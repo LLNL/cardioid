@@ -7,7 +7,9 @@ include $(ARCH).mk
 #------------------------------------------------------------------------------
 #
 
-HEARTSRC=TT04Model.C SimpleInputParser.C ProcessGrid3D.C DataGrid3D.C GDLoadBalancer.C
+HEARTSRC=TT04Model.C SimpleInputParser.C ProcessGrid3D.C DataGrid3D.C \
+	 GDLoadBalancer.C CommTable.C
+
 HEARTOBJS = $(HEARTSRC:%.C=$(OBJDIR)/%.o)
 
 OBJDIR = objs-$(ARCH)

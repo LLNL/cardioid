@@ -38,6 +38,12 @@ endif
 ifeq ($(HOSTNAME),tux)
   ARCHGUESS = linux_gnu
 endif
+ifeq ($(HOSTNAME),sole)
+  ARCHGUESS = osx_gnu
+endif
+ifeq ($(HOSTNAME),largo)
+  ARCHGUESS = osx_gnu
+endif
 
 ifndef ARCHGUESS
   UNAME := $(shell uname -p)
