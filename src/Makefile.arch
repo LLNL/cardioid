@@ -1,0 +1,57 @@
+
+# guess hostname with hostname command, stripping off all numbers
+HOSTNAME := $(shell hostname -s | sed  's/[0-9]*//g')
+
+ifeq ($(HOSTNAME),dawn)  
+  ARCHGUESS = ibm_bgp_xlc
+endif
+ifeq ($(HOSTNAME),dawndev)
+  ARCHGUESS = ibm_bgp_xlc
+endif
+ifeq ($(HOSTNAME),udawn)
+  ARCHGUESS = ibm_bgp_xlc
+endif
+ifeq ($(HOSTNAME),bgl)  
+  ARCHGUESS = ibm_bgl_xlc
+endif
+ifeq ($(HOSTNAME),ubgl)  
+  ARCHGUESS = ibm_bgl_xlc
+endif
+ifeq ($(HOSTNAME),atlas)  
+  ARCHGUESS = linux_x86_64_intel
+endif
+ifeq ($(HOSTNAME),hera)  
+  ARCHGUESS = linux_x86_64_intel
+endif
+ifeq ($(HOSTNAME),yana)  
+  ARCHGUESS = linux_x86_64_intel
+endif
+ifeq ($(HOSTNAME),minos)  
+  ARCHGUESS = linux_x86_64_intel
+endif
+ifeq ($(HOSTNAME),rhea)
+  ARCHGUESS = linux_x86_64_intel
+endif
+ifeq ($(HOSTNAME),hopi)
+  ARCHGUESS = linux_x86_64_intel
+endif
+ifeq ($(HOSTNAME),tux)
+  ARCHGUESS = linux_gnu
+endif
+
+ifndef ARCHGUESS
+  UNAME := $(shell uname -p)
+  ifeq ($(UNAME),x86_64)
+    ARCHGUESS = linux_x86_64_intel
+  endif
+endif
+
+ifndef ARCHGUESS
+  UNAME := $(shell uname -n | sed  's/[0-9]*//g')
+  ifeq ($(UNAME),up)
+    ARCHGUESS = ibm_sp5_xlc
+  endif
+  ifeq ($(UNAME),purple)
+    ARCHGUESS = ibm_sp5_xlc
+  endif
+endif
