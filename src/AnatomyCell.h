@@ -1,0 +1,15 @@
+#ifndef ANATOMY_CELL_HH
+#define ANATOMY_CELL_HH
+
+#include "Long64.h"
+
+class AnatomyCell
+{
+  public:
+   Long64 _gid;
+   int _cellType;
+   int _theta;
+   int _phi;
+};
+
+#endif

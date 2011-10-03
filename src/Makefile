@@ -8,19 +8,61 @@ include $(ARCH).mk
 #
 
 HEARTSRC=TT04Model.C SimpleInputParser.C ProcessGrid3D.C DataGrid3D.C \
-	 GDLoadBalancer.C CommTable.C
+	 GDLoadBalancer.C CommTable.C AnatomyReader.C object_cc.C
+
+
+DDCMD_FILES = \
+	codata.h \
+	ddcMalloc.c \
+	ddcMalloc.h \
+	ddcMath.h \
+	error.c \
+	error.h \
+	hardwareInfo.c \
+	hardwareInfo.h \
+	heap.c \
+	heap.h \
+	ioUtils.c \
+	ioUtils.h \
+	match.c \
+	match.h \
+	mpiUtils.c \
+	mpiUtils.h \
+	object.c \
+	object.h \
+	pio.c \
+	pio.h \
+	pioFixedRecordHelper.c \
+	pioFixedRecordHelper.h \
+	pioHelper.c \
+	pioHelper.h \
+	pioVariableRecordHelper.c \
+	pioVariableRecordHelper.h \
+	tagServer.c \
+	tagServer.h \
+	units.c \
+	units.h \
+	utilities.c \
+	utilities.h \
+
+
+DDCMDSRC = $(filter %.c, $(DDCMD_FILES))
 
 HEARTOBJS = $(HEARTSRC:%.C=$(OBJDIR)/%.o)
+HEARTOBJS += $(DDCMDSRC:%.c=$(OBJDIR)/%.o)
 
 OBJDIR = objs-$(ARCH)
 INSTALLDIR = ../bin
 EXENAME = bigHeart-$(ARCH)
 CXXFLAGS += -DARCH='"$(ARCH)"'
 
-DEFAULT: $(EXENAME)
+DEFAULT: $(DDCMD_FILES) $(EXENAME)
 
 $(OBJDIR)/%.o: %.C
 	$(CXX) $(CXXFLAGS) -o $@ -c $^
+
+$(OBJDIR)/%.o: %.c
+	$(CC) $(CFLAGS) -o $@ -c $^
 
 $(OBJDIR)/bigHeart.o: bigHeart.C
 	$(CXX) $(CXXFLAGS) -o $@ -c $^
@@ -30,6 +72,9 @@ $(EXENAME): makedirs depend $(HEARTOBJS) $(OBJDIR)/bigHeart.o
 
 testLoadBalancer: makedirs $(OBJDIR)/GDLoadBalancer.o $(OBJDIR)/testLoadBalancer.o
 	$(LD) $(DFLAGS) -o testLoadBalancer $(OBJDIR)/testLoadBalancer.o $(HEARTOBJS) $(LDFLAGS)
+
+$(DDCMD_FILES):
+	./mkLinks_ddcMD.sh $@
 
 makedirs:
 	@if [ ! -d $(OBJDIR) ]; then mkdir -p $(OBJDIR) ; fi
@@ -49,11 +94,13 @@ makedirs:
 #makedepend -D$(PLT) -I/usr/include/CC *.[cC]
 #------------------------------------------------------------------------------
 #  Cleanup object files
- clean :
-	rm -f $(OBJDIR)/*.o
+clean :
+	rm -rf $(OBJDIR)/*.o
 	rm -f $(EXENAME)
-	rmdir $(OBJDIR)
-	rm -f .depend_$(ARCH)
+	rm -f .depend_$(ARCH)*
 	rm -f testLoadBalancer
+
+distclean: clean
+	rm -f $(DDCMD_FILES)
 
 -include .depend_$(ARCH)
