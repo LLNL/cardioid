@@ -1,5 +1,6 @@
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 #include <string>
 #include <cassert>
 #include <fstream>
@@ -8,6 +9,7 @@
 #if USE_MPI
 #include <mpi.h>
 #endif
+#include "GridPoint.h"
 #include "GDLoadBalancer.h"
 #include "Control.h"
 #include "Timer.h"
@@ -23,12 +25,12 @@ GDLoadBalancer::GDLoadBalancer(int npex, int npey, int npez):
   for (int ip=0; ip<npegrid_; ip++)
     nloc_[ip] = 0;
 
-  tosend_.resize(npegrid_);
+  togive_.resize(npegrid_);
   for (int ip=0; ip<npegrid_; ip++)
-    tosend_[ip].resize(nnbr_);
+    togive_[ip].resize(nnbr_);
   for (int ip=0; ip<npegrid_; ip++)
     for (int n=0; n<nnbr_; n++)
-      tosend_[ip][n] = 0;
+      togive_[ip][n] = 0;
   
   loctype_.resize(npegrid_);
   locgid_.resize(npegrid_);
@@ -49,37 +51,32 @@ GDLoadBalancer::GDLoadBalancer(int npex, int npey, int npez):
       penbr_[ip][j] = -1;
 
 
-    // want x,y,z coords of process ip
-    const int npexy = npex_*npey_;
-    int pz = ip/npexy;
-    int xy0 = ip;
-    while (xy0 >= npexy) xy0 -= npexy;
-    int py = xy0/npex_;
-    int px = xy0 - py*npex_;  
+    // x,y,z coords of process ip
+    GridPoint ipt(ip,npex_,npey_,npez_);
     
     int nbr;
-    if (px > 0) {
-      nbr = (px-1) + py*npex_ + pz*npex_*npey_;
+    if (ipt.x > 0) {
+      nbr = (ipt.x-1) + ipt.y*npex_ + ipt.z*npex_*npey_;
       penbr_[ip][0] = nbr;
     }
-    if (px < npex_-1) {
-      nbr = (px+1) + py*npex_ + pz*npex_*npey_;
+    if (ipt.x < npex_-1) {
+      nbr = (ipt.x+1) + ipt.y*npex_ + ipt.z*npex_*npey_;
       penbr_[ip][1] = nbr;
     }
-    if (py > 0) {
-      nbr = px + (py-1)*npex_ + pz*npex_*npey_;
+    if (ipt.y > 0) {
+      nbr = ipt.x + (ipt.y-1)*npex_ + ipt.z*npex_*npey_;
       penbr_[ip][2] = nbr;
     }
-    if (py < npey_-1) {
-      nbr = px + (py+1)*npex_ + pz*npex_*npey_;
+    if (ipt.y < npey_-1) {
+      nbr = ipt.x + (ipt.y+1)*npex_ + ipt.z*npex_*npey_;
       penbr_[ip][3] = nbr;
     }
-    if (pz > 0) {
-      nbr = px + py*npex_ + (pz-1)*npex_*npey_;
+    if (ipt.z > 0) {
+      nbr = ipt.x + ipt.y*npex_ + (ipt.z-1)*npex_*npey_;
       penbr_[ip][4] = nbr;
     }
-    if (pz < npez_-1) {
-      nbr = px + py*npex_ + (pz+1)*npex_*npey_;
+    if (ipt.z < npez_-1) {
+      nbr = ipt.x + ipt.y*npex_ + (ipt.z+1)*npex_*npey_;
       penbr_[ip][5] = nbr;
     }
   }
@@ -101,6 +98,9 @@ void GDLoadBalancer::initialDistribution(vector<int>& types, int nx, int ny, int
   int npts = types.size();
   if (npts != nx*ny*nz)
     cout << "WARNING:  GDLoadBalancer::initialDistribution called with npts != nx*ny*nz!" << endl;
+  nx_ = nx;
+  ny_ = ny;
+  nz_ = nz;
   
   // count non-zero grid points
   ntissue_ = 0;
@@ -197,7 +197,7 @@ void GDLoadBalancer::initialDistribution(vector<int>& types, int nx, int ny, int
     k0 = kmax[kp];
   }
     
-  k0 = 0;    
+  k0 = 0;
   for (int kp=0; kp<npez_; kp++)
   {
     int j0 = 0;
@@ -264,9 +264,7 @@ void GDLoadBalancer::initialDistribution(vector<int>& types, int nx, int ny, int
     cout << " x-y plane " << k << ", non-zero grid pts = " << nxyplane[k] << endl;
   }
   cout << endl;
-  //ewd DEBUG
-  
-  //ewd DEBUG
+
   // calculate total number of non-zero points at each x-y plane of pe grid
   vector<int> xype_hist(npez_);
   for (int kp=0; kp<npez_; kp++)
@@ -336,9 +334,9 @@ void GDLoadBalancer::balanceLoop(int bblock, int bthresh, int maxiter)
           if (nbrpmax > -1)
           {
             nloc_[ip]++;
-            tosend_[ip][thisn]--;  // we are owed one grid point from neighbor thisn
+            togive_[ip][thisn]--;  // we are owed one grid point from neighbor thisn
             nloc_[nbrpmax]--;
-            tosend_[nbrpmax][thatn_[thisn]]++;  // we owe one grid point to neighbor thatn_
+            togive_[nbrpmax][thatn_[thisn]]++;  // we owe one grid point to neighbor thatn_
           }
           else if (rattle_meta && allavg)  // avoid metastable vacancy pinning
           {
@@ -350,9 +348,9 @@ void GDLoadBalancer::balanceLoop(int bblock, int bthresh, int maxiter)
               if (tip > -1) 
               {
                 nloc_[ip]++;
-                tosend_[ip][n]--;  // we are owed one grid point from neighbor n
+                togive_[ip][n]--;  // we are owed one grid point from neighbor n
                 nloc_[tip]--;
-                tosend_[tip][thatn_[n]]++;  // we owe one grid point to neighbor thatn_
+                togive_[tip][thatn_[n]]++;  // we owe one grid point to neighbor thatn_
               }
             }
           }
@@ -380,9 +378,9 @@ void GDLoadBalancer::balanceLoop(int bblock, int bthresh, int maxiter)
           if (nbrpmin > -1)
           {
             nloc_[ip]--;
-            tosend_[ip][thisn]++;  // we owe one grid point to neighbor thisn
+            togive_[ip][thisn]++;  // we owe one grid point to neighbor thisn
             nloc_[nbrpmin]++;
-            tosend_[nbrpmin][thatn_[thisn]]--;  // we are owed one grid point from neighbor thatn_
+            togive_[nbrpmin][thatn_[thisn]]--;  // we are owed one grid point from neighbor thatn_
           }
           else if (rattle_meta && allavg)  // avoid metastable vacancy pinning
           {
@@ -394,9 +392,9 @@ void GDLoadBalancer::balanceLoop(int bblock, int bthresh, int maxiter)
               if (tip > -1) 
               {
                 nloc_[ip]--;
-                tosend_[ip][n]++;  // we owe one grid point to neighbor n
+                togive_[ip][n]++;  // we owe one grid point to neighbor n
                 nloc_[tip]++;
-                tosend_[tip][thatn_[n]]--;  // we are owed one grid point from neighbor thatn_
+                togive_[tip][thatn_[n]]--;  // we are owed one grid point from neighbor thatn_
               }
             }
           }
@@ -427,29 +425,111 @@ void GDLoadBalancer::balanceLoop(int bblock, int bthresh, int maxiter)
       cout << "load balance iteration " << bcnt << ":  " << maxnum << " - " << minnum << " = " << maxnum-minnum << ", threshold = " << bthresh << endl;
       loadHistogram();
     }
-        
-
   }
 
-  /*
-  //ewd:  where should this take place?  ProcessGrid?
-  // use tosend_ array to achieve calculated load balance, move gids between neighbors
+  // use togive_ array to achieve calculated load balance, move gids between neighbors
+  const int nxy = nx_*ny_;
   for (int ip=0; ip<npegrid_; ip++)
   {
+    int ngidloc = locgid_[ip].size();
+    vector<int> keep(ngidloc);
+    for (int i=0; i<ngidloc; i++)
+      keep[i] = 1;
+
+    vector<int> xgid(ngidloc);
+    vector<int> ygid(ngidloc);
+    vector<int> zgid(ngidloc);
+    vector<int> xgid_sort(ngidloc);
+    vector<int> ygid_sort(ngidloc);
+    vector<int> zgid_sort(ngidloc);
+    for (int i=0; i<ngidloc; i++)
+    {
+      int gid = locgid_[ip][i];
+      GridPoint gpt(gid,nx_,ny_,nz_);
+      xgid[i] = gpt.x + gpt.y*nx_ + gpt.z*nx_*ny_;
+      ygid[i] = gpt.y + gpt.z*ny_ + gpt.x*ny_*nz_;
+      zgid[i] = gpt.z + gpt.x*nz_ + gpt.y*nz_*nx_;
+      xgid_sort[i] = xgid[i];
+      ygid_sort[i] = ygid[i];
+      zgid_sort[i] = zgid[i];
+    }
+    sort(xgid_sort.begin(),xgid_sort.end());
+    sort(ygid_sort.begin(),ygid_sort.end());
+    sort(zgid_sort.begin(),zgid_sort.end());
+    
     for (int n=0; n<nnbr_; n++)
     {
-      if (tosend_[ip][n] > 0)      // send data
+      if (togive_[ip][n] > 0)      // have data to transfer to this neighbor
       {
-        
-
-      }
-      else if (tosend_[ip][n] > 0) // receive data
-      {
-        
+        int offset = 0;
+        int s = 0;
+        while (s < togive_[ip][n])
+        {
+          int tid = -1;
+          if (n==0) {
+            for (int j=0; j<ngidloc; j++)
+              if (xgid[j] == xgid_sort[s+offset]) // send this id
+                tid = j;
+          }
+          else if (n==1) {
+            for (int j=0; j<ngidloc; j++)
+              if (xgid[j] == xgid_sort[ngidloc-1-s-offset]) // send this id
+                tid = j;
+          }
+          else if (n==2) {
+            for (int j=0; j<ngidloc; j++)
+              if (ygid[j] == ygid_sort[s+offset]) // send this id
+                tid = j;
+          }
+          else if (n==3) {
+            for (int j=0; j<ngidloc; j++)
+              if (ygid[j] == ygid_sort[ngidloc-1-s-offset]) // send this id
+                tid = j;
+          }
+          else if (n==4) {
+            for (int j=0; j<ngidloc; j++)
+              if (zgid[j] == zgid_sort[s+offset]) // send this id
+                tid = j;
+          }
+          else if (n==5) {
+            for (int j=0; j<ngidloc; j++)
+              if (zgid[j] == zgid_sort[ngidloc-1-s-offset]) // send this id
+                tid = j;
+          }
+          
+          if (tid > -1 && keep[tid] == 1) // hasn't been moved yet
+          {
+            int thisgid = locgid_[ip][tid];
+            int thistype = loctype_[ip][tid];
+            int ipn = penbr_[ip][n];
+            locgid_[ipn].push_back(thisgid);
+            loctype_[ipn].push_back(thistype);
+            keep[tid] = 0;
+            s++;
+          }
+          else
+          {
+            offset++;
+          }
+        }
       }
     }
+
+    // remove transferred elements from loctype, locgid 
+    int offset = 0;
+    for (int j=0; j<ngidloc; j++)
+    {
+      if (keep[j] == 0)
+        offset++;
+      else
+      {
+        locgid_[ip][j-offset] = locgid_[ip][j];
+        loctype_[ip][j-offset] = loctype_[ip][j];
+      }
+    }
+    locgid_[ip].resize(ngidloc-offset);
+    loctype_[ip].resize(ngidloc-offset);
   }
-  */
   
   if (!balance)
     cout << "balanceLoop did not converge after " << maxiter << " iterations." << endl;

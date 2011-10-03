@@ -67,10 +67,14 @@ int main(int argc, char** argv)
   delete sip;
 
   // compute process grid info 
+  assert(ctrl.npegrid_ep.size() == 3);
   int npex = ctrl.npegrid_ep[0];
   int npey = ctrl.npegrid_ep[1];
   int npez = ctrl.npegrid_ep[2];
 
+  ProcessGrid3D* pgridep = new ProcessGrid3D(MPI_COMM_WORLD,npex,npey,npez);
+  DataGrid3D* dgridep = new DataGrid3D(*pgridep,ctrl.ngrid_ep[0],ctrl.ngrid_ep[1],ctrl.ngrid_ep[2]);
+  
   GDLoadBalancer* loadbal = new GDLoadBalancer(npex,npey,npez);
 
   /////
@@ -133,6 +137,7 @@ int main(int argc, char** argv)
       tmap["randomload"].stop();
     }
 
+    // compute data decomposition, redistribute data until load balance is achieved
     tmap["assign_init"].start();
     loadbal->initialDistribution(types,nx,ny,nz);
     tmap["assign_init"].stop();
@@ -141,25 +146,9 @@ int main(int argc, char** argv)
     loadbal->balanceLoop();
     tmap["balance"].stop();
 
-    cout.setf(ios::fixed,ios::floatfield);
-    for ( map<std::string,Timer>::iterator i = tmap.begin(); i != tmap.end(); i++ ) {
-      double time = (*i).second.real();
-      cout << "timing name=" << setw(15) << (*i).first << ":   time=" << setprecision(6) << setw(12) << time << " sec" << endl;
-    }
+    // move data to tasks
     
-    // compute data decomposition, redistribute data until good load balance is achieved
-
-
-    // move data to tasks:  placeholder grid objects constructed
-  
-    assert(ctrl.npegrid_ep.size() == 3);
-    ProcessGrid3D* pgridep = new ProcessGrid3D(MPI_COMM_WORLD,ctrl.npegrid_ep[0],ctrl.npegrid_ep[1],ctrl.npegrid_ep[2]);
-
-    cout << "mype = " << mype << ", grid.pe = " << pgridep->mype()
-         << ", grid coord = " << pgridep->ip0() << " " << pgridep->ip1() << " "
-         << pgridep->ip2() << ", active = " << pgridep->active() << endl;
-
-    DataGrid3D* dgridep = new DataGrid3D(*pgridep,ctrl.ngrid_ep[0],ctrl.ngrid_ep[1],ctrl.ngrid_ep[2]);
+    
   
     // compute comm tables
 
@@ -170,10 +159,21 @@ int main(int argc, char** argv)
 
 
     
+
+    cout.setf(ios::fixed,ios::floatfield);
+    for ( map<std::string,Timer>::iterator i = tmap.begin(); i != tmap.end(); i++ ) {
+      double time = (*i).second.real();
+      cout << "timing name=" << setw(15) << (*i).first << ":   time=" << setprecision(6) << setw(12) << time << " sec" << endl;
+    }
+    
   }
 #if USE_MPI  
   MPI_Finalize();
 #endif
+
+  delete pgridep;
+  delete dgridep;
+  delete loadbal;
   
   return 0;
 }
