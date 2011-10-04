@@ -23,7 +23,7 @@ class GDLoadBalancer {
   vector<vector<int> > penbr_;   // process numbers of all neighbors
   vector<int> thatn_;            // convenience function for neighbor pair indices
   vector<int> gpe_;              // process that owns each grid point (may want to ditch this)
-  vector<vector<int> > tosend_;  // list of all data exchanges needed for balance
+  vector<vector<int> > togive_;  // list of all data exchanges needed for balance
   vector<vector<int> > loctype_; // output: type list for each pe's local data
   vector<vector<int> > locgid_;  // output: gid list for each pe's local data
   

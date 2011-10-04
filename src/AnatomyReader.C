@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include "pio.h"
+#include "pioFixedRecordHelper.h"
 #include "object_cc.hh"
 
 using std::string;
@@ -19,7 +20,7 @@ AnatomyReader::AnatomyReader(const string& filename, MPI_Comm comm)
    objectGet(hObj, "cellTypes", _cellTypes);
 
    assert(_nx*_ny*_nz > 0);
-   assert(_cellTypes.size() > 0);
+//   assert(_cellTypes.size() > 0);
    
    switch (file->datatype)
    {
@@ -38,7 +39,12 @@ AnatomyReader::AnatomyReader(const string& filename, MPI_Comm comm)
 
 void AnatomyReader::asciiReader(PFILE* file)
 {
-   for (unsigned ii=0; ii<file->numberRecords; ++ii)
+   PIO_FIXED_RECORD_HELPER* helper = (PIO_FIXED_RECORD_HELPER*) file->helper;
+   unsigned lrec = helper->lrec;
+   unsigned nRecords = file->bufsize/lrec;
+   assert(file->bufsize%lrec == 0);
+   
+   for (unsigned ii=0; ii<nRecords; ++ii)
    {
       char buf[file->recordLength];
       AnatomyCell tmp;

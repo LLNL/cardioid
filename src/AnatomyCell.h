@@ -10,6 +10,7 @@ class AnatomyCell
    int _cellType;
    int _theta;
    int _phi;
+   int _dest;
 };
 
 #endif

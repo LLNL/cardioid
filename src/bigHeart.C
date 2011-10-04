@@ -16,17 +16,24 @@
 #include "DataGrid3D.h"
 #include "Timer.h"
 #include "GDLoadBalancer.h"
+#include "AnatomyReader.h"
+#include "mpiUtils.h"
+
+Control parseCommandLineAndReadInputFile(int argc, char** argv, int rank);
 
 using std::cout;
 using std::endl;
 using std::string;
 
+// Sorry about this.
+MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
+
 int main(int argc, char** argv)
 {
 
+   
   const bool realdata_ = true;
 
-  Control ctrl;
   Heart heart;
   map<std::string,Timer> tmap;
   
@@ -40,32 +47,39 @@ int main(int argc, char** argv)
   mype = 0;
   int MPI_COMM_WORLD = 0;
 #endif
+
+  Control ctrl = parseCommandLineAndReadInputFile(argc, argv, mype);
+
+//   AnatomyReader reader("anatomy#", MPI_COMM_WORLD);
+//   Long64 nCells = reader._nx*reader._ny*reader._nz;
   
-  // get input file name from command line argument
-  if (argc != 2 && argc != 1)
-  {
-    if (mype == 0)
-      cout << "Usage:  bigHeart [input file]" << endl;
-    exit(-1);
-  }
+//   for (int ii=0; ii<reader._anatomy.size(); ++ii)
+//      reader._anatomy[ii]._dest = 0;
 
-  // parse input file
-  string inputfile("input");
-  if (argc > 1)
-  {
-    string argfile(argv[1]);
-    inputfile = argfile;
-    cout << "argc = " << argc << endl;
-  }
-  SimpleInputParser* sip = new SimpleInputParser();
-  if (sip->readInput((char*)inputfile.c_str(),&ctrl))
-  {
-    if (mype == 0)
-      cout << "Input parsing error!" << endl;
-    return 1;
-  }
-  delete sip;
+//   unsigned nLocal = reader._anatomy.size();
+  
+//   vector<unsigned> dest(nLocal, 0);
+  
+//   reader._anatomy.resize(nCells);
+//   assignArray((unsigned char*)&(reader._anatomy[0]),
+// 	      &nLocal,
+// 	      reader._anatomy.capacity(),
+// 	      sizeof(AnatomyCell),
+// 	      &(dest[0]),
+// 	      0,
+// 	      MPI_COMM_WORLD);
+//   reader._anatomy.resize(nLocal);
+//   cout << "task " << mype << " size " << reader._anatomy.size() <<endl;
+//   for (unsigned ii=0; ii<reader._anatomy.size(); ++ii)
+//      cout << reader._anatomy[ii]._cellType << " "
+// 	  << reader._anatomy[ii]._theta << " "
+// 	  << reader._anatomy[ii]._phi << " "
+// 	  << endl;
+  
+//   exit(0);
 
+  
+  
   // compute process grid info 
   assert(ctrl.npegrid_ep.size() == 3);
   int npex = ctrl.npegrid_ep[0];
@@ -176,4 +190,34 @@ int main(int argc, char** argv)
   delete loadbal;
   
   return 0;
+}
+
+
+Control parseCommandLineAndReadInputFile(int argc, char** argv, int rank)
+{
+   // get input file name from command line argument
+   if (argc != 2 && argc != 1)
+   {
+      if (rank == 0)
+	 cout << "Usage:  bigHeart [input file]" << endl;
+      exit(-1);
+   }
+
+   // parse input file
+   string inputfile("input");
+   if (argc > 1)
+   {
+      string argfile(argv[1]);
+      inputfile = argfile;
+      cout << "argc = " << argc << endl;
+   }
+   SimpleInputParser sip;
+   Control ctrl;
+   if (sip.readInput(inputfile.c_str(), &ctrl))
+   {
+      if (rank == 0)
+	 cout << "Input parsing error!" << endl;
+      exit(1);
+   }
+   return ctrl;
 }

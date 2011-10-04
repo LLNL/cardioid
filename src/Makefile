@@ -18,12 +18,15 @@ DDCMD_FILES = \
 	ddcMath.h \
 	error.c \
 	error.h \
+	external.h \
 	hardwareInfo.c \
 	hardwareInfo.h \
 	heap.c \
 	heap.h \
 	ioUtils.c \
 	ioUtils.h \
+	lessThan.c \
+	lessThan.h \
 	match.c \
 	match.h \
 	mpiUtils.c \

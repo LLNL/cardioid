@@ -21,7 +21,7 @@ SimpleInputParser::SimpleInputParser()
   inputread_ = false;
 }
 ////////////////////////////////////////////////////////////////////////////////
-int SimpleInputParser::readInput(char* inputfile, Control *ctrl)
+int SimpleInputParser::readInput(const char* inputfile, Control *ctrl)
 {
 
   int npes, mype;

@@ -15,6 +15,6 @@ class SimpleInputParser
   public:
 
   SimpleInputParser();
-  int readInput(char* inputfile, Control* ctrl);
+  int readInput(const char* inputfile, Control* ctrl);
 };
 #endif
