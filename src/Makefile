@@ -9,7 +9,7 @@ include $(ARCH).mk
 
 HEARTSRC=TT04Model.cc SimpleInputParser.cc ProcessGrid3D.cc DataGrid3D.cc \
 	 GDLoadBalancer.cc CommTable.cc AnatomyReader.cc object_cc.cc \
-	 KoradiTest.cc
+	 KoradiTest.cc GridRouter.cc Grid3DStencil.cc
 
 
 DDCMD_FILES = \
@@ -80,8 +80,11 @@ $(OBJDIR)/bigHeart.o: bigHeart.cc
 $(EXENAME): makedirs depend $(HEARTOBJS) $(OBJDIR)/bigHeart.o
 	$(LD) $(DFLAGS) -o $(EXENAME) $(OBJDIR)/bigHeart.o $(HEARTOBJS) $(LDFLAGS)
 
-testLoadBalancer: makedirs $(OBJDIR)/GDLoadBalancer.o $(OBJDIR)/testLoadBalancer.o
+testLoadBalancer: makedirs $(HEARTOBJS) $(OBJDIR)/testLoadBalancer.o
 	$(LD) $(DFLAGS) -o testLoadBalancer $(OBJDIR)/testLoadBalancer.o $(HEARTOBJS) $(LDFLAGS)
+
+testGridRouter: makedirs $(HEARTOBJS) $(OBJDIR)/testGridRouter.o
+	$(LD) $(DFLAGS) -o testGridRouter $(OBJDIR)/testGridRouter.o $(HEARTOBJS) $(LDFLAGS)
 
 $(DDCMD_FILES):
 	./mkLinks_ddcMD.sh $@
@@ -109,6 +112,7 @@ clean :
 	rm -f $(EXENAME)
 	rm -f .depend_$(ARCH)*
 	rm -f testLoadBalancer
+	rm -f testGridRouter
 
 distclean: clean
 	rm -f $(DDCMD_FILES)

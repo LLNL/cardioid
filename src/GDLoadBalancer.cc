@@ -16,8 +16,17 @@ using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////
 GDLoadBalancer::GDLoadBalancer(int npex, int npey, int npez):
-    npex_(npex), npey_(npey), npez_(npez), nnbr_(6)
+    npex_(npex), npey_(npey), npez_(npez)
 {
+  // only exchange load across faces
+  nnbr_ = 6;
+
+  // equivalent local neighbor index of neighboring point
+  thatn_.resize(nnbr_);  
+  thatn_[0] = 1; thatn_[1] = 0;
+  thatn_[2] = 3; thatn_[3] = 2;
+  thatn_[4] = 5; thatn_[5] = 4;
+
   // initialize arrays
   npegrid_ = npex_*npey_*npez_;
   nloc_.resize(npegrid_);
@@ -53,6 +62,7 @@ GDLoadBalancer::GDLoadBalancer(int npex, int npey, int npez):
     // x,y,z coords of process ip
     GridPoint ipt(ip,npex_,npey_,npez_);
     
+    // face to face exchanges
     int nbr;
     if (ipt.x > 0) {
       nbr = (ipt.x-1) + ipt.y*npex_ + ipt.z*npex_*npey_;
@@ -80,11 +90,6 @@ GDLoadBalancer::GDLoadBalancer(int npex, int npey, int npez):
     }
   }
 
-  // equivalent neighbor index of neighboring point
-  thatn_.resize(nnbr_);  
-  thatn_[0] = 1; thatn_[1] = 0;
-  thatn_[2] = 3; thatn_[3] = 2;
-  thatn_[4] = 5; thatn_[5] = 4;
 }
 ////////////////////////////////////////////////////////////////////////////////
 GDLoadBalancer::~GDLoadBalancer()

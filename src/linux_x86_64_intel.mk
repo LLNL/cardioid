@@ -2,6 +2,7 @@
  PLAT=LINUX_X86_64
 #-------------------------------------------------------------------------------
 
+ CC=/usr/local/bin/mpiicc
  CXX=/usr/local/bin/mpiicpc
  LD=$(CXX)
 
