@@ -8,7 +8,8 @@ include $(ARCH).mk
 #
 
 HEARTSRC=TT04Model.cc SimpleInputParser.cc ProcessGrid3D.cc DataGrid3D.cc \
-	 GDLoadBalancer.cc CommTable.cc AnatomyReader.cc object_cc.cc
+	 GDLoadBalancer.cc CommTable.cc AnatomyReader.cc object_cc.cc \
+	 KoradiTest.cc
 
 
 DDCMD_FILES = \
@@ -19,12 +20,16 @@ DDCMD_FILES = \
 	error.c \
 	error.h \
 	external.h \
+	GridAssignmentObject.c \
+	GridAssignmentObject.h \
 	hardwareInfo.c \
 	hardwareInfo.h \
 	heap.c \
 	heap.h \
 	ioUtils.c \
 	ioUtils.h \
+	intQueue.c \
+	intQueue.h \
 	lessThan.c \
 	lessThan.h \
 	match.c \
@@ -43,6 +48,8 @@ DDCMD_FILES = \
 	pioVariableRecordHelper.h \
 	tagServer.c \
 	tagServer.h \
+	three_algebra.c \
+	three_algebra.h \
 	units.c \
 	units.h \
 	utilities.c \
@@ -87,7 +94,7 @@ makedirs:
 # generate dependencies in makefile: use -Y to avoid library header files
 # that are likely to be different on other platforms.
  depend :
-	@makedepend -f .depend_$(ARCH) -p'($(OBJDIR)/' -o '.o)' -Y -D$(PLT) *.[cCh] 2> /dev/null
+	@makedepend -f .depend_$(ARCH) -p'($(OBJDIR)/' -o '.o)' -Y -D$(PLT) *.cc *.c *.hh *.h 2> /dev/null
 
 .depend_$(ARCH): $(HEARTSRC)
 	@touch .depend_$(ARCH)
@@ -105,5 +112,6 @@ clean :
 
 distclean: clean
 	rm -f $(DDCMD_FILES)
+	rm -rf $(OBJDIR)
 
 -include .depend_$(ARCH)

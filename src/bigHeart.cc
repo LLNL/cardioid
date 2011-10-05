@@ -16,12 +16,13 @@
 #include "GDLoadBalancer.hh"
 #include "AnatomyReader.hh"
 #include "mpiUtils.h"
+#include "KoradiTest.hh"
+
+using namespace std;
 
 Control parseCommandLineAndReadInputFile(int argc, char** argv, int rank);
 
-using std::cout;
-using std::endl;
-using std::string;
+
 
 // Sorry about this.
 MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
@@ -43,6 +44,11 @@ int main(int argc, char** argv)
 
   Control ctrl = parseCommandLineAndReadInputFile(argc, argv, mype);
 
+
+//   AnatomyReader reader("anatomy#", MPI_COMM_WORLD);
+//   KoradiTest(reader, 1);
+  
+  
 //   AnatomyReader reader("anatomy#", MPI_COMM_WORLD);
 //   Long64 nCells = reader._nx*reader._ny*reader._nz;
   
