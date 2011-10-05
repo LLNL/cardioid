@@ -1,12 +1,12 @@
 anatomy FILEHEADER{
   datatype = FIXRECORDASCII;
   nfiles = 1;
+  nfields = 4;
   field_names = gid cellType theta phi;
   field_types = u u u u;
   nx = 3; ny = 3; nz = 3;
   nrecord = 27;
   lrec=12;
-  cellTypes = 0 1 2;
 }
 
  0  0  0  0
