@@ -1,6 +1,6 @@
 // $Id$
 
-#include "CommTable.h"
+#include "CommTable.hh"
 
 #include <cassert>
 

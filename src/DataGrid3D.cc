@@ -1,9 +1,9 @@
+#include "DataGrid3D.hh"
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
 #include <iomanip>
-#include "ProcessGrid3D.h"
-#include "DataGrid3D.h"
+#include "ProcessGrid3D.hh"
 using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,13 +43,13 @@ int DataGrid3D::gridCoords(int gid, int &ig0, int &ig1, int &ig2)
   return 0;
 }
 ////////////////////////////////////////////////////////////////////////////////
-void DataGrid3D::addState(string name)
+void DataGrid3D::addState(const string& name)
 {
   statename_.push_back(name);
   nstate_++;
 }
 ////////////////////////////////////////////////////////////////////////////////
-int DataGrid3D::initSendLocalData(string state, vector<double>& locdata, int g0)
+int DataGrid3D::initSendLocalData(const string& state, vector<double>& locdata, int g0)
 {
   // initLocalData distributes blocks of grid data using a simple parallel
   // distribution without regard to load balance
@@ -87,7 +87,7 @@ int DataGrid3D::initSendLocalData(string state, vector<double>& locdata, int g0)
   return 0;
 }
 ////////////////////////////////////////////////////////////////////////////////
-int DataGrid3D::initRecvLocalData(string state, int srcpe)
+int DataGrid3D::initRecvLocalData(const string& state, int srcpe)
 {
   // call this from every task:  need to know which pes are sending data
   // (i.e. which tasks are reading input/checkpoint data from disk)
@@ -126,7 +126,7 @@ int DataGrid3D::initProcLoc(int gid, int &p0, int &p1, int &p2)
   return ierr;
 }
 ////////////////////////////////////////////////////////////////////////////////
-int DataGrid3D::stateInd(string state)
+int DataGrid3D::stateInd(const string& state)
 {
   int dind = -1;
   for (int i=0; i<statename_.size(); i++)

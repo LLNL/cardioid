@@ -7,8 +7,8 @@ include $(ARCH).mk
 #------------------------------------------------------------------------------
 #
 
-HEARTSRC=TT04Model.C SimpleInputParser.C ProcessGrid3D.C DataGrid3D.C \
-	 GDLoadBalancer.C CommTable.C AnatomyReader.C object_cc.C
+HEARTSRC=TT04Model.cc SimpleInputParser.cc ProcessGrid3D.cc DataGrid3D.cc \
+	 GDLoadBalancer.cc CommTable.cc AnatomyReader.cc object_cc.cc
 
 
 DDCMD_FILES = \
@@ -51,7 +51,7 @@ DDCMD_FILES = \
 
 DDCMDSRC = $(filter %.c, $(DDCMD_FILES))
 
-HEARTOBJS = $(HEARTSRC:%.C=$(OBJDIR)/%.o)
+HEARTOBJS = $(HEARTSRC:%.cc=$(OBJDIR)/%.o)
 HEARTOBJS += $(DDCMDSRC:%.c=$(OBJDIR)/%.o)
 
 OBJDIR = objs-$(ARCH)
@@ -61,13 +61,13 @@ CXXFLAGS += -DARCH='"$(ARCH)"'
 
 DEFAULT: $(DDCMD_FILES) $(EXENAME)
 
-$(OBJDIR)/%.o: %.C
+$(OBJDIR)/%.o: %.cc
 	$(CXX) $(CXXFLAGS) -o $@ -c $^
 
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $^
 
-$(OBJDIR)/bigHeart.o: bigHeart.C
+$(OBJDIR)/bigHeart.o: bigHeart.cc
 	$(CXX) $(CXXFLAGS) -o $@ -c $^
 
 $(EXENAME): makedirs depend $(HEARTOBJS) $(OBJDIR)/bigHeart.o

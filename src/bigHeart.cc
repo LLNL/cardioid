@@ -5,18 +5,16 @@
 #include <fstream>
 #include <vector>
 #include <map>
-#if USE_MPI
 #include <mpi.h>
-#endif
-#include "Control.h"
-#include "Heart.h"
-#include "TT04Model.h"
-#include "SimpleInputParser.h"
-#include "ProcessGrid3D.h"
-#include "DataGrid3D.h"
-#include "Timer.h"
-#include "GDLoadBalancer.h"
-#include "AnatomyReader.h"
+#include "Control.hh"
+#include "Heart.hh"
+#include "TT04Model.hh"
+#include "SimpleInputParser.hh"
+#include "ProcessGrid3D.hh"
+#include "DataGrid3D.hh"
+#include "Timer.hh"
+#include "GDLoadBalancer.hh"
+#include "AnatomyReader.hh"
 #include "mpiUtils.h"
 
 Control parseCommandLineAndReadInputFile(int argc, char** argv, int rank);
@@ -38,15 +36,10 @@ int main(int argc, char** argv)
   map<std::string,Timer> tmap;
   
   int npes, mype;
-#if USE_MPI
   MPI_Init(&argc,&argv);
   MPI_Comm_size(MPI_COMM_WORLD, &npes);
   MPI_Comm_rank(MPI_COMM_WORLD, &mype);  
-#else
-  npes = 1;
-  mype = 0;
-  int MPI_COMM_WORLD = 0;
-#endif
+
 
   Control ctrl = parseCommandLineAndReadInputFile(argc, argv, mype);
 
@@ -162,28 +155,66 @@ int main(int argc, char** argv)
 
     // move data to tasks
     
-    
-  
-    // compute comm tables
-
-
-    
-    // create integrator object, run time steps
-
-
-
-    
-
-    cout.setf(ios::fixed,ios::floatfield);
-    for ( map<std::string,Timer>::iterator i = tmap.begin(); i != tmap.end(); i++ ) {
-      double time = (*i).second.real();
-      cout << "timing name=" << setw(15) << (*i).first << ":   time=" << setprecision(6) << setw(12) << time << " sec" << endl;
-    }
-    
   }
-#if USE_MPI  
-  MPI_Finalize();
+  
+  
+  // compute comm tables
+  
+  
+  
+  // create integrator object, run time steps
+#if 0
+  { // limit scope
+
+
+     
+     double*** Vm;
+     diffusion*** diffIntra;
+     cell* cells;
+
+     for (param.tcurrent=param.tstart;
+	  param.tcurrent<param.tend; param.tcurrent++)
+     {
+	
+	// REACTION
+	for (int iCell=0; iCell<nTissue; ++iCell)
+	{
+	   iStimArray[iCell] =
+	      boundaryFDLaplacianSaleheen98SumPhi(
+		 Vm, diffIntra,
+		 cells[iCell].x, cells[iCell].y, cells[iCell].z);
+	}
+	
+	// DIFFUSION
+	for (int iCell=0; iCell<nTissue; ++iCell)
+	{
+	   iStimArray[iCell] *= param.diffusionscale;
+	   
+	   // code to limit or set iStimArray goes here.
+	   
+	   VmArray[iCell] = pemIBMArray[iCell]->Calc(
+	      param.dt, VmArray[iCell], IstimArray[iCell]);
+	}
+     }
+  } //limit scope
+  
 #endif
+  
+  
+  
+  
+  if (mype == 0)
+  {
+     
+     cout.setf(ios::fixed,ios::floatfield);
+     for ( map<std::string,Timer>::iterator i = tmap.begin(); i != tmap.end(); i++ )
+     {
+	double time = (*i).second.real();
+	cout << "timing name=" << setw(15) << (*i).first << ":   time=" << setprecision(6) << setw(12) << time << " sec" << endl;
+     }
+     
+  }
+  MPI_Finalize();
 
   delete pgridep;
   delete dgridep;

@@ -2,11 +2,7 @@
 #define PROCESSGRID3D_H
 
 #include <vector>
-#ifdef USE_MPI
 #include <mpi.h> 
-#else
-typedef int MPI_Comm;
-#endif
 
 class ProcessGrid3D {
   private:

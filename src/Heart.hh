@@ -1,7 +1,7 @@
 #ifndef HEART_H
 #define HEART_H
-#include "EPhysModel.h"
-#include "MechModel.h"
+#include "EPhysModel.hh"
+#include "MechModel.hh"
 
 struct Heart
 {

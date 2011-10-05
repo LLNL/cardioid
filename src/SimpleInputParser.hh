@@ -1,10 +1,7 @@
 #ifndef SIMPLE_INPUT_PARSER_H
 #define SIMPLE_INPUT_PARSER_H
 
-#include <string>
-#include <vector>
-#include "Control.h"
-using namespace std;
+class Control;
 
 class SimpleInputParser
 {

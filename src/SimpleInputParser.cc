@@ -5,15 +5,11 @@
 #include <fstream>
 #include <sstream>
 #include <cassert>
-#include "SimpleInputParser.h"
-#include "Control.h"
+#include "SimpleInputParser.hh"
+#include "Control.hh"
 using namespace std;
 
-#if USE_MPI
 #include <mpi.h>
-#else
-typedef int MPI_Comm;
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 SimpleInputParser::SimpleInputParser()
@@ -25,13 +21,9 @@ int SimpleInputParser::readInput(const char* inputfile, Control *ctrl)
 {
 
   int npes, mype;
-#ifdef USE_MPI
   MPI_Comm_size(MPI_COMM_WORLD, &npes);
   MPI_Comm_rank(MPI_COMM_WORLD, &mype);  
-#else
-  npes = 1;
-  mype = 0;
-#endif
+
 
   // open input file on pe 0, notify all pes if open was successful
   ifstream input;
@@ -43,9 +35,7 @@ int SimpleInputParser::readInput(const char* inputfile, Control *ctrl)
     if (!input.is_open())
       inputopenerr = 1;
   }  
-#ifdef USE_MPI
   MPI_Bcast(&inputopenerr, 1, MPI_INT, 0, MPI_COMM_WORLD);
-#endif
   if (inputopenerr == 1)
     return 1;
 
@@ -65,9 +55,7 @@ int SimpleInputParser::readInput(const char* inputfile, Control *ctrl)
       else
         len = -1;
     }
-#if USE_MPI
     MPI_Bcast(&len,1,MPI_INT,0,MPI_COMM_WORLD);
-#endif
     if (len == -1)
     {
       readlines = 0;
@@ -80,9 +68,7 @@ int SimpleInputParser::readInput(const char* inputfile, Control *ctrl)
         buf[len]=0;
         assert(buf[len]=='\0');
       }
-#if USE_MPI
       MPI_Bcast(buf,len+1,MPI_CHAR,0,MPI_COMM_WORLD);
-#endif
       line = buf;
     }
 

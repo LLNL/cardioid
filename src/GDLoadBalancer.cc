@@ -1,3 +1,5 @@
+#include "GDLoadBalancer.hh"
+
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
@@ -6,13 +8,10 @@
 #include <fstream>
 #include <vector>
 #include <map>
-#if USE_MPI
 #include <mpi.h>
-#endif
-#include "GridPoint.h"
-#include "GDLoadBalancer.h"
-#include "Control.h"
-#include "Timer.h"
+#include "GridPoint.hh"
+#include "Control.hh"
+#include "Timer.hh"
 using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////

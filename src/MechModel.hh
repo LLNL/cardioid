@@ -1,8 +1,7 @@
 #ifndef MECHMODEL_H
 #define MECHMODEL_H
-//#include "ddc.h"
+
 #include <vector>
-using namespace std;
 
 class MechModel {
 
@@ -12,8 +11,7 @@ class MechModel {
   
   public:
 
-  //  DDC* ddc;
-  vector<double> dataLoc;  // local mechanical data
+  std::vector<double> dataLoc;  // local mechanical data
   int np(void) { return _nloc; };
 
   MechModel() {}

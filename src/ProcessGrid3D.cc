@@ -1,38 +1,28 @@
+#include "ProcessGrid3D.hh"
+
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
 #include <iomanip>
-#include "ProcessGrid3D.h"
+#include <mpi.h>
+
 using namespace std;
 
-#ifdef USE_MPI
-#include <mpi.h> 
-#else
-typedef int MPI_Comm;
-#endif
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ProcessGrid3D::ProcessGrid3D(MPI_Comm comm, int np0, int np1, int np2):
   np0_(np0), np1_(np1), np2_(np2)
 {
   int npes, mype;
-#if USE_MPI
   MPI_Comm_size(comm, &npes);
   MPI_Comm_rank(comm, &mype);
-#else
-  npes = 1;
-  mype = 0;
-#endif
   npes_ = np0_*np1_*np2_;
   if (npes == npes_)
   {
     mype_ = mype;
-#if USE_MPI
     int ierr = MPI_Comm_dup(comm,&comm_);
     assert(ierr == 0);
-#else
-    comm_ = 0;
-#endif
   }
   else if (npes_ < npes)
   {
@@ -41,7 +31,6 @@ ProcessGrid3D::ProcessGrid3D(MPI_Comm comm, int np0, int np1, int np2):
     pmap_.resize(npes_);
     for (int i=0; i<npes_; i++)
       pmap_[i] = i;
-#if USE_MPI
     MPI_Group c_group, subgroup;
     MPI_Comm_group(comm,&c_group);
     MPI_Group_incl(c_group,npes_,&pmap_[0],&subgroup);
@@ -52,9 +41,6 @@ ProcessGrid3D::ProcessGrid3D(MPI_Comm comm, int np0, int np1, int np2):
       MPI_Comm_rank(comm_, &mype_);
     else
       mype_ = mype;
-#else
-    comm_ = 0;
-#endif
   }
   else
   {
@@ -109,16 +95,12 @@ MPI_Comm ProcessGrid3D::subcomm(int nsubx, int nsuby, int nsubz, int istart, int
   }
 
   MPI_Comm sub;
-#if USE_MPI
   MPI_Group c_group, subgroup;
   MPI_Comm_group(comm_,&c_group);
   MPI_Group_incl(c_group,nprocs,&pmap[0],&subgroup);
   MPI_Comm_create(comm_,subgroup,&sub);
   MPI_Group_free(&c_group);
   MPI_Group_free(&subgroup);
-#else
-  sub = 0;
-#endif
   return sub;
 }
 ////////////////////////////////////////////////////////////////////////////////

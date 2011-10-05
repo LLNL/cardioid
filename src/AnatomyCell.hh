@@ -1,7 +1,7 @@
 #ifndef ANATOMY_CELL_HH
 #define ANATOMY_CELL_HH
 
-#include "Long64.h"
+#include "Long64.hh"
 
 class AnatomyCell
 {

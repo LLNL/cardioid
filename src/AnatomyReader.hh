@@ -5,7 +5,7 @@
 #include <string>
 #include <mpi.h>
 
-#include "AnatomyCell.h"
+#include "AnatomyCell.hh"
 
 struct pfile_st;
 

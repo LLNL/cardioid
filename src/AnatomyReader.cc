@@ -1,4 +1,4 @@
-#include "AnatomyReader.h"
+#include "AnatomyReader.hh"
 
 #include <cassert>
 #include "pio.h"
