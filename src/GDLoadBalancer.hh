@@ -27,7 +27,7 @@ class GDLoadBalancer {
 
   GDLoadBalancer(int npex, int npey, int npez);
   ~GDLoadBalancer();
-  void initialDistribution(vector<int>& types, int nx, int ny, int nz);
+  void initialDistribution(std::vector<int>& types, int nx, int ny, int nz);
   void balanceLoop(void);
   void balanceLoop(int bblock, int bthresh, int maxiter);
   const std::vector<std::vector<int> >& loctype(void) const { return loctype_; }
