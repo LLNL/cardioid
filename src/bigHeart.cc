@@ -3,6 +3,7 @@
 #include <string>
 #include <cassert>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <map>
 #include <mpi.h>
@@ -18,6 +19,9 @@
 #include "mpiUtils.h"
 #include "KoradiTest.hh"
 
+#include "writeCells.hh"
+#include "heap.h"
+#include "ioUtils.h"
 using namespace std;
 
 Control parseCommandLineAndReadInputFile(int argc, char** argv, int rank);
@@ -44,9 +48,35 @@ int main(int argc, char** argv)
 
   Control ctrl = parseCommandLineAndReadInputFile(argc, argv, mype);
 
-
+//   Control ctrl;
+//   heap_start(100);
+  
+//   if (mype==0) cout << "Starting read" <<endl;
 //   AnatomyReader reader("anatomy#", MPI_COMM_WORLD);
-//   KoradiTest(reader, 1);
+//   if (mype==0) cout << "Finished read" <<endl;
+
+//   for (unsigned ii=0; ii<reader._anatomy.size(); ++ii)
+//      reader._anatomy[ii]._dest = mype;
+//   DirTestCreate("asRead.0");
+//   writeCells(reader, "asRead.0/anatomy");
+//   MPI_Barrier(MPI_COMM_WORLD);
+//   cout << mype << ": nCells = " << reader._anatomy.size() << endl;
+  
+
+
+//   KoradiTest tester(reader, 20);
+//   for (unsigned ii=0; ii<100; ++ii)
+//   {
+//      tester.balanceStep();
+//      stringstream name;
+//      name << "snap."<<ii;
+//      string fullname = name.str();
+//      DirTestCreate(fullname.c_str());
+//      fullname += "/anatomy";
+//      writeCells(reader, fullname.c_str());
+//   }
+  
+//   exit(0);
   
   
 //   AnatomyReader reader("anatomy#", MPI_COMM_WORLD);

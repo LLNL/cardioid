@@ -17,14 +17,16 @@ class KoradiTest
 
  private:
 
+   void distributeCellsEvenly();
    void pickInitialCenters();
    void initialAssignment();
+   void moveCenters();
    void computeRadii();
-
+   void printStatistics();
    
    void allGatherCenters();
    void allReduceRadii();
-
+   void bruteForceDistanceCheck();
 
 
    int _myRank;

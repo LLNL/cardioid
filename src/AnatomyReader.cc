@@ -1,11 +1,13 @@
 #include "AnatomyReader.hh"
 
 #include <cassert>
+#include <set>
 #include "pio.h"
 #include "pioFixedRecordHelper.h"
 #include "object_cc.hh"
 
 using std::string;
+using std::set;
 
 
 AnatomyReader::AnatomyReader(const string& filename, MPI_Comm comm)
@@ -39,6 +41,21 @@ AnatomyReader::AnatomyReader(const string& filename, MPI_Comm comm)
 
 void AnatomyReader::asciiReader(PFILE* file)
 {
+   set<int> typeSet;
+   typeSet.insert(100);
+   typeSet.insert(101);
+   typeSet.insert(102);
+//    typeSet.insert(30);
+//    typeSet.insert(31);
+//    typeSet.insert(32);
+//    typeSet.insert(33);
+//    typeSet.insert(34);
+//    typeSet.insert(35);
+//    typeSet.insert(75);
+//    typeSet.insert(76);
+//    typeSet.insert(77);
+   
+
    PIO_FIXED_RECORD_HELPER* helper = (PIO_FIXED_RECORD_HELPER*) file->helper;
    unsigned lrec = helper->lrec;
    unsigned nRecords = file->bufsize/lrec;
@@ -51,7 +68,8 @@ void AnatomyReader::asciiReader(PFILE* file)
       buf[0] = '\0';
       Pfgets(buf, file->recordLength, file);
       sscanf(buf, "%llu %d %d %d", &(tmp._gid), &(tmp._cellType), &(tmp._theta), &(tmp._phi));
-      _anatomy.push_back(tmp);
+      if (typeSet.find(tmp._cellType) != typeSet.end())
+	 _anatomy.push_back(tmp);
    }
 }
 
