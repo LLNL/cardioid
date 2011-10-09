@@ -1,4 +1,6 @@
 anatomy FILEHEADER{
+  comment = nonsense anatomy file intended for testing and demonstration;
+  // C++ style comments are also allowed in header.
   datatype = FIXRECORDASCII;
   nfiles = 1;
   nfields = 4;
