@@ -45,15 +45,15 @@ void AnatomyReader::asciiReader(PFILE* file)
    typeSet.insert(100);
    typeSet.insert(101);
    typeSet.insert(102);
-//    typeSet.insert(30);
-//    typeSet.insert(31);
-//    typeSet.insert(32);
-//    typeSet.insert(33);
-//    typeSet.insert(34);
-//    typeSet.insert(35);
-//    typeSet.insert(75);
-//    typeSet.insert(76);
-//    typeSet.insert(77);
+   typeSet.insert(30);
+   typeSet.insert(31);
+   typeSet.insert(32);
+   typeSet.insert(33);
+   typeSet.insert(34);
+   typeSet.insert(35);
+   typeSet.insert(75);
+   typeSet.insert(76);
+   typeSet.insert(77);
    
 
    PIO_FIXED_RECORD_HELPER* helper = (PIO_FIXED_RECORD_HELPER*) file->helper;
