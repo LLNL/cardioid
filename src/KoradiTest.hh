@@ -19,16 +19,23 @@ class KoradiTest
 
    void distributeCellsEvenly();
    void pickInitialCenters();
+   void assignCells();
    void initialAssignment();
+   void sendCellsToDestinations();
    void moveCenters();
    void computeRadii();
    void printStatistics();
+   void updateBias();
    
-   void allGatherCenters();
-   void allReduceRadii();
+   void calculateCellDestinations();
+   void exchangeCells();
    void bruteForceDistanceCheck();
+   void findNbrDomains();
+   void computeLoad(std::vector<double>& load);
 
 
+   double _alpha;
+   
    int _myRank;
    int _nTasks;
 
@@ -36,9 +43,15 @@ class KoradiTest
    int _localOffset;
 
    IndexToVector _indexToVector;
-   std::vector<AnatomyCell>& _cells;
+
+   // shared globally
    std::vector<THREE_VECTOR> _centers;
    std::vector<double> _radii;
+   std::vector<double> _bias;
+
+   // local only
+   std::vector<AnatomyCell>& _cells;
+   std::vector<std::vector<int> > _nbrDomains;
    
 };
 
