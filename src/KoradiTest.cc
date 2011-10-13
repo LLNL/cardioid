@@ -100,6 +100,7 @@ void KoradiTest::distributeCellsEvenly()
 		   nWant,
 		   sizeof(AnatomyCell),
 		   MPI_COMM_WORLD);
+   _cells.resize(nWant);
 }
 
 
@@ -185,7 +186,7 @@ void KoradiTest::exchangeCells()
       dest[ii] = _cells[ii]._dest/_nCentersPerTask;
    
    unsigned nLocal = _cells.size();
-   unsigned capacity = 3*_cells.size();
+   unsigned capacity = max(10000ul, 3*_cells.size());
    _cells.resize(capacity);
    assignArray((unsigned char*) &(_cells[0]),
 	       &nLocal,
