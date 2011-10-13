@@ -55,7 +55,7 @@ KoradiTest::KoradiTest(AnatomyReader& anatomy,
    MPI_Comm_size(MPI_COMM_WORLD, &_nTasks);
    MPI_Comm_rank(MPI_COMM_WORLD, &_myRank);
 
-   _alpha = 0.9;
+   _alpha = 0.5;
    
    _localOffset = _myRank*_nCentersPerTask;
 
@@ -66,7 +66,7 @@ KoradiTest::KoradiTest(AnatomyReader& anatomy,
    
    distributeCellsEvenly();
    pickInitialCenters();
-   for (unsigned ii=0; ii<100; ++ii)
+   for (unsigned ii=0; ii<20; ++ii)
    {
       assignCells();
       moveCenters();
@@ -81,6 +81,9 @@ void KoradiTest::balanceStep()
    updateBias();
    assignCells();
    moveCenters();
+   double maxBias = *max_element(_bias.begin(), _bias.end());
+   for (unsigned ii=0; ii<_bias.size(); ++ii)
+      _bias[ii] -= maxBias;
    printStatistics();
 }
 
@@ -302,6 +305,11 @@ void KoradiTest::updateBias()
    computeLoad(load);
    allGather(load, _nCentersPerTask, MPI_COMM_WORLD);
 
+   double globalAveLoad=0;
+   for (unsigned ii=0; ii<load.size(); ++ii)
+      globalAveLoad += load[ii];
+   globalAveLoad /= load.size();
+   
    for (unsigned ii=0; ii<_nCentersPerTask; ++ii)
    {
       double localAverageLoad = 0;
@@ -311,6 +319,9 @@ void KoradiTest::updateBias()
 
       assert(overLapList.size() > 0);
       localAverageLoad /= (1.0*overLapList.size());
+
+      localAverageLoad = globalAveLoad;
+
       double tmp = localAverageLoad/load[_localOffset+ii];
       tmp = pow(tmp, (2.0/3.0));
       double r = _radii[ii+_localOffset];
