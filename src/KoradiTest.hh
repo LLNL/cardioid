@@ -2,16 +2,18 @@
 #define KORADI_TEST_HH
 
 #include <vector>
-#include "AnatomyReader.hh"
+#include "AnatomyCell.hh"
 #include "three_algebra.h"
 #include "IndexToVector.hh"
+
+class Simulate;
 
 class KoradiTest
 {
  public:
    
-   KoradiTest(AnatomyReader& anatomy,
-	      int nCentersPerTask);
+   KoradiTest(Simulate& sim, int nCentersPerTask,
+	      double alpha, int voronoiSteps);
    
    void balanceStep();
 

@@ -2,10 +2,10 @@
 #define WRITE_CELLS_HH
 
 #include <string>
-class AnatomyReader;
+class Simulate;
 
 
-void writeCells(const AnatomyReader& anatomy,
+void writeCells(const Simulate& sim,
 		const std::string& filename);
 
 #endif

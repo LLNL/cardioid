@@ -1,0 +1,25 @@
+simulate SIMULATE {
+   anatomy = pioAnatomy;
+   decomposition = koradi;
+}
+
+pioAnatomy ANATOMY {
+   method = pio;
+   fileName = snapshot.initial/anatomy#;
+   cellTypes = -1;
+}
+
+koradi DECOMPOSITION {
+   method = koradi;
+   nCenters = 40;
+   alpha = 0.5;
+   voronoiSteps = 30;
+   koradiSteps = 500;
+}
+
+grid DECOMPOSITION {
+    method = grid;
+    nx = 16;
+    ny = 16;
+    nz = 32;
+}

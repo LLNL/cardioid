@@ -8,6 +8,7 @@
 #include "GridAssignmentObject.h"
 #include "mpiUtils.h"
 #include "Drand48Object.hh"
+#include "Simulate.hh"
 using namespace std;
 
 
@@ -46,17 +47,18 @@ allGather(vector<T>& data, size_t nDataPerTask, MPI_Comm comm)
 
 
 
-KoradiTest::KoradiTest(AnatomyReader& anatomy,
-		      int nCentersPerTask)
-:_nCentersPerTask(nCentersPerTask),
- _indexToVector(anatomy._nx, anatomy._ny, anatomy._nz),
- _cells(anatomy._anatomy)
+KoradiTest::KoradiTest(Simulate& sim,
+		       int nCentersPerTask,
+		       double alpha,
+		       int voronoiSteps)
+:_alpha(alpha),
+ _nCentersPerTask(nCentersPerTask),
+ _indexToVector(sim.nx_, sim.ny_, sim.nz_),
+ _cells(sim.cell_)
 {
    MPI_Comm_size(MPI_COMM_WORLD, &_nTasks);
    MPI_Comm_rank(MPI_COMM_WORLD, &_myRank);
 
-   _alpha = 0.5;
-   
    _localOffset = _myRank*_nCentersPerTask;
 
    _centers.resize(_nTasks*_nCentersPerTask);
@@ -66,12 +68,12 @@ KoradiTest::KoradiTest(AnatomyReader& anatomy,
    
    distributeCellsEvenly();
    pickInitialCenters();
-   for (unsigned ii=0; ii<20; ++ii)
+   for (unsigned ii=0; ii<voronoiSteps; ++ii)
    {
       assignCells();
       moveCenters();
       _bias.assign(_bias.size(), 0);
-   printStatistics();
+      printStatistics();
    }
 }
 
@@ -86,6 +88,7 @@ void KoradiTest::balanceStep()
       _bias[ii] -= maxBias;
    printStatistics();
 }
+
 
 void KoradiTest::distributeCellsEvenly()
 {

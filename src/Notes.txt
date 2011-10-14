@@ -1,0 +1,2 @@
+1.  Exisiting timer class appears to not support nested timers.  Is this
+    correct?  What can we steal from somewhere else?

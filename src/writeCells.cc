@@ -4,7 +4,7 @@
 #include <iostream>
 #include <algorithm>
 
-#include "AnatomyReader.hh"
+#include "Simulate.hh"
 #include "pio.h"
 #include "IndexToVector.hh"
 
@@ -13,20 +13,18 @@ using namespace std;
 
 
 
-void writeCells(const AnatomyReader& anatomy,
+void writeCells(const Simulate& sim,
 		const std::string& filename)
 {
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
-   const vector<AnatomyCell>& cells = anatomy._anatomy;
-   IndexToVector indexToVector(anatomy._nx,
-			       anatomy._ny,
-			       anatomy._nz);
+   const vector<AnatomyCell>& cells = sim.cell_;
+   IndexToVector indexToVector(sim.nx_, sim.ny_, sim.nz_);
 
-   int halfNx = anatomy._nx/2;
-   int halfNy = anatomy._ny/2;
-   int halfNz = anatomy._nz/2;
+   int halfNx = sim.nx_/2;
+   int halfNy = sim.ny_/2;
+   int halfNz = sim.nz_/2;
    
 
    Long64 nLocal = cells.size();
@@ -53,9 +51,9 @@ void writeCells(const AnatomyReader& anatomy,
       Pprintf(file, "  field_names = rx ry rz cellType domain;\n");
       Pprintf(file, "  field_types = u u u u u;\n" );
       Pprintf(file, "  nfiles = %u;\n", nfiles);
-      Pprintf(file, "  h = %4u  0    0\n", anatomy._nx);
-      Pprintf(file, "        0    %4u  0\n", anatomy._ny);
-      Pprintf(file, "        0    0    %4u;\n", anatomy._nz);
+      Pprintf(file, "  h = %4u  0    0\n", sim.nx_);
+      Pprintf(file, "        0    %4u  0\n", sim.ny_);
+      Pprintf(file, "        0    0    %4u;\n", sim.nz_);
       Pprintf(file, "}\n\n");
    }
    

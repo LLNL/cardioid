@@ -8,24 +8,23 @@
 #include "AnatomyCell.hh"
 
 struct pfile_st;
-
+class Simulate;
 
 class AnatomyReader
 {
   public:
 
-   AnatomyReader(const std::string& filename, MPI_Comm comm);
+   AnatomyReader(const std::string& filename, MPI_Comm comm,
+   Simulate& sim);
 
-   int _nx; // nCells in x-direction in global anatomy grid
-   int _ny; // nCells in y-direction in global anatomy grid
-   int _nz; // nCells in z-direction in global anatomy grid
-   std::vector<std::string> _cellTypes;
-   std::vector<AnatomyCell> _anatomy;
 
   private:
 
    void asciiReader(pfile_st* file);
    void binaryReader(pfile_st* file);
+
+//   std::vector<std::string> _cellTypes;
+   std::vector<AnatomyCell>& _anatomy;
 };
 
 #endif

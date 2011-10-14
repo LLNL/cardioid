@@ -5,24 +5,36 @@
 #include "pio.h"
 #include "pioFixedRecordHelper.h"
 #include "object_cc.hh"
+#include "Simulate.hh"
 
 using std::string;
 using std::set;
 
 
-AnatomyReader::AnatomyReader(const string& filename, MPI_Comm comm)
+AnatomyReader::AnatomyReader(const string& filename, MPI_Comm comm,
+			     Simulate& sim)
+: _anatomy(sim.cell_)
 {
+   int myRank;
+   MPI_Comm_rank(comm, &myRank);
+
    PFILE* file = Popen(filename.c_str(), "r", comm);
 
    OBJECT* hObj = file->headerObject;
 
-   objectGet(hObj, "nx", _nx, "0");
-   objectGet(hObj, "ny", _ny, "0");
-   objectGet(hObj, "nz", _nz, "0");
-   objectGet(hObj, "cellTypes", _cellTypes);
+   int nx, ny, nz;
+   objectGet(hObj, "nx", nx, "0");
+   objectGet(hObj, "ny", ny, "0");
+   objectGet(hObj, "nz", nz, "0");
+//   objectGet(hObj, "cellTypes", _cellTypes);
 
-   assert(_nx*_ny*_nz > 0);
+   assert(nx*ny*nz > 0);
 //   assert(_cellTypes.size() > 0);
+
+   sim.nx_ = nx;
+   sim.ny_ = ny;
+   sim.nz_ = nz;
+   
    
    switch (file->datatype)
    {
@@ -35,6 +47,9 @@ AnatomyReader::AnatomyReader(const string& filename, MPI_Comm comm)
      default:
       assert(1==0);
    }
+
+   for (unsigned ii=0; ii<_anatomy.size(); ++ii)
+     _anatomy[ii]._dest = myRank;
    
    Pclose(file);
 }

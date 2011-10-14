@@ -10,9 +10,10 @@
 #include <map>
 #include <mpi.h>
 #include "GridPoint.hh"
-#include "Control.hh"
 #include "Timer.hh"
 using namespace std;
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 GDLoadBalancer::GDLoadBalancer(int npex, int npey, int npez):

@@ -9,7 +9,8 @@ include $(ARCH).mk
 
 HEARTSRC=TT04Model.cc SimpleInputParser.cc ProcessGrid3D.cc DataGrid3D.cc \
 	 GDLoadBalancer.cc CommTable.cc AnatomyReader.cc object_cc.cc \
-	 KoradiTest.cc GridRouter.cc Grid3DStencil.cc writeCells.cc
+	 KoradiTest.cc GridRouter.cc Grid3DStencil.cc writeCells.cc \
+	 initializeAnatomy.cc assignCellsToTasks.cc
 
 
 DDCMD_FILES = \
