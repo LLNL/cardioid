@@ -2,6 +2,7 @@
 #include <string>
 #include <cassert>
 #include <sstream>
+#include <iostream>
 
 #include "object_cc.hh"
 #include "ioUtils.h"
@@ -63,6 +64,10 @@ namespace
 	 DirTestCreate(fullname.c_str());
 	 fullname += "/anatomy";
 	 writeCells(sim, fullname.c_str());
+
+	 if (ii%100 == 0)
+	    tester.recondition(voronoiSteps);
+
       }
       
       exit(0);

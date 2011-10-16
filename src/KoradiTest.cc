@@ -85,9 +85,26 @@ void KoradiTest::balanceStep()
    moveCenters();
    double maxBias = *max_element(_bias.begin(), _bias.end());
    for (unsigned ii=0; ii<_bias.size(); ++ii)
+   {
       _bias[ii] -= maxBias;
+//      _bias[ii] = max(_bias[ii], -.25*_radii[ii]*_radii[ii]);
+   }
+   
    printStatistics();
 }
+
+void KoradiTest::recondition(int nSteps)
+{
+   for (unsigned ii=0; ii<nSteps; ++ii)
+   {
+      assignCells();
+      moveCenters();
+      _bias.assign(_bias.size(), 0);
+      printStatistics();
+   }
+}
+
+
 
 
 void KoradiTest::distributeCellsEvenly()
@@ -95,6 +112,8 @@ void KoradiTest::distributeCellsEvenly()
    Long64 nLocal = _cells.size();
    Long64 nGlobal = 0;
    MPI_Allreduce(&nLocal, &nGlobal, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+   if (_myRank == 0) cout << "nGlobal = "<<nGlobal<<" nAve = " <<nGlobal/_nTasks/_nCentersPerTask<<endl;
+   
    size_t nWant = nGlobal / _nTasks;
    unsigned nExtra = nGlobal % _nTasks;
    if (_myRank < nExtra)
@@ -192,7 +211,7 @@ void KoradiTest::exchangeCells()
       dest[ii] = _cells[ii]._dest/_nCentersPerTask;
    
    unsigned nLocal = _cells.size();
-   unsigned capacity = max(10000ul, 3*_cells.size());
+   unsigned capacity = max(10000ul, 4*_cells.size());
    _cells.resize(capacity);
    assignArray((unsigned char*) &(_cells[0]),
 	       &nLocal,
@@ -320,15 +339,24 @@ void KoradiTest::updateBias()
       for (unsigned jj=0; jj<overLapList.size(); ++jj)
 	 localAverageLoad += load[overLapList[jj]];
 
-      assert(overLapList.size() > 0);
-      localAverageLoad /= (1.0*overLapList.size());
+
+
+      
+//      assert(overLapList.size() > 0);
+      if(overLapList.size() > 0)
+
+	 localAverageLoad /= (1.0*overLapList.size());
 
       localAverageLoad = globalAveLoad;
 
       double tmp = localAverageLoad/load[_localOffset+ii];
+//       tmp = min(tmp, 1.1);
+//       tmp = max(tmp, 0.9);
+
       tmp = pow(tmp, (2.0/3.0));
       double r = _radii[ii+_localOffset];
       _bias[ii+_localOffset] += _alpha*r*r*(tmp-1.0);
+
    }
 
    allGather(_bias, _nCentersPerTask, MPI_COMM_WORLD);

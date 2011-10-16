@@ -16,7 +16,8 @@ class KoradiTest
 	      double alpha, int voronoiSteps);
    
    void balanceStep();
-
+   void recondition(int nSteps);
+   
  private:
 
    void distributeCellsEvenly();
