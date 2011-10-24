@@ -10,6 +10,8 @@
 #include "LocalGrid.hh"
 #include "Array3d.hh"
 
+class Diffusion;
+
 // Kitchen sink class for heart simulation.  This is probably a great
 // example of how *not* to do design, but we need to get something
 // running before we can understand what good design would be.
@@ -18,8 +20,6 @@
 // This is poor encapsulation, but it seems silly at this point to make
 // get/set calls for all of the externals while we are still figuring
 // out what we are doing.
-
-class Diffusion;
 
 class Simulate
 {

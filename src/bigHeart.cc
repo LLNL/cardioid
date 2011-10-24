@@ -25,6 +25,8 @@
 #include "simulationLoop.hh"
 #include "heap.h"
 #include "object_cc.hh"
+#include "diffusionFactory.hh"
+#include "Anatomy.hh"
 
 using namespace std;
 
@@ -55,13 +57,17 @@ int main(int argc, char** argv)
   objectGet(simObj, "decomposition", nameTmp, "decomposition");
   assignCellsToTasks(sim, nameTmp, MPI_COMM_WORLD);
 
-
-//  createLocalStorage(sim);
-
   
+
 //  buildHaloExchange(sim, MPI_COMM_WORLD);
+
+  Anatomy anatomy;
+  objectGet(simObj, "diffusion", nameTmp, "diffusion");
+  sim.diffusion_ = diffusionFactory(nameTmp, anatomy);
+
+
 //   prepareCellModels();
-//   precompute();
+
    simulationLoop(sim);  
   
   if (mype == 0)
