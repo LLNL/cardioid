@@ -35,7 +35,7 @@ class Array3d
 
 template <class T> inline
 Array3d<T>::Array3d()
-: nx_(0), ny_(0), nz_(0), data_(0), cArray_(NULL);
+: nx_(0), ny_(0), nz_(0), data_(0), cArray_(0)
 {
 }
 

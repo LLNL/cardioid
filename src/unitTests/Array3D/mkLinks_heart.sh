@@ -2,7 +2,7 @@
 
 # $Id$
 
-searchPath="../../src"
+searchPath="../../"
 
 files="$@"
 
