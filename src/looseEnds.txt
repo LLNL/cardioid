@@ -1,0 +1,28 @@
+1.  The Anatomy class is totally undefined, and is never filled with
+data.
+
+2.  The polymorphic pointers like Diffusion* in the Simulate class and
+Conductivity* in the diffusion classes should be wrapped in a
+templatized goody so that the default copy constructor, destructor, etc
+will just work.
+
+3.  It would really be better if the fibre orientation angles were
+converted to a double (radians) when they are read in and the
+conductivity models don't have to worry about the conversion.
+
+4.  The grid spacing (in m) appears to be read from input.  Shouldn't
+this travel with the anatomy data?  Where do the values that were used
+in the test run from IBM come from.  They input deck contains no setting.
+
+5.  I don't quite understand why I have to explicity cast calls to
+Array3D::cArray() to const.  See for example
+Salheen98PrecomputeDiffusion::precomputeCoefficients.  I know that the
+return value isn't used in determining the overload resolution....
+
+6.  There is output in FibreConductivity.cc that isn't screened for rank
+
+7.  Be more careful about initializations in
+Salheen98PrecomputeDiffusion:initializeLocalGridInfo
+
+8.  There is something wrong with the Makefile.  Stuff doesn't rebuild
+when headers are touched.

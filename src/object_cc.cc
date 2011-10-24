@@ -6,6 +6,11 @@ using std::string;
 using std::vector;
 
 
+OBJECT* objectFind(const std::string& name, const std::string& objClass)
+{
+   return object_find(name.c_str(), objClass.c_str());
+}
+
 void objectGet(OBJECT* obj, const string& name, string& value, const string& defVal)
 {
    char* tmp;

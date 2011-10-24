@@ -1,15 +1,22 @@
-simulate SIMULATE {
+simulate SIMULATE 
+{
    anatomy = pioAnatomy;
    decomposition = koradi;
+   diffusion = Salheen98Fast;
 }
 
-pioAnatomy ANATOMY {
+pioAnatomy ANATOMY 
+{
    method = pio;
    fileName = snapshot.initial/anatomy#;
    cellTypes = -1;
+   dx = 0.000167; // in meters
+   dy = 0.000167; // in meters
+   dz = 0.000167; // in meters
 }
 
-koradi DECOMPOSITION {
+koradi DECOMPOSITION 
+{
    method = koradi;
    nCenters = 40;
    alpha = 0.5;
@@ -17,9 +24,23 @@ koradi DECOMPOSITION {
    koradiSteps = 500;
 }
 
-grid DECOMPOSITION {
+grid DECOMPOSITION 
+{
     method = grid;
     nx = 16;
     ny = 16;
     nz = 32;
+}
+
+Salheen98Fast DIFFUSION
+{
+   method = Salheen98;
+   variant = precompute;
+   conductivity = conductivity;
+}
+
+conductivity CONDUCTIVITY
+{
+    sigmaLi = 0.3;   // units S/m
+    sigmaTi = 0.03;  // units S/m
 }

@@ -28,7 +28,4 @@ class IndexToVector
    int nz_;
 };
 
-
-
-
 #endif

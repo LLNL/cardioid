@@ -22,6 +22,7 @@
 #include "writeCells.hh"
 #include "initializeAnatomy.hh"
 #include "assignCellsToTasks.hh"
+#include "simulationLoop.hh"
 #include "heap.h"
 #include "object_cc.hh"
 
@@ -55,55 +56,13 @@ int main(int argc, char** argv)
   assignCellsToTasks(sim, nameTmp, MPI_COMM_WORLD);
 
 
+//  createLocalStorage(sim);
 
+  
 //  buildHaloExchange(sim, MPI_COMM_WORLD);
 //   prepareCellModels();
 //   precompute();
-//   simulationLoop();
-  
-
-  
-  
-  // create integrator object, run time steps
-#if 0
-  { // limit scope
-
-
-     
-     double*** Vm;
-     diffusion*** diffIntra;
-     cell* cells;
-
-     for (param.tcurrent=param.tstart;
-	  param.tcurrent<param.tend; param.tcurrent++)
-     {
-	
-	// REACTION
-	for (int iCell=0; iCell<nTissue; ++iCell)
-	{
-	   iStimArray[iCell] =
-	      boundaryFDLaplacianSaleheen98SumPhi(
-		 Vm, diffIntra,
-		 cells[iCell].x, cells[iCell].y, cells[iCell].z);
-	}
-	
-	// DIFFUSION
-	for (int iCell=0; iCell<nTissue; ++iCell)
-	{
-	   iStimArray[iCell] *= param.diffusionscale;
-	   
-	   // code to limit or set iStimArray goes here.
-	   
-	   VmArray[iCell] = pemIBMArray[iCell]->Calc(
-	      param.dt, VmArray[iCell], IstimArray[iCell]);
-	}
-     }
-  } //limit scope
-  
-#endif
-  
-  
-  
+   simulationLoop(sim);  
   
   if (mype == 0)
   {

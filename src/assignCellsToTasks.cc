@@ -102,7 +102,7 @@ namespace
       
       // Move all cells to rank 0
       for (unsigned ii=0; ii<cells.size(); ++ii)
-	 cells[ii]._dest = 0;
+	 cells[ii].dest_ = 0;
       unsigned nLocal = cells.size();
       unsigned nGlobal;
       MPI_Allreduce(&nLocal, &nGlobal, 1, MPI_UNSIGNED, MPI_SUM, comm);
@@ -117,7 +117,7 @@ namespace
       int nGrid = sim.nx_ * sim.ny_ * sim.nz_;
       vector<int> types(nGrid, 0);
       for (unsigned ii=0; ii<cells.size(); ++ii)
-	 types[cells[ii]._gid] = cells[ii]._cellType;
+	 types[cells[ii].gid_] = cells[ii].cellType_;
       
 
       // get process grid info 

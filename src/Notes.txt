@@ -1,2 +1,36 @@
 1.  Exisiting timer class appears to not support nested timers.  Is this
     correct?  What can we steal from somewhere else?
+
+
+
+At the end of the assignment/load balance, each task has a list of
+cells.
+
+We compute a halo exchange to figure out where ghost data should be
+sent/recvd. 
+
+We execute this halo exchange to get remote anatomy data (gid, cell
+type, theta, phi).  Now we have a linear array of anatomy data
+partitioned into local and remote cells.
+
+
+From the anatomy array data we need to build several data structures:
+
+ARRAY STRUCTURES
+================
+1.  The parallel array of cell models.  We only need cell models for the
+    local cells.
+2.  The VmArray.  We need space for local and remote.  The eventual 
+    halo exchange of voltage will load/store in this array.
+3.  The cellCoordArray.  This array is parallel to the anatomy data and
+    contains only the (local) x, y, and z coords of the cells.
+
+
+BRICK STRUCTURES
+================
+1. sigmaMintra.  The conductivities.  Computed for both local and remote
+		 cellls.  These don't require a stencil to compute so we
+		 could compute them just as easily in a linear array.  
+		 However they are only used in the diffusion calculation
+		 which is brick based so it is easier just to put them
+		 in a brick to begin with.

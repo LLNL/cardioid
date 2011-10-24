@@ -17,7 +17,7 @@ class AnatomyCellDestSort
  public:
    bool operator()(const AnatomyCell& a, const AnatomyCell& b)
    {
-      return a._dest < b._dest;
+      return a.dest_ < b.dest_;
    }
 };
 
@@ -141,7 +141,7 @@ void KoradiTest::pickInitialCenters()
    
    for (int ii=0; ii<_nCentersPerTask; ++ii)
    {
-      Long64 gid = _cells[indexArray[ii]]._gid;
+      Long64 gid = _cells[indexArray[ii]].gid_;
       _centers[ii+_localOffset] = _indexToVector(gid);
       _centers[ii+_localOffset].x += .1;
       _centers[ii+_localOffset].y += .2;
@@ -174,8 +174,8 @@ void KoradiTest::calculateCellDestinations()
    
       for (unsigned ii=0; ii<_cells.size(); ++ii)
       {
-	 THREE_VECTOR r = _indexToVector(_cells[ii]._gid);
-	 _cells[ii]._dest = gao_nearestCenter(gao, r);
+	 THREE_VECTOR r = _indexToVector(_cells[ii].gid_);
+	 _cells[ii].dest_ = gao_nearestCenter(gao, r);
       }
       gao_destroy(gao);
    }
@@ -183,18 +183,18 @@ void KoradiTest::calculateCellDestinations()
    {
       for (unsigned ii=0; ii<_cells.size(); ++ii)
       {
-	 int cellOwner = _cells[ii]._dest;
-	 THREE_VECTOR rCell = _indexToVector(_cells[ii]._gid);
+	 int cellOwner = _cells[ii].dest_;
+	 THREE_VECTOR rCell = _indexToVector(_cells[ii].gid_);
 	 const vector<int> overLapList = _nbrDomains[cellOwner-_localOffset];
 	 double r2Min = DIFFSQ(rCell, _centers[cellOwner]) - _bias[cellOwner];
-	 _cells[ii]._dest = cellOwner;
+	 _cells[ii].dest_ = cellOwner;
 	 for (unsigned jj=0; jj<overLapList.size(); ++jj)
 	 {
 	    double r2 = DIFFSQ(rCell, _centers[overLapList[jj]]) - _bias[overLapList[jj]];
 	    if (r2 < r2Min)
 	    {
 	       r2Min = r2;
-	       _cells[ii]._dest = overLapList[jj];
+	       _cells[ii].dest_ = overLapList[jj];
 	    }
 	 }
 	 
@@ -208,7 +208,7 @@ void KoradiTest::exchangeCells()
    sort(_cells.begin(), _cells.end(), sortByDest);
    vector<unsigned> dest(_cells.size());
    for (unsigned ii=0; ii<_cells.size(); ++ii)
-      dest[ii] = _cells[ii]._dest/_nCentersPerTask;
+      dest[ii] = _cells[ii].dest_/_nCentersPerTask;
    
    unsigned nLocal = _cells.size();
    unsigned capacity = max(10000ul, 4*_cells.size());
@@ -232,8 +232,8 @@ void KoradiTest::moveCenters()
    vector<int> nCells(_centers.size(), 0);
    for (unsigned ii=0; ii<_cells.size(); ++ii)
    {
-      int dest = _cells[ii]._dest;
-      THREE_VECTOR r = _indexToVector(_cells[ii]._gid);
+      int dest = _cells[ii].dest_;
+      THREE_VECTOR r = _indexToVector(_cells[ii].gid_);
       ++nCells[dest];
       _centers[dest].x += r.x;
       _centers[dest].y += r.y;
@@ -268,8 +268,8 @@ void KoradiTest::computeRadii()
    
    for (int ii=0; ii<_cells.size(); ++ii)
    {
-      THREE_VECTOR v = _indexToVector(_cells[ii]._gid);
-      int cellOwner = _cells[ii]._dest;
+      THREE_VECTOR v = _indexToVector(_cells[ii].gid_);
+      int cellOwner = _cells[ii].dest_;
       assert(cellOwner/_nCentersPerTask == _myRank);
       double r2 = DIFFSQ(v, _centers[cellOwner]);
       _radii[cellOwner] = max(_radii[cellOwner], r2);
@@ -288,7 +288,7 @@ void KoradiTest::printStatistics()
    vector<unsigned> nCells(_centers.size(), 0);
    for (unsigned ii=0; ii<_cells.size(); ++ii)
    {
-      unsigned dest = _cells[ii]._dest;
+      unsigned dest = _cells[ii].dest_;
       ++nCells[dest];
       assert( dest >= _localOffset && dest < _localOffset+_nCentersPerTask);
    }
@@ -440,7 +440,7 @@ void KoradiTest::bruteForceDistanceCheck()
    {
       double r2Min = 1e30;
       int dest = -1;
-      THREE_VECTOR r = _indexToVector(_cells[ii]._gid);
+      THREE_VECTOR r = _indexToVector(_cells[ii].gid_);
       for (unsigned jj=0; jj<_centers.size(); ++jj)
       {
 	 double r2 = DIFFSQ(r, _centers[jj]);
@@ -450,10 +450,10 @@ void KoradiTest::bruteForceDistanceCheck()
 	    dest = jj;
 	 }
       }
-      if (dest != _cells[ii]._dest)
-	 cout << "Fail "<<ii<<" fast " <<_cells[ii]._dest<<" brute "<<dest<<endl;
+      if (dest != _cells[ii].dest_)
+	 cout << "Fail "<<ii<<" fast " <<_cells[ii].dest_<<" brute "<<dest<<endl;
       
-	 //assert(dest == _cells[ii]._dest);
+	 //assert(dest == _cells[ii].dest_);
       
    }
 }
@@ -464,7 +464,7 @@ void KoradiTest::computeLoad(vector<double>& load)
 
    for (unsigned ii=0; ii<_cells.size(); ++ii)
    {
-      load[_cells[ii]._dest] += 1;
+      load[_cells[ii].dest_] += 1;
    }
    allGather(load, _nCentersPerTask, MPI_COMM_WORLD);
 }

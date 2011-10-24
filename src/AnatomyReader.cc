@@ -26,10 +26,10 @@ AnatomyReader::AnatomyReader(const string& filename, MPI_Comm comm,
    objectGet(hObj, "nx", nx, "0");
    objectGet(hObj, "ny", ny, "0");
    objectGet(hObj, "nz", nz, "0");
-//   objectGet(hObj, "cellTypes", _cellTypes);
+//   objectGet(hObj, "cellTypes", cellType_s);
 
    assert(nx*ny*nz > 0);
-//   assert(_cellTypes.size() > 0);
+//   assert(cellType_s.size() > 0);
 
    sim.nx_ = nx;
    sim.ny_ = ny;
@@ -49,7 +49,7 @@ AnatomyReader::AnatomyReader(const string& filename, MPI_Comm comm,
    }
 
    for (unsigned ii=0; ii<_anatomy.size(); ++ii)
-     _anatomy[ii]._dest = myRank;
+     _anatomy[ii].dest_ = myRank;
    
    Pclose(file);
 }
@@ -82,8 +82,8 @@ void AnatomyReader::asciiReader(PFILE* file)
       AnatomyCell tmp;
       buf[0] = '\0';
       Pfgets(buf, file->recordLength, file);
-      sscanf(buf, "%llu %d %d %d", &(tmp._gid), &(tmp._cellType), &(tmp._theta), &(tmp._phi));
-      if (typeSet.find(tmp._cellType) != typeSet.end())
+      sscanf(buf, "%llu %d %d %d", &(tmp.gid_), &(tmp.cellType_), &(tmp.theta_), &(tmp.phi_));
+      if (typeSet.find(tmp.cellType_) != typeSet.end())
 	 _anatomy.push_back(tmp);
    }
 }

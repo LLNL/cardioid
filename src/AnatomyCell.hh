@@ -6,11 +6,11 @@
 class AnatomyCell
 {
   public:
-   Long64 _gid;
-   int _cellType;
-   int _theta;
-   int _phi;
-   int _dest;
+   Long64 gid_;
+   int cellType_;
+   int theta_;
+   int phi_;
+   int dest_;
 };
 
 #endif

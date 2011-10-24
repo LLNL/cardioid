@@ -62,17 +62,17 @@ void writeCells(const Simulate& sim,
    int count = 0;
    for (unsigned ii=0; ii<cells.size(); ++ii)
    {
-      if (cells[ii]._dest != lastDest)
+      if (cells[ii].dest_ != lastDest)
       {
 	 count =0;
-	 lastDest = cells[ii]._dest;
+	 lastDest = cells[ii].dest_;
       }
 
 //       if (count++ > 1000)
 // 	 continue;
       
 
-      THREE_VECTOR v = indexToVector(cells[ii]._gid);
+      THREE_VECTOR v = indexToVector(cells[ii].gid_);
       int ix = int(v.x) - halfNx;
       int iy = int(v.y) - halfNy;
       int iz = int(v.z) - halfNz;
@@ -81,7 +81,7 @@ void writeCells(const Simulate& sim,
 //       int iz = int(v.z);
 
       int l = snprintf(line, lrec, fmt,
-		   ix, iy, iz, cells[ii]._cellType, cells[ii]._dest);
+		   ix, iy, iz, cells[ii].cellType_, cells[ii].dest_);
       
       for (; l < lrec - 1; l++) line[l] = (char)' ';
       line[l++] = (char)'\n';
