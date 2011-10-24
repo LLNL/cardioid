@@ -26,3 +26,5 @@ Salheen98PrecomputeDiffusion:initializeLocalGridInfo
 
 8.  There is something wrong with the Makefile.  Stuff doesn't rebuild
 when headers are touched.
+
+9.  Do something about the long comment in Conductivity.hh
