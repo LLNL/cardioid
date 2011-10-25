@@ -1,6 +1,9 @@
 #ifndef ANATOMY_HH
 #define ANATOMY_HH
 
+#include <cassert>
+#include "Tuple.hh"
+
 class Anatomy
 {
  public:

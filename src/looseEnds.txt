@@ -28,3 +28,14 @@ Salheen98PrecomputeDiffusion:initializeLocalGridInfo
 when headers are touched.
 
 9.  Do something about the long comment in Conductivity.hh
+
+10.  Initialization of Voltages
+
+11.  initialization/filtering of cell types, including the use of type 9
+and type 0
+
+12.  Do we need to think about the fact that the reading process in
+BlueBeats completely populates certain blocks such as tissue (and
+probably conductivity)
+
+13.  Base classes need virtual destructors

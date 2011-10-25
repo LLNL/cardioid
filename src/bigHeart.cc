@@ -8,24 +8,16 @@
 #include <mpi.h>
 
 #include "Simulate.hh"
-#include "Heart.hh"
-#include "TT04Model.hh"
-#include "SimpleInputParser.hh"
-#include "ProcessGrid3D.hh"
-#include "DataGrid3D.hh"
 #include "Timer.hh"
-#include "GDLoadBalancer.hh"
-#include "AnatomyReader.hh"
 #include "mpiUtils.h"
-#include "KoradiTest.hh"
 
-#include "writeCells.hh"
 #include "initializeAnatomy.hh"
 #include "assignCellsToTasks.hh"
 #include "simulationLoop.hh"
 #include "heap.h"
 #include "object_cc.hh"
 #include "diffusionFactory.hh"
+#include "reactionFactory.hh"
 #include "Anatomy.hh"
 
 using namespace std;
@@ -39,51 +31,49 @@ MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
 
 int main(int argc, char** argv)
 {
-  int npes, mype;
-  MPI_Init(&argc,&argv);
-  MPI_Comm_size(MPI_COMM_WORLD, &npes);
-  MPI_Comm_rank(MPI_COMM_WORLD, &mype);  
-  heap_start(100);
-
-  parseCommandLineAndReadInputFile(argc, argv, mype);
-
-  Simulate sim;
-  OBJECT* simObj = object_find("simulate", "SIMULATE");
-  string nameTmp;
-
-  objectGet(simObj, "anatomy", nameTmp, "anatomy");
-  initializeAnatomy(sim, nameTmp, MPI_COMM_WORLD);
-  
-  objectGet(simObj, "decomposition", nameTmp, "decomposition");
-  assignCellsToTasks(sim, nameTmp, MPI_COMM_WORLD);
-
-  
-
+   int npes, mype;
+   MPI_Init(&argc,&argv);
+   MPI_Comm_size(MPI_COMM_WORLD, &npes);
+   MPI_Comm_rank(MPI_COMM_WORLD, &mype);  
+   heap_start(100);
+   
+   parseCommandLineAndReadInputFile(argc, argv, mype);
+   
+   Simulate sim;
+   OBJECT* simObj = object_find("simulate", "SIMULATE");
+   string nameTmp;
+   
+   objectGet(simObj, "anatomy", nameTmp, "anatomy");
+   initializeAnatomy(sim, nameTmp, MPI_COMM_WORLD);
+   
+   objectGet(simObj, "decomposition", nameTmp, "decomposition");
+   assignCellsToTasks(sim, nameTmp, MPI_COMM_WORLD);
+   
 //  buildHaloExchange(sim, MPI_COMM_WORLD);
-
-  Anatomy anatomy;
-  objectGet(simObj, "diffusion", nameTmp, "diffusion");
-  sim.diffusion_ = diffusionFactory(nameTmp, anatomy);
-
-
-//   prepareCellModels();
-
+   
+   Anatomy anatomy;
+   objectGet(simObj, "diffusion", nameTmp, "diffusion");
+   sim.diffusion_ = diffusionFactory(nameTmp, anatomy);
+   
+   objectGet(simObj, "reaction", nameTmp, "reaction");
+   sim.reaction_ = reactionFactory(nameTmp, anatomy);
+   
    simulationLoop(sim);  
-  
-  if (mype == 0)
-  {
-     
-     cout.setf(ios::fixed,ios::floatfield);
-     for ( map<std::string,Timer>::iterator i = sim.tmap_.begin(); i != sim.tmap_.end(); i++ )
-     {
-	double time = (*i).second.real();
-	cout << "timing name=" << setw(15) << (*i).first << ":   time=" << setprecision(6) << setw(12) << time << " sec" << endl;
-     }
-     
-  }
-  MPI_Finalize();
-
-  return 0;
+   
+   if (mype == 0)
+   {
+      
+      cout.setf(ios::fixed,ios::floatfield);
+      for ( map<std::string,Timer>::iterator i = sim.tmap_.begin(); i != sim.tmap_.end(); i++ )
+      {
+	 double time = (*i).second.real();
+	 cout << "timing name=" << setw(15) << (*i).first << ":   time=" << setprecision(6) << setw(12) << time << " sec" << endl;
+      }
+      
+   }
+   MPI_Finalize();
+   
+   return 0;
 }
 
 

@@ -1,0 +1,8 @@
+1.  Angles.
+
+2.  The globalTissueBlock is defined for each task by calling
+getORBdataScaled (BlueBeats.cpp:580).  How are the min and max values
+set? Do they include room for ghost cells?  We then go on to define
+quantities such as xMaxLocal that include extra room for
+param.boxoverlap.  This is the size that is used for creating the block
+arrays such as tissue, Vm etc.

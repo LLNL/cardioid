@@ -3,6 +3,7 @@ simulate SIMULATE
    anatomy = pioAnatomy;
    decomposition = koradi;
    diffusion = Salheen98Fast;
+   reaction = tenTusscher04;
 }
 
 pioAnatomy ANATOMY 
@@ -43,4 +44,9 @@ conductivity CONDUCTIVITY
 {
     sigmaLi = 0.3;   // units S/m
     sigmaTi = 0.03;  // units S/m
+}
+
+tenTusscher04 REACTION
+{
+    method = tenTusscher04;
 }

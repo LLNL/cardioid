@@ -1,0 +1,9 @@
+Each task has a tissue block.
+
+The size of that tissue block is determined when the ORB file is read
+and stored in globalTissueBlock.  It appears that this size accounts
+only for the local elements.  
+
+The xMaxLocal and xMaxOff (and friends) are set up later to include
+extra room for the ghost cells.
+

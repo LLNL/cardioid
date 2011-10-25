@@ -1,0 +1,29 @@
+* VERY IMPORTANT *
+
+When BlueBeats reads the anatomy, it unconditionally sets values for
+every location in the local tissue block.  Those values may be:
+75-77
+
+
+In the TT04 case:
+
+The TT04 data structures are initialized at line 635 as follows:
+
+   IBM_tenTusscher04 **pemIBMArray;
+   IBM_tenTusscher04_endoLUT::TT04LUT_Init();
+   IBM_tenTusscher04_midLUT::TT04LUT_Init();
+   IBM_tenTusscher04_epiLUT::TT04LUT_Init();
+  
+   int tmpV=(int)(DivisionTab*(RangeTabhalf+(-0.0862*1000))+.5); //array position
+   double tmp1 = IBM_tenTusscher04_endoLUT::Get_tau_m(tmpV);
+   double tmp2 = IBM_tenTusscher04_midLUT::Get_tau_m(tmpV);
+   double tmp3 = IBM_tenTusscher04_epiLUT::Get_tau_m(tmpV);
+
+tmp1, tmp2, and tmp3 are never used.
+
+At line 2065 we malloc an array of tissueCnt IBM_tenTusscher04*.  Is
+tissueCnt only the local cells?  From the code at line 2103 I
+would surimize that cells between the offsets are local.
+
+In the loop starting at 2115 we create a cell model for each (local)
+cell, with a different type depending on the cellType.

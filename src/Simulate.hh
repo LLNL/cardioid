@@ -11,6 +11,7 @@
 #include "Array3d.hh"
 
 class Diffusion;
+class Reaction;
 
 // Kitchen sink class for heart simulation.  This is probably a great
 // example of how *not* to do design, but we need to get something
@@ -29,16 +30,18 @@ class Simulate
 
    int loop_;
    int maxLoop_;
+   double dt_;
    
    int nx_, ny_, nz_; // global size of grid
 
 
    unsigned nCellLocal_;
    unsigned nCellRemote_;
-   std::vector<AnatomyCell> cell_;
-   std::vector<double> VmArray_;
+   std::vector<AnatomyCell> cell_; 
+   std::vector<double> VmArray_; // local and remote
 
    Diffusion* diffusion_;
+   Reaction* reaction_; 
    
 };
 
