@@ -29,22 +29,22 @@ class Anatomy
    
    
  private:
-   unsigned nCellLocal_;
-   unsigned nCellRemote_;
+   unsigned nLocal_;
+   unsigned nRemote_;
    std::vector<AnatomyCell> cell_; 
 
 };
 
-inline unsigned Anatomy::size() const { assert (1==0); return 0;}
-inline unsigned Anatomy::nLocal() const { assert (1==0); return 0;}
+inline unsigned Anatomy::size() const { return cell_.size();}
+inline unsigned Anatomy::nLocal() const { return nLocal_;}
 
 inline double  Anatomy::dx() const { assert (1==0); return 0;}
 inline double  Anatomy::dy() const { assert (1==0); return 0;}
 inline double  Anatomy::dz() const { assert (1==0); return 0;}
 
-inline int  Anatomy::theta(unsigned ii) const { assert (1==0); return 0;}
-inline int  Anatomy::phi(unsigned ii) const { assert (1==0); return 0;}
-inline int  Anatomy::cellType(unsigned ii) const { assert (1==0); return 0;}
+inline int  Anatomy::theta(unsigned ii) const { return cell_[ii].theta_;}
+inline int  Anatomy::phi(unsigned ii) const { return cell_[ii].phi_;}
+inline int  Anatomy::cellType(unsigned ii) const { return cell_[ii].cellType_;}
 
 inline Tuple Anatomy::globalTuple(unsigned ii) const { assert (1==0); return Tuple(0, 0, 0);}
 
