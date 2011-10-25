@@ -54,7 +54,7 @@ KoradiTest::KoradiTest(Simulate& sim,
 :_alpha(alpha),
  _nCentersPerTask(nCentersPerTask),
  _indexToVector(sim.nx_, sim.ny_, sim.nz_),
- _cells(sim.cell_)
+ _cells(sim.anatomy_.cellArray())
 {
    MPI_Comm_size(MPI_COMM_WORLD, &_nTasks);
    MPI_Comm_rank(MPI_COMM_WORLD, &_myRank);

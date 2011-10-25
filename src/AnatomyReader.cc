@@ -13,7 +13,7 @@ using std::set;
 
 AnatomyReader::AnatomyReader(const string& filename, MPI_Comm comm,
 			     Simulate& sim)
-: _anatomy(sim.cell_)
+: _anatomy(sim.anatomy_.cellArray())
 {
    int myRank;
    MPI_Comm_rank(comm, &myRank);

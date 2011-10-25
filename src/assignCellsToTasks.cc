@@ -98,7 +98,7 @@ namespace
       MPI_Comm_size(comm, &nTasks);
       MPI_Comm_rank(comm, &myRank);
 
-      vector<AnatomyCell>& cells = sim.cell_;
+      vector<AnatomyCell>& cells = sim.anatomy_.cellArray();
       
       // Move all cells to rank 0
       for (unsigned ii=0; ii<cells.size(); ++ii)

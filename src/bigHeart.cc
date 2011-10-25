@@ -51,12 +51,11 @@ int main(int argc, char** argv)
    
 //  buildHaloExchange(sim, MPI_COMM_WORLD);
    
-   Anatomy anatomy;
    objectGet(simObj, "diffusion", nameTmp, "diffusion");
-   sim.diffusion_ = diffusionFactory(nameTmp, anatomy);
+   sim.diffusion_ = diffusionFactory(nameTmp, sim.anatomy_);
    
    objectGet(simObj, "reaction", nameTmp, "reaction");
-   sim.reaction_ = reactionFactory(nameTmp, anatomy);
+   sim.reaction_ = reactionFactory(nameTmp, sim.anatomy_);
    
    simulationLoop(sim);  
    

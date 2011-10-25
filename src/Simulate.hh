@@ -7,6 +7,7 @@
 
 #include "Timer.hh"
 #include "AnatomyCell.hh"
+#include "Anatomy.hh"
 #include "LocalGrid.hh"
 #include "Array3d.hh"
 
@@ -35,11 +36,9 @@ class Simulate
    int nx_, ny_, nz_; // global size of grid
 
 
-   unsigned nCellLocal_;
-   unsigned nCellRemote_;
-   std::vector<AnatomyCell> cell_; 
    std::vector<double> VmArray_; // local and remote
 
+   Anatomy anatomy_;
    Diffusion* diffusion_;
    Reaction* reaction_; 
    

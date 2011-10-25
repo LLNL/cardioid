@@ -11,7 +11,7 @@ using namespace std;
 void simulationLoop(Simulate& sim)
 {
   
-   vector<double> iStimArray(sim.nCellLocal_);
+   vector<double> iStimArray(sim.anatomy_.nLocal());
    
    for ( ; sim.loop_<sim.maxLoop_; ++sim.loop_)
    {

@@ -19,7 +19,7 @@ void writeCells(const Simulate& sim,
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
-   const vector<AnatomyCell>& cells = sim.cell_;
+   const vector<AnatomyCell>& cells = sim.anatomy_.cellArray();
    IndexToVector indexToVector(sim.nx_, sim.ny_, sim.nz_);
 
    int halfNx = sim.nx_/2;
