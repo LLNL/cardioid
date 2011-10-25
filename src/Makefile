@@ -7,7 +7,8 @@ include $(ARCH).mk
 #------------------------------------------------------------------------------
 #
 
-HEARTSRC=GDLoadBalancer.cc CommTable.cc AnatomyReader.cc object_cc.cc \
+HEARTSRC=bigHeart.cc \
+         GDLoadBalancer.cc CommTable.cc AnatomyReader.cc object_cc.cc \
 	 KoradiTest.cc GridRouter.cc Grid3DStencil.cc writeCells.cc \
 	 initializeAnatomy.cc assignCellsToTasks.cc simulationLoop.cc \
 	 diffusionFactory.cc reactionFactory.cc \
@@ -77,16 +78,13 @@ CXXFLAGS += -DARCH='"$(ARCH)"'
 DEFAULT: $(DDCMD_FILES) $(EXENAME)
 
 $(OBJDIR)/%.o: %.cc
-	$(CXX) $(CXXFLAGS) -o $@ -c $^
+	$(CXX) $(CXXFLAGS) -o $@ -c $<
 
 $(OBJDIR)/%.o: %.c
-	$(CC) $(CFLAGS) -o $@ -c $^
+	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(OBJDIR)/bigHeart.o: bigHeart.cc
-	$(CXX) $(CXXFLAGS) -o $@ -c $^
-
-$(EXENAME): makedirs depend $(HEARTOBJS) $(OBJDIR)/bigHeart.o
-	$(LD) $(DFLAGS) -o $(EXENAME) $(OBJDIR)/bigHeart.o $(HEARTOBJS) $(LDFLAGS)
+$(EXENAME): makedirs depend $(HEARTOBJS)
+	$(LD) $(DFLAGS) -o $(EXENAME) $(HEARTOBJS) $(LDFLAGS)
 
 testLoadBalancer: makedirs $(HEARTOBJS) $(OBJDIR)/testLoadBalancer.o
 	$(LD) $(DFLAGS) -o testLoadBalancer $(OBJDIR)/testLoadBalancer.o $(HEARTOBJS) $(LDFLAGS)
@@ -105,7 +103,7 @@ makedirs:
 # generate dependencies in makefile: use -Y to avoid library header files
 # that are likely to be different on other platforms.
  depend :
-	@makedepend -f .depend_$(ARCH) -p'($(OBJDIR)/' -o '.o)' -Y -D$(PLT) *.cc *.c *.hh *.h 2> /dev/null
+	@makedepend -f .depend_$(ARCH) -p'$(OBJDIR)/' -o '.o' -Y -D$(PLT) *.cc *.c *.hh *.h 2> /dev/null
 
 .depend_$(ARCH): $(HEARTSRC)
 	@touch .depend_$(ARCH)
@@ -126,4 +124,5 @@ distclean: clean
 	rm -f $(DDCMD_FILES)
 	rm -rf $(OBJDIR)
 	rm -f .depend*
--include .depend_$(ARCH)
+
+include .depend_$(ARCH)
