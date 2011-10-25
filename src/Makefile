@@ -1,6 +1,8 @@
 # Get name of architecture-specific include file from hostname
 include Makefile.arch
 
+.PHONY: DEFAULT makedirs clean distclean depend
+
 # If defined, use architecture file set with ARCH variable
 ARCH ?= $(ARCHGUESS)
 include $(ARCH).mk
@@ -75,7 +77,7 @@ INSTALLDIR = ../bin
 EXENAME = bigHeart-$(ARCH)
 CXXFLAGS += -DARCH='"$(ARCH)"'
 
-DEFAULT: $(DDCMD_FILES) $(EXENAME)
+DEFAULT: $(DDCMD_FILES) makedirs $(EXENAME)
 
 $(OBJDIR)/%.o: %.cc
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
@@ -83,7 +85,7 @@ $(OBJDIR)/%.o: %.cc
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(EXENAME): makedirs depend $(HEARTOBJS)
+$(EXENAME): $(HEARTOBJS)
 	$(LD) $(DFLAGS) -o $(EXENAME) $(HEARTOBJS) $(LDFLAGS)
 
 testLoadBalancer: makedirs $(HEARTOBJS) $(OBJDIR)/testLoadBalancer.o
