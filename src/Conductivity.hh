@@ -118,18 +118,3 @@ class Conductivity
  *  defined in cardiacSetupMPI.h
  */
 
-
-
-/** Questions for IBM:
- *
- *  1.  What is the valid range for theta and phi?  From the code it
- *  appears to be [0, 254], However, the units are apparently not
- *  degrees.  Rather, in CalcConductivityMatrixIBT the angles are
- *  multiplied by PI/256.  This seems wrong for two reasons:  First the
- *  divisor should be 254 since the value 255 is specifically excluded
- *  in BlueBeats.cpp.  Second, since we multiply by PI we only have a
- *  range of angles from [0, 180].  This is ok for one of the angles,
- *  but does not allow the expression of all possible directions.  Is
- *  there a symmetry relation here that I'm missing?
- *  
-*/

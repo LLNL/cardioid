@@ -11,7 +11,9 @@ class Anatomy
  public:
    unsigned size() const;
    unsigned nLocal() const;
-   
+   unsigned& nLocal();
+   unsigned nRemote() const;
+   unsigned& nRemote();
 
    double dx() const;
    double dy() const;
@@ -19,6 +21,7 @@ class Anatomy
    
 
    
+   int gid(unsigned ii) const;
    int theta(unsigned ii) const;
    int phi(unsigned ii) const;
    int cellType(unsigned ii) const;
@@ -35,13 +38,17 @@ class Anatomy
 
 };
 
-inline unsigned Anatomy::size() const { return cell_.size();}
-inline unsigned Anatomy::nLocal() const { return nLocal_;}
+inline unsigned  Anatomy::size() const { return cell_.size();}
+inline unsigned  Anatomy::nLocal() const { return nLocal_;}
+inline unsigned& Anatomy::nLocal()       { return nLocal_;}
+inline unsigned  Anatomy::nRemote() const { return nRemote_;}
+inline unsigned& Anatomy::nRemote()       { return nRemote_;}
 
 inline double  Anatomy::dx() const { assert (1==0); return 0;}
 inline double  Anatomy::dy() const { assert (1==0); return 0;}
 inline double  Anatomy::dz() const { assert (1==0); return 0;}
 
+inline int  Anatomy::gid(unsigned ii) const { return cell_[ii].gid_;}
 inline int  Anatomy::theta(unsigned ii) const { return cell_[ii].theta_;}
 inline int  Anatomy::phi(unsigned ii) const { return cell_[ii].phi_;}
 inline int  Anatomy::cellType(unsigned ii) const { return cell_[ii].cellType_;}

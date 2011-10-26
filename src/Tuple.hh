@@ -11,6 +11,7 @@ class Tuple
    const int& z() const;
 
    Tuple& operator-=(const Tuple& a);
+   Tuple& operator+=(const Tuple& a);
    
  private:
    int ix_;
@@ -19,6 +20,7 @@ class Tuple
 };
 
 Tuple operator-(const Tuple& a, const Tuple& b);
+Tuple operator+(const Tuple& a, const Tuple& b);
 
 
 
@@ -50,11 +52,23 @@ inline Tuple& Tuple::operator-=(const Tuple& a)
    iz_ -= a.iz_;
 }
 
+inline Tuple& Tuple::operator+=(const Tuple& a)
+{
+   ix_ += a.ix_;
+   iy_ += a.iy_;
+   iz_ += a.iz_;
+}
+
 inline Tuple operator-(const Tuple& a, const Tuple& b)
 {
    Tuple c(a);
    return c-=b;
 }
 
+inline Tuple operator+(const Tuple& a, const Tuple& b)
+{
+   Tuple c(a);
+   return c+=b;
+}
 
 #endif

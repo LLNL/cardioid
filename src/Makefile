@@ -10,9 +10,12 @@ include $(ARCH).mk
 #
 
 HEARTSRC=bigHeart.cc \
-         GDLoadBalancer.cc CommTable.cc AnatomyReader.cc object_cc.cc \
+         GDLoadBalancer.cc CommTable.cc \
+	 AnatomyReader.cc object_cc.cc \
 	 KoradiTest.cc GridRouter.cc Grid3DStencil.cc writeCells.cc \
-	 initializeAnatomy.cc assignCellsToTasks.cc simulationLoop.cc \
+	 DomainInfo.cc \
+	 initializeAnatomy.cc assignCellsToTasks.cc getRemoteCells.cc \
+	 simulationLoop.cc \
 	 diffusionFactory.cc reactionFactory.cc \
 	 conductivityFactory.cc \
 	 Salheen98Diffusion.cc \

@@ -39,3 +39,15 @@ BlueBeats completely populates certain blocks such as tissue (and
 probably conductivity)
 
 13.  Base classes need virtual destructors
+
+14.  The process of creating a HaloExchange from a GridRouter involves a
+great deal of copying data.  This could be improved.
+
+15.  I really don't like the way the Simulate class is turning out.  In
+particular the fact that it owns things like GridRouter and
+HaloExchange<double> voltageExchange that can't be easily initialized in
+the constructor is a problem.
+
+16.  There is way too much convertion from gids to tuples going on.
+Should think about the right time to ditch the gids and just store
+tuples.

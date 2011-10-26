@@ -11,8 +11,10 @@
 #include "LocalGrid.hh"
 #include "Array3d.hh"
 
+class GridRouter;
 class Diffusion;
 class Reaction;
+template <class T> class HaloExchange;
 
 // Kitchen sink class for heart simulation.  This is probably a great
 // example of how *not* to do design, but we need to get something
@@ -35,7 +37,10 @@ class Simulate
    
    int nx_, ny_, nz_; // global size of grid
 
+   GridRouter* router_;
+   HaloExchange<double>* voltageExchange_;
 
+   
    std::vector<double> VmArray_; // local and remote
 
    Anatomy anatomy_;

@@ -18,6 +18,7 @@
 #include "object_cc.hh"
 #include "diffusionFactory.hh"
 #include "reactionFactory.hh"
+#include "getRemoteCells.hh"
 #include "Anatomy.hh"
 
 using namespace std;
@@ -49,7 +50,7 @@ int main(int argc, char** argv)
    objectGet(simObj, "decomposition", nameTmp, "decomposition");
    assignCellsToTasks(sim, nameTmp, MPI_COMM_WORLD);
    
-//  buildHaloExchange(sim, MPI_COMM_WORLD);
+   getRemoteCells(sim, MPI_COMM_WORLD);
    
    objectGet(simObj, "diffusion", nameTmp, "diffusion");
    sim.diffusion_ = diffusionFactory(nameTmp, sim.anatomy_);

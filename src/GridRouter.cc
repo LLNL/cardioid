@@ -1,16 +1,19 @@
-#include <iostream>
 #include "GridRouter.hh"
+#include <iostream>
+#include <cassert>
+#include <cmath>
 #include "CommTable.hh"
-#include "GridPoint.hh"
 #include "Grid3DStencil.hh"
-using std::vector;
+#include "DomainInfo.hh"
 
-GridRouter::GridRouter(vector<int>& locgid, int nx, int ny, int nz,
-                       vector<double>& center, double radius,
-                       MPI_Comm comm) : comm_(comm)
+using namespace std;
+
+
+GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm comm)
+: comm_(comm)
 {
   // input:
-  //   locgid: vector of grid ids (gid = i+j*nx+k*nx*ny) owned by this task
+  //   gid: vector of grid ids (gid = i+j*nx+k*nx*ny) owned by this task
   //   pectr:  cartesian coordinate of center of sphere enclosing all grid points
   //   perad:  radius of enclosing sphere
   // output:
@@ -23,6 +26,13 @@ GridRouter::GridRouter(vector<int>& locgid, int nx, int ny, int nz,
   int npes, mype;
   MPI_Comm_size(comm_, &npes);
   MPI_Comm_rank(comm_, &mype);  
+
+  double deltaR = 2.0;
+  
+
+  DomainInfo dInfo(gid, nx, ny, nz);
+  vector<double> center = dInfo.center();
+  double radius = dInfo.radius();
   
   // distribute process centers and radii to all tasks
   int ctrsize = 4*npes;
@@ -33,25 +43,28 @@ GridRouter::GridRouter(vector<int>& locgid, int nx, int ny, int nz,
   sumbuf[4*mype+1] = center[1];
   sumbuf[4*mype+2] = center[2];
   sumbuf[4*mype+3] = radius;
-  vector<double> pectr(ctrsize);
+  vector<double> pectr(ctrsize, 0.0);
   MPI_Allreduce(&sumbuf[0],&pectr[0],ctrsize,MPI_DOUBLE,MPI_SUM,comm_);
 
   // compute all tasks which overlap with this process
   vector<int> penbrs(0);
   for (int ip=0; ip<npes; ip++)
   {
-    double distsq = 0.0;
-    for (int i=0; i<3; i++)
-      distsq += (pectr[4*ip+i]-center[i])*(pectr[4*ip+i]-center[i]);
-    double radsq = (radius+pectr[4*ip+3])*(radius+pectr[4*ip+3]);
-    // this process is a potential neighbor, add it to the list
-    if (distsq > 0.0 && distsq <= radsq)
-      penbrs.push_back(ip);
+     if (ip = mype)
+	continue;
+     double distsq = 0.0;
+     for (int i=0; i<3; i++)
+	distsq += (pectr[4*ip+i]-center[i])*(pectr[4*ip+i]-center[i]);
+     assert(distsq > 0.0);
+     double dist = sqrt(distsq);
+     // this process is a potential neighbor, add it to the list
+     if (dist <= radius + pectr[4*ip+3] + deltaR)
+	penbrs.push_back(ip);
   }
   
   // send mpi rank, local data size to all neighbors
   int nnbrs = penbrs.size();
-  int locsize = locgid.size();
+  int locsize = gid.size();
   MPI_Request sendReq[nnbrs];
   MPI_Request recvReq[nnbrs];
   vector<int> recvinfobuf(2*nnbrs);
@@ -59,41 +72,41 @@ GridRouter::GridRouter(vector<int>& locgid, int nx, int ny, int nz,
   for (int in=0; in<nnbrs; in++)
   {
     int recvpe = penbrs[in];
-    MPI_Irecv(&recvinfobuf[2*in],2,MPI_INT,recvpe,1,comm_,&recvReq[in]);
+    MPI_Irecv(&recvinfobuf[2*in],2,MPI_INT,recvpe,1,comm_,recvReq+in);
   }  
   for (int in=0; in<nnbrs; in++)
   {
     int destpe = penbrs[in];
     sendinfobuf[2*in+0] = mype;
     sendinfobuf[2*in+1] = locsize;
-    MPI_Isend(&sendinfobuf[2*in],2,MPI_INT,destpe,1,comm_,&sendReq[in]);
+    MPI_Isend(&sendinfobuf[2*in],2,MPI_INT,destpe,1,comm_,sendReq+in);
   }  
-  MPI_Waitall(nnbrs, &sendReq[0], MPI_STATUSES_IGNORE);
-  MPI_Waitall(nnbrs, &recvReq[0], MPI_STATUSES_IGNORE);
+  MPI_Waitall(nnbrs, sendReq, MPI_STATUSES_IGNORE);
+  MPI_Waitall(nnbrs, recvReq, MPI_STATUSES_IGNORE);
 
   // send local data to neighbors
   int nrecvtot = 0;
   for (int in=0; in<nnbrs; in++)
     nrecvtot += recvinfobuf[2*in+1];
 
-  vector<int> recvdatabuf(nrecvtot);
+  vector<Long64> recvdatabuf(nrecvtot);
   vector<int> recvoff(nnbrs);
   int offset = 0;
   for (int in=0; in<nnbrs; in++)
   {
     int recvpe = penbrs[in];
     int recvsize = recvinfobuf[2*in+1];
-    MPI_Irecv(&recvdatabuf[offset],recvsize,MPI_INT,recvpe,1,comm_,&recvReq[in]);
+    MPI_Irecv(&recvdatabuf[offset],recvsize,MPI_LONG_LONG,recvpe,1,comm_,recvReq+in);
     recvoff[in] = offset;
     offset += recvsize;
   }  
   for (int in=0; in<nnbrs; in++)
   {
     int destpe = penbrs[in];
-    MPI_Isend(&locgid[0],locsize,MPI_INT,destpe,1,comm_,&sendReq[in]);
+    MPI_Isend(&gid[0],locsize,MPI_LONG_LONG,destpe,1,comm_,sendReq+in);
   }  
-  MPI_Waitall(nnbrs, &sendReq[0], MPI_STATUSES_IGNORE);
-  MPI_Waitall(nnbrs, &recvReq[0], MPI_STATUSES_IGNORE);
+  MPI_Waitall(nnbrs, sendReq, MPI_STATUSES_IGNORE);
+  MPI_Waitall(nnbrs, recvReq, MPI_STATUSES_IGNORE);
 
   // recvdatabuf contains all gids of all possible neighbors, make accompanying
   // list of which pes own them
@@ -116,11 +129,10 @@ GridRouter::GridRouter(vector<int>& locgid, int nx, int ny, int nz,
     for (int in=0; in<nnbrs; in++)
       sendthis[in]=0;
     
-    int gid = locgid[ig];
-    Grid3DStencil stencil(gid,nx,ny,nz);
-    for (int is=0; is<stencil.nstencil(); is++)
+    Grid3DStencil stencil(gid[ig], nx, ny, nz);
+    for (int is=0; is<stencil.nStencil(); is++)
       for (int ib=0; ib<nrecvtot; ib++)
-        if (stencil.nbr_gid(is) == recvdatabuf[ib])
+        if (stencil.nbrGid(is) == recvdatabuf[ib])
           sendthis[recvdatanbr[ib]] = 1;
 
     for (int in=0; in<nnbrs; in++)
@@ -148,13 +160,9 @@ GridRouter::GridRouter(vector<int>& locgid, int nx, int ny, int nz,
 
 }
 
-GridRouter::~GridRouter(void)
+CommTable GridRouter::commTable() const
 {
-
+   return CommTable(sendRank_, sendOffset_, comm_);
 }
 
-CommTable* GridRouter::fillTable()
-{
-  CommTable* ctable = new CommTable(sendRank_,sendOffset_,comm_);
-  return ctable;
-}
+

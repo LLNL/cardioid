@@ -13,6 +13,25 @@ using namespace std;
 // 1.  What should be the default value of the cell type when the tissue
 // block is created in precomputeCoefficients?
 
+
+/** This implements (part of) the initialization conventions found at
+ *  lines 1027 through 1076 of BlueBeats.cpp.  I.e., 9 everywhere,
+ *  except 0 around the surface of the block.  (We'll overwrite this
+ *  with actual cell types for the cells we have on this task later). */
+void initializeTissueBlock(Array3d<int>& tissue)
+{
+   for (unsigned ii=0; ii<tissue.size(); ++ii)
+      tissue(ii) = 9;
+   // cells on the outer face of the block are set to 0
+   for (unsigned ii=0; ii<tissue.nx(); ++ii)
+      for (unsigned jj=0; jj<tissue.ny(); ++jj)
+	 for (unsigned kk=0; kk<tissue.nz(); ++kk)
+	    if ( ii==0 || ii==tissue.nx()-1 ||
+		 jj==0 || jj==tissue.nx()-1 ||
+		 kk==0 || kk==tissue.nx()-1 )
+	       tissue(ii, jj, kk) = 0;
+}
+
 LocalGrid findBoundingBox(const Anatomy& anatomy)
 {
    assert(anatomy.size() > 0);
@@ -141,6 +160,7 @@ Salheen98PrecomputeDiffusion::precomputeCoefficients(const Anatomy& anatomy)
 
    Array3d<SigmaTensorMatrix> sigmaMintra(nx, ny, nz);
    Array3d<int> tissue(nx, ny, nz);
+   initializeTissueBlock(tissue);
    // What about default values for sigmaMintra and tissue?
    // Not all entries in the block are calculated.
    for (unsigned ii=0; ii<anatomy.size(); ++ii)

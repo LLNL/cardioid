@@ -18,7 +18,11 @@ class Array3d
    T*** cArray();
    const T*** cArray() const;
    
-   unsigned const size();
+   unsigned size() const;
+   unsigned nx() const;
+   unsigned ny() const;
+   unsigned nz() const;
+   
    void resize(unsigned nx, unsigned ny, unsigned nz);
    
    unsigned const tupleToIndex(unsigned ix, unsigned iy, unsigned iz);
@@ -72,11 +76,28 @@ const T*** Array3d<T>::cArray() const
 }
 
 template <class T> inline
-unsigned const Array3d<T>::size()
+unsigned Array3d<T>::size() const
 {
    return nx_*ny_*nz_;
 }
 
+template <class T> inline
+unsigned Array3d<T>::nx() const
+{
+   return nx_;
+}
+
+template <class T> inline
+unsigned Array3d<T>::ny() const
+{
+   return ny_;
+}
+
+template <class T> inline
+unsigned Array3d<T>::nz() const
+{
+   return nz_;
+}
 
 
 template <class T> inline 

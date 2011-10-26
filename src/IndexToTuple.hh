@@ -13,7 +13,6 @@ class IndexToTuple
 
    Tuple operator()(Long64 index)
    {
-
       int x = index % nx_;
       index /= nx_;
       int y = index % ny_;

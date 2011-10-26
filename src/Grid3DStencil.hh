@@ -2,23 +2,22 @@
 #define GRID3DSTENCIL_H
 
 #include <vector>
+#include "Long64.hh"
 using std::vector;
 
 class Grid3DStencil
 {
-  private:
+ public:
+   
+   Grid3DStencil(int gid, int nx, int ny, int nz);
+   
+   int nStencil(void) const { return nbrGids_.size(); }
+   Long64 nbrGid(int i) const { return nbrGids_[i]; }
+   const vector<Long64>& nbrGid(void) const { return nbrGids_; }
 
-  int nstencil_;          // stencil size
-  int gid_;
-  int nx_, ny_, nz_;      // grid dimensions
-  vector<int> nbr_gids_;  // gids of stencil points
-  
-  public:
-  
-  Grid3DStencil(int gid, int nx, int ny, int nz);
-  ~Grid3DStencil(void);
-  int nstencil(void) { return nstencil_; }
-  int nbr_gid(int i) { return nbr_gids_[i]; }
-  vector<int> nbr_gid(void) { return nbr_gids_; }
+ private:
+   
+   vector<Long64> nbrGids_;   // gids of stencil points
+   
 };
 #endif
