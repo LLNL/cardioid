@@ -3,6 +3,7 @@
 #include <cassert>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 
 #include "object_cc.hh"
 #include "ioUtils.h"
@@ -11,6 +12,7 @@
 #include "Simulate.hh"
 #include "GDLoadBalancer.hh"
 #include "mpiUtils.h"
+#include "GridPoint.hh"
 
 using namespace std;
 
@@ -57,17 +59,17 @@ namespace
       KoradiTest tester(sim, nCentersPerTask, alpha, voronoiSteps);
       for (unsigned ii=0; ii<koradiSteps; ++ii)
       {
-	 tester.balanceStep();
-	 stringstream name;
-	 name << "snap."<<ii;
-	 string fullname = name.str();
-	 DirTestCreate(fullname.c_str());
-	 fullname += "/anatomy";
-	 writeCells(sim, fullname.c_str());
+        tester.balanceStep();
+        stringstream name;
+        name << "snap."<<ii;
+        string fullname = name.str();
+        DirTestCreate(fullname.c_str());
+        fullname += "/anatomy";
+        writeCells(sim, fullname.c_str());
 
-	 if (ii%100 == 0)
-	    tester.recondition(voronoiSteps);
-
+        if (ii%100 == 0)
+          tester.recondition(voronoiSteps);
+        
       }
       
       exit(0);
@@ -99,62 +101,106 @@ namespace
       MPI_Comm_rank(comm, &myRank);
 
       vector<AnatomyCell>& cells = sim.anatomy_.cellArray();
-      
-      // Move all cells to rank 0
-      for (unsigned ii=0; ii<cells.size(); ++ii)
-	 cells[ii].dest_ = 0;
-      unsigned nLocal = cells.size();
-      unsigned nGlobal;
-      MPI_Allreduce(&nLocal, &nGlobal, 1, MPI_UNSIGNED, MPI_SUM, comm);
-      vector<unsigned> dest(nLocal, 0);
-      
-      cells.resize(nGlobal);
-      assignArray((unsigned char*)&(cells[0]), &nLocal, cells.capacity(),
-		  sizeof(AnatomyCell), &(dest[0]), 0, comm);
-      cells.resize(nLocal);
-      
-      // build the types array
-      int nGrid = sim.nx_ * sim.ny_ * sim.nz_;
-      vector<int> types(nGrid, 0);
-      for (unsigned ii=0; ii<cells.size(); ++ii)
-	 types[cells[ii].gid_] = cells[ii].cellType_;
-      
 
       // get process grid info 
-      int nx, ny, nz;
-      objectGet(obj, "nx", nx, "0");
-      objectGet(obj, "ny", ny, "0");
-      objectGet(obj, "nz", nz, "0");
-      assert(nx*ny*nz > 0);
+      int npex, npey, npez;
+      objectGet(obj, "nx", npex, "0");
+      objectGet(obj, "ny", npey, "0");
+      objectGet(obj, "nz", npez, "0");
+      int npegrid = npex*npey*npez;
+      assert(npegrid > 0);
 
-      GDLoadBalancer loadbal(nx, ny, nz);
-      
-      // compute data decomposition, redistribute data until load
-      // balance is achieved
-      sim.tmap_["assign_init"].start();
-      loadbal.initialDistribution(types, sim.nx_, sim.ny_, sim.nz_);
-      sim.tmap_["assign_init"].stop();
-      
-      sim.tmap_["balance"].start();
-      loadbal.balanceLoop();
-      sim.tmap_["balance"].stop();
-
-      // If we have more grid points than MPI ranks, this must be a test.
-      if (nx*ny*nz != nTasks)
+      // Move each cell of gid=(i,j,k) to corresponding rank k
+      for (unsigned ii=0; ii<cells.size(); ++ii)
       {
-	 if (myRank == 0)
-	    cout << "Grid size does not match number of tasks.\n"
-		 << "This must be a test run only.  Exiting now"<< endl;
-	 exit(0);
+        GridPoint gpt(cells[ii].gid_,sim.nx_,sim.ny_,sim.nz_);
+        if (nTasks >= sim.nz_) 
+          cells[ii].dest_ = gpt.z;
+        else
+          cells[ii].dest_ = gpt.z*nTasks/sim.nz_;
       }
 
-      // This is where we send cells to their tasks.
-      // To make this in any way efficient we need to sort the cell
-      // array so that we can match up with GDLoadBalancer::gpe_
-      // I don't have the patience for that right now, and the whole
-      // system would be worlds easier if GDLoadBalancer would just move
-      // the cells around.  I'll negotiate with Erik later.
+      sort(cells.begin(),cells.end(),AnatomyCell::destLessThan);
+      unsigned nLocal = cells.size();
+      vector<unsigned> dest(nLocal);
+      for (unsigned ii=0; ii<cells.size(); ++ii)
+         dest[ii] = cells[ii].dest_;
 
+      // compute maximum possible number of non-zero local elements
+      int nMax = sim.nx_*sim.ny_; 
+      if (nTasks < sim.nz_)
+        nMax *= sim.nz_/nTasks + 1;
+
+      // carry out communication
+      cells.resize(nMax);
+      assignArray((unsigned char*)&(cells[0]), &nLocal, cells.capacity(),
+                  sizeof(AnatomyCell), &(dest[0]), 0, comm);
+      assert(nLocal <= nMax);
+      cells.resize(nLocal);
+
+      GDLoadBalancer loadbal(comm, npex, npey, npez);
+      
+      // compute initial data decomposition
+      sim.tmap_["gd_assign_init"].start();
+      loadbal.initialDistribution(cells, sim.nx_, sim.ny_, sim.nz_);
+      sim.tmap_["gd_assign_init"].stop();
+
+      //ewd DEBUG set up visualization of initial distribution
+      int visgrid;
+      objectGet(obj, "visgrid", visgrid, "0");
+      if (visgrid == 1)
+      {
+        stringstream name;
+        name << "snap.gridinit";
+        string fullname = name.str();
+        DirTestCreate(fullname.c_str());
+        fullname += "/anatomy";
+        writeCells(sim, fullname.c_str());
+      }
+      
+      // redistribute data until load balance is achieved
+      int ninner;
+      int threshold;
+      objectGet(obj, "ninner", ninner, "10");
+      objectGet(obj, "threshold", threshold, "4");
+      int nmax = 10000000;
+
+      sim.tmap_["gd_balance"].start();
+      loadbal.balanceLoop(cells,ninner,threshold,nmax);
+      sim.tmap_["gd_balance"].stop();
+
+      //ewd DEBUG:  print out load balance data
+      if (visgrid == 1)
+      {
+        stringstream name;
+        name << "snap.gridfinal";
+        string fullname = name.str();
+        DirTestCreate(fullname.c_str());
+        fullname += "/anatomy";
+        writeCells(sim, fullname.c_str());
+      }
+      //ewd DEBUG
+      
+      //ewd print out load balance timing
+      if (myRank == 0)
+      {
+        cout.setf(ios::fixed,ios::floatfield);
+        for ( map<std::string,Timer>::iterator i = sim.tmap_.begin(); i != sim.tmap_.end(); i++ ) {
+          double time = (*i).second.real();
+          cout << "timing name=" << setw(15) << (*i).first << ":   time=" << setprecision(6) << setw(12) << time << " sec" << endl;
+        }
+      }
+      // ewd DEBUG
+
+
+      bool testingOnly = (npegrid != nTasks);
+      if (testingOnly)
+      {
+        if (myRank == 0)
+          cout << "Process grid size does not match number of tasks.\n"
+               << "This must be a test run only.  Exiting now"<< endl;
+        exit(0);
+      }
    }
 }
 

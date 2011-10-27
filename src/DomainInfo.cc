@@ -1,7 +1,7 @@
 #include "DomainInfo.hh"
 #include <cmath>
 #include "IndexToTuple.hh"
-#include "indexToVector.hh"
+#include "IndexToVector.hh"
 #include "three_algebra.h"
 
 using namespace std;

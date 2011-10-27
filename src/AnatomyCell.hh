@@ -11,6 +11,11 @@ class AnatomyCell
    int theta_;
    int phi_;
    int dest_;
+   int sortind_;
+   static bool destLessThan(const AnatomyCell &a, const AnatomyCell &b)
+        { return a.dest_ < b.dest_; }
+   static bool indLessThan(const AnatomyCell &a, const AnatomyCell &b)
+        { return a.sortind_ < b.sortind_; }
 };
 
 #endif
