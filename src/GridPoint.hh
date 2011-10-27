@@ -8,12 +8,10 @@ class GridPoint {
 
   GridPoint(int gid, int nx, int ny, int nz)
   {
-    int nxy = nx*ny;
-    z = gid/nxy;
-    int xy0 = gid;
-    while (xy0 >= nxy) xy0 -= nxy;
-    y = xy0/nx;
-    x = xy0 - y*nx;
+    x = gid % nx;
+    gid /= nx;
+    y = gid % ny;
+    z = gid / ny;
   }
 };
 #endif

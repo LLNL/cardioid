@@ -178,6 +178,19 @@ namespace
         DirTestCreate(fullname.c_str());
         fullname += "/anatomy";
         writeCells(sim, fullname.c_str());
+
+        //ewd DEBUG
+        //for (unsigned ii=0; ii<cells.size(); ++ii)
+        //{
+        //  if (cells[ii].dest_ == 100)
+        //  {
+        //    GridPoint gpt(cells[ii].gid_,sim.nx_,sim.ny_,sim.nz_);
+        //    cout << " X  " << gpt.x << "  " << gpt.y << "  " << gpt.z << endl;
+        //  }
+        //}
+        //ewd DEBUG
+
+        
       }
       //ewd DEBUG
       
