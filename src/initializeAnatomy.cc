@@ -44,9 +44,8 @@ namespace {
       objectGet(obj, "fileName", fileName, "snapshot.initial/atatomy#");
       
       if (myRank==0) cout << "Starting read" <<endl;
-      {
-	 AnatomyReader reader(fileName, comm, sim);
-      }
+
+      AnatomyReader reader(fileName, comm, sim);
       if (myRank==0) cout << "Finished read" <<endl;
    }
 }

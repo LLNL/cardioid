@@ -46,6 +46,9 @@ int main(int argc, char** argv)
    
    objectGet(simObj, "anatomy", nameTmp, "anatomy");
    initializeAnatomy(sim, nameTmp, MPI_COMM_WORLD);
+   sim.anatomy_.nx() = sim.nx_;
+   sim.anatomy_.ny() = sim.ny_;
+   sim.anatomy_.nz() = sim.nz_;
    
    objectGet(simObj, "decomposition", nameTmp, "decomposition");
    assignCellsToTasks(sim, nameTmp, MPI_COMM_WORLD);

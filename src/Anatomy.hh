@@ -5,7 +5,7 @@
 #include <cassert>
 #include "AnatomyCell.hh"
 #include "Tuple.hh"
-
+#include "IndexToTuple.hh"
 class Anatomy
 {
  public:
@@ -15,11 +15,13 @@ class Anatomy
    unsigned nRemote() const;
    unsigned& nRemote();
 
+   unsigned& nx();
+   unsigned& ny();
+   unsigned& nz();
+
    double dx() const;
    double dy() const;
    double dz() const;
-   
-
    
    int gid(unsigned ii) const;
    int theta(unsigned ii) const;
@@ -32,6 +34,7 @@ class Anatomy
    
    
  private:
+   unsigned nx_, ny_, nz_;
    unsigned nLocal_;
    unsigned nRemote_;
    std::vector<AnatomyCell> cell_; 
@@ -44,6 +47,10 @@ inline unsigned& Anatomy::nLocal()       { return nLocal_;}
 inline unsigned  Anatomy::nRemote() const { return nRemote_;}
 inline unsigned& Anatomy::nRemote()       { return nRemote_;}
 
+inline unsigned&  Anatomy::nx() { return nx_;}
+inline unsigned&  Anatomy::ny() { return ny_;}
+inline unsigned&  Anatomy::nz() { return nz_;}
+
 inline double  Anatomy::dx() const { assert (1==0); return 0;}
 inline double  Anatomy::dy() const { assert (1==0); return 0;}
 inline double  Anatomy::dz() const { assert (1==0); return 0;}
@@ -53,7 +60,11 @@ inline int  Anatomy::theta(unsigned ii) const { return cell_[ii].theta_;}
 inline int  Anatomy::phi(unsigned ii) const { return cell_[ii].phi_;}
 inline int  Anatomy::cellType(unsigned ii) const { return cell_[ii].cellType_;}
 
-inline Tuple Anatomy::globalTuple(unsigned ii) const { assert (1==0); return Tuple(0, 0, 0);}
+inline Tuple Anatomy::globalTuple(unsigned ii) const
+{
+   IndexToTuple i2t(nx_, ny_, nz_);
+   return i2t(cell_[ii].gid_);
+}
 
 inline       std::vector<AnatomyCell>& Anatomy::cellArray()       {return cell_;}
 inline const std::vector<AnatomyCell>& Anatomy::cellArray() const {return cell_;}
