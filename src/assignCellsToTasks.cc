@@ -55,6 +55,7 @@ namespace
       objectGet(obj, "alpha", alpha, "0.05");
 
       int nCentersPerTask = nCenters/nTasks;
+      assert(nCenters > 0);
       
       KoradiTest tester(sim, nCentersPerTask, alpha, voronoiSteps);
       for (unsigned ii=0; ii<koradiSteps; ++ii)
@@ -67,12 +68,13 @@ namespace
         fullname += "/anatomy";
         writeCells(sim, fullname.c_str());
 
-        if (ii%100 == 0)
-          tester.recondition(voronoiSteps);
+//         if (ii%100 == 0)
+//           tester.recondition(voronoiSteps);
         
       }
       
-      exit(0);
+      if (nCentersPerTask > 1)
+	 exit(0);
    }
    
 }

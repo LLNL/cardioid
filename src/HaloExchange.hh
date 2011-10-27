@@ -24,7 +24,7 @@ HaloExchange<T>::HaloExchange(const std::vector<int>& sendMap,
 			      const CommTable& comm)
 : width_(sizeof(T)),
   commTable_(comm),
-  sendMap_(sendMap_)
+  sendMap_(sendMap)
 {
 }
 

@@ -50,7 +50,7 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
   vector<int> penbrs(0);
   for (int ip=0; ip<npes; ip++)
   {
-     if (ip = mype)
+     if (ip == mype)
 	continue;
      double distsq = 0.0;
      for (int i=0; i<3; i++)
@@ -157,7 +157,6 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
       nSend_++;
     }
   }
-
 }
 
 CommTable GridRouter::commTable() const
