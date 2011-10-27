@@ -45,7 +45,7 @@ Array3d<T>::Array3d()
 
 template <class T> inline
 Array3d<T>::Array3d(unsigned nx, unsigned ny, unsigned nz)
-: nx_(nx), ny_(ny), nz_(nz), data_(nx*nz*nz)
+: nx_(nx), ny_(ny), nz_(nz), data_(nx*ny*nz)
 {
    pointerSetup();
 }

@@ -53,9 +53,9 @@ LocalGrid findBoundingBox(const Anatomy& anatomy)
       yMax = max(yMax, globalTuple.y());
       zMax = max(zMax, globalTuple.z());
    }
-   int nx = xMax - xMin;
-   int ny = yMax - yMin;
-   int nz = zMax - zMin;
+   int nx = xMax - xMin + 1;
+   int ny = yMax - yMin + 1;
+   int nz = zMax - zMin + 1;
 
    return LocalGrid(nx, ny, nz, xMin, yMin, zMin);
 }

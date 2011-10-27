@@ -144,6 +144,7 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
   int datasize = 0;
   sendRank_.clear();
   sendOffset_.clear();
+  sendOffset_.push_back(0);
   for (int in=0; in<instencil_.size(); in++)
   {
     if (instencil_[in].size() > 0)
@@ -161,6 +162,7 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
 
 CommTable GridRouter::commTable() const
 {
+   assert(sendOffset_.size() == sendRank_.size() + 1);
    return CommTable(sendRank_, sendOffset_, comm_);
 }
 
