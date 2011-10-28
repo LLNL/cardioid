@@ -2,162 +2,176 @@
 #include <iostream>
 #include <cassert>
 #include <cmath>
+#include <set>
+#include <algorithm>
 #include "CommTable.hh"
 #include "Grid3DStencil.hh"
 #include "DomainInfo.hh"
+#include "Vector.hh"
+#include "IndexToVector.hh"
 
 using namespace std;
-
 
 GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm comm)
 : comm_(comm)
 {
-  // input:
-  //   gid: vector of grid ids (gid = i+j*nx+k*nx*ny) owned by this task
-  //   pectr:  cartesian coordinate of center of sphere enclosing all grid points
-  //   perad:  radius of enclosing sphere
-  // output:
-  //   nSend:  number of tasks to send data to
-  //   sendRank: vector of task ranks to send to
-  //   sendOffset: vector of indices of local data for each send
-  //       note: assumes packing such that sendRank[i] gets the elements
-  //       sendOffset[i]:sendOffset[i+1]-1
-    
-  int npes, mype;
-  MPI_Comm_size(comm_, &npes);
-  MPI_Comm_rank(comm_, &mype);  
+   int nTasks, myRank;
+   MPI_Comm_size(comm_, &nTasks);
+   MPI_Comm_rank(comm_, &myRank);  
 
-  double deltaR = 2.0;
+   double deltaR = 2.0;
   
 
-  DomainInfo dInfo(gid, nx, ny, nz);
-  vector<double> center = dInfo.center();
-  double radius = dInfo.radius();
+   DomainInfo myInfo(gid, nx, ny, nz);
+   Vector myCenter = myInfo.center();
+   double myRadius = myInfo.radius();
   
-  // distribute process centers and radii to all tasks
-  int ctrsize = 4*npes;
-  vector<double> sumbuf(ctrsize);  // center coord + radius for each pe
-  for (int i=0; i<ctrsize; i++)
-    sumbuf[i] = 0.;
-  sumbuf[4*mype+0] = center[0];
-  sumbuf[4*mype+1] = center[1];
-  sumbuf[4*mype+2] = center[2];
-  sumbuf[4*mype+3] = radius;
-  vector<double> pectr(ctrsize, 0.0);
-  MPI_Allreduce(&sumbuf[0],&pectr[0],ctrsize,MPI_DOUBLE,MPI_SUM,comm_);
+   // distribute process centers and radii to all tasks
+   vector<DomainInfo> dInfo(nTasks, myInfo);
+   int dSize = sizeof(DomainInfo);
+   MPI_Allgather(&myInfo, dSize, MPI_BYTE, &dInfo[0], dSize, MPI_BYTE, comm);
 
-  // compute all tasks which overlap with this process
-  vector<int> penbrs(0);
-  for (int ip=0; ip<npes; ip++)
-  {
-     if (ip == mype)
-	continue;
-     double distsq = 0.0;
-     for (int i=0; i<3; i++)
-	distsq += (pectr[4*ip+i]-center[i])*(pectr[4*ip+i]-center[i]);
-     assert(distsq > 0.0);
-     double dist = sqrt(distsq);
-     // this process is a potential neighbor, add it to the list
-     if (dist <= radius + pectr[4*ip+3] + deltaR)
-	penbrs.push_back(ip);
-  }
+   // compute all tasks which overlap with this process
+   vector<int> myNbrs;
+   { //scope
+      for (int ii=0; ii<nTasks; ++ii)
+      {
+	 if (ii == myRank)
+	    continue;
+	 double rij = 0.0;
+	 for (int jj=0; jj<3; ++jj)
+	 {
+	    double xij = dInfo[ii].center()[jj] - myCenter[jj];
+	    rij += xij*xij;
+	 }
+	 assert(rij > 0.0);
+	 rij = sqrt(rij);
+	 // this process is a potential neighbor, add it to the list
+	 if (rij <= myRadius + dInfo[ii].radius() + deltaR)
+	    myNbrs.push_back(ii);
+      }
+   } //scope
+
+   // Get a list of all of the cells I might possibly need on this task.
+   // This list might include non-tissue cells since we have no way of
+   // telling. 
+   vector<Long64> neededCells;
+   {//scope
+      set<Long64> stencilGids;
+      set<Long64> myGids;
+      for (unsigned ii=0; ii<gid.size(); ++ii)
+      {
+	 myGids.insert(gid[ii]);
+	 Grid3DStencil stencil(gid[ii], nx, ny, nz);
+	 for (int jj=0; jj<stencil.nStencil(); ++jj)
+	    stencilGids.insert(stencil[jj]);
+      }
+      set_difference(stencilGids.begin(), stencilGids.end(),
+		     myGids.begin(), myGids.end(), 
+		     back_inserter(neededCells));
+   } //scope
+
+   
+   vector<Long64> sendBuf;  
+   vector<int> sendOffset;
+   { //scope
+      sendBuf.reserve(2*gid.size());
+      sendOffset.reserve(myNbrs.size() + 1);
+      sendOffset.push_back(0);
+      IndexToVector indexToVector(nx, ny, nz);
+      vector<Vector> neededVectors;
+      neededVectors.reserve(neededCells.size());
+      for (unsigned ii=0; ii<neededCells.size(); ++ii)
+	 neededVectors.push_back(indexToVector(neededCells[ii]));
+     
+      for (unsigned ii=0; ii<myNbrs.size(); ++ii)
+      {
+	 Vector ri = dInfo[myNbrs[ii]].center();
+	 double rMax2 = dInfo[myNbrs[ii]].radius();
+	 rMax2 *= rMax2;
+	 for (unsigned jj=0; jj<neededCells.size(); ++jj)
+	 {
+	    Vector rij = ri - neededVectors[jj];
+	    if ( dot(rij, rij)  < rMax2)
+	       sendBuf.push_back(neededCells[jj]);
+	 }
+	 sendOffset.push_back(sendBuf.size());
+      }
+   } //scope
+
+   
+   // send request size to all neighbors
+   vector<int> recvOffset(myNbrs.size()+1);
+   { //scope
+      recvOffset[0] = 0;
+      const int tag = 78539;
+      int nNbrs = myNbrs.size();
+      MPI_Request sendReq[nNbrs];
+      MPI_Request recvReq[nNbrs];
+      for (int ii=0; ii<nNbrs; ++ii)
+      {
+	 int source = myNbrs[ii];
+	 MPI_Irecv(&recvOffset[ii+1], 1, MPI_INT, source, tag, comm_, recvReq+ii);
+      }  
+      vector<int> buf(nNbrs);
+      for (int ii=0; ii<nNbrs; ++ii)
+      {
+	 int dest = myNbrs[ii];
+	 buf[ii] = sendOffset[ii+1]-sendOffset[ii];
+	 MPI_Isend(&buf[ii], 1, MPI_INT, dest, tag, comm_, sendReq+ii);
+      }  
+      MPI_Waitall(nNbrs, sendReq, MPI_STATUSES_IGNORE);
+      MPI_Waitall(nNbrs, recvReq, MPI_STATUSES_IGNORE);
+
+      for (int ii=0; ii<myNbrs.size(); ++ii)
+	 recvOffset[ii+1] += recvOffset[ii];
+   } //scope
   
-  // send mpi rank, local data size to all neighbors
-  int nnbrs = penbrs.size();
-  int locsize = gid.size();
-  MPI_Request sendReq[nnbrs];
-  MPI_Request recvReq[nnbrs];
-  vector<int> recvinfobuf(2*nnbrs);
-  vector<int> sendinfobuf(2*nnbrs);
-  for (int in=0; in<nnbrs; in++)
-  {
-    int recvpe = penbrs[in];
-    MPI_Irecv(&recvinfobuf[2*in],2,MPI_INT,recvpe,1,comm_,recvReq+in);
-  }  
-  for (int in=0; in<nnbrs; in++)
-  {
-    int destpe = penbrs[in];
-    sendinfobuf[2*in+0] = mype;
-    sendinfobuf[2*in+1] = locsize;
-    MPI_Isend(&sendinfobuf[2*in],2,MPI_INT,destpe,1,comm_,sendReq+in);
-  }  
-  MPI_Waitall(nnbrs, sendReq, MPI_STATUSES_IGNORE);
-  MPI_Waitall(nnbrs, recvReq, MPI_STATUSES_IGNORE);
+   // send cell requests to neighbors
+   vector<Long64> recvBuf(recvOffset.back());
+   {
+      int nNbrs = myNbrs.size();
+      MPI_Request sendReq[nNbrs];
+      MPI_Request recvReq[nNbrs];
+      const int tag = 78540;
+      for (unsigned ii=0; ii<nNbrs; ++ii)
+      {
+	 int source = myNbrs[ii];
+	 int nRecv = recvOffset[ii+1] - recvOffset[ii];
+	 MPI_Irecv(&recvBuf[recvOffset[ii]], nRecv, MPI_LONG_LONG, source , tag ,comm_, recvReq+ii);
+      }  
+     
+      for (int ii=0; ii<nNbrs; ++ii)
+      {
+	 int dest = myNbrs[ii];
+	 int nSend = sendOffset[ii+1]-sendOffset[ii];
+	 MPI_Isend(&sendBuf[sendOffset[ii]], nSend, MPI_LONG_LONG, dest, tag, comm_, sendReq+ii);
+      }  
+      MPI_Waitall(nNbrs, sendReq, MPI_STATUSES_IGNORE);
+      MPI_Waitall(nNbrs, recvReq, MPI_STATUSES_IGNORE);
+   }
+  
 
-  // send local data to neighbors
-  int nrecvtot = 0;
-  for (int in=0; in<nnbrs; in++)
-    nrecvtot += recvinfobuf[2*in+1];
-
-  vector<Long64> recvdatabuf(nrecvtot);
-  vector<int> recvoff(nnbrs);
-  int offset = 0;
-  for (int in=0; in<nnbrs; in++)
-  {
-    int recvpe = penbrs[in];
-    int recvsize = recvinfobuf[2*in+1];
-    MPI_Irecv(&recvdatabuf[offset],recvsize,MPI_LONG_LONG,recvpe,1,comm_,recvReq+in);
-    recvoff[in] = offset;
-    offset += recvsize;
-  }  
-  for (int in=0; in<nnbrs; in++)
-  {
-    int destpe = penbrs[in];
-    MPI_Isend(&gid[0],locsize,MPI_LONG_LONG,destpe,1,comm_,sendReq+in);
-  }  
-  MPI_Waitall(nnbrs, sendReq, MPI_STATUSES_IGNORE);
-  MPI_Waitall(nnbrs, recvReq, MPI_STATUSES_IGNORE);
-
-  // recvdatabuf contains all gids of all possible neighbors, make accompanying
-  // list of which pes own them
-  vector<int> recvdatanbr(nrecvtot);
-  for (int in=0; in<nnbrs; in++)
-  {
-    int insize = recvinfobuf[2*in+1];
-    int inoff = recvoff[in];
-    for (int i=0; i<insize; i++)
-      recvdatanbr[inoff+i] = in;
-  }      
-
-  // use stencil to determine which gids to send/recv
-  instencil_.resize(nnbrs);
-  vector<int> sendthis(nnbrs);
-  for (int ig=0; ig<locsize; ig++)
-  {
-    // neighbor process may own multiple grid points in stencil of ig
-    // we only want to send it once, so just set send flag
-    for (int in=0; in<nnbrs; in++)
-      sendthis[in]=0;
-    
-    Grid3DStencil stencil(gid[ig], nx, ny, nz);
-    for (int is=0; is<stencil.nStencil(); is++)
-      for (int ib=0; ib<nrecvtot; ib++)
-        if (stencil.nbrGid(is) == recvdatabuf[ib])
-          sendthis[recvdatanbr[ib]] = 1;
-
-    for (int in=0; in<nnbrs; in++)
-      if (sendthis[in] == 1)
-        instencil_[in].push_back(ig);
-  }
-
-  nSend_ = 0;
-  int datasize = 0;
-  sendRank_.clear();
-  sendOffset_.clear();
-  sendOffset_.push_back(0);
-  for (int in=0; in<instencil_.size(); in++)
-  {
-    if (instencil_[in].size() > 0)
-    {
-      sendRank_.push_back(recvinfobuf[2*in]);
-      sendOffset_.push_back(datasize);
-      datasize += instencil_[in].size();
-      sendIndex_.resize(datasize);
-      for (int is=0; is<instencil_[in].size(); is++)
-        sendIndex_[sendOffset_[nSend_]+is] = instencil_[in][is];
-      nSend_++;
-    }
-  }
+   sendRank_.clear();
+   sendMap_.clear();
+   sendOffset_.clear();
+   sendOffset_.push_back(0);
+   for (unsigned ii=0; ii<myNbrs.size(); ++ii)
+   {
+      vector<Long64>::const_iterator first = recvBuf.begin() + recvOffset[ii];
+      vector<Long64>::const_iterator last =  recvBuf.begin() + recvOffset[ii+1];
+      for (unsigned jj=0; jj<gid.size(); ++jj)
+      {
+	 if (binary_search(first, last, gid[jj]))
+	    sendMap_.push_back(jj);
+      }
+      if (sendMap_.size() > sendOffset_.back())
+      {
+	 sendRank_.push_back(myNbrs[ii]);
+	 sendOffset_.push_back(sendMap_.size());
+      }
+     
+   }
 }
 
 CommTable GridRouter::commTable() const

@@ -4,7 +4,7 @@
 #include <vector>
 #include "AnatomyCell.hh"
 #include "three_algebra.h"
-#include "IndexToVector.hh"
+#include "IndexToThreeVector.hh"
 
 class Simulate;
 
@@ -45,7 +45,7 @@ class KoradiTest
    int _nCentersPerTask;
    int _localOffset;
 
-   IndexToVector _indexToVector;
+   IndexToThreeVector _indexToVector;
 
    // shared globally
    std::vector<THREE_VECTOR> _centers;

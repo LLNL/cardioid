@@ -1,7 +1,7 @@
 #ifndef INDEX_TO_VECTOR_HH
 #define INDEX_TO_VECTOR_HH
 
-#include "three_algebra.h"
+#include "Vector.hh"
 #include "Long64.hh"
 
 class IndexToVector
@@ -11,13 +11,13 @@ class IndexToVector
    : nx_(nx), ny_(ny), nz_(nz)
    {};
 
-   THREE_VECTOR operator()(Long64 index)
+   Vector operator()(Long64 index)
    {
-      THREE_VECTOR r;
-      r.x = index % nx_;
+      Vector r;
+      r[0] = index % nx_;
       index /= nx_;
-      r.y = index % ny_;
-      r.z = index / ny_;
+      r[1] = index % ny_;
+      r[2] = index / ny_;
 
       return r;
    }

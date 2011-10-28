@@ -8,9 +8,17 @@
     not allow the expression of all possible directions.  Is there a
     symmetry relation here that I'm missing?
 
+    Answer:  This is the way it is done at Matthias's old lab.  In 
+    the future we can do whatever we want.
+
 
 2.  settings for dx, dy, dz.  Shouldn't this live with the 
     anatomy data?
+ 
+    Answer: They actually do.  However for ease of rescaling the
+    parameters were moved to the input deck.  We can put the values
+    in the pio header and supply an override in object.data
+
 
 3.  The globalTissueBlock is defined for each task by calling
     getORBdataScaled (BlueBeats.cpp:580).  How are the min and max
@@ -18,3 +26,14 @@
     define quantities such as xMaxLocal that include extra room for
     param.boxoverlap.  This is the size that is used for creating the
     block arrays such as tissue, Vm etc.
+
+    Answer:  The ORB calls return a box that bounds the local cells.
+    The given overlap (param.boxoverlap) establishes the halo size.
+
+
+4.  Can I assume that there is always a layer of cells that are not
+    tissue cells around every anatomic data set?
+
+    Answer:  Matthias typically sets things up this way.  However
+    the code should probably be smart enough to deal with it either
+    way.

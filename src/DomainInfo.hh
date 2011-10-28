@@ -3,17 +3,19 @@
 
 #include <vector>
 #include "Long64.hh"
+#include "Vector.hh"
 
 class DomainInfo
 {
  public:
    DomainInfo(const std::vector<Long64>& gid, int nx, int ny, int nz);
    
-   const std::vector<double>& center() const {return center_;}
+   const Vector& center() const {return center_;}
    double radius() const {return radius_;}
  private:
+
    double radius_;
-   std::vector<double> center_;
+   Vector center_;
 };
 
 #endif

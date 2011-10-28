@@ -23,7 +23,7 @@ class LocalGrid
 
    int xOffset_; // These are the coordinates of the minimum
    int yOffset_; // corner of the local grid on the global 
-   int zOffset_; // grid.
+   int zOffset_; // grid.  Yes, they can be negative.
    
 };
 

@@ -10,6 +10,7 @@ include $(ARCH).mk
 #
 
 HEARTSRC=bigHeart.cc \
+	 Vector.cc \
          GDLoadBalancer.cc CommTable.cc \
 	 AnatomyReader.cc object_cc.cc \
 	 KoradiTest.cc GridRouter.cc Grid3DStencil.cc writeCells.cc \

@@ -6,6 +6,7 @@
 #include "Simulate.hh"
 #include "AnatomyReader.hh"
 #include "object_cc.hh"
+#include "Anatomy.hh"
 
 using namespace std;
 
@@ -31,6 +32,13 @@ void initializeAnatomy(Simulate& sim, const string& name, MPI_Comm comm)
       assert(1==0);
    else
       assert(1==0);
+   double dx, dy, dz;
+   objectGet(obj, "dx", dx, "0.2");
+   objectGet(obj, "dy", dy, "0.2");
+   objectGet(obj, "dz", dz, "0.2");
+   sim.anatomy_.dx() = dx;
+   sim.anatomy_.dy() = dy;
+   sim.anatomy_.dz() = dz;
 }
 
 

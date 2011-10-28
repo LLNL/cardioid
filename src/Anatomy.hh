@@ -19,6 +19,10 @@ class Anatomy
    unsigned& ny();
    unsigned& nz();
 
+   double& dx();
+   double& dy();
+   double& dz();
+
    double dx() const;
    double dy() const;
    double dz() const;
@@ -35,6 +39,7 @@ class Anatomy
    
  private:
    unsigned nx_, ny_, nz_;
+   double dx_, dy_, dz_;
    unsigned nLocal_;
    unsigned nRemote_;
    std::vector<AnatomyCell> cell_; 
@@ -51,9 +56,13 @@ inline unsigned&  Anatomy::nx() { return nx_;}
 inline unsigned&  Anatomy::ny() { return ny_;}
 inline unsigned&  Anatomy::nz() { return nz_;}
 
-inline double  Anatomy::dx() const { assert (1==0); return 0;}
-inline double  Anatomy::dy() const { assert (1==0); return 0;}
-inline double  Anatomy::dz() const { assert (1==0); return 0;}
+inline double&  Anatomy::dx()  { return dx_;}
+inline double&  Anatomy::dy()  { return dy_;}
+inline double&  Anatomy::dz()  { return dz_;}
+
+inline double  Anatomy::dx() const { return dx_;}
+inline double  Anatomy::dy() const { return dy_;}
+inline double  Anatomy::dz() const { return dz_;}
 
 inline int  Anatomy::gid(unsigned ii) const { return cell_[ii].gid_;}
 inline int  Anatomy::theta(unsigned ii) const { return cell_[ii].theta_;}

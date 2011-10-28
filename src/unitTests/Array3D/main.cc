@@ -3,9 +3,9 @@
 int main(int argc, char** argv)
 {
    Array3d<int> aa;
-   int nx = 3;
-   int ny = 5;
-   int nz = 7;
+   int nx = 39;
+   int ny = 57;
+   int nz = 79;
    aa.resize(nx, ny, nz);
 
 

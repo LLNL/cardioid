@@ -13,6 +13,7 @@ class Grid3DStencil
    
    int nStencil(void) const { return nbrGids_.size(); }
    Long64 nbrGid(int i) const { return nbrGids_[i]; }
+   const Long64& operator[](int i) const { return nbrGids_[i]; }
    const vector<Long64>& nbrGid(void) const { return nbrGids_; }
 
  private:

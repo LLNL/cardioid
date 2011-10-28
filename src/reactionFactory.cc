@@ -19,7 +19,7 @@ Reaction* reactionFactory(const string& name, const Anatomy& anatomy)
 
    if (method == "undefined")
       assert(1==0);
-   else if (method == "TT04")
+   else if (method == "TT04" || method == "tenTusscher04")
       return scanTT04(obj, anatomy);
    
    assert(1==0); // reachable only due to bad input

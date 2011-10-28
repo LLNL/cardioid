@@ -19,7 +19,7 @@ class HaloExchange
    std::vector<int> sendMap_;
 };
 
-template <class T> inline
+template <class T>
 HaloExchange<T>::HaloExchange(const std::vector<int>& sendMap,
 			      const CommTable& comm)
 : width_(sizeof(T)),
@@ -28,7 +28,7 @@ HaloExchange<T>::HaloExchange(const std::vector<int>& sendMap,
 {
 }
 
-template <class T> inline
+template <class T>
 void HaloExchange<T>::execute(std::vector<T>& data, unsigned nLocal)
 {
    // Create and fill send buffer

@@ -6,7 +6,40 @@
 #include "GridRouter.hh"
 #include "HaloExchange.hh"
 
+#include <fstream>
+#include <sstream>
+#include <iostream>
+
 using namespace std;
+
+void dumpCells(const Anatomy& anatomy)
+{
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, & myRank);
+   {
+      stringstream buf;
+      buf << "cellsLocal."<<myRank;
+      ofstream file(buf.str().c_str());
+      for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
+      {
+	 Tuple gg = anatomy.globalTuple(ii);
+	 file << gg.x() << " " << gg.y() << " " << gg.z() <<endl;
+      }
+   }
+   {
+      stringstream buf;
+      buf << "cellsRemote."<<myRank;
+      ofstream file(buf.str().c_str());
+      for (unsigned ii=anatomy.nLocal(); ii<anatomy.size(); ++ii)
+      {
+	 Tuple gg = anatomy.globalTuple(ii);
+	 file << gg.x() << " " << gg.y() << " " << gg.z() <<endl;
+      }
+   }
+   
+}
+
+
 
 void getRemoteCells(Simulate& sim, MPI_Comm comm)
 {
@@ -26,5 +59,6 @@ void getRemoteCells(Simulate& sim, MPI_Comm comm)
    anatomy.nLocal() = anatomy.size();
    cellExchange.execute(anatomy.cellArray(), anatomy.nLocal());
    anatomy.nRemote() = anatomy.size() - anatomy.nLocal();
+//   dumpCells(anatomy);
 }
 

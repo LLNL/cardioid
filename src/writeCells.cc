@@ -72,10 +72,10 @@ void writeCells(const Simulate& sim,
 // 	 continue;
       
 
-      THREE_VECTOR v = indexToVector(cells[ii].gid_);
-      int ix = int(v.x) - halfNx;
-      int iy = int(v.y) - halfNy;
-      int iz = int(v.z) - halfNz;
+      Vector v = indexToVector(cells[ii].gid_);
+      int ix = int(v.x()) - halfNx;
+      int iy = int(v.y()) - halfNy;
+      int iz = int(v.z()) - halfNz;
 //       int ix = int(v.x);
 //       int iy = int(v.y);
 //       int iz = int(v.z);

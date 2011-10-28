@@ -12,17 +12,15 @@ class GridRouter
  private:
    
    MPI_Comm comm_;
-   int nSend_;
    std::vector<int> sendRank_;
    std::vector<int> sendOffset_;
-   std::vector<int> sendIndex_;
-   std::vector<std::vector<int> > instencil_;
+   std::vector<int> sendMap_;
    
   public:
   
    GridRouter(std::vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm comm);
    CommTable commTable() const;
-   const std::vector<int>& sendMap() const {return sendIndex_;}
+   const std::vector<int>& sendMap() const {return sendMap_;}
 };
 #endif
 

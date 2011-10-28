@@ -37,13 +37,13 @@ class Array3d
    T*** cArray_;
 };
 
-template <class T> inline
+template <class T> 
 Array3d<T>::Array3d()
 : nx_(0), ny_(0), nz_(0), data_(0), cArray_(0)
 {
 }
 
-template <class T> inline
+template <class T> 
 Array3d<T>::Array3d(unsigned nx, unsigned ny, unsigned nz)
 : nx_(nx), ny_(ny), nz_(nz), data_(nx*ny*nz)
 {
@@ -100,7 +100,7 @@ unsigned Array3d<T>::nz() const
 }
 
 
-template <class T> inline 
+template <class T>  
 void Array3d<T>::resize(unsigned nx, unsigned ny, unsigned nz)
 {
    assert(nx_ == 0 && ny_ == 0 && nz_ == 0);
@@ -119,7 +119,7 @@ unsigned const Array3d<T>::tupleToIndex(unsigned ix, unsigned iy, unsigned iz)
 //   return ix + nx_*(iy + ny_*(iz));
 }
 
-template <class T> inline
+template <class T> 
 void Array3d<T>::pointerSetup()
 {
    cArray_ = (T***) malloc(sizeof(T**)*nx_);

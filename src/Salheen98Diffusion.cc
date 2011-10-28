@@ -17,7 +17,12 @@ using namespace std;
 /** This implements (part of) the initialization conventions found at
  *  lines 1027 through 1076 of BlueBeats.cpp.  I.e., 9 everywhere,
  *  except 0 around the surface of the block.  (We'll overwrite this
- *  with actual cell types for the cells we have on this task later). */
+ *  with actual cell types for the cells we have on this task later).
+ *  This is a necessary initialization since the cells around the edge
+ *  of the block may be completely synthetic.  For cells at the outer
+ *  wall of the heart their may be no nbr cell defined in the anatomy,
+ *  yet we need to have something there when we want to compute stencil
+ *  operations. */
 void initializeTissueBlock(Array3d<int>& tissue)
 {
    for (unsigned ii=0; ii<tissue.size(); ++ii)
@@ -32,9 +37,17 @@ void initializeTissueBlock(Array3d<int>& tissue)
 	       tissue(ii, jj, kk) = 0;
 }
 
+/** We want to find the boundingBox such that any stencil point of any
+ *  local atom is in the box.  It is not suffiient merely to iterate all
+ *  of the local and remote atoms and find the maximum extent.  There
+ *  may be local cells that are on the outer or inner walls of the
+ *  heart.  Such cells will have no remote cells to satisfy their
+ *  stencil.  Therefore, the safe bet is to iterate the local cells and
+ *  add the stencil size in each direction.
+ */
 LocalGrid findBoundingBox(const Anatomy& anatomy)
 {
-   assert(anatomy.size() > 0);
+   assert(anatomy.nLocal() > 0);
    Tuple globalTuple = anatomy.globalTuple(0);
    int xMin = globalTuple.x();
    int yMin = globalTuple.y();
@@ -43,7 +56,7 @@ LocalGrid findBoundingBox(const Anatomy& anatomy)
    int yMax = globalTuple.y();
    int zMax = globalTuple.z();
 
-   for (unsigned ii=1; ii<anatomy.size(); ++ii)
+   for (unsigned ii=1; ii<anatomy.nLocal(); ++ii)
    {
       Tuple globalTuple = anatomy.globalTuple(ii);
       xMin = min(xMin, globalTuple.x());
@@ -53,10 +66,16 @@ LocalGrid findBoundingBox(const Anatomy& anatomy)
       yMax = max(yMax, globalTuple.y());
       zMax = max(zMax, globalTuple.z());
    }
-   int nx = xMax - xMin + 1;
-   int ny = yMax - yMin + 1;
-   int nz = zMax - zMin + 1;
 
+   int stencilSize = 1;
+   
+   int nx = 2*stencilSize + xMax - xMin + 1;
+   int ny = 2*stencilSize + yMax - yMin + 1;
+   int nz = 2*stencilSize + zMax - zMin + 1;
+   xMin -= stencilSize;
+   yMin -= stencilSize;
+   zMin -= stencilSize;
+   
    return LocalGrid(nx, ny, nz, xMin, yMin, zMin);
 }
 
@@ -70,6 +89,16 @@ Salheen98PrecomputeDiffusion::Salheen98PrecomputeDiffusion(
    unsigned ny = localGrid_.ny();
    unsigned nz = localGrid_.nz();
 
+   // This is a test
+   for (unsigned ii=0; ii<anatomy.size(); ++ii)
+   {
+      Tuple globalTuple = anatomy.globalTuple(ii);
+      Tuple ll = localGrid_.localTuple(globalTuple);
+      assert(ll.x() >= 0 && ll.y() >= 0 && ll.z() >= 0);
+      assert(ll.x() < nx && ll.y() < ny && ll.z() < nz);
+   }
+   // This has been a test
+   
    diffIntra_.resize(nx, ny, nz);
    VmBlock_.resize(nx, ny, nz);
 
@@ -101,6 +130,12 @@ void Salheen98PrecomputeDiffusion::buildTupleArray(const Anatomy& anatomy)
    {
       Tuple globalTuple = anatomy.globalTuple(ii);
       localTuple_[ii] = localGrid_.localTuple(globalTuple);
+      assert(localTuple_[ii].x() > 0);
+      assert(localTuple_[ii].y() > 0);
+      assert(localTuple_[ii].z() > 0);
+      assert(localTuple_[ii].x() < localGrid_.nx()-1);
+      assert(localTuple_[ii].y() < localGrid_.ny()-1);
+      assert(localTuple_[ii].z() < localGrid_.nz()-1);
    }
 }
 
