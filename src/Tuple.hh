@@ -50,6 +50,7 @@ inline Tuple& Tuple::operator-=(const Tuple& a)
    ix_ -= a.ix_;
    iy_ -= a.iy_;
    iz_ -= a.iz_;
+   return *this;
 }
 
 inline Tuple& Tuple::operator+=(const Tuple& a)
@@ -57,6 +58,7 @@ inline Tuple& Tuple::operator+=(const Tuple& a)
    ix_ += a.ix_;
    iy_ += a.iy_;
    iz_ += a.iz_;
+   return *this;
 }
 
 inline Tuple operator-(const Tuple& a, const Tuple& b)
