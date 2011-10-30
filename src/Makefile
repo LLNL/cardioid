@@ -13,7 +13,7 @@ HEARTSRC=bigHeart.cc \
 	 Vector.cc \
          GDLoadBalancer.cc CommTable.cc \
 	 AnatomyReader.cc object_cc.cc \
-	 KoradiTest.cc GridRouter.cc Grid3DStencil.cc writeCells.cc \
+	 Koradi.cc GridRouter.cc Grid3DStencil.cc writeCells.cc \
 	 DomainInfo.cc \
 	 initializeAnatomy.cc assignCellsToTasks.cc getRemoteCells.cc \
 	 simulationLoop.cc \

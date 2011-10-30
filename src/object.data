@@ -19,10 +19,14 @@ pioAnatomy ANATOMY
 koradi DECOMPOSITION 
 {
    method = koradi;
+   verbose = 1;
    nCenters = 40;
    alpha = 0.5;
-   voronoiSteps = 30;
-   koradiSteps = 500;
+   maxVoronoiSteps = 100;
+   maxSteps = 500;
+   tolerance = 0.01;
+   outputRate = 1;
+   nbrDeltaR = 2;
 }
 
 grid DECOMPOSITION 

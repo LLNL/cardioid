@@ -43,9 +43,17 @@ Vector operator*(const double& a, const Vector& b);
 Vector operator/(const Vector& a, const double& b);
 Vector operator/(const double& a, const Vector& b);
 double dot(const Vector& a, const Vector& b);
+double diffSq(const Vector& a, const Vector& b);
 double length(const Vector& a);
 
 // input , output functions
 std::ostream& operator<<(std::ostream&, const Vector&);
+
+inline double diffSq(const Vector& a, const Vector& b)
+{
+   return dot(a-b, a-b);
+}
+
+
 
 #endif // ifdef VECTOR_HH

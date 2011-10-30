@@ -19,6 +19,10 @@ class Anatomy
    unsigned& ny();
    unsigned& nz();
 
+   unsigned nx() const;
+   unsigned ny() const;
+   unsigned nz() const;
+
    double& dx();
    double& dy();
    double& dz();
@@ -55,6 +59,10 @@ inline unsigned& Anatomy::nRemote()       { return nRemote_;}
 inline unsigned&  Anatomy::nx() { return nx_;}
 inline unsigned&  Anatomy::ny() { return ny_;}
 inline unsigned&  Anatomy::nz() { return nz_;}
+
+inline unsigned  Anatomy::nx() const { return nx_;}
+inline unsigned  Anatomy::ny() const { return ny_;}
+inline unsigned  Anatomy::nz() const { return nz_;}
 
 inline double&  Anatomy::dx()  { return dx_;}
 inline double&  Anatomy::dy()  { return dy_;}

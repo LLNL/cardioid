@@ -26,6 +26,13 @@ void objectGet(OBJECT* obj, const string& name, double& value, const string& def
    value = tmp;
 }
 
+void objectGet(OBJECT* obj, const string& name, bool& value, const string& defVal)
+{
+   int tmp;
+   object_get(obj, name.c_str(), &tmp, INT, 1, defVal.c_str());
+   value = (tmp!=0);
+}
+
 void objectGet(OBJECT* obj, const string& name, int& value, const string& defVal)
 {
    int tmp;

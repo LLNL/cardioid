@@ -10,6 +10,7 @@ OBJECT* objectFind(const std::string& name, const std::string& objClass);
 
 void objectGet(OBJECT* obj, const std::string& name, std::string& value, const std::string& defVal);
 void objectGet(OBJECT* obj, const std::string& name, double& value,      const std::string& defVal);
+void objectGet(OBJECT* obj, const std::string& name, bool& value,        const std::string& defVal);
 void objectGet(OBJECT* obj, const std::string& name, int& value,         const std::string& defVal);
 void objectGet(OBJECT* obj, const std::string& name, unsigned& value,    const std::string& defVal);
 

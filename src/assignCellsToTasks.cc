@@ -7,7 +7,7 @@
 
 #include "object_cc.hh"
 #include "ioUtils.h"
-#include "KoradiTest.hh"
+#include "Koradi.hh"
 #include "writeCells.hh"
 #include "Simulate.hh"
 #include "GDLoadBalancer.hh"
@@ -44,39 +44,26 @@ namespace
       int nTasks;  MPI_Comm_size(comm, &nTasks);
       stringstream buf;
       buf << nTasks;
-
-      int nCenters;
-      double alpha;
-      int koradiSteps;
-      int voronoiSteps;
+      
+      KoradiParms kp;
+      int nCenters;      
       objectGet(obj, "nCenters", nCenters, buf.str());
-      objectGet(obj, "koradiSteps", koradiSteps, "100");
-      objectGet(obj, "voronoiSteps", voronoiSteps, "30");
-      objectGet(obj, "alpha", alpha, "0.05");
-
-      int nCentersPerTask = nCenters/nTasks;
+      objectGet(obj, "verbose",         kp.verbose,         "1");
+      objectGet(obj, "maxVoronoiSteps", kp.maxVoronoiSteps, "50");
+      objectGet(obj, "maxSteps",        kp.maxSteps,        "500");
+      objectGet(obj, "outputRate",      kp.outputRate,      "5");
+      objectGet(obj, "alpha",           kp.alpha,           "0.05");
+      objectGet(obj, "tolerance",       kp.tolerance,       "0.01");
+      objectGet(obj, "nbrDeltaR",       kp.nbrDeltaR,       "2");
+      
+      kp.nCentersPerTask = nCenters/nTasks;
       assert(nCenters > 0);
       
-      KoradiTest tester(sim, nCentersPerTask, alpha, voronoiSteps);
-      for (unsigned ii=0; ii<koradiSteps; ++ii)
-      {
-        tester.balanceStep();
-        stringstream name;
-        name << "snap."<<ii;
-        string fullname = name.str();
-        DirTestCreate(fullname.c_str());
-        fullname += "/anatomy";
-        writeCells(sim, fullname.c_str());
-
-//         if (ii%100 == 0)
-//           tester.recondition(voronoiSteps);
-        
-      }
+      Koradi balancer(sim.anatomy_, kp);
       
-      if (nCentersPerTask > 1)
+      if (kp.nCentersPerTask > 1)
 	 exit(0);
    }
-   
 }
 
 
