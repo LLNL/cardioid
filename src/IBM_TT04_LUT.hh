@@ -1,13 +1,10 @@
-/*
-*/
+#ifndef IBM_TT04_LUT_HH
+#define IBM_TT04_LUT_HH
 
-#define PARAMETER_INCLUDED
-
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cmath>
 #include <iostream>
 #include <fstream>
 using namespace std;
@@ -199,3 +196,4 @@ class IBM_TT04_LUT
                                                                                                                     
 };
                                                                                                                     
+#endif

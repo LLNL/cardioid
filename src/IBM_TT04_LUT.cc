@@ -1,6 +1,4 @@
-/*
-*/
-#include <IBM_TT04_LUT.h>
+#include "IBM_TT04_LUT.hh"
 
 
 

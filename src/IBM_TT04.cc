@@ -1,7 +1,7 @@
-/*	File: IBM_TT04.cpp
+/*	File: IBM_TT04.cc
 */
 
-#include <IBM_TT04.h>
+#include "IBM_TT04.hh"
 
 IBM_TT04::IBM_TT04(char *inputEVFilename, int cellType) 
 {

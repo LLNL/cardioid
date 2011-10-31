@@ -25,7 +25,7 @@ HEARTSRC=bigHeart.cc \
 	 TT04Reaction.cc \
 	 IBM_tenTusscher04.cc IBM_tenTusscher04_endoLUT.cc \
 	 IBM_tenTusscher04_epiLUT.cc IBM_tenTusscher04_midLUT.cc \
-
+	 IBM_TT04.cc IBM_TT04_LUT.cc
 
 
 DDCMD_FILES = \

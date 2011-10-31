@@ -1,7 +1,11 @@
+#ifndef IBM_TT04_HH
+#define IBM_TT04_HH
+
 /*  
 Author: Matthias Reumann, IBM Research
 */
-#include <IBM_TT04_LUT.h>
+
+#include "IBM_TT04_LUT.hh"
 
 
 
@@ -153,3 +157,5 @@ class IBM_TT04
     void Print();
     void LongPrint();
 };
+
+#endif
