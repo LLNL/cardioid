@@ -1,15 +1,15 @@
-#ifndef TT04_REACTION_HH
-#define TT04_REACTION_HH
+#ifndef TT04_BB_REACTION_HH
+#define TT04_BB_REACTION_HH
 
 #include "Reaction.hh"
 class Anatomy;
 class IBM_tenTusscher04;
 
 
-class TT04Reaction : public Reaction
+class TT04_bbReaction : public Reaction
 {
  public:
-   TT04Reaction(const Anatomy& anatomy);
+   TT04_bbReaction(const Anatomy& anatomy);
    
    void calc(double dt, const std::vector<double>& Vm, std::vector<double>& dVm);
 

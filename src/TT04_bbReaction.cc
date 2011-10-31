@@ -1,10 +1,10 @@
-#include "TT04Reaction.hh"
+#include "TT04_bbReaction.hh"
 #include "Anatomy.hh"
 #include "IBM_tenTusscher04.hh"
 
 using namespace std;
 
-TT04Reaction::TT04Reaction(const Anatomy& anatomy)
+TT04_bbReaction::TT04_bbReaction(const Anatomy& anatomy)
 : nCells_(anatomy.nLocal())
 {
    ttType_.resize(256, -1); 
@@ -32,7 +32,7 @@ TT04Reaction::TT04Reaction(const Anatomy& anatomy)
    
 }
 
-void TT04Reaction::calc(double dt, const vector<double>& Vm, vector<double>& dVm)
+void TT04_bbReaction::calc(double dt, const vector<double>& Vm, vector<double>& dVm)
 {
    assert(nCells_ == dVm.size());
    
