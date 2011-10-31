@@ -11,7 +11,7 @@ class IndexToTuple
    : nx_(nx), ny_(ny), nz_(nz)
    {};
 
-   Tuple operator()(Long64 index)
+   Tuple operator()(Long64 index) const 
    {
       int x = index % nx_;
       index /= nx_;

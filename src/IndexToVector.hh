@@ -11,7 +11,7 @@ class IndexToVector
    : nx_(nx), ny_(ny), nz_(nz)
    {};
 
-   Vector operator()(Long64 index)
+   Vector operator()(Long64 index) const
    {
       Vector r;
       r[0] = index % nx_;

@@ -11,7 +11,7 @@ class IndexToThreeVector
    : nx_(nx), ny_(ny), nz_(nz)
    {};
 
-   THREE_VECTOR operator()(Long64 index)
+   THREE_VECTOR operator()(Long64 index) const
    {
       THREE_VECTOR r;
       r.x = index % nx_;
