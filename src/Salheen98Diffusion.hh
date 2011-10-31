@@ -15,6 +15,7 @@ class Tuple;
 
 struct Salheen98DiffusionParms
 {
+   double diffusionScale_;
    std::string conductivityName_;
 };
 
@@ -84,6 +85,7 @@ class Salheen98PrecomputeDiffusion : public Diffusion
 
 
    LocalGrid                      localGrid_;
+   double                         diffusionScale_;
    Conductivity*                  conductivity_;
    std::vector<unsigned>          blockIndex_; // for local and remote cells
    std::vector<Tuple>             localTuple_; // only for local cells

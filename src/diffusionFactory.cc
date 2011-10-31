@@ -42,6 +42,7 @@ namespace
    {
       Salheen98DiffusionParms p;
       objectGet(obj, "conductivity", p.conductivityName_, "conductivity");
+      objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0");
 
       string variant;
       objectGet(obj, "variant", variant, "precompute");

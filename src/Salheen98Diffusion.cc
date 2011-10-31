@@ -4,6 +4,7 @@
 #include "Conductivity.hh"
 #include "conductivityFactory.hh"
 #include <algorithm>
+#include <iostream>
 
 using namespace std;
 
@@ -83,7 +84,8 @@ LocalGrid findBoundingBox(const Anatomy& anatomy)
 Salheen98PrecomputeDiffusion::Salheen98PrecomputeDiffusion(
    const Salheen98DiffusionParms& parms,
    const Anatomy& anatomy)
-: localGrid_(findBoundingBox(anatomy))
+: localGrid_(findBoundingBox(anatomy)),
+  diffusionScale_(parms.diffusionScale_)
 {
    unsigned nx = localGrid_.nx();
    unsigned ny = localGrid_.ny();
@@ -117,6 +119,7 @@ void Salheen98PrecomputeDiffusion::diffusion(
    for (unsigned ii=0; ii<Istim.size(); ++ii)
    {
       Istim[ii] = boundaryFDLaplacianSaleheen98SumPhi(localTuple_[ii]);
+      Istim[ii] *= diffusionScale_;
    }
 }
 /** We're building the localTuple array only for local cells.  We can't
