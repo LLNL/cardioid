@@ -144,7 +144,7 @@ namespace
         string fullname = name.str();
         DirTestCreate(fullname.c_str());
         fullname += "/anatomy";
-        writeCells(sim, fullname.c_str());
+        writeCells(sim.anatomy_.cellArray(), sim.nx_, sim.ny_, sim.nz_, fullname.c_str());
       }
       
       // redistribute data until load balance is achieved
@@ -166,7 +166,7 @@ namespace
         string fullname = name.str();
         DirTestCreate(fullname.c_str());
         fullname += "/anatomy";
-        writeCells(sim, fullname.c_str());
+        writeCells(sim.anatomy_.cellArray(), sim.nx_, sim.ny_, sim.nz_, fullname.c_str());
 
         //ewd DEBUG
         //for (unsigned ii=0; ii<cells.size(); ++ii)

@@ -11,15 +11,10 @@
 #include "Timer.hh"
 #include "mpiUtils.h"
 
-#include "initializeAnatomy.hh"
-#include "assignCellsToTasks.hh"
+#include "initializeSimulate.hh"
 #include "simulationLoop.hh"
 #include "heap.h"
 #include "object_cc.hh"
-#include "diffusionFactory.hh"
-#include "reactionFactory.hh"
-#include "getRemoteCells.hh"
-#include "Anatomy.hh"
 
 using namespace std;
 
@@ -41,25 +36,7 @@ int main(int argc, char** argv)
    parseCommandLineAndReadInputFile(argc, argv, mype);
    
    Simulate sim;
-   OBJECT* simObj = object_find("simulate", "SIMULATE");
-   string nameTmp;
-   
-   objectGet(simObj, "anatomy", nameTmp, "anatomy");
-   initializeAnatomy(sim, nameTmp, MPI_COMM_WORLD);
-   sim.anatomy_.nx() = sim.nx_;
-   sim.anatomy_.ny() = sim.ny_;
-   sim.anatomy_.nz() = sim.nz_;
-   
-   objectGet(simObj, "decomposition", nameTmp, "decomposition");
-   assignCellsToTasks(sim, nameTmp, MPI_COMM_WORLD);
-   
-   getRemoteCells(sim, MPI_COMM_WORLD);
-   
-   objectGet(simObj, "diffusion", nameTmp, "diffusion");
-   sim.diffusion_ = diffusionFactory(nameTmp, sim.anatomy_);
-   
-   objectGet(simObj, "reaction", nameTmp, "reaction");
-   sim.reaction_ = reactionFactory(nameTmp, sim.anatomy_);
+   initializeSimulate("simulate", sim);
    
    simulationLoop(sim);  
    

@@ -111,15 +111,15 @@ Salheen98PrecomputeDiffusion::Salheen98PrecomputeDiffusion(
 }
 
    
-void Salheen98PrecomputeDiffusion::diffusion(
-   const vector<double>& Vm, vector<double>& Istim)
+void Salheen98PrecomputeDiffusion::calc(
+   const vector<double>& Vm, vector<double>& dVm)
 {
    updateVoltageBlock(Vm);
 
-   for (unsigned ii=0; ii<Istim.size(); ++ii)
+   for (unsigned ii=0; ii<dVm.size(); ++ii)
    {
-      Istim[ii] = boundaryFDLaplacianSaleheen98SumPhi(localTuple_[ii]);
-      Istim[ii] *= diffusionScale_;
+      dVm[ii] = boundaryFDLaplacianSaleheen98SumPhi(localTuple_[ii]);
+      dVm[ii] *= diffusionScale_;
    }
 }
 /** We're building the localTuple array only for local cells.  We can't

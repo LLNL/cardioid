@@ -66,7 +66,7 @@ class Salheen98PrecomputeDiffusion : public Diffusion
       const Salheen98DiffusionParms& parms,
       const Anatomy& anatomy);
    
-   void diffusion(const std::vector<double>& Vm, std::vector<double>& Istim);
+   void calc(const std::vector<double>& Vm, std::vector<double>& dVm);
    
  private:
    void   buildTupleArray(const Anatomy& anatomy);

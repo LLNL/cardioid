@@ -14,10 +14,12 @@
 	-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
  INCLUDE = 
  CXXFLAGS= -g  -O3 $(INCLUDE) $(DFLAGS)
- CXXFLAGS= -g -O0 -ggdb   $(INCLUDE) $(DFLAGS)
+# CXXFLAGS= -g  -ggdb -O2 -fno-inline $(INCLUDE) $(DFLAGS)
+# CXXFLAGS= -g -O0 -ggdb   $(INCLUDE) $(DFLAGS)
  CFLAGS= -std=c99 -g -xW $(INCLUDE) $(DFLAGS)
  CFLAGS= --std=gnu99 -g -O3 $(INCLUDE) $(DFLAGS)
- CFLAGS= --std=gnu99 -g -ggdb -O0 $(INCLUDE) $(DFLAGS)
+# CFLAGS= --std=gnu99 -g -O2 -fno-inline $(INCLUDE) $(DFLAGS)
+# CFLAGS= --std=gnu99 -g -ggdb -O0 $(INCLUDE) $(DFLAGS)
  LIBPATH = 
  LIBS = 
 

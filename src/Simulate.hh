@@ -6,10 +6,7 @@
 #include <vector>
 
 #include "Timer.hh"
-#include "AnatomyCell.hh"
 #include "Anatomy.hh"
-#include "LocalGrid.hh"
-#include "Array3d.hh"
 
 class GridRouter;
 class Diffusion;
@@ -33,7 +30,10 @@ class Simulate
 
    int loop_;
    int maxLoop_;
+   int printRate_;
+   int snapshotRate_;
    double dt_;
+   double time_;
    
    int nx_, ny_, nz_; // global size of grid
 

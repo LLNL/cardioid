@@ -4,6 +4,12 @@ simulate SIMULATE
    decomposition = koradi;
    diffusion = Salheen98Fast;
    reaction = tenTusscher04;
+   loop = 0;
+   maxLoop = 50000;
+   dt = 0.02e-3;
+   time = 0;
+   printRate = 50;
+   snapshotRate = 50;
 }
 
 pioAnatomy ANATOMY 
@@ -46,6 +52,7 @@ Salheen98Fast DIFFUSION
 
 conductivity CONDUCTIVITY
 {
+    method = fibre;
     sigmaLi = 0.3;   // units S/m
     sigmaTi = 0.03;  // units S/m
 }

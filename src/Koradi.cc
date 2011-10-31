@@ -112,7 +112,8 @@ Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
 	 string fullname = name.str();
 	 DirTestCreate(fullname.c_str());
 	 fullname += "/anatomy";
-	 writeCells(anatomy, fullname.c_str());
+	 writeCells(cells_, anatomy.nx(), anatomy.ny(), anatomy.nz(),
+		    fullname.c_str());
       }
       
       if (verbose_)
@@ -128,7 +129,8 @@ Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
    string fullname = name.str();
    DirTestCreate(fullname.c_str());
    fullname += "/anatomy";
-   writeCells(anatomy, fullname.c_str());
+   writeCells(cells_, anatomy.nx(), anatomy.ny(), anatomy.nz(),
+	      fullname.c_str());
 }
 
 void Koradi::balanceStep()

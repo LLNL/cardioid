@@ -15,6 +15,7 @@ HEARTSRC=bigHeart.cc \
 	 AnatomyReader.cc object_cc.cc \
 	 Koradi.cc GridRouter.cc Grid3DStencil.cc writeCells.cc \
 	 DomainInfo.cc \
+	 initializeSimulate.cc \
 	 initializeAnatomy.cc assignCellsToTasks.cc getRemoteCells.cc \
 	 simulationLoop.cc \
 	 diffusionFactory.cc reactionFactory.cc \

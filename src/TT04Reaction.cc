@@ -16,8 +16,12 @@ TT04Reaction::TT04Reaction(const Anatomy& anatomy)
    ttType_[100] = 0;
    ttType_[101] = 1;
    ttType_[102] = 2;
-   
 
+   
+   IBM_tenTusscher04_endoLUT::TT04LUT_Init();
+   IBM_tenTusscher04_midLUT::TT04LUT_Init();
+   IBM_tenTusscher04_epiLUT::TT04LUT_Init();
+   
    cellModel_.reserve(nCells_);
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
@@ -28,13 +32,13 @@ TT04Reaction::TT04Reaction(const Anatomy& anatomy)
    
 }
 
-void TT04Reaction::calc(double dt, vector<double>& Vm, vector<double>& iStim)
+void TT04Reaction::calc(double dt, const vector<double>& Vm, vector<double>& dVm)
 {
-   assert(nCells_ == iStim.size());
+   assert(nCells_ == dVm.size());
    
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
-      Vm[ii] = cellModel_[ii].Calc(dt, Vm[ii], iStim[ii]);
+      dVm[ii] = cellModel_[ii].Calc(dt, Vm[ii]);
    }
 }
 

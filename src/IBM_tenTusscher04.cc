@@ -222,12 +222,12 @@ void IBM_tenTusscher04::parameterCalculate()
 };
   
                                                                                                                                         
-double IBM_tenTusscher04::Calc(double tinc,  double V,  double i_external)
+double IBM_tenTusscher04::Calc(double dt, double V)
 {
 
 
   double svolt = V*1000; //membrane voltage in mV
-  double HT = tinc*1000; //timestep in ms
+  double HT = dt*1000; //timestep in ms
   const int Vi=(int)(DivisionTab*(RangeTabhalf+svolt)+.5); //array position
 
 
@@ -355,7 +355,7 @@ double IBM_tenTusscher04::Calc(double tinc,  double V,  double i_external)
   const double I_CaL=y_TT[tt_d]*y_TT[tt_f]*y_TT[tt_fCa]*( CaL_P1  *y_TT[tt_Ca_i]+ CaL_P2  );
   const double I_NaCa=( NaCa_P1  )*y_TT[tt_Na_i]*y_TT[tt_Na_i]*y_TT[tt_Na_i]-y_TT[tt_Ca_i]*( NaCa_P2  );
   const double I_NaK=( NaK_P1  )*(y_TT[tt_Na_i]/(y_TT[tt_Na_i]+( ttps.KmNa )));
-  const double I_tot=I_Kr+I_Ks+I_K1+I_to+I_Na+I_bNa+I_CaL+I_bCa+I_NaK+I_NaCa+I_pCa+I_pK-i_external;
+  const double I_tot=I_Kr+I_Ks+I_K1+I_to+I_Na+I_bNa+I_CaL+I_bCa+I_NaK+I_NaCa+I_pCa+I_pK;
 
   //update concentrations
   const double Caisquare=y_TT[tt_Ca_i]*y_TT[tt_Ca_i];
@@ -380,7 +380,7 @@ double IBM_tenTusscher04::Calc(double tinc,  double V,  double i_external)
   y_TT[tt_Ca_i]=(sqrt(bc*bc+4*cc)-bc)/2;
   const double dNai=-(I_Na+I_bNa+3*I_NaK+3*I_NaCa)*( ttps.inverseVcFC );
   y_TT[tt_Na_i]+=HT*dNai;
-  const double dKi=-(I_to+I_Kr+I_Ks+I_K1-2*I_NaK+I_pK-i_external)*( ttps.inverseVcFC );
+  const double dKi=-(I_to+I_Kr+I_Ks+I_K1-2*I_NaK+I_pK)*( ttps.inverseVcFC );
   y_TT[tt_K_i]+=HT*dKi;
   const double FCa_INF=(1./(1.+pow((y_TT[tt_Ca_i]*3076.923076923077),8))+0.1/(1.+exp(10000*y_TT[tt_Ca_i]-5))+0.20/(1.+exp(1250*y_TT[tt_Ca_i]-0.9375))+0.23)*.684931506849;
   const double G_INF=(y_TT[tt_Ca_i]<.00035?1./(1.+pow((y_TT[tt_Ca_i]*2857.142857142857),6)):1./(1.+pow((y_TT[tt_Ca_i]*2857.142857142857),16)));
@@ -413,12 +413,9 @@ double IBM_tenTusscher04::Calc(double tinc,  double V,  double i_external)
        y_TT[tt_g]=gold;
      }  
      
-  // this is Euler integration
   const double dVm = (-I_tot);
-  V = V + (tinc * dVm);
 
-
-  return(V); // convert [mV] back to [V]      
+  return(dVm); // should be in Volts/sec
 }
 
 void IBM_tenTusscher04::Print()//ostream &tempstr, double tArg,  double V) 

@@ -9,20 +9,27 @@
 class Anatomy
 {
  public:
+
+   Anatomy()
+   : i2t_(0, 0, 0){};
+
    unsigned size() const;
    unsigned nLocal() const;
    unsigned& nLocal();
    unsigned nRemote() const;
    unsigned& nRemote();
 
-   unsigned& nx();
-   unsigned& ny();
-   unsigned& nz();
+//    unsigned nx();
+//    unsigned ny();
+//    unsigned nz();
 
-   unsigned nx() const;
-   unsigned ny() const;
-   unsigned nz() const;
+   const unsigned& nx() const;
+   const unsigned& ny() const;
+   const unsigned& nz() const;
 
+
+   void setGridSize(int nx, int ny, int nz);
+   
    double& dx();
    double& dy();
    double& dz();
@@ -46,6 +53,8 @@ class Anatomy
    double dx_, dy_, dz_;
    unsigned nLocal_;
    unsigned nRemote_;
+   IndexToTuple i2t_;
+
    std::vector<AnatomyCell> cell_; 
 
 };
@@ -56,13 +65,18 @@ inline unsigned& Anatomy::nLocal()       { return nLocal_;}
 inline unsigned  Anatomy::nRemote() const { return nRemote_;}
 inline unsigned& Anatomy::nRemote()       { return nRemote_;}
 
-inline unsigned&  Anatomy::nx() { return nx_;}
-inline unsigned&  Anatomy::ny() { return ny_;}
-inline unsigned&  Anatomy::nz() { return nz_;}
+// inline unsigned  Anatomy::nx() { return nx_;}
+// inline unsigned  Anatomy::ny() { return ny_;}
+// inline unsigned  Anatomy::nz() { return nz_;}
 
-inline unsigned  Anatomy::nx() const { return nx_;}
-inline unsigned  Anatomy::ny() const { return ny_;}
-inline unsigned  Anatomy::nz() const { return nz_;}
+inline const unsigned&  Anatomy::nx() const { return nx_;}
+inline const unsigned&  Anatomy::ny() const { return ny_;}
+inline const unsigned&  Anatomy::nz() const { return nz_;}
+
+inline void Anatomy::setGridSize(int nx, int ny, int nz)
+{
+   nx_ = nx; ny_ = ny; nz_ = nz; i2t_ = IndexToTuple(nx, ny, nz);
+}
 
 inline double&  Anatomy::dx()  { return dx_;}
 inline double&  Anatomy::dy()  { return dy_;}
@@ -79,8 +93,7 @@ inline int  Anatomy::cellType(unsigned ii) const { return cell_[ii].cellType_;}
 
 inline Tuple Anatomy::globalTuple(unsigned ii) const
 {
-   IndexToTuple i2t(nx_, ny_, nz_);
-   return i2t(cell_[ii].gid_);
+   return i2t_(cell_[ii].gid_);
 }
 
 inline       std::vector<AnatomyCell>& Anatomy::cellArray()       {return cell_;}

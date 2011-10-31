@@ -6,9 +6,8 @@
 class Diffusion
 {
  public:
-   virtual void diffusion(
-      const std::vector<double>& Vm,
-      std::vector<double>& Istim) = 0;
+   virtual void
+   calc(const std::vector<double>& Vm, std::vector<double>& dVm) = 0;
 };
 
 /** Notes:
