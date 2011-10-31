@@ -33,7 +33,7 @@ CommTable::CommTable(
       msgCount[_sendTask[ii]] += 1;
       assert(msgCount[_sendTask[ii]] == 1);
    }
-	int nRecv;
+   int nRecv;
    MPI_Reduce_scatter(msgCount, &nRecv, recvCnt, MPI_INT, MPI_SUM, _comm);
    
    delete [] recvCnt;
@@ -82,9 +82,6 @@ CommTable::~CommTable()
 
 void CommTable::execute(void* sendBufV, void* recvBufV, unsigned width)
 {
-   assert(sendBufV);
-   assert(recvBufV);
-
    char* sendBuf = (char*)sendBufV;
    char* recvBuf = (char*)recvBufV;
    
@@ -94,6 +91,7 @@ void CommTable::execute(void* sendBufV, void* recvBufV, unsigned width)
 
    for (unsigned ii=0; ii<_recvTask.size(); ++ii)
    {
+      assert(recvBuf);
       unsigned sender = _recvTask[ii];
       unsigned nItems = _recvOffset[ii+1] - _recvOffset[ii];
       unsigned len = nItems * width;
@@ -103,6 +101,7 @@ void CommTable::execute(void* sendBufV, void* recvBufV, unsigned width)
 
    for (unsigned ii=0; ii<_sendTask.size(); ++ii)
    {
+      assert(sendBuf);
       unsigned target = _sendTask[ii];
       unsigned nItems = _sendOffset[ii+1] - _sendOffset[ii];
       unsigned len = nItems * width;
@@ -119,7 +118,3 @@ unsigned CommTable::nRemote()
    return _recvOffset.back();
 }
 
-
-/* Local Variables: */
-/* tab-width: 3 */
-/* End: */
