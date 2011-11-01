@@ -222,7 +222,7 @@ void IBM_tenTusscher04::parameterCalculate()
 };
   
                                                                                                                                         
-double IBM_tenTusscher04::Calc(double dt, double V)
+double IBM_tenTusscher04::Calc(double dt, double V, double i_external)
 {
 
 
@@ -380,7 +380,7 @@ double IBM_tenTusscher04::Calc(double dt, double V)
   y_TT[tt_Ca_i]=(sqrt(bc*bc+4*cc)-bc)/2;
   const double dNai=-(I_Na+I_bNa+3*I_NaK+3*I_NaCa)*( ttps.inverseVcFC );
   y_TT[tt_Na_i]+=HT*dNai;
-  const double dKi=-(I_to+I_Kr+I_Ks+I_K1-2*I_NaK+I_pK)*( ttps.inverseVcFC );
+  const double dKi=-(I_to+I_Kr+I_Ks+I_K1-2*I_NaK+I_pK-i_external)*( ttps.inverseVcFC );
   y_TT[tt_K_i]+=HT*dKi;
   const double FCa_INF=(1./(1.+pow((y_TT[tt_Ca_i]*3076.923076923077),8))+0.1/(1.+exp(10000*y_TT[tt_Ca_i]-5))+0.20/(1.+exp(1250*y_TT[tt_Ca_i]-0.9375))+0.23)*.684931506849;
   const double G_INF=(y_TT[tt_Ca_i]<.00035?1./(1.+pow((y_TT[tt_Ca_i]*2857.142857142857),6)):1./(1.+pow((y_TT[tt_Ca_i]*2857.142857142857),16)));

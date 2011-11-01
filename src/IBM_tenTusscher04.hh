@@ -94,7 +94,7 @@ class IBM_tenTusscher04
     void parameterCalculate();
 
     void Init(int cellType);
-   double Calc(double dt, double V);
+   double Calc(double dt, double V, double iStim);
 //    void Print(ostream &tempstr, double tArg,  double V);
     void Print();
 //    void LongPrint(ostream &tempstr, double tArg,  double V);

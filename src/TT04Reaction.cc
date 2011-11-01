@@ -1,10 +1,10 @@
-#include "TT04_bbReaction.hh"
+#include "TT04Reaction.hh"
 #include "Anatomy.hh"
-#include "IBM_tenTusscher04.hh"
+#include "IBM_TT04.hh"
 
 using namespace std;
 
-TT04_bbReaction::TT04_bbReaction(const Anatomy& anatomy)
+TT04Reaction::TT04Reaction(const Anatomy& anatomy)
 : nCells_(anatomy.nLocal())
 {
    ttType_.resize(256, -1); 
@@ -18,30 +18,26 @@ TT04_bbReaction::TT04_bbReaction(const Anatomy& anatomy)
    ttType_[102] = 2;
 
    
-   IBM_tenTusscher04_endoLUT::TT04LUT_Init();
-   IBM_tenTusscher04_midLUT::TT04LUT_Init();
-   IBM_tenTusscher04_epiLUT::TT04LUT_Init();
-   
    cellModel_.reserve(nCells_);
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
       assert(anatomy.cellType(ii) >= 0 && anatomy.cellType(ii) < 256);
       int ttType = ttType_[anatomy.cellType(ii)];
-      cellModel_.push_back(IBM_tenTusscher04(NULL, ttType));
+      cellModel_.push_back(IBM_TT04(NULL, ttType));
    }
    
 }
 
-void TT04_bbReaction::calc(double dt,
-			   const vector<double>& Vm,
-			   const vector<double>& iStim,
-			   vector<double>& dVm)
+void TT04Reaction::calc(double dt,
+			const vector<double>& Vm,
+			const vector<double>& iStim,
+			vector<double>& dVm)
 {
    assert(nCells_ == dVm.size());
    
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
-      dVm[ii] = cellModel_[ii].Calc(dt, Vm[ii], iStim[ii]);
+      dVm[ii] = - cellModel_[ii].Calc(1000*dt, 1000*Vm[ii], iStim[ii]);
    }
 }
 

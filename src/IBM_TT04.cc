@@ -6,6 +6,14 @@
 IBM_TT04::IBM_TT04(char *inputEVFilename, int cellType) 
 {
 
+//    static bool tablesInitialized = false;
+//    if ( !tablesInitialized )
+//    {
+//       tablesInitialized = true;
+//       IBM_TT04_LUT::TT04LUT_Init();
+//    }
+   
+   
   y_TT04 = (double*)malloc( sizeof(double) * TT04_STATE_VARIABLES);
   
 #ifdef EULER

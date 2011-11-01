@@ -6,8 +6,10 @@
 class Reaction
 {
  public:
-   virtual void calc(
-      double dt, const std::vector<double>& Vm, std::vector<double>& dVm) = 0;
+   virtual void calc(double dt,
+		     const std::vector<double>& Vm,
+		     const std::vector<double>& iStim,
+		     std::vector<double>& dVm) = 0;
    
 };
 

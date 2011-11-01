@@ -23,6 +23,7 @@ void simulationLoop(Simulate& sim)
    vector<double> dVmDiffusion(sim.anatomy_.nLocal());
    vector<double> dVmReaction(sim.anatomy_.nLocal());
    vector<double> dVmExternal(sim.anatomy_.nLocal(), 0.0);
+   vector<double> iStim(sim.anatomy_.nLocal(), 0.0);
    
    // for now, hardcode initialization of voltage.
    // use TT04 value from BlueBeats
@@ -61,11 +62,13 @@ void simulationLoop(Simulate& sim)
 	 else
 	    dVmExternal[0] = 0;
       }
+      for (unsigned ii=0; ii<nLocal; ++ii)
+	 iStim[ii] = dVmDiffusion[ii] + dVmExternal[ii];
       
-      sim.reaction_->calc(sim.dt_, sim.VmArray_, dVmReaction);
+      sim.reaction_->calc(sim.dt_, sim.VmArray_, iStim, dVmReaction);
       for (unsigned ii=0; ii<nLocal; ++ii)
       {
-	 double dVm = dVmReaction[ii] + dVmDiffusion[ii] + dVmExternal[ii];
+	 double dVm = dVmReaction[ii] + iStim[ii];
 	 sim.VmArray_[ii] += sim.dt_*dVm;
       }
       sim.time_ += sim.dt_;
