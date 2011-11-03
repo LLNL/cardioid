@@ -98,10 +98,11 @@ int main(int argc, char *argv[])
       }
 	  
 
-      Iion = (pemIBM)->Calc(dt, (Vm), (Istim));
+      double dVExternal = -Istim;
+      double dVReaction = (pemIBM)->Calc(dt, (Vm), (Istim));
        
 //       Vm += (dt * (MinusOne_over_Cm) * (Istim + Iion)); // Eq. 1 tenTusscher et al. AJP Heart Circ Physiol 2004
-      Vm += (dt * (-1) * (Istim + Iion));               // In CellML it is just dVm/dt = (-1)*(Istim + Iion)
+      Vm += (dt *  (dVExternal + dVReaction));               // In CellML it is just dVm/dt = (-1)*(Istim + Iion)
        
       
       
