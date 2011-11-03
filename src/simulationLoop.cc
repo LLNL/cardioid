@@ -27,7 +27,7 @@ void simulationLoop(Simulate& sim)
    
    // for now, hardcode initialization of voltage.
    // use TT04 value from BlueBeats
-   sim.VmArray_.resize(sim.anatomy_.size(), -0.0862); // in Volts
+   sim.VmArray_.resize(sim.anatomy_.size(), -86.2); // in Volts
    
    sim.voltageExchange_ = new HaloExchange<double>(sim.router_->sendMap(), sim.router_->commTable());
 
@@ -62,13 +62,12 @@ void simulationLoop(Simulate& sim)
 	 else
 	    dVmExternal[0] = 0;
       }
-      for (unsigned ii=0; ii<nLocal; ++ii)
-	 iStim[ii] = dVmDiffusion[ii] + dVmExternal[ii];
+      for (unsigned ii=0; ii<nLocal; ++ii) iStim[ii] = -(dVmDiffusion[ii] + dVmExternal[ii]);
       
       sim.reaction_->calc(sim.dt_, sim.VmArray_, iStim, dVmReaction);
       for (unsigned ii=0; ii<nLocal; ++ii)
       {
-	 double dVm = dVmReaction[ii] + iStim[ii];
+	 double dVm = dVmReaction[ii] + dVmDiffusion[ii] + dVmExternal[ii] ;
 	 sim.VmArray_[ii] += sim.dt_*dVm;
       }
       sim.time_ += sim.dt_;

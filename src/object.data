@@ -6,7 +6,7 @@ simulate SIMULATE
    reaction = tenTusscher04;
    loop = 0;
    maxLoop = 50000;
-   dt = 0.02e-3;
+   dt = 0.02; //msec
    time = 0;
    printRate = 50;
    snapshotRate = 50;

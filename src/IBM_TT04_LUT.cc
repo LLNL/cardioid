@@ -1,3 +1,5 @@
+/*
+*/
 #include "IBM_TT04_LUT.hh"
 
 
@@ -42,6 +44,12 @@
      
 IBM_TT04_LUT::IBM_TT04_LUT() 
 {
+   static bool tablesInitialized = false;
+   if (! tablesInitialized )
+   {
+      tablesInitialized = true;
+      IBM_TT04_LUT::TT04LUT_Init();
+   }
 
 };
 
@@ -126,6 +134,7 @@ void IBM_TT04_LUT::TT04LUT_InitParameters()
 void IBM_TT04_LUT::TT04LUT_InitTable()
 {
 
+  printf("TableInit\n"); 
   for(double V=-RangeTabhalf+.0001; V<RangeTabhalf; V+=dDivisionTab) 
      {
        //V in mV

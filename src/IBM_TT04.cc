@@ -1,19 +1,20 @@
-/*	File: IBM_TT04.cc
+/*	File: IBM_TT04.cpp
 */
 
 #include "IBM_TT04.hh"
 
 IBM_TT04::IBM_TT04(char *inputEVFilename, int cellType) 
 {
+/*
+   static bool tablesInitialized = false;
+   if (! tablesInitialized )
+   {
+      tablesInitialized = true;
+      IBM_TT04_LUT::TT04LUT_Init();
+   }
+*/
 
-//    static bool tablesInitialized = false;
-//    if ( !tablesInitialized )
-//    {
-//       tablesInitialized = true;
-//       IBM_TT04_LUT::TT04LUT_Init();
-//    }
-   
-   
+
   y_TT04 = (double*)malloc( sizeof(double) * TT04_STATE_VARIABLES);
   
 #ifdef EULER
@@ -253,13 +254,14 @@ void IBM_TT04::Init(int cellType)
   
  
                                                                                                                                        
-//double IBM_TT04::Calc(double dt,  double Vm,  double i_stim) // i_stim in CellML = 52 [pA/pF]
 double IBM_TT04::Calc(double dt_ms,  double Vm_mV,  double i_stim) // i_stim in CellML = 52 [pA/pF]
 {
 
 //  double Vm_mV = Vm*1000; //membrane voltage in mV
 //  double dt_ms = dt*1000; //timestep in ms
-  const int Vi=(int)(DivisionTab*(RangeTabhalf+Vm_mV)+.5); //array position
+  int Vi=(int)(DivisionTab*(RangeTabhalf+Vm_mV)+.5); //array position
+  if (Vi < 0) Vi = 0; 
+  if (Vi >=  V_RESOLUTION) Vi = V_RESOLUTION-2; 
                                                                                                                                                                                                             
 
 //  printf("Vi %d; DivisionTab %d; RangeTabhalf %d; Vm_mV %lf\n", Vi, DivisionTab, RangeTabhalf, Vm_mV);
@@ -288,6 +290,7 @@ double IBM_TT04::Calc(double dt_ms,  double Vm_mV,  double i_stim) // i_stim in 
   tau_m = IBM_TT04_LUT::Get_tau_m(Vi);
   tau_h = IBM_TT04_LUT::Get_tau_h(Vi);
   tau_j = IBM_TT04_LUT::Get_tau_j(Vi);
+	//printf("%e %d %e %e %e %e %e %e\n",Vm_mV,Vi,m_inf,h_inf,j_inf,tau_m,tau_h,tau_j); 
 
 
   // L-type Ca2+ current
@@ -536,7 +539,8 @@ double IBM_TT04::Calc(double dt_ms,  double Vm_mV,  double i_stim) // i_stim in 
    
   // Eq. 3 tenTusscher et al. AJP Heart Circ Physiol 2004
   Iion = I_Na + I_K1 + I_to + I_Kr + I_Ks + I_CaL + I_NaCa + I_NaK + I_pCa + I_pK + I_bCa + I_bNa;
-  return(Iion);      
+  double dVdt = -Iion; 
+  return(dVdt);      
   
   
 }

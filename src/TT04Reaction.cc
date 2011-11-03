@@ -37,7 +37,7 @@ void TT04Reaction::calc(double dt,
    
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
-      dVm[ii] = - cellModel_[ii].Calc(1000*dt, 1000*Vm[ii], iStim[ii]);
+      dVm[ii] = cellModel_[ii].Calc(dt, Vm[ii], iStim[ii]);
    }
 }
 
