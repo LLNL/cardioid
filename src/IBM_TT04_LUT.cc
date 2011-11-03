@@ -44,13 +44,6 @@
      
 IBM_TT04_LUT::IBM_TT04_LUT() 
 {
-   static bool tablesInitialized = false;
-   if (! tablesInitialized )
-   {
-      tablesInitialized = true;
-      IBM_TT04_LUT::TT04LUT_Init();
-   }
-
 };
 
 
