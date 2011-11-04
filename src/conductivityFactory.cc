@@ -48,12 +48,12 @@ namespace
    Conductivity* scanUniformConductivity(OBJECT* obj)
    {
       UniformConductivityParms p;
-      objectGet(obj, "s11", p.sigma.a11, "0.1");
-      objectGet(obj, "s22", p.sigma.a22, "0.1");
-      objectGet(obj, "s33", p.sigma.a33, "0.1");
-      objectGet(obj, "s12", p.sigma.a12, "0.0");
-      objectGet(obj, "s13", p.sigma.a13, "0.0");
-      objectGet(obj, "s23", p.sigma.a23, "0.0");
+      objectGet(obj, "sigma11", p.sigma.a11, "0.1");
+      objectGet(obj, "sigma22", p.sigma.a22, "0.1");
+      objectGet(obj, "sigma33", p.sigma.a33, "0.1");
+      objectGet(obj, "sigma12", p.sigma.a12, "0.0");
+      objectGet(obj, "sigma13", p.sigma.a13, "0.0");
+      objectGet(obj, "sigma23", p.sigma.a23, "0.0");
       return new UniformConductivity(p);
    }
 }
