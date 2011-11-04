@@ -20,8 +20,8 @@ HEARTSRC=bigHeart.cc \
 	 simulationLoop.cc \
 	 diffusionFactory.cc reactionFactory.cc \
 	 conductivityFactory.cc \
+	 FibreConductivity.cc UniformConductivity.cc \
 	 Salheen98Diffusion.cc \
-	 FibreConductivity.cc \
 	 TT04_bbReaction.cc TT04Reaction.cc \
 	 IBM_tenTusscher04.cc IBM_tenTusscher04_endoLUT.cc \
 	 IBM_tenTusscher04_epiLUT.cc IBM_tenTusscher04_midLUT.cc \

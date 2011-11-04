@@ -9,7 +9,7 @@ calcConductivityMatrixIBT(SigmaTensorMatrix& conductivity,
 
 
 
-FibreConductivity::FibreConductivity(FibreConductivityParms& p)
+FibreConductivity::FibreConductivity(const FibreConductivityParms& p)
 : sigmaTi_(p.sigmaTi), sigmaLi_(p.sigmaLi)
 {
 }

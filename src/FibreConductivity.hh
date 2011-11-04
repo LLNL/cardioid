@@ -13,7 +13,7 @@ struct FibreConductivityParms
 class FibreConductivity : public Conductivity
 {
  public:
-   FibreConductivity(FibreConductivityParms& p);
+   FibreConductivity(const FibreConductivityParms& p);
    
    void compute(int theta, int phi, SigmaTensorMatrix& sigma);
  private:

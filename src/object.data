@@ -57,6 +57,17 @@ conductivity CONDUCTIVITY
     sigmaTi = 0.03;  // units S/m
 }
 
+uniform CONDUCTIVITY
+{
+    type = uniform;
+    sigma11 = 0.1;
+    sigma22 = 0.1;
+    sigma33 = 0.1;
+    sigma12 = 0.0;
+    sigma13 = 0.0;
+    sigma23 = 0.0;
+}
+
 tenTusscher04 REACTION
 {
     method = tenTusscher04;
