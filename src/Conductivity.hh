@@ -12,6 +12,7 @@ struct SigmaTensorMatrix
 class Conductivity
 {
  public:
+   virtual ~Conductivity(){};
    virtual void compute(int theta, int phi, SigmaTensorMatrix& sigma) = 0;
 };
 

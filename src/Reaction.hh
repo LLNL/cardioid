@@ -6,6 +6,7 @@
 class Reaction
 {
  public:
+   virtual ~Reaction(){};
    virtual void calc(double dt,
 		     const std::vector<double>& Vm,
 		     const std::vector<double>& iStim,
