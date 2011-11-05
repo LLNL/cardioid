@@ -11,7 +11,8 @@
  INCLUDE = 
  CXXFLAGS= -g -ggdb $(INCLUDE) $(DFLAGS)
  CFLAGS= --std=gnu99 -g -ggdb  $(INCLUDE) $(DFLAGS)
-# CXXFLAGS= -g -O3 $(INCLUDE) $(DFLAGS)
+ CXXFLAGS= -g -O3 $(INCLUDE) $(DFLAGS)
+ CFLAGS= --std=gnu99 -g -O3 -ggdb  $(INCLUDE) $(DFLAGS)
 
  LIBPATH = 
  LIBS =

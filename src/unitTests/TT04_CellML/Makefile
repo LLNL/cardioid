@@ -1,10 +1,15 @@
 # $Id: Makefile 7 2010-03-11 21:50:18Z richards12 $
 
-EXE = Array3d_test
+EXE = SingleCell
 
 HEART_FILES = \
-	Array3d.hh \
-
+	TT04_CellML.hh \
+	TT04_CellML_Endo.cc \
+	TT04_CellML_Endo.hh \
+	TT04_CellML_Epi.cc \
+	TT04_CellML_Epi.hh \
+	TT04_CellML_Mid.cc \
+	TT04_CellML_Mid.hh \
 
 
 

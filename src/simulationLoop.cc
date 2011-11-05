@@ -57,12 +57,13 @@ void simulationLoop(Simulate& sim)
       if (myRank == 0)
       {
 	 dVmDiffusion[0] = 0;
-	 if (sim.loop_>=100 && sim.loop_ <200)
+	 if (sim.time_>=1 && sim.time_ <2)
 	    dVmExternal[0] = 52; // in mV/msec
 	 else
 	    dVmExternal[0] = 0;
       }
-      for (unsigned ii=0; ii<nLocal; ++ii) iStim[ii] = -(dVmDiffusion[ii] + dVmExternal[ii]);
+      for (unsigned ii=0; ii<nLocal; ++ii)
+	 iStim[ii] = -(dVmDiffusion[ii] + dVmExternal[ii]);
       
       sim.reaction_->calc(sim.dt_, sim.VmArray_, iStim, dVmReaction);
       for (unsigned ii=0; ii<nLocal; ++ii)

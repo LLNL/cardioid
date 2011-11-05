@@ -3,10 +3,10 @@ simulate SIMULATE
    anatomy = pioAnatomy;
    decomposition = koradi;
    diffusion = Salheen98Fast;
-   reaction = tenTusscher04;
+   reaction = TT04_CellML;
    loop = 0;
    maxLoop = 50000;
-   dt = 0.02; //msec
+   dt = 2e-4; //msec
    time = 0;
    printRate = 50;
    snapshotRate = 50;
@@ -71,4 +71,9 @@ uniform CONDUCTIVITY
 tenTusscher04 REACTION
 {
     method = tenTusscher04;
+}
+
+TT04_CellML REACTION
+{
+    method = TT04_CellML;
 }
