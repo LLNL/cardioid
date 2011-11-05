@@ -19,14 +19,15 @@ HEARTSRC=bigHeart.cc \
 	 initializeAnatomy.cc assignCellsToTasks.cc getRemoteCells.cc \
 	 simulationLoop.cc \
 	 diffusionFactory.cc reactionFactory.cc \
-	 conductivityFactory.cc \
+	 conductivityFactory.cc stimulusFactory.cc\
 	 FibreConductivity.cc UniformConductivity.cc \
 	 Salheen98Diffusion.cc \
 	 TT04_bbReaction.cc TT04Reaction.cc TT04_CellML_Reaction.cc \
 	 IBM_tenTusscher04.cc IBM_tenTusscher04_endoLUT.cc \
 	 IBM_tenTusscher04_epiLUT.cc IBM_tenTusscher04_midLUT.cc \
 	 IBM_TT04.cc IBM_TT04_LUT.cc \
-	 TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc 
+	 TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc \
+	 TestStimulus.cc
 
 
 DDCMD_FILES = \

@@ -8,6 +8,7 @@
 #include "Simulate.hh"
 #include "Diffusion.hh"
 #include "Reaction.hh"
+#include "Stimulus.hh"
 #include "HaloExchange.hh"
 #include "GridRouter.hh"
 #include "ioUtils.h"
@@ -54,14 +55,9 @@ void simulationLoop(Simulate& sim)
       sim.diffusion_->calc(sim.VmArray_, dVmDiffusion);
       
       // code to limit or set iStimArray goes here.
-      if (myRank == 0)
-      {
-	 dVmDiffusion[0] = 0;
-	 if (sim.time_>=1 && sim.time_ <2)
-	    dVmExternal[0] = 52; // in mV/msec
-	 else
-	    dVmExternal[0] = 0;
-      }
+      for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
+	 sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion, dVmExternal);
+
       for (unsigned ii=0; ii<nLocal; ++ii)
 	 iStim[ii] = -(dVmDiffusion[ii] + dVmExternal[ii]);
       

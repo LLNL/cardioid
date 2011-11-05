@@ -11,6 +11,7 @@
 class GridRouter;
 class Diffusion;
 class Reaction;
+class Stimulus;
 template <class T> class HaloExchange;
 
 // Kitchen sink class for heart simulation.  This is probably a great
@@ -46,7 +47,7 @@ class Simulate
    Anatomy anatomy_;
    Diffusion* diffusion_;
    Reaction* reaction_; 
-   
+   std::vector<Stimulus*> stimulus_;
 };
 
 #endif

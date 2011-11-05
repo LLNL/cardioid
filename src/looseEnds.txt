@@ -51,3 +51,6 @@ the constructor is a problem.
 16.  There is way too much convertion from gids to tuples going on.
 Should think about the right time to ditch the gids and just store
 tuples.
+
+17.  We allow multiple stimulus objects, but if two objects happen to
+stimulate the same cell the last guy wins.  Is this what we want?

@@ -4,6 +4,8 @@ simulate SIMULATE
    decomposition = koradi;
    diffusion = Salheen98Fast;
    reaction = TT04_CellML;
+   stimulus = test;
+   probe = test;
    loop = 0;
    maxLoop = 50000;
    dt = 2e-4; //msec
@@ -76,4 +78,15 @@ tenTusscher04 REACTION
 TT04_CellML REACTION
 {
     method = TT04_CellML;
+}
+
+test STIMULUS
+{
+     method = test;
+     rank = 0;
+     cell = 0;
+     iStim = -52; // mV/msec
+     tStart = 1; // msec
+     tEnd = 2; // msec
+     freq = 1000; /msec
 }

@@ -6,6 +6,7 @@
 #include "assignCellsToTasks.hh"
 #include "diffusionFactory.hh"
 #include "reactionFactory.hh"
+#include "stimulusFactory.hh"
 #include "getRemoteCells.hh"
 #include "Anatomy.hh"
 
@@ -39,4 +40,9 @@ void initializeSimulate(const string& name, Simulate& sim)
    
    objectGet(obj, "reaction", nameTmp, "reaction");
    sim.reaction_ = reactionFactory(nameTmp, sim.anatomy_);
+
+   vector<string> names;
+   objectGet(obj, "stimulus", names);
+   for (unsigned ii=0; ii<names.size(); ++ii)
+      sim.stimulus_.push_back(stimulusFactory(names[ii], sim.anatomy_));
 }
