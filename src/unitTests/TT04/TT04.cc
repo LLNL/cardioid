@@ -82,9 +82,9 @@ int main(int argc, char *argv[])
 
    string method = (argv[1]);
    double stimMagnitude = atof(argv[2]);
-   int stimStart =        atof(argv[4]);
-   int stimLength =       atof(argv[4]);
-   int stimCycleLength =  atof(argv[5]);
+   double stimStart =        atof(argv[3]);
+   double stimLength =       atof(argv[4]);
+   double stimCycleLength =  atof(argv[5]);
    double tEnd =          atof(argv[6]);
    double dt =            atof(argv[7]);
    int printRate =        atoi(argv[8]);

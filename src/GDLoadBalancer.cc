@@ -252,7 +252,7 @@ void GDLoadBalancer::initialDistribution(vector<AnatomyCell>& cells, int nx, int
           int ip = pexind[jp*nx_+gpt.x];
           int peid = ip + jp*npex_ + kp*npex_*npey_;
           cells[ii].dest_ = peid;
-        
+
           assert(ip >= 0 && ip < npex_);    //ewd DEBUG
           assert(jp >= 0 && jp < npey_);    //ewd DEBUG
           assert(kp >= 0 && kp < npez_);    //ewd DEBUG
@@ -283,7 +283,7 @@ void GDLoadBalancer::balanceLoop(vector<AnatomyCell>& cells)
 void GDLoadBalancer::balanceLoop(vector<AnatomyCell>& cells, int bblock, int bthresh, int maxiter)
 {
   bool balance = false;
-  const int bprint = 10000;
+  const int bprint = 100;
   
   // need to sync up information on each process' load on all tasks
   vector<int> nloc_buf_(npegrid_,0);
@@ -615,7 +615,7 @@ void GDLoadBalancer::redistributeCells(vector<AnatomyCell>& cells)
     // compress process grid onto nTasks
     computeReducedProcGrid(nTasks_);
     if (myRank_ == 0)
-      cout << "assignCellsToTask:  nTasks < process grid size, reduced grid = " <<
+      cout << "GDLoadBalancer::redistributeCells:  reduced grid = " <<
           tnx_ << " x " << tny_ << " x " << tnz_ << " used for testing." << endl;
 
     // for testing, certain assumptions have to be fulfilled
