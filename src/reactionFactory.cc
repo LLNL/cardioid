@@ -6,6 +6,7 @@
 #include "TT04_bbReaction.hh" // TT04 implementation from BlueBeats
 #include "TT04Reaction.hh"    // new TT04 implementation from Matthias (Oct 2011)
 #include "TT04_CellML_Reaction.hh"    // TT04 implementation from CellML (Nov 2011)
+#include "TT06_CellML_Reaction.hh"    // TT06 implementation from CellML (Nov 2011)
 using namespace std;
 
 namespace
@@ -13,6 +14,7 @@ namespace
    Reaction* scanTT04_bb(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanTT04_CellML(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanTT04(OBJECT* obj, const Anatomy& anatomy);
+   Reaction* scanTT06_CellML(OBJECT* obj, const Anatomy& anatomy);
 }
 
 
@@ -29,6 +31,8 @@ Reaction* reactionFactory(const string& name, const Anatomy& anatomy)
       return scanTT04_CellML(obj, anatomy);
    else if (method == "TT04" || method == "tenTusscher04")
       return scanTT04(obj, anatomy);
+   else if (method == "TT06_CellML" || method == "tenTusscher06_CellML")
+      return scanTT06_CellML(obj, anatomy);
    
    assert(false); // reachable only due to bad input
 }
@@ -54,5 +58,13 @@ namespace
    Reaction* scanTT04(OBJECT* obj, const Anatomy& anatomy)
    {
       return new TT04Reaction(anatomy);
+   }
+}
+
+namespace
+{
+   Reaction* scanTT06_CellML(OBJECT* obj, const Anatomy& anatomy)
+   {
+      return new TT06_CellML_Reaction(anatomy);
    }
 }

@@ -10,6 +10,13 @@ HEART_FILES = \
 	TT04_CellML_Epi.hh \
 	TT04_CellML_Mid.cc \
 	TT04_CellML_Mid.hh \
+	TT06_CellML.hh \
+	TT06_CellML_Endo.cc \
+	TT06_CellML_Endo.hh \
+	TT06_CellML_Epi.cc \
+	TT06_CellML_Epi.hh \
+	TT06_CellML_Mid.cc \
+	TT06_CellML_Mid.hh \
 	IBM_TT04.cc \
 	IBM_TT04.hh \
 	IBM_TT04_LUT.cc \
@@ -28,6 +35,8 @@ HEART_FILES = \
 	TT04Reaction.hh \
 	TT04_CellML_Reaction.cc \
 	TT04_CellML_Reaction.hh \
+	TT06_CellML_Reaction.cc \
+	TT06_CellML_Reaction.hh \
 	TT04_bbReaction.cc \
 	TT04_bbReaction.hh \
 	Anatomy.hh \
