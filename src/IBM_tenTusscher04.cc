@@ -392,7 +392,7 @@ double IBM_tenTusscher04::Calc(double dt, double V, double i_external)
   y_TT[tt_j] = j_inf  -(j_inf  -y_TT[tt_j])*exp(-HT/tau_j  );
   y_TT[tt_xr1] = Xr1_inf  -(Xr1_inf  -y_TT[tt_xr1])*exp(-HT/tau_Xr1  );
   y_TT[tt_xr2] = Xr2_inf  -(Xr2_inf  -y_TT[tt_xr2])*exp(-HT/tau_Xr2  );
-  y_TT[tt_xs] = s_inf  -(s_inf  -y_TT[tt_xs])*exp(-HT/tau_Xs  );
+  y_TT[tt_xs] = Xs_inf  -(Xs_inf  -y_TT[tt_xs])*exp(-HT/tau_Xs  );
   y_TT[tt_s]= s_inf  -(s_inf  -y_TT[tt_s])*exp(-HT/tau_s  );
   y_TT[tt_r]= r_inf  -(r_inf  -y_TT[tt_r])*exp(-HT/tau_r  );
   const double fcaold=y_TT[tt_fCa];
