@@ -24,7 +24,7 @@ class PeriodicPulse
    {
       time -= (floor(time/tRepeat_) * tRepeat_);
       if (time >= tStart_ && time < tEnd_)
-	 return magnitude_;
+        return magnitude_;
       return 0;
    }
    
@@ -67,9 +67,9 @@ Reaction* factory(const string& name, const Anatomy& anatomy)
 
 int main(int argc, char *argv[])
 {
-   if (argc < 9)
+   if (argc < 10)
    {
-      cout << "program agruments:" << endl;
+      cout << "program arguments:" << endl;
       cout << "argv[1] - method name (bb, mr, cellml, cellml_tt06)" << endl;
       cout << "argv[2] - amplitude of stimulus -52.0" << endl;
       cout << "argv[3] - start time of stimulus [ms]  2 ms" << endl; 
@@ -78,7 +78,8 @@ int main(int argc, char *argv[])
       cout << "argv[6] - simulation time [ms] 1000 ms" << endl;
       cout << "argv[7] - time step [ms] 2e-4 ms"<< endl;
       cout << "argv[8] - print Vm every N time steps   50" << endl;
-      cout << "argv[9] - cell position [endo=0; mid=1; epi=2]" << endl;
+      cout << "argv[9] - equilibration time t [ms]    0" << endl;
+      cout << "argv[10] - cell position [endo=0; mid=1; epi=2]" << endl;
       return 0;
    }
 
@@ -90,8 +91,9 @@ int main(int argc, char *argv[])
    double tEnd =          atof(argv[6]);
    double dt =            atof(argv[7]);
    int printRate =        atoi(argv[8]);
-   int cellPosition =     atoi(argv[9]);
-
+   double equilTime =        atof(argv[9]);
+   int cellPosition =     atoi(argv[10]);
+   int equilTimeStep = equilTime/dt;
 
    PeriodicPulse stimFunction(
       stimMagnitude, stimStart, stimStart+stimLength, stimCycleLength);
@@ -119,23 +121,24 @@ int main(int argc, char *argv[])
    
    printf("# Starting the computation time loop\n");
    printf("# time Vm iStim dVmReaction\n");
-   printf("%f %le %le %le\n",time,Vm[0],iStim[0],dVmReaction[0]); 
+   if (equilTimeStep == 0)
+     printf("%f %le %le %le\n",time,Vm[0],iStim[0],dVmReaction[0]); 
    fflush (stdout);
 
    while (time < tEnd)
    {
       cellModel->calc(dt, Vm, iStim, dVmReaction);
       for (unsigned ii=0; ii<nLocal; ++ii)
-	 Vm[ii] += dt*(dVmReaction[ii] - iStim[ii]);
+        Vm[ii] += dt*(dVmReaction[ii] - iStim[ii]);
       ++loop;
       time = loop*dt;
       tmp = stimFunction(time);
       iStim.assign(nLocal, tmp);
       
-      if (loop%printRate == 0) 
+      if (loop%printRate == 0 && loop >= equilTimeStep) 
       {
-	 printf("%f %le %le %le\n",time,Vm[0],iStim[0],dVmReaction[0]); 
-	 fflush (stdout);
+        printf("%f %le %le %le\n",time-equilTime,Vm[0],iStim[0],dVmReaction[0]); 
+        fflush (stdout);
       }
    } // end time loop
 
