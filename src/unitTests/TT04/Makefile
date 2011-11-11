@@ -58,6 +58,8 @@ CFLAGS += -MMD
 CFLAGS += -Wall -Wextra
 CFLAGS += -std=gnu99
 
+HEART_CXX_SRCS = $(filter %.cc, $(HEART_FILES))
+HEART_C_SRCS   = $(filter %.c, $(HEART_FILES))
 
 C_SRCS = $(wildcard *.c)
 CXX_SRCS = $(wildcard *.cc)
@@ -65,7 +67,9 @@ CXX_SRCS = $(wildcard *.cc)
 
 
 OBJECTS = $(patsubst  %.c,  %.o, $(C_SRCS))
+OBJECTS += $(patsubst  %.cc,  %.o, $(HEART_C_SRCS))
 OBJECTS += $(patsubst  %.cc,  %.o, $(CXX_SRCS))
+OBJECTS += $(patsubst  %.cc,  %.o, $(HEART_CXX_SRCS))
 
 $(EXE): $(HEART_FILES) $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS)

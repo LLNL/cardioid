@@ -1,6 +1,6 @@
 #include "Array3d.hh"
 
-int main(int argc, char** argv)
+int main(int, char**)
 {
    Array3d<int> aa;
    int nx = 39;
