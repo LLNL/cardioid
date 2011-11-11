@@ -4,6 +4,8 @@ EXE = TT04
 
 HEART_FILES = \
 	TT04_CellML.hh \
+	TT04Dev.cc \
+	TT04Dev.hh \
 	TT04_CellML_Endo.cc \
 	TT04_CellML_Endo.hh \
 	TT04_CellML_Epi.cc \
@@ -33,6 +35,8 @@ HEART_FILES = \
 	Reaction.hh \
 	TT04Reaction.cc \
 	TT04Reaction.hh \
+	TT04Dev_Reaction.cc \
+	TT04Dev_Reaction.hh \
 	TT04_CellML_Reaction.cc \
 	TT04_CellML_Reaction.hh \
 	TT06_CellML_Reaction.cc \

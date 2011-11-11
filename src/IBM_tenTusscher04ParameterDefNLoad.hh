@@ -31,6 +31,8 @@ const double dDivisionTab=1.0/DivisionTab;
 
 #define TT04_STATE_VARIABLES 17
 
+//enum TTStateVariables { tt_V, tt_K_i, tt_Na_i, tt_Ca_i, tt_xr1, tt_xr2, tt_xs, tt_m, tt_h, tt_j, tt_d, tt_f, tt_fCa, tt_s, tt_r, tt_CaSR, tt_g }; //CellML order
+
 enum TTStateVariables
 {
   tt_V,

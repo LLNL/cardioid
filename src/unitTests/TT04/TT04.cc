@@ -10,6 +10,7 @@
 #include "TT04_bbReaction.hh"
 #include "TT04Reaction.hh"
 #include "TT04_CellML_Reaction.hh"
+#include "TT04Dev_Reaction.hh"
 #include "TT06_CellML_Reaction.hh"
 
 using namespace std;
@@ -58,6 +59,7 @@ Reaction* factory(const string& name, const Anatomy& anatomy)
    if (name == "bb")          return new TT04_bbReaction(anatomy);
    if (name == "mr")          return new TT04Reaction(anatomy);
    if (name == "cellml")      return new TT04_CellML_Reaction(anatomy);
+   if (name == "tt04dev")    return new TT04Dev_Reaction(anatomy);
    if (name == "cellml_tt06") return new TT06_CellML_Reaction(anatomy);
    assert(false);
    return 0;
@@ -70,7 +72,7 @@ int main(int argc, char *argv[])
    if (argc < 10)
    {
       cout << "program arguments:" << endl;
-      cout << "argv[1] - method name (bb, mr, cellml, cellml_tt06)" << endl;
+      cout << "argv[1] - method name (bb, mr, tt04dev, cellml, cellml_tt06)" << endl;
       cout << "argv[2] - amplitude of stimulus -52.0" << endl;
       cout << "argv[3] - start time of stimulus [ms]  2 ms" << endl; 
       cout << "argv[4] - length of stimulus [ms] 1 ms" << endl;
