@@ -9,7 +9,7 @@ include $(ARCH).mk
 #------------------------------------------------------------------------------
 #
 
-HEARTSRC=bigHeart.cc \
+HEARTSRC=cardioid.cc \
 	 Vector.cc \
          GDLoadBalancer.cc CommTable.cc \
 	 AnatomyReader.cc object_cc.cc \
@@ -83,7 +83,7 @@ HEARTOBJS += $(DDCMDSRC:%.c=$(OBJDIR)/%.o)
 
 OBJDIR = objs-$(ARCH)
 INSTALLDIR = ../bin
-EXENAME = bigHeart-$(ARCH)
+EXENAME = cardioid-$(ARCH)
 CXXFLAGS += -DARCH='"$(ARCH)"'
 
 DEFAULT: $(DDCMD_FILES) makedirs $(EXENAME)
