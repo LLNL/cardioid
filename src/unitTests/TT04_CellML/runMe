@@ -1,7 +1,0 @@
-#!/bin/sh
-
-./SingleCell xx -52 5000 5000000 1000 0.0002 1000 0 > endo
-./SingleCell xx -52 5000 5000000 1000 0.0002 1000 1 > mid
-./SingleCell xx -52 5000 5000000 1000 0.0002 1000 2 > epi
-
-./SingleCell xx -52 5000 5000000 10000 0.0002 1000 0 > endo_multi
