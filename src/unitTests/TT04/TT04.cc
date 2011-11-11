@@ -8,7 +8,6 @@
 #include "Anatomy.hh"
 #include "Reaction.hh"
 #include "TT04_bbReaction.hh"
-#include "TT04Reaction.hh"
 #include "TT04_CellML_Reaction.hh"
 #include "TT04Dev_Reaction.hh"
 #include "TT06_CellML_Reaction.hh"
@@ -57,7 +56,6 @@ Anatomy buildAnatomy(int cellType)
 Reaction* factory(const string& name, const Anatomy& anatomy)
 {
    if (name == "bb")          return new TT04_bbReaction(anatomy);
-   if (name == "mr")          return new TT04Reaction(anatomy);
    if (name == "cellml")      return new TT04_CellML_Reaction(anatomy);
    if (name == "tt04dev")    return new TT04Dev_Reaction(anatomy);
    if (name == "cellml_tt06") return new TT06_CellML_Reaction(anatomy);
@@ -72,7 +70,7 @@ int main(int argc, char *argv[])
    if (argc < 10)
    {
       cout << "program arguments:" << endl;
-      cout << "argv[1] - method name (bb, mr, tt04dev, cellml, cellml_tt06)" << endl;
+      cout << "argv[1] - method name (bb, tt04dev, cellml, cellml_tt06)" << endl;
       cout << "argv[2] - amplitude of stimulus -52.0" << endl;
       cout << "argv[3] - start time of stimulus [ms]  2 ms" << endl; 
       cout << "argv[4] - length of stimulus [ms] 1 ms" << endl;
@@ -86,16 +84,17 @@ int main(int argc, char *argv[])
    }
 
    string method = (argv[1]);
-   double stimMagnitude = atof(argv[2]);
+   double stimMagnitude =    atof(argv[2]);
    double stimStart =        atof(argv[3]);
    double stimLength =       atof(argv[4]);
    double stimCycleLength =  atof(argv[5]);
-   double tEnd =          atof(argv[6]);
-   double dt =            atof(argv[7]);
-   int printRate =        atoi(argv[8]);
+   double tEnd =             atof(argv[6]);
+   double dt =               atof(argv[7]);
+   int printRate =           atoi(argv[8]);
    double equilTime =        atof(argv[9]);
-   int cellPosition =     atoi(argv[10]);
-   int equilTimeStep = equilTime/dt;
+   int cellPosition =        atoi(argv[10]);
+
+   int firstStepToPrint = equilTime/dt;
 
    PeriodicPulse stimFunction(
       stimMagnitude, stimStart, stimStart+stimLength, stimCycleLength);
@@ -123,7 +122,7 @@ int main(int argc, char *argv[])
    
    printf("# Starting the computation time loop\n");
    printf("# time Vm iStim dVmReaction\n");
-   if (equilTimeStep == 0)
+   if (firstStepToPrint == 0)
      printf("%f %le %le %le\n",time,Vm[0],iStim[0],dVmReaction[0]); 
    fflush (stdout);
 
@@ -137,7 +136,7 @@ int main(int argc, char *argv[])
       tmp = stimFunction(time);
       iStim.assign(nLocal, tmp);
       
-      if (loop%printRate == 0 && loop >= equilTimeStep) 
+      if (loop%printRate == 0 && loop >= firstStepToPrint) 
       {
         printf("%f %le %le %le\n",time-equilTime,Vm[0],iStim[0],dVmReaction[0]); 
         fflush (stdout);

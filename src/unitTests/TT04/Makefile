@@ -1,5 +1,7 @@
 # $Id: Makefile 7 2010-03-11 21:50:18Z richards12 $
 
+.PHONY: DEFAULT clean distclean 
+
 EXE = TT04
 
 HEART_FILES = \
@@ -19,10 +21,6 @@ HEART_FILES = \
 	TT06_CellML_Epi.hh \
 	TT06_CellML_Mid.cc \
 	TT06_CellML_Mid.hh \
-	IBM_TT04.cc \
-	IBM_TT04.hh \
-	IBM_TT04_LUT.cc \
-	IBM_TT04_LUT.hh \
 	IBM_tenTusscher04.cc \
 	IBM_tenTusscher04.hh \
 	IBM_tenTusscher04ParameterDefNLoad.hh \
@@ -33,8 +31,6 @@ HEART_FILES = \
 	IBM_tenTusscher04_midLUT.cc \
 	IBM_tenTusscher04_midLUT.hh \
 	Reaction.hh \
-	TT04Reaction.cc \
-	TT04Reaction.hh \
 	TT04Dev_Reaction.cc \
 	TT04Dev_Reaction.hh \
 	TT04_CellML_Reaction.cc \
