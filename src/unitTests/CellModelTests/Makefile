@@ -2,7 +2,7 @@
 
 .PHONY: DEFAULT clean distclean 
 
-EXE = TT04
+EXE = OneCell
 
 HEART_FILES = \
 	TT04_CellML.hh \
