@@ -135,4 +135,4 @@ distclean: clean
 	rm -rf $(OBJDIR)
 	rm -f .depend*
 
-include .depend_$(ARCH)
+-include .depend_$(ARCH)

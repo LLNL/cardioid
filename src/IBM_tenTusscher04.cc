@@ -5,7 +5,7 @@
 
 #include "IBM_tenTusscher04.hh"
 
-IBM_tenTusscher04::IBM_tenTusscher04(char *inputEVFilename, int cellType) 
+IBM_tenTusscher04::IBM_tenTusscher04(char */*inputEVFilename*/, int cellType) 
 {
 
   y_TT = (double*)malloc( sizeof(double) * TT04_STATE_VARIABLES);
@@ -69,7 +69,7 @@ IBM_tenTusscher04::~IBM_tenTusscher04()
 };
 
 
-inline unsigned char IBM_tenTusscher04::getSpeed( double adVm) 
+inline unsigned char IBM_tenTusscher04::getSpeed( double /*adVm*/) 
 {
   return (unsigned char) 5;
 };

@@ -242,7 +242,7 @@ namespace
  * RATES[1] is d/dt K_i in component potassium_dynamics (millimolar).
  */
 void
-initConsts(double* CONSTANTS, double* RATES, double *STATES)
+initConsts(double* CONSTANTS, double* /*RATES*/, double *STATES)
 {
 STATES[0] = -85.23;
 CONSTANTS[0] = 8314.472;
@@ -318,7 +318,7 @@ CONSTANTS[51] = 0.001094;
 CONSTANTS[52] = 0.00005468;
 }
 void
-computeRates(double VOI, double* CONSTANTS, double* RATES, double* STATES, double* ALGEBRAIC)
+computeRates(double /*VOI*/, double* CONSTANTS, double* RATES, double* STATES, double* ALGEBRAIC)
 {
 ALGEBRAIC[7] = 1.00000/(1.00000+(exp(((STATES[0]+20.0000)/7.00000))));
 ALGEBRAIC[20] =  1102.50*(exp((- (pow((STATES[0]+27.0000), 2.00000))/225.000)))+200.000/(1.00000+(exp(((13.0000 - STATES[0])/10.0000))))+180.000/(1.00000+(exp(((STATES[0]+30.0000)/10.0000))))+20.0000;

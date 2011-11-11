@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
    double equilTime =        atof(argv[9]);
    int cellPosition =        atoi(argv[10]);
 
-   int firstStepToPrint = equilTime/dt;
+   unsigned firstStepToPrint = unsigned(equilTime/dt);
 
    PeriodicPulse stimFunction(
       stimMagnitude, stimStart, stimStart+stimLength, stimCycleLength);

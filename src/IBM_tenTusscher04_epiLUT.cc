@@ -65,7 +65,7 @@ void IBM_tenTusscher04_epiLUT::TT04LUT_Init()
 
 void IBM_tenTusscher04_epiLUT::TT04LUT_InitParameters() 
 {
-  int cellType = 0;
+// unused  int cellType = 0;
 
   TT04LUT_ttps.Rgas    = 8314.472;
   TT04LUT_ttps.Tx      = 310.0;

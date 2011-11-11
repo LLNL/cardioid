@@ -337,8 +337,8 @@ void Koradi::printStatistics()
 {
    computeRadii();
 
-   int maxLoad = *max_element(load_.begin(), load_.end());
-   int minLoad = *min_element(load_.begin(), load_.end());
+   double maxLoad = *max_element(load_.begin(), load_.end());
+   double minLoad = *min_element(load_.begin(), load_.end());
    double maxRadius = *max_element(radii_.begin(), radii_.end());
    double minRadius = *min_element(radii_.begin(), radii_.end());
    double maxBias = *max_element(bias_.begin(), bias_.end());

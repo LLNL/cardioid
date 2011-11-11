@@ -136,7 +136,9 @@ typedef struct
 
 } TTParameterStruct;
 
-static int loadTTParameter(TTParameterStruct &parameter, double* &y, char *parameterFile)
+#if 0
+// unused function
+static int loadTTParameter(TTParameterStruct &parameter, double* &/*y*/, char *parameterFile)
 {
 
   FILE *inputFP;
@@ -145,7 +147,7 @@ static int loadTTParameter(TTParameterStruct &parameter, double* &y, char *param
   char *ptmpstring = NULL;
   int numparameters = 0;
   int nparam = 0;
-  bool readall = false;      
+//  bool readall = false;      
 
   // setting default values
 
@@ -225,3 +227,6 @@ static int loadTTParameter(TTParameterStruct &parameter, double* &y, char *param
   
   return(0);
 }
+#endif
+
+
