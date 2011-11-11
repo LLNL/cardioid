@@ -64,12 +64,13 @@ HEART_C_SRCS   = $(filter %.c, $(HEART_FILES))
 C_SRCS = $(wildcard *.c)
 CXX_SRCS = $(wildcard *.cc)
 
+ALL_C_SRCS   = $(sort $(HEART_C_SRCS)   $(C_SRCS))
+ALL_CXX_SRCS = $(sort $(HEART_CXX_SRCS) $(CXX_SRCS))
+
+OBJECTS = $(patsubst  %.c,  %.o, $(ALL_C_SRCS))
+OBJECTS += $(patsubst  %.cc,  %.o, $(ALL_CXX_SRCS))
 
 
-OBJECTS = $(patsubst  %.c,  %.o, $(C_SRCS))
-OBJECTS += $(patsubst  %.cc,  %.o, $(HEART_C_SRCS))
-OBJECTS += $(patsubst  %.cc,  %.o, $(CXX_SRCS))
-OBJECTS += $(patsubst  %.cc,  %.o, $(HEART_CXX_SRCS))
 
 $(EXE): $(HEART_FILES) $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS)
