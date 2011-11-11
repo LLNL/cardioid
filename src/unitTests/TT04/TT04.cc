@@ -55,11 +55,11 @@ Anatomy buildAnatomy(int cellType)
 
 Reaction* factory(const string& name, const Anatomy& anatomy)
 {
-   if (name == "bb")          return new TT04_bbReaction(anatomy);
-   if (name == "cellml")      return new TT04_CellML_Reaction(anatomy);
-   if (name == "cellml_tt04") return new TT04_CellML_Reaction(anatomy);
-   if (name == "tt04dev")     return new TT04Dev_Reaction(anatomy);
-   if (name == "cellml_tt06") return new TT06_CellML_Reaction(anatomy);
+   if (name == "bb_tt04")        return new TT04_bbReaction(anatomy);
+   if (name == "cellml_tt04")    return new TT04_CellML_Reaction(anatomy, TT04_CellML_Reaction::rushLarson);
+   if (name == "cellml_tt04_fe") return new TT04_CellML_Reaction(anatomy, TT04_CellML_Reaction::forwardEuler);
+   if (name == "cellml_tt06_fe") return new TT06_CellML_Reaction(anatomy);
+   if (name == "tt04dev")        return new TT04Dev_Reaction(anatomy);
    assert(false);
    return 0;
 }
@@ -71,16 +71,24 @@ int main(int argc, char *argv[])
    if (argc < 10)
    {
       cout << "program arguments:" << endl;
-      cout << "argv[1] - method name (bb, tt04dev, cellml_tt04, cellml_tt06)" << endl;
+      cout << "argv[1] - method name (see list below)" << endl;
       cout << "argv[2] - amplitude of stimulus -52.0" << endl;
       cout << "argv[3] - start time of stimulus [ms]  2 ms" << endl; 
       cout << "argv[4] - length of stimulus [ms] 1 ms" << endl;
       cout << "argv[5] - frequency of stimulus [ms] 1000 ms" << endl;
       cout << "argv[6] - simulation time [ms] 1000 ms" << endl;
-      cout << "argv[7] - time step [ms] 2e-4 ms"<< endl;
+      cout << "argv[7] - time step [ms] 2e-2 ms"<< endl;
       cout << "argv[8] - print Vm every N time steps   50" << endl;
       cout << "argv[9] - equilibration time t [ms]    0" << endl;
-      cout << "argv[10] - cell position [endo=0; mid=1; epi=2]" << endl;
+      cout << "argv[10] - cell position [endo=0; mid=1; epi=2]" << endl<<endl;
+      cout << "Supported cell models:" <<endl;
+      cout << "----------------------" <<endl;
+      cout << "   bb_tt04          TT04 from BlueBeats" << endl;
+      cout << "   cellml_tt04      TT04 from CellML.  Rush-Larson integrator" << endl;
+      cout << "   cellml_tt04_fe   TT04 from CellML.  Forward Euler integrator" << endl;
+      cout << "   cellml_tt06_fe   TT06 from CellML.  Forward Euler integrator" << endl;
+      cout << "   tt04dev          Developmental version of TT04" << endl;
+      
       return 0;
    }
 

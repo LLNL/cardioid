@@ -24,20 +24,10 @@ TT04Dev_Reaction::TT04Dev_Reaction(const Anatomy& anatomy)
    {
       assert(anatomy.cellType(ii) >= 0 && anatomy.cellType(ii) < 256);
       int cellType = ttType_[anatomy.cellType(ii)];
-      cellModel_.push_back(new TT04Dev(cellType));
+      cellModel_.push_back(TT04Dev(cellType));
    }
    
 }
-
-TT04Dev_Reaction::~TT04Dev_Reaction()
-{
-   for (unsigned ii=0; ii<cellModel_.size(); ++ii)
-   {
-      delete cellModel_[ii];
-   }
-}
-
-
 void TT04Dev_Reaction::calc(double dt,
 				const vector<double>& Vm,
 				const vector<double>& iStim,
@@ -47,7 +37,7 @@ void TT04Dev_Reaction::calc(double dt,
    
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
-      dVm[ii] = cellModel_[ii]->calc(dt, Vm[ii], iStim[ii]);
+      dVm[ii] = cellModel_[ii].calc(dt, Vm[ii], iStim[ii]);
    }
 }
 

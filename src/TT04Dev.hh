@@ -1,9 +1,7 @@
 #ifndef TT04DEV_HH
 #define TT04DEV_HH
 
-#include "TT04_CellML.hh"
-
-class TT04Dev : public TT04_CellML
+class TT04Dev
 {
  public:
    TT04Dev(int);

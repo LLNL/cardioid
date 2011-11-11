@@ -72,12 +72,13 @@ uniform CONDUCTIVITY
 
 tenTusscher04 REACTION
 {
-    method = tenTusscher04;
+    method = TT04_bb;
 }
 
 TT04_CellML REACTION
 {
     method = TT04_CellML;
+    integrator = rushLarson;
 }
 
 test STIMULUS

@@ -3,18 +3,13 @@
 
 #include "Reaction.hh"
 class Anatomy;
-class TT04_CellML;
+class TT04Dev;
 
 
 class TT04Dev_Reaction : public Reaction
 {
  public:
    TT04Dev_Reaction(const Anatomy& anatomy);
-   // copy constructor and assignment operator intentionally
-   // left unimplemented.
-   TT04Dev_Reaction(const TT04Dev_Reaction&);
-   TT04Dev_Reaction& operator=(const TT04Dev_Reaction&);
-   ~TT04Dev_Reaction();
    
    void calc(double dt,
 	     const std::vector<double>& Vm,
@@ -23,8 +18,8 @@ class TT04Dev_Reaction : public Reaction
 
  private:
    unsigned nCells_;
-   std::vector<int>          ttType_; // maps cellType to ttType
-   std::vector<TT04_CellML*> cellModel_;
+   std::vector<int>     ttType_; // maps cellType to ttType
+   std::vector<TT04Dev> cellModel_;
 
 };
 

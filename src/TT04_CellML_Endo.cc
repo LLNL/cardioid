@@ -25,23 +25,17 @@ TT04_CellML_Endo::TT04_CellML_Endo()
       double dummy[17];
       initConsts(constants_, dummy, defaultState_);
    }
-   for (unsigned ii=0; ii<17; ++ii)
-      states_[ii] = defaultState_[ii];
 }
 
 /** returns dVm/dt for the reaction part only. */
-double TT04_CellML_Endo::calc(double dt, double Vm, double iStim)
+double TT04_CellML_Endo::calc(double Vm, double iStim,
+			      double states[17], double rates[17],
+			      double algebraic[67])
 {
    double dummy  = 0.;
-   double rates[17];
-   double algebraic[67];
    algebraic[0] = iStim;
-   states_[0] = Vm;
-   computeRates(dummy, constants_, rates, states_, algebraic);
-
-   for (unsigned ii=1; ii<17; ++ii)
-      states_[ii] += rates[ii] * dt;
-   
+   states[0] = Vm;
+   computeRates(dummy, constants_, rates, states, algebraic);
    return rates[0]+iStim;
 }
 

@@ -45,7 +45,14 @@ namespace
 {
    Reaction* scanTT04_CellML(OBJECT* obj, const Anatomy& anatomy)
    {
-      return new TT04_CellML_Reaction(anatomy);
+      TT04_CellML_Reaction::IntegratorType integrator;
+      string tmp;
+      objectGet(obj, "integrator", tmp, "rushLarson");
+      if      (tmp == "rushLarson")   integrator = TT04_CellML_Reaction::rushLarson;
+      else if (tmp == "forwardEuler") integrator = TT04_CellML_Reaction::forwardEuler;
+      else    assert(false);    
+      
+      return new TT04_CellML_Reaction(anatomy, integrator);
    }
 }
 
