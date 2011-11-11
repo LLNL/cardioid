@@ -22,6 +22,7 @@ HEARTSRC=bigHeart.cc \
 	 conductivityFactory.cc stimulusFactory.cc\
 	 FibreConductivity.cc UniformConductivity.cc \
 	 Salheen98Diffusion.cc \
+	 ReactionFHN.cc \
 	 TT04_bbReaction.cc TT04_CellML_Reaction.cc \
 	 TT06_CellML_Reaction.cc \
 	 IBM_tenTusscher04.cc IBM_tenTusscher04_endoLUT.cc \

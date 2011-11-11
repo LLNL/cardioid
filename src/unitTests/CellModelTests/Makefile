@@ -39,6 +39,8 @@ HEART_FILES = \
 	TT06_CellML_Reaction.hh \
 	TT04_bbReaction.cc \
 	TT04_bbReaction.hh \
+	ReactionFHN.cc \
+	ReactionFHN.hh \
 	Anatomy.hh \
 	AnatomyCell.hh \
 	Tuple.hh \

@@ -11,6 +11,7 @@
 #include "TT04_CellML_Reaction.hh"
 #include "TT04Dev_Reaction.hh"
 #include "TT06_CellML_Reaction.hh"
+#include "ReactionFHN.hh"
 
 using namespace std;
 
@@ -59,6 +60,7 @@ Reaction* factory(const string& name, const Anatomy& anatomy)
    if (name == "cellml_tt04")    return new TT04_CellML_Reaction(anatomy, TT04_CellML_Reaction::rushLarson);
    if (name == "cellml_tt04_fe") return new TT04_CellML_Reaction(anatomy, TT04_CellML_Reaction::forwardEuler);
    if (name == "cellml_tt06_fe") return new TT06_CellML_Reaction(anatomy);
+   if (name == "fhn")            return new ReactionFHN(anatomy);
    if (name == "tt04dev")        return new TT04Dev_Reaction(anatomy);
    assert(false);
    return 0;
@@ -87,6 +89,7 @@ int main(int argc, char *argv[])
       cout << "   cellml_tt04      TT04 from CellML.  Rush-Larson integrator" << endl;
       cout << "   cellml_tt04_fe   TT04 from CellML.  Forward Euler integrator" << endl;
       cout << "   cellml_tt06_fe   TT06 from CellML.  Forward Euler integrator" << endl;
+      cout << "   fhn              FitzHugh-Nagumo" << endl;
       cout << "   tt04dev          Developmental version of TT04" << endl;
       
       return 0;
@@ -113,7 +116,7 @@ int main(int argc, char *argv[])
      
    cout << "# method: " << method
 	<< "\tstimMagnitude " << stimMagnitude
-	<< "\tstimStart " << stimLength
+	<< "\tstimStart " << stimStart
 	<< "\tstimLength " << stimLength
 	<< "\tstimCycleLength " << stimCycleLength
 	<< "\ttend " << tEnd
