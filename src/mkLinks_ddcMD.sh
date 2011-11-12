@@ -2,13 +2,13 @@
 
 # $Id$
 
-searchPath_ddcMD="$DDCMD_SRC ../../ddcMD/src $HOME/src/ddcMD/src $HOME/ddcMD/src"
+searchPath_ddcMD="$DDCMD_SRC $HOME/src/ddcMD/src $HOME/ddcMD/src ddcMD_files/src"
 
 files_ddcMD="$@"
 
 for dir in $searchPath_ddcMD
 do
-  if [ -r $dir/ddcMD.c ]
+  if [ -r $dir/object.c ]
   then
     ddcPath=$dir
     break
