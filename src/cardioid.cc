@@ -18,7 +18,11 @@
 
 using namespace std;
 
-void parseCommandLineAndReadInputFile(int argc, char** argv, int rank);
+namespace
+{
+   void parseCommandLineAndReadInputFile(int argc, char** argv, int rank);
+   void printBanner();
+}
 
 
 
@@ -33,6 +37,7 @@ int main(int argc, char** argv)
    MPI_Comm_rank(MPI_COMM_WORLD, &mype);  
    heap_start(100);
 
+   printBanner();
    parseCommandLineAndReadInputFile(argc, argv, mype);
    
    Simulate sim;
@@ -57,6 +62,8 @@ int main(int argc, char** argv)
 }
 
 
+namespace
+{
 void parseCommandLineAndReadInputFile(int argc, char** argv, int rank)
 {
    // get input file name from command line argument
@@ -79,4 +86,17 @@ void parseCommandLineAndReadInputFile(int argc, char** argv, int rank)
    object_compilefile(inputfile.c_str());
    
 
+}
+}
+
+
+namespace 
+{
+void printBanner()
+{
+   cout <<
+      "Cardioid v1.0\n"
+      "Unclassified/Code in development Distribution\n"
+      "LLNL-CODE-508771\n\n";
+}
 }
