@@ -2,7 +2,7 @@
 
 .PHONY: DEFAULT clean distclean 
 
-EXE = OneCell
+EXE = DRPTest
 DEFAULT: first
 
 HEART_FILES = \
