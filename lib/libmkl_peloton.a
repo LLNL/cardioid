@@ -1,0 +1,1 @@
+GROUP ( /usr/local/tools/mkl-10.0.1.014/lib/libmkl_intel_lp64.a /usr/local/tools/mkl-10.0.1.014/lib/libmkl_intel_thread.a /usr/local/tools/mkl-10.0.1.014/lib/libmkl_core.a)
