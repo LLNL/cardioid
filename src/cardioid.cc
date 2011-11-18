@@ -37,7 +37,8 @@ int main(int argc, char** argv)
    MPI_Comm_rank(MPI_COMM_WORLD, &mype);  
    heap_start(100);
 
-   printBanner();
+   if (mype == 0)
+      printBanner();
    parseCommandLineAndReadInputFile(argc, argv, mype);
    
    Simulate sim;
