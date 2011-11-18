@@ -89,5 +89,5 @@ test STIMULUS
      iStim = -52; // mV/msec
      tStart = 1; // msec
      tEnd = 2; // msec
-     freq = 1000; /msec
+     freq = 1000; // msec
 }
