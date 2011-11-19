@@ -62,9 +62,12 @@ PointListSensor::~PointListSensor()
 
 void PointListSensor::print(double time, std::vector<double>& Vm)
 {
-  for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
+  if (time >= startTime_ && (endTime_ > 0.0 && time <= endTime_))
   {
-    int ind = sensorind_[ii];
-    (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << Vm[ind] << endl;
+    for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
+    {
+      int ind = sensorind_[ii];
+      (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << Vm[ind] << endl;
+    }
   }
 }
