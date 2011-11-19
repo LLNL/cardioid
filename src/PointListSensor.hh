@@ -14,7 +14,7 @@ struct PointListSensorParms
   double startTime;
   double endTime;
   std::string filebase;
-  int printRate;
+  unsigned printRate;
 };
 
 class PointListSensor : public Sensor
@@ -22,15 +22,17 @@ class PointListSensor : public Sensor
  public:
    PointListSensor(const PointListSensorParms& p, const Anatomy& anatomy);
    ~PointListSensor();
-   void print();
-   
+   void print(double time, std::vector<double>& Vm);
+   unsigned printRate(void) { return printRate_; };
+    
  private:
-   std::vector<unsigned> pointlist_loc_;
+   std::vector<unsigned> pointlist_loc_;  // grid gids owned by this task
+   std::vector<unsigned> sensorind_;      // corresponding local array index 
    std::vector<std::ofstream*> fout_loc_;
    double startTime_;
    double endTime_;
    std::string filebase_;
-   int printRate_;
+   unsigned printRate_;
 };
 
 #endif

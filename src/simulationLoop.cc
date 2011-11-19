@@ -9,6 +9,7 @@
 #include "Diffusion.hh"
 #include "Reaction.hh"
 #include "Stimulus.hh"
+#include "Sensor.hh"
 #include "HaloExchange.hh"
 #include "GridRouter.hh"
 #include "ioUtils.h"
@@ -61,6 +62,7 @@ void simulationLoop(Simulate& sim)
     for (unsigned ii=0; ii<nLocal; ++ii)
       iStim[ii] = -(dVmDiffusion[ii] + dVmExternal[ii]);
       
+    // REACTION
     sim.reaction_->calc(sim.dt_, sim.VmArray_, iStim, dVmReaction);
     for (unsigned ii=0; ii<nLocal; ++ii)
     {
@@ -70,7 +72,12 @@ void simulationLoop(Simulate& sim)
     sim.time_ += sim.dt_;
     ++sim.loop_;
 
-
+    // print output to file
+    for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
+      if (sim.loop_ % sim.sensor_[ii]->printRate() == 0)
+        sim.sensor_[ii]->print(sim.time_,sim.VmArray_);
+    
+    /*
     if ( (sim.loop_ % sim.printRate_ == 0) && myRank == 0)
     {
       cout << setw(8) << sim.loop_ <<" "
@@ -80,7 +87,8 @@ void simulationLoop(Simulate& sim)
            << setw(12) << dVmDiffusion[0] << " "
            << setw(12) << dVmExternal[0]  << endl;
     }
-
+    */
+    
     if (sim.loop_ % sim.snapshotRate_ == 0)
     {
       stringstream name;

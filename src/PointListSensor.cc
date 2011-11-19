@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cassert>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 
 using namespace std;
@@ -25,7 +26,7 @@ PointListSensor::PointListSensor(const PointListSensorParms& p, const Anatomy& a
       if (anatomy.gid(jj) == gid)
       {        
         pointlist_loc_.push_back(gid);
-
+        sensorind_.push_back(jj);
         ostringstream ossnum;
         ossnum.width(5);
         ossnum.fill('0');
@@ -44,6 +45,7 @@ PointListSensor::PointListSensor(const PointListSensorParms& p, const Anatomy& a
       ofstream* fout_ii = new ofstream;
       fout_loc_.push_back(fout_ii);
       fout_loc_[ii]->open(outfiles_loc[ii].c_str(),ofstream::out);
+      fout_loc_[ii]->setf(ios::scientific,ios::floatfield);
       (*fout_loc_[ii]) << "#  time   V_m   for grid point " << pointlist_loc_[ii] << endl;
     }
   }
@@ -57,6 +59,12 @@ PointListSensor::~PointListSensor()
     delete fout_loc_[ii];
   }
 }
-void PointListSensor::print()
+
+void PointListSensor::print(double time, std::vector<double>& Vm)
 {
+  for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
+  {
+    int ind = sensorind_[ii];
+    (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << Vm[ind] << endl;
+  }
 }
