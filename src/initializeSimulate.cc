@@ -7,6 +7,7 @@
 #include "diffusionFactory.hh"
 #include "reactionFactory.hh"
 #include "stimulusFactory.hh"
+#include "sensorFactory.hh"
 #include "getRemoteCells.hh"
 #include "Anatomy.hh"
 
@@ -45,4 +46,10 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "stimulus", names);
    for (unsigned ii=0; ii<names.size(); ++ii)
       sim.stimulus_.push_back(stimulusFactory(names[ii], sim.anatomy_));
+
+   names.clear();
+   objectGet(obj, "sensor", names);
+   for (unsigned ii=0; ii<names.size(); ++ii)
+     sim.sensor_.push_back(sensorFactory(names[ii], sim.anatomy_));
+
 }

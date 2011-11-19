@@ -38,7 +38,7 @@ int main(int argc, char** argv)
    heap_start(100);
 
    if (mype == 0)
-      printBanner();
+     printBanner();
    parseCommandLineAndReadInputFile(argc, argv, mype);
    
    Simulate sim;

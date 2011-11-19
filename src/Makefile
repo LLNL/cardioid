@@ -19,7 +19,7 @@ HEARTSRC=cardioid.cc \
 	 initializeAnatomy.cc assignCellsToTasks.cc getRemoteCells.cc \
 	 simulationLoop.cc \
 	 diffusionFactory.cc reactionFactory.cc \
-	 conductivityFactory.cc stimulusFactory.cc\
+	 conductivityFactory.cc stimulusFactory.cc sensorFactory.cc \
 	 FibreConductivity.cc UniformConductivity.cc \
 	 Salheen98Diffusion.cc \
 	 ReactionFHN.cc \
@@ -29,7 +29,7 @@ HEARTSRC=cardioid.cc \
 	 IBM_tenTusscher04_epiLUT.cc IBM_tenTusscher04_midLUT.cc \
 	 TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc \
 	 TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc \
-	 TestStimulus.cc
+	 TestStimulus.cc PointListSensor.cc 
 
 
 DDCMD_FILES = \
