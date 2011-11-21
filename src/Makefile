@@ -29,7 +29,7 @@ HEARTSRC=cardioid.cc \
 	 IBM_tenTusscher04_epiLUT.cc IBM_tenTusscher04_midLUT.cc \
 	 TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc \
 	 TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc \
-	 TestStimulus.cc PointListSensor.cc 
+	 TestStimulus.cc PointStimulus.cc PointListSensor.cc 
 
 
 DDCMD_FILES = \
