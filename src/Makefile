@@ -20,7 +20,7 @@ HEARTSRC=cardioid.cc \
 	 simulationLoop.cc \
 	 diffusionFactory.cc reactionFactory.cc \
 	 conductivityFactory.cc stimulusFactory.cc sensorFactory.cc \
-	 FibreConductivity.cc UniformConductivity.cc \
+	 FibreConductivity.cc UniformConductivity.cc JHUConductivity.cc\
 	 Salheen98Diffusion.cc \
 	 ReactionFHN.cc \
 	 TT04_bbReaction.cc TT04_CellML_Reaction.cc \

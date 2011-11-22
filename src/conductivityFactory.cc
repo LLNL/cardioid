@@ -3,8 +3,10 @@
 #include "Conductivity.hh"
 #include "object_cc.hh"
 
+#include "Anatomy.hh"
 #include "FibreConductivity.hh"
 #include "UniformConductivity.hh"
+#include "JHUConductivity.hh"
 
 using namespace std;
 
@@ -12,10 +14,11 @@ namespace
 {
    Conductivity* scanFibreConductivity(OBJECT* obj);
    Conductivity* scanUniformConductivity(OBJECT* obj);
+   Conductivity* scanJHUConductivity(OBJECT* obj, const Anatomy& anatomy);
 }
 
 
-Conductivity* conductivityFactory(const std::string& name)
+Conductivity* conductivityFactory(const string& name, const Anatomy& anatomy)
 {
    OBJECT* obj = objectFind(name, "CONDUCTIVITY");
    string method; objectGet(obj, "method", method, "undefined");
@@ -25,7 +28,7 @@ Conductivity* conductivityFactory(const std::string& name)
    else if (method == "fibre")    return scanFibreConductivity(obj);
    else if (method == "fiber")    return scanFibreConductivity(obj);
    else if (method == "uniform")  return scanUniformConductivity(obj);
-//   else if (method == "JHU")      return scanJhuConductivity(obj);
+   else if (method == "JHU")      return scanJHUConductivity(obj, anatomy);
    
    assert(1==0); // reachable only due to bad input
 
@@ -58,4 +61,26 @@ namespace
    }
 }
 
-   
+namespace
+{
+   /** See JHUConductivity.hh for an explanation of the paramters and
+    *  their default values. */
+   Conductivity* scanJHUConductivity(OBJECT* obj, const Anatomy& anatomy)
+   {
+      JHUConductivityParms p;
+      p.nx = anatomy.nx();
+      p.ny = anatomy.ny();
+      p.nz = anatomy.nz();
+      p.transmuralAxis = anatomy.ny() - 2;
+
+      objectGet(obj, "sigmaTi", p.sigmaTi, "0.0315");
+      objectGet(obj, "sigmaLi", p.sigmaLi, "0.3");
+
+      objectGet(obj, "sheetAngle", p.sheetAngle, "45");
+      objectGet(obj, "rotatationMatrix", p.rotatationMatrix, "1");
+      objectGet(obj, "homogeneousFiber", p.homogeneousFiber, "0");
+
+      return new JHUConductivity(p);
+   }
+}
+

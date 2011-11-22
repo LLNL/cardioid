@@ -1,4 +1,5 @@
 #include "FibreConductivity.hh"
+#include "AnatomyCell.hh"
 #include <cmath>
 #include <iostream>
 
@@ -15,8 +16,10 @@ FibreConductivity::FibreConductivity(const FibreConductivityParms& p)
 }
 
 
-void FibreConductivity::compute(int theta, int phi, SigmaTensorMatrix& sigma)
+void FibreConductivity::compute(const AnatomyCell& cell, SigmaTensorMatrix& sigma)
 {
+   int theta = cell.theta_;
+   int phi = cell.phi_;
    calcConductivityMatrixIBT(sigma, sigmaLi_, sigmaTi_, phi, theta);
 }
 

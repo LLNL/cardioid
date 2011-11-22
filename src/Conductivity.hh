@@ -1,6 +1,8 @@
 #ifndef CONDUCTIVITY_HH
 #define CONDUCTIVITY_HH
 
+class AnatomyCell;
+
 struct SigmaTensorMatrix
 {
    double a11, a12, a13;
@@ -13,7 +15,7 @@ class Conductivity
 {
  public:
    virtual ~Conductivity(){};
-   virtual void compute(int theta, int phi, SigmaTensorMatrix& sigma) = 0;
+   virtual void compute(const AnatomyCell& cell, SigmaTensorMatrix& sigma) = 0;
 };
 
 
@@ -80,6 +82,11 @@ class Conductivity
  *
  *  GetDiffusionTensorJHU is called for cell types 75-77, 100-102, and
  *  30-31.  Otherwise, sigmaMintra is unmodified from initial defaults.
+ *
+ *  This code has a number of internal switches that are set at compile
+ *  time.  I've attempted to recreate all of those switches with runtime
+ *  parmaters, but there isn't quite enough information in the BlueBeats
+ *  code to provide adequate documentation.
  *
  *
  *

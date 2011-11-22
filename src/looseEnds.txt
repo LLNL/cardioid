@@ -48,9 +48,21 @@ particular the fact that it owns things like GridRouter and
 HaloExchange<double> voltageExchange that can't be easily initialized in
 the constructor is a problem.
 
-16.  There is way too much convertion from gids to tuples going on.
+16.  There is way too much conversion from gids to tuples going on.
 Should think about the right time to ditch the gids and just store
 tuples.
 
 17.  We allow multiple stimulus objects, but if two objects happen to
 stimulate the same cell the last guy wins.  Is this what we want?
+
+18.  The conductivity classes don't know anything about cell type.  In
+BlueBeats there are explicit checks to make sure that we're only
+computing conductivities for tissue cell.  No such check here.  In fact,
+I'm worried that we don't handle default values for conductivities
+prperly as a result.
+
+19.  The system for using the JHU model for conductivities isn't the
+same as in BlueBeats.  In BB we use a parameter on the anatomy reader
+(sort of) to determine whether to read the angles.  Here, we need to set
+the type of the CONDUCTIVITY object.  Should there be some kind of magic
+system that turns on the JHU model if the fiber angles can't be found?

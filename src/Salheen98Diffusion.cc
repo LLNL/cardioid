@@ -106,7 +106,7 @@ Salheen98PrecomputeDiffusion::Salheen98PrecomputeDiffusion(
 
    buildTupleArray(anatomy);
    buildBlockIndex(anatomy);
-   conductivity_ = conductivityFactory(parms.conductivityName_);
+   conductivity_ = conductivityFactory(parms.conductivityName_, anatomy);
    precomputeCoefficients(anatomy);
 }
 
@@ -199,14 +199,13 @@ Salheen98PrecomputeDiffusion::precomputeCoefficients(const Anatomy& anatomy)
    Array3d<SigmaTensorMatrix> sigmaMintra(nx, ny, nz);
    Array3d<int> tissue(nx, ny, nz);
    initializeTissueBlock(tissue);
+   const vector<AnatomyCell>& cell = anatomy.cellArray();
    // What about default values for sigmaMintra and tissue?
    // Not all entries in the block are calculated.
    for (unsigned ii=0; ii<anatomy.size(); ++ii)
    {
       unsigned ib = blockIndex_[ii];
-      int theta = anatomy.theta(ii);
-      int phi = anatomy.phi(ii);
-      conductivity_->compute(theta, phi, sigmaMintra(ib));
+      conductivity_->compute(cell[ii], sigmaMintra(ib));
       tissue(ib) = anatomy.cellType(ii);
    }
 	 

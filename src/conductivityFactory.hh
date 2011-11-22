@@ -3,7 +3,8 @@
 
 #include <string>
 class Conductivity;
+class Anatomy;
 
-Conductivity* conductivityFactory(const std::string& name);
+Conductivity* conductivityFactory(const std::string& name, const Anatomy& anatomy);
 
 #endif

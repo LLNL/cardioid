@@ -6,8 +6,7 @@ UniformConductivity::UniformConductivity(const UniformConductivityParms& p)
 }
 
    
-void UniformConductivity::compute(
-   int theta, int phi, SigmaTensorMatrix& sigma)
+void UniformConductivity::compute(const AnatomyCell&, SigmaTensorMatrix& sigma)
 {
    sigma = sigma_;
 }

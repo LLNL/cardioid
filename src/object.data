@@ -70,6 +70,16 @@ uniform CONDUCTIVITY
     sigma23 = 0.0;
 }
 
+jhu CONDUCTIVITY
+{
+    type = JHU;
+    sigmaLi = 0.0315;
+    sigmaTi = 0.3;
+    sheetAngle = 45;
+    rotationMatrix = 1;
+    homogeneousFiber = 0;
+}
+
 tenTusscher04 REACTION
 {
     method = TT04_bb;
