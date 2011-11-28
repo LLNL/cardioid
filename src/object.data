@@ -101,3 +101,22 @@ test STIMULUS
      tEnd = 2; // msec
      freq = 1000; // msec
 }
+
+pointStimulus STIMULUS
+{
+  cell = 0;       // grid index of cell to stimulate
+  freq = 1000.0;  // msec
+  duration = 1.0; // msec
+  iStim = -52.0;  // mV/msec
+  tStart = 10.0;  // time in msec of first stimulus 
+//tStop = 5000.0;  // no stimulus after this time (in msec)
+}
+
+pointSensor SENSOR
+{
+  method = pointlist;
+  pointlist = 13 400; // gids to print out (celltype must be nonzero, or no output)
+  startTime = 0.0;   // in ms
+  printRate = 50;    // in timesteps
+  filebase = sensorData/vm_vs_t_pr50;  // this directory needs to exist before the run
+}

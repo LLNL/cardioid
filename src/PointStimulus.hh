@@ -10,8 +10,9 @@ struct PointStimulusParms
    int cell;
    double iStim;
    double tStart;
-   double tEnd;
+   double tStop;
    double freq;
+   double duration;
 };
 
 class PointStimulus : public Stimulus
@@ -26,8 +27,9 @@ class PointStimulus : public Stimulus
    int targetCell_;
    double dVmStim_;
    double tStart_;
-   double tEnd_;
+   double tStop_;
    double freq_;
+   double duration_;
    bool cellLocal_;
    int localInd_;
 };

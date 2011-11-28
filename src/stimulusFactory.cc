@@ -38,9 +38,10 @@ namespace
       PointStimulusParms p;
       objectGet(obj, "cell",   p.cell,   "0");
       objectGet(obj, "freq",   p.freq,   "1000");
+      objectGet(obj, "duration",   p.duration,   "1");
       objectGet(obj, "iStim",  p.iStim,  "-52");
-      objectGet(obj, "tEnd",   p.tEnd,   "1");
-      objectGet(obj, "tStart", p.tStart, "2");
+      objectGet(obj, "tStart", p.tStart, "0");
+      objectGet(obj, "tStop",   p.tStop,   "-1");
       return new PointStimulus(p, anatomy);
    }
    Stimulus* scanTestStimulus(OBJECT* obj)

@@ -6,7 +6,7 @@
 using namespace std;
 
 PointStimulus::PointStimulus(const PointStimulusParms& p, const Anatomy& anatomy)
-    : dVmStim_(-p.iStim),tStart_(p.tStart),tEnd_(p.tEnd),freq_(p.freq)
+    : dVmStim_(-p.iStim),tStart_(p.tStart),tStop_(p.tStop),freq_(p.freq), duration_(p.duration)
 {
 
   // loop through grid points on this task, check against target cell
@@ -26,13 +26,19 @@ void PointStimulus::stim(double time,
 			vector<double>& dVmDiffusion,
 			vector<double>& dVmExternal)
 {
-  if (cellLocal_)
+  // apply stimulus only within tStart_ to tStop_ window
+  if (time >= tStart_ && (time <= tStop_ || tStop_ <= 0.0))
   {
-    dVmDiffusion[localInd_] = 0.;
-    double t = time - floor(time/freq_)*freq_;
-    if (t >= tStart_ && t < tEnd_)
-      dVmExternal[localInd_] = dVmStim_;
-    else
-      dVmExternal[localInd_] = 0.;
+    if (cellLocal_)
+    {
+      dVmDiffusion[localInd_] = 0.;
+      double trel = time - tStart_;  // stimulus starts at tStart_
+
+      double t = trel - floor(trel/freq_)*freq_;
+      if (t < duration_)
+        dVmExternal[localInd_] = dVmStim_;
+      else
+        dVmExternal[localInd_] = 0.;
+    }
   }
 }
