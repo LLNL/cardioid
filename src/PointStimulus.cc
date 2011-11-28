@@ -2,7 +2,7 @@
 #include "Anatomy.hh"
 #include <mpi.h>
 #include <cmath>
-
+#include <iostream>
 using namespace std;
 
 PointStimulus::PointStimulus(const PointStimulusParms& p, const Anatomy& anatomy)
@@ -31,10 +31,11 @@ void PointStimulus::stim(double time,
   {
     if (cellLocal_)
     {
-      dVmDiffusion[localInd_] = 0.;
+      dVmDiffusion[localInd_] = 0.;  //ewd:  should this always be zeroed or just during stimulus?
+      
       double trel = time - tStart_;  // stimulus starts at tStart_
 
-      double t = trel - floor(trel/freq_)*freq_;
+      double t = trel - floor(trel/freq_)*freq_;  
       if (t < duration_)
         dVmExternal[localInd_] = dVmStim_;
       else

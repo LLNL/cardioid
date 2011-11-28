@@ -11,7 +11,8 @@ using namespace std;
 
 PointListSensor::PointListSensor(const PointListSensorParms& p, const Anatomy& anatomy)
     : startTime_(p.startTime), endTime_(p.endTime),
-      filebase_(p.filebase), printRate_(p.printRate)
+      filebase_(p.filebase), printRate_(p.printRate),
+      printDerivs_(p.printDerivs)
 {
   assert(p.pointlist.size() > 0);
 
@@ -46,7 +47,10 @@ PointListSensor::PointListSensor(const PointListSensorParms& p, const Anatomy& a
       fout_loc_.push_back(fout_ii);
       fout_loc_[ii]->open(outfiles_loc[ii].c_str(),ofstream::out);
       fout_loc_[ii]->setf(ios::scientific,ios::floatfield);
-      (*fout_loc_[ii]) << "#  time   V_m   for grid point " << pointlist_loc_[ii] << endl;
+      if (printDerivs_)
+        (*fout_loc_[ii]) << "#    time   V_m  dVm_r  dVm_d  dVm_e   for grid point " << pointlist_loc_[ii] << endl;
+      else
+        (*fout_loc_[ii]) << "#    time   V_m   for grid point " << pointlist_loc_[ii] << endl;
     }
   }
 }
@@ -62,12 +66,24 @@ PointListSensor::~PointListSensor()
 
 void PointListSensor::print(double time, std::vector<double>& Vm)
 {
-  if (time >= startTime_ && (endTime_ > 0.0 && time <= endTime_))
+  if (time >= startTime_ && (endTime_ <= 0.0 || time <= endTime_))
   {
     for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
     {
       int ind = sensorind_[ii];
       (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << Vm[ind] << endl;
+    }
+  }
+}
+
+void PointListSensor::print(double time, vector<double>& Vm, vector<double>& dVm_r, vector<double>& dVm_d, vector<double>& dVm_e)
+{
+  if (time >= startTime_ && (endTime_ <= 0.0 || time <= endTime_))
+  {
+    for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
+    {
+      int ind = sensorind_[ii];
+      (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << Vm[ind] << "   " << dVm_r[ind] << "   " << dVm_d[ind] << "   " << dVm_e[ind] << endl;
     }
   }
 }

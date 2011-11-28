@@ -36,6 +36,9 @@ namespace
       objectGet(obj, "startTime", p.startTime, "0.0");
       objectGet(obj, "endTime", p.endTime, "-1.0");
       objectGet(obj, "printRate", p.printRate, "1");
+      int pder;
+      objectGet(obj, "printDerivs", pder, "0");
+      p.printDerivs = (pder == 0 ? false : true);
       objectGet(obj, "filebase", p.filebase, "sensor.pointlist");
       return new PointListSensor(p, anatomy);
    }

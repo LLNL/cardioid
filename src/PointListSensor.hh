@@ -5,16 +5,18 @@
 #include <vector>
 #include <string>
 #include <fstream>
+using namespace std;
 
 class Anatomy;
 
 struct PointListSensorParms
 {
-  std::vector<unsigned> pointlist;
+  vector<unsigned> pointlist;
   double startTime;
   double endTime;
-  std::string filebase;
+  string filebase;
   unsigned printRate;
+  int printDerivs;
 };
 
 class PointListSensor : public Sensor
@@ -22,17 +24,20 @@ class PointListSensor : public Sensor
  public:
    PointListSensor(const PointListSensorParms& p, const Anatomy& anatomy);
    ~PointListSensor();
-   void print(double time, std::vector<double>& Vm);
+   void print(double time, vector<double>& Vm);
+   void print(double time, vector<double>& Vm, vector<double>& dVm_r, vector<double>& dVm_d, vector<double>& dVm_e);
    unsigned printRate(void) { return printRate_; };
+   bool printDerivs(void) { return printDerivs_; };
     
  private:
-   std::vector<unsigned> pointlist_loc_;  // grid gids owned by this task
-   std::vector<unsigned> sensorind_;      // corresponding local array index 
-   std::vector<std::ofstream*> fout_loc_;
+   vector<unsigned> pointlist_loc_;  // grid gids owned by this task
+   vector<unsigned> sensorind_;      // corresponding local array index 
+   vector<ofstream*> fout_loc_;
    double startTime_;
    double endTime_;
-   std::string filebase_;
+   string filebase_;
    unsigned printRate_;
+    bool printDerivs_;
 };
 
 #endif

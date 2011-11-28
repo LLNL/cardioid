@@ -74,10 +74,16 @@ void simulationLoop(Simulate& sim)
 
     // print output to file
     for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
+    {
       if (sim.loop_ % sim.sensor_[ii]->printRate() == 0)
-        sim.sensor_[ii]->print(sim.time_,sim.VmArray_);
+      {
+        if (sim.sensor_[ii]->printDerivs())
+          sim.sensor_[ii]->print(sim.time_,sim.VmArray_,dVmReaction,dVmDiffusion,dVmExternal);
+        else
+          sim.sensor_[ii]->print(sim.time_,sim.VmArray_);
+      }
+    }
     
-    /*
     if ( (sim.loop_ % sim.printRate_ == 0) && myRank == 0)
     {
       cout << setw(8) << sim.loop_ <<" "
@@ -85,9 +91,9 @@ void simulationLoop(Simulate& sim)
            << setw(12) << sim.VmArray_[0] << " "
            << setw(12) << dVmReaction[0] << " "
            << setw(12) << dVmDiffusion[0] << " "
-           << setw(12) << dVmExternal[0]  << endl;
+           << setw(12) << dVmExternal[0]  << " "
+           << setw(12) << sim.anatomy_.gid(0)  << endl;
     }
-    */
     
     if (sim.loop_ % sim.snapshotRate_ == 0)
     {

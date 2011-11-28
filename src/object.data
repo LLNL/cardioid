@@ -104,6 +104,7 @@ test STIMULUS
 
 pointStimulus STIMULUS
 {
+  method = point;
   cell = 0;       // grid index of cell to stimulate
   freq = 1000.0;  // msec
   duration = 1.0; // msec
@@ -118,5 +119,6 @@ pointSensor SENSOR
   pointlist = 13 400; // gids to print out (celltype must be nonzero, or no output)
   startTime = 0.0;   // in ms
   printRate = 50;    // in timesteps
+  printDerivs = 1;   // print dVm terms in addition to Vm (default = 0, i.e. off)
   filebase = sensorData/vm_vs_t_pr50;  // this directory needs to exist before the run
 }
