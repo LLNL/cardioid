@@ -61,7 +61,7 @@ conductivity CONDUCTIVITY
 
 uniform CONDUCTIVITY
 {
-    type = uniform;
+    method = uniform;
     sigma11 = 0.1;
     sigma22 = 0.1;
     sigma33 = 0.1;
@@ -72,7 +72,7 @@ uniform CONDUCTIVITY
 
 jhu CONDUCTIVITY
 {
-    type = JHU;
+    method = JHU;
     sigmaLi = 0.0315;
     sigmaTi = 0.3;
     sheetAngle = 45;
@@ -89,6 +89,11 @@ TT04_CellML REACTION
 {
     method = TT04_CellML;
     integrator = rushLarson;
+}
+
+FHN REACTION
+{
+    method = FHN;
 }
 
 test STIMULUS

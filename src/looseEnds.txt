@@ -66,3 +66,10 @@ same as in BlueBeats.  In BB we use a parameter on the anatomy reader
 (sort of) to determine whether to read the angles.  Here, we need to set
 the type of the CONDUCTIVITY object.  Should there be some kind of magic
 system that turns on the JHU model if the fiber angles can't be found?
+
+20.  There is a fudge factor of 1e-5 added to the radius of a domain
+in GridRouter when determining whether a cell is inside the domain.  I'd
+feel better if there was a meaningful length scale attached to the fudge.
+
+21.  The initializeTissueBlock function results in different cell type
+(9 vs 0) for some cells depending on the number of tasks.

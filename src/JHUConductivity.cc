@@ -19,7 +19,7 @@ JHUConductivity::JHUConductivity(const JHUConductivityParms& p)
    double epiAngle = -60; //degrees
    double totalTwist = endoAngle_ - epiAngle;    // 120 degrees
    // YDIM is TM axis (in JHU code) defined by max y coord
-   double twistPerCell_ =  totalTwist/p.transmuralAxis;
+   twistPerCell_ =  totalTwist/p.transmuralAxis;
 }
 
 /** Adapted from GetDiffusionTensorJHU in BlueBeats conductivity.h */
@@ -79,6 +79,8 @@ void JHUConductivity::compute(const AnatomyCell& cell, SigmaTensorMatrix& sigma)
    double determinant_E =
       E1[0]*E2[1]*E3[2] + E2[0]*E3[1]*E1[2] + E3[0]*E1[1]*E2[2] -
       E1[0]*E2[2]*E3[1] - E2[0]*E1[1]*E3[2] - E3[0]*E2[1]*E1[2];
+
+   assert( abs(determinant_E - 1) < 1e-10 );
    
    double D[3][3];
    D[0][0] = GL_*pow(E1[0],2) + GT_*pow(E2[0],2) + GN_*pow(E3[0],2);
@@ -90,11 +92,18 @@ void JHUConductivity::compute(const AnatomyCell& cell, SigmaTensorMatrix& sigma)
    D[0][2] = D[2][0];
    D[1][2] = D[2][1];
    D[2][2] = GL_*pow(E1[2],2) + GT_*pow(E2[2],2) + GN_*pow(E3[2],2);
+
+   for (unsigned ii=0; ii<3; ++ii)
+      for (unsigned jj=0; jj<3; ++jj)
+	 if (abs(D[ii][jj]) < 1e-12 * GT_)
+	    D[ii][jj] = 0;
+   
    
    // Check: Determinant of Diffusion Tensor 'D' should be 1
    double determinant_D =
       D[0][0]*D[1][1]*D[2][2] + D[0][1]*D[1][2]*D[2][0] + D[0][2]*D[1][0]*D[2][1] -
       D[0][0]*D[1][2]*D[2][1] - D[0][2]*D[1][1]*D[2][0] - D[0][1]*D[1][0]*D[2][2];
+//   assert( abs(determinant_D - 1) < 1e-10 );
    
    // setting the conductivity matrix of the IBM code
    sigma.a11 = D[0][0];

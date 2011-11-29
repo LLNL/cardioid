@@ -10,6 +10,11 @@
 #include "Vector.hh"
 #include "IndexToVector.hh"
 
+// #include <iostream> //ddt
+// #include <fstream> //ddt
+// #include <sstream> //ddt
+// #include "Tuple.hh" //ddt
+// #include "IndexToTuple.hh" //ddt
 using namespace std;
 
 GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm comm)
@@ -70,7 +75,18 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
 		     myGids.begin(), myGids.end(), 
 		     back_inserter(neededCells));
    } //scope
-
+   
+//    { //ddt
+//       IndexToTuple indexToTuple(nx, ny, nz);
+//       stringstream buf;
+//       buf << "neededCells."<<myRank;
+//       ofstream file(buf.str().c_str());
+//       for (unsigned ii=0; ii<neededCells.size(); ++ii)
+//       {
+// 	 Tuple gg = indexToTuple(neededCells[ii]);
+// 	 file << gg.x() << " " << gg.y() << " " << gg.z() <<endl;
+//       }
+//    } //end ddt
    
    vector<Long64> sendBuf;  
    vector<int> sendOffset;
@@ -87,12 +103,12 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
       for (unsigned ii=0; ii<myNbrs.size(); ++ii)
       {
 	 Vector ri = dInfo[myNbrs[ii]].center();
-	 double rMax2 = dInfo[myNbrs[ii]].radius();
+	 double rMax2 = dInfo[myNbrs[ii]].radius() + 1e-5;
 	 rMax2 *= rMax2;
 	 for (unsigned jj=0; jj<neededCells.size(); ++jj)
 	 {
 	    Vector rij = ri - neededVectors[jj];
-	    if ( dot(rij, rij)  < rMax2)
+	    if ( dot(rij, rij)  <= rMax2 )
 	       sendBuf.push_back(neededCells[jj]);
 	 }
 	 sendOffset.push_back(sendBuf.size());

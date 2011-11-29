@@ -21,7 +21,7 @@ class Tuple
 
 Tuple operator-(const Tuple& a, const Tuple& b);
 Tuple operator+(const Tuple& a, const Tuple& b);
-
+bool operator==(const Tuple& a, const Tuple& b);
 
 
 
@@ -71,6 +71,11 @@ inline Tuple operator+(const Tuple& a, const Tuple& b)
 {
    Tuple c(a);
    return c+=b;
+}
+
+inline bool operator==(const Tuple& a, const Tuple& b)
+{
+   return (a.x() == b.x() && a.y() == b.y() && a.z() == b.z());
 }
 
 #endif

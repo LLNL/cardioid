@@ -208,7 +208,9 @@ Salheen98PrecomputeDiffusion::precomputeCoefficients(const Anatomy& anatomy)
       conductivity_->compute(cell[ii], sigmaMintra(ib));
       tissue(ib) = anatomy.cellType(ii);
    }
-	 
+
+//   printAllConductivities(tissue, sigmaMintra); //ddt
+   
    double dxInv = 1.0/anatomy.dx();
    double dyInv = 1.0/anatomy.dy();
    double dzInv = 1.0/anatomy.dz();
@@ -226,7 +228,6 @@ Salheen98PrecomputeDiffusion::precomputeCoefficients(const Anatomy& anatomy)
       boundaryFDLaplacianSaleheen98Constants(
 	 tt, ss, ix, iy, iz, dxInv, dyInv, dzInv);
    }
-   
 }
 
 
@@ -370,3 +371,28 @@ void Salheen98PrecomputeDiffusion::updateVoltageBlock(
    }
 }
 
+void Salheen98PrecomputeDiffusion::printAllConductivities(
+   const Array3d<int>& tissue, const Array3d<SigmaTensorMatrix>& sigma)
+{
+   unsigned nx = localGrid_.nx();
+   unsigned ny = localGrid_.ny();
+   unsigned nz = localGrid_.nz();
+
+   for (unsigned ix=0; ix<nx; ++ix)
+      for (unsigned iy=0; iy<ny; ++iy)
+	 for (unsigned iz=0; iz<nz; ++iz)
+	 {
+	    Tuple globalTuple = localGrid_.globalTuple(Tuple(ix, iy, iz));
+	    printf("Conductivity: %5d %5d %5d %4d %18.12e %18.12e %18.12e %18.12e %18.12e %18.12e\n",
+		   globalTuple.x(),
+		   globalTuple.y(),
+		   globalTuple.z(),
+		   tissue(ix, iy, iz),
+		   sigma(ix, iy, iz).a11,
+		   sigma(ix, iy, iz).a22,
+		   sigma(ix, iy, iz).a33,
+		   sigma(ix, iy, iz).a12,
+		   sigma(ix, iy, iz).a13,
+		   sigma(ix, iy, iz).a23);
+	 }
+}

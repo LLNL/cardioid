@@ -13,7 +13,9 @@ class Array3d
    Array3d(unsigned nx, unsigned ny, unsigned nz);
    
    T& operator()(unsigned index);
+   const T& operator()(unsigned index) const;
    T& operator()(unsigned ix, unsigned iy, unsigned iz);
+   const T& operator()(unsigned ix, unsigned iy, unsigned iz) const;
 
    T*** cArray();
    const T*** cArray() const;
@@ -25,7 +27,7 @@ class Array3d
    
    void resize(unsigned nx, unsigned ny, unsigned nz);
    
-   unsigned const tupleToIndex(unsigned ix, unsigned iy, unsigned iz);
+   unsigned const tupleToIndex(unsigned ix, unsigned iy, unsigned iz) const;
 
  private:
    void pointerSetup();
@@ -58,7 +60,19 @@ T& Array3d<T>::operator()(unsigned index)
 }
 
 template <class T> inline
+const T& Array3d<T>::operator()(unsigned index) const
+{
+   return data_[index];
+}
+
+template <class T> inline
 T& Array3d<T>::operator()(unsigned ix, unsigned iy, unsigned iz)
+{
+   return data_[tupleToIndex(ix, iy, iz)];
+}
+
+template <class T> inline
+const T& Array3d<T>::operator()(unsigned ix, unsigned iy, unsigned iz) const
 {
    return data_[tupleToIndex(ix, iy, iz)];
 }
@@ -113,7 +127,7 @@ void Array3d<T>::resize(unsigned nx, unsigned ny, unsigned nz)
 			
 
 template <class T> inline 
-unsigned const Array3d<T>::tupleToIndex(unsigned ix, unsigned iy, unsigned iz)
+unsigned const Array3d<T>::tupleToIndex(unsigned ix, unsigned iy, unsigned iz) const
 {
    return iz + nz_*(iy + ny_*(ix));
 //   return ix + nx_*(iy + ny_*(iz));

@@ -15,6 +15,7 @@ class LocalGrid
    int nz() const; 
    
    Tuple localTuple(const Tuple& globalTuple) const;
+   Tuple globalTuple(const Tuple& localTuple) const;
 
  private:
    int nx_; // The size of the grid in each direction
@@ -44,5 +45,10 @@ LocalGrid::localTuple(const Tuple& globalTuple) const
    return globalTuple - Tuple(xOffset_, yOffset_, zOffset_);
 }
 
+inline Tuple
+LocalGrid::globalTuple(const Tuple& localTuple) const
+{
+   return localTuple + Tuple(xOffset_, yOffset_, zOffset_);
+}
 
 #endif
