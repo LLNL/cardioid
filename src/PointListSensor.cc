@@ -14,18 +14,21 @@ PointListSensor::PointListSensor(const PointListSensorParms& p, const Anatomy& a
       filebase_(p.filebase), printRate_(p.printRate),
       printDerivs_(p.printDerivs)
 {
-  assert(p.pointlist.size() > 0);
+  const int plistsize = p.pointlist.size();
+  assert(plistsize > 0);
 
   vector<string> outfiles_loc;  // filenames of output files owned by this task
+  vector<int> gidfound(plistsize,0);
   
   // loop through grid points on this task, check against pointlist
-  for (unsigned ii=0; ii<p.pointlist.size(); ++ii)
+  for (unsigned ii=0; ii<plistsize; ++ii)
   {
     const unsigned gid = p.pointlist[ii];
-    for (unsigned jj=0; jj<anatomy.size(); ++jj)
+    //for (unsigned jj=0; jj<anatomy.size(); ++jj)
+    for (unsigned jj=0; jj<anatomy.nLocal(); ++jj)
     {
       if (anatomy.gid(jj) == gid)
-      {        
+      {
         pointlist_loc_.push_back(gid);
         sensorind_.push_back(jj);
         ostringstream ossnum;
@@ -34,9 +37,28 @@ PointListSensor::PointListSensor(const PointListSensorParms& p, const Anatomy& a
         ossnum << ii;
         string filename = filebase_ + "." + ossnum.str();
         outfiles_loc.push_back(filename);
+        gidfound[ii] = 1;
       }
     }
   }
+
+  //ewd:  error checking, print out warning when no cell of this gid is found (i.e. type is probably zero)
+  vector<int> gidsum(plistsize,0);
+  MPI_Allreduce(&gidfound[0], &gidsum[0], plistsize, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  int myRank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+  if (myRank == 0)
+  {
+    for (unsigned ii=0; ii<plistsize; ++ii)
+    {
+      if (gidsum[ii] == 0)
+        cout << "Warning:  PointListSensor could not find non-zero cell type with gid " << p.pointlist[ii] << "!  Skipping." << endl;
+      else if (gidsum[ii] > 1)
+        cout << "ERROR:  PointListSensor found multiple processors which own cell gid = " << p.pointlist[ii] << "!" << endl;
+    }
+  }
+      
+
 
   // loop through local files, initialize ofstream, print header
   if (outfiles_loc.size() > 0)

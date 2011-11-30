@@ -48,7 +48,7 @@ namespace
       objectGet(obj, "variant", variant, "precompute");
 
       if (variant == "precompute")
-	 return new Salheen98PrecomputeDiffusion(p, anatomy);
+        return new Salheen98PrecomputeDiffusion(p, anatomy);
 
       assert(1==0); // reachable only due to bad input.
    }

@@ -31,7 +31,7 @@ void PointStimulus::stim(double time,
   {
     if (cellLocal_)
     {
-      dVmDiffusion[localInd_] = 0.;  //ewd:  should this always be zeroed or just during stimulus?
+      //dVmDiffusion[localInd_] = 0.;  //ewd:  should this be zeroed?
       
       double trel = time - tStart_;  // stimulus starts at tStart_
 
