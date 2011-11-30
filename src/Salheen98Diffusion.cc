@@ -17,25 +17,32 @@ using namespace std;
 
 /** This implements (part of) the initialization conventions found at
  *  lines 1027 through 1076 of BlueBeats.cpp.  I.e., 9 everywhere,
- *  except 0 around the surface of the block.  (We'll overwrite this
- *  with actual cell types for the cells we have on this task later).
- *  This is a necessary initialization since the cells around the edge
- *  of the block may be completely synthetic.  For cells at the outer
- *  wall of the heart their may be no nbr cell defined in the anatomy,
- *  yet we need to have something there when we want to compute stencil
- *  operations. */
-void initializeTissueBlock(Array3d<int>& tissue)
+ *  except 0 around the surface of the simulation cell.  (We'll
+ *  overwrite this with actual cell types for the cells we have on this
+ *  task later).  This is a necessary initialization since the cells
+ *  around the edge of the block may be completely synthetic.  For cells
+ *  at the outer wall of the heart their may be no nbr cell defined in
+ *  the anatomy, yet we need to have something there when we want to
+ *  compute stencil operations. */
+void initializeTissueBlock(Array3d<int>& tissue, const LocalGrid & localGrid,
+			   const Anatomy& anatomy)
 {
    for (unsigned ii=0; ii<tissue.size(); ++ii)
       tissue(ii) = 9;
-   // cells on the outer face of the block are set to 0
-   for (unsigned ii=0; ii<tissue.nx(); ++ii)
-      for (unsigned jj=0; jj<tissue.ny(); ++jj)
-	 for (unsigned kk=0; kk<tissue.nz(); ++kk)
-	    if ( ii==0 || ii==tissue.nx()-1 ||
-		 jj==0 || jj==tissue.nx()-1 ||
-		 kk==0 || kk==tissue.nx()-1 )
-	       tissue(ii, jj, kk) = 0;
+
+   int nxGlobal = anatomy.nx();
+   int nyGlobal = anatomy.ny();
+   int nzGlobal = anatomy.nz();
+   for (unsigned ix=0; ix<localGrid.nx(); ++ix)
+      for (unsigned iy=0; iy<localGrid.ny(); ++iy)
+	 for (unsigned iz=0; iz<localGrid.nz(); ++iz)
+	 {
+	    Tuple gt = localGrid.globalTuple(Tuple(ix, iy, iz));
+	    if (gt.x() <= 0 || gt.x() >= nxGlobal ||
+		gt.y() <= 0 || gt.y() >= nyGlobal ||
+		gt.z() <= 0 || gt.z() >= nzGlobal )
+	       tissue(ix, iy, iz) = 0;
+	 }
 }
 
 /** We want to find the boundingBox such that any stencil point of any
@@ -195,10 +202,16 @@ Salheen98PrecomputeDiffusion::precomputeCoefficients(const Anatomy& anatomy)
    unsigned nx = localGrid_.nx();
    unsigned ny = localGrid_.ny();
    unsigned nz = localGrid_.nz();
-
+   unsigned nxGlobal = anatomy.nx();
+   unsigned nyGlobal = anatomy.ny();
+   unsigned nzGlobal = anatomy.nz();
+   
    Array3d<SigmaTensorMatrix> sigmaMintra(nx, ny, nz);
    Array3d<int> tissue(nx, ny, nz);
-   initializeTissueBlock(tissue);
+   initializeTissueBlock(tissue, localGrid_, anatomy);
+   SigmaTensorMatrix sigmaDefault = conductivity_->defaultValue();
+   for (unsigned ii=0; ii<sigmaMintra.size(); ++ii)
+      sigmaMintra(ii) = sigmaDefault;
    const vector<AnatomyCell>& cell = anatomy.cellArray();
    // What about default values for sigmaMintra and tissue?
    // Not all entries in the block are calculated.
@@ -228,6 +241,8 @@ Salheen98PrecomputeDiffusion::precomputeCoefficients(const Anatomy& anatomy)
       boundaryFDLaplacianSaleheen98Constants(
 	 tt, ss, ix, iy, iz, dxInv, dyInv, dzInv);
    }
+
+//   printAllDiffusionWeights(tissue); //ddt
 }
 
 
@@ -394,5 +409,47 @@ void Salheen98PrecomputeDiffusion::printAllConductivities(
 		   sigma(ix, iy, iz).a12,
 		   sigma(ix, iy, iz).a13,
 		   sigma(ix, iy, iz).a23);
+	 }
+}
+
+void Salheen98PrecomputeDiffusion::printAllDiffusionWeights(const Array3d<int>& tissue)
+{
+   unsigned nx = localGrid_.nx();
+   unsigned ny = localGrid_.ny();
+   unsigned nz = localGrid_.nz();
+   
+   for (unsigned ix=0; ix<nx; ++ix)
+      for (unsigned iy=0; iy<ny; ++iy)
+	 for (unsigned iz=0; iz<nz; ++iz)
+	 {
+	    Tuple globalTuple = localGrid_.globalTuple(Tuple(ix, iy, iz));
+	    printf("DiffusionWeight: %5d %5d %5d %4d"
+		   " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
+		   " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
+		   " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
+		   " %20.12e\n"
+		   ,
+		   globalTuple.x(),
+		   globalTuple.y(), globalTuple.z(),
+		   tissue(ix, iy, iz),
+		   diffIntra_(ix, iy, iz).A1,
+		   diffIntra_(ix, iy, iz).A2,
+		   diffIntra_(ix, iy, iz).A3,
+		   diffIntra_(ix, iy, iz).A4,
+		   diffIntra_(ix, iy, iz).A5,
+		   diffIntra_(ix, iy, iz).A6,
+		   diffIntra_(ix, iy, iz).A7,
+		   diffIntra_(ix, iy, iz).A8,
+		   diffIntra_(ix, iy, iz).A9,
+		   diffIntra_(ix, iy, iz).A10,
+		   diffIntra_(ix, iy, iz).A11,
+		   diffIntra_(ix, iy, iz).A12,
+		   diffIntra_(ix, iy, iz).A13,
+		   diffIntra_(ix, iy, iz).A14,
+		   diffIntra_(ix, iy, iz).A15,
+		   diffIntra_(ix, iy, iz).A16,
+		   diffIntra_(ix, iy, iz).A17,
+		   diffIntra_(ix, iy, iz).A18,
+		   diffIntra_(ix, iy, iz).sumA);
 	 }
 }

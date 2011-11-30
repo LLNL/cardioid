@@ -16,6 +16,7 @@ class Conductivity
  public:
    virtual ~Conductivity(){};
    virtual void compute(const AnatomyCell& cell, SigmaTensorMatrix& sigma) = 0;
+   virtual SigmaTensorMatrix defaultValue() = 0;
 };
 
 

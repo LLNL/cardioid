@@ -11,3 +11,7 @@ void UniformConductivity::compute(const AnatomyCell&, SigmaTensorMatrix& sigma)
    sigma = sigma_;
 }
 
+SigmaTensorMatrix UniformConductivity::defaultValue()
+{
+   return sigma_;
+}

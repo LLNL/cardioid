@@ -15,6 +15,7 @@ class UniformConductivity : public Conductivity
    UniformConductivity(const UniformConductivityParms& p);
    
    void compute(const AnatomyCell& cell, SigmaTensorMatrix& sigma);
+   SigmaTensorMatrix defaultValue();
  private:
    SigmaTensorMatrix sigma_;
 };

@@ -23,6 +23,17 @@ void FibreConductivity::compute(const AnatomyCell& cell, SigmaTensorMatrix& sigm
    calcConductivityMatrixIBT(sigma, sigmaLi_, sigmaTi_, phi, theta);
 }
 
+SigmaTensorMatrix FibreConductivity::defaultValue()
+{
+   SigmaTensorMatrix tmp;
+   tmp.a11 = sigmaTi_;
+   tmp.a22 = sigmaTi_;
+   tmp.a33 = sigmaLi_;
+   tmp.a12 = 0;
+   tmp.a13 = 0;
+   tmp.a23 = 0;
+   return tmp;
+}
 
 
 /** Adapted from conductivity.h in BlueBeats code.
