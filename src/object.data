@@ -50,6 +50,7 @@ Salheen98Fast DIFFUSION
    method = Salheen98;
    variant = precompute;
    conductivity = conductivity;
+   diffusionScale = 0.0066666666666666;
 }
 
 conductivity CONDUCTIVITY
@@ -117,6 +118,17 @@ pointStimulus STIMULUS
   tStart = 10.0;  // time in msec of first stimulus 
 //tStop = 5000.0;  // no stimulus after this time (in msec)
 }
+
+boxStimulus STIMULUS
+{
+   method = box;
+   yMax = 15;
+   iStim = -40;
+   tStart = 0;
+   duration = 5;
+   freq = 1000;
+}
+   
 
 pointSensor SENSOR
 {
