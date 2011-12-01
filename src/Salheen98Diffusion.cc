@@ -355,6 +355,26 @@ Salheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98Constants(
    diffConst[x][y][z].A17 = conductivityMatrix[i-1][j][k-1].a13 * diffConst[x][y][z].A17;
    diffConst[x][y][z].A18 = -(conductivityMatrix[i+1][j][k-1].a13 * diffConst[x][y][z].A18);
 
+   // We express voltage in mV.
+   diffConst[x][y][z].A1 /= 1e3;
+   diffConst[x][y][z].A2 /= 1e3;
+   diffConst[x][y][z].A3 /= 1e3;
+   diffConst[x][y][z].A4 /= 1e3;
+   diffConst[x][y][z].A5 /= 1e3;
+   diffConst[x][y][z].A6 /= 1e3;
+   diffConst[x][y][z].A7 /= 1e3;
+   diffConst[x][y][z].A8 /= 1e3;
+   diffConst[x][y][z].A9 /= 1e3;
+   diffConst[x][y][z].A10 /= 1e3;
+   diffConst[x][y][z].A11 /= 1e3;
+   diffConst[x][y][z].A12 /= 1e3;
+   diffConst[x][y][z].A13 /= 1e3;
+   diffConst[x][y][z].A14 /= 1e3;
+   diffConst[x][y][z].A15 /= 1e3;
+   diffConst[x][y][z].A16 /= 1e3;
+   diffConst[x][y][z].A17 /= 1e3;
+   diffConst[x][y][z].A18 /= 1e3;
+   
    diffConst[x][y][z].sumA = diffConst[x][y][z].A1 
       + diffConst[x][y][z].A2 
       + diffConst[x][y][z].A3 
