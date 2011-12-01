@@ -8,12 +8,11 @@
 #include "Timer.hh"
 #include "Anatomy.hh"
 
-class GridRouter;
 class Diffusion;
 class Reaction;
 class Stimulus;
 class Sensor;
-template <class T> class HaloExchange;
+class CommTable;
 
 // Kitchen sink class for heart simulation.  This is probably a great
 // example of how *not* to do design, but we need to get something
@@ -39,9 +38,8 @@ class Simulate
    
    int nx_, ny_, nz_; // global size of grid
 
-   GridRouter* router_;
-   HaloExchange<double>* voltageExchange_;
-
+   std::vector<int> sendMap_;
+   CommTable* commTable_;
    
    std::vector<double> VmArray_; // local and remote
 

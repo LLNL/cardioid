@@ -434,42 +434,37 @@ void Salheen98PrecomputeDiffusion::printAllConductivities(
 
 void Salheen98PrecomputeDiffusion::printAllDiffusionWeights(const Array3d<int>& tissue)
 {
-   unsigned nx = localGrid_.nx();
-   unsigned ny = localGrid_.ny();
-   unsigned nz = localGrid_.nz();
-   
-   for (unsigned ix=0; ix<nx; ++ix)
-      for (unsigned iy=0; iy<ny; ++iy)
-	 for (unsigned iz=0; iz<nz; ++iz)
-	 {
-	    Tuple globalTuple = localGrid_.globalTuple(Tuple(ix, iy, iz));
-	    printf("DiffusionWeight: %5d %5d %5d %4d"
-		   " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
-		   " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
-		   " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
-		   " %20.12e\n"
-		   ,
-		   globalTuple.x(),
-		   globalTuple.y(), globalTuple.z(),
-		   tissue(ix, iy, iz),
-		   diffIntra_(ix, iy, iz).A1,
-		   diffIntra_(ix, iy, iz).A2,
-		   diffIntra_(ix, iy, iz).A3,
-		   diffIntra_(ix, iy, iz).A4,
-		   diffIntra_(ix, iy, iz).A5,
-		   diffIntra_(ix, iy, iz).A6,
-		   diffIntra_(ix, iy, iz).A7,
-		   diffIntra_(ix, iy, iz).A8,
-		   diffIntra_(ix, iy, iz).A9,
-		   diffIntra_(ix, iy, iz).A10,
-		   diffIntra_(ix, iy, iz).A11,
-		   diffIntra_(ix, iy, iz).A12,
-		   diffIntra_(ix, iy, iz).A13,
-		   diffIntra_(ix, iy, iz).A14,
-		   diffIntra_(ix, iy, iz).A15,
-		   diffIntra_(ix, iy, iz).A16,
-		   diffIntra_(ix, iy, iz).A17,
-		   diffIntra_(ix, iy, iz).A18,
-		   diffIntra_(ix, iy, iz).sumA);
-	 }
+   for (unsigned ii=0; ii<localTuple_.size(); ++ii)
+   {
+      Tuple globalTuple = localGrid_.globalTuple(localTuple_[ii]);
+      int xx = localTuple_[ii].x();
+      int yy = localTuple_[ii].y();
+      int zz = localTuple_[ii].z();
+      printf("DiffusionWeight: %5d %5d %5d %4d"
+	     " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
+	     " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
+	     " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
+	     " %20.12e\n",
+	     globalTuple.x(), globalTuple.y(), globalTuple.z(),
+	     tissue(xx, yy, zz),
+	     diffIntra_(xx, yy, zz).A1,
+	     diffIntra_(xx, yy, zz).A2,
+	     diffIntra_(xx, yy, zz).A3,
+	     diffIntra_(xx, yy, zz).A4,
+	     diffIntra_(xx, yy, zz).A5,
+	     diffIntra_(xx, yy, zz).A6,
+	     diffIntra_(xx, yy, zz).A7,
+	     diffIntra_(xx, yy, zz).A8,
+	     diffIntra_(xx, yy, zz).A9,
+	     diffIntra_(xx, yy, zz).A10,
+	     diffIntra_(xx, yy, zz).A11,
+	     diffIntra_(xx, yy, zz).A12,
+	     diffIntra_(xx, yy, zz).A13,
+	     diffIntra_(xx, yy, zz).A14,
+	     diffIntra_(xx, yy, zz).A15,
+	     diffIntra_(xx, yy, zz).A16,
+	     diffIntra_(xx, yy, zz).A17,
+	     diffIntra_(xx, yy, zz).A18,
+	     diffIntra_(xx, yy, zz).sumA);
+   }
 }

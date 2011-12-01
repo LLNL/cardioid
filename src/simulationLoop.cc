@@ -29,9 +29,11 @@ void simulationLoop(Simulate& sim)
    
   // for now, hardcode initialization of voltage.
   // use TT04 value from BlueBeats
-  sim.VmArray_.resize(sim.anatomy_.size(), -86.2); // in Volts
+  sim.VmArray_.resize(sim.anatomy_.size(), -86.2); // in mVolts
+  for (unsigned ii=sim.anatomy_.nLocal(); ii<sim.anatomy_.size(); ++ii)
+     sim.VmArray_[ii] = 0;
    
-  sim.voltageExchange_ = new HaloExchange<double>(sim.router_->sendMap(), sim.router_->commTable());
+  HaloExchange<double> voltageExchange(sim.sendMap_, *(sim.commTable_));
 
 
   if ( myRank == 0)
@@ -44,16 +46,26 @@ void simulationLoop(Simulate& sim)
          << setw(12) << dVmDiffusion[0] << " "
          << setw(12) << dVmExternal[0]  << endl;
   }
-      
-
 
   while ( sim.loop_<sim.maxLoop_ )
   {
     int nLocal = sim.anatomy_.nLocal();
-    sim.voltageExchange_->execute(sim.VmArray_, nLocal);
-      
+    voltageExchange.execute(sim.VmArray_, nLocal);
+
+    
     // DIFFUSION
     sim.diffusion_->calc(sim.VmArray_, dVmDiffusion);
+
+    //ddt start    
+//     for (unsigned ii=0; ii<sim.anatomy_.nLocal(); ++ii)
+//     {
+//        Tuple gt = sim.anatomy_.globalTuple(ii);
+//        printf("dVmd: %8d %5d %5d %5d %20.12e %20.12e\n",
+// 	      sim.loop_, gt.x(), gt.y(), gt.z(), dVmDiffusion[ii],
+// 	      sim.VmArray_[ii]);
+//     }
+    //ddt end
+    
       
     // code to limit or set iStimArray goes here.
     for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
@@ -67,6 +79,7 @@ void simulationLoop(Simulate& sim)
     for (unsigned ii=0; ii<nLocal; ++ii)
     {
       double dVm = dVmReaction[ii] + dVmDiffusion[ii] + dVmExternal[ii] ;
+//      double dVm = dVmDiffusion[ii] + dVmExternal[ii] ;
       sim.VmArray_[ii] += sim.dt_*dVm;
     }
     sim.time_ += sim.dt_;

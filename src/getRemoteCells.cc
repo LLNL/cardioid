@@ -53,8 +53,11 @@ void getRemoteCells(Simulate& sim, MPI_Comm comm)
    for (unsigned ii=0; ii<anatomy.size(); ++ii)
       myCells[ii] = anatomy.gid(ii);
    
-   sim.router_= new GridRouter(myCells, nx, ny, nz, MPI_COMM_WORLD);
-   HaloExchange<AnatomyCell> cellExchange(sim.router_->sendMap(), sim.router_->commTable());
+   GridRouter router(myCells, nx, ny, nz, MPI_COMM_WORLD);
+   sim.sendMap_ = router.sendMap();
+   sim.commTable_ = new CommTable(router.commTable());
+
+   HaloExchange<AnatomyCell> cellExchange(sim.sendMap_, *(sim.commTable_));
 
    anatomy.nLocal() = anatomy.size();
    cellExchange.execute(anatomy.cellArray(), anatomy.nLocal());
