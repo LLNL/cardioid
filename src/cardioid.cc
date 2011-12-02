@@ -73,7 +73,7 @@ void parseCommandLineAndReadInputFile(int argc, char** argv, int rank)
    if (argc != 2 && argc != 1)
    {
       if (rank == 0)
-	 cout << "Usage:  bigHeart [input file]" << endl;
+         cout << "Usage:  bigHeart [input file]" << endl;
       exit(-1);
    }
 

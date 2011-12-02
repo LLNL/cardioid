@@ -19,139 +19,139 @@ Grid3DStencil::Grid3DStencil(int gid, int nx, int ny, int nz)
    {
       if (tt.x() < nx-1)
       {
-	 Long64 newGid = tupleToGid(tt.x()+1, tt.y(), tt.z());
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()+1, tt.y(), tt.z());
+         nbrGids_.push_back(newGid);
       }
       if (tt.x() > 0 )
       {
-	 Long64 newGid = tupleToGid(tt.x()-1, tt.y(), tt.z());
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()-1, tt.y(), tt.z());
+         nbrGids_.push_back(newGid);
       }
       if (tt.y() < ny-1)
       {
-	 Long64 newGid = tupleToGid(tt.x(), tt.y()+1, tt.z());
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x(), tt.y()+1, tt.z());
+         nbrGids_.push_back(newGid);
       }
       if (tt.y() > 0 )
       {
-	 Long64 newGid = tupleToGid(tt.x(), tt.y()-1, tt.z());
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x(), tt.y()-1, tt.z());
+         nbrGids_.push_back(newGid);
       }
       if (tt.z() < nz-1)
       {
-	 Long64 newGid = tupleToGid(tt.x(), tt.y(), tt.z()+1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x(), tt.y(), tt.z()+1);
+         nbrGids_.push_back(newGid);
       }
       if (tt.z() > 0 )
       {
-	 Long64 newGid = tupleToGid(tt.x(), tt.y(), tt.z()-1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x(), tt.y(), tt.z()-1);
+         nbrGids_.push_back(newGid);
       }    
    }
    if (edges)
    {
       if (tt.x() < nx-1 && tt.y() < ny-1)
       {
-	 Long64 newGid = tupleToGid(tt.x()+1, tt.y()+1, tt.z());
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()+1, tt.y()+1, tt.z());
+         nbrGids_.push_back(newGid);
       }
       if (tt.x() > 0 && tt.y() < ny-1)
       {
-	 Long64 newGid = tupleToGid(tt.x()-1, tt.y()+1, tt.z());
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()-1, tt.y()+1, tt.z());
+         nbrGids_.push_back(newGid);
       }
       if (tt.x() < nx-1 && tt.y() > 0)
       {
-	 Long64 newGid = tupleToGid(tt.x()+1, tt.y()-1, tt.z());
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()+1, tt.y()-1, tt.z());
+         nbrGids_.push_back(newGid);
       }
       if (tt.x() > 0 && tt.y() > 0)
       {
-	 Long64 newGid = tupleToGid(tt.x()-1, tt.y()-1, tt.z());
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()-1, tt.y()-1, tt.z());
+         nbrGids_.push_back(newGid);
       }
       if (tt.x() < nx-1 && tt.z() < nz-1)
       {
-	 Long64 newGid = tupleToGid(tt.x()+1, tt.y(), tt.z()+1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()+1, tt.y(), tt.z()+1);
+         nbrGids_.push_back(newGid);
       }
       if (tt.x() > 0 && tt.z() < nz-1)
       {
-	 Long64 newGid = tupleToGid(tt.x()-1, tt.y(), tt.z()+1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()-1, tt.y(), tt.z()+1);
+         nbrGids_.push_back(newGid);
       }
       if (tt.x() < nx-1 && tt.z() > 0)
       {
-	 Long64 newGid = tupleToGid(tt.x()+1, tt.y(), tt.z()-1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()+1, tt.y(), tt.z()-1);
+         nbrGids_.push_back(newGid);
       }
       if (tt.x() > 0 && tt.z() > 0)
       {
-	 Long64 newGid = tupleToGid(tt.x()-1, tt.y(), tt.z()-1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()-1, tt.y(), tt.z()-1);
+         nbrGids_.push_back(newGid);
       }
       if (tt.y() < ny-1 && tt.z() < nz-1)
       {
-	 Long64 newGid = tupleToGid(tt.x(), tt.y()+1, tt.z()+1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x(), tt.y()+1, tt.z()+1);
+         nbrGids_.push_back(newGid);
       }
       if (tt.y() > 0 && tt.z() < nz-1)
       {
-	 Long64 newGid = tupleToGid(tt.x(), tt.y()-1, tt.z()+1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x(), tt.y()-1, tt.z()+1);
+         nbrGids_.push_back(newGid);
       }
       if (tt.y() < ny-1 && tt.z() > 0)
       {
-	 Long64 newGid = tupleToGid(tt.x(), tt.y()+1, tt.z()-1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x(), tt.y()+1, tt.z()-1);
+         nbrGids_.push_back(newGid);
       }
       if (tt.y() > 0 && tt.z() > 0)
       {
-	 Long64 newGid = tupleToGid(tt.x(), tt.y()-1, tt.z()-1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x(), tt.y()-1, tt.z()-1);
+         nbrGids_.push_back(newGid);
       }
    }
    if (corners)
    {
       if (tt.x() < nx-1 && tt.y() < ny-1 && tt.z() < nz-1)
       {
-	 Long64 newGid = tupleToGid(tt.x()+1, tt.y()+1, tt.z()+1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()+1, tt.y()+1, tt.z()+1);
+         nbrGids_.push_back(newGid);
       }
       if (tt.x() > 0 && tt.y() < ny-1 && tt.z() < nz-1)
       {
-	 Long64 newGid = tupleToGid(tt.x()-1, tt.y()+1, tt.z()+1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()-1, tt.y()+1, tt.z()+1);
+         nbrGids_.push_back(newGid);
       }
       if (tt.x() > 0 && tt.y() > 0 && tt.z() < nz-1)
       {
-	 Long64 newGid = tupleToGid(tt.x()-1, tt.y()-1, tt.z()+1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()-1, tt.y()-1, tt.z()+1);
+         nbrGids_.push_back(newGid);
       }
       if (tt.x() > 0 && tt.y() < ny-1 && tt.z() > 0)
       {
-	 Long64 newGid = tupleToGid(tt.x()-1, tt.y()+1, tt.z()-1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()-1, tt.y()+1, tt.z()-1);
+         nbrGids_.push_back(newGid);
       }
       if (tt.x() < nx-1 && tt.y() > 0 && tt.z() < nz-1)
       {
-	 Long64 newGid = tupleToGid(tt.x()+1, tt.y()-1, tt.z()+1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()+1, tt.y()-1, tt.z()+1);
+         nbrGids_.push_back(newGid);
       }
       if (tt.x() < nx-1 && tt.y() > 0 && tt.z() > 0)
       {
-	 Long64 newGid = tupleToGid(tt.x()+1, tt.y()-1, tt.z()-1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()+1, tt.y()-1, tt.z()-1);
+         nbrGids_.push_back(newGid);
       }
       if (tt.x() < nx-1 && tt.y() < ny-1 && tt.z() > 0)
       {
-	 Long64 newGid = tupleToGid(tt.x()+1, tt.y()+1, tt.z()-1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()+1, tt.y()+1, tt.z()-1);
+         nbrGids_.push_back(newGid);
       }
       if (tt.x() > 0 && tt.y() > 0 && tt.z() > 0)
       {
-	 Long64 newGid = tupleToGid(tt.x()-1, tt.y()-1, tt.z()-1);
-	 nbrGids_.push_back(newGid);
+         Long64 newGid = tupleToGid(tt.x()-1, tt.y()-1, tt.z()-1);
+         nbrGids_.push_back(newGid);
       }
    }
 }

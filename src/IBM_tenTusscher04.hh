@@ -5,7 +5,7 @@ This file has been modified by Matthias Reumann, IBM Research, to be stand alone
     File: IBM_tenTusscher04.h
     automatically created by ExtractParameterClass.pl - done by dw (20.04.2007)
     Institute of Biomedical Engineering, Universität Karlsruhe (TH)
-    send comments to dw@ibt.uka.de	*/
+    send comments to dw@ibt.uka.de      */
 
 #define PARAMETER_INCLUDED
 

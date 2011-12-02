@@ -16,8 +16,8 @@ TestStimulus::TestStimulus(const TestStimulusParms& p)
 }
 
 void TestStimulus::stim(double time,
-			vector<double>& dVmDiffusion,
-			vector<double>& dVmExternal)
+                        vector<double>& dVmDiffusion,
+                        vector<double>& dVmExternal)
 {
    if ( myRank_ != targetRank_ )
       return;

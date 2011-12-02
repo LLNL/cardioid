@@ -10,7 +10,7 @@ class Drand48Object
    {
       srand48(seed);
       for (unsigned ii=0; ii<2000; ++ii)
-	 drand48();
+         drand48();
    }
    
    int operator()(int maxval)

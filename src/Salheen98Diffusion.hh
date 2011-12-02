@@ -83,7 +83,7 @@ class Salheen98PrecomputeDiffusion : public Diffusion
    
    void updateVoltageBlock(const std::vector<double>& Vm);
    void printAllConductivities(const Array3d<int>& tissue,
-			       const Array3d<SigmaTensorMatrix>& sigma);
+                               const Array3d<SigmaTensorMatrix>& sigma);
    void printAllDiffusionWeights(const Array3d<int>& tissue);
 
 

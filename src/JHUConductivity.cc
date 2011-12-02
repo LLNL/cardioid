@@ -95,8 +95,8 @@ void JHUConductivity::compute(const AnatomyCell& cell, SigmaTensorMatrix& sigma)
 
    for (unsigned ii=0; ii<3; ++ii)
       for (unsigned jj=0; jj<3; ++jj)
-	 if (abs(D[ii][jj]) < 1e-12 * GT_)
-	    D[ii][jj] = 0;
+         if (abs(D[ii][jj]) < 1e-12 * GT_)
+            D[ii][jj] = 0;
    
    
    // Check: Determinant of Diffusion Tensor 'D' should be 1

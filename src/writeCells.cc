@@ -15,7 +15,7 @@ using namespace std;
 
 /** Only write records for the local cells */
 void writeCells(const Simulate& sim,
-		const std::string& filename)
+                const std::string& filename)
 {
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -67,8 +67,8 @@ void writeCells(const Simulate& sim,
    {
       if (cells[ii].dest_ != lastDest)
       {
-	 count =0;
-	 lastDest = cells[ii].dest_;
+         count =0;
+         lastDest = cells[ii].dest_;
       }
 
       Vector v = indexToVector(cells[ii].gid_);
@@ -77,8 +77,8 @@ void writeCells(const Simulate& sim,
       int iz = int(v.z()) - halfNz;
 
       int l = snprintf(line, lrec, fmt,
-		       ix, iy, iz, cells[ii].cellType_, cells[ii].dest_,
-		       sim.VmArray_[ii]);
+                       ix, iy, iz, cells[ii].cellType_, cells[ii].dest_,
+                       sim.VmArray_[ii]);
       
       for (; l < lrec - 1; l++) line[l] = (char)' ';
       line[l++] = (char)'\n';
@@ -91,8 +91,8 @@ void writeCells(const Simulate& sim,
 
 /** Writes all the cells in the cell array. */
 void writeCells(const vector<AnatomyCell>& cells,
-		int nx, int ny, int nz,
-		const std::string& filename)
+                int nx, int ny, int nz,
+                const std::string& filename)
 {
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -141,8 +141,8 @@ void writeCells(const vector<AnatomyCell>& cells,
    {
       if (cells[ii].dest_ != lastDest)
       {
-	 count =0;
-	 lastDest = cells[ii].dest_;
+         count =0;
+         lastDest = cells[ii].dest_;
       }
 
       Vector v = indexToVector(cells[ii].gid_);
@@ -151,7 +151,7 @@ void writeCells(const vector<AnatomyCell>& cells,
       int iz = int(v.z()) - halfNz;
 
       int l = snprintf(line, lrec, fmt,
-		       ix, iy, iz, cells[ii].cellType_, cells[ii].dest_);
+                       ix, iy, iz, cells[ii].cellType_, cells[ii].dest_);
       
       for (; l < lrec - 1; l++) line[l] = (char)' ';
       line[l++] = (char)'\n';

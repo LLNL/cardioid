@@ -41,19 +41,19 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
    { //scope
       for (int ii=0; ii<nTasks; ++ii)
       {
-	 if (ii == myRank)
-	    continue;
-	 double rij = 0.0;
-	 for (int jj=0; jj<3; ++jj)
-	 {
-	    double xij = dInfo[ii].center()[jj] - myCenter[jj];
-	    rij += xij*xij;
-	 }
-	 assert(rij > 0.0);
-	 rij = sqrt(rij);
-	 // this process is a potential neighbor, add it to the list
-	 if (rij <= myRadius + dInfo[ii].radius() + deltaR)
-	    myNbrs.push_back(ii);
+         if (ii == myRank)
+            continue;
+         double rij = 0.0;
+         for (int jj=0; jj<3; ++jj)
+         {
+            double xij = dInfo[ii].center()[jj] - myCenter[jj];
+            rij += xij*xij;
+         }
+         assert(rij > 0.0);
+         rij = sqrt(rij);
+         // this process is a potential neighbor, add it to the list
+         if (rij <= myRadius + dInfo[ii].radius() + deltaR)
+            myNbrs.push_back(ii);
       }
    } //scope
 
@@ -66,14 +66,14 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
       set<Long64> myGids;
       for (unsigned ii=0; ii<gid.size(); ++ii)
       {
-	 myGids.insert(gid[ii]);
-	 Grid3DStencil stencil(gid[ii], nx, ny, nz);
-	 for (int jj=0; jj<stencil.nStencil(); ++jj)
-	    stencilGids.insert(stencil[jj]);
+         myGids.insert(gid[ii]);
+         Grid3DStencil stencil(gid[ii], nx, ny, nz);
+         for (int jj=0; jj<stencil.nStencil(); ++jj)
+            stencilGids.insert(stencil[jj]);
       }
       set_difference(stencilGids.begin(), stencilGids.end(),
-		     myGids.begin(), myGids.end(), 
-		     back_inserter(neededCells));
+                     myGids.begin(), myGids.end(), 
+                     back_inserter(neededCells));
    } //scope
    
 //    { //ddt
@@ -83,8 +83,8 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
 //       ofstream file(buf.str().c_str());
 //       for (unsigned ii=0; ii<neededCells.size(); ++ii)
 //       {
-// 	 Tuple gg = indexToTuple(neededCells[ii]);
-// 	 file << gg.x() << " " << gg.y() << " " << gg.z() <<endl;
+//       Tuple gg = indexToTuple(neededCells[ii]);
+//       file << gg.x() << " " << gg.y() << " " << gg.z() <<endl;
 //       }
 //    } //end ddt
    
@@ -98,20 +98,20 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
       vector<Vector> neededVectors;
       neededVectors.reserve(neededCells.size());
       for (unsigned ii=0; ii<neededCells.size(); ++ii)
-	 neededVectors.push_back(indexToVector(neededCells[ii]));
+         neededVectors.push_back(indexToVector(neededCells[ii]));
      
       for (unsigned ii=0; ii<myNbrs.size(); ++ii)
       {
-	 Vector ri = dInfo[myNbrs[ii]].center();
-	 double rMax2 = dInfo[myNbrs[ii]].radius() + 1e-5;
-	 rMax2 *= rMax2;
-	 for (unsigned jj=0; jj<neededCells.size(); ++jj)
-	 {
-	    Vector rij = ri - neededVectors[jj];
-	    if ( dot(rij, rij)  <= rMax2 )
-	       sendBuf.push_back(neededCells[jj]);
-	 }
-	 sendOffset.push_back(sendBuf.size());
+         Vector ri = dInfo[myNbrs[ii]].center();
+         double rMax2 = dInfo[myNbrs[ii]].radius() + 1e-5;
+         rMax2 *= rMax2;
+         for (unsigned jj=0; jj<neededCells.size(); ++jj)
+         {
+            Vector rij = ri - neededVectors[jj];
+            if ( dot(rij, rij)  <= rMax2 )
+               sendBuf.push_back(neededCells[jj]);
+         }
+         sendOffset.push_back(sendBuf.size());
       }
    } //scope
 
@@ -126,21 +126,21 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
       MPI_Request recvReq[nNbrs];
       for (int ii=0; ii<nNbrs; ++ii)
       {
-	 int source = myNbrs[ii];
-	 MPI_Irecv(&recvOffset[ii+1], 1, MPI_INT, source, tag, comm_, recvReq+ii);
+         int source = myNbrs[ii];
+         MPI_Irecv(&recvOffset[ii+1], 1, MPI_INT, source, tag, comm_, recvReq+ii);
       }  
       vector<int> buf(nNbrs);
       for (int ii=0; ii<nNbrs; ++ii)
       {
-	 int dest = myNbrs[ii];
-	 buf[ii] = sendOffset[ii+1]-sendOffset[ii];
-	 MPI_Isend(&buf[ii], 1, MPI_INT, dest, tag, comm_, sendReq+ii);
+         int dest = myNbrs[ii];
+         buf[ii] = sendOffset[ii+1]-sendOffset[ii];
+         MPI_Isend(&buf[ii], 1, MPI_INT, dest, tag, comm_, sendReq+ii);
       }  
       MPI_Waitall(nNbrs, sendReq, MPI_STATUSES_IGNORE);
       MPI_Waitall(nNbrs, recvReq, MPI_STATUSES_IGNORE);
 
       for (int ii=0; ii<myNbrs.size(); ++ii)
-	 recvOffset[ii+1] += recvOffset[ii];
+         recvOffset[ii+1] += recvOffset[ii];
    } //scope
   
    // send cell requests to neighbors
@@ -152,16 +152,16 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
       const int tag = 78540;
       for (unsigned ii=0; ii<nNbrs; ++ii)
       {
-	 int source = myNbrs[ii];
-	 int nRecv = recvOffset[ii+1] - recvOffset[ii];
-	 MPI_Irecv(&recvBuf[recvOffset[ii]], nRecv, MPI_LONG_LONG, source , tag ,comm_, recvReq+ii);
+         int source = myNbrs[ii];
+         int nRecv = recvOffset[ii+1] - recvOffset[ii];
+         MPI_Irecv(&recvBuf[recvOffset[ii]], nRecv, MPI_LONG_LONG, source , tag ,comm_, recvReq+ii);
       }  
      
       for (int ii=0; ii<nNbrs; ++ii)
       {
-	 int dest = myNbrs[ii];
-	 int nSend = sendOffset[ii+1]-sendOffset[ii];
-	 MPI_Isend(&sendBuf[sendOffset[ii]], nSend, MPI_LONG_LONG, dest, tag, comm_, sendReq+ii);
+         int dest = myNbrs[ii];
+         int nSend = sendOffset[ii+1]-sendOffset[ii];
+         MPI_Isend(&sendBuf[sendOffset[ii]], nSend, MPI_LONG_LONG, dest, tag, comm_, sendReq+ii);
       }  
       MPI_Waitall(nNbrs, sendReq, MPI_STATUSES_IGNORE);
       MPI_Waitall(nNbrs, recvReq, MPI_STATUSES_IGNORE);
@@ -178,13 +178,13 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
       vector<Long64>::const_iterator last =  recvBuf.begin() + recvOffset[ii+1];
       for (unsigned jj=0; jj<gid.size(); ++jj)
       {
-	 if (binary_search(first, last, gid[jj]))
-	    sendMap_.push_back(jj);
+         if (binary_search(first, last, gid[jj]))
+            sendMap_.push_back(jj);
       }
       if (sendMap_.size() > sendOffset_.back())
       {
-	 sendRank_.push_back(myNbrs[ii]);
-	 sendOffset_.push_back(sendMap_.size());
+         sendRank_.push_back(myNbrs[ii]);
+         sendOffset_.push_back(sendMap_.size());
       }
      
    }

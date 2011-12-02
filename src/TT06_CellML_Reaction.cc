@@ -28,17 +28,17 @@ TT06_CellML_Reaction::TT06_CellML_Reaction(const Anatomy& anatomy)
       int ttType = ttType_[anatomy.cellType(ii)];
       switch (ttType)
       {
-	case 0:
-	 cellModel_.push_back(new TT06_CellML_Endo());
-	 break;
-	case 1:
-	 cellModel_.push_back(new TT06_CellML_Mid());
-	 break;
-	case 2:
-	 cellModel_.push_back(new TT06_CellML_Epi());
-	 break;
-	default:
-	 assert(false);
+        case 0:
+         cellModel_.push_back(new TT06_CellML_Endo());
+         break;
+        case 1:
+         cellModel_.push_back(new TT06_CellML_Mid());
+         break;
+        case 2:
+         cellModel_.push_back(new TT06_CellML_Epi());
+         break;
+        default:
+         assert(false);
       }
    }
    
@@ -54,9 +54,9 @@ TT06_CellML_Reaction::~TT06_CellML_Reaction()
 
 
 void TT06_CellML_Reaction::calc(double dt,
-				const vector<double>& Vm,
-				const vector<double>& iStim,
-				vector<double>& dVm)
+                                const vector<double>& Vm,
+                                const vector<double>& iStim,
+                                vector<double>& dVm)
 {
    assert(nCells_ == dVm.size());
    

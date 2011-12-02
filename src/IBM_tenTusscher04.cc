@@ -1,7 +1,7 @@
-/*	File: IBM_tenTusscher04.cpp
+/*      File: IBM_tenTusscher04.cpp
     automatically created by ExtractParameterClass.pl - done by dw (20.04.2007)
     Institute of Biomedical Engineering, Universität Karlsruhe (TH)
-    send comments to dw@ibt.uka.de	*/
+    send comments to dw@ibt.uka.de      */
 
 #include "IBM_tenTusscher04.hh"
 
@@ -421,11 +421,11 @@ double IBM_tenTusscher04::Calc(double dt, double V, double i_external)
 void IBM_tenTusscher04::Print()//ostream &tempstr, double tArg,  double V) 
 {  
 /*
-	tempstr<<tArg<<' '<<y_TT[tt_V]<<' '
-	<<y_TT[tt_m]<<' '<<y_TT[tt_h]<<' '<<y_TT[tt_j]<<' '<<y_TT[tt_d]<<' '
-	<<y_TT[tt_f]<<' '<<y_TT[tt_fCa]<<' '<<y_TT[tt_g]<<' '<<y_TT[tt_xr1]<<' '<<y_TT[tt_xr2]<<' '
-	<<y_TT[tt_xs]<<' '<<y_TT[tt_r]<<' '<<y_TT[tt_s]<<' '<<y_TT[tt_Ca_i]<<' '<<y_TT[tt_CaSR]<<' '<<y_TT[tt_Na_i]<<' '<<y_TT[tt_K_i];
-*/	
+        tempstr<<tArg<<' '<<y_TT[tt_V]<<' '
+        <<y_TT[tt_m]<<' '<<y_TT[tt_h]<<' '<<y_TT[tt_j]<<' '<<y_TT[tt_d]<<' '
+        <<y_TT[tt_f]<<' '<<y_TT[tt_fCa]<<' '<<y_TT[tt_g]<<' '<<y_TT[tt_xr1]<<' '<<y_TT[tt_xr2]<<' '
+        <<y_TT[tt_xs]<<' '<<y_TT[tt_r]<<' '<<y_TT[tt_s]<<' '<<y_TT[tt_Ca_i]<<' '<<y_TT[tt_CaSR]<<' '<<y_TT[tt_Na_i]<<' '<<y_TT[tt_K_i];
+*/      
 };
 
 void IBM_tenTusscher04::LongPrint()//ostream &tempstr, double tArg,  double V) 
@@ -434,34 +434,34 @@ void IBM_tenTusscher04::LongPrint()//ostream &tempstr, double tArg,  double V)
     Print(tempstr, tArg, V);
       const double svolt=V*1000.0;
       constint Vi=(int)(DivisionTab*(RangeTabhalf+svolt)+.5);
-	  const double EK=( ttps.RToverF)*(log((( ttps.K_o )/y_TT[tt_K_i])));
-	  const double ENa=( ttps.RToverF )*(log((( ttps.Na_o )/y_TT[tt_Na_i])));
-	  const double EKs=( ttps.RToverF )*(log(( ttps.KopKNaNao )/(y_TT[tt_K_i]+( ttps.pKNa )*y_TT[tt_Na_i])));
-	  const double ECa=0.5*( ttps.RToverF )*(log((( ttps.Ca_o)/y_TT[tt_Ca_i])));
-	  const double AK1=0.1/(1.+exp(0.06*(svolt-EK-200)));
-	  const double BK1=(3.*exp(0.0002*(svolt-EK+100))+exp(0.1*(svolt-EK-10)))/(1.+exp(-0.5*(svolt-EK)));
-	  const double rec_iK1=AK1/(AK1+BK1);
-	  const double I_pCa=( ttps.g_pCa )*y_TT[tt_Ca_i]/(( ttps.KpCa )+y_TT[tt_Ca_i]);
-	  const double I_pK=( ttps.g_pK )* rec_ipK  *(svolt-EK);
-	  const double I_Na=( ttps.g_Na )*m*m*m*h*j*(svolt-ENa);
-	  const double I_CaL=d*f*y_TT[tt_fCa]*( CaL_P1  *y_TT[tt_Ca_i]+ CaL_P2  );
-	  const double I_NaCa=( NaCa_P1  )*y_TT[tt_Na_i]*y_TT[tt_Na_i]*y_TT[tt_Na_i]-y_TT[tt_Ca_i]*( NaCa_P2  );
-	  const double I_NaK=( NaK_P1  )*(y_TT[tt_Na_i]/(y_TT[tt_Na_i]+( ttps.KmNa )));
-	  const double I_to=( ttps.g_to )*y_TT[tt_r]*s*(svolt-EK);
-	  const double I_Kr=( ttps.g_Kr )*sqrt(( ttps.K_o )/5.4)*y_TT[tt_xr1]*y_TT[tt_xr2]*(svolt-EK);
-	  const double I_Ks=( ttps.g_Ks )*y_TT[tt_xs]*y_TT[tt_xs]*(svolt-EKs);
-	  const double I_K1=( ttps.g_K1 )*rec_iK1*(svolt-EK);
-	  const double I_bNa=( ttps.g_bNa )*(svolt-ENa);
-	  const double I_bCa=( ttps.g_bCa )*(svolt-ECa);
-	//  const double Caisquare=y_TT[tt_Ca_i]*y_TT[tt_Ca_i];
-	  const double CaSRsquare=y_TT[tt_CaSR]*y_TT[tt_CaSR];
-	//  const double CaCurrent=-(I_CaL+I_bCa+I_pCa-2*I_NaCa)*( ttps.inverseVcF2C );
-	  const double A=0.016464*CaSRsquare/(0.0625+CaSRsquare)+0.008232;
-	  const double I_rel=A*d*g;
-	  const double I_leak=0.00008*(y_TT[tt_CaSR]-y_TT[tt_Ca_i]);
-	  const double I_mem=I_Kr+I_Ks+I_K1+I_to+I_Na+I_bNa+I_CaL+I_bCa+I_NaK+I_NaCa+I_pCa+I_pK;
-	tempstr<<' '<<I_Na/0.185<<' '<<I_CaL/0.185<<' '<<I_bCa/0.185<<' '<<I_pCa/0.185<<' '<<I_to/0.185<<' '<<I_Ks/0.185<<' '<<I_Kr/0.185<<' '<<I_K1/0.185
-	    <<' '<<I_pK/0.185<<' '<<I_bNa/0.185<<' '<<I_NaK/0.185<<' '<<I_NaCa/0.185<<' '<<I_rel
-	    <<' '<<I_leak <<' '<<I_mem << ' ';
+          const double EK=( ttps.RToverF)*(log((( ttps.K_o )/y_TT[tt_K_i])));
+          const double ENa=( ttps.RToverF )*(log((( ttps.Na_o )/y_TT[tt_Na_i])));
+          const double EKs=( ttps.RToverF )*(log(( ttps.KopKNaNao )/(y_TT[tt_K_i]+( ttps.pKNa )*y_TT[tt_Na_i])));
+          const double ECa=0.5*( ttps.RToverF )*(log((( ttps.Ca_o)/y_TT[tt_Ca_i])));
+          const double AK1=0.1/(1.+exp(0.06*(svolt-EK-200)));
+          const double BK1=(3.*exp(0.0002*(svolt-EK+100))+exp(0.1*(svolt-EK-10)))/(1.+exp(-0.5*(svolt-EK)));
+          const double rec_iK1=AK1/(AK1+BK1);
+          const double I_pCa=( ttps.g_pCa )*y_TT[tt_Ca_i]/(( ttps.KpCa )+y_TT[tt_Ca_i]);
+          const double I_pK=( ttps.g_pK )* rec_ipK  *(svolt-EK);
+          const double I_Na=( ttps.g_Na )*m*m*m*h*j*(svolt-ENa);
+          const double I_CaL=d*f*y_TT[tt_fCa]*( CaL_P1  *y_TT[tt_Ca_i]+ CaL_P2  );
+          const double I_NaCa=( NaCa_P1  )*y_TT[tt_Na_i]*y_TT[tt_Na_i]*y_TT[tt_Na_i]-y_TT[tt_Ca_i]*( NaCa_P2  );
+          const double I_NaK=( NaK_P1  )*(y_TT[tt_Na_i]/(y_TT[tt_Na_i]+( ttps.KmNa )));
+          const double I_to=( ttps.g_to )*y_TT[tt_r]*s*(svolt-EK);
+          const double I_Kr=( ttps.g_Kr )*sqrt(( ttps.K_o )/5.4)*y_TT[tt_xr1]*y_TT[tt_xr2]*(svolt-EK);
+          const double I_Ks=( ttps.g_Ks )*y_TT[tt_xs]*y_TT[tt_xs]*(svolt-EKs);
+          const double I_K1=( ttps.g_K1 )*rec_iK1*(svolt-EK);
+          const double I_bNa=( ttps.g_bNa )*(svolt-ENa);
+          const double I_bCa=( ttps.g_bCa )*(svolt-ECa);
+        //  const double Caisquare=y_TT[tt_Ca_i]*y_TT[tt_Ca_i];
+          const double CaSRsquare=y_TT[tt_CaSR]*y_TT[tt_CaSR];
+        //  const double CaCurrent=-(I_CaL+I_bCa+I_pCa-2*I_NaCa)*( ttps.inverseVcF2C );
+          const double A=0.016464*CaSRsquare/(0.0625+CaSRsquare)+0.008232;
+          const double I_rel=A*d*g;
+          const double I_leak=0.00008*(y_TT[tt_CaSR]-y_TT[tt_Ca_i]);
+          const double I_mem=I_Kr+I_Ks+I_K1+I_to+I_Na+I_bNa+I_CaL+I_bCa+I_NaK+I_NaCa+I_pCa+I_pK;
+        tempstr<<' '<<I_Na/0.185<<' '<<I_CaL/0.185<<' '<<I_bCa/0.185<<' '<<I_pCa/0.185<<' '<<I_to/0.185<<' '<<I_Ks/0.185<<' '<<I_Kr/0.185<<' '<<I_K1/0.185
+            <<' '<<I_pK/0.185<<' '<<I_bNa/0.185<<' '<<I_NaK/0.185<<' '<<I_NaCa/0.185<<' '<<I_rel
+            <<' '<<I_leak <<' '<<I_mem << ' ';
 */
 };

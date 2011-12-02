@@ -12,7 +12,7 @@ using std::set;
 
 
 AnatomyReader::AnatomyReader(const string& filename, MPI_Comm comm,
-			     Simulate& sim)
+                             Simulate& sim)
 : _anatomy(sim.anatomy_.cellArray())
 {
    int myRank;
@@ -84,7 +84,7 @@ void AnatomyReader::asciiReader(PFILE* file)
       Pfgets(buf, file->recordLength, file);
       sscanf(buf, "%llu %d %d %d", &(tmp.gid_), &(tmp.cellType_), &(tmp.theta_), &(tmp.phi_));
       if (typeSet.find(tmp.cellType_) != typeSet.end())
-	 _anatomy.push_back(tmp);
+         _anatomy.push_back(tmp);
    }
 }
 

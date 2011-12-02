@@ -124,7 +124,7 @@ void Array3d<T>::resize(unsigned nx, unsigned ny, unsigned nz)
    nz_ = nz;
    pointerSetup();
 }
-			
+                        
 
 template <class T> inline 
 unsigned const Array3d<T>::tupleToIndex(unsigned ix, unsigned iy, unsigned iz) const
@@ -141,7 +141,7 @@ void Array3d<T>::pointerSetup()
    {
       cArray_[ii] = (T**) malloc(sizeof(T*)*ny_);
       for (unsigned jj=0; jj<ny_; ++jj)
-	 cArray_[ii][jj] = &data_[0] + nz_*(jj + ny_*(ii)); 
+         cArray_[ii][jj] = &data_[0] + nz_*(jj + ny_*(ii)); 
    }
 }
 

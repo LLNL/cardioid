@@ -9,7 +9,7 @@ class HaloExchange
 {
  public:
    HaloExchange(const std::vector<int>& sendMap,
-		const CommTable& comm);
+                const CommTable& comm);
 
    void execute(std::vector<T>& data, unsigned nLocal);
    
@@ -21,7 +21,7 @@ class HaloExchange
 
 template <class T>
 HaloExchange<T>::HaloExchange(const std::vector<int>& sendMap,
-			      const CommTable& comm)
+                              const CommTable& comm)
 : width_(sizeof(T)),
   commTable_(comm),
   sendMap_(sendMap)

@@ -46,7 +46,7 @@ CommTable::CommTable(
    int* sendBuf = new int[2*_sendTask.size()];
    MPI_Request* recvReq = new MPI_Request[_recvTask.size()];
    MPI_Request* sendReq = new MPI_Request[_sendTask.size()];
-	
+        
    for (unsigned ii=0; ii<_recvTask.size(); ++ii)
    {
       MPI_Irecv(recvBuf+2*ii, 2, MPI_INT, MPI_ANY_SOURCE, tag, _comm, recvReq+ii);
@@ -60,7 +60,7 @@ CommTable::CommTable(
    }
    MPI_Waitall(_sendTask.size(), sendReq, MPI_STATUSES_IGNORE);
    MPI_Waitall(_recvTask.size(), recvReq, MPI_STATUSES_IGNORE);
-	
+        
    // set recvTask and recvOffset arrays.
    _recvOffset[0] = 0;
    for (unsigned ii=0; ii<_recvTask.size(); ++ii)

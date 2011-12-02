@@ -34,7 +34,7 @@ void assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
    else if (method == "grid")
       gridBalancer(sim, obj, comm);
    else
-      assert(1==0);	 
+      assert(1==0);      
 }
 
 namespace
@@ -62,7 +62,7 @@ namespace
       Koradi balancer(sim.anatomy_, kp);
       
       if (kp.nCentersPerTask > 1)
-	 exit(0);
+         exit(0);
    }
 }
 

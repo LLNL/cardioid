@@ -32,8 +32,8 @@ class CommTable
   public:
 
    CommTable(const std::vector<int>& sendTask,
-				 const std::vector<int>& sendOffset,
-				 MPI_Comm comm);
+             const std::vector<int>& sendOffset,
+             MPI_Comm comm);
    ~CommTable();
 
    void execute(void* sendBuf, void* recvBuf, unsigned width);
@@ -41,10 +41,10 @@ class CommTable
 
   private:
 
-	std::vector<int> _sendTask;   // ranks to send to
-	std::vector<int> _recvTask;   // ranks to recv from
-	std::vector<int> _sendOffset; // offsets to sendBuf. offsets are size n+1
-	std::vector<int> _recvOffset; // offsets to recvBuf
+   std::vector<int> _sendTask;   // ranks to send to
+   std::vector<int> _recvTask;   // ranks to recv from
+   std::vector<int> _sendOffset; // offsets to sendBuf. offsets are size n+1
+   std::vector<int> _recvOffset; // offsets to recvBuf
    MPI_Comm  _comm;
 };
 

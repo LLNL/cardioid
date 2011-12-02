@@ -19,7 +19,7 @@ void writeCells(const Simulate& sim, const std::string& filename);
 // array has both local and remote cells and this routine will write all
 // of them into the file producing a file with duplicate cellls.
 void writeCells(const std::vector<AnatomyCell>& cells,
-		int nx, int ny, int nz,
-		const std::string& filename);
+                int nx, int ny, int nz,
+                const std::string& filename);
 
 #endif

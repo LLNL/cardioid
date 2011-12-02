@@ -17,9 +17,9 @@ struct TT04_CellMLState
 
 
 TT04_CellML_Reaction::TT04_CellML_Reaction(const Anatomy& anatomy,
-					   IntegratorType integrator)
+                                           IntegratorType integrator)
 : nCells_(anatomy.nLocal()),
-	  integrator_(integrator)
+          integrator_(integrator)
 {
    ttType_.resize(256, -1); 
    ttType_[30] = 0;
@@ -39,17 +39,17 @@ TT04_CellML_Reaction::TT04_CellML_Reaction(const Anatomy& anatomy,
       int ttType = ttType_[anatomy.cellType(ii)];
       switch (ttType)
       {
-	case 0:
-	 cellModel_.push_back(new TT04_CellML_Endo());
-	 break;
-	case 1:
-	 cellModel_.push_back(new TT04_CellML_Mid());
-	 break;
-	case 2:
-	 cellModel_.push_back(new TT04_CellML_Epi());
-	 break;
-	default:
-	 assert(false);
+        case 0:
+         cellModel_.push_back(new TT04_CellML_Endo());
+         break;
+        case 1:
+         cellModel_.push_back(new TT04_CellML_Mid());
+         break;
+        case 2:
+         cellModel_.push_back(new TT04_CellML_Epi());
+         break;
+        default:
+         assert(false);
       }
    }
 
@@ -58,7 +58,7 @@ TT04_CellML_Reaction::TT04_CellML_Reaction(const Anatomy& anatomy,
    {
       for (unsigned jj=0; jj<17; ++jj)
       {
-	 s_[ii].state[jj] = cellModel_[ii]->defaultState(jj);
+         s_[ii].state[jj] = cellModel_[ii]->defaultState(jj);
       }
    }
    
@@ -74,9 +74,9 @@ TT04_CellML_Reaction::~TT04_CellML_Reaction()
 }
 
 void TT04_CellML_Reaction::calc(double dt,
-				const vector<double>& Vm,
-				const vector<double>& iStim,
-				vector<double>& dVm)
+                                const vector<double>& Vm,
+                                const vector<double>& iStim,
+                                vector<double>& dVm)
 {
    assert(nCells_ == dVm.size());
 
@@ -108,7 +108,7 @@ void TT04_CellML_Reaction::forwardEulerIntegrator(
 
       // forward euler to integrate internal state variables.
       for (unsigned jj=1; jj<17; ++jj)
-	 s_[ii].state[jj] += rates[jj] * dt;
+         s_[ii].state[jj] += rates[jj] * dt;
    
    }
 }
@@ -127,10 +127,10 @@ void TT04_CellML_Reaction::rushLarsonIntegrator(
 
       // forward euler for all states except rushLarson for fast sodium.
       for (unsigned jj=1; jj<7; ++jj)
-	 s_[ii].state[jj] += rates[jj] * dt;
+         s_[ii].state[jj] += rates[jj] * dt;
       s_[ii].state[7] =  algebraic[4] - (algebraic[4]-s_[ii].state[7])*exp(-dt/algebraic[39]);
       for (unsigned jj=8; jj<17; ++jj)
-	 s_[ii].state[jj] += rates[jj] * dt;
+         s_[ii].state[jj] += rates[jj] * dt;
    
    }
 }

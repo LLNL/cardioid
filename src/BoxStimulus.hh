@@ -24,8 +24,8 @@ class BoxStimulus : public Stimulus
  public:
    BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy);
    void stim(double time,
-	     std::vector<double>& dVmDiffusion,
-	     std::vector<double>& dVmExternal);
+             std::vector<double>& dVmDiffusion,
+             std::vector<double>& dVmExternal);
    
  private:
    double dVmStim_;

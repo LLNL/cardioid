@@ -5,8 +5,8 @@
 
 inline void
 calcConductivityMatrixIBT(SigmaTensorMatrix& conductivity,
-			  double sigmal, double sigmat,
-			  int phi, int theta);
+                          double sigmal, double sigmat,
+                          int phi, int theta);
 
 
 
@@ -40,8 +40,8 @@ SigmaTensorMatrix FibreConductivity::defaultValue()
  */
 inline void
 calcConductivityMatrixIBT(SigmaTensorMatrix& conductivity,
-			  double sigmal, double sigmat,
-			  int phi, int theta)
+                          double sigmal, double sigmat,
+                          int phi, int theta)
 {
    double sinPhi   = std::sin(  phi*M_PI/256); // SinTable[phi];
    double cosPhi   = std::cos(  phi*M_PI/256); // CosTable[phi];
@@ -67,26 +67,26 @@ calcConductivityMatrixIBT(SigmaTensorMatrix& conductivity,
       ((sigmat) *  sinThetaSquared);
    //M(0,1) = M(1,0)
    conductivity.a12 = ((sigmal)  -
-		       (sigmat)) * cosPhi * sinThetaSquared * sinPhi;
+                       (sigmat)) * cosPhi * sinThetaSquared * sinPhi;
    //M(0,2) = M(2,0)
    conductivity.a13 = ((sigmal) -
-		       (sigmat)) * cosTheta * cosPhi * sinTheta;
+                       (sigmat)) * cosTheta * cosPhi * sinTheta;
    //M(1,2) = M(2,1)
    conductivity.a23 = ((sigmal) -
-		       (sigmat)) * sinPhi * cosTheta * sinTheta;
+                       (sigmat)) * sinPhi * cosTheta * sinTheta;
 
    //ewd
    if (false && conductivity.a11 <= 0.0)
    {
       std::cout
-	 << sinPhi << " " << cosPhi << " " << sinTheta << " " << cosTheta << "\n"
-	 << conductivity.a11 << "\t"
-	 << conductivity.a12 << "\t"
-	 << conductivity.a13 << "\n"
-	 << conductivity.a22 << "\t"
-	 << conductivity.a23 << "\n"
-	 << conductivity.a33 << "\t"
-	 << std::endl;
+         << sinPhi << " " << cosPhi << " " << sinTheta << " " << cosTheta << "\n"
+         << conductivity.a11 << "\t"
+         << conductivity.a12 << "\t"
+         << conductivity.a13 << "\n"
+         << conductivity.a22 << "\t"
+         << conductivity.a23 << "\n"
+         << conductivity.a33 << "\t"
+         << std::endl;
    }                         
 
 }

@@ -27,8 +27,8 @@ TT04_CellML_Mid::TT04_CellML_Mid()
 
 /** returns dVm/dt for the reaction part only. */
 double TT04_CellML_Mid::calc(double Vm, double iStim,
-			     double states[17], double rates[17],
-			     double algebraic[67])
+                             double states[17], double rates[17],
+                             double algebraic[67])
 {
    double dummy  = 0.;
    algebraic[0] = iStim;

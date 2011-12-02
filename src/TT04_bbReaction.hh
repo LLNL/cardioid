@@ -12,9 +12,9 @@ class TT04_bbReaction : public Reaction
    TT04_bbReaction(const Anatomy& anatomy);
    
    void calc(double dt,
-	     const std::vector<double>& Vm,
-	     const std::vector<double>& iStim,
-	     std::vector<double>& dVm);
+             const std::vector<double>& Vm,
+             const std::vector<double>& iStim,
+             std::vector<double>& dVm);
 
  private:
    unsigned nCells_;

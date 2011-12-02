@@ -33,9 +33,9 @@ TT04_bbReaction::TT04_bbReaction(const Anatomy& anatomy)
 }
 
 void TT04_bbReaction::calc(double dt,
-			   const vector<double>& Vm,
-			   const vector<double>& iStim,
-			   vector<double>& dVm)
+                           const vector<double>& Vm,
+                           const vector<double>& iStim,
+                           vector<double>& dVm)
 {
    assert(nCells_ == dVm.size());
    

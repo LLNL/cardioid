@@ -20,8 +20,8 @@ class PointStimulus : public Stimulus
  public:
    PointStimulus(const PointStimulusParms& p, const Anatomy& anatomy);
    void stim(double time,
-	     std::vector<double>& dVmDiffusion,
-	     std::vector<double>& dVmExternal);
+             std::vector<double>& dVmDiffusion,
+             std::vector<double>& dVmExternal);
    
  private:
    int targetCell_;

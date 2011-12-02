@@ -23,8 +23,8 @@ PointStimulus::PointStimulus(const PointStimulusParms& p, const Anatomy& anatomy
 }
 
 void PointStimulus::stim(double time,
-			vector<double>& dVmDiffusion,
-			vector<double>& dVmExternal)
+                        vector<double>& dVmDiffusion,
+                        vector<double>& dVmExternal)
 {
   // apply stimulus only within tStart_ to tStop_ window
   if (time >= tStart_ && (time <= tStop_ || tStop_ <= 0.0))

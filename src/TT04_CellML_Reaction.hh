@@ -19,9 +19,9 @@ class TT04_CellML_Reaction : public Reaction
    ~TT04_CellML_Reaction();
 
    void calc(double dt,
-	     const std::vector<double>& Vm,
-	     const std::vector<double>& iStim,
-	     std::vector<double>& dVm);
+             const std::vector<double>& Vm,
+             const std::vector<double>& iStim,
+             std::vector<double>& dVm);
 
  private:
 

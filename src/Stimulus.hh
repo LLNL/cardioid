@@ -7,8 +7,8 @@ class Stimulus
 {
  public:
    virtual void stim(double time,
-		     std::vector<double>& dVmDiffusion,
-		     std::vector<double>& dVmExternal) = 0;
+                     std::vector<double>& dVmDiffusion,
+                     std::vector<double>& dVmExternal) = 0;
    virtual ~Stimulus(){};
 };
 

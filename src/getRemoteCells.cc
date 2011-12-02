@@ -22,8 +22,8 @@ void dumpCells(const Anatomy& anatomy)
       ofstream file(buf.str().c_str());
       for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
       {
-	 Tuple gg = anatomy.globalTuple(ii);
-	 file << gg.x() << " " << gg.y() << " " << gg.z() <<endl;
+         Tuple gg = anatomy.globalTuple(ii);
+         file << gg.x() << " " << gg.y() << " " << gg.z() <<endl;
       }
    }
    {
@@ -32,8 +32,8 @@ void dumpCells(const Anatomy& anatomy)
       ofstream file(buf.str().c_str());
       for (unsigned ii=anatomy.nLocal(); ii<anatomy.size(); ++ii)
       {
-	 Tuple gg = anatomy.globalTuple(ii);
-	 file << gg.x() << " " << gg.y() << " " << gg.z() <<endl;
+         Tuple gg = anatomy.globalTuple(ii);
+         file << gg.x() << " " << gg.y() << " " << gg.z() <<endl;
       }
    }
    

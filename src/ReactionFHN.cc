@@ -27,7 +27,7 @@ ReactionFHN::ReactionFHN(const Anatomy& anatomy)
 
 
 void ReactionFHN::calc(double dt, const vector<double>& Vm,
-		       const vector<double>& iStim , vector<double>& dVm)
+                       const vector<double>& iStim , vector<double>& dVm)
 {
   for (unsigned ii=0; ii<nCells_; ++ii)
   {

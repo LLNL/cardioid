@@ -61,8 +61,8 @@ void simulationLoop(Simulate& sim)
 //     {
 //        Tuple gt = sim.anatomy_.globalTuple(ii);
 //        printf("dVmd: %8d %5d %5d %5d %20.12e %20.12e\n",
-// 	      sim.loop_, gt.x(), gt.y(), gt.z(), dVmDiffusion[ii],
-// 	      sim.VmArray_[ii]);
+//            sim.loop_, gt.x(), gt.y(), gt.z(), dVmDiffusion[ii],
+//            sim.VmArray_[ii]);
 //     }
     //ddt end
     

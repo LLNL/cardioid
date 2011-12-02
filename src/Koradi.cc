@@ -107,22 +107,22 @@ Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
       balanceStep();
       if (ii>0  && ii%outputRate_ == 0)
       {
-	 stringstream name;
-	 name << "balance."<< setfill('0') <<setw(8) << ii;
-	 string fullname = name.str();
-	 DirTestCreate(fullname.c_str());
-	 fullname += "/anatomy";
-	 writeCells(cells_, anatomy.nx(), anatomy.ny(), anatomy.nz(),
-		    fullname.c_str());
+         stringstream name;
+         name << "balance."<< setfill('0') <<setw(8) << ii;
+         string fullname = name.str();
+         DirTestCreate(fullname.c_str());
+         fullname += "/anatomy";
+         writeCells(cells_, anatomy.nx(), anatomy.ny(), anatomy.nz(),
+                    fullname.c_str());
       }
       
       if (verbose_)
-	 printStatistics();
+         printStatistics();
 
       double maxLoad = *max_element(load_.begin(), load_.end());
       double imbalance = abs(maxLoad - targetLoad_)/targetLoad_;
       if (imbalance < tolerance_)
-	 break;
+         break;
    }
    stringstream name;
    name << "balance.final";
@@ -130,7 +130,7 @@ Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
    DirTestCreate(fullname.c_str());
    fullname += "/anatomy";
    writeCells(cells_, anatomy.nx(), anatomy.ny(), anatomy.nz(),
-	      fullname.c_str());
+              fullname.c_str());
 }
 
 void Koradi::balanceStep()
@@ -153,10 +153,10 @@ void Koradi::voronoiBalance()
       bias_.assign(bias_.size(), 0);
       computeLoad(load_);
       if (verbose_)
-	 printStatistics();
+         printStatistics();
 
 //       if (stats.imbalance < tolerance_)
-// 	 break;
+//       break;
    }
 }
 
@@ -177,10 +177,10 @@ void Koradi::distributeCellsEvenly()
 
    cells_.resize(max(nWant, cells_.size()));
    distributeArray((unsigned char*)&(cells_[0]),
-		   nLocal,
-		   nWant,
-		   sizeof(AnatomyCell),
-		   MPI_COMM_WORLD);
+                   nLocal,
+                   nWant,
+                   sizeof(AnatomyCell),
+                   MPI_COMM_WORLD);
    cells_.resize(nWant);
 }
 
@@ -222,13 +222,13 @@ void Koradi::calculateCellDestinations()
    if (nbrDomains_[0].size() == 0)
    {
       GRID_ASSIGNMENT_OBJECT* gao = gao_init(centers_.size(),
-					     (const void*) &(centers_[0]),
-					     sizeof(THREE_VECTOR));
+                                             (const void*) &(centers_[0]),
+                                             sizeof(THREE_VECTOR));
    
       for (unsigned ii=0; ii<cells_.size(); ++ii)
       {
-	 THREE_VECTOR r = indexTo3Vector_(cells_[ii].gid_);
-	 cells_[ii].dest_ = gao_nearestCenter(gao, r);
+         THREE_VECTOR r = indexTo3Vector_(cells_[ii].gid_);
+         cells_[ii].dest_ = gao_nearestCenter(gao, r);
       }
       gao_destroy(gao);
    }
@@ -236,21 +236,21 @@ void Koradi::calculateCellDestinations()
    {
       for (unsigned ii=0; ii<cells_.size(); ++ii)
       {
-	 int cellOwner = cells_[ii].dest_;
-	 Vector rCell = indexToVector_(cells_[ii].gid_);
-	 const vector<int> overLapList = nbrDomains_[cellOwner-localOffset_];
-	 double r2Min = diffSq(rCell, centers_[cellOwner]) - bias_[cellOwner];
-	 cells_[ii].dest_ = cellOwner;
-	 for (unsigned jj=0; jj<overLapList.size(); ++jj)
-	 {
-	    double r2 = diffSq(rCell, centers_[overLapList[jj]]) - bias_[overLapList[jj]];
-	    if (r2 < r2Min)
-	    {
-	       r2Min = r2;
-	       cells_[ii].dest_ = overLapList[jj];
-	    }
-	 }
-	 
+         int cellOwner = cells_[ii].dest_;
+         Vector rCell = indexToVector_(cells_[ii].gid_);
+         const vector<int> overLapList = nbrDomains_[cellOwner-localOffset_];
+         double r2Min = diffSq(rCell, centers_[cellOwner]) - bias_[cellOwner];
+         cells_[ii].dest_ = cellOwner;
+         for (unsigned jj=0; jj<overLapList.size(); ++jj)
+         {
+            double r2 = diffSq(rCell, centers_[overLapList[jj]]) - bias_[overLapList[jj]];
+            if (r2 < r2Min)
+            {
+               r2Min = r2;
+               cells_[ii].dest_ = overLapList[jj];
+            }
+         }
+         
       }
    }
 }
@@ -267,12 +267,12 @@ void Koradi::exchangeCells()
    unsigned capacity = max(10000ul, 4*cells_.size());
    cells_.resize(capacity);
    assignArray((unsigned char*) &(cells_[0]),
-	       &nLocal,
-	       capacity,
-	       sizeof(AnatomyCell),
-	       &(dest[0]),
-	       0,
-	       MPI_COMM_WORLD);
+               &nLocal,
+               capacity,
+               sizeof(AnatomyCell),
+               &(dest[0]),
+               0,
+               MPI_COMM_WORLD);
    cells_.resize(nLocal);
    sort(cells_.begin(), cells_.end(), sortByDest);
 }
@@ -347,17 +347,17 @@ void Koradi::printStatistics()
    if (myRank_ == 0)
    {
       cout << "min/max load, radius, bias  = "
-	   << minLoad << " " << maxLoad << " "
-	   << minRadius << " " << maxRadius << " "
-	   << minBias << " " << maxBias << endl;
+           << minLoad << " " << maxLoad << " "
+           << minRadius << " " << maxRadius << " "
+           << minBias << " " << maxBias << endl;
 //       for (unsigned ii=0; ii<centers_.size(); ++ii)
 //       {
-// 	 cout << ii <<": " <<bias_[ii]<<" " << nCells[ii] <<" "<<radii_[ii]
-// 	      <<" " << nbrDomains_[ii].size()<< " ";
-	 
-// 	 for (unsigned jj=0; jj<nbrDomains_[ii].size(); ++jj)
-// 	    cout << nbrDomains_[ii][jj] <<",";
-// 	 cout <<endl;
+//       cout << ii <<": " <<bias_[ii]<<" " << nCells[ii] <<" "<<radii_[ii]
+//            <<" " << nbrDomains_[ii].size()<< " ";
+         
+//       for (unsigned jj=0; jj<nbrDomains_[ii].size(); ++jj)
+//          cout << nbrDomains_[ii][jj] <<",";
+//       cout <<endl;
 //       }
 
    }
@@ -379,11 +379,11 @@ void Koradi::updateBias()
       double localAverageLoad = 0;
       const vector<int>& overLapList = nbrDomains_[ii];
       for (unsigned jj=0; jj<overLapList.size(); ++jj)
-	 localAverageLoad += load_[overLapList[jj]];
+         localAverageLoad += load_[overLapList[jj]];
       
 //      assert(overLapList.size() > 0);
       if (overLapList.size() > 0)
-	 localAverageLoad /= (1.0*overLapList.size());
+         localAverageLoad /= (1.0*overLapList.size());
 
       double aveLoad = globalAveLoad;
 //      double aveLoad = localAverageLoad;
@@ -411,13 +411,13 @@ void Koradi::findNbrDomains()
       double rii = radii_[ii];
       for (unsigned jj=0; jj<centers_.size(); ++jj)
       {
-	 if (jj == ii)
-	    continue;
-	 Vector cij = ci - centers_[jj];
-	 double r2 = dot(cij, cij);
-	 double rjj = radii_[jj];
-	 if (r2 < (rii+rjj+nbrDeltaR_)*(rii+rjj+nbrDeltaR_))
-	     nbrDomains_[iCenter].push_back(jj);
+         if (jj == ii)
+            continue;
+         Vector cij = ci - centers_[jj];
+         double r2 = dot(cij, cij);
+         double rjj = radii_[jj];
+         if (r2 < (rii+rjj+nbrDeltaR_)*(rii+rjj+nbrDeltaR_))
+             nbrDomains_[iCenter].push_back(jj);
       }
    }
 }
@@ -433,18 +433,18 @@ void Koradi::bruteForceDistanceCheck()
       Vector r = indexToVector_(cells_[ii].gid_);
       for (unsigned jj=0; jj<centers_.size(); ++jj)
       {
-	 Vector rij = r - centers_[jj];
-	 double r2 = dot(rij, rij);
-	 if (r2 < r2Min)
-	 {
-	    r2Min = r2;
-	    dest = jj;
-	 }
+         Vector rij = r - centers_[jj];
+         double r2 = dot(rij, rij);
+         if (r2 < r2Min)
+         {
+            r2Min = r2;
+            dest = jj;
+         }
       }
       if (dest != cells_[ii].dest_)
-	 cout << "Fail "<<ii<<" fast " <<cells_[ii].dest_<<" brute "<<dest<<endl;
+         cout << "Fail "<<ii<<" fast " <<cells_[ii].dest_<<" brute "<<dest<<endl;
       
-	 //assert(dest == cells_[ii].dest_);
+         //assert(dest == cells_[ii].dest_);
       
    }
 }

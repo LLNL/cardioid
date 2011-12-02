@@ -29,8 +29,8 @@ TT04_CellML_Endo::TT04_CellML_Endo()
 
 /** returns dVm/dt for the reaction part only. */
 double TT04_CellML_Endo::calc(double Vm, double iStim,
-			      double states[17], double rates[17],
-			      double algebraic[67])
+                              double states[17], double rates[17],
+                              double algebraic[67])
 {
    double dummy  = 0.;
    algebraic[0] = iStim;

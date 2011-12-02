@@ -136,7 +136,7 @@ Vector::operator<(const Vector& b) const
       _r[0]<b._r[0] ||
       (_r[0]==b._r[0] &&
        (_r[1]<b._r[1] ||
-	( _r[1] == b._r[1] && _r[2] < b._r[2] )));
+        ( _r[1] == b._r[1] && _r[2] < b._r[2] )));
 }
 
 inline Vector
