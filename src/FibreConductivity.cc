@@ -74,8 +74,9 @@ calcConductivityMatrixIBT(SigmaTensorMatrix& conductivity,
    //M(1,2) = M(2,1)
    conductivity.a23 = ((sigmal) -
 		       (sigmat)) * sinPhi * cosTheta * sinTheta;
-   
-   if (conductivity.a11 <= 0.0)
+
+   //ewd
+   if (false && conductivity.a11 <= 0.0)
    {
       std::cout
 	 << sinPhi << " " << cosPhi << " " << sinTheta << " " << cosTheta << "\n"

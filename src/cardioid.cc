@@ -44,7 +44,9 @@ int main(int argc, char** argv)
    Simulate sim;
    initializeSimulate("simulate", sim);
    
+   sim.tmap_["simulation_loop"].start();
    simulationLoop(sim);  
+   sim.tmap_["simulation_loop"].stop();
    
    if (mype == 0)
    {
@@ -52,8 +54,8 @@ int main(int argc, char** argv)
       cout.setf(ios::fixed,ios::floatfield);
       for ( map<std::string,Timer>::iterator i = sim.tmap_.begin(); i != sim.tmap_.end(); i++ )
       {
-	 double time = (*i).second.real();
-	 cout << "timing name=" << setw(15) << (*i).first << ":   time=" << setprecision(6) << setw(12) << time << " sec" << endl;
+        double time = (*i).second.real();
+        cout << "timing name=" << setw(15) << (*i).first << ":   time=" << setprecision(6) << setw(12) << time << " sec" << endl;
       }
       
    }

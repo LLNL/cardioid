@@ -25,24 +25,24 @@ using namespace std;
  *  the anatomy, yet we need to have something there when we want to
  *  compute stencil operations. */
 void initializeTissueBlock(Array3d<int>& tissue, const LocalGrid & localGrid,
-			   const Anatomy& anatomy)
+                           const Anatomy& anatomy)
 {
-   for (unsigned ii=0; ii<tissue.size(); ++ii)
-      tissue(ii) = 9;
+  for (unsigned ii=0; ii<tissue.size(); ++ii)
+    tissue(ii) = 9;
 
-   int nxGlobal = anatomy.nx();
-   int nyGlobal = anatomy.ny();
-   int nzGlobal = anatomy.nz();
-   for (unsigned ix=0; ix<localGrid.nx(); ++ix)
-      for (unsigned iy=0; iy<localGrid.ny(); ++iy)
-	 for (unsigned iz=0; iz<localGrid.nz(); ++iz)
-	 {
-	    Tuple gt = localGrid.globalTuple(Tuple(ix, iy, iz));
-	    if (gt.x() <= 0 || gt.x() >= nxGlobal ||
-		gt.y() <= 0 || gt.y() >= nyGlobal ||
-		gt.z() <= 0 || gt.z() >= nzGlobal )
-	       tissue(ix, iy, iz) = 0;
-	 }
+  int nxGlobal = anatomy.nx();
+  int nyGlobal = anatomy.ny();
+  int nzGlobal = anatomy.nz();
+  for (unsigned ix=0; ix<localGrid.nx(); ++ix)
+    for (unsigned iy=0; iy<localGrid.ny(); ++iy)
+      for (unsigned iz=0; iz<localGrid.nz(); ++iz)
+      {
+        Tuple gt = localGrid.globalTuple(Tuple(ix, iy, iz));
+        if (gt.x() <= 0 || gt.x() >= nxGlobal ||
+            gt.y() <= 0 || gt.y() >= nyGlobal ||
+            gt.z() <= 0 || gt.z() >= nzGlobal )
+          tissue(ix, iy, iz) = 0;
+      }
 }
 
 /** We want to find the boundingBox such that any stencil point of any
@@ -55,79 +55,79 @@ void initializeTissueBlock(Array3d<int>& tissue, const LocalGrid & localGrid,
  */
 LocalGrid findBoundingBox(const Anatomy& anatomy)
 {
-   assert(anatomy.nLocal() > 0);
-   Tuple globalTuple = anatomy.globalTuple(0);
-   int xMin = globalTuple.x();
-   int yMin = globalTuple.y();
-   int zMin = globalTuple.z();
-   int xMax = globalTuple.x();
-   int yMax = globalTuple.y();
-   int zMax = globalTuple.z();
+  assert(anatomy.nLocal() > 0);
+  Tuple globalTuple = anatomy.globalTuple(0);
+  int xMin = globalTuple.x();
+  int yMin = globalTuple.y();
+  int zMin = globalTuple.z();
+  int xMax = globalTuple.x();
+  int yMax = globalTuple.y();
+  int zMax = globalTuple.z();
 
-   for (unsigned ii=1; ii<anatomy.nLocal(); ++ii)
-   {
-      Tuple globalTuple = anatomy.globalTuple(ii);
-      xMin = min(xMin, globalTuple.x());
-      yMin = min(yMin, globalTuple.y());
-      zMin = min(zMin, globalTuple.z());
-      xMax = max(xMax, globalTuple.x());
-      yMax = max(yMax, globalTuple.y());
-      zMax = max(zMax, globalTuple.z());
-   }
+  for (unsigned ii=1; ii<anatomy.nLocal(); ++ii)
+  {
+    Tuple globalTuple = anatomy.globalTuple(ii);
+    xMin = min(xMin, globalTuple.x());
+    yMin = min(yMin, globalTuple.y());
+    zMin = min(zMin, globalTuple.z());
+    xMax = max(xMax, globalTuple.x());
+    yMax = max(yMax, globalTuple.y());
+    zMax = max(zMax, globalTuple.z());
+  }
 
-   int stencilSize = 1;
+  int stencilSize = 1;
    
-   int nx = 2*stencilSize + xMax - xMin + 1;
-   int ny = 2*stencilSize + yMax - yMin + 1;
-   int nz = 2*stencilSize + zMax - zMin + 1;
-   xMin -= stencilSize;
-   yMin -= stencilSize;
-   zMin -= stencilSize;
+  int nx = 2*stencilSize + xMax - xMin + 1;
+  int ny = 2*stencilSize + yMax - yMin + 1;
+  int nz = 2*stencilSize + zMax - zMin + 1;
+  xMin -= stencilSize;
+  yMin -= stencilSize;
+  zMin -= stencilSize;
    
-   return LocalGrid(nx, ny, nz, xMin, yMin, zMin);
+  return LocalGrid(nx, ny, nz, xMin, yMin, zMin);
 }
 
 
 Salheen98PrecomputeDiffusion::Salheen98PrecomputeDiffusion(
-   const Salheen98DiffusionParms& parms,
-   const Anatomy& anatomy)
-: localGrid_(findBoundingBox(anatomy)),
-  diffusionScale_(parms.diffusionScale_)
+    const Salheen98DiffusionParms& parms,
+    const Anatomy& anatomy)
+    : localGrid_(findBoundingBox(anatomy)),
+      diffusionScale_(parms.diffusionScale_)
 {
-   unsigned nx = localGrid_.nx();
-   unsigned ny = localGrid_.ny();
-   unsigned nz = localGrid_.nz();
+  unsigned nx = localGrid_.nx();
+  unsigned ny = localGrid_.ny();
+  unsigned nz = localGrid_.nz();
 
-   // This is a test
-   for (unsigned ii=0; ii<anatomy.size(); ++ii)
-   {
-      Tuple globalTuple = anatomy.globalTuple(ii);
-      Tuple ll = localGrid_.localTuple(globalTuple);
-      assert(ll.x() >= 0 && ll.y() >= 0 && ll.z() >= 0);
-      assert(ll.x() < nx && ll.y() < ny && ll.z() < nz);
-   }
-   // This has been a test
+  // This is a test
+  for (unsigned ii=0; ii<anatomy.size(); ++ii)
+  {
+    Tuple globalTuple = anatomy.globalTuple(ii);
+    Tuple ll = localGrid_.localTuple(globalTuple);
+    assert(ll.x() >= 0 && ll.y() >= 0 && ll.z() >= 0);
+    assert(ll.x() < nx && ll.y() < ny && ll.z() < nz);
+  }
+  // This has been a test
    
-   diffIntra_.resize(nx, ny, nz);
-   VmBlock_.resize(nx, ny, nz);
+  diffIntra_.resize(nx, ny, nz);
+  VmBlock_.resize(nx, ny, nz);
 
-   buildTupleArray(anatomy);
-   buildBlockIndex(anatomy);
-   conductivity_ = conductivityFactory(parms.conductivityName_, anatomy);
-   precomputeCoefficients(anatomy);
+  buildTupleArray(anatomy);
+  buildBlockIndex(anatomy);
+  conductivity_ = conductivityFactory(parms.conductivityName_, anatomy);
+  precomputeCoefficients(anatomy);
 }
 
    
 void Salheen98PrecomputeDiffusion::calc(
-   const vector<double>& Vm, vector<double>& dVm)
+    const vector<double>& Vm, vector<double>& dVm)
 {
-   updateVoltageBlock(Vm);
+  updateVoltageBlock(Vm);
 
-   for (unsigned ii=0; ii<dVm.size(); ++ii)
-   {
-      dVm[ii] = boundaryFDLaplacianSaleheen98SumPhi(localTuple_[ii]);
-      dVm[ii] *= diffusionScale_;
-   }
+  for (unsigned ii=0; ii<dVm.size(); ++ii)
+  {
+    dVm[ii] = boundaryFDLaplacianSaleheen98SumPhi(localTuple_[ii]);
+    dVm[ii] *= diffusionScale_;
+  }
 }
 /** We're building the localTuple array only for local cells.  We can't
  * do stencil operations on remote particles so we shouldn't need
@@ -135,29 +135,29 @@ void Salheen98PrecomputeDiffusion::calc(
  */
 void Salheen98PrecomputeDiffusion::buildTupleArray(const Anatomy& anatomy)
 {
-   localTuple_.resize(anatomy.nLocal(), Tuple(0,0,0));
-   for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
-   {
-      Tuple globalTuple = anatomy.globalTuple(ii);
-      localTuple_[ii] = localGrid_.localTuple(globalTuple);
-      assert(localTuple_[ii].x() > 0);
-      assert(localTuple_[ii].y() > 0);
-      assert(localTuple_[ii].z() > 0);
-      assert(localTuple_[ii].x() < localGrid_.nx()-1);
-      assert(localTuple_[ii].y() < localGrid_.ny()-1);
-      assert(localTuple_[ii].z() < localGrid_.nz()-1);
-   }
+  localTuple_.resize(anatomy.nLocal(), Tuple(0,0,0));
+  for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
+  {
+    Tuple globalTuple = anatomy.globalTuple(ii);
+    localTuple_[ii] = localGrid_.localTuple(globalTuple);
+    assert(localTuple_[ii].x() > 0);
+    assert(localTuple_[ii].y() > 0);
+    assert(localTuple_[ii].z() > 0);
+    assert(localTuple_[ii].x() < localGrid_.nx()-1);
+    assert(localTuple_[ii].y() < localGrid_.ny()-1);
+    assert(localTuple_[ii].z() < localGrid_.nz()-1);
+  }
 }
 
 void Salheen98PrecomputeDiffusion::buildBlockIndex(const Anatomy& anatomy)
 {
-   blockIndex_.resize(anatomy.size());
-   for (unsigned ii=0; ii<anatomy.size(); ++ii)
-   {
-      Tuple globalTuple = anatomy.globalTuple(ii);
-      Tuple ll = localGrid_.localTuple(globalTuple);
-      blockIndex_[ii] = VmBlock_.tupleToIndex(ll.x(), ll.y(), ll.z());
-   }
+  blockIndex_.resize(anatomy.size());
+  for (unsigned ii=0; ii<anatomy.size(); ++ii)
+  {
+    Tuple globalTuple = anatomy.globalTuple(ii);
+    Tuple ll = localGrid_.localTuple(globalTuple);
+    blockIndex_[ii] = VmBlock_.tupleToIndex(ll.x(), ll.y(), ll.z());
+  }
 }
 
 
@@ -195,54 +195,55 @@ void Salheen98PrecomputeDiffusion::buildBlockIndex(const Anatomy& anatomy)
  *  for the edges of the local brick.  In fact, doing so will fail since
  *  the stencil can't be satisfied.
  
- */
+*/
 void
 Salheen98PrecomputeDiffusion::precomputeCoefficients(const Anatomy& anatomy)
 {
-   unsigned nx = localGrid_.nx();
-   unsigned ny = localGrid_.ny();
-   unsigned nz = localGrid_.nz();
-   unsigned nxGlobal = anatomy.nx();
-   unsigned nyGlobal = anatomy.ny();
-   unsigned nzGlobal = anatomy.nz();
+  unsigned nx = localGrid_.nx();
+  unsigned ny = localGrid_.ny();
+  unsigned nz = localGrid_.nz();
+  unsigned nxGlobal = anatomy.nx();
+  unsigned nyGlobal = anatomy.ny();
+  unsigned nzGlobal = anatomy.nz();
    
-   Array3d<SigmaTensorMatrix> sigmaMintra(nx, ny, nz);
-   Array3d<int> tissue(nx, ny, nz);
-   initializeTissueBlock(tissue, localGrid_, anatomy);
-   SigmaTensorMatrix sigmaDefault = conductivity_->defaultValue();
-   for (unsigned ii=0; ii<sigmaMintra.size(); ++ii)
-      sigmaMintra(ii) = sigmaDefault;
-   const vector<AnatomyCell>& cell = anatomy.cellArray();
-   // What about default values for sigmaMintra and tissue?
-   // Not all entries in the block are calculated.
-   for (unsigned ii=0; ii<anatomy.size(); ++ii)
-   {
-      unsigned ib = blockIndex_[ii];
-      conductivity_->compute(cell[ii], sigmaMintra(ib));
-      tissue(ib) = anatomy.cellType(ii);
-   }
+  Array3d<SigmaTensorMatrix> sigmaMintra(nx, ny, nz);
+  Array3d<int> tissue(nx, ny, nz);
+  initializeTissueBlock(tissue, localGrid_, anatomy);
+  SigmaTensorMatrix sigmaDefault = conductivity_->defaultValue();
+  for (unsigned ii=0; ii<sigmaMintra.size(); ++ii)
+    sigmaMintra(ii) = sigmaDefault;
+  const vector<AnatomyCell>& cell = anatomy.cellArray();
+  // What about default values for sigmaMintra and tissue?
+  // Not all entries in the block are calculated.
+  for (unsigned ii=0; ii<anatomy.size(); ++ii)
+  {
+    unsigned ib = blockIndex_[ii];
+    conductivity_->compute(cell[ii], sigmaMintra(ib));
+    tissue(ib) = anatomy.cellType(ii);
+  }
 
-//   printAllConductivities(tissue, sigmaMintra); //ddt
+  //printAllConductivities(tissue, sigmaMintra); //ddt
    
-   double dxInv = 1.0/anatomy.dx();
-   double dyInv = 1.0/anatomy.dy();
-   double dzInv = 1.0/anatomy.dz();
+  double dxInv = 1.0/anatomy.dx();
+  double dyInv = 1.0/anatomy.dy();
+  double dzInv = 1.0/anatomy.dz();
 
-   for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
-   {
-      unsigned ix = localTuple_[ii].x();
-      unsigned iy = localTuple_[ii].y();
-      unsigned iz = localTuple_[ii].z();
+  for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
+  {
+    unsigned ix = localTuple_[ii].x();
+    unsigned iy = localTuple_[ii].y();
+    unsigned iz = localTuple_[ii].z();
       
-      // compute diffIntra_(ix, iy, iz)
-      const int*** tt = (const int***) tissue.cArray();
-      const SigmaTensorMatrix*** ss =
-	 (const SigmaTensorMatrix***) sigmaMintra.cArray();
-      boundaryFDLaplacianSaleheen98Constants(
-	 tt, ss, ix, iy, iz, dxInv, dyInv, dzInv);
-   }
-
-//   printAllDiffusionWeights(tissue); //ddt
+    // compute diffIntra_(ix, iy, iz)
+    const int*** tt = (const int***) tissue.cArray();
+    const SigmaTensorMatrix*** ss =
+        (const SigmaTensorMatrix***) sigmaMintra.cArray();
+    boundaryFDLaplacianSaleheen98Constants(
+        tt, ss, ix, iy, iz, dxInv, dyInv, dzInv);
+  }
+  
+  //ewd DEBUG
+  //printAllDiffusionWeights(tissue); //ddt
 }
 
 
@@ -251,32 +252,32 @@ Salheen98PrecomputeDiffusion::precomputeCoefficients(const Anatomy& anatomy)
 /** Adapted from BlueBeats source code: FDLaplacian.h */
 double
 Salheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi(
-   const Tuple& tuple)
+    const Tuple& tuple)
 {
-   DiffusionCoefficients*** diffConst = diffIntra_.cArray();
-   double*** phi = VmBlock_.cArray();
-   const unsigned& x = tuple.x();
-   const unsigned& y = tuple.y();
-   const unsigned& z = tuple.z();
+  DiffusionCoefficients*** diffConst = diffIntra_.cArray();
+  double*** phi = VmBlock_.cArray();
+  const unsigned& x = tuple.x();
+  const unsigned& y = tuple.y();
+  const unsigned& z = tuple.z();
    
-   double SumAphi = (diffConst[x][y][z].A1  * (phi[x+1][y][z]))
-                  + (diffConst[x][y][z].A2  * (phi[x][y+1][z]))
-                  + (diffConst[x][y][z].A3  * (phi[x-1][y][z]))
-                  + (diffConst[x][y][z].A4  * (phi[x][y-1][z]))
-                  + (diffConst[x][y][z].A5  * (phi[x+1][y+1][z]))
-                  + (diffConst[x][y][z].A6  * (phi[x-1][y+1][z]))
-                  + (diffConst[x][y][z].A7  * (phi[x-1][y-1][z]))
-                  + (diffConst[x][y][z].A8  * (phi[x+1][y-1][z]))
-                  + (diffConst[x][y][z].A9  * (phi[x][y][z+1]))
-                  + (diffConst[x][y][z].A10 * (phi[x][y][z-1]))
-                  + (diffConst[x][y][z].A11 * (phi[x][y+1][z+1]))
-                  + (diffConst[x][y][z].A12 * (phi[x][y+1][z-1]))
-                  + (diffConst[x][y][z].A13 * (phi[x][y-1][z-1]))
-                  + (diffConst[x][y][z].A14 * (phi[x][y-1][z+1]))
-                  + (diffConst[x][y][z].A15 * (phi[x+1][y][z+1]))
-                  + (diffConst[x][y][z].A16 * (phi[x-1][y][z+1]))
-                  + (diffConst[x][y][z].A17 * (phi[x-1][y][z-1]))
-                  + (diffConst[x][y][z].A18 * (phi[x+1][y][z-1]));
+  double SumAphi = (diffConst[x][y][z].A1  * (phi[x+1][y][z]))
+      + (diffConst[x][y][z].A2  * (phi[x][y+1][z]))
+      + (diffConst[x][y][z].A3  * (phi[x-1][y][z]))
+      + (diffConst[x][y][z].A4  * (phi[x][y-1][z]))
+      + (diffConst[x][y][z].A5  * (phi[x+1][y+1][z]))
+      + (diffConst[x][y][z].A6  * (phi[x-1][y+1][z]))
+      + (diffConst[x][y][z].A7  * (phi[x-1][y-1][z]))
+      + (diffConst[x][y][z].A8  * (phi[x+1][y-1][z]))
+      + (diffConst[x][y][z].A9  * (phi[x][y][z+1]))
+      + (diffConst[x][y][z].A10 * (phi[x][y][z-1]))
+      + (diffConst[x][y][z].A11 * (phi[x][y+1][z+1]))
+      + (diffConst[x][y][z].A12 * (phi[x][y+1][z-1]))
+      + (diffConst[x][y][z].A13 * (phi[x][y-1][z-1]))
+      + (diffConst[x][y][z].A14 * (phi[x][y-1][z+1]))
+      + (diffConst[x][y][z].A15 * (phi[x+1][y][z+1]))
+      + (diffConst[x][y][z].A16 * (phi[x-1][y][z+1]))
+      + (diffConst[x][y][z].A17 * (phi[x-1][y][z-1]))
+      + (diffConst[x][y][z].A18 * (phi[x+1][y][z-1]));
   
   double result = SumAphi - (diffConst[x][y][z].sumA * (phi[x][y][z]));
   return result;
@@ -285,97 +286,127 @@ Salheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi(
 /** Adapted from BlueBeats source code: FDLaplacian.h */
 void
 Salheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98Constants(
-   const int*** tissue,
-   const SigmaTensorMatrix*** sigmaMatrix,
-   const int& x, const int& y, const int& z,
-   const double& dxInv, const double& dyInv, const double& dzInv)
+    const int*** tissue,
+    const SigmaTensorMatrix*** sigmaMatrix,
+    const int& x, const int& y, const int& z,
+    const double& dxInv, const double& dyInv, const double& dzInv)
 {
-   DiffusionCoefficients*** diffConst = diffIntra_.cArray();
+  DiffusionCoefficients*** diffConst = diffIntra_.cArray();
 
 
 
-   SigmaTensorMatrix conductivityMatrix[3][3][3];
+  SigmaTensorMatrix conductivityMatrix[3][3][3];
   
-   for (int i=0; i<3; ++i)
-      for (int j=0; j<3; ++j)
-	 for (int k=0; k<3; ++k)
-	 {
-	    conductivityMatrix[i][j][k].a11 = ((tissue[x-1+i][y-1+j][z-1+k]!=0)? (sigmaMatrix[x-1+i][y-1+j][z-1+k].a11):0.0);
-	    conductivityMatrix[i][j][k].a12 = ((tissue[x-1+i][y-1+j][z-1+k]!=0)? (sigmaMatrix[x-1+i][y-1+j][z-1+k].a12):0.0);
-	    conductivityMatrix[i][j][k].a13 = ((tissue[x-1+i][y-1+j][z-1+k]!=0)? (sigmaMatrix[x-1+i][y-1+j][z-1+k].a13):0.0);
-	    conductivityMatrix[i][j][k].a22 = ((tissue[x-1+i][y-1+j][z-1+k]!=0)? (sigmaMatrix[x-1+i][y-1+j][z-1+k].a22):0.0);
-	    conductivityMatrix[i][j][k].a23 = ((tissue[x-1+i][y-1+j][z-1+k]!=0)? (sigmaMatrix[x-1+i][y-1+j][z-1+k].a23):0.0);
-	    conductivityMatrix[i][j][k].a33 = ((tissue[x-1+i][y-1+j][z-1+k]!=0)? (sigmaMatrix[x-1+i][y-1+j][z-1+k].a33):0.0);
-	 }
+  for (int i=0; i<3; ++i)
+    for (int j=0; j<3; ++j)
+      for (int k=0; k<3; ++k)
+      {
+        conductivityMatrix[i][j][k].a11 = ((tissue[x-1+i][y-1+j][z-1+k]!=0)? (sigmaMatrix[x-1+i][y-1+j][z-1+k].a11):0.0);
+        conductivityMatrix[i][j][k].a12 = ((tissue[x-1+i][y-1+j][z-1+k]!=0)? (sigmaMatrix[x-1+i][y-1+j][z-1+k].a12):0.0);
+        conductivityMatrix[i][j][k].a13 = ((tissue[x-1+i][y-1+j][z-1+k]!=0)? (sigmaMatrix[x-1+i][y-1+j][z-1+k].a13):0.0);
+        conductivityMatrix[i][j][k].a22 = ((tissue[x-1+i][y-1+j][z-1+k]!=0)? (sigmaMatrix[x-1+i][y-1+j][z-1+k].a22):0.0);
+        conductivityMatrix[i][j][k].a23 = ((tissue[x-1+i][y-1+j][z-1+k]!=0)? (sigmaMatrix[x-1+i][y-1+j][z-1+k].a23):0.0);
+        conductivityMatrix[i][j][k].a33 = ((tissue[x-1+i][y-1+j][z-1+k]!=0)? (sigmaMatrix[x-1+i][y-1+j][z-1+k].a33):0.0);
+      }
                                                                                                                   
-   double dxdxInv = dxInv * dxInv;
-   double dydyInv = dyInv * dyInv;
-   double dzdzInv = dzInv * dzInv;
+  double dxdxInv = dxInv * dxInv;
+  double dydyInv = dyInv * dyInv;
+  double dzdzInv = dzInv * dzInv;
                       
-   const int i = 1;
-   const int j = 1;
-   const int k = 1;
+  const int i = 1;
+  const int j = 1;
+  const int k = 1;
 
-   // original formulation - note that I replaced division by multiplication of reciprocal and division by 2 with multiplication by 0.5
-   // I also used the central difference method for the differentiation. This results in a factor of 0.25 below
-   // NOTE: sigmaX, sigmaY, sigmaZ could be precalculated if no deformation and no chance in conductivity
+  // original formulation - note that I replaced division by multiplication of reciprocal and division by 2 with multiplication by 0.5
+  // I also used the central difference method for the differentiation. This results in a factor of 0.25 below
+  // NOTE: sigmaX, sigmaY, sigmaZ could be precalculated if no deformation and no chance in conductivity
                                                                                                                     
-   double sigmaX = 0.25 * dxInv * (((conductivityMatrix[i+1][j][k].a11 - conductivityMatrix[i-1][j][k].a11) * dxInv)
-					+ ((conductivityMatrix[i][j+1][k].a12 - conductivityMatrix[i][j-1][k].a12) * dyInv)
-					+ ((conductivityMatrix[i][j][k+1].a13 - conductivityMatrix[i][j][k-1].a13) * dzInv));
-   double sigmaY = 0.25 * dyInv * (((conductivityMatrix[i+1][j][k].a12 - conductivityMatrix[i-1][j][k].a12) * dxInv)
-					+ ((conductivityMatrix[i][j+1][k].a22 - conductivityMatrix[i][j-1][k].a12) * dyInv)
-					+ ((conductivityMatrix[i][j][k+1].a23 - conductivityMatrix[i][j][k-1].a23) * dzInv));
-   double sigmaZ = 0.25 * dzInv * (((conductivityMatrix[i+1][j][k].a13 - conductivityMatrix[i-1][j][k].a13) * dxInv)
-					+ ((conductivityMatrix[i][j+1][k].a23 - conductivityMatrix[i][j-1][k].a23) * dyInv)
-					+ ((conductivityMatrix[i][j][k+1].a33 - conductivityMatrix[i][j][k-1].a33) * dzInv));
+  double sigmaX = 0.25 * dxInv * (((conductivityMatrix[i+1][j][k].a11 - conductivityMatrix[i-1][j][k].a11) * dxInv)
+                                  + ((conductivityMatrix[i][j+1][k].a12 - conductivityMatrix[i][j-1][k].a12) * dyInv)
+                                  + ((conductivityMatrix[i][j][k+1].a13 - conductivityMatrix[i][j][k-1].a13) * dzInv));
+  double sigmaY = 0.25 * dyInv * (((conductivityMatrix[i+1][j][k].a12 - conductivityMatrix[i-1][j][k].a12) * dxInv)
+                                  + ((conductivityMatrix[i][j+1][k].a22 - conductivityMatrix[i][j-1][k].a12) * dyInv)
+                                  + ((conductivityMatrix[i][j][k+1].a23 - conductivityMatrix[i][j][k-1].a23) * dzInv));
+  double sigmaZ = 0.25 * dzInv * (((conductivityMatrix[i+1][j][k].a13 - conductivityMatrix[i-1][j][k].a13) * dxInv)
+                                  + ((conductivityMatrix[i][j+1][k].a23 - conductivityMatrix[i][j-1][k].a23) * dyInv)
+                                  + ((conductivityMatrix[i][j][k+1].a33 - conductivityMatrix[i][j][k-1].a33) * dzInv));
   
-   diffConst[x][y][z].A1  = conductivityMatrix[i+1][j][k].a11 * (dxdxInv - (sigmaX/conductivityMatrix[i][j][k].a11));
-   diffConst[x][y][z].A3  = conductivityMatrix[i-1][j][k].a11 * (dxdxInv + (sigmaX/conductivityMatrix[i][j][k].a11));
-   diffConst[x][y][z].A2  = conductivityMatrix[i][j+1][k].a22 * (dydyInv - (sigmaY/conductivityMatrix[i][j][k].a22));
-   diffConst[x][y][z].A4  = conductivityMatrix[i][j-1][k].a22 * (dydyInv + (sigmaY/conductivityMatrix[i][j][k].a22));
-   diffConst[x][y][z].A5  = diffConst[x][y][z].A6 = diffConst[x][y][z].A7 = diffConst[x][y][z].A8 = (0.5 * dxInv * dyInv);
+  //ewd: for 1D or 2D case, check that a11,a22,a33 nonzero before divide:
+  if (conductivityMatrix[i][j][k].a11 == 0.0)
+  {
+    diffConst[x][y][z].A1  = conductivityMatrix[i+1][j][k].a11 * dxdxInv;
+    diffConst[x][y][z].A3  = conductivityMatrix[i-1][j][k].a11 * dxdxInv;
+  }
+  else
+  {
+    diffConst[x][y][z].A1  = conductivityMatrix[i+1][j][k].a11 * (dxdxInv - (sigmaX/conductivityMatrix[i][j][k].a11));
+    diffConst[x][y][z].A3  = conductivityMatrix[i-1][j][k].a11 * (dxdxInv + (sigmaX/conductivityMatrix[i][j][k].a11));
+  }
+  if (conductivityMatrix[i][j][k].a22 == 0.0)
+  {
+    diffConst[x][y][z].A2  = conductivityMatrix[i][j+1][k].a22 * dydyInv;
+    diffConst[x][y][z].A4  = conductivityMatrix[i][j-1][k].a22 * dydyInv;
+  }
+  else
+  {
+    diffConst[x][y][z].A2  = conductivityMatrix[i][j+1][k].a22 * (dydyInv - (sigmaY/conductivityMatrix[i][j][k].a22));
+    diffConst[x][y][z].A4  = conductivityMatrix[i][j-1][k].a22 * (dydyInv + (sigmaY/conductivityMatrix[i][j][k].a22));
+  }
+  diffConst[x][y][z].A5  = diffConst[x][y][z].A6 = diffConst[x][y][z].A7 = diffConst[x][y][z].A8 = (0.5 * dxInv * dyInv);
   
-   diffConst[x][y][z].A5  = conductivityMatrix[i+1][j+1][k].a12 * diffConst[x][y][z].A5;
-   diffConst[x][y][z].A6  = -(conductivityMatrix[i-1][j+1][k].a12 * diffConst[x][y][z].A6);
-   diffConst[x][y][z].A7  = conductivityMatrix[i-1][j-1][k].a12 * diffConst[x][y][z].A7;
-   diffConst[x][y][z].A8  = -(conductivityMatrix[i+1][j-1][k].a12 * diffConst[x][y][z].A8);
-   diffConst[x][y][z].A9  = conductivityMatrix[i][j][k+1].a33 * (dzdzInv - (sigmaZ/conductivityMatrix[i][j][k].a33));
-   diffConst[x][y][z].A10 = conductivityMatrix[i][j][k-1].a33 * (dzdzInv + (sigmaZ/conductivityMatrix[i][j][k].a33));
-   diffConst[x][y][z].A11 = diffConst[x][y][z].A12 = diffConst[x][y][z].A13 = diffConst[x][y][z].A14 = (0.5 * dyInv * dzInv);
+  diffConst[x][y][z].A5  = conductivityMatrix[i+1][j+1][k].a12 * diffConst[x][y][z].A5;
+  diffConst[x][y][z].A6  = -(conductivityMatrix[i-1][j+1][k].a12 * diffConst[x][y][z].A6);
+  diffConst[x][y][z].A7  = conductivityMatrix[i-1][j-1][k].a12 * diffConst[x][y][z].A7;
+  diffConst[x][y][z].A8  = -(conductivityMatrix[i+1][j-1][k].a12 * diffConst[x][y][z].A8);
+  if (conductivityMatrix[i][j][k].a11 == 0.0)
+  {
+    diffConst[x][y][z].A9  = conductivityMatrix[i][j][k+1].a33 * dzdzInv;
+    diffConst[x][y][z].A10 = conductivityMatrix[i][j][k-1].a33 * dzdzInv;
+  }
+  else
+  {
+    diffConst[x][y][z].A9  = conductivityMatrix[i][j][k+1].a33 * (dzdzInv - (sigmaZ/conductivityMatrix[i][j][k].a33));
+    diffConst[x][y][z].A10 = conductivityMatrix[i][j][k-1].a33 * (dzdzInv + (sigmaZ/conductivityMatrix[i][j][k].a33));
+  }
+  diffConst[x][y][z].A11 = diffConst[x][y][z].A12 = diffConst[x][y][z].A13 = diffConst[x][y][z].A14 = (0.5 * dyInv * dzInv);
   
-   diffConst[x][y][z].A11 = conductivityMatrix[i][j+1][k+1].a23 * diffConst[x][y][z].A11;
-   diffConst[x][y][z].A12 = -(conductivityMatrix[i][j+1][k-1].a23 * diffConst[x][y][z].A12);
-   diffConst[x][y][z].A13 = conductivityMatrix[i][j-1][k-1].a23 * diffConst[x][y][z].A13;
-   diffConst[x][y][z].A14 = -(conductivityMatrix[i][j-1][k+1].a23 * diffConst[x][y][z].A14);
-   diffConst[x][y][z].A15 = diffConst[x][y][z].A16 = diffConst[x][y][z].A17 = diffConst[x][y][z].A18 = (0.5 * dxInv * dzInv);
-  
-   diffConst[x][y][z].A15 = conductivityMatrix[i+1][j][k+1].a13 * diffConst[x][y][z].A15;
-   diffConst[x][y][z].A16 = -(conductivityMatrix[i-1][j][k+1].a13 * diffConst[x][y][z].A16);
-   diffConst[x][y][z].A17 = conductivityMatrix[i-1][j][k-1].a13 * diffConst[x][y][z].A17;
-   diffConst[x][y][z].A18 = -(conductivityMatrix[i+1][j][k-1].a13 * diffConst[x][y][z].A18);
+  diffConst[x][y][z].A11 = conductivityMatrix[i][j+1][k+1].a23 * diffConst[x][y][z].A11;
+  diffConst[x][y][z].A12 = -(conductivityMatrix[i][j+1][k-1].a23 * diffConst[x][y][z].A12);
+  diffConst[x][y][z].A13 = conductivityMatrix[i][j-1][k-1].a23 * diffConst[x][y][z].A13;
+  diffConst[x][y][z].A14 = -(conductivityMatrix[i][j-1][k+1].a23 * diffConst[x][y][z].A14);
 
-   // We express voltage in mV.
-   diffConst[x][y][z].A1 /= 1e3;
-   diffConst[x][y][z].A2 /= 1e3;
-   diffConst[x][y][z].A3 /= 1e3;
-   diffConst[x][y][z].A4 /= 1e3;
-   diffConst[x][y][z].A5 /= 1e3;
-   diffConst[x][y][z].A6 /= 1e3;
-   diffConst[x][y][z].A7 /= 1e3;
-   diffConst[x][y][z].A8 /= 1e3;
-   diffConst[x][y][z].A9 /= 1e3;
-   diffConst[x][y][z].A10 /= 1e3;
-   diffConst[x][y][z].A11 /= 1e3;
-   diffConst[x][y][z].A12 /= 1e3;
-   diffConst[x][y][z].A13 /= 1e3;
-   diffConst[x][y][z].A14 /= 1e3;
-   diffConst[x][y][z].A15 /= 1e3;
-   diffConst[x][y][z].A16 /= 1e3;
-   diffConst[x][y][z].A17 /= 1e3;
-   diffConst[x][y][z].A18 /= 1e3;
-   
-   diffConst[x][y][z].sumA = diffConst[x][y][z].A1 
+  diffConst[x][y][z].A15 =
+      diffConst[x][y][z].A16 =
+      diffConst[x][y][z].A17 =
+      diffConst[x][y][z].A18 = (0.5 * dxInv * dzInv);
+  diffConst[x][y][z].A15 = conductivityMatrix[i+1][j][k+1].a13 * diffConst[x][y][z].A15;
+  diffConst[x][y][z].A16 = -(conductivityMatrix[i-1][j][k+1].a13 * diffConst[x][y][z].A16);
+  diffConst[x][y][z].A17 = conductivityMatrix[i-1][j][k-1].a13 * diffConst[x][y][z].A17;
+  diffConst[x][y][z].A18 = -(conductivityMatrix[i+1][j][k-1].a13 * diffConst[x][y][z].A18);
+
+  // We express voltage in mV.
+  /*ewd:  diffusion constant doesn't need voltage conversion, it's in mm^2/msec
+  diffConst[x][y][z].A1 /= 1e3;
+  diffConst[x][y][z].A2 /= 1e3;
+  diffConst[x][y][z].A3 /= 1e3;
+  diffConst[x][y][z].A4 /= 1e3;
+  diffConst[x][y][z].A5 /= 1e3;
+  diffConst[x][y][z].A6 /= 1e3;
+  diffConst[x][y][z].A7 /= 1e3;
+  diffConst[x][y][z].A8 /= 1e3;
+  diffConst[x][y][z].A9 /= 1e3;
+  diffConst[x][y][z].A10 /= 1e3;
+  diffConst[x][y][z].A11 /= 1e3;
+  diffConst[x][y][z].A12 /= 1e3;
+  diffConst[x][y][z].A13 /= 1e3;
+  diffConst[x][y][z].A14 /= 1e3;
+  diffConst[x][y][z].A15 /= 1e3;
+  diffConst[x][y][z].A16 /= 1e3;
+  diffConst[x][y][z].A17 /= 1e3;
+  diffConst[x][y][z].A18 /= 1e3;
+  */
+  
+  diffConst[x][y][z].sumA = diffConst[x][y][z].A1 
       + diffConst[x][y][z].A2 
       + diffConst[x][y][z].A3 
       + diffConst[x][y][z].A4 
@@ -397,74 +428,74 @@ Salheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98Constants(
 
 
 void Salheen98PrecomputeDiffusion::updateVoltageBlock(
-   const std::vector<double>& Vm)
+    const std::vector<double>& Vm)
 {
-   for (unsigned ii=0; ii<Vm.size(); ++ii)
-   {
-      int index = blockIndex_[ii];
-      VmBlock_(index) = Vm[ii];
-   }
+  for (unsigned ii=0; ii<Vm.size(); ++ii)
+  {
+    int index = blockIndex_[ii];
+    VmBlock_(index) = Vm[ii];
+  }
 }
 
 void Salheen98PrecomputeDiffusion::printAllConductivities(
-   const Array3d<int>& tissue, const Array3d<SigmaTensorMatrix>& sigma)
+    const Array3d<int>& tissue, const Array3d<SigmaTensorMatrix>& sigma)
 {
-   unsigned nx = localGrid_.nx();
-   unsigned ny = localGrid_.ny();
-   unsigned nz = localGrid_.nz();
+  unsigned nx = localGrid_.nx();
+  unsigned ny = localGrid_.ny();
+  unsigned nz = localGrid_.nz();
 
-   for (unsigned ix=0; ix<nx; ++ix)
-      for (unsigned iy=0; iy<ny; ++iy)
-	 for (unsigned iz=0; iz<nz; ++iz)
-	 {
-	    Tuple globalTuple = localGrid_.globalTuple(Tuple(ix, iy, iz));
-	    printf("Conductivity: %5d %5d %5d %4d %18.12e %18.12e %18.12e %18.12e %18.12e %18.12e\n",
-		   globalTuple.x(),
-		   globalTuple.y(),
-		   globalTuple.z(),
-		   tissue(ix, iy, iz),
-		   sigma(ix, iy, iz).a11,
-		   sigma(ix, iy, iz).a22,
-		   sigma(ix, iy, iz).a33,
-		   sigma(ix, iy, iz).a12,
-		   sigma(ix, iy, iz).a13,
-		   sigma(ix, iy, iz).a23);
-	 }
+  for (unsigned ix=0; ix<nx; ++ix)
+    for (unsigned iy=0; iy<ny; ++iy)
+      for (unsigned iz=0; iz<nz; ++iz)
+      {
+        Tuple globalTuple = localGrid_.globalTuple(Tuple(ix, iy, iz));
+        printf("Conductivity: %5d %5d %5d %4d %18.12e %18.12e %18.12e %18.12e %18.12e %18.12e\n",
+               globalTuple.x(),
+               globalTuple.y(),
+               globalTuple.z(),
+               tissue(ix, iy, iz),
+               sigma(ix, iy, iz).a11,
+               sigma(ix, iy, iz).a22,
+               sigma(ix, iy, iz).a33,
+               sigma(ix, iy, iz).a12,
+               sigma(ix, iy, iz).a13,
+               sigma(ix, iy, iz).a23);
+      }
 }
 
 void Salheen98PrecomputeDiffusion::printAllDiffusionWeights(const Array3d<int>& tissue)
 {
-   for (unsigned ii=0; ii<localTuple_.size(); ++ii)
-   {
-      Tuple globalTuple = localGrid_.globalTuple(localTuple_[ii]);
-      int xx = localTuple_[ii].x();
-      int yy = localTuple_[ii].y();
-      int zz = localTuple_[ii].z();
-      printf("DiffusionWeight: %5d %5d %5d %4d"
-	     " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
-	     " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
-	     " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
-	     " %20.12e\n",
-	     globalTuple.x(), globalTuple.y(), globalTuple.z(),
-	     tissue(xx, yy, zz),
-	     diffIntra_(xx, yy, zz).A1,
-	     diffIntra_(xx, yy, zz).A2,
-	     diffIntra_(xx, yy, zz).A3,
-	     diffIntra_(xx, yy, zz).A4,
-	     diffIntra_(xx, yy, zz).A5,
-	     diffIntra_(xx, yy, zz).A6,
-	     diffIntra_(xx, yy, zz).A7,
-	     diffIntra_(xx, yy, zz).A8,
-	     diffIntra_(xx, yy, zz).A9,
-	     diffIntra_(xx, yy, zz).A10,
-	     diffIntra_(xx, yy, zz).A11,
-	     diffIntra_(xx, yy, zz).A12,
-	     diffIntra_(xx, yy, zz).A13,
-	     diffIntra_(xx, yy, zz).A14,
-	     diffIntra_(xx, yy, zz).A15,
-	     diffIntra_(xx, yy, zz).A16,
-	     diffIntra_(xx, yy, zz).A17,
-	     diffIntra_(xx, yy, zz).A18,
-	     diffIntra_(xx, yy, zz).sumA);
-   }
+  for (unsigned ii=0; ii<localTuple_.size(); ++ii)
+  {
+    Tuple globalTuple = localGrid_.globalTuple(localTuple_[ii]);
+    int xx = localTuple_[ii].x();
+    int yy = localTuple_[ii].y();
+    int zz = localTuple_[ii].z();
+    printf("DiffusionWeight: %5d %5d %5d %4d"
+           " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
+           " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
+           " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
+           " %20.12e\n",
+           globalTuple.x(), globalTuple.y(), globalTuple.z(),
+           tissue(xx, yy, zz),
+           diffIntra_(xx, yy, zz).A1,
+           diffIntra_(xx, yy, zz).A2,
+           diffIntra_(xx, yy, zz).A3,
+           diffIntra_(xx, yy, zz).A4,
+           diffIntra_(xx, yy, zz).A5,
+           diffIntra_(xx, yy, zz).A6,
+           diffIntra_(xx, yy, zz).A7,
+           diffIntra_(xx, yy, zz).A8,
+           diffIntra_(xx, yy, zz).A9,
+           diffIntra_(xx, yy, zz).A10,
+           diffIntra_(xx, yy, zz).A11,
+           diffIntra_(xx, yy, zz).A12,
+           diffIntra_(xx, yy, zz).A13,
+           diffIntra_(xx, yy, zz).A14,
+           diffIntra_(xx, yy, zz).A15,
+           diffIntra_(xx, yy, zz).A16,
+           diffIntra_(xx, yy, zz).A17,
+           diffIntra_(xx, yy, zz).A18,
+           diffIntra_(xx, yy, zz).sumA);
+  }
 }

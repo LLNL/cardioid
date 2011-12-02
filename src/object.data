@@ -6,12 +6,12 @@ simulate SIMULATE
    reaction = TT04_CellML;
    stimulus = test;
    probe = test;
-   loop = 0;
-   maxLoop = 50000;
-   dt = 2e-4; //msec
-   time = 0;
-   printRate = 50;
-   snapshotRate = 50;
+   loop = 0;            // in timesteps
+   maxLoop = 50000;     // in timesteps
+   dt = 2e-4;           // msec
+   time = 0;            // msec
+   printRate = 50;      // in timesteps
+   snapshotRate = 5000; // in timesteps
 }
 
 pioAnatomy ANATOMY 
@@ -19,9 +19,9 @@ pioAnatomy ANATOMY
    method = pio;
    fileName = snapshot.initial/anatomy#;
    cellTypes = -1;
-   dx = 0.000167; // in meters
-   dy = 0.000167; // in meters
-   dz = 0.000167; // in meters
+   dx = 0.167;   // in mm
+   dy = 0.167;   // in mm
+   dz = 0.167;   // in mm
 }
 
 koradi DECOMPOSITION 
@@ -50,22 +50,22 @@ Salheen98Fast DIFFUSION
    method = Salheen98;
    variant = precompute;
    conductivity = conductivity;
-   diffusionScale = 0.0066666666666666;
+   diffusionScale = 250.0;      // mm^3/mF
 }
 
 conductivity CONDUCTIVITY
 {
     method = fibre;
-    sigmaLi = 0.3;   // units S/m
-    sigmaTi = 0.03;  // units S/m
+    sigmaLi = 0.0003;   // units S/mm
+    sigmaTi = 0.00003;  // units S/mm
 }
 
 uniform CONDUCTIVITY
 {
     method = uniform;
-    sigma11 = 0.1;
-    sigma22 = 0.1;
-    sigma33 = 0.1;
+    sigma11 = 0.0001;  // S/mm
+    sigma22 = 0.0001;  // S/mm
+    sigma33 = 0.0001;  // S/mm
     sigma12 = 0.0;
     sigma13 = 0.0;
     sigma23 = 0.0;
@@ -74,8 +74,8 @@ uniform CONDUCTIVITY
 jhu CONDUCTIVITY
 {
     method = JHU;
-    sigmaLi = 0.0315;
-    sigmaTi = 0.3;
+    sigmaLi = 0.0000315; // S/mm
+    sigmaTi = 0.0003;    // S/mm
     sheetAngle = 45;
     rotationMatrix = 1;
     homogeneousFiber = 0;
@@ -137,5 +137,5 @@ pointSensor SENSOR
   startTime = 0.0;   // in ms
   printRate = 50;    // in timesteps
   printDerivs = 1;   // print dVm terms in addition to Vm (default = 0, i.e. off)
-  filebase = sensorData/vm_vs_t_pr50;  // this directory needs to exist before the run
+  filebase = sensorData/vm_vs_t;  // this directory needs to exist before the run
 }

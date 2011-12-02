@@ -184,6 +184,7 @@ namespace
       //ewd DEBUG
       
       //ewd print out load balance timing
+      /*
       if (myRank == 0)
       {
         cout.setf(ios::fixed,ios::floatfield);
@@ -192,6 +193,7 @@ namespace
           cout << "timing name=" << setw(15) << (*i).first << ":   time=" << setprecision(6) << setw(12) << time << " sec" << endl;
         }
       }
+      */
       // ewd DEBUG
 
 
