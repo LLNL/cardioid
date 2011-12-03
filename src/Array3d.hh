@@ -11,6 +11,7 @@ class Array3d
 
    Array3d();
    Array3d(unsigned nx, unsigned ny, unsigned nz);
+   Array3d(unsigned nx, unsigned ny, unsigned nz, const T& initValue);
    
    T& operator()(unsigned index);
    const T& operator()(unsigned index) const;
@@ -26,6 +27,7 @@ class Array3d
    unsigned nz() const;
    
    void resize(unsigned nx, unsigned ny, unsigned nz);
+   void resize(unsigned nx, unsigned ny, unsigned nz, const T& initValue);
    
    unsigned const tupleToIndex(unsigned ix, unsigned iy, unsigned iz) const;
 
@@ -48,6 +50,13 @@ Array3d<T>::Array3d()
 template <class T> 
 Array3d<T>::Array3d(unsigned nx, unsigned ny, unsigned nz)
 : nx_(nx), ny_(ny), nz_(nz), data_(nx*ny*nz)
+{
+   pointerSetup();
+}
+
+template <class T> 
+Array3d<T>::Array3d(unsigned nx, unsigned ny, unsigned nz, const T& initValue)
+: nx_(nx), ny_(ny), nz_(nz), data_(nx*ny*nz, initValue)
 {
    pointerSetup();
 }
@@ -125,6 +134,16 @@ void Array3d<T>::resize(unsigned nx, unsigned ny, unsigned nz)
    pointerSetup();
 }
                         
+template <class T>  
+void Array3d<T>::resize(unsigned nx, unsigned ny, unsigned nz, const T& initValue)
+{
+   assert(nx_ == 0 && ny_ == 0 && nz_ == 0);
+   data_.resize(nx*ny*nz, initValue);
+   nx_ = nx;
+   ny_ = ny;
+   nz_ = nz;
+   pointerSetup();
+}
 
 template <class T> inline 
 unsigned const Array3d<T>::tupleToIndex(unsigned ix, unsigned iy, unsigned iz) const

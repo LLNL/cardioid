@@ -114,19 +114,6 @@ void JHUConductivity::compute(const AnatomyCell& cell, SigmaTensorMatrix& sigma)
    sigma.a33 = D[2][2];
 }
 
-SigmaTensorMatrix JHUConductivity::defaultValue()
-{
-   SigmaTensorMatrix tmp;
-   tmp.a11 = GT_;
-   tmp.a22 = GT_;
-   tmp.a33 = GL_;
-   tmp.a12 = 0;
-   tmp.a13 = 0;
-   tmp.a23 = 0;
-   return tmp;
-}
-
-
 
 double JHUConductivity::getFiberAngle(const Tuple& globalCoord)
 {

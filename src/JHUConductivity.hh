@@ -52,7 +52,6 @@ class JHUConductivity : public Conductivity
  public:
    JHUConductivity(const JHUConductivityParms& p);
    void compute(const AnatomyCell& cell, SigmaTensorMatrix& sigma);
-   SigmaTensorMatrix defaultValue();
    
  private:
 

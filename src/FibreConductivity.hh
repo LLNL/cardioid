@@ -16,7 +16,6 @@ class FibreConductivity : public Conductivity
    FibreConductivity(const FibreConductivityParms& p);
    
    void compute(const AnatomyCell& cell, SigmaTensorMatrix& sigma);
-   SigmaTensorMatrix defaultValue();
    
  private:
    double sigmaTi_;

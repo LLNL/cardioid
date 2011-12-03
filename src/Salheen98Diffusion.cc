@@ -8,43 +8,6 @@
 
 using namespace std;
 
-
-// To Do
-//
-// 1.  What should be the default value of the cell type when the tissue
-// block is created in precomputeCoefficients?
-
-
-/** This implements (part of) the initialization conventions found at
- *  lines 1027 through 1076 of BlueBeats.cpp.  I.e., 9 everywhere,
- *  except 0 around the surface of the simulation cell.  (We'll
- *  overwrite this with actual cell types for the cells we have on this
- *  task later).  This is a necessary initialization since the cells
- *  around the edge of the block may be completely synthetic.  For cells
- *  at the outer wall of the heart their may be no nbr cell defined in
- *  the anatomy, yet we need to have something there when we want to
- *  compute stencil operations. */
-void initializeTissueBlock(Array3d<int>& tissue, const LocalGrid & localGrid,
-                           const Anatomy& anatomy)
-{
-  for (unsigned ii=0; ii<tissue.size(); ++ii)
-    tissue(ii) = 9;
-
-  int nxGlobal = anatomy.nx();
-  int nyGlobal = anatomy.ny();
-  int nzGlobal = anatomy.nz();
-  for (unsigned ix=0; ix<localGrid.nx(); ++ix)
-    for (unsigned iy=0; iy<localGrid.ny(); ++iy)
-      for (unsigned iz=0; iz<localGrid.nz(); ++iz)
-      {
-        Tuple gt = localGrid.globalTuple(Tuple(ix, iy, iz));
-        if (gt.x() <= 0 || gt.x() >= nxGlobal ||
-            gt.y() <= 0 || gt.y() >= nyGlobal ||
-            gt.z() <= 0 || gt.z() >= nzGlobal )
-          tissue(ix, iy, iz) = 0;
-      }
-}
-
 /** We want to find the boundingBox such that any stencil point of any
  *  local atom is in the box.  It is not suffiient merely to iterate all
  *  of the local and remote atoms and find the maximum extent.  There
@@ -207,11 +170,8 @@ Salheen98PrecomputeDiffusion::precomputeCoefficients(const Anatomy& anatomy)
   unsigned nzGlobal = anatomy.nz();
    
   Array3d<SigmaTensorMatrix> sigmaMintra(nx, ny, nz);
-  Array3d<int> tissue(nx, ny, nz);
-  initializeTissueBlock(tissue, localGrid_, anatomy);
-  SigmaTensorMatrix sigmaDefault = conductivity_->defaultValue();
-  for (unsigned ii=0; ii<sigmaMintra.size(); ++ii)
-    sigmaMintra(ii) = sigmaDefault;
+  Array3d<int> tissue(nx, ny, nz, 0);
+
   const vector<AnatomyCell>& cell = anatomy.cellArray();
   // What about default values for sigmaMintra and tissue?
   // Not all entries in the block are calculated.
