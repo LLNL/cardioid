@@ -53,7 +53,10 @@ Should think about the right time to ditch the gids and just store
 tuples.
 
 17.  We allow multiple stimulus objects, but if two objects happen to
-stimulate the same cell the last guy wins.  Is this what we want?
+stimulate the same cell the last guy wins.  Is this what we want?  Also,
+if stimuli are additive we need to zero the external stimulus every time
+step.
+
 
 18.  The conductivity classes don't know anything about cell type.  In
 BlueBeats there are explicit checks to make sure that we're only

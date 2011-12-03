@@ -81,9 +81,9 @@ namespace
       objectGet(obj, "duration", p.duration, "1");
       objectGet(obj, "freq",     p.freq,     "1000");
       objectGet(obj, "iStim",    p.iStim,    "-52");
-      objectGet(obj, "xMin",     p.xMin,     "0");
-      objectGet(obj, "yMin",     p.yMin,     "0");
-      objectGet(obj, "zMin",     p.zMin,     "0");
+      objectGet(obj, "xMin",     p.xMin,     "-1");
+      objectGet(obj, "yMin",     p.yMin,     "-1");
+      objectGet(obj, "zMin",     p.zMin,     "-1");
       objectGet(obj, "xMax",     p.xMax,     nxString);
       objectGet(obj, "yMax",     p.yMax,     nyString);
       objectGet(obj, "zMax",     p.zMax,     nzString);
