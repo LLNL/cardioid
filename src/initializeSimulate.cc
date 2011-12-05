@@ -29,7 +29,9 @@ void initializeSimulate(const string& name, Simulate& sim)
    string nameTmp;
    objectGet(obj, "anatomy", nameTmp, "anatomy");
    initializeAnatomy(sim, nameTmp, MPI_COMM_WORLD);
-   sim.anatomy_.setGridSize(sim.nx_, sim.ny_, sim.nz_);
+   sim.nx_ = sim.anatomy_.nx();
+   sim.ny_ = sim.anatomy_.ny();
+   sim.nz_ = sim.anatomy_.nz();
    
    objectGet(obj, "decomposition", nameTmp, "decomposition");
    assignCellsToTasks(sim, nameTmp, MPI_COMM_WORLD);

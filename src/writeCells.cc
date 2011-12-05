@@ -61,16 +61,8 @@ void writeCells(const Simulate& sim,
    }
    
    char line[lrec+1];
-   int lastDest = -1;
-   int count = 0;
    for (unsigned ii=0; ii<nLocal; ++ii)
    {
-      if (cells[ii].dest_ != lastDest)
-      {
-         count =0;
-         lastDest = cells[ii].dest_;
-      }
-
       Vector v = indexToVector(cells[ii].gid_);
       int ix = int(v.x()) - halfNx;
       int iy = int(v.y()) - halfNy;
@@ -135,16 +127,8 @@ void writeCells(const vector<AnatomyCell>& cells,
    }
    
    char line[lrec+1];
-   int lastDest = -1;
-   int count = 0;
    for (unsigned ii=0; ii<nLocal; ++ii)
    {
-      if (cells[ii].dest_ != lastDest)
-      {
-         count =0;
-         lastDest = cells[ii].dest_;
-      }
-
       Vector v = indexToVector(cells[ii].gid_);
       int ix = int(v.x()) - halfNx;
       int iy = int(v.y()) - halfNy;

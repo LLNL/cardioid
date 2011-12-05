@@ -78,13 +78,12 @@ void simulationLoop(Simulate& sim)
     // SENSORS
     for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
     {
+      if (sim.loop_ % sim.sensor_[ii]->evalRate() == 0)
+         sim.sensor_[ii]->eval(sim.time_, sim.loop_, sim.VmArray_,
+                               dVmReaction, dVmDiffusion, dVmExternal);
       if (sim.loop_ % sim.sensor_[ii]->printRate() == 0)
-      {
-        if (sim.sensor_[ii]->printDerivs())
-          sim.sensor_[ii]->print(sim.time_,sim.VmArray_,dVmReaction,dVmDiffusion,dVmExternal);
-        else
-          sim.sensor_[ii]->print(sim.time_,sim.VmArray_);
-      }
+         sim.sensor_[ii]->print(sim.time_, sim.loop_, sim.VmArray_,
+                                dVmReaction, dVmDiffusion, dVmExternal);
     }
     
     if ( (sim.loop_ % sim.printRate_ == 0) && myRank == 0)

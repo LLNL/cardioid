@@ -15,29 +15,33 @@ struct PointListSensorParms
   double startTime;
   double endTime;
   string filebase;
-  unsigned printRate;
   int printDerivs;
 };
 
 class PointListSensor : public Sensor
 {
  public:
-   PointListSensor(const PointListSensorParms& p, const Anatomy& anatomy);
+   PointListSensor(const SensorParms& sp, const PointListSensorParms& p, const Anatomy& anatomy);
    ~PointListSensor();
-   void print(double time, vector<double>& Vm);
-   void print(double time, vector<double>& Vm, vector<double>& dVm_r, vector<double>& dVm_d, vector<double>& dVm_e);
-   unsigned printRate(void) { return printRate_; };
-   bool printDerivs(void) { return printDerivs_; };
+
+   void print(double time, int loop, const vector<double>& Vm, const vector<double>& dVm_r, const vector<double>& dVm_d, const vector<double>& dVm_e);
+   void eval(double time, int loop,
+             const std::vector<double>& Vm, const std::vector<double>& dVm_r,
+             const std::vector<double>& dVm_d, const std::vector<double>& dVm_e)
+   {} // no eval function.
     
  private:
+   void print(double time, const vector<double>& Vm);
+   void printDerivs(double time, const vector<double>& Vm, const vector<double>& dVm_r,
+                    const vector<double>& dVm_d, const vector<double>& dVm_e);
+
    vector<unsigned> pointlist_loc_;  // grid gids owned by this task
    vector<unsigned> sensorind_;      // corresponding local array index 
    vector<ofstream*> fout_loc_;
    double startTime_;
    double endTime_;
    string filebase_;
-   unsigned printRate_;
-    bool printDerivs_;
+   bool printDerivs_;
 };
 
 #endif

@@ -30,7 +30,7 @@ HEARTSRC=cardioid.cc \
 	 TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc \
 	 TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc \
 	 TestStimulus.cc PointStimulus.cc BoxStimulus.cc \
-	 PointListSensor.cc 
+	 PointListSensor.cc ActivationTimeSensor.cc
 
 
 DDCMD_FILES = \

@@ -31,10 +31,7 @@ AnatomyReader::AnatomyReader(const string& filename, MPI_Comm comm,
    assert(nx*ny*nz > 0);
 //   assert(cellType_s.size() > 0);
 
-   sim.nx_ = nx;
-   sim.ny_ = ny;
-   sim.nz_ = nz;
-   
+   sim.anatomy_.setGridSize(nx, ny,nz);
    
    switch (file->datatype)
    {

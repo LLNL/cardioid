@@ -139,3 +139,11 @@ pointSensor SENSOR
   printDerivs = 1;   // print dVm terms in addition to Vm (default = 0, i.e. off)
   filebase = sensorData/vm_vs_t;  // this directory needs to exist before the run
 }
+
+activationTime SENSOR
+{
+   method = activationTime;
+   filename = activtionTime;
+   printRate = 100000;
+   evalRate = 1;
+}

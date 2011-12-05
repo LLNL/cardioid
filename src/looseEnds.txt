@@ -74,5 +74,26 @@ system that turns on the JHU model if the fiber angles can't be found?
 in GridRouter when determining whether a cell is inside the domain.  I'd
 feel better if there was a meaningful length scale attached to the fudge.
 
-21.  The initializeTissueBlock function results in different cell type
-(9 vs 0) for some cells depending on the number of tasks.
+22.  The size of the simulation cell is stored in both Simulate and
+Anatomy.  This is trouble waiting to happen.
+
+23.  Why does the PointListSensor have a collection of pointers to
+streams instead of just a collection of streams?  With just streams we
+don't need a non-default destructor.
+
+24.  What are reasonable defaults for the printRate and evalRate of a
+Sensor?
+
+25.  It might be nice if the ActivationTimeSensor had a printrate in ms
+instead of timesteps.  What about the other print/eval rate functions?
+should they be in steps or in msec?
+
+26.  We're going down the road of making all of the Sensors depend on
+the cell order in the Anatomy.  Do we want to think about rebuilding all
+of the Sensors if the Anatomy changes?
+
+27.  How is the PointListSensor's output organized?  Should we use
+snapshot directories?  Should each Sensor go in its own special purpose
+directory?
+
+28.  Loop count is currently an int.  Do we need to make it long long?

@@ -9,9 +9,10 @@
 
 using namespace std;
 
-PointListSensor::PointListSensor(const PointListSensorParms& p, const Anatomy& anatomy)
-    : startTime_(p.startTime), endTime_(p.endTime),
-      filebase_(p.filebase), printRate_(p.printRate),
+PointListSensor::PointListSensor(const SensorParms& sp, const PointListSensorParms& p, const Anatomy& anatomy)
+: Sensor(sp),
+  startTime_(p.startTime), endTime_(p.endTime),
+      filebase_(p.filebase),
       printDerivs_(p.printDerivs)
 {
   const int plistsize = p.pointlist.size();
@@ -86,7 +87,18 @@ PointListSensor::~PointListSensor()
   }
 }
 
-void PointListSensor::print(double time, std::vector<double>& Vm)
+void PointListSensor::print(double time, int /*loop*/,
+                            const vector<double>& Vm, const vector<double>& dVm_r,
+                            const vector<double>& dVm_d, const vector<double>& dVm_e)
+{
+   if (printDerivs_)
+      printDerivs(time, Vm, dVm_r, dVm_d, dVm_e);
+   else
+      print(time, Vm);
+}
+
+
+void PointListSensor::print(double time, const vector<double>& Vm)
 {
   if (time >= startTime_ && (endTime_ <= 0.0 || time <= endTime_))
   {
@@ -98,7 +110,7 @@ void PointListSensor::print(double time, std::vector<double>& Vm)
   }
 }
 
-void PointListSensor::print(double time, vector<double>& Vm, vector<double>& dVm_r, vector<double>& dVm_d, vector<double>& dVm_e)
+void PointListSensor::printDerivs(double time, const vector<double>& Vm, const vector<double>& dVm_r, const vector<double>& dVm_d, const vector<double>& dVm_e)
 {
   if (time >= startTime_ && (endTime_ <= 0.0 || time <= endTime_))
   {
