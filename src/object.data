@@ -89,7 +89,7 @@ tenTusscher04 REACTION
 TT04_CellML REACTION
 {
     method = TT04_CellML;
-    integrator = rushLarson;
+    integrator = rushLarsen;
 }
 
 FHN REACTION

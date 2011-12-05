@@ -39,7 +39,7 @@ Anatomy buildAnatomy(int cellType)
 Reaction* factory(const string& name, const Anatomy& anatomy)
 {
    if (name == "bb_tt04")        return new TT04_bbReaction(anatomy);
-   if (name == "cellml_tt04")    return new TT04_CellML_Reaction(anatomy, TT04_CellML_Reaction::rushLarson);
+   if (name == "cellml_tt04")    return new TT04_CellML_Reaction(anatomy, TT04_CellML_Reaction::rushLarsen);
    if (name == "cellml_tt04_fe") return new TT04_CellML_Reaction(anatomy, TT04_CellML_Reaction::forwardEuler);
    if (name == "cellml_tt06_fe") return new TT06_CellML_Reaction(anatomy);
    if (name == "fhn")            return new ReactionFHN(anatomy);

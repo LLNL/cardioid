@@ -1,4 +1,5 @@
 #include "TT06_CellML_Reaction.hh"
+#include <cmath>
 #include "Anatomy.hh"
 #include "TT06_CellML.hh"
 #include "TT06_CellML_Endo.hh"
@@ -7,8 +8,18 @@
 
 using namespace std;
 
-TT06_CellML_Reaction::TT06_CellML_Reaction(const Anatomy& anatomy)
-: nCells_(anatomy.nLocal())
+struct TT06_CellMLState
+{
+   double state[19];
+};
+
+
+
+
+TT06_CellML_Reaction::TT06_CellML_Reaction(const Anatomy& anatomy,
+                                           IntegratorType integrator)
+: nCells_(anatomy.nLocal()),
+          integrator_(integrator)
 {
    ttType_.resize(256, -1); 
    ttType_[30] = 0;
@@ -41,6 +52,16 @@ TT06_CellML_Reaction::TT06_CellML_Reaction(const Anatomy& anatomy)
          assert(false);
       }
    }
+
+   s_.resize(nCells_);
+   for (unsigned ii=0; ii<nCells_; ++ii)
+   {
+      for (unsigned jj=0; jj<19; ++jj)
+      {
+         s_[ii].state[jj] = cellModel_[ii]->defaultState(jj);
+      }
+   }
+   
    
 }
 
@@ -52,18 +73,65 @@ TT06_CellML_Reaction::~TT06_CellML_Reaction()
    }
 }
 
-
 void TT06_CellML_Reaction::calc(double dt,
                                 const vector<double>& Vm,
                                 const vector<double>& iStim,
                                 vector<double>& dVm)
 {
    assert(nCells_ == dVm.size());
-   
-   for (unsigned ii=0; ii<nCells_; ++ii)
+
+   switch (integrator_)
    {
-      dVm[ii] = cellModel_[ii]->calc(dt, Vm[ii], iStim[ii]);
+     case forwardEuler:
+      forwardEulerIntegrator(dt, Vm, iStim, dVm);
+      break;
+     case rushLarsen:
+      rushLarsenIntegrator(dt, Vm, iStim, dVm);
+      break;
+     default:
+      assert(false);
    }
 }
 
+   
+void TT06_CellML_Reaction::forwardEulerIntegrator(
+   double dt,
+   const vector<double>& Vm,
+   const vector<double>& iStim,
+   vector<double>& dVm)
+{
+   for (unsigned ii=0; ii<nCells_; ++ii)
+   {
+      double rates[19];
+      double algebraic[70];
+      dVm[ii] = cellModel_[ii]->calc(Vm[ii], iStim[ii], s_[ii].state, rates, algebraic);
+
+      // forward euler to integrate internal state variables.
+      for (unsigned jj=1; jj<19; ++jj)
+         s_[ii].state[jj] += rates[jj] * dt;
+   
+   }
+}
+
+void TT06_CellML_Reaction::rushLarsenIntegrator(
+   double dt,
+   const vector<double>& Vm,
+   const vector<double>& iStim,
+   vector<double>& dVm)
+{
+   for (unsigned ii=0; ii<nCells_; ++ii)
+   {
+      double rates[19];
+      double algebraic[70];
+      dVm[ii] = cellModel_[ii]->calc(Vm[ii], iStim[ii], s_[ii].state, rates, algebraic);
+
+      // forward euler for all states except rushLarsen for fast sodium m gate.
+      for (unsigned jj=1; jj<7; ++jj)
+         s_[ii].state[jj] += rates[jj] * dt;
+      s_[ii].state[7] =  algebraic[3] - (algebraic[3]-s_[ii].state[7])*exp(-dt/algebraic[37]);
+      for (unsigned jj=8; jj<19; ++jj)
+         s_[ii].state[jj] += rates[jj] * dt;
+   
+   }
+}
 

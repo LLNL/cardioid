@@ -51,8 +51,8 @@ namespace
    {
       TT04_CellML_Reaction::IntegratorType integrator;
       string tmp;
-      objectGet(obj, "integrator", tmp, "rushLarson");
-      if      (tmp == "rushLarson")   integrator = TT04_CellML_Reaction::rushLarson;
+      objectGet(obj, "integrator", tmp, "rushLarsen");
+      if      (tmp == "rushLarsen")   integrator = TT04_CellML_Reaction::rushLarsen;
       else if (tmp == "forwardEuler") integrator = TT04_CellML_Reaction::forwardEuler;
       else    assert(false);    
       
@@ -64,7 +64,13 @@ namespace
 {
    Reaction* scanTT06_CellML(OBJECT* obj, const Anatomy& anatomy)
    {
-      return new TT06_CellML_Reaction(anatomy);
+      TT06_CellML_Reaction::IntegratorType integrator;
+      string tmp;
+      objectGet(obj, "integrator", tmp, "rushLarsen");
+      if      (tmp == "rushLarsen")   integrator = TT06_CellML_Reaction::rushLarsen;
+      else if (tmp == "forwardEuler") integrator = TT06_CellML_Reaction::forwardEuler;
+      else    assert(false);    
+      return new TT06_CellML_Reaction(anatomy, integrator);
    }
 }
 

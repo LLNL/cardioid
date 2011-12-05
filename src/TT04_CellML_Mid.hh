@@ -7,7 +7,7 @@ class TT04_CellML_Mid : public TT04_CellML
 {
  public:
    TT04_CellML_Mid();
-   double calc(double Vm, double iStim, double states_[17],
+   double calc(double Vm, double iStim, double states[17],
                double rates[17], double algebraic[67]);
    double defaultState(unsigned ii){return defaultState_[ii];}
  private:

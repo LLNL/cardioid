@@ -85,8 +85,8 @@ void TT04_CellML_Reaction::calc(double dt,
      case forwardEuler:
       forwardEulerIntegrator(dt, Vm, iStim, dVm);
       break;
-     case rushLarson:
-      rushLarsonIntegrator(dt, Vm, iStim, dVm);
+     case rushLarsen:
+      rushLarsenIntegrator(dt, Vm, iStim, dVm);
       break;
      default:
       assert(false);
@@ -113,7 +113,7 @@ void TT04_CellML_Reaction::forwardEulerIntegrator(
    }
 }
 
-void TT04_CellML_Reaction::rushLarsonIntegrator(
+void TT04_CellML_Reaction::rushLarsenIntegrator(
    double dt,
    const vector<double>& Vm,
    const vector<double>& iStim,
@@ -125,7 +125,7 @@ void TT04_CellML_Reaction::rushLarsonIntegrator(
       double algebraic[67];
       dVm[ii] = cellModel_[ii]->calc(Vm[ii], iStim[ii], s_[ii].state, rates, algebraic);
 
-      // forward euler for all states except rushLarson for fast sodium.
+      // forward euler for all states except rushLarsen for fast sodium m gate.
       for (unsigned jj=1; jj<7; ++jj)
          s_[ii].state[jj] += rates[jj] * dt;
       s_[ii].state[7] =  algebraic[4] - (algebraic[4]-s_[ii].state[7])*exp(-dt/algebraic[39]);

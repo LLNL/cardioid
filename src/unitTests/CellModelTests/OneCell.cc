@@ -57,9 +57,10 @@ Anatomy buildAnatomy(int cellType)
 Reaction* factory(const string& name, const Anatomy& anatomy)
 {
    if (name == "bb_tt04")        return new TT04_bbReaction(anatomy);
-   if (name == "cellml_tt04")    return new TT04_CellML_Reaction(anatomy, TT04_CellML_Reaction::rushLarson);
+   if (name == "cellml_tt04")    return new TT04_CellML_Reaction(anatomy, TT04_CellML_Reaction::rushLarsen);
    if (name == "cellml_tt04_fe") return new TT04_CellML_Reaction(anatomy, TT04_CellML_Reaction::forwardEuler);
-   if (name == "cellml_tt06_fe") return new TT06_CellML_Reaction(anatomy);
+   if (name == "cellml_tt06")    return new TT06_CellML_Reaction(anatomy, TT06_CellML_Reaction::rushLarsen);
+   if (name == "cellml_tt06_fe") return new TT06_CellML_Reaction(anatomy, TT06_CellML_Reaction::forwardEuler);
    if (name == "fhn")            return new ReactionFHN(anatomy);
    if (name == "tt04dev")        return new TT04Dev_Reaction(anatomy);
    assert(false);
@@ -86,8 +87,9 @@ int main(int argc, char *argv[])
       cout << "Supported cell models:" <<endl;
       cout << "----------------------" <<endl;
       cout << "   bb_tt04          TT04 from BlueBeats" << endl;
-      cout << "   cellml_tt04      TT04 from CellML.  Rush-Larson integrator" << endl;
+      cout << "   cellml_tt04      TT04 from CellML.  Rush-Larsen integrator" << endl;
       cout << "   cellml_tt04_fe   TT04 from CellML.  Forward Euler integrator" << endl;
+      cout << "   cellml_tt06      TT06 from CellML.  Rush-Larsen integrator" << endl;
       cout << "   cellml_tt06_fe   TT06 from CellML.  Forward Euler integrator" << endl;
       cout << "   fhn              FitzHugh-Nagumo" << endl;
       cout << "   tt04dev          Developmental version of TT04" << endl;

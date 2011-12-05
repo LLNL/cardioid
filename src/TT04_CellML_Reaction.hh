@@ -9,7 +9,7 @@ class TT04_CellMLState;
 class TT04_CellML_Reaction : public Reaction
 {
  public:
-   enum IntegratorType {forwardEuler, rushLarson};
+   enum IntegratorType {forwardEuler, rushLarsen};
    
    TT04_CellML_Reaction(const Anatomy& anatomy, IntegratorType integrator);
    // copy constructor and assignment operator intentionally
@@ -27,7 +27,7 @@ class TT04_CellML_Reaction : public Reaction
 
    void forwardEulerIntegrator(double dt, const std::vector<double>& Vm,
       const std::vector<double>& iStim, std::vector<double>& dVm);
-   void rushLarsonIntegrator(double dt, const std::vector<double>& Vm,
+   void rushLarsenIntegrator(double dt, const std::vector<double>& Vm,
       const std::vector<double>& iStim, std::vector<double>& dVm);
 
    unsigned nCells_;
