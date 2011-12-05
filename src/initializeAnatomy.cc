@@ -13,7 +13,7 @@ using namespace std;
 namespace
 {
    void readUsingPio(Simulate& sim, OBJECT* obj, MPI_Comm comm);
-   void generateTissueBrick(Simulate& sim, OBJECT* obj);
+   void generateTissueBrick(Simulate& sim, OBJECT* obj, MPI_Comm comm);
 }
 
    
@@ -36,7 +36,7 @@ void initializeAnatomy(Simulate& sim, const string& name, MPI_Comm comm)
    if (method == "pio")
       readUsingPio(sim, obj, comm);
    else if (method == "brick")
-      generateTissueBrick(sim, obj);
+      generateTissueBrick(sim, obj, comm);
    else if (method == "simple")
       // We can wire in the simple load code that Erik originally wrote
       // here if we still need it.
@@ -65,8 +65,13 @@ namespace
 
 namespace
 {
-   void generateTissueBrick(Simulate& sim, OBJECT* obj)
+   void generateTissueBrick(Simulate& sim, OBJECT* obj, MPI_Comm comm)
    {
+      int myRank;
+      int nTasks;
+      MPI_Comm_size(comm, &nTasks);
+      MPI_Comm_rank(comm, &myRank);
+
       double xSize, ySize, zSize;
       int cellType;
       objectGet(obj, "xSize", xSize, "3");
@@ -81,21 +86,25 @@ namespace
       int nz = int(zSize/anatomy.dz());
       anatomy.setGridSize(nx, ny, nz);
 
-      unsigned nCells = nx*ny*nz;
+      Long64 maxGid = Long64(nx)*Long64(ny)*Long64(nz);
+      unsigned cellsPerTask = maxGid/nTasks;
+      if (maxGid%nTasks != 0)
+         ++cellsPerTask;
+
+      Long64 gidBegin = min(maxGid, Long64(myRank)*Long64(cellsPerTask));
+      Long64 gidEnd   = min(maxGid, gidBegin+Long64(cellsPerTask));
+      unsigned nLocal = gidEnd - gidBegin;
+
       vector<AnatomyCell>& cells = sim.anatomy_.cellArray();
-      cells.reserve(nCells);
-      TupleToIndex tupleToIndex(nx, ny, nz);
-      
-      for (unsigned iz=0; iz<nz; ++iz)
-         for (unsigned iy=0; iy<ny; ++iy)
-            for (unsigned ix=0; ix<nx; ++ix)
-            {
-               AnatomyCell tmp;
-               tmp.gid_ = tupleToIndex(ix, iy, iz);
-               tmp.theta_= 0;
-               tmp.phi_ = 0;
-               tmp.cellType_ = cellType;
-               cells.push_back(tmp);
-            }
+      cells.reserve(nLocal);
+      for (Long64 ii=gidBegin; ii<gidEnd; ++ii)
+      {
+         AnatomyCell tmp;
+         tmp.gid_ = ii;
+         tmp.theta_= 0;
+         tmp.phi_ = 0;
+         tmp.cellType_ = cellType;
+         cells.push_back(tmp);
+      }
    }
 }
