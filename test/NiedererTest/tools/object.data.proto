@@ -76,14 +76,16 @@ uniform CONDUCTIVITY
 tt06 REACTION
 {
     method = TT06_CellML;
-    integrator = rushLarson;
+    integrator = rushLarsen;
 }
 
 
 boxStimulus STIMULUS
 {
    method = box;
-   yMax = 15;
+   xMax = XX_STIMBOX_XX;
+   yMax = XX_STIMBOX_XX;
+   zMax = XX_STIMBOX_XX;
    iStim = -50;
    tStart = 0;
    duration = 2;

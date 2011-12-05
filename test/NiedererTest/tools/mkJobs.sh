@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# To Do
+
+# 1. Might want to add a loop over different numbers of tasks to check
+# that the results don't change with the decomposition.  
+
 exe=
 pool=
 maxTime=
@@ -44,10 +49,10 @@ do
       maxLoop=20000
       ;;
       0.01)
-      stimBox=100000
+      maxLoop=100000
       ;;
       0.005)
-      stimBox=200000
+      maxLoop=200000
       ;;
       *)
       echo ERROR: undefined dt
@@ -60,7 +65,7 @@ do
       | sed s/XX_DX_XX/$dx/ \
       | sed s/XX_MAXLOOP_XX/$maxLoop/ \
       | sed s/XX_BALANCER_XX/$balancer/ \
-      | sed s/XX_STIM_BOX_XX/$stimBox/ \
+      | sed s/XX_STIMBOX_XX/$stimBox/ \
       > $dirname/object.data
         
   cat tools/runMe.sh.proto \
