@@ -97,3 +97,8 @@ snapshot directories?  Should each Sensor go in its own special purpose
 directory?
 
 28.  Loop count is currently an int.  Do we need to make it long long?
+
+29.  Figure out arch dependent build stuff.  In particular, the code
+that is inherited from ddcMD has some expectations about what the
+-D$(ARCH) macros should look like and I don't think we're doing the righ
+thing at present

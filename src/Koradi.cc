@@ -266,7 +266,7 @@ void Koradi::exchangeCells()
       dest[ii] = cells_[ii].dest_/nCentersPerTask_;
    
    unsigned nLocal = cells_.size();
-   unsigned capacity = max(10000ul, 4*cells_.size());
+   unsigned capacity = max(vector<AnatomyCell>::size_type(10000), 4*cells_.size());
    cells_.resize(capacity);
    assignArray((unsigned char*) &(cells_[0]),
                &nLocal,
