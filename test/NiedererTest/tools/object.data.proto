@@ -1,0 +1,101 @@
+simulate SIMULATE 
+{
+   anatomy = niederer;
+   decomposition = XX_BALANCER_XX;
+   diffusion = Salheen98Fast;
+   reaction = tt06;
+   stimulus = boxStimulus;
+   sensor = activationTime;
+   loop = 0;            // in timesteps
+   maxLoop = XX_MAXLOOP_XX;     // in timesteps
+   dt = XX_DT_XX;       // msec
+   time = 0;            // msec
+   printRate = 50;      // in timesteps
+   snapshotRate = 500; // in timesteps
+}
+
+niederer ANATOMY 
+{
+   method = brick;
+   cellType = 102;
+   dx = XX_DX_XX;   // in mm
+   dy = XX_DX_XX;   // in mm
+   dz = XX_DX_XX;   // in mm
+   xSize = 3; 
+   ySize = 7;
+   zSize = 20;
+}
+
+koradi DECOMPOSITION 
+{
+   method = koradi;
+   verbose = 1;
+   alpha = 0.25;
+   maxVoronoiSteps = 30;
+   maxSteps = 500;
+   tolerance = 0.01;
+   outputRate = 1;
+   nbrDeltaR = 2;
+}
+
+grid DECOMPOSITION 
+{
+    method = grid;
+    nx = XX_XGRID_XX;
+    ny = XX_YGRID_XX;
+    nz = XX_ZGRID_XX;
+}
+
+Salheen98Fast DIFFUSION
+{
+   method = Salheen98;
+   variant = precompute;
+   conductivity = conductivity;
+   diffusionScale = 250.0;      // mm^3/mF
+}
+
+conductivity CONDUCTIVITY
+{
+    method = fibre;
+    sigmaLi = 0.0003;   // units S/mm
+    sigmaTi = 0.00003;  // units S/mm
+}
+
+uniform CONDUCTIVITY
+{
+    method = uniform;
+    sigma11 = 0.0001;  // S/mm
+    sigma22 = 0.0001;  // S/mm
+    sigma33 = 0.0001;  // S/mm
+    sigma12 = 0.0;
+    sigma13 = 0.0;
+    sigma23 = 0.0;
+}
+
+
+tt06 REACTION
+{
+    method = TT06_CellML;
+    integrator = rushLarson;
+}
+
+
+boxStimulus STIMULUS
+{
+   method = box;
+   yMax = 15;
+   iStim = -50;
+   tStart = 0;
+   duration = 2;
+   freq = 1000;
+}
+   
+
+
+activationTime SENSOR
+{
+   method = activationTime;
+   filename = activtionTime;
+   printRate = XX_MAXLOOP_XX;
+   evalRate = 1;
+}
