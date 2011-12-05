@@ -19,7 +19,8 @@ ActivationTimeSensor::ActivationTimeSensor(const SensorParms& sp,
   nz_(anatomy.nz()),
   dx_(anatomy.dx()),
   dy_(anatomy.dy()),
-  dz_(anatomy.dz())
+  dz_(anatomy.dz()),
+  filename_(p.filename)
 {
    activationTime_.resize(nLocal_, 0.0);
    activated_.resize(nLocal_, false);
@@ -92,7 +93,7 @@ void ActivationTimeSensor::print(double time, int loop,
       assert (l==lrec);
       Pwrite(line, lrec, 1, file);
    }
-   
+   Pclose(file);
 }
 
 void ActivationTimeSensor::eval(double time, int loop,

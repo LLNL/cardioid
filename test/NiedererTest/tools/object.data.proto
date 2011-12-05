@@ -97,7 +97,7 @@ boxStimulus STIMULUS
 activationTime SENSOR
 {
    method = activationTime;
-   filename = activtionTime;
+   filename = activationTime;
    printRate = XX_MAXLOOP_XX;
    evalRate = 1;
 }
