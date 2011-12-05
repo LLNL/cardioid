@@ -43,8 +43,6 @@ void initializeAnatomy(Simulate& sim, const string& name, MPI_Comm comm)
       assert(1==0);
    else
       assert(1==0);
-
-   sim.anatomy_.setGridSize(sim.nx_, sim.ny_, sim.nz_);
 }
 
 
