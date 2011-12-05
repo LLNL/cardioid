@@ -99,7 +99,7 @@ void ActivationTimeSensor::eval(double time, int loop,
                                 const vector<double>& Vm, const vector<double>&,
                                 const vector<double>&,    const vector<double>&)
 {
-   for (unsigned ii=0; ii< nLocal_; +ii)
+   for (unsigned ii=0; ii<nLocal_; ++ii)
    {
       if (activated_[ii]) continue;
       if (Vm[ii] > 0)

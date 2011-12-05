@@ -82,7 +82,7 @@ namespace
       anatomy.setGridSize(nx, ny, nz);
 
       unsigned nCells = nx*ny*nz;
-      vector<AnatomyCell> cells = sim.anatomy_.cellArray();
+      vector<AnatomyCell>& cells = sim.anatomy_.cellArray();
       cells.reserve(nCells);
       TupleToIndex tupleToIndex(nx, ny, nz);
       
