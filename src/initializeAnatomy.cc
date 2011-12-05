@@ -76,9 +76,9 @@ namespace
 
       Anatomy& anatomy = sim.anatomy_;
       
-      int nx = xSize/anatomy.dx();
-      int ny = ySize/anatomy.dy();
-      int nz = zSize/anatomy.dz();
+      int nx = int(xSize/anatomy.dx());
+      int ny = int(ySize/anatomy.dy());
+      int nz = int(zSize/anatomy.dz());
       anatomy.setGridSize(nx, ny, nz);
 
       unsigned nCells = nx*ny*nz;
@@ -92,8 +92,8 @@ namespace
             {
                AnatomyCell tmp;
                tmp.gid_ = tupleToIndex(ix, iy, iz);
-               tmp.theta_= 0.0;
-               tmp.phi_ = 0.0;
+               tmp.theta_= 0;
+               tmp.phi_ = 0;
                tmp.cellType_ = cellType;
                cells.push_back(tmp);
             }
