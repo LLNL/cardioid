@@ -51,14 +51,14 @@ Salheen98Fast DIFFUSION
    method = Salheen98;
    variant = precompute;
    conductivity = conductivity;
-   diffusionScale = 250.0;      // mm^3/mF
+   diffusionScale = 714.2857143;      // mm^3/mF
 }
 
 conductivity CONDUCTIVITY
 {
     method = fibre;
-    sigmaLi = 0.0003;   // units S/mm
-    sigmaTi = 0.00003;  // units S/mm
+    sigmaLi = 0.0001334177;   // units S/mm
+    sigmaTi = 0.0000176062;  // units S/mm
 }
 
 uniform CONDUCTIVITY
