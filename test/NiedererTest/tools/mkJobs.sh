@@ -31,17 +31,17 @@ do
 
   case $dx in
       0.5)
-      stimBox=3
+      stimBox=4
       nTasks=64
       xGrid=4; yGrid=4; zGrid=4
       ;;
       0.2)
-      stimBox=7
+      stimBox=8
       nTasks=128
       xGrid=4; yGrid=4; zGrid=8
       ;;
       0.1)
-      stimBox=15
+      stimBox=16
       nTasks=256
       xGrid=4; yGrid=8; zGrid=8
       ;;
