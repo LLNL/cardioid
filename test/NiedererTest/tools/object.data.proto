@@ -11,7 +11,7 @@ simulate SIMULATE
    dt = XX_DT_XX;       // msec
    time = 0;            // msec
    printRate = 50;      // in timesteps
-   snapshotRate = 500; // in timesteps
+   snapshotRate = XX_SNAPSHOTRATE_XX; // in timesteps
 }
 
 niederer ANATOMY 
@@ -34,7 +34,7 @@ koradi DECOMPOSITION
    maxVoronoiSteps = 30;
    maxSteps = 500;
    tolerance = 0.01;
-   outputRate = 1;
+   outputRate = 1000;
    nbrDeltaR = 2;
 }
 

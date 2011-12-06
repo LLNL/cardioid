@@ -1,3 +1,5 @@
+#!/bin/sh
+
 #PSUB -ln XX_NNODES_XX
 #PSUB -tM XX_MAXTIME_XX
 #PSUB -pool XX_POOL_XX
@@ -8,4 +10,5 @@ cd $PSUB_SUBDIR
 
 exe=XX_EXE_XX
 
-srun --ntasks=XX_NTASKS_XX $exe
+#srun --ntasks=XX_NTASKS_XX $exe
+mpirun -mode VN -np XX_NTASKS_XX -exe $exe
