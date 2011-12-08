@@ -33,6 +33,7 @@ Sensor* sensorFactory(const std::string& name, const Anatomy& anatomy)
      return scanActivationTimeSensor(obj, sp, anatomy);
 
   assert(false); // reachable only due to bad input
+  return 0;
 }
 
 

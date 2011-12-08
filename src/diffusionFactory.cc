@@ -31,7 +31,8 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy)
    else if (method == "Salheen98")
       return salheen98DiffusionFactory(obj, anatomy);
    
-   assert(1==0); // reachable only due to bad input
+   assert(false); // reachable only due to bad input
+   return 0;
 }
 
 

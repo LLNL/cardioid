@@ -30,8 +30,8 @@ Conductivity* conductivityFactory(const string& name, const Anatomy& anatomy)
    else if (method == "uniform")  return scanUniformConductivity(obj);
    else if (method == "JHU")      return scanJHUConductivity(obj, anatomy);
    
-   assert(1==0); // reachable only due to bad input
-
+   assert(false); // reachable only due to bad input
+   return 0;
 }
 
 

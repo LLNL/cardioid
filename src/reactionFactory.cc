@@ -35,6 +35,7 @@ Reaction* reactionFactory(const string& name, const Anatomy& anatomy)
    else if (method == "FHN" || method == "FitzhughNagumo")
       return scanFHN(obj, anatomy);
    assert(false); // reachable only due to bad input
+   return 0;
 }
 
 namespace

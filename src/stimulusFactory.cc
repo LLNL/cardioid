@@ -34,6 +34,7 @@ Stimulus* stimulusFactory(const std::string& name, const Anatomy& anatomy)
       return scanBoxStimulus(obj, anatomy);
 
    assert(false); // reachable only due to bad input
+   return 0;
 }
 
 
