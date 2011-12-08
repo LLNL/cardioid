@@ -1,7 +1,7 @@
 simulate SIMULATE {
    anatomy = pioAnatomy;
    decomposition = grid;
-   diffusion = Salheen98Fast;
+   diffusion = Saleheen98Fast;
    reaction = TT04_CellML;
    sensor = pointSensor;
    stimulus = pointStimulus;
@@ -40,9 +40,9 @@ grid DECOMPOSITION {
     visgrid = 0;
 }
 
-Salheen98Fast DIFFUSION
+Saleheen98Fast DIFFUSION
 {
-   method = Salheen98;
+   method = Saleheen98;
    variant = precompute;
    conductivity = uniform;
    diffusionScale = 250.0;

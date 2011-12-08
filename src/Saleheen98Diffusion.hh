@@ -1,5 +1,5 @@
-#ifndef SALHEEN98_DIFFUSION_HH
-#define SALHEEN98_DIFFUSION_HH
+#ifndef SALEHEEN98_DIFFUSION_HH
+#define SALEHEEN98_DIFFUSION_HH
 
 #include "Diffusion.hh"
 #include <string>
@@ -13,7 +13,7 @@ class Tuple;
 
 
 
-struct Salheen98DiffusionParms
+struct Saleheen98DiffusionParms
 {
    double diffusionScale_;
    std::string conductivityName_;
@@ -59,11 +59,11 @@ struct DiffusionCoefficients
  *  - Computes and owns the 19 constants in the DiffusionCoefficients
  *    structure for each local Anatomy cell.
  */
-class Salheen98PrecomputeDiffusion : public Diffusion
+class Saleheen98PrecomputeDiffusion : public Diffusion
 {
  public:
-   Salheen98PrecomputeDiffusion(
-      const Salheen98DiffusionParms& parms,
+   Saleheen98PrecomputeDiffusion(
+      const Saleheen98DiffusionParms& parms,
       const Anatomy& anatomy);
    
    void calc(const std::vector<double>& Vm, std::vector<double>& dVm);

@@ -6,7 +6,7 @@
 #include "object_cc.hh"
 
 
-#include "Salheen98Diffusion.hh"
+#include "Saleheen98Diffusion.hh"
 
 class Anatomy;
 
@@ -17,7 +17,7 @@ using namespace std;
 
 namespace
 {
-   Diffusion* salheen98DiffusionFactory(OBJECT* obj, const Anatomy& anatomy);
+   Diffusion* saleheen98DiffusionFactory(OBJECT* obj, const Anatomy& anatomy);
 }
 
 
@@ -28,8 +28,8 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy)
 
    if (method == "undefined")
       assert(1==0);
-   else if (method == "Salheen98")
-      return salheen98DiffusionFactory(obj, anatomy);
+   else if (method == "Saleheen98")
+      return saleheen98DiffusionFactory(obj, anatomy);
    
    assert(false); // reachable only due to bad input
    return 0;
@@ -39,9 +39,9 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy)
 
 namespace
 {
-   Diffusion* salheen98DiffusionFactory(OBJECT* obj, const Anatomy& anatomy)
+   Diffusion* saleheen98DiffusionFactory(OBJECT* obj, const Anatomy& anatomy)
    {
-      Salheen98DiffusionParms p;
+      Saleheen98DiffusionParms p;
       objectGet(obj, "conductivity", p.conductivityName_, "conductivity");
       objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0");
 
@@ -49,7 +49,7 @@ namespace
       objectGet(obj, "variant", variant, "precompute");
 
       if (variant == "precompute")
-         return new Salheen98PrecomputeDiffusion(p, anatomy);
+         return new Saleheen98PrecomputeDiffusion(p, anatomy);
 
       assert(1==0); // reachable only due to bad input.
    }

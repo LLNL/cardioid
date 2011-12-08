@@ -13,7 +13,7 @@ class Diffusion
 
 /** Notes:
  * 
- *  1. There are probably many things going on in the Salheen98Diffusion
+ *  1. There are probably many things going on in the Saleheen98Diffusion
  *     concrete class that should be moved to the base class.  For
  *     example setting up and handling of the local bounding box
  *     and multiplying by diffusionscale seem generic.  This needs to

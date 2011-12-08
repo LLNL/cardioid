@@ -16,13 +16,13 @@ in the test run from IBM come from.  They input deck contains no setting.
 
 5.  I don't quite understand why I have to explicity cast calls to
 Array3D::cArray() to const.  See for example
-Salheen98PrecomputeDiffusion::precomputeCoefficients.  I know that the
+Saleheen98PrecomputeDiffusion::precomputeCoefficients.  I know that the
 return value isn't used in determining the overload resolution....
 
 6.  There is output in FibreConductivity.cc that isn't screened for rank
 
 7.  Be more careful about initializations in
-Salheen98PrecomputeDiffusion:initializeLocalGridInfo
+Saleheen98PrecomputeDiffusion:initializeLocalGridInfo
 
 8.  There is something wrong with the Makefile.  Stuff doesn't rebuild
 when headers are touched.

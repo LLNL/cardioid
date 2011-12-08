@@ -1,4 +1,4 @@
-#include "Salheen98Diffusion.hh"
+#include "Saleheen98Diffusion.hh"
 
 #include "Anatomy.hh"
 #include "Conductivity.hh"
@@ -51,8 +51,8 @@ LocalGrid findBoundingBox(const Anatomy& anatomy)
 }
 
 
-Salheen98PrecomputeDiffusion::Salheen98PrecomputeDiffusion(
-    const Salheen98DiffusionParms& parms,
+Saleheen98PrecomputeDiffusion::Saleheen98PrecomputeDiffusion(
+    const Saleheen98DiffusionParms& parms,
     const Anatomy& anatomy)
     : localGrid_(findBoundingBox(anatomy)),
       diffusionScale_(parms.diffusionScale_)
@@ -81,7 +81,7 @@ Salheen98PrecomputeDiffusion::Salheen98PrecomputeDiffusion(
 }
 
    
-void Salheen98PrecomputeDiffusion::calc(
+void Saleheen98PrecomputeDiffusion::calc(
     const vector<double>& Vm, vector<double>& dVm)
 {
   updateVoltageBlock(Vm);
@@ -96,7 +96,7 @@ void Salheen98PrecomputeDiffusion::calc(
  * do stencil operations on remote particles so we shouldn't need
  * tuples.  We can use block indices instead.
  */
-void Salheen98PrecomputeDiffusion::buildTupleArray(const Anatomy& anatomy)
+void Saleheen98PrecomputeDiffusion::buildTupleArray(const Anatomy& anatomy)
 {
   localTuple_.resize(anatomy.nLocal(), Tuple(0,0,0));
   for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
@@ -112,7 +112,7 @@ void Salheen98PrecomputeDiffusion::buildTupleArray(const Anatomy& anatomy)
   }
 }
 
-void Salheen98PrecomputeDiffusion::buildBlockIndex(const Anatomy& anatomy)
+void Saleheen98PrecomputeDiffusion::buildBlockIndex(const Anatomy& anatomy)
 {
   blockIndex_.resize(anatomy.size());
   for (unsigned ii=0; ii<anatomy.size(); ++ii)
@@ -160,7 +160,7 @@ void Salheen98PrecomputeDiffusion::buildBlockIndex(const Anatomy& anatomy)
  
 */
 void
-Salheen98PrecomputeDiffusion::precomputeCoefficients(const Anatomy& anatomy)
+Saleheen98PrecomputeDiffusion::precomputeCoefficients(const Anatomy& anatomy)
 {
   unsigned nx = localGrid_.nx();
   unsigned ny = localGrid_.ny();
@@ -211,7 +211,7 @@ Salheen98PrecomputeDiffusion::precomputeCoefficients(const Anatomy& anatomy)
 
 /** Adapted from BlueBeats source code: FDLaplacian.h */
 double
-Salheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi(
+Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi(
     const Tuple& tuple)
 {
   DiffusionCoefficients*** diffConst = diffIntra_.cArray();
@@ -245,7 +245,7 @@ Salheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi(
 
 /** Adapted from BlueBeats source code: FDLaplacian.h */
 void
-Salheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98Constants(
+Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98Constants(
     const int*** tissue,
     const SigmaTensorMatrix*** sigmaMatrix,
     const int& x, const int& y, const int& z,
@@ -387,7 +387,7 @@ Salheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98Constants(
 }
 
 
-void Salheen98PrecomputeDiffusion::updateVoltageBlock(
+void Saleheen98PrecomputeDiffusion::updateVoltageBlock(
     const std::vector<double>& Vm)
 {
   for (unsigned ii=0; ii<Vm.size(); ++ii)
@@ -397,7 +397,7 @@ void Salheen98PrecomputeDiffusion::updateVoltageBlock(
   }
 }
 
-void Salheen98PrecomputeDiffusion::printAllConductivities(
+void Saleheen98PrecomputeDiffusion::printAllConductivities(
     const Array3d<int>& tissue, const Array3d<SigmaTensorMatrix>& sigma)
 {
   unsigned nx = localGrid_.nx();
@@ -423,7 +423,7 @@ void Salheen98PrecomputeDiffusion::printAllConductivities(
       }
 }
 
-void Salheen98PrecomputeDiffusion::printAllDiffusionWeights(const Array3d<int>& tissue)
+void Saleheen98PrecomputeDiffusion::printAllDiffusionWeights(const Array3d<int>& tissue)
 {
   for (unsigned ii=0; ii<localTuple_.size(); ++ii)
   {
