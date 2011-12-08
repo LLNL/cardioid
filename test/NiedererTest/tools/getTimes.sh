@@ -19,18 +19,36 @@ do
     
     case $dx in
     0.1)
-        target="  14    34    99  "
+        xMin = -15
+        yMin = -35
+        zMin = -100
+        xMax = 14
+        yMax = 34
+        zMax = 99
         ;;
     0.2)
-        target="  7    17    49 "
+        xMin = -8
+        yMin = -18
+        zMin = -50
+        xMax = 7
+        yMax = 17
+        zMax = 49
         ;;
     0.5)
-        target="   2     6    19 "
+        xMin = -3
+        yMin = -7
+        zMin = -20
+        xMax = 2
+        yMax = 6
+        zMax = 19
         ;;
     *)
         echo undefined dx
         exit 1
     esac
+
+    P1 = 
+
 
     echo $balancer $dx $dt `grep "$target" $lastSnap/activationTime* | awk '{print $5}'`
 
