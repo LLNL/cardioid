@@ -18,27 +18,37 @@ def main():
     P6 = -1.0
     P7 = -1.0
     P8 = -1.0
-
+    C  = -1.0
+    
     for line in sys.stdin:
         cols = line.split()
         if len(cols) != 4 : continue
-        if float(cols[0]) < xMin : xMin = float(cols[0])
-        if float(cols[0]) > xMax : xMax = float(cols[0])
-        if float(cols[1]) < yMin : yMin = float(cols[1])
-        if float(cols[1]) > yMax : yMax = float(cols[1])
-        if float(cols[2]) < zMin : zMin = float(cols[2])
-        if float(cols[2]) > zMax : zMax = float(cols[2])
 
-        if (float(cols[0]) == xMin and float(cols[1]) == yMin and float(cols[2]) == zMin): P1 = float(cols[3])
-        if (float(cols[0]) == xMin and float(cols[1]) == yMin and float(cols[2]) == zMax): P2 = float(cols[3])
-        if (float(cols[0]) == xMax and float(cols[1]) == yMin and float(cols[2]) == zMin): P3 = float(cols[3])
-        if (float(cols[0]) == xMax and float(cols[1]) == yMin and float(cols[2]) == zMax): P4 = float(cols[3])
-        if (float(cols[0]) == xMin and float(cols[1]) == yMax and float(cols[2]) == zMin): P5 = float(cols[3])
-        if (float(cols[0]) == xMin and float(cols[1]) == yMax and float(cols[2]) == zMax): P6 = float(cols[3])
-        if (float(cols[0]) == xMax and float(cols[1]) == yMax and float(cols[2]) == zMin): P7 = float(cols[3])
-        if (float(cols[0]) == xMax and float(cols[1]) == yMax and float(cols[2]) == zMax): P8 = float(cols[3])
+        x = float(cols[0])
+        y = float(cols[1])
+        z = float(cols[2])
+        t = float(cols[3])
 
-    print (P1, P2, P3, P4, P5, P6, P7, P8)
+        if x < xMin : xMin = x
+        if x > xMax : xMax = x
+        if y < yMin : yMin = y
+        if y > yMax : yMax = y
+        if z < zMin : zMin = z
+        if z > zMax : zMax = z
+
+        
+
+        if (x == xMin and y == yMin and z == zMin): P1 = t
+        if (x == xMin and y == yMin and z == zMax): P2 = t
+        if (x == xMax and y == yMin and z == zMin): P3 = t
+        if (x == xMax and y == yMin and z == zMax): P4 = t
+        if (x == xMin and y == yMax and z == zMin): P5 = t
+        if (x == xMin and y == yMax and z == zMax): P6 = t
+        if (x == xMax and y == yMax and z == zMin): P7 = t
+        if (x == xMax and y == yMax and z == zMax): P8 = t
+        if (x == 0    and y == 0    and z == 0):     C = t
+
+    print "%6.2f & %6.2f & %6.2f & %6.2f & %6.2f & %6.2f & %6.2f & %6.2f & %6.2f\\\\"%(P1, P2, P3, P4, P5, P6, P7, P8, C)
 
 if __name__ == "__main__":
     main()

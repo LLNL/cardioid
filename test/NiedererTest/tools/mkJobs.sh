@@ -13,9 +13,9 @@ nNodes=64
 nTasks=256
 
 
-for dt in 0.05 0.01 0.005
+for dt in 0.05 0.01 0.005 0.001
 do
-for dx in 0.5 0.2 0.1
+for dx in 0.5 0.2 0.1 0.05
 do
 for balancer in koradi grid
 do
@@ -33,17 +33,30 @@ do
       0.5)
       stimBox=4
       nTasks=64
+      nNodes=64
       xGrid=4; yGrid=4; zGrid=4
+      tMax=150
       ;;
       0.2)
       stimBox=8
       nTasks=128
+      nNodes=64
       xGrid=4; yGrid=4; zGrid=8
+      tMax=60
       ;;
       0.1)
       stimBox=16
       nTasks=256
+      nNodes=64
       xGrid=4; yGrid=8; zGrid=8
+      tMax=50
+      ;;
+      0.05)
+      stimBox=30
+      nTasks=1024
+      nNodes=256
+      xGrid=8; yGrid=8; zGrid=16
+      tMax=50
       ;;
       *)
       echo ERROR: undefined dx
@@ -52,22 +65,23 @@ do
 
   case $dt in
       0.05)
-      maxLoop=2000
       snapshotRate=50
       ;;
       0.01)
-      maxLoop=10000
       snapshotRate=250
       ;;
       0.005)
-      maxLoop=20000
-      snapshotRate=50
+      snapshotRate=500
+      ;;
+      0.001)
+      snapshotRate=2500
       ;;
       *)
       echo ERROR: undefined dt
       exit -1
   esac
 
+  maxLoop=`echo $tMax/$dt | bc`
 
   cat tools/object.data.proto \
       | sed s/XX_DT_XX/$dt/ \
