@@ -10,9 +10,8 @@ will just work.
 converted to a double (radians) when they are read in and the
 conductivity models don't have to worry about the conversion.
 
-4.  The grid spacing (in m) appears to be read from input.  Shouldn't
-this travel with the anatomy data?  Where do the values that were used
-in the test run from IBM come from.  They input deck contains no setting.
+4.  The grid spacing (in mm) appears to be read from input.  Shouldn't
+this travel with the anatomy data?
 
 5.  I don't quite understand why I have to explicity cast calls to
 Array3D::cArray() to const.  See for example
@@ -21,22 +20,9 @@ return value isn't used in determining the overload resolution....
 
 6.  There is output in FibreConductivity.cc that isn't screened for rank
 
-7.  Be more careful about initializations in
-Saleheen98PrecomputeDiffusion:initializeLocalGridInfo
-
-8.  There is something wrong with the Makefile.  Stuff doesn't rebuild
-when headers are touched.
-
 9.  Do something about the long comment in Conductivity.hh
 
 10.  Initialization of Voltages
-
-11.  initialization/filtering of cell types, including the use of type 9
-and type 0
-
-12.  Do we need to think about the fact that the reading process in
-BlueBeats completely populates certain blocks such as tissue (and
-probably conductivity)
 
 13.  Base classes need virtual destructors
 
@@ -60,9 +46,7 @@ step.
 
 18.  The conductivity classes don't know anything about cell type.  In
 BlueBeats there are explicit checks to make sure that we're only
-computing conductivities for tissue cell.  No such check here.  In fact,
-I'm worried that we don't handle default values for conductivities
-prperly as a result.
+computing conductivities for tissue cell.
 
 19.  The system for using the JHU model for conductivities isn't the
 same as in BlueBeats.  In BB we use a parameter on the anatomy reader
@@ -102,3 +86,6 @@ directory?
 that is inherited from ddcMD has some expectations about what the
 -D$(ARCH) macros should look like and I don't think we're doing the righ
 thing at present
+
+30.  I'm not sold on the checks for zero valued elements of the
+conductivity tensor in the computation of the diffusion weights.
