@@ -9,7 +9,7 @@
 using namespace std;
 
 /** We want to find the boundingBox such that any stencil point of any
- *  local atom is in the box.  It is not suffiient merely to iterate all
+ *  local atom is in the box.  It is not sufficient merely to iterate all
  *  of the local and remote atoms and find the maximum extent.  There
  *  may be local cells that are on the outer or inner walls of the
  *  heart.  Such cells will have no remote cells to satisfy their

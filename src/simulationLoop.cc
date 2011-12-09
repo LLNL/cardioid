@@ -29,7 +29,7 @@ void simulationLoop(Simulate& sim)
    
   // for now, hardcode initialization of voltage.
   // use TT04 value from BlueBeats
-  sim.VmArray_.resize(sim.anatomy_.size(), -86.2); // in mVolts
+  sim.VmArray_.resize(sim.anatomy_.size(), -85.23); // in mVolts
   for (unsigned ii=sim.anatomy_.nLocal(); ii<sim.anatomy_.size(); ++ii)
      sim.VmArray_[ii] = 0;
    
@@ -47,7 +47,7 @@ void simulationLoop(Simulate& sim)
          << setw(12) << dVmExternal[0]  << endl;
   }
 
-  while ( sim.loop_<sim.maxLoop_ )
+  while ( sim.loop_<=sim.maxLoop_ )
   {
     int nLocal = sim.anatomy_.nLocal();
     voltageExchange.execute(sim.VmArray_, nLocal);
