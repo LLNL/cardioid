@@ -47,6 +47,13 @@ void simulationLoop(Simulate& sim)
          << setw(12) << dVmExternal[0]  << endl;
   }
 
+  // sensors:  print out initial values
+  for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
+  {
+     sim.sensor_[ii]->print(sim.time_, sim.loop_, sim.VmArray_,
+                            dVmReaction, dVmDiffusion, dVmExternal);
+  }
+
   while ( sim.loop_<=sim.maxLoop_ )
   {
     int nLocal = sim.anatomy_.nLocal();

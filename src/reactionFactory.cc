@@ -54,6 +54,7 @@ namespace
       string tmp;
       objectGet(obj, "integrator", tmp, "rushLarsen");
       if      (tmp == "rushLarsen")   integrator = TT04_CellML_Reaction::rushLarsen;
+      else if (tmp == "rushLarson")   integrator = TT04_CellML_Reaction::rushLarsen;
       else if (tmp == "forwardEuler") integrator = TT04_CellML_Reaction::forwardEuler;
       else    assert(false);    
       

@@ -13,7 +13,8 @@
  DFLAGS += -DWITH_MPI -DADD_ -D$(PLAT) -DUSE_CSTDIO_LFS \
 	-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
  INCLUDE = 
- OPTFLAGS= -g -ggdb -fno-inline
+# OPTFLAGS= -g -ggdb -fno-inline
+ OPTFLAGS= -g -O3 -fno-inline
  OPTFLAGS= -g -O3
  CXXFLAGS= $(OPTFLAGS) $(INCLUDE) $(DFLAGS)
  CFLAGS= -std=c99 -g -xW $(INCLUDE) $(DFLAGS)

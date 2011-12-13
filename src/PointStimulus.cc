@@ -31,13 +31,14 @@ void PointStimulus::stim(double time,
   {
     if (cellLocal_)
     {
-      //dVmDiffusion[localInd_] = 0.;  //ewd:  should this be zeroed?
-      
       double trel = time - tStart_;  // stimulus starts at tStart_
 
       double t = trel - floor(trel/freq_)*freq_;  
       if (t < duration_)
+      {
+         //dVmDiffusion[localInd_] = 0.;  //ewd:  set this to zero to prevent stimulus from diffusing away
         dVmExternal[localInd_] = dVmStim_;
+      }
       else
         dVmExternal[localInd_] = 0.;
     }
