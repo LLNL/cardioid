@@ -17,9 +17,15 @@ done
 
 if [ -z $ddcPath ]
 then
-    echo "ERROR: can't find ddcMD sources."
-    echo "  search path:  $searchPath_ddcMD"
-    exit 1
+    if [ -e ddcMD_files_r????.tgz ]
+    then
+        tar -xzf ddcMD_files_r????.tgz 
+        ddcPath=ddcMD_files/src
+    else
+        echo "ERROR: can't find ddcMD sources."
+        echo "  search path:  $searchPath_ddcMD"
+        exit 1
+    fi
 else
     echo "Using ddcMD sources from $ddcPath"
 fi

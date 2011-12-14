@@ -107,6 +107,9 @@ testGridRouter: makedirs $(HEARTOBJS) $(OBJDIR)/testGridRouter.o
 $(DDCMD_FILES):
 	./mkLinks_ddcMD.sh $@
 
+ddcMD_dist:
+	./mkDist_ddcMD.sh $(DDCMD_FILES)
+
 makedirs:
 	@if [ ! -d $(OBJDIR) ]; then mkdir -p $(OBJDIR) ; fi
 	@if [ ! -e .depend_$(ARCH) ]; then touch .depend_$(ARCH) ; fi
@@ -134,6 +137,7 @@ clean :
 
 distclean: clean
 	rm -f $(DDCMD_FILES)
+	rm -rf ddcMD_files
 	rm -rf $(OBJDIR)
 	rm -f .depend*
 
