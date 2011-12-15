@@ -11,6 +11,7 @@
 #include "TT04_CellML_Reaction.hh"
 #include "TT04Dev_Reaction.hh"
 #include "TT06_CellML_Reaction.hh"
+#include "TT06Dev_Reaction.hh"
 #include "ReactionFHN.hh"
 
 using namespace std;
@@ -63,6 +64,7 @@ Reaction* factory(const string& name, const Anatomy& anatomy)
    if (name == "cellml_tt06_fe") return new TT06_CellML_Reaction(anatomy, TT06_CellML_Reaction::forwardEuler);
    if (name == "fhn")            return new ReactionFHN(anatomy);
    if (name == "tt04dev")        return new TT04Dev_Reaction(anatomy);
+   if (name == "tt06dev")        return new TT06Dev_Reaction(anatomy);
    assert(false);
    return 0;
 }

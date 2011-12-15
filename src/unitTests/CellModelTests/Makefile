@@ -7,8 +7,10 @@ DEFAULT: first
 
 HEART_FILES = \
 	TT04_CellML.hh \
-	TT04Dev.cc \
+	TT04Dev_a.cc \
 	TT04Dev.hh \
+	TT06Dev.cc \
+	TT06Dev.hh \
 	TT04_CellML_Endo.cc \
 	TT04_CellML_Endo.hh \
 	TT04_CellML_Epi.cc \
@@ -34,6 +36,8 @@ HEART_FILES = \
 	Reaction.hh \
 	TT04Dev_Reaction.cc \
 	TT04Dev_Reaction.hh \
+	TT06Dev_Reaction.cc \
+	TT06Dev_Reaction.hh \
 	TT04_CellML_Reaction.cc \
 	TT04_CellML_Reaction.hh \
 	TT06_CellML_Reaction.cc \
@@ -51,7 +55,8 @@ HEART_FILES = \
 CXX=g++
 CC=gcc
 
-OPTFLAGS=-g -O3
+#OPTFLAGS=-g -O3
+OPTFLAGS=-g 
 
 CXXFLAGS += $(OPTFLAGS)
 CXXFLAGS += -MMD
