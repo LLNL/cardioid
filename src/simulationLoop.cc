@@ -57,13 +57,17 @@ void simulationLoop(Simulate& sim)
   while ( sim.loop_<=sim.maxLoop_ )
   {
     int nLocal = sim.anatomy_.nLocal();
+    sim.tmap_["Halo Exchange"].start();
     voltageExchange.execute(sim.VmArray_, nLocal);
+    sim.tmap_["Halo Exchange"].stop();
 
     for (unsigned ii=0; ii<nLocal; ++ii)
        dVmExternal[ii] = 0;
     
     // DIFFUSION
+    sim.tmap_["Diffusion"].start();
     sim.diffusion_->calc(sim.VmArray_, dVmDiffusion);
+    sim.tmap_["Diffusion"].stop();
 
     // code to limit or set iStimArray goes here.
     for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
@@ -73,7 +77,9 @@ void simulationLoop(Simulate& sim)
       iStim[ii] = -(dVmDiffusion[ii] + dVmExternal[ii]);
       
     // REACTION
+    sim.tmap_["Reaction"].start();
     sim.reaction_->calc(sim.dt_, sim.VmArray_, iStim, dVmReaction);
+    sim.tmap_["Reaction"].stop();
     for (unsigned ii=0; ii<nLocal; ++ii)
     {
       double dVm = dVmReaction[ii] + dVmDiffusion[ii] + dVmExternal[ii] ;
