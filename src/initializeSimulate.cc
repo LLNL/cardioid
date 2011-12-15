@@ -20,7 +20,7 @@ void initializeSimulate(const string& name, Simulate& sim)
 
    objectGet(obj, "loop", sim.loop_, "0");
    objectGet(obj, "maxLoop", sim.maxLoop_, "1000");
-   objectGet(obj, "dt", sim.dt_, "0.02e-3");
+   objectGet(obj, "dt", sim.dt_, "0.01");
    objectGet(obj, "time", sim.time_, "0");
    objectGet(obj, "printRate", sim.printRate_, "20");
    objectGet(obj, "snapshotRate", sim.snapshotRate_, "100");

@@ -1,0 +1,245 @@
+\documentclass{article}
+\begin{document}
+
+\def\path#1{#1}
+
+\section{Building Cardioid}
+
+Cardioid has been designed to be portable to a wide variety of systems.
+If you are building on a system that is recognized by the build system
+you should only have to enter the src directory and type make.  The next
+few paragraphs describe the proceedure to follow if your build host is
+not recognized.
+
+Cardioid's build system uses a hostname based configuration system
+rather than an architecture based configuration (i.e., uname or
+similar).  Over the years we have found that using hostnames allows us
+to easily work around subtle hardware or environmental difference that
+are hard to detect otherwise.  We also find that the number of build
+hosts is relatively small so this system is easy to maintain, especially
+compared to the complexity of a tool like autoconf.
+
+To configure the build system for a new host, edit
+\path{src/Makefile.arch} and add a conditional block for your build
+host.  Note that we trim trailing digits from the host name to account
+for the fact that many clusters have several front-end nodes with names
+that differ only by trailing digits.  If your host is sufficiently
+similar to one that is already configured you may be able to use one of
+the existing values for ARCHGUESS.  If not, you will need to specify a
+new value and create the corresponding \path{.mk} file with the
+characteristics of your build host.  Use one of the existing files as a
+guide.
+
+
+
+\section{Command Line Arguments}
+
+Cardioid does not recognize any command line arguments
+
+\section{Input Files}
+
+The input parameters for a Cardioid job are read from the file
+\path{object.data}.  This file consists of a number of ``object'' blocks
+that can be used to control all aspects of the job.
+
+An object block is of the form
+\begin{verbatim}
+name ClassName { 
+  keyword1 = value1; 
+  keyword2 = value2;
+  keyword3 = value3.1 value3.2 value3.3;
+  ...
+}
+\end{verbatim}
+Values may be string, floats, or integers and may be vector or scalar
+valued.  Units are supported.  The set of keywords is open and
+arbitrary.  Both C and C++ style comments are supported.  All
+identifiers are case sensitive.  The order of objects in the file is
+arbitrary.  If two objects with the same name and class name appear in
+the file they are treated as if the keyword value lists are
+concatenated.  If the same keyword appears multiple times within a
+single object the last value overrides all others.  By convention,
+object names are mixed case, class names are all caps.
+
+
+The primary or root object in the object.data file is the SIMULATE
+object and the job is configured according to its settings.  A complete
+list of the supported object classes and their keywords is given in the
+appendix.
+
+
+
+
+\appendix
+
+\section{Object Classes}
+
+\newenvironment{keywords}
+{
+  \par\vspace{12pt}\noindent
+  \begin{tabular}{|r|p{0.7\textwidth}|}
+    \hline
+    Keyword & Description \\ \hline
+  }
+  {
+  \end{tabular}
+}
+
+\def\kw#1#2#3{%
+  #1 & {#2 \par Default: #3}\\ \hline%
+}
+
+
+\subsection{ANATOMY}
+\begin{keywords}
+  \kw{dx}{}{0.2~mm}
+  \kw{dy}{}{0.2~mm}
+  \kw{dz}{}{0.2~mm}
+  \kw{method}{Choose from ``brick'' or ``'pio''}{pio}
+\end{keywords}
+
+\subsubsection{brick method}
+\begin{keywords}
+  \kw{cellType}{The cell type in the brick}{102}
+  \kw{xSize}{Size of the simulation in the $x$-direction in mm}{3~mm}
+  \kw{ySize}{Size of the simulation in the $y$-direction in mm}{7~mm}
+  \kw{zSize}{Size of the simulation in the $z$-direction in mm}{20~mm}
+\end{keywords}
+
+\subsubsection{pio method}
+\begin{keywords}
+  \kw{filename}{}{snapshot.initial/anatomy\#}
+\end{keywords}
+
+
+\subsection{CONDUCTIVITY}
+\begin{keywords}
+\end{keywords}
+
+\subsection{DECOMPOSITION}
+\begin{keywords}
+\end{keywords}
+
+\subsection{DIFFUSION}
+\begin{keywords}
+\end{keywords}
+
+\subsection{REACTION}
+\begin{keywords}
+\end{keywords}
+
+\subsection{SENSOR}
+\begin{keywords}
+\end{keywords}
+
+\subsection{SIMULATE}
+
+The SIMULATE object is the master object of the simulation.  It
+specifies simulation parameters such as the time step, maximum loop
+count, etc, as well as the names of the other objects that define the
+reaction and diffusion models, as well as the stimulus and sensor
+protocols.
+
+\begin{keywords}
+  \kw{anatomy}{The name of the ANATOMY object for this simulation}{anatomy}
+  \kw{decomposition}{The name of the DECOMPOSITION object for this
+    simulation.}
+  {decomposition}
+  \kw{diffusion}{The name of the DIFFUSION object for this simulation.}
+  {diffusion}
+  \kw{dt}{The time step.}{0.01~msec}
+  \kw{loop}{The initial loop count for the simulation.}{0}
+  \kw{maxLoop}{The maximum value for the loop count.}{1000}
+  \kw{printRate}{}{}
+  \kw{reaction}{The name of the REACTION object for this simulation.}{reaction}
+  \kw{sensor}{The name of the sensor object(s) for this simulation.
+    Multiple sensors may be specified.}{No sensors}
+  \kw{snapshotRate}{The rate (in time steps) at which snapshot directories are
+    created}{100 time steps}
+  \kw{stimulus}{The name of the STIMULUS object(s) to use in this
+    simulation. Multiple stimuli may be specified.}{No Stimulus}
+  \kw{time}{The initial simulation time.}{0~msec}
+\end{keywords}
+
+\subsection{STIMULUS}
+
+\section{Anatomy File Format}
+
+Anatom files are written using a parallel I/O system known as ``pio.''
+The pio system is designed to provide extremely high I/O performance on
+a variety of machines.  Because file-per-task and file-per-job
+approaches to parallel I/O both have serious problems at large scale we
+take a middle road and divide the data into $n$ physical files where $n$
+is typically in the range of 1--2000.  For very large scale jobs and
+highest throughput $n$ can be tuned according to the number of I/O nodes
+on the system or some other hardware parameter that limits performance
+such as the number of storage targets.
+
+
+The $n$ physical files int a pio logical file all share common base name
+and end with the \#-sign and a six digit sequence number.  For example,
+anatomy\#000000, anatomy\#000001, \ldots You can think of this set of
+files as being logically concatenated in numerical order.  Pio files may
+contain either ascii or binary data.
+
+The zeroth file contains a human readable ascii header that describes
+the data.  This header is of the form
+\begin{verbatim}
+name ClassName { 
+  keyword1 = value1; 
+  keyword2 = value2;
+  ...
+}
+\end{verbatim}
+Note that this is exactly the same form as an object in the object.data
+input file.  Values may be string, floats, or integers and may be vector
+or scalar valued.  Units are supported.  The set of keywords is open and
+arbitrary.  You can put whatever data you want in the header to help
+identify the file.  The maximum header length is something like 4k but
+that could be easily extended if it became a limitation.  The header
+ends with two newline characters in a row.
+
+The header for an ascii anatomy file looks like this:
+\begin{verbatim}
+anatomy FILEHEADER{
+  datatype = FIXRECORDASCII;
+  nfiles = 1;
+  nfields = 4;
+  field_names = gid cellType theta phi;
+  field_types = u u u u;
+  nx = 3; ny = 3; nz = 3;
+  nrecord = 27;
+  lrec=12;
+}
+\end{verbatim}
+The meaning of most of the keywords should be fairly self-evident.  Most
+are needed by pio to determine how to read the file.   (For now we're
+using ascii to facilitate debugging.  Binary files will be available in
+the future to improve performance and decrease storage cost)
+
+
+Note that the names and types of the data fields are specified.  
+
+It is fairly simple to write reader code that is sensitive to the list
+of data fields that are present.  For example the reader could notice
+that only the cellType is in the file, read two columns instead of four
+and synthesize the orientation data (or set a flag to tell someone else
+it needs to be synthesized).
+
+For ascii files the types can be f, u, and s, for integers, floats, and
+strings.  Binary files have types such as i4, i8, f4, f8, b1, b2, b3, \ldots,
+bn where bn is an unsigned integer stored in n bytes.
+
+The gid field contains the 3D index of the cell converted to a single
+integer by the formula $ix + nx*(iy + ny*iz)$.  We could use bit
+shifting operations instead if this is necessary for performance.
+
+All records (lines) must be exactly lrec long.  (Should we ever need it,
+pio does contain support for variable length records.)
+
+
+\end{document}
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

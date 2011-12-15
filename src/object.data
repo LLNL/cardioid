@@ -5,10 +5,10 @@ simulate SIMULATE
    diffusion = Saleheen98Fast;
    reaction = TT04_CellML;
    stimulus = test;
-   probe = test;
+   sensor = pointSensor;
    loop = 0;            // in timesteps
    maxLoop = 50000;     // in timesteps
-   dt = 2e-4;           // msec
+   dt = 0.01;           // msec
    time = 0;            // msec
    printRate = 50;      // in timesteps
    snapshotRate = 5000; // in timesteps
