@@ -86,7 +86,7 @@ boxStimulus STIMULUS
    xMax = XX_STIMBOX_XX;
    yMax = XX_STIMBOX_XX;
    zMax = XX_STIMBOX_XX;
-   iStim = -50;
+   iStim = -35.71429;
    tStart = 0;
    duration = 2;
    freq = 1000;

@@ -7,7 +7,7 @@
 
 exe=../../../../src/cardioid-ibm_bgp_xlc 
 pool=pdebug
-maxTime=1:00
+maxTime=1:30
 bank=dev
 nNodes=64
 nTasks=256
