@@ -65,16 +65,16 @@ do
 
   case $dt in
       0.05)
-      snapshotRate=50
+      snapshotRate=20
       ;;
       0.01)
-      snapshotRate=250
+      snapshotRate=100
       ;;
       0.005)
-      snapshotRate=500
+      snapshotRate=200
       ;;
       0.001)
-      snapshotRate=2500
+      snapshotRate=1000
       ;;
       *)
       echo ERROR: undefined dt

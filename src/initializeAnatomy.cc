@@ -81,9 +81,9 @@ namespace
 
       Anatomy& anatomy = sim.anatomy_;
       
-      int nx = int(xSize/anatomy.dx() + 1);
-      int ny = int(ySize/anatomy.dy() + 1);
-      int nz = int(zSize/anatomy.dz() + 1);
+      int nx = int(xSize/anatomy.dx());
+      int ny = int(ySize/anatomy.dy());
+      int nz = int(zSize/anatomy.dz());
       anatomy.setGridSize(nx, ny, nz);
 
       Long64 maxGid = Long64(nx)*Long64(ny)*Long64(nz);

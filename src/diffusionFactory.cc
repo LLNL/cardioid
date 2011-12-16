@@ -52,6 +52,7 @@ namespace
          return new Saleheen98PrecomputeDiffusion(p, anatomy);
 
       assert(1==0); // reachable only due to bad input.
+      return 0;
    }
 }
 
