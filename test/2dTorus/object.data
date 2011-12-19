@@ -1,0 +1,68 @@
+simulate SIMULATE 
+{
+   anatomy = pioAnatomy;
+   decomposition = koradi;
+   diffusion = Saleheen98;
+   reaction = tt06;
+   loop = 0;
+   maxLoop = 50000;
+   dt = 0.01;
+   time = 0;
+   printRate = 1;
+   snapshotRate = 100;
+   stimulus = box;
+}
+
+pioAnatomy ANATOMY 
+{
+   method = pio;
+   fileName = snapshot.initial/anatomy#;
+   cellTypes = -1;
+   dx = 0.1;
+   dy = 0.1;
+   dz = 0.1;
+}
+
+koradi DECOMPOSITION 
+{
+   method = koradi;
+   alpha = 0.5;
+   maxVoronoiSteps = 5;
+   maxSteps = 100;
+   tolerance = 0.001;
+}
+
+Saleheen98 DIFFUSION
+{
+   method = Saleheen98;
+   variant = precompute;
+   conductivity = conductivity;
+    diffusionScale = 714.2857143; 
+}
+
+conductivity CONDUCTIVITY
+{
+    method = fibre;
+    sigmaLi = 0.0001334177;   // units S/mm
+    sigmaTi = 0.0000176062;  // units S/mm
+}
+
+tt06 REACTION
+{
+    method = TT06_CellML;
+    integrator = rushLarsen;
+}
+
+
+box STIMULUS
+{
+   method = box;
+   xMin = 75;
+   xMax = 80;
+   yMin = 47;
+   yMax = 53;
+   iStim = -35.71429;
+   tStart = 0;
+   duration = 2;
+   freq = 1000;
+}
