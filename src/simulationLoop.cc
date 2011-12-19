@@ -22,8 +22,8 @@ void simulationLoop(Simulate& sim)
   int myRank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
    
-  vector<double> dVmDiffusion(sim.anatomy_.nLocal());
-  vector<double> dVmReaction(sim.anatomy_.nLocal());
+  vector<double> dVmDiffusion(sim.anatomy_.nLocal(), 0.0);
+  vector<double> dVmReaction(sim.anatomy_.nLocal(), 0.0);
   vector<double> dVmExternal(sim.anatomy_.nLocal(), 0.0);
   vector<double> iStim(sim.anatomy_.nLocal(), 0.0);
    

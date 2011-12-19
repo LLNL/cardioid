@@ -5,8 +5,8 @@
 #include "Diffusion.hh"
 #include "object_cc.hh"
 
-
 #include "Saleheen98Diffusion.hh"
+#include "NullDiffusion.hh"
 
 class Anatomy;
 
@@ -30,6 +30,8 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy)
       assert(1==0);
    else if (method == "Saleheen98")
       return saleheen98DiffusionFactory(obj, anatomy);
+   else if (method == "null")
+      return new NullDiffusion();
    
    assert(false); // reachable only due to bad input
    return 0;

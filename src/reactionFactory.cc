@@ -7,6 +7,7 @@
 #include "TT04_CellML_Reaction.hh"    // TT04 implementation from CellML (Nov 2011)
 #include "TT06_CellML_Reaction.hh"    // TT06 implementation from CellML (Nov 2011)
 #include "ReactionFHN.hh"
+#include "NullReaction.hh"
 
 using namespace std;
 
@@ -34,6 +35,8 @@ Reaction* reactionFactory(const string& name, const Anatomy& anatomy)
       return scanTT06_CellML(obj, anatomy);
    else if (method == "FHN" || method == "FitzhughNagumo")
       return scanFHN(obj, anatomy);
+   else if (method == "null")
+      return new NullReaction();
    assert(false); // reachable only due to bad input
    return 0;
 }
