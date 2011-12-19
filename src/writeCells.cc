@@ -54,6 +54,7 @@ void writeCells(const Simulate& sim,
       Pprintf(file, "  field_names = rx ry rz cellType domain Vm;\n");
       Pprintf(file, "  field_types = u u u u u f;\n" );
       Pprintf(file, "  nfiles = %u;\n", nfiles);
+      Pprintf(file, "  time = %f; loop = %u;\n", sim.time_, sim.loop_);
       Pprintf(file, "  h = %4u  0    0\n", anatomy.nx());
       Pprintf(file, "        0    %4u  0\n", anatomy.ny());
       Pprintf(file, "        0    0    %4u;\n", anatomy.nz());
