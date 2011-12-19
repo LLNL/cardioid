@@ -6,7 +6,7 @@ anatomy FILEHEADER {
   field_types = u u u u;
   nx = 100; ny = 100; nz = 3;
 }
-                    
+
          43 100   0   0
          44 100   0   0
          45 100   0   0
