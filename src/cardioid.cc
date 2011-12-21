@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <mpi.h>
+#include <cstdlib>
 
 #include "Simulate.hh"
 #include "Timer.hh"

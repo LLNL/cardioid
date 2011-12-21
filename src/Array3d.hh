@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cassert>
+#include <cstdlib>
 
 template <class T>
 class Array3d

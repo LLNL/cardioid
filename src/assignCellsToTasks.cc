@@ -1,9 +1,11 @@
 #include "assignCellsToTasks.hh"
 #include <string>
 #include <cassert>
+#include <cstdlib>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 
 #include "object_cc.hh"
 #include "ioUtils.h"
