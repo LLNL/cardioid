@@ -1,5 +1,5 @@
-#ifndef SALEHEEN98_DIFFUSION_HH
-#define SALEHEEN98_DIFFUSION_HH
+#ifndef SALEHEEN_DEV_HH
+#define SALEHEEN_DEV_HH
 
 #include "Diffusion.hh"
 #include <string>
@@ -13,7 +13,7 @@ class Tuple;
 
 
 
-struct Saleheen98DiffusionParms
+struct SaleheenDevParms
 {
    double diffusionScale_;
    std::string conductivityName_;
@@ -37,8 +37,9 @@ struct Saleheen98DiffusionParms
  *  - Computes and owns the 19 constants in the DiffusionCoefficients
  *    structure for each local Anatomy cell.
  */
-class Saleheen98PrecomputeDiffusion : public Diffusion
+class SaleheenDev : public Diffusion
 {
+
    struct DiffusionCoefficients
    {
       double sumA;
@@ -61,10 +62,10 @@ class Saleheen98PrecomputeDiffusion : public Diffusion
       double A17;
       double A18;
    };
-   
+
  public:
-   Saleheen98PrecomputeDiffusion(
-      const Saleheen98DiffusionParms& parms,
+   SaleheenDev(
+      const SaleheenDevParms& parms,
       const Anatomy& anatomy);
    
    void calc(const std::vector<double>& Vm, std::vector<double>& dVm);
@@ -74,7 +75,7 @@ class Saleheen98PrecomputeDiffusion : public Diffusion
    void   buildBlockIndex(const Anatomy& anatomy);
    void   precomputeCoefficients(const Anatomy& anatomy);
    
-   double boundaryFDLaplacianSaleheen98SumPhi(const Tuple& tuple);
+   double boundaryFDLaplacianSaleheen98SumPhi(const int index);
    void   boundaryFDLaplacianSaleheen98Constants(
       const int*** tissue,
       const SigmaTensorMatrix*** sigmaMatrix,
@@ -88,6 +89,24 @@ class Saleheen98PrecomputeDiffusion : public Diffusion
    void printAllDiffusionWeights(const Array3d<int>& tissue);
 
 
+   int xp1yz_;
+   int xyp1z_;
+   int xm1yz_;
+   int xym1z_;
+   int xp1yp1z_;
+   int xm1yp1z_;
+   int xm1ym1z_;
+   int xp1ym1z_;
+   int xyzp1_;
+   int xyzm1_;
+   int xyp1zp1_;
+   int xyp1zm1_;
+   int xym1zm1_;
+   int xym1zp1_;
+   int xp1yzp1_;
+   int xm1yzp1_;
+   int xm1yzm1_;
+   int xp1yzm1_;
    LocalGrid                      localGrid_;
    double                         diffusionScale_;
    Conductivity*                  conductivity_;
