@@ -130,7 +130,9 @@ void Saleheen98PrecomputeDiffusion::calc(
 {
    updateVoltageBlock(Vm);
 
-   for (unsigned ii=0; ii<dVm.size(); ++ii)
+   const int n = dVm.size();
+#pragma omp parallel for
+   for (int ii=0; ii<n; ++ii)
    {
       dVm[ii] = boundaryFDLaplacianSaleheen98SumPhi(localTuple_[ii]);
       dVm[ii] *= diffusionScale_;

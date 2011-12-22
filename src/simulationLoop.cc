@@ -57,6 +57,7 @@ void simulationLoop(Simulate& sim)
   while ( sim.loop_<=sim.maxLoop_ )
   {
     int nLocal = sim.anatomy_.nLocal();
+    MPI_Barrier(MPI_COMM_WORLD);
     sim.tmap_["Halo Exchange"].start();
     voltageExchange.execute(sim.VmArray_, nLocal);
     sim.tmap_["Halo Exchange"].stop();

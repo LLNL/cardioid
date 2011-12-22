@@ -89,3 +89,7 @@ thing at present
 
 30.  I'm not sold on the checks for zero valued elements of the
 conductivity tensor in the computation of the diffusion weights.
+
+31. The decomposition is setup by two functions: assignCellsToTasks and
+getRemoteCells.  Right now both scan the DECOMPOSITION object.  Perhaps
+these should be brought together somehow.

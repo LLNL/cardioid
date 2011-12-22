@@ -37,7 +37,9 @@ class CommTable
    ~CommTable();
 
    void execute(void* sendBuf, void* recvBuf, unsigned width);
-   unsigned nRemote();
+   unsigned nRemote(); // total number of remote items to recv.
+   unsigned nNbrs();
+   std::vector<int> msgSize(); // nItems in each msg that will be sent
 
   private:
 

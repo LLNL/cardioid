@@ -11,6 +11,7 @@
 #include "Simulate.hh"
 #include "Timer.hh"
 #include "mpiUtils.h"
+#include "pio.h"
 
 #include "initializeSimulate.hh"
 #include "simulationLoop.hh"
@@ -53,13 +54,29 @@ int main(int argc, char** argv)
    {
       
       cout.setf(ios::fixed,ios::floatfield);
-      for ( map<std::string,Timer>::iterator i = sim.tmap_.begin(); i != sim.tmap_.end(); i++ )
+      for ( map<std::string,Timer>::iterator i=sim.tmap_.begin();
+            i!=sim.tmap_.end(); i++ )
       {
         double time = (*i).second.real();
-        cout << "timing name=" << setw(15) << (*i).first << ":   time=" << setprecision(6) << setw(12) << time << " sec" << endl;
+        cout << "timing name=" << setw(15) << (*i).first << ":   time="
+             << setprecision(6) << setw(12) << time << " sec" << endl;
       }
       
    }
+
+   PFILE* file = Popen("timing", "w", MPI_COMM_WORLD);
+   Pprintf(file, "Performance info for task %d\n", mype);
+   for ( map<std::string,Timer>::iterator i=sim.tmap_.begin();
+         i!=sim.tmap_.end(); i++ )
+   {
+      double time = (*i).second.real();
+      Pprintf(file, "timing name= %s: time = %f\n", i->first.c_str(), time);
+   }
+   Pprintf(file, "\n\n");
+   Pclose(file);
+
+
+
    MPI_Finalize();
    
    return 0;

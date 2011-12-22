@@ -5,6 +5,8 @@
 #include "Anatomy.hh"
 #include "GridRouter.hh"
 #include "HaloExchange.hh"
+#include "pio.h"
+#include "object_cc.hh"
 
 #include <fstream>
 #include <sstream>
@@ -41,7 +43,7 @@ void dumpCells(const Anatomy& anatomy)
 
 
 
-void getRemoteCells(Simulate& sim, MPI_Comm comm)
+void getRemoteCells(Simulate& sim, const string& name, MPI_Comm comm)
 {
    Anatomy& anatomy = sim.anatomy_;
 
@@ -63,5 +65,23 @@ void getRemoteCells(Simulate& sim, MPI_Comm comm)
    cellExchange.execute(anatomy.cellArray(), anatomy.nLocal());
    anatomy.nRemote() = anatomy.size() - anatomy.nLocal();
 //   dumpCells(anatomy);
+
+   OBJECT* obj = object_find(name.c_str(), "DECOMPOSITION");
+   bool printStats;
+   objectGet(obj, "printStats", printStats, "0");
+   if (printStats)
+   {
+      PFILE* file = Popen("nNbrTasks", "w", comm);
+      Pprintf(file, "%d\n", sim.commTable_->nNbrs());
+      Pclose(file);
+
+      file = Popen("msgSizes", "w", comm);
+      vector<int> mSize = sim.commTable_->msgSize();
+      for (unsigned ii=0; ii<mSize.size(); ++ii)
+         Pprintf(file, "%d\n", mSize[ii]);
+      Pclose(file);
+   }
+   
+
 }
 

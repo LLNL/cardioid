@@ -118,3 +118,16 @@ unsigned CommTable::nRemote()
    return _recvOffset.back();
 }
 
+unsigned CommTable::nNbrs()
+{
+   return _sendTask.size();
+}
+
+vector<int> CommTable::msgSize()
+{
+   vector<int> tmp(_sendOffset.size()-1);
+   for (unsigned ii=1; ii<_sendOffset.size(); ++ii)
+      tmp[ii-1] = _sendOffset[ii] - _sendOffset[ii-1];
+   return tmp;
+}
+

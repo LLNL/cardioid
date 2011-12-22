@@ -33,7 +33,7 @@ TT06_CellML_Reaction::TT06_CellML_Reaction(const Anatomy& anatomy,
 
    
    cellModel_.reserve(nCells_);
-   for (unsigned ii=0; ii<nCells_; ++ii)
+   for (int ii=0; ii<nCells_; ++ii)
    {
       assert(anatomy.cellType(ii) >= 0 && anatomy.cellType(ii) < 256);
       int ttType = ttType_[anatomy.cellType(ii)];
@@ -54,7 +54,7 @@ TT06_CellML_Reaction::TT06_CellML_Reaction(const Anatomy& anatomy,
    }
 
    s_.resize(nCells_);
-   for (unsigned ii=0; ii<nCells_; ++ii)
+   for (int ii=0; ii<nCells_; ++ii)
    {
       for (unsigned jj=0; jj<19; ++jj)
       {
@@ -100,7 +100,8 @@ void TT06_CellML_Reaction::forwardEulerIntegrator(
    const vector<double>& iStim,
    vector<double>& dVm)
 {
-   for (unsigned ii=0; ii<nCells_; ++ii)
+#pragma omp parallel for
+   for (int ii=0; ii<nCells_; ++ii)
    {
       double rates[19];
       double algebraic[70];
@@ -119,7 +120,8 @@ void TT06_CellML_Reaction::rushLarsenIntegrator(
    const vector<double>& iStim,
    vector<double>& dVm)
 {
-   for (unsigned ii=0; ii<nCells_; ++ii)
+#pragma omp parallel for
+   for (int ii=0; ii<nCells_; ++ii)
    {
       double rates[19];
       double algebraic[70];

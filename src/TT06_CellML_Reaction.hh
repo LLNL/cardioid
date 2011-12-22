@@ -30,7 +30,7 @@ class TT06_CellML_Reaction : public Reaction
    void rushLarsenIntegrator(double dt, const std::vector<double>& Vm,
       const std::vector<double>& iStim, std::vector<double>& dVm);
 
-   unsigned nCells_;
+   int nCells_;
    IntegratorType integrator_;
    
    std::vector<int>              ttType_; // maps cellType to ttType

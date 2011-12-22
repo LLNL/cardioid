@@ -36,7 +36,7 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "decomposition", nameTmp, "decomposition");
    assignCellsToTasks(sim, nameTmp, MPI_COMM_WORLD);
    
-   getRemoteCells(sim, MPI_COMM_WORLD);
+   getRemoteCells(sim, nameTmp, MPI_COMM_WORLD);
    
    objectGet(obj, "diffusion", nameTmp, "diffusion");
    sim.diffusion_ = diffusionFactory(nameTmp, sim.anatomy_);
