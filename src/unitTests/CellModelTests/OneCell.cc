@@ -45,9 +45,11 @@ Anatomy buildAnatomy(int cellType)
    c.theta_ = 0;
    c.phi_ = 0;
    Anatomy a;
-   a.setGridSize(1, 1, 1);
-   a.cellArray().push_back(c);
-   a.nLocal() = 1;
+   //a.setGridSize(1, 1, 1);
+   a.setGridSize(14, 14, 14);
+   //a.cellArray().push_back(c);
+   a.cellArray().resize(14*14*14,c);
+   a.nLocal() = 14*14*14;
    a.nRemote() = 0;
    a.dx() = 0.2;
    a.dy() = 0.2;

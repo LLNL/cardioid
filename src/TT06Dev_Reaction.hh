@@ -3,7 +3,6 @@
 
 #include "Reaction.hh"
 class Anatomy;
-class TT06Dev;
 class TT06DevState;
 
 class TT06Dev_Reaction : public Reaction
@@ -24,7 +23,6 @@ class TT06Dev_Reaction : public Reaction
    unsigned nCells_;
    
    std::vector<int>              ttType_; // maps cellType to ttType
-   std::vector<TT06Dev>     cellModel_;
    std::vector<TT06DevState> s_;
 };
 

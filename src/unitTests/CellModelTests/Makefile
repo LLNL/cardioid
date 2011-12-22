@@ -11,6 +11,8 @@ HEART_FILES = \
 	TT04Dev.hh \
 	TT06Dev.cc \
 	TT06Dev.hh \
+	TT06DevFit.cc \
+	TT06DevFit.hh \
 	TT04_CellML_Endo.cc \
 	TT04_CellML_Endo.hh \
 	TT04_CellML_Epi.cc \
@@ -55,8 +57,8 @@ HEART_FILES = \
 CXX=g++
 CC=gcc
 
-#OPTFLAGS=-g -O3
-OPTFLAGS=-g 
+LDFLAGS= -pg -L/opt/local/lib -lgsl -lgslcblas  
+OPTFLAGS=-g -O3 -pg -I/opt/local/include  
 
 CXXFLAGS += $(OPTFLAGS)
 CXXFLAGS += -MMD
@@ -82,7 +84,7 @@ first: $(HEART_FILES)
 	@$(MAKE) $(EXE)
 
 $(EXE): $(HEART_FILES) $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJECTS)
 
 $(HEART_FILES):
 	../tools/mkLinks_heart.sh $@

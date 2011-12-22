@@ -6,6 +6,7 @@
 #include "TT04_bbReaction.hh"         // TT04 implementation from BlueBeats
 #include "TT04_CellML_Reaction.hh"    // TT04 implementation from CellML (Nov 2011)
 #include "TT06_CellML_Reaction.hh"    // TT06 implementation from CellML (Nov 2011)
+#include "TT06Dev_Reaction.hh"    // TT06 implementation from CellML (Nov 2011)
 #include "ReactionFHN.hh"
 #include "NullReaction.hh"
 
@@ -16,6 +17,7 @@ namespace
    Reaction* scanTT04_bb(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanTT04_CellML(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanTT06_CellML(OBJECT* obj, const Anatomy& anatomy);
+   Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanFHN(OBJECT* obj, const Anatomy& anatomy);
 }
 
@@ -33,6 +35,8 @@ Reaction* reactionFactory(const string& name, const Anatomy& anatomy)
       return scanTT04_CellML(obj, anatomy);
    else if (method == "TT06_CellML" || method == "tenTusscher06_CellML")
       return scanTT06_CellML(obj, anatomy);
+   else if (method == "TT06Dev" )
+      return scanTT06Dev(obj, anatomy);
    else if (method == "FHN" || method == "FitzhughNagumo")
       return scanFHN(obj, anatomy);
    else if (method == "null")
@@ -76,6 +80,13 @@ namespace
       else if (tmp == "forwardEuler") integrator = TT06_CellML_Reaction::forwardEuler;
       else    assert(false);    
       return new TT06_CellML_Reaction(anatomy, integrator);
+   }
+}
+namespace
+{
+   Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy)
+   {
+      return new TT06Dev_Reaction(anatomy);
    }
 }
 
