@@ -151,8 +151,9 @@ void SaleheenDev::calc(
 {
    updateVoltageBlock(Vm);
 
+   int n = dVm.size();
 #pragma omp parallel for
-   for (unsigned ii=0; ii<dVm.size(); ++ii)
+   for (int ii=0; ii<n; ++ii)
    {
       dVm[ii] = boundaryFDLaplacianSaleheen98SumPhi(blockIndex_[ii]);
       dVm[ii] *= diffusionScale_;
