@@ -5,7 +5,7 @@
 # 1. Might want to add a loop over different numbers of tasks to check
 # that the results don't change with the decomposition.  
 
-exe=../../../../src/cardioid-ibm_bgp_xlc 
+exe=../../../../bin/cardioid-bgp
 pool=pdebug
 maxTime=1:30
 bank=dev
