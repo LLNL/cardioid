@@ -1,0 +1,32 @@
+1.  executable in bin directory
+2.  short arch names
+3.  opt, debug, profile
+4.  with gsl
+5.  standardized -D things
+6.  .mk files in arch directory
+7.  Don't try to guess build host.
+
+
+
+Every .mk file must define:
+
+CXX
+CC
+LD
+
+CFLAGS - includes all switches passed to compiler including -D's
+
+
+Platform specific macros:
+
+OSX
+BGL
+BGP
+BGQ
+
+Questions:
+
+1.  Why _LARGEFILE_SOURCE
+2.  Why _FILE_OFFSET_BITS
+3.  why -DADD_
+4.  What about LDFLAGS?  Do I need to capture the CFLAGS and CXXFLAGS?

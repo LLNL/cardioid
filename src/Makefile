@@ -1,13 +1,16 @@
 # Get name of architecture-specific include file from hostname
+SHELL = /bin/bash
+
+.PHONY: DEFAULT COMMON_TARGETS makedirs clean distclean depend
+
 include Makefile.arch
-
-.PHONY: DEFAULT makedirs clean distclean depend
-
 # If defined, use architecture file set with ARCH variable
 ARCH ?= $(ARCHGUESS)
-include $(ARCH).mk
+include arch/$(ARCH).mk
 #------------------------------------------------------------------------------
 #
+
+BINDIR = ../bin
 
 HEARTSRC=cardioid.cc \
 	 Vector.cc \
@@ -85,12 +88,36 @@ DDCMDSRC = $(filter %.c, $(DDCMD_FILES))
 HEARTOBJS = $(HEARTSRC:%.cc=$(OBJDIR)/%.o)
 HEARTOBJS += $(DDCMDSRC:%.c=$(OBJDIR)/%.o)
 
-OBJDIR = objs-$(ARCH)
-INSTALLDIR = ../bin
-EXENAME = cardioid-$(ARCH)
-CXXFLAGS += -DARCH='"$(ARCH)"'
+BUILD_SUFFIX := $(ARCH)
+OBJDIR := objs-$(BUILD_SUFFIX)
+EXENAME = cardioid
 
-DEFAULT: $(DDCMD_FILES) makedirs $(EXENAME)
+
+DEFAULT: opt
+
+COMMON_TARGETS: $(DDCMD_FILES) makedirs
+
+opt:
+	@$(MAKE) --no-print-directory COMMON_TARGETS \
+	$(BINDIR)/cardioid-$(ARCH) \
+	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH) \
+	CFLAGS="$(CFLAGS_OPT)" CXXFLAGS="$(CXXFLAGS_OPT)" \
+	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=cardioid-$(ARCH)
+debug:
+	@$(MAKE) --no-print-directory COMMON_TARGETS \
+	$(BINDIR)/cardioid-$(ARCH)-debug \
+	BUILD_SUFFIX=$(ARCH)-debug OBJDIR=objs-$(ARCH)-debug \
+	CFLAGS="$(CFLAGS_DEBUG)" CXXFLAGS="$(CXXFLAGS_DEBUG)" \
+	LDFLAGS="$(LDFLAGS_DEBUG)" EXENAME=cardioid-$(ARCH)-debug 
+profile:
+	@$(MAKE) --no-print-directory COMMON_TARGETS \
+	$(BINDIR)/cardioid-$(ARCH)-prof \
+	BUILD_SUFFIX=$(ARCH)-prof OBJDIR=objs-$(ARCH)-prof \
+	CFLAGS="$(CFLAGS_PROF)" CXXFLAGS="$(CXXFLAGS_PROF)" \
+	LDFLAGS="$(LDFLAGS_PROF)"  EXENAME=cardioid-$(ARCH)-prof
+
+
+
 
 $(OBJDIR)/%.o: %.cc
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
@@ -98,8 +125,8 @@ $(OBJDIR)/%.o: %.cc
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(EXENAME): $(HEARTOBJS)
-	$(LD) $(DFLAGS) -o $(EXENAME) $(HEARTOBJS) $(LDFLAGS)
+$(BINDIR)/$(EXENAME): $(HEARTOBJS)
+	$(LD) $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(LDFLAGS)
 
 testLoadBalancer: makedirs $(HEARTOBJS) $(OBJDIR)/testLoadBalancer.o
 	$(LD) $(DFLAGS) -o testLoadBalancer $(OBJDIR)/testLoadBalancer.o $(HEARTOBJS) $(LDFLAGS)
@@ -116,24 +143,23 @@ ddcMD_dist:
 makedirs:
 	@if [ ! -d $(OBJDIR) ]; then mkdir -p $(OBJDIR) ; fi
 	@if [ ! -e .depend_$(ARCH) ]; then touch .depend_$(ARCH) ; fi
+	@if [ ! -d $(BINDIR) ]; then mkdir -p $(BINDIR) ; fi
 
 #------------------------------------------------------------------------------
 # generate dependencies in makefile: use -Y to avoid library header files
 # that are likely to be different on other platforms.
  depend :
-	@makedepend -f .depend_$(ARCH) -p'$(OBJDIR)/' -o '.o' -Y -D$(PLT) *.cc *.c *.hh *.h 2> /dev/null
+	@makedepend -f .depend_$(BUILD_SUFFIX) -p'$(OBJDIR)/' -o '.o' -Y $(CFLAGS) $(CXXFLAGS) *.cc *.c *.hh *.h 2> /dev/null
 
-.depend_$(ARCH): $(HEARTSRC)
-	@touch .depend_$(ARCH)
+.depend_$(BUILD_SUFFIX): $(HEARTSRC)
+	@touch .depend_$(BUILD_SUFFIX)
 	@$(MAKE) depend
 
-#	makedepend -Y -D$(PLT) *.[cCh]
-#makedepend -D$(PLT) -I/usr/include/CC *.[cC]
 #------------------------------------------------------------------------------
 #  Cleanup object files
 clean :
-	rm -rf $(OBJDIR)/*.o
-	rm -f $(EXENAME)
+	rm -rf $(OBJDIR)-*/*.o
+	rm -f $(BINDIR)/$(EXENAME)-$(ARCH)*
 	rm -f .depend_$(ARCH)*
 	rm -f testLoadBalancer
 	rm -f testGridRouter
@@ -141,7 +167,8 @@ clean :
 distclean: clean
 	rm -f $(DDCMD_FILES)
 	rm -rf ddcMD_files
-	rm -rf $(OBJDIR)
+	rm -rf $(OBJDIR)*
 	rm -f .depend*
+	rm -rf $(BINDIR)
 
 -include .depend_$(ARCH)

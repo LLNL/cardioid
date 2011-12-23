@@ -6,64 +6,51 @@ ifeq ($(HOSTNAME),bgqfen)
   ARCHGUESS = q32
 endif
 ifeq ($(HOSTNAME),dawn)  
-  ARCHGUESS = ibm_bgp_xlc
+  ARCHGUESS = bgp
 endif
 ifeq ($(HOSTNAME),dawndev)
-  ARCHGUESS = ibm_bgp_xlc
+  ARCHGUESS = bgp
 endif
 ifeq ($(HOSTNAME),udawn)
-  ARCHGUESS = ibm_bgp_xlc
+  ARCHGUESS = bgp
 endif
 ifeq ($(HOSTNAME),bgl)  
-  ARCHGUESS = ibm_bgl_xlc
+  ARCHGUESS = bgl
 endif
 ifeq ($(HOSTNAME),ubgl)  
-  ARCHGUESS = ibm_bgl_xlc
+  ARCHGUESS = bgl
 endif
 ifeq ($(HOSTNAME),atlas)  
-  ARCHGUESS = linux_x86_64_intel
+  ARCHGUESS = peloton
+endif
+ifeq ($(HOSTNAME),aztec)  
+  ARCHGUESS = peloton
 endif
 ifeq ($(HOSTNAME),hera)  
-  ARCHGUESS = linux_x86_64_intel
-endif
-ifeq ($(HOSTNAME),yana)  
-  ARCHGUESS = linux_x86_64_intel
+  ARCHGUESS = peloton
 endif
 ifeq ($(HOSTNAME),minos)  
-  ARCHGUESS = linux_x86_64_intel
+  ARCHGUESS = peloton
 endif
 ifeq ($(HOSTNAME),rhea)
-  ARCHGUESS = linux_x86_64_intel
+  ARCHGUESS = peloton
 endif
 ifeq ($(HOSTNAME),hopi)
-  ARCHGUESS = linux_x86_64_intel
+  ARCHGUESS = peloton
 endif
 ifeq ($(HOSTNAME),tux)
   ARCHGUESS = linux_gnu
 endif
 ifeq ($(HOSTNAME),sole)
-  ARCHGUESS = osx_gnu
+  ARCHGUESS = osx
 endif
 ifeq ($(HOSTNAME),largo)
-  ARCHGUESS = osx_gnu
+  ARCHGUESS = osx
 endif
 ifeq ($(HOSTNAME),blackcomb)
-  ARCHGUESS = osx_gnu
+  ARCHGUESS = osx
 endif
 
 ifndef ARCHGUESS
-  UNAME := $(shell uname -p)
-  ifeq ($(UNAME),x86_64)
-    ARCHGUESS = linux_x86_64_intel
-  endif
-endif
-
-ifndef ARCHGUESS
-  UNAME := $(shell uname -n | sed  's/[0-9]*//g')
-  ifeq ($(UNAME),up)
-    ARCHGUESS = ibm_sp5_xlc
-  endif
-  ifeq ($(UNAME),purple)
-    ARCHGUESS = ibm_sp5_xlc
-  endif
+   $(error Unrecognized build host.  Edit Makefile.arch)
 endif
