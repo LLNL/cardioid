@@ -11,4 +11,4 @@ cd $PSUB_SUBDIR
 exe=XX_EXE_XX
 
 #srun --ntasks=XX_NTASKS_XX $exe
-mpirun -mode VN -np XX_NTASKS_XX -exe $exe
+mpirun -mode VN -np XX_NTASKS_XX -exe $exe -env OMP_NUM_THREADS=1
