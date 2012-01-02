@@ -121,7 +121,8 @@ void simulationLoop(Simulate& sim)
       stringstream name;
       name << "snapshot."<<setfill('0')<<setw(8)<<sim.loop_;
       string fullname = name.str();
-      DirTestCreate(fullname.c_str());
+      if (myRank == 0)
+         DirTestCreate(fullname.c_str());
       fullname += "/anatomy";
       writeCells(sim, fullname.c_str());
     }

@@ -41,7 +41,8 @@ void ActivationTimeSensor::print(double time, int loop,
    stringstream name;
    name << "snapshot."<<setfill('0')<<setw(8)<<loop;
    string fullname = name.str();
-   DirTestCreate(fullname.c_str());
+   if (myRank == 0)
+      DirTestCreate(fullname.c_str());
    fullname += "/" + filename_;
 
    Long64 nGlobal;

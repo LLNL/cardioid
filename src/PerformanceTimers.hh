@@ -16,4 +16,5 @@ TimerHandle profileGetHandle(const std::string& timerName);
 void profileSetRefTimer(const std::string& timerName);
 void profileSetPrintOrder(const std::string& timerName);
 void profileDumpTimes(std::ostream&);
+void profileDumpAll(const std::string& dirname);
 #endif

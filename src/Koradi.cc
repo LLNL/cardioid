@@ -112,7 +112,8 @@ Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
          stringstream name;
          name << "balance."<< setfill('0') <<setw(8) << ii;
          string fullname = name.str();
-         DirTestCreate(fullname.c_str());
+         if (myRank_ == 0)
+            DirTestCreate(fullname.c_str());
          fullname += "/anatomy";
          writeCells(cells_, anatomy.nx(), anatomy.ny(), anatomy.nz(),
                     fullname.c_str());
@@ -129,6 +130,7 @@ Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
    stringstream name;
    name << "balance.final";
    string fullname = name.str();
+   if (myRank_ == 0)
    DirTestCreate(fullname.c_str());
    fullname += "/anatomy";
    writeCells(cells_, anatomy.nx(), anatomy.ny(), anatomy.nz(),

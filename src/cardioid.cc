@@ -7,6 +7,7 @@
 #include <map>
 #include <mpi.h>
 #include <cstdlib>
+#include <sstream>
 
 #include "Simulate.hh"
 #include "PerformanceTimers.hh"
@@ -60,6 +61,9 @@ int main(int argc, char** argv)
    profileStop("Total");
    if (mype == 0)
       profileDumpTimes(cout);
+   stringstream dirname;
+   dirname << "snapshot."<<setfill('0')<<setw(8)<<sim.loop_;
+   profileDumpAll(dirname.str());
    MPI_Finalize();
    
    return 0;
@@ -88,8 +92,6 @@ void parseCommandLineAndReadInputFile(int argc, char** argv, int rank)
    }
 
    object_compilefile(inputfile.c_str());
-   
-
 }
 }
 

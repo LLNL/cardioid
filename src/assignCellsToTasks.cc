@@ -145,7 +145,8 @@ namespace
         stringstream name;
         name << "snap.gridinit";
         string fullname = name.str();
-        DirTestCreate(fullname.c_str());
+        if (myRank == 0)
+           DirTestCreate(fullname.c_str());
         fullname += "/anatomy";
         writeCells(sim.anatomy_.cellArray(), sim.nx_, sim.ny_, sim.nz_, fullname.c_str());
       }
@@ -167,7 +168,8 @@ namespace
         stringstream name;
         name << "snap.gridfinal";
         string fullname = name.str();
-        DirTestCreate(fullname.c_str());
+        if (myRank == 0)
+           DirTestCreate(fullname.c_str());
         fullname += "/anatomy";
         writeCells(sim.anatomy_.cellArray(), sim.nx_, sim.ny_, sim.nz_, fullname.c_str());
 

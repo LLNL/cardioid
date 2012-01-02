@@ -5,6 +5,9 @@
 #include <sys/time.h>
 #include <iostream>
 #include <iomanip>
+#include <sstream>
+#include "pio.h"
+#include "ioUtils.h"
 
 using namespace std;
 
@@ -142,18 +145,40 @@ void profileDumpTimes(ostream& out)
    {
       const string& name = printOrder[iName];
       if (name.empty())
+      {
          out << "--------------------------------------------------------------------------------" << endl;
+         continue;
+      }
       
       unsigned ii = handleMap_[name];
-   out << setw(maxLen) << left << name << " : "
-       << setw(10) << right << int(timers_[ii].nCalls) << "  |"
-       << setw(10)  <<setprecision(3) << timers_[ii].lastTime 
-       << setw(10)  << timers_[ii].totalTime/timers_[ii].nCalls 
-       << setw(10)  << timers_[ii].totalTime
-       << "   "
-       << setw(8) << setprecision(2) << 100.0*(timers_[ii].totalTime/refTime)
-       << endl;
+      out << setw(maxLen) << left << name << " : "
+          << setw(10) << right << int(timers_[ii].nCalls) << "  |"
+          << setw(10) << setprecision(3) << timers_[ii].lastTime 
+          << setw(10) << timers_[ii].totalTime/timers_[ii].nCalls 
+          << setw(10) << timers_[ii].totalTime
+          << "   "
+          << setw(8) << setprecision(2) << 100.0*(timers_[ii].totalTime/refTime)
+          << endl;
    }
-    out.setf(oldFlags);
-    
+   out.setf(oldFlags);
+   
+}
+
+void profileDumpAll(const string& dirname)
+{
+   MPI_Comm comm = MPI_COMM_WORLD;
+   int myRank;
+   MPI_Comm_rank(comm, &myRank);
+   if (myRank == 0)
+      DirTestCreate(dirname.c_str());
+   string filename = dirname + "/profile";
+   PFILE* file = Popen(filename.c_str(), "w", comm);
+
+   Pprintf(file, "Performance for task %u\n", myRank);
+   Pprintf(file, "------------------------------\n");
+   stringstream buf;
+   profileDumpTimes(buf);
+   Pprintf(file, "%s", buf.str().c_str());
+   Pprintf(file, "\n\n");
+   Pclose(file);
 }
