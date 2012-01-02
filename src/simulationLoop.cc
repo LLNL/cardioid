@@ -14,6 +14,7 @@
 #include "GridRouter.hh"
 #include "ioUtils.h"
 #include "writeCells.hh"
+#include "PerformanceTimers.hh"
 
 using namespace std;
 
@@ -58,17 +59,19 @@ void simulationLoop(Simulate& sim)
   {
     int nLocal = sim.anatomy_.nLocal();
     MPI_Barrier(MPI_COMM_WORLD);
-    sim.tmap_["Halo Exchange"].start();
+    static TimerHandle haloHandle = profileGetHandle("Halo Exchange");
+    profileStart(haloHandle);
     voltageExchange.execute(sim.VmArray_, nLocal);
-    sim.tmap_["Halo Exchange"].stop();
+    profileStop(haloHandle);
 
     for (unsigned ii=0; ii<nLocal; ++ii)
        dVmExternal[ii] = 0;
     
     // DIFFUSION
-    sim.tmap_["Diffusion"].start();
+    static TimerHandle diffusionHandle = profileGetHandle("Diffusion");
+    profileStart(diffusionHandle);
     sim.diffusion_->calc(sim.VmArray_, dVmDiffusion);
-    sim.tmap_["Diffusion"].stop();
+    profileStop(diffusionHandle);
 
     // code to limit or set iStimArray goes here.
     for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
@@ -78,9 +81,11 @@ void simulationLoop(Simulate& sim)
       iStim[ii] = -(dVmDiffusion[ii] + dVmExternal[ii]);
       
     // REACTION
-    sim.tmap_["Reaction"].start();
+    static TimerHandle reactionHandle = profileGetHandle("Reaction");
+    profileStart(reactionHandle);
     sim.reaction_->calc(sim.dt_, sim.VmArray_, iStim, dVmReaction);
-    sim.tmap_["Reaction"].stop();
+    profileStop(reactionHandle);
+    
     for (unsigned ii=0; ii<nLocal; ++ii)
     {
       double dVm = dVmReaction[ii] + dVmDiffusion[ii] + dVmExternal[ii] ;

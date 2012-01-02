@@ -9,7 +9,7 @@
 #include <cstdlib>
 
 #include "Simulate.hh"
-#include "Timer.hh"
+#include "PerformanceTimers.hh"
 #include "mpiUtils.h"
 #include "pio.h"
 
@@ -37,6 +37,13 @@ int main(int argc, char** argv)
    MPI_Init(&argc,&argv);
    MPI_Comm_size(MPI_COMM_WORLD, &npes);
    MPI_Comm_rank(MPI_COMM_WORLD, &mype);  
+
+   profileStart("Total");
+   profileSetPrintOrder("Total");
+   profileSetPrintOrder("Loop");
+   profileSetPrintOrder("");
+   profileSetRefTimer("Loop");
+
    heap_start(100);
 
    if (mype == 0)
@@ -46,37 +53,13 @@ int main(int argc, char** argv)
    Simulate sim;
    initializeSimulate("simulate", sim);
    
-   sim.tmap_["simulation_loop"].start();
+   profileStart("Loop");
    simulationLoop(sim);  
-   sim.tmap_["simulation_loop"].stop();
+   profileStop("Loop");
    
+   profileStop("Total");
    if (mype == 0)
-   {
-      
-      cout.setf(ios::fixed,ios::floatfield);
-      for ( map<std::string,Timer>::iterator i=sim.tmap_.begin();
-            i!=sim.tmap_.end(); i++ )
-      {
-        double time = (*i).second.real();
-        cout << "timing name=" << setw(15) << (*i).first << ":   time="
-             << setprecision(6) << setw(12) << time << " sec" << endl;
-      }
-      
-   }
-
-   PFILE* file = Popen("timing", "w", MPI_COMM_WORLD);
-   Pprintf(file, "Performance info for task %d\n", mype);
-   for ( map<std::string,Timer>::iterator i=sim.tmap_.begin();
-         i!=sim.tmap_.end(); i++ )
-   {
-      double time = (*i).second.real();
-      Pprintf(file, "timing name= %s: time = %f\n", i->first.c_str(), time);
-   }
-   Pprintf(file, "\n\n");
-   Pclose(file);
-
-
-
+      profileDumpTimes(cout);
    MPI_Finalize();
    
    return 0;

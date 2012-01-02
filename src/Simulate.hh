@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 
-#include "Timer.hh"
 #include "Anatomy.hh"
 
 class Diffusion;
@@ -26,8 +25,6 @@ class CommTable;
 class Simulate
 {
  public:
-
-   std::map<std::string, Timer> tmap_;
 
    int loop_;
    int maxLoop_;

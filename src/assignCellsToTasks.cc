@@ -15,6 +15,7 @@
 #include "GDLoadBalancer.hh"
 #include "mpiUtils.h"
 #include "GridPoint.hh"
+#include "PerformanceTimers.hh"
 
 using namespace std;
 
@@ -132,9 +133,9 @@ namespace
       GDLoadBalancer loadbal(comm, npex, npey, npez);
       
       // compute initial data decomposition
-      sim.tmap_["gd_assign_init"].start();
+      profileStart("gd_assign_init");
       loadbal.initialDistribution(cells, sim.nx_, sim.ny_, sim.nz_);
-      sim.tmap_["gd_assign_init"].stop();
+      profileStop("gd_assign_init");
 
       //ewd DEBUG set up visualization of initial distribution
       int visgrid;
@@ -156,9 +157,9 @@ namespace
       objectGet(obj, "threshold", threshold, "4");
       int nmax = 10000000;
 
-      sim.tmap_["gd_balance"].start();
+      profileStart("gd_balance");
       loadbal.balanceLoop(cells,ninner,threshold,nmax);
-      sim.tmap_["gd_balance"].stop();
+      profileStop("gd_balance");
 
       //ewd DEBUG:  print out load balance data
       if (visgrid == 1)

@@ -13,7 +13,7 @@ include arch/$(ARCH).mk
 BINDIR = ../bin
 
 HEARTSRC=cardioid.cc \
-	 Vector.cc \
+	 Vector.cc PerformanceTimers.cc unionOfStrings.cc \
          GDLoadBalancer.cc CommTable.cc \
 	 AnatomyReader.cc object_cc.cc \
 	 Koradi.cc GridRouter.cc Grid3DStencil.cc writeCells.cc \

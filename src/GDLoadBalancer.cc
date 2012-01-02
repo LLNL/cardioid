@@ -12,7 +12,6 @@
 #include "mpiUtils.h"
 #include "GridPoint.hh"
 #include "AnatomyCell.hh"
-#include "Timer.hh"
 using namespace std;
 
 
