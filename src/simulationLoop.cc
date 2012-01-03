@@ -74,11 +74,14 @@ void simulationLoop(Simulate& sim)
     profileStop(diffusionHandle);
 
     // code to limit or set iStimArray goes here.
+    static TimerHandle stimulusHandle = profileGetHandle("Stimulus");
+    profileStart(stimulusHandle);
     for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
       sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion, dVmExternal);
 
     for (unsigned ii=0; ii<nLocal; ++ii)
       iStim[ii] = -(dVmDiffusion[ii] + dVmExternal[ii]);
+    profileStop(stimulusHandle);
       
     // REACTION
     static TimerHandle reactionHandle = profileGetHandle("Reaction");
@@ -86,6 +89,8 @@ void simulationLoop(Simulate& sim)
     sim.reaction_->calc(sim.dt_, sim.VmArray_, iStim, dVmReaction);
     profileStop(reactionHandle);
     
+    static TimerHandle integratorHandle = profileGetHandle("Integrator");
+    profileStart(integratorHandle);
     for (unsigned ii=0; ii<nLocal; ++ii)
     {
       double dVm = dVmReaction[ii] + dVmDiffusion[ii] + dVmExternal[ii] ;
@@ -93,8 +98,11 @@ void simulationLoop(Simulate& sim)
     }
     sim.time_ += sim.dt_;
     ++sim.loop_;
+    profileStop(integratorHandle);
 
     // SENSORS
+    static TimerHandle sensorHandle = profileGetHandle("Sensors");
+    profileStart(sensorHandle);
     for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
     {
       if (sim.loop_ % sim.sensor_[ii]->evalRate() == 0)
@@ -104,7 +112,11 @@ void simulationLoop(Simulate& sim)
          sim.sensor_[ii]->print(sim.time_, sim.loop_, sim.VmArray_,
                                 dVmReaction, dVmDiffusion, dVmExternal);
     }
+    profileStop(sensorHandle);
     
+    
+    static TimerHandle loopIOHandle = profileGetHandle("LoopIO");
+    profileStart(loopIOHandle);
     if ( (sim.loop_ % sim.printRate_ == 0) && myRank == 0)
     {
       cout << setw(8) << sim.loop_ <<" "
@@ -126,6 +138,7 @@ void simulationLoop(Simulate& sim)
       fullname += "/anatomy";
       writeCells(sim, fullname.c_str());
     }
+    profileStop(loopIOHandle);
       
   }
 }

@@ -6,8 +6,11 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <cmath>
 #include "pio.h"
 #include "ioUtils.h"
+#include "tagServer.h"
+#include "unionOfStrings.hh"
 
 using namespace std;
 
@@ -94,7 +97,7 @@ void profileSetPrintOrder(const string& timerName)
 
 
 
-vector<string> generatePrintOrder()
+vector<string> generateOutputOrder()
 {
    vector<string> order;
    set<string> printed;
@@ -114,6 +117,27 @@ vector<string> generatePrintOrder()
          order.push_back(iter->first);
    }
    
+   return order;
+}
+
+vector<string> generateOutputOrder(const vector<string>& words)
+{
+   vector<string> order;
+   set<string> printed;
+   
+   for (unsigned ii=0; ii<printOrder_.size(); ++ii)
+      if ( printOrder_[ii].empty() ||
+           find(words.begin(), words.end(), printOrder_[ii]) != words.end() )
+      {
+         order.push_back(printOrder_[ii]);
+         printed.insert(printOrder_[ii]);
+      }
+   
+   for (unsigned ii=0; ii<words.size(); ++ii)
+   {
+      if (printed.count(words[ii]) == 0)
+         order.push_back(words[ii]);
+   }
    
    return order;
 }
@@ -125,7 +149,7 @@ void profileDumpTimes(ostream& out)
         iter!=handleMap_.end(); ++iter)
        maxLen = max(maxLen, iter->first.size());
 
-   vector<string> printOrder = generatePrintOrder();
+   vector<string> outputOrder = generateOutputOrder();
 
    ios::fmtflags oldFlags = out.setf(ios::fixed, ios::floatfield);
 
@@ -141,9 +165,9 @@ void profileDumpTimes(ostream& out)
 
    double refTime = timers_[handleMap_[refTimer_]].totalTime;
 
-   for (unsigned iName=0; iName<printOrder.size(); ++iName)
+   for (unsigned iName=0; iName<outputOrder.size(); ++iName)
    {
-      const string& name = printOrder[iName];
+      const string& name = outputOrder[iName];
       if (name.empty())
       {
          out << "--------------------------------------------------------------------------------" << endl;
@@ -174,11 +198,130 @@ void profileDumpAll(const string& dirname)
    string filename = dirname + "/profile";
    PFILE* file = Popen(filename.c_str(), "w", comm);
 
-   Pprintf(file, "Performance for task %u\n", myRank);
    Pprintf(file, "------------------------------\n");
+   Pprintf(file, "Performance for rank %u\n", myRank);
+   Pprintf(file, "------------------------------\n\n");
    stringstream buf;
    profileDumpTimes(buf);
    Pprintf(file, "%s", buf.str().c_str());
    Pprintf(file, "\n\n");
    Pclose(file);
+}
+
+void profileDumpStats(ostream& out)
+{
+   MPI_Comm comm = MPI_COMM_WORLD;
+   int myRank;
+   MPI_Comm_rank(comm, &myRank);
+   vector<string> timerName;
+   for (HandleMap::const_iterator iter=handleMap_.begin();
+        iter!=handleMap_.end(); ++iter)
+      timerName.push_back(iter->first);
+   unionOfStrings(timerName, comm, getUniqueTag(comm));
+
+   vector<string> outputOrder = generateOutputOrder(timerName);
+   unsigned nTimers = outputOrder.size();
+
+   vector<double> aveTime(nTimers);
+   vector<int>    nActive(nTimers);
+   {
+      unsigned bufSize = 2*nTimers;
+      double sendBuf[bufSize];
+      
+      for (unsigned ii=0; ii<nTimers; ++ii)
+      {
+         HandleMap::const_iterator here = handleMap_.find(outputOrder[ii]);
+         if (here == handleMap_.end())
+         {
+            sendBuf[2*ii+0] = 0; // inactive timer
+            sendBuf[2*ii+1] = 0;
+         }
+         else
+         {
+            sendBuf[2*ii+0] = 1; // active timer
+            sendBuf[2*ii+1] = timers_[here->second].totalTime;
+         }
+      }
+      double recvBuf[bufSize];
+      MPI_Allreduce(sendBuf, recvBuf, bufSize, MPI_DOUBLE, MPI_SUM, comm);
+      for (unsigned ii=0; ii<nTimers; ++ii)
+      {
+         nActive[ii] = (int) recvBuf[2*ii+0];
+         aveTime[ii] = recvBuf[2*ii+1]/nActive[ii];
+      }
+   }
+   struct DoubleInt
+   {
+      double val;
+      int rank;
+   };
+   
+   DoubleInt minLoc[nTimers];
+   DoubleInt maxLoc[nTimers];
+   double sigma[nTimers];
+   {
+      DoubleInt minLocSendBuf[nTimers];
+      DoubleInt maxLocSendBuf[nTimers];
+      double sigmaSendBuf[nTimers];
+      
+      for (unsigned ii=0; ii<nTimers; ++ii)
+      {
+         minLocSendBuf[ii].rank = myRank;
+         maxLocSendBuf[ii].rank = myRank;
+         
+         HandleMap::const_iterator here = handleMap_.find(outputOrder[ii]);
+         if (here == handleMap_.end())
+         {
+            minLocSendBuf[ii].val = aveTime[ii];
+            maxLocSendBuf[ii].val = aveTime[ii];
+            sigmaSendBuf[ii] = 0;
+         }
+         else
+         {
+            minLocSendBuf[ii].val = timers_[here->second].totalTime;
+            maxLocSendBuf[ii].val = timers_[here->second].totalTime;
+            sigmaSendBuf[ii] = (timers_[here->second].totalTime - aveTime[ii]);
+            sigmaSendBuf[ii] *= sigmaSendBuf[ii]/nActive[ii];
+         }
+      }
+      MPI_Reduce(minLocSendBuf, minLoc, nTimers, MPI_DOUBLE_INT, MPI_MINLOC, 0, comm);
+      MPI_Reduce(maxLocSendBuf, maxLoc, nTimers, MPI_DOUBLE_INT, MPI_MAXLOC, 0, comm);
+      MPI_Reduce(sigmaSendBuf, sigma, nTimers, MPI_DOUBLE, MPI_SUM, 0, comm);
+   }
+   
+   if (myRank != 0)
+      return;
+
+   string::size_type maxLen = 0;
+   for (unsigned ii=0; ii<nTimers; ++ii)
+      maxLen = max(maxLen, outputOrder[ii].size());
+   ios::fmtflags oldFlags = out.setf(ios::fixed, ios::floatfield);
+   out << setw(maxLen+3) << " "
+       << setw(6) << "nTasks" << " |"
+       << setw(10) << "minTime" << " ( rank )"
+       << setw(10) << "maxTime" << " ( rank )"
+       << setw(10) << "sigma"
+       << setw(10) << "aveTime"
+       << endl;
+   out << "--------------------------------------------------------------------------------" << endl;
+   for (unsigned ii=0; ii<nTimers; ++ii)
+   {
+      if (outputOrder[ii].empty())
+      {
+         out << "--------------------------------------------------------------------------------" << endl;
+         continue;
+      }
+      out << setw(maxLen) << left << outputOrder[ii] << " : " << right
+          << setw(6) << nActive[ii] << " |"
+          << setprecision(3)
+          << setw(10) << minLoc[ii].val
+          << " (" << setw(6) << minLoc[ii].rank << ")"
+          << setw(10) << maxLoc[ii].val
+          << " (" << setw(6) << maxLoc[ii].rank << ")"
+          << setw(10) << sqrt(sigma[ii])
+          << setw(10) << aveTime[ii]
+          << endl;
+   }
+
+   out.setf(oldFlags);
 }

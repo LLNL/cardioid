@@ -3,9 +3,9 @@
 for balancer in koradi grid
 do
 echo $balancer
-for dx in 0.1 0.2 0.5
+for dx in 0.10 0.20 0.50
 do
-for dt in 0.005 0.01 0.05
+for dt in 0.005 0.010 0.050
 do
 
     dirname=run/${balancer}_dt${dt}_dx${dx}

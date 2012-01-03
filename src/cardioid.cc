@@ -41,6 +41,7 @@ int main(int argc, char** argv)
 
    profileStart("Total");
    profileSetPrintOrder("Total");
+   profileSetPrintOrder("Assignment");
    profileSetPrintOrder("Loop");
    profileSetPrintOrder("");
    profileSetRefTimer("Loop");
@@ -60,7 +61,12 @@ int main(int argc, char** argv)
    
    profileStop("Total");
    if (mype == 0)
+   {
       profileDumpTimes(cout);
+      cout << "\n" << endl;
+   }
+   profileDumpStats(cout);
+   
    stringstream dirname;
    dirname << "snapshot."<<setfill('0')<<setw(8)<<sim.loop_;
    profileDumpAll(dirname.str());

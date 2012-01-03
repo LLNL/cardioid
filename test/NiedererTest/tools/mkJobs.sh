@@ -13,9 +13,9 @@ nNodes=64
 nTasks=256
 
 
-for dt in 0.05 0.01 0.005 0.001
+for dt in 0.050 0.010 0.005 0.001
 do
-for dx in 0.5 0.2 0.1 0.05
+for dx in 0.50 0.20 0.10 0.05
 do
 for balancer in koradi grid
 do

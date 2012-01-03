@@ -32,12 +32,14 @@ void assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
    string method;
    objectGet(obj, "method", method, "koradi");
 
+   profileStart("Assignment");
    if (method == "koradi")
       koradiBalancer(sim, obj, comm);
    else if (method == "grid")
       gridBalancer(sim, obj, comm);
    else
       assert(1==0);      
+   profileStop("Assignment");
 }
 
 namespace
@@ -62,8 +64,9 @@ namespace
       kp.nCentersPerTask = nCenters/nTasks;
       assert(nCenters > 0);
       
+      profileStart("Koradi");
       Koradi balancer(sim.anatomy_, kp);
-      
+      profileStop("Koradi");
       if (kp.nCentersPerTask > 1)
          exit(0);
    }
