@@ -1,20 +1,17 @@
 #include "TT06Dev_Reaction.hh"
 #include <cmath>
 #include "Anatomy.hh"
-//#include "TT06_CellML.hh"
-#include "TT06DevFit.hh"
+#include "TT06Func.hh"
 
 using namespace std;
 
 struct TT06DevState
 {
    double state[nStateVar];
+   int cellType; 
 };
 
-
-
-
-TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy)
+TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int mod)
 : nCells_(anatomy.nLocal())
 {
    static bool initialized = false;
@@ -22,8 +19,10 @@ TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy)
    {
       initialized = true;
       initCnst();
-      Approx(1301,32,0.005); 
    }
+   mod_=mod; 
+   dtForFit_=0.0; 
+   tolerance_=tolerance; 
    ttType_.resize(256, -1); 
    ttType_[30] = 0;
    ttType_[31] = 0;
@@ -39,11 +38,22 @@ TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy)
    {
       assert(anatomy.cellType(ii) >= 0 && anatomy.cellType(ii) < 256);
       int cellType = ttType_[anatomy.cellType(ii)];
-      for (unsigned jj=0; jj<nStateVar; ++jj) { initState(s_[ii].state,cellType); }
+      s_[ii].cellType = cellType; 
+      initState(s_[ii].state,cellType); 
+   }
+   //if (dtForFit_ != dt) 
+   {
+      double V0 = -90.0; 
+      double V1 =  40.0; 
+      double deltaV = 0.1; 
+      int maxCost=128; 
+      int maxOrder=64; 
+      double dt = 0.02; 
+      makeFit(tolerance_,V0,V1,deltaV,maxOrder,maxCost,dt,mod_); 
+   	dtForFit_=dt; 
    }
    
 }
-
 TT06Dev_Reaction::~TT06Dev_Reaction()
 {
 }
@@ -53,11 +63,10 @@ void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<do
    assert(nCells_ == dVm.size());
 
 
-   int cellType =0; 
    double c9 = get_c9(); 
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
-      double dVdt = computeUpdates(dt, Vm[ii], s_[ii].state, cellType);
+      double dVdt = computeUpdates(dt, Vm[ii], s_[ii].state, s_[ii].cellType);
       dVm[ii] = dVdt; 
       s_[ii].state[K_i] += iStim[ii]*c9*dt ;
    }

@@ -28,8 +28,9 @@ HEARTSRC=cardioid.cc \
 	 ReactionFHN.cc \
 	 TT04_bbReaction.cc TT04_CellML_Reaction.cc \
 	 TT06_CellML_Reaction.cc  \
-	 TT06Dev.cc \
-	 TT06DevFit.cc \
+	 TT06Tau.cc \
+	 TT06Func.cc \
+         pade.cc \
 	 TT06Dev_Reaction.cc \
 	 IBM_tenTusscher04.cc IBM_tenTusscher04_endoLUT.cc \
 	 IBM_tenTusscher04_epiLUT.cc IBM_tenTusscher04_midLUT.cc \
@@ -49,6 +50,8 @@ DDCMD_FILES = \
 	external.h \
 	GridAssignmentObject.c \
 	GridAssignmentObject.h \
+	gsl.c \
+	gsl.h \
 	hardwareInfo.c \
 	hardwareInfo.h \
 	heap.c \

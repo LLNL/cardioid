@@ -45,11 +45,12 @@ Anatomy buildAnatomy(int cellType)
    c.theta_ = 0;
    c.phi_ = 0;
    Anatomy a;
-   //a.setGridSize(1, 1, 1);
-   a.setGridSize(14, 14, 14);
-   //a.cellArray().push_back(c);
-   a.cellArray().resize(14*14*14,c);
-   a.nLocal() = 14*14*14;
+   a.setGridSize(1, 1, 1);
+   a.cellArray().push_back(c);
+   a.nLocal() = 1;
+   //a.setGridSize(14, 14, 14);
+   //a.cellArray().resize(14*14*14,c);
+   //a.nLocal() = 14*14*14;
    a.nRemote() = 0;
    a.dx() = 0.2;
    a.dy() = 0.2;
@@ -57,7 +58,7 @@ Anatomy buildAnatomy(int cellType)
    return a;
 }
 
-Reaction* factory(const string& name, const Anatomy& anatomy)
+Reaction* factory(const string& name, const Anatomy& anatomy, double tolerance,int mod)
 {
    if (name == "bb_tt04")        return new TT04_bbReaction(anatomy);
    if (name == "cellml_tt04")    return new TT04_CellML_Reaction(anatomy, TT04_CellML_Reaction::rushLarsen);
@@ -66,7 +67,7 @@ Reaction* factory(const string& name, const Anatomy& anatomy)
    if (name == "cellml_tt06_fe") return new TT06_CellML_Reaction(anatomy, TT06_CellML_Reaction::forwardEuler);
    if (name == "fhn")            return new ReactionFHN(anatomy);
    if (name == "tt04dev")        return new TT04Dev_Reaction(anatomy);
-   if (name == "tt06dev")        return new TT06Dev_Reaction(anatomy);
+   if (name == "tt06dev")        return new TT06Dev_Reaction(anatomy,tolerance,mod);
    assert(false);
    return 0;
 }
@@ -97,6 +98,7 @@ int main(int argc, char *argv[])
       cout << "   cellml_tt06_fe   TT06 from CellML.  Forward Euler integrator" << endl;
       cout << "   fhn              FitzHugh-Nagumo" << endl;
       cout << "   tt04dev          Developmental version of TT04" << endl;
+      cout << "   tt06dev          Developmental version of TT06" << endl;
       
       return 0;
    }
@@ -111,6 +113,8 @@ int main(int argc, char *argv[])
    int printRate =           atoi(argv[8]);
    double equilTime =        atof(argv[9]);
    int cellPosition =        atoi(argv[10]);
+   double tolerance =        atof(argv[11]);
+   int  mod =        atof(argv[12]);
 
    unsigned firstStepToPrint = unsigned(equilTime/dt);
 
@@ -118,7 +122,7 @@ int main(int argc, char *argv[])
       stimMagnitude, stimStart, stimStart+stimLength, stimCycleLength);
    
    Anatomy anatomy = buildAnatomy(cellPosition);
-   Reaction* cellModel = factory(method, anatomy);
+   Reaction* cellModel = factory(method, anatomy,tolerance,mod);
      
    cout << "# method: " << method
 	<< "\tstimMagnitude " << stimMagnitude

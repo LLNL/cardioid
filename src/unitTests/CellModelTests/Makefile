@@ -7,12 +7,12 @@ DEFAULT: first
 
 HEART_FILES = \
 	TT04_CellML.hh \
-	TT04Dev_a.cc \
-	TT04Dev.hh \
-	TT06Dev.cc \
-	TT06Dev.hh \
-	TT06DevFit.cc \
-	TT06DevFit.hh \
+	TT06Func.cc \
+	TT06Func.hh \
+	TT06Tau.cc \
+	TT06Tau.hh \
+	pade.hh \
+	pade.cc \
 	TT04_CellML_Endo.cc \
 	TT04_CellML_Endo.hh \
 	TT04_CellML_Epi.cc \
@@ -51,14 +51,17 @@ HEART_FILES = \
 	Anatomy.hh \
 	AnatomyCell.hh \
 	Tuple.hh \
+	mpiUtils.h \
+	mpiUtils.c \
 	IndexToTuple.hh \
 	Long64.hh \
 
-CXX=g++
-CC=gcc
+CXX=mpig++
+CC=mpigcc
 
-LDFLAGS= -pg -L/opt/local/lib -lgsl -lgslcblas  
-OPTFLAGS=-g -O3 -pg -I/opt/local/include  
+LDFLAGS=  -lgsl -lgslcblas  
+OPTFLAGS=-g -O3    
+#OPTFLAGS=-g    
 
 CXXFLAGS += $(OPTFLAGS)
 CXXFLAGS += -MMD

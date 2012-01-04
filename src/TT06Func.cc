@@ -1,19 +1,41 @@
-#include "TT06DevFit.hh"
-#include <cmath>
+#include "TT06Func.hh"
+#include <math.h>
 #include <gsl/gsl_multifit.h>
+#include "TT06Tau.hh"
+#include "pade.hh"
+#include "mpiUtils.h"
+
 #define C(i) (gsl_vector_get(c,(i)))
 #define sigm(x)   ((x)/(1.0+(x)) )
+
+void update_Xr1Gate(double dt, double Vm, double *gate, int cellType, double *a, double *b);
+void update_Xr2Gate(double dt, double Vm, double *gate,  int cellType, double *a, double *b);
+void update_XsGate(double dt, double Vm, double *gate,  int cellType, double *a, double *b);
+void update_mGate(double dt, double Vm, double *gate, int cellType, double *a, double *b);
+void update_hGate(double dt, double Vm, double *gate, int cellType, double *a, double *b);
+void update_hGateMod(double dt, double Vm, double *gate, int cellType, double *a, double *b);
+void update_jGate(double dt, double Vm, double *gate, int cellType, double *a, double *b);
+void update_jGateMod(double dt, double Vm, double *gate, int cellType, double *a, double *b);
+void update_rGate(double dt, double Vm, double *gate, int cellType, double *a, double *b);
+void update_dGate(double dt, double Vm, double *gate, int cellType, double *a, double *b);
+void update_fGate(double dt, double Vm, double *gate, int cellType, double *a, double *b);
+void update_f2Gate(double dt, double Vm, double *gate, int cellType, double *a, double *b);
+void update_sGate(double dt, double Vm, double *gate, int cellType,double *a, double *b);
+void update_fCassGate(double dt, double Ca_SS, double *gate);
+void extra(double Vm, double *fv);
+
+static TauRecipParms *jParms;
+static TauRecipParms *hParms;
+static PADE *fit[32]; 
 static double cA[3],cB[3]; 
 static double c1,c2,c3,c4,c5,c6,c7,c8,c9;
 static double c10,c11,c12,c13,c14,c15,c16,c17,c18,c19;
 static double c20,c21,c22,c23,c24,c25,c26,c27,c28,c29;
 static double c30,c31,c32,c33,c34,c36,c40,c43,c44;
-static double f1,f2,f3,f4,f5,f6,f7,f8,f9,f10; 
-static  int fitL[30],fitM[30]; 
-static double fitCoef[30][64]; 
+static double f1,f2,f3,f4,f5,f6,f7,f7a,f9,f9a,f10; 
 void update_fCassGate(double dt, double Ca_SS, double *gate);
-void  funcValue(int cellType, double Vm , double dt, double *gv); 
-void  funcValueA(int cellType, double Vm , double dt, double *gv); 
+typedef void (*GATE)(double dt, double Vm, double *x0, int cellType, double *A, double *B); 
+typedef struct {void (*update)(double dt, double Vm, double *x0, int cellType, double *A, double *B); int cellType; double dt;} GateParms;  
 void initState(double *STATES,int cellType)
 {
 if (cellType == 0) 
@@ -269,27 +291,148 @@ void initCnst()
    f5 =  cnst[27]*f1; 
    f6 =  (CUBE(cnst[11])*cnst[26]/cnst[12]);
    f7 = cnst[18]*cnst[2]*f1;
-   f8 = 15.0*f7;
+   f7a = 0.5*cnst[18]*cnst[2];
    f9 = 4.0*cnst[12];
+   f9a = 4.0*cnst[12]*f7a;
    f10 = c9*cnst[32];
+   jParms =makeTauRecipParms(-48.85,-17.6,jTauRecip); 
+   hParms =makeTauRecipParms(-64.20,-23.3,hTauRecip); 
    
 }
 double get_c9() { return c9; }
+double fv0(double Vm, void *parm) 
+{ 
+   double expV1 = exp(-f1*Vm); 
+   return f2/(1.0+0.1245*exp(-0.1*Vm*f1)+0.0353*expV1);
+}
+double fv1(double Vm, void *parm) 
+{ 
+   double expV1 = exp(-f1*Vm); 
+   double expV5 = exp(f5*Vm); 
+   double expV = expV5*expV1; 
+   double fva = 1.0/(f3+ f4*expV);
+   return expV5*fva ; 
+}
+double fv2(double Vm, void *parm) 
+{ 
+   double expV1 = exp(-f1*Vm); 
+   double expV5 = exp(f5*Vm); 
+   double expV = expV5*expV1; 
+   double fva = 1.0/(f3+ f4*expV);
+   return expV* fva*f6 ; 
+}
+double fv3(double Vm, void *parm) 
+{ 
+   double x = 2.0*f1*(Vm-15.0);
+   double x2 =x*x;  
+   if (x2 < 1e-4) return (1 + 0.5*x + x2/12.0-x2*x2/720)*f7a ;
+   return f7a*x/(1.0-exp(-x));
+}
+double fv4(double Vm, void *parm) 
+{
+   double x = 2*f1*(Vm-15.0);
+   double x2 =x*x;  
+   if (x2 < 1e-4) return (1 - 0.5*x + x2/12.0-x2*x2/720)*f9a ;
+   return f9a*x/(exp(x)-1.0);
+}
+double fv5(double Vm, void *parm) 
+{
+   return f10/(1.0+exp((25.0 - Vm)/5.98));
+}
+void  funcValue(double Vm , double dt, double *gv)
+{
+   double x0; 
+   int i=0;
+   extra(Vm,gv);  i+= 6; 
+   x0 = 0; update_Xr1Gate(dt, Vm, &x0, 0, gv+i, gv+i+1);    i+=2; 
+   x0 = 0; update_Xr2Gate(dt, Vm, &x0, 0, gv+i, gv+i+1);    i+=2; 
+   x0 = 0; update_XsGate(dt, Vm, &x0, 0, gv+i, gv+i+1);    i+=2; 
+   x0 = 0; update_mGate(dt, Vm, &x0, 0, gv+i, gv+i+1);    i+=2; 
+   x0 = 0; update_hGate(dt, Vm, &x0, 0, gv+i, gv+i+1);    i+=2; 
+   x0 = 0; update_jGate(dt, Vm, &x0, 0, gv+i, gv+i+1);    i+=2; 
+   x0 = 0; update_rGate(dt, Vm, &x0, 0, gv+i, gv+i+1);    i+=2; 
+   x0 = 0; update_dGate(dt, Vm, &x0, 0, gv+i, gv+i+1);    i+=2; 
+   x0 = 0; update_fGate(dt, Vm, &x0, 0, gv+i, gv+i+1);    i+=2; 
+   x0 = 0; update_f2Gate(dt, Vm, &x0,0,  gv+i, gv+i+1);    i+=2; 
+   x0 = 0; update_sGate(dt, Vm, &x0, 0 ,gv+i, gv+i+1);    i+=2; 
+   x0 = 0; update_sGate(dt, Vm, &x0, 1,gv+i, gv+i+1);    i+=2; 
+}
+double getGateA(double Vm, void *parms)
+{
+   double x0,A,B;
+   GateParms *p = (GateParms *)parms; 
+   x0 = 0; p->update(p->dt, Vm, &x0, p->cellType, &A, &B);
+   return A; 
+}
+double getGateB(double Vm, void *parms)
+{
+   double x0,A,B;
+   GateParms *p = (GateParms *)parms; 
+   x0 = 0; p->update(p->dt, Vm, &x0, p->cellType, &A, &B);
+   return B; 
+}
+void makeFit(double tol, double V0, double V1, double deltaV , int maxOrder, int maxCost,double dt,int mod) 
+{
+   GATE gate[] ={ update_Xr1Gate, update_Xr2Gate,update_XsGate,update_mGate,update_hGate,update_jGate,update_rGate,update_dGate,update_fGate,update_f2Gate, update_sGate}; 
+   char *nameA[] ={ "Xr1GateA", "Xr2GateA","XsGateA","mGateA","hGateA","jGateA","rGateA","dGateA","fGateA","f2GateA","sGateA"}; 
+   char *nameB[] ={ "Xr1GateB", "Xr2GateB","XsGateB","mGateB","hGateB","jGateB","rGateB","dGateB","fGateB","f2GateB","sGateA"}; 
+   if (mod) 
+   {
+	gate[4] = update_hGateMod; 
+        nameA[4] = "hGateAMod"; 
+        nameB[4] = "hGateBMod"; 
+	gate[5] = update_jGateMod; 
+        nameA[5] = "jGateAMod"; 
+        nameB[5] = "jGateBMod"; 
+   }
+   GateParms parms; 
+   parms.dt = dt; 
+   parms.cellType = 0; 
+   int nPade=0;; 
+   fit[nPade++]=padeApprox("fv0",fv0,NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
+   fit[nPade++]=padeApprox("fv1",fv1,NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
+   fit[nPade++]=padeApprox("fv2",fv2,NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
+   fit[nPade++]=padeApprox("fv3",fv3,NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
+   fit[nPade++]=padeApprox("fv4",fv4,NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
+   fit[nPade++]=padeApprox("fv5",fv5,NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
+   for (int k=0;k<11;k++) 
+   {
+      parms.update = gate[k] ;
+      fit[nPade++]=padeApprox(nameA[k],getGateA,(void*)&parms,sizeof(parms),tol,deltaV,V0,V1,maxOrder,maxCost); 
+      fit[nPade++]=padeApprox(nameB[k],getGateB,(void*)&parms,sizeof(parms),tol,deltaV,V0,V1,maxOrder,maxCost); 
+   }
+   parms.cellType = 1; 
+   parms.update = gate[10]; 
+   fit[nPade++]=padeApprox("sGateA_1",getGateA,(void*)&parms,sizeof(parms),tol,deltaV,V0,V1,maxOrder,maxCost); 
+   fit[nPade++]=padeApprox("sGateB_1",getGateB,(void*)&parms,sizeof(parms),tol,deltaV,V0,V1,maxOrder,maxCost); 
+   if (getRank(0)==0) 
+   {
+      FILE *file=fopen("pade.data","w"); 
+      for (int  i=0;i<nPade;i++) 
+      {
+         padeErrorInfo(*fit[i]); 
+         padeWrite(file,*fit[i]); 
+      }
+      fclose(file); 
+   }
+}
 double computeUpdates(double dt, double Vm, double* STATES, int cellType)
 {
-   double gv[30]; 
-   funcValueA(cellType,Vm,dt,gv);
-   double *fv= gv+24; 
+   double fv[6]; 
+   for (int i=0;i<6;i++)
+   {
+	fv[i]=fit[i]->afunc(Vm, fit[i]->aparms); 
+   }
 
 #define logSeries(x) ((x)*(1.0-0.5*(x)))
    double dV0 = 1.0*Vm -c3*log(STATES[K_i]) -c5;
    double dV1 = 1.0*Vm -c3*log(STATES[Na_i]) -c4;
-   //double dV2 = 1.0*Vm -c3*log(STATES[K_i]+c2*STATES[Na_i]) -c6;
+   double dV2 =dV0-c3*logSeries(c2*STATES[Na_i]/STATES[K_i])+c5-c6;
    double dV3 = 2.0*Vm- c3*log(STATES[Ca_i]) - c8;
    //double ss = c2*(STATES[Na_i]/STATES[K_i]);
    //double dV2 =Vm-c3*log(STATES[K_i]) -c3*log(1+ss) -c6;
    //double dV2 =Vm-c3*log(STATES[K_i])-c3*logSeries(c2*STATES[Na_i]/STATES[K_i]) -c6;
-   double dV2 =dV0-c3*logSeries(c2*STATES[Na_i]/STATES[K_i])+c5-c6;
+   //double dV2 = 1.0*Vm -c3*log(STATES[K_i]+c2*STATES[Na_i]) -c6;
    
    double xx  =  (3.0*exp(0.0002*dV0 + 0.02)+exp(0.1*dV0 - 1.0))/(1.0+exp( -0.5*dV0))*(10.0+10*exp(0.06*dV0 -12.0));
    double fdV0 =  c9*c12/(1.0+xx);
@@ -341,36 +484,24 @@ double computeUpdates(double dt, double Vm, double* STATES, int cellType)
    STATES[R_prime] += dt*(c36 - tmp9*STATES[R_prime]);
    
    update_fCassGate(dt, Ca_SS, STATES+fCass_gate);
-
-   for (int i=0;i<10;i++) STATES[i+Xr1_gate] = gv[2*i] + gv[2*i+1]*STATES[i+Xr1_gate]   ;
-   int i  = 10 + (cellType != 0) ; 
-   STATES[s_gate] = gv[2*i] + gv[2*i+1]*STATES[s_gate]   ;
-   
-   /*
-   static FILE *file = NULL; 
-   static double time = 0.0; 
-   static int loop =0; 
-   static double xmin[7],xmax[7]; 
-   if (file == NULL) 
-   {	file = fopen("info.data","w"); 
-   //	for (int i=0;i<7;i++)  xmin[i]=xmax[i] = x[i]; 
-   }
-   if (loop % 10 ==0) fprintf(file,"%14.10f %e %24.14e %24.14e %24.14e %24.14e %24.14e %24.14e\n",time,RATES[0],RATES[K_i],RATES[Na_i],RATES[Ca_i],RATES[Ca_ss],RATES[Ca_SR],STATES[R_prime]); 
-   if (loop % 1000 ==0) fprintf(file,"    %f %e %e %e %e %e %e %e\n",time,x[0],x[1],x[2],x[3],x[4],x[5],xmin[6]); 
-   for (int i=0;i<7;i++) 
+   double A,B; 
+   double *gate = STATES+Xr1_gate; 
+   for (int i=0;i<10;i++) 
    {
-	   if (x[i] < xmin[i] ) xmin[i] = x[i]; 
-	   if (x[i] > xmax[i] ) xmax[i] = x[i]; 
+      int k = 2*i+6; 
+      A=fit[k]  ->afunc(Vm,fit[k  ]->aparms); 
+      B=fit[k+1]->afunc(Vm,fit[k+1]->aparms); 
+      gate[i] =  A + B*gate[i]   ;
    }
-   if (loop % 1000 ==0) fprintf(file,"min %f %e %e %e %e %e %e %e\n",time,xmin[0],xmin[1],xmin[2],xmin[3],xmin[4],xmin[5],xmin[6]); 
-   if (loop % 1000 ==0) fprintf(file,"max %f %e %e %e %e %e %e %e\n",time,xmax[0],xmax[1],xmax[2],xmax[3],xmax[4],xmax[5],xmax[6]); 
-   time += 0.02; 
-   loop++; 
-   */
-   
+   int i  = 10 + (cellType != 0) ; 
+   int k = 2*i+6; 
+   A=fit[k]  ->afunc(Vm,fit[k  ]->aparms); 
+   B=fit[k+1]->afunc(Vm,fit[k+1]->aparms); 
+  STATES[s_gate] = A+ B*STATES[s_gate];
+
    return dVdt; 
 }
-static void update_Xr1Gate(double dt, double Vm, double *gate,double *a, double *b)
+void update_Xr1Gate(double dt, double Vm, double *gate, int cellType, double *a, double *b)
 {
    double mhu = 1.0/(1.0+(exp(((- 26.0 - Vm)/7.0))));
    double t1 = 450.0/(1.0+(exp(((- 45.0 - Vm)/10.0))));
@@ -382,7 +513,7 @@ static void update_Xr1Gate(double dt, double Vm, double *gate,double *a, double 
    *gate += rate*dt;
 }
 // Update Xr2 in component rapid_time_dependent_potassium_current_Xr1_gate (dimensionless).
-static void update_Xr2Gate(double dt, double Vm, double *gate, double *a, double *b)
+void update_Xr2Gate(double dt, double Vm, double *gate, int cellType,  double *a, double *b)
 {
    double mhu = 1.0/(1.0+(exp(((Vm+88.0)/24.0))));
    double t1 = 3.0/(1.0+(exp(((- 60.0 - Vm)/20.0))));
@@ -393,7 +524,7 @@ static void update_Xr2Gate(double dt, double Vm, double *gate, double *a, double
    *b =  1.0-dt/tau; 
    *gate += rate*dt;
 }
-static void update_XsGate(double dt, double Vm, double *gate, double *a, double *b)
+void update_XsGate(double dt, double Vm, double *gate, int cellType,  double *a, double *b)
 {
    double mhu = 1.0/(1.0+(exp(((- 5.0 - Vm)/14.0))));
    double t1 = 1400.00/ sqrt(1.0+exp((5.0 - Vm)/6.0));
@@ -404,7 +535,7 @@ static void update_XsGate(double dt, double Vm, double *gate, double *a, double 
    *b =  1.0-dt/tau; 
    *gate += rate*dt;
 }
-static void update_mGate(double dt, double Vm, double *gate,double *a, double *b)
+void update_mGate(double dt, double Vm, double *gate, int cellType, double *a, double *b)
 {
    double mhu = 1.0/SQ(1.0+exp((-56.8600 - Vm)/9.03000));
    double t1  = 1.0/(1.0+(exp(((- 60.0 - Vm)/5.0))));
@@ -415,29 +546,49 @@ static void update_mGate(double dt, double Vm, double *gate,double *a, double *b
    *b = exp(-dt/tau); 
    *gate = mhu - (mhu -*gate) *exp(-dt/tau);
 }
-static void update_hGate(double dt, double Vm, double *gate,double *a, double *b)
+void update_hGate(double dt, double Vm, double *gate, int cellType, double *a, double *b)
 {
    double mhu = 1.0/SQ((1.0+(exp(((Vm+71.5500)/7.43000)))));
    double t1  = (Vm<- 40.0 ?  0.0570000*(exp((- (Vm+80.0)/6.80000))) : 0.0);
    double t2  = (Vm<- 40.0 ?  2.70000*(exp(( 0.0790000*Vm)))+ 310000.*(exp(( 0.348500*Vm))) : 0.770000/( 0.130000*(1.0+(exp(((Vm+10.6600)/- 11.1000))))));
-   double tau = 1.0/(t1+t2);
-   *a =  mhu*dt/tau; 
-   *b =  1.0-dt/tau; 
-   double rate = (mhu - *gate)/tau;
+   double tauR = (t1+t2);
+   *a =  mhu*dt*tauR; 
+   *b =  1.0-dt*tauR; 
+   double rate = (mhu - *gate)*tauR;
    *gate += rate*dt;
 }
-static void update_jGate(double dt, double Vm, double *gate,double *a, double *b)
+void update_hGateMod(double dt, double Vm, double *gate, int cellType, double *a, double *b)
+{
+   double mhu = 1.0/SQ((1.0+(exp(((Vm+71.5500)/7.43000)))));
+   double dtauR,ddtauR; 
+   double tauR = TauRecipMod(Vm,hParms,&dtauR,&ddtauR); 
+   *a =  mhu*dt*tauR; 
+   *b =  1.0-dt*tauR; 
+   double rate = (mhu - *gate)*tauR;
+   *gate += rate*dt;
+}
+void update_jGate(double dt, double Vm, double *gate, int cellType, double *a, double *b)
 {
    double mhu = 1.0/SQ((1.0+(exp(((Vm+71.5500)/7.43000)))));
    double t1  = (Vm < -40.0 ? (( ( - 25428.0*(exp(( 0.244400*Vm))) -  6.94800e-06*(exp(( - 0.0439100*Vm))))*(Vm+37.7800))/1.0)/(1.0+(exp(( 0.311000*(Vm+79.2300))))) : 0.0);
    double t2 = (Vm < -40.0 ? ( 0.0242400*(exp(( - 0.0105200*Vm))))/(1.0+(exp(( - 0.137800*(Vm+40.1400))))) : ( 0.600000*(exp(( 0.0570000*Vm))))/(1.0+(exp(( - 0.100000*(Vm+32.0))))));
-   double tau  = 1.0/(t1+t2);
-   *a =  mhu*dt/tau; 
-   *b =  1.0-dt/tau; 
-   double rate = (mhu - *gate)/tau;
+   double tauR  = (t1+t2);
+   *a =  mhu*dt*tauR; 
+   *b =  1.0-dt*tauR; 
+   double rate = (mhu - *gate)*tauR;
    *gate += rate*dt;
 }
-static void update_rGate(double dt, double Vm, double *gate,double *a, double *b)
+void update_jGateMod(double dt, double Vm, double *gate, int cellType, double *a, double *b)
+{
+   double mhu = 1.0/SQ((1.0+(exp(((Vm+71.5500)/7.43000)))));
+   double dtauR,ddtauR; 
+   double tauR = TauRecipMod(Vm,jParms,&dtauR,&ddtauR); 
+   *a =  mhu*dt*tauR; 
+   *b =  1.0-dt*tauR; 
+   double rate = (mhu - *gate)*tauR;
+   *gate += rate*dt;
+}
+void update_rGate(double dt, double Vm, double *gate, int cellType, double *a, double *b)
 {
    double mhu = 1.0/(1.0+(exp(((20.0 - Vm)/6.0))));
    double tau =  9.50000*(exp((- SQ((Vm+40.0)))/1800.00))+0.800000;
@@ -446,7 +597,7 @@ static void update_rGate(double dt, double Vm, double *gate,double *a, double *b
    double rate = (mhu - *gate)/tau;
    *gate += rate*dt;
 }
-static void update_dGate(double dt, double Vm, double *gate,double *a, double *b)
+void update_dGate(double dt, double Vm, double *gate, int cellType, double *a, double *b)
 {
    double mhu = 1.0/(1.0+(exp(((- 8.0 - Vm)/7.50000))));
    double t1  = 1.40000/(1.0+(exp(((- 35.0 - Vm)/13.0))))+0.250000;
@@ -458,7 +609,7 @@ static void update_dGate(double dt, double Vm, double *gate,double *a, double *b
    double rate = (mhu - *gate)/tau;
    *gate += rate*dt;
 }
-static void update_fGate(double dt, double Vm, double *gate,double *a, double *b)
+void update_fGate(double dt, double Vm, double *gate, int cellType, double *a, double *b)
 {
    double mhu = 1.0/(1.0+(exp(((Vm+20.0)/7.0))));
    double tau =  1102.50*(exp((- SQ(Vm+27.0)/225.0)))+200.0/(1.0+(exp(((13.0 - Vm)/10.0))))+180.0/(1.0+(exp(((Vm+30.0)/10.0))))+20.0;
@@ -467,7 +618,7 @@ static void update_fGate(double dt, double Vm, double *gate,double *a, double *b
    double rate = (mhu - *gate)/tau;
    *gate += rate*dt;
 }
-static void update_f2Gate(double dt, double Vm, double *gate,double *a, double *b)
+void update_f2Gate(double dt, double Vm, double *gate, int cellType, double *a, double *b)
 {
    double mhu = 0.670000/(1.0+(exp(((Vm+35.0)/7.0))))+0.330000;
    double tau =  562.0*exp(-SQ((Vm+27.0))/240.0)+31.0/(1.0+(exp(((25.0 - Vm)/10.0))))+80.0/(1.0+(exp(((Vm+30.0)/10.0))));
@@ -476,7 +627,7 @@ static void update_f2Gate(double dt, double Vm, double *gate,double *a, double *
    double rate = (mhu - *gate)/tau;
    *gate += rate*dt;
 }
-static void update_sGate(double dt, double Vm, double *gate, int cellType,double *a, double *b)
+void update_sGate(double dt, double Vm, double *gate, int cellType,double *a, double *b)
 {
 
    if (cellType==0) 
@@ -516,204 +667,22 @@ double fva = 1.0/(f3+ f4*expV);
 fv[0]= f2/(1.0+0.1245*exp(-0.1*Vm*f1)+0.0353*expV1);
 fv[1] = expV5*fva ; 
 fv[2] = expV* fva*f6 ; 
-fv[3] = (f7*Vm-f8)/(1.0-expV2);
+fv[3] = f7*(Vm-15.0)/(1.0-expV2);
 fv[4] = fv[3] * expV2 *f9;
 fv[5] = f10/(1.0+exp((25.0 - Vm)/5.98));
 }
-
-int costFunc(int l, int m)
+/*
+int main()
 {
-   int cost = (m-1)+(l-1)+4;
-   if ( l==1 ) cost = (m-1) ; 
-	return cost; 
-}
-double fit(int l,int m,double  *a,double x, double *s1, double *s2) 
-{
-   double sum1=0; 
-   double sum2=0;    
-   int k = m+l-1; 
-   for (int j=m-1;j>=0;j--)sum1 =  a[j] + x*sum1; 
-   if (l<2) return sum1; 
-   for (int j=k;j>=m;j--)  sum2 =  a[j] + x*sum2; 
-   *s1=sum1; 
-   *s2=sum2; 
-   return sum1/sum2; 
-}
-void  funcValue(int cellType, double Vm , double dt, double *gv)
-{
-   double x0; 
-   int i=0;
-   x0 = 0; update_Xr1Gate(dt, Vm, &x0, gv+i, gv+i+1);    i+=2; 
-   x0 = 0; update_Xr2Gate(dt, Vm, &x0, gv+i, gv+i+1);    i+=2; 
-   x0 = 0; update_XsGate(dt, Vm, &x0, gv+i, gv+i+1);    i+=2; 
-   x0 = 0; update_mGate(dt, Vm, &x0, gv+i, gv+i+1);    i+=2; 
-   x0 = 0; update_hGate(dt, Vm, &x0, gv+i, gv+i+1);    i+=2; 
-   x0 = 0; update_jGate(dt, Vm, &x0, gv+i, gv+i+1);    i+=2; 
-   x0 = 0; update_rGate(dt, Vm, &x0, gv+i, gv+i+1);    i+=2; 
-   x0 = 0; update_dGate(dt, Vm, &x0, gv+i, gv+i+1);    i+=2; 
-   x0 = 0; update_fGate(dt, Vm, &x0, gv+i, gv+i+1);    i+=2; 
-   x0 = 0; update_f2Gate(dt, Vm, &x0, gv+i, gv+i+1);    i+=2; 
-   x0 = 0; update_sGate(dt, Vm, &x0, 0 ,gv+i, gv+i+1);    i+=2; 
-   x0 = 0; update_sGate(dt, Vm, &x0, 1,gv+i, gv+i+1);    i+=2; 
-   extra(Vm,gv+i); 
-}
-void  funcValueA(int cellType, double Vm , double dt, double *gv)
-{
-   double s1,s2; 
-   for (int i=0;i<30;i++) gv[i] = fit(fitL[i],fitM[i],fitCoef[i],Vm,&s1,&s2); 
+      initCnst();
+      double dt = 0.02; 
+      GateParms parms; 
+      parms.update = update_Xr1Gate; 
+      parms.dt     = dt; 
+      PADE fit; 
+      FILE *file= fopen("pade.data","w"); 
+      fit=padeApprox("Xr1Gate_A",getGateA,(void*)&parms,sizeof(parms),0.001,1301,-90.0,40.0,64,128); padeErrorInfo(fit) ; padeWrite(file,fit);
+      fit=padeApprox("Xr1Gate_B",getGateB,(void*)&parms,sizeof(parms),0.001,1301,-90.0,40.0,64,128); padeErrorInfo(fit) ; padeWrite(file,fit);
 }
 
-
-   
-
-void calcError(int funcNumber, int l,int m,double *a,int n,double *x,double *y,double *errMax, double *errRMS,double *error)
-{
-   double eMax = 0.0; 
-   double err2 = 0.0; 
-   double s1,s2; 
-   for (int i = 0; i<n;i++) 
-   {
-     double f = fit(l,m,a,x[i],&s1,&s2); 
-     double err = fabs(f-y[i]); 
-     error[i]=err; 
-     if (err > eMax) eMax = err; 
-     err2 += err*err; 
-   }
-   *errMax = eMax; 
-   *errRMS = sqrt(err2/n); 
-}
-double  calcQ(int funcNumber, double x)
-{
-   double dt = 0.02; 
-   double gv[30]; 
-   funcValue(0,x,dt,gv);
-   return gv[funcNumber]; 
-}
-void  pade(int l, int m, int n, double *x, double *y, double *a )
-{
-   gsl_matrix *X=NULL, *cov=NULL;
-   gsl_vector *yy=NULL, *w=NULL, *c=NULL;
-   int k = m+l-1 ; 
-      
-    X = gsl_matrix_alloc(n, k);
-    yy= gsl_vector_alloc(n);
-    w = gsl_vector_alloc(n);
-        
-     c = gsl_vector_alloc(k);
-     cov = gsl_matrix_alloc(k, k);
-         
-     for (int i = 0; i < n; i++)
-     {
-           double xj=1.0; 
-           for (int j=0;j<m;j++) { gsl_matrix_set (X, i, j, xj); xj *= x[i]; }
-           xj=y[i]*x[i]; 
-           for (int j=m;j<k;j++) { gsl_matrix_set (X, i, j, xj); xj *= x[i]; }
-           gsl_vector_set (yy, i, y[i]);
-           gsl_vector_set (w, i, 1.0);
-      }
-      for (int i = 0; i < n; i++) gsl_vector_set(w, i, 1.0);
-      double chisq; 
-      {
-          gsl_multifit_linear_workspace * work = gsl_multifit_linear_alloc (n, k);
-          gsl_multifit_wlinear (X, w, yy, c, cov, &chisq, work);
-          gsl_multifit_linear_free (work);
-       }
-       for (int j=0;j<m;j++) a[j] = C(j);
-       a[m]=1.0; 
-       for (int j=m;j<k;j++) a[j+1] =-C(j);
-      gsl_matrix_free (X);
-      gsl_vector_free (yy);
-      gsl_vector_free (w);
-      gsl_vector_free (c);
-      gsl_matrix_free (cov);
-}
-void makeFunctionTable(int funcNumber, double x0, double x1, int n, double *x, double *y, double *yMin, double *yMax, double *dydxMax) 
-{
-   double deltaX = (x1-x0)/n; 
-   n++; 
-   double ymin=0.0,ymax=0.0,dydxmax=0.0; 
-   for (int i = 0; i < n; i++)
-   {
-      x[i] = x0 + deltaX * i ; 
-      y[i]=calcQ(funcNumber,x[i]); 
-      double dydx = (y[i]-y[i-1])/(x[i]-x[i-1]); 
-      if (dydx > dydxmax || i==0) dydxmax = dydx;   
-      if ( y[i] < ymin   || i==0) ymin    =  y[i]; 
-      if ( y[i] > ymax   || i==0) ymax    =  y[i]; 
-   }
-   *yMin = ymin; 
-   *yMax = ymax; 
-   *dydxMax = dydxmax; 
-}
-void errorInfo(int funcNumber, double tol, int l, int m, int n, double *a, double *x, double *y, double yMin, double yMax, double dydxMax) 
-{
-   double dy = yMax-yMin; 
-   double tableRes = 0.1; // millivolts
-   double tableErrMax = 0.5*tableRes*dydxMax; 
-   double errMax,errRMS,err[n+1]; 
-   calcError(funcNumber,l,m,a,n,x,y,&errMax,&errRMS,err);
-   fprintf(stderr,"# %4d: %6d %6d %6d ",funcNumber,costFunc(l,m),l,m); fflush(stdout); 
-   fprintf(stderr,"%10.2e %10.2e %10.2e ",tol,errMax,errMax/dy); 
-   fprintf(stderr,"%10.2e %10.2e %10.2e\n",errRMS,errRMS/dy,tableErrMax/dy); 
-   char filename[256]; 
-   sprintf(filename,"func_tt06.%d",funcNumber); 
-   FILE *file = fopen(filename,"w"); 
-   for (int i=0;i<n;i++) 
-   {
-      double s1,s2; 
-      double f = fit(l,m,a,x[i],&s1,&s2); 
-      fprintf(file,"%e %e %e %e\n",x[i],y[i],f,err[i]); fflush(file); 
-   }
-}
-     
-void  fitVoltageFunc(int funcNumber, double errTol, double *x, double *y, int n, int lMax, int mMax, int *lMin, int *mMin, double *amin)
-{
-   double err[n]; 
-   int lmin=0.0,mmin=0.0; 
-   for (int kk=4;kk<128;kk++) 
-   {
-   	double errMin = -1.0; 
-        for (int l=1;l<=lMax;l+=1)
-        for (int m=1;m<=mMax;m+=1)
-        {
-           //if (l != m  ) continue; 
-	   //if (l > 1 ) continue ; 
-           if (costFunc(l,m) != kk) continue; 
-           double errMax, errRMS; 
-           double a[l+m]; 
-	   pade(l,m,n,x, y,a);
-           calcError(funcNumber,l,m,a,n,x,y,&errMax,&errRMS,err);
-           if (errMax < errMin || errMin==-1.0) 
-           {
-              lmin=l;
-              mmin=m;
-              for (int j=0;j<l+m;j++) amin[j] = a[j];
-              errMin = errMax; 
-           }
-       }
-       if (errMin  < errTol && errMin >= 0.0 ) break ; 
-   }
-   *lMin = lmin; 
-   *mMin = mmin; 
-}
-void  Approx (int n, int maxOrder, double tol)
-{
-   
-   int lMax = maxOrder; 
-   int mMax = maxOrder; 
-   
-
-   double x0 = -90; 
-   double x1 =  40; 
-   double yMin,yMax, dydxMax; 
-   double x[n+1],y[n+1]; 
-   int cost =0; 
-   for (int p =0;p<30;p++) 
-   { 
-   makeFunctionTable(p, x0,x1,n, x, y, &yMin, &yMax, &dydxMax) ;
-   fitVoltageFunc(p,tol*(yMax-yMin),x,y,n,lMax,mMax,&fitL[p],&fitM[p],fitCoef[p]);
-   errorInfo(p,tol, fitL[p], fitM[p], n, fitCoef[p], x, y, yMin, yMax, dydxMax) ;
-   cost += costFunc(fitL[p],fitM[p]); 
-   }
-   fprintf(stderr,"Total Cost = %d\n", cost); 
-}
+*/

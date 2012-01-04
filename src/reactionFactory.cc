@@ -86,7 +86,12 @@ namespace
 {
    Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy)
    {
-      return new TT06Dev_Reaction(anatomy);
+      double tolerance = 0.0; 
+      int mod=0; 
+      objectGet(obj, "tolerance", tolerance, "0.0") ;
+      objectGet(obj, "mod", mod, "0") ;
+      Reaction *reaction = new TT06Dev_Reaction(anatomy, tolerance,mod);
+      return  reaction; 
    }
 }
 

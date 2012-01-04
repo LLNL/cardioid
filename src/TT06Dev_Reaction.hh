@@ -1,6 +1,5 @@
 #ifndef TT06DEV_REACTION_HH
 #define TT06DEV_REACTION_HH
-
 #include "Reaction.hh"
 class Anatomy;
 class TT06DevState;
@@ -9,7 +8,7 @@ class TT06Dev_Reaction : public Reaction
 {
  public:
    
-   TT06Dev_Reaction(const Anatomy& anatomy);
+   TT06Dev_Reaction(const Anatomy& anatomy, double tolerance,int mod);
    // copy constructor and assignment operator intentionally
    // left unimplemented.
    TT06Dev_Reaction(const TT06Dev_Reaction&);
@@ -21,6 +20,9 @@ class TT06Dev_Reaction : public Reaction
  private:
 
    unsigned nCells_;
+   double dtForFit_; 
+   double tolerance_; 
+   int mod_; 
    
    std::vector<int>              ttType_; // maps cellType to ttType
    std::vector<TT06DevState> s_;
