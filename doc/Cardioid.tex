@@ -177,7 +177,7 @@ on the system or some other hardware parameter that limits performance
 such as the number of storage targets.
 
 
-The $n$ physical files int a pio logical file all share common base name
+The $n$ physical files in a pio logical file all share common base name
 and end with the \#-sign and a six digit sequence number.  For example,
 anatomy\#000000, anatomy\#000001, \ldots You can think of this set of
 files as being logically concatenated in numerical order.  Pio files may
@@ -216,7 +216,7 @@ anatomy FILEHEADER{
 The meaning of most of the keywords should be fairly self-evident.  Most
 are needed by pio to determine how to read the file.   (For now we're
 using ascii to facilitate debugging.  Binary files will be available in
-the future to improve performance and decrease storage cost)
+the future to improve performance and decrease storage cost.)
 
 
 Note that the names and types of the data fields are specified.  
@@ -232,8 +232,36 @@ strings.  Binary files have types such as i4, i8, f4, f8, b1, b2, b3, \ldots,
 bn where bn is an unsigned integer stored in n bytes.
 
 The gid field contains the 3D index of the cell converted to a single
-integer by the formula $ix + nx*(iy + ny*iz)$.  We could use bit
-shifting operations instead if this is necessary for performance.
+integer by the formula $ix + nx*(iy + ny*iz)$.  (If necesary for
+performance we could change this formula and use bit shifting operations
+instead.)
+
+The cell type field contains the cell type encoded according to the
+following conventions:
+\begin{center}
+  \begin{tabular}{rl}
+    75 & right ventricle endocardial cells\\
+    76 & right ventricle m-cells\\
+    77 & right ventricle epicardial cells\\
+    100 & left ventricle endocardial cells\\
+    101 & left ventricle m-cells\\
+    102 & left ventricle epicardial cells\\
+  \end{tabular}
+\end{center}
+
+The fibre angle is stored in theta and phi.  Theta is the polar angle,
+phi the azimuthal.  In Blue Beats, angles were not stored as real
+numbers in radians or degress, but rather as 8-bit unsigned integers.
+We can choose to maintain this convention to save storage costs.  In
+this convention the angle (in radians) is computed by the formula
+$\theta\pi/256$ or $\varphi\pi/256$.  (In Blue Beats theta and phi were
+effectively limited to values in the range [0..254]  This is not the
+case in Cardioid.)
+
+I realize that the coordinate system is not rigorously defined.  This
+needs to be fixed, but I'm not familiar with the conventions of the
+field so I need some help here to make sure that we define things in a
+way that is consistent with conventions.
 
 All records (lines) must be exactly lrec long.  (Should we ever need it,
 pio does contain support for variable length records.)
