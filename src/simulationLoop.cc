@@ -58,7 +58,12 @@ void simulationLoop(Simulate& sim)
   while ( sim.loop_<=sim.maxLoop_ )
   {
     int nLocal = sim.anatomy_.nLocal();
+    
+    static TimerHandle barrierHandle = profileGetHandle("Barrier");
+    profileStart(barrierHandle);
     MPI_Barrier(MPI_COMM_WORLD);
+    profileStop(barrierHandle);
+
     static TimerHandle haloHandle = profileGetHandle("Halo Exchange");
     profileStart(haloHandle);
     voltageExchange.execute(sim.VmArray_, nLocal);

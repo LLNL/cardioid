@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "CommTable.hh"
+#include "PerformanceTimers.hh"
 
 template <class T>
 class HaloExchange
@@ -32,6 +33,8 @@ template <class T>
 void HaloExchange<T>::execute(std::vector<T>& data, unsigned nLocal)
 {
    // Create and fill send buffer
+   static TimerHandle bufFillHandle = profileGetHandle("Buffer Fill");
+   profileStart(bufFillHandle);
    std::vector<T> sendBuf;
    sendBuf.reserve(sendMap_.size());
    for (unsigned ii=0; ii<sendMap_.size(); ++ii)
@@ -39,9 +42,9 @@ void HaloExchange<T>::execute(std::vector<T>& data, unsigned nLocal)
       assert(sendMap_[ii] < data.size());
       sendBuf.push_back(data[sendMap_[ii]]);
    }
-   
    // make room for received data
    data.resize(nLocal+commTable_.nRemote());
+   profileStop(bufFillHandle);
 
    void* sendPtr = (void*) &sendBuf[0];
    void* recvPtr = (void*) &data[nLocal];
