@@ -23,6 +23,9 @@ endif
 ifeq ($(HOSTNAME),atlas)  
   ARCHGUESS = peloton
 endif
+ifeq ($(HOSTNAME),ansel)  
+  ARCHGUESS = peloton
+endif
 ifeq ($(HOSTNAME),aztec)  
   ARCHGUESS = peloton
 endif

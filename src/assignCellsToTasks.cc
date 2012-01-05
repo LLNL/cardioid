@@ -115,6 +115,10 @@ namespace
           cells[ii].dest_ = gpt.z*nTasks/sim.nz_;
       }
 
+      //ewd DEBUG
+      if (myRank == 0)
+         cout << "GDLoadBalancer:  global grid " << sim.nx_ << " x " << sim.ny_ << " x " << sim.nz_ << ", process grid " << npex << " x " << npey << " x " << npez << endl;
+      
       sort(cells.begin(),cells.end(),AnatomyCell::destLessThan);
       unsigned nLocal = cells.size();
       vector<unsigned> dest(nLocal);
@@ -177,14 +181,16 @@ namespace
         writeCells(sim.anatomy_.cellArray(), sim.nx_, sim.ny_, sim.nz_, fullname.c_str());
 
         //ewd DEBUG
-        //for (unsigned ii=0; ii<cells.size(); ++ii)
-        //{
-        //  if (cells[ii].dest_ == 100)
-        //  {
-        //    GridPoint gpt(cells[ii].gid_,sim.nx_,sim.ny_,sim.nz_);
-        //    cout << " X  " << gpt.x << "  " << gpt.y << "  " << gpt.z << endl;
-        //  }
-        //}
+        /*
+        for (unsigned ii=0; ii<cells.size(); ++ii)
+        {
+          if (cells[ii].dest_ == 105)
+          {
+            GridPoint gpt(cells[ii].gid_,sim.nx_,sim.ny_,sim.nz_);
+            cout << " X  " << gpt.x << "  " << gpt.y << "  " << gpt.z << endl;
+          }
+        }
+        */
         //ewd DEBUG
 
         

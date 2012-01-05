@@ -94,7 +94,8 @@ void parseCommandLineAndReadInputFile(int argc, char** argv, int rank)
    {
       string argfile(argv[1]);
       inputfile = argfile;
-      cout << "argc = " << argc << endl;
+      //if (rank == 0)
+      //cout << "argc = " << argc << endl;
    }
 
    object_compilefile(inputfile.c_str());
