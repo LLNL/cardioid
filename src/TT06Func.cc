@@ -1,6 +1,6 @@
 #include "TT06Func.hh"
 #include <math.h>
-#include <gsl/gsl_multifit.h>
+#include "gsl.h"
 #include "TT06Tau.hh"
 #include "pade.hh"
 #include "mpiUtils.h"
