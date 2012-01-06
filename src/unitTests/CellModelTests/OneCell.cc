@@ -7,7 +7,6 @@
 
 #include "Anatomy.hh"
 #include "Reaction.hh"
-#include "TT04_bbReaction.hh"
 #include "TT04_CellML_Reaction.hh"
 #include "TT04Dev_Reaction.hh"
 #include "TT06_CellML_Reaction.hh"
@@ -60,7 +59,6 @@ Anatomy buildAnatomy(int cellType)
 
 Reaction* factory(const string& name, const Anatomy& anatomy, double tolerance,int mod)
 {
-   if (name == "bb_tt04")        return new TT04_bbReaction(anatomy);
    if (name == "cellml_tt04")    return new TT04_CellML_Reaction(anatomy, TT04_CellML_Reaction::rushLarsen);
    if (name == "cellml_tt04_fe") return new TT04_CellML_Reaction(anatomy, TT04_CellML_Reaction::forwardEuler);
    if (name == "cellml_tt06")    return new TT06_CellML_Reaction(anatomy, TT06_CellML_Reaction::rushLarsen);
@@ -91,7 +89,6 @@ int main(int argc, char *argv[])
       cout << "argv[10] - cell position [endo=0; mid=1; epi=2]" << endl<<endl;
       cout << "Supported cell models:" <<endl;
       cout << "----------------------" <<endl;
-      cout << "   bb_tt04          TT04 from BlueBeats" << endl;
       cout << "   cellml_tt04      TT04 from CellML.  Rush-Larsen integrator" << endl;
       cout << "   cellml_tt04_fe   TT04 from CellML.  Forward Euler integrator" << endl;
       cout << "   cellml_tt06      TT06 from CellML.  Rush-Larsen integrator" << endl;

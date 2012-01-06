@@ -7,18 +7,14 @@ DEFAULT: first
 
 HEART_FILES = \
 	TT04_CellML.hh \
-	TT06Func.cc \
-	TT06Func.hh \
-	TT06Tau.cc \
-	TT06Tau.hh \
-	pade.hh \
-	pade.cc \
 	TT04_CellML_Endo.cc \
 	TT04_CellML_Endo.hh \
 	TT04_CellML_Epi.cc \
 	TT04_CellML_Epi.hh \
 	TT04_CellML_Mid.cc \
 	TT04_CellML_Mid.hh \
+	TT04Dev.cc \
+	TT04Dev.hh \
 	TT06_CellML.hh \
 	TT06_CellML_Endo.cc \
 	TT06_CellML_Endo.hh \
@@ -26,15 +22,12 @@ HEART_FILES = \
 	TT06_CellML_Epi.hh \
 	TT06_CellML_Mid.cc \
 	TT06_CellML_Mid.hh \
-	IBM_tenTusscher04.cc \
-	IBM_tenTusscher04.hh \
-	IBM_tenTusscher04ParameterDefNLoad.hh \
-	IBM_tenTusscher04_endoLUT.cc \
-	IBM_tenTusscher04_endoLUT.hh \
-	IBM_tenTusscher04_epiLUT.cc \
-	IBM_tenTusscher04_epiLUT.hh \
-	IBM_tenTusscher04_midLUT.cc \
-	IBM_tenTusscher04_midLUT.hh \
+	TT06Func.cc \
+	TT06Func.hh \
+	TT06Tau.cc \
+	TT06Tau.hh \
+	pade.hh \
+	pade.cc \
 	Reaction.hh \
 	TT04Dev_Reaction.cc \
 	TT04Dev_Reaction.hh \
@@ -44,13 +37,12 @@ HEART_FILES = \
 	TT04_CellML_Reaction.hh \
 	TT06_CellML_Reaction.cc \
 	TT06_CellML_Reaction.hh \
-	TT04_bbReaction.cc \
-	TT04_bbReaction.hh \
 	ReactionFHN.cc \
 	ReactionFHN.hh \
 	Anatomy.hh \
 	AnatomyCell.hh \
 	Tuple.hh \
+	gsl.h \
 	mpiUtils.h \
 	mpiUtils.c \
 	IndexToTuple.hh \
