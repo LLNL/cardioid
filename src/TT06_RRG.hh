@@ -19,7 +19,8 @@ class TT06_RRG
    double g_Ks_;  // formerly CONSTANTS[15]
    double g_to_;  // formerly CONSTANTS[20]
    double P_NaK_; // formerly CONSTANTS[21]
-   double states_[19];
+   double g_NaL_;
+   double states_[20];
 };
 
 #endif

@@ -121,19 +121,22 @@ void TT06_RRG::initConsts(int cellType)
      case 0: // Endo
       g_Ks_ = 0.392;
       g_to_ = 0.073;
-      P_NaK_ = 2.724;
+      P_NaK_ = 3.0;
+      g_NaL_ = 0.15;
       switchTauS_ = 0;
       break;
      case 1: // Mid
       g_Ks_ = 0.098;
       g_to_ = 0.294;
-      P_NaK_ = 2.724;
+      P_NaK_ = 3.1;
+      g_NaL_ = 0.3;
       switchTauS_ = 1;
       break;
      case 2: // Epi
       g_Ks_ = 0.392;
       g_to_ = 0.294;
-      P_NaK_ = 2.724;
+      P_NaK_ = 3.0;
+      g_NaL_ = 0.15;
       switchTauS_ = 1;
       break;
      default:
@@ -165,6 +168,7 @@ void TT06_RRG::initStates(int cellType)
       states_[16] = 2.235e-8;
       states_[17] = 3.715;
       states_[18] = 0.9068;
+      states_[19] = 0.066;
       break;
      case 1: // mid
       states_[0] = -85.423;
@@ -186,6 +190,7 @@ void TT06_RRG::initStates(int cellType)
       states_[16] = 2.347e-8;
       states_[17] = 4.272;
       states_[18] = 0.8978;
+      states_[19] = 0.066;
       break;
      case 2: // epi
       states_[0] = -85.23;
@@ -207,6 +212,7 @@ void TT06_RRG::initStates(int cellType)
       states_[16] = 2.42e-8;
       states_[17] = 3.64;
       states_[18] = 0.9073;
+      states_[19] = 0.066;
       break;
      default:
       assert(false);
@@ -217,7 +223,7 @@ void TT06_RRG::initStates(int cellType)
 double TT06_RRG::computeRates(double dt, double iStim)
 {
    double algebraic[70];
-   double rates[19];
+   double rates[20];
    
    algebraic[12] = iStim;
    algebraic[7] = 1.00000/(1.00000+(exp(((states_[0]+20.0000)/7.00000))));
@@ -288,7 +294,14 @@ double TT06_RRG::computeRates(double dt, double iStim)
    algebraic[50] =  constants_[16]*(pow(states_[7], 3.00000))*states_[8]*states_[9]*(states_[0] - algebraic[25]);
    algebraic[51] =  constants_[17]*(states_[0] - algebraic[25]);
    algebraic[56] = ( constants_[24]*( (exp((( constants_[27]*states_[0]*constants_[2])/( constants_[0]*constants_[1]))))*(pow(states_[2], 3.00000))*constants_[12] -  (exp((( (constants_[27] - 1.00000)*states_[0]*constants_[2])/( constants_[0]*constants_[1]))))*(pow(constants_[11], 3.00000))*states_[3]*constants_[26]))/( ((pow(constants_[29], 3.00000))+(pow(constants_[11], 3.00000)))*(constants_[28]+constants_[12])*(1.00000+ constants_[25]*(exp((( (constants_[27] - 1.00000)*states_[0]*constants_[2])/( constants_[0]*constants_[1]))))));
-   rates[2] =  (( - 1.00000*(algebraic[50]+algebraic[51]+ 3.00000*algebraic[55]+ 3.00000*algebraic[56]))/( 1.00000*constants_[4]*constants_[2]))*constants_[3];
+
+   double jLinf = 1.0/exp((states_[0]+91.0)/6.1);
+   jLinf *= jLinf;
+   rates[19] = (jLinf - states_[19])/670.0;
+
+   double iNaL = g_NaL_*states_[7]*states_[7]*states_[7]*states_[19]*(states_[0]-algebraic[25]);
+   
+   rates[2] =  (( - 1.00000*(algebraic[50]+iNaL+algebraic[51]+ 3.00000*algebraic[55]+ 3.00000*algebraic[56]))/( 1.00000*constants_[4]*constants_[2]))*constants_[3];
    algebraic[33] =  (( constants_[0]*constants_[1])/constants_[2])*(log((constants_[10]/states_[1])));
    algebraic[44] = 0.100000/(1.00000+(exp(( 0.0600000*((states_[0] - algebraic[33]) - 200.000)))));
    algebraic[45] = ( 3.00000*(exp(( 0.000200000*((states_[0] - algebraic[33])+100.000))))+(exp(( 0.100000*((states_[0] - algebraic[33]) - 10.0000)))))/(1.00000+(exp(( - 0.500000*(states_[0] - algebraic[33])))));
@@ -303,7 +316,7 @@ double TT06_RRG::computeRates(double dt, double iStim)
    algebraic[53] =  constants_[19]*(states_[0] - algebraic[43]);
    algebraic[58] = ( constants_[32]*(states_[0] - algebraic[33]))/(1.00000+(exp(((25.0000 - states_[0])/5.98000))));
    algebraic[57] = ( constants_[30]*states_[3])/(states_[3]+constants_[31]);
-   rates[0] = - (algebraic[47]+algebraic[54]+algebraic[48]+algebraic[49]+algebraic[52]+algebraic[55]+algebraic[50]+algebraic[51]+algebraic[56]+algebraic[53]+algebraic[58]+algebraic[57]);
+   rates[0] = - (algebraic[47]+algebraic[54]+algebraic[48]+algebraic[49]+algebraic[52]+algebraic[55]+algebraic[50]+algebraic[51]+algebraic[56]+algebraic[53]+algebraic[58]+algebraic[57]+iNaL);
    rates[1] =  (( - 1.00000*((algebraic[47]+algebraic[54]+algebraic[48]+algebraic[49]+algebraic[58]+algebraic[12]) -  2.00000*algebraic[55]))/( 1.00000*constants_[4]*constants_[2]))*constants_[3];
    algebraic[59] = constants_[44]/(1.00000+(pow(constants_[42], 2.00000))/(pow(states_[3], 2.00000)));
    algebraic[60] =  constants_[43]*(states_[17] - states_[3]);
@@ -325,7 +338,7 @@ double TT06_RRG::computeRates(double dt, double iStim)
    for (unsigned jj=1; jj<7; ++jj)
       states_[jj] += rates[jj] * dt;
    states_[7] = algebraic[3] - (algebraic[3]-states_[7])*exp(-dt/algebraic[37]);
-   for (unsigned jj=8; jj<19; ++jj)
+   for (unsigned jj=8; jj<20; ++jj)
       states_[jj] += rates[jj] * dt;
 
    return rates[0];
