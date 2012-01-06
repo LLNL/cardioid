@@ -9,7 +9,16 @@ class TT06_RRG
    double calc(double dt, double Vm, double iStim);
    
  private:
+
+   void initConsts(int cellType);
+   void initStates(int cellType);
+   double computeRates(double dt, double iStim);
+   
    static double constants_[53];
+   int switchTauS_;
+   double g_Ks_;  // formerly CONSTANTS[15]
+   double g_to_;  // formerly CONSTANTS[20]
+   double P_NaK_; // formerly CONSTANTS[21]
    double states_[19];
 };
 

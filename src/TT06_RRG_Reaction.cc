@@ -18,7 +18,7 @@ TT06_RRG_Reaction::TT06_RRG_Reaction(const Anatomy& anatomy)
    ttType_[102] = 2;
 
    cells_.reserve(anatomy.nLocal());
-   for (int ii=0; ii<anatomy.nLocal(); ++ii)
+   for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
    {
       assert(anatomy.cellType(ii) >= 0 && anatomy.cellType(ii) < 256);
       int ttType = ttType_[anatomy.cellType(ii)];

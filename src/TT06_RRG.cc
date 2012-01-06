@@ -1,5 +1,6 @@
 #include "TT06_RRG.hh"
 #include <cmath>
+#include <cassert>
 
 using namespace std;
 
@@ -8,27 +9,317 @@ double TT06_RRG::constants_[53];
 namespace
 {
    void
-      initConsts(double* CONSTANTS, double* RATES, double *STATES);
-   void
       computeRates(double VOI, double* CONSTANTS, double* RATES, double* STATES, double* ALGEBRAIC);
 }
 
 
 TT06_RRG::TT06_RRG(int cellType)
 {
-   initConsts(constants_, 0, states_);
-   
+   initConsts(cellType);
+   initStates(cellType);
 }
 
 double TT06_RRG::calc(double dt, double Vm, double iStim)
 {
+   states_[0] = Vm;
+   double dVmdt = computeRates(dt, iStim);
+   return dVmdt;
+}
+
+
+/** Everything below this point started life as the TT06 mid model
+ *  generated code from the CellML web site (retrieved 8-Nov-2011).
+ *  This code has been altered as follows:
+ *
+ *  1.  initConsts was split into two functions, initConsts and
+ *  initStates.  Both are member functions, depend on cell type and
+ *  initialize the appropriate class members directly.  initConsts 
+ *  initializes the constants that vary from cell to cell as well as the
+ *  static constants_ array.
+ *
+ *  2.  computeRates was converted to a member function.  The argument
+ *  list was simplified.  The rates and algebraics arrays are created in
+ *  the scope of the function.  Constants 15, 20, and 21, are not taken
+ *  from the constants_ arrary, but rather from cellwise values g_Ks_,
+ *  g_to_, and P_NaK_, respectively.  The calculation of ALGEBRAIC[12]
+ *  (stimulus current) is replaced by the value of iStim that is passed
+ *  in.  This obsoletes constants 5-8
+ *
+ *  3.  In computeRates we have modified the calculation of RATES[0] so
+ *  that it no longer includes ALGEBRAIC[12].  This is for consistency
+ *  with our conventions for dVm/dt (i.e., it is for the reaction part
+ *  only).
+ *
+ *  4.  Integration of the internal state variables is included in
+ *  computeRates. 
+ */ 
+
+
+void TT06_RRG::initConsts(int cellType)
+{
+   static bool initialized = false;
+   if (! initialized)
+   {
+      initialized = true;
+      constants_[0] = 8314.472;
+      constants_[1] = 310;
+      constants_[2] = 96485.3415;
+      constants_[3] = 0.185;
+      constants_[4] = 0.016404;
+//unused      constants_[5] = 10;
+//unused      constants_[6] = 1000;
+//unused      constants_[7] = 1;
+//unused      constants_[8] = 52;
+      constants_[9] = 0.03;
+      constants_[10] = 5.4;
+      constants_[11] = 140;
+      constants_[12] = 2;
+      constants_[13] = 5.405;
+      constants_[14] = 0.153;
+// unused      constants_[15] = 0.098;
+      constants_[16] = 14.838;
+      constants_[17] = 0.00029;
+      constants_[18] = 0.0000398;
+      constants_[19] = 0.000592;
+//unused      constants_[20] = 0.294;
+//unused      constants_[21] = 2.724;
+      constants_[22] = 1;
+      constants_[23] = 40;
+      constants_[24] = 1000;
+      constants_[25] = 0.1;
+      constants_[26] = 2.5;
+      constants_[27] = 0.35;
+      constants_[28] = 1.38;
+      constants_[29] = 87.5;
+      constants_[30] = 0.1238;
+      constants_[31] = 0.0005;
+      constants_[32] = 0.0146;
+      constants_[33] = 0.15;
+      constants_[34] = 0.045;
+      constants_[35] = 0.06;
+      constants_[36] = 0.005;
+      constants_[37] = 1.5;
+      constants_[38] = 2.5;
+      constants_[39] = 1;
+      constants_[40] = 0.102;
+      constants_[41] = 0.0038;
+      constants_[42] = 0.00025;
+      constants_[43] = 0.00036;
+      constants_[44] = 0.006375;
+      constants_[45] = 0.2;
+      constants_[46] = 0.001;
+      constants_[47] = 10;
+      constants_[48] = 0.3;
+      constants_[49] = 0.4;
+      constants_[50] = 0.00025;
+      constants_[51] = 0.001094;
+      constants_[52] = 0.00005468;
+   }
+
+   switch (cellType)
+   {
+     case 0: // Endo
+      g_Ks_ = 0.392;
+      g_to_ = 0.073;
+      P_NaK_ = 2.724;
+      switchTauS_ = 0;
+      break;
+     case 1: // Mid
+      g_Ks_ = 0.098;
+      g_to_ = 0.294;
+      P_NaK_ = 2.724;
+      switchTauS_ = 1;
+      break;
+     case 2: // Epi
+      g_Ks_ = 0.392;
+      g_to_ = 0.294;
+      P_NaK_ = 2.724;
+      switchTauS_ = 1;
+      break;
+     default:
+      assert(false);
+   }
+}
+
+void TT06_RRG::initStates(int cellType)
+{
+   switch (cellType)
+   {
+     case 0: // endo
+      states_[0] = -86.709;
+      states_[1] = 138.4;
+      states_[2] = 10.355;
+      states_[3] = 0.00013;
+      states_[4] = 0.00448;
+      states_[5] = 0.476;
+      states_[6] = 0.0087;
+      states_[7] = 0.00155;
+      states_[8] = 0.7573;
+      states_[9] = 0.7225;
+      states_[10] = 0.00036;
+      states_[11] = 3.164e-5;
+      states_[12] = 0.8009;
+      states_[13] = 0.9778;
+      states_[14] = 0.9953;
+      states_[15] = 0.3212;
+      states_[16] = 2.235e-8;
+      states_[17] = 3.715;
+      states_[18] = 0.9068;
+      break;
+     case 1: // mid
+      states_[0] = -85.423;
+      states_[1] = 138.52;
+      states_[2] = 10.132;
+      states_[3] = 0.000153;
+      states_[4] = 0.0165;
+      states_[5] = 0.473;
+      states_[6] = 0.0174;
+      states_[7] = 0.00165;
+      states_[8] = 0.749;
+      states_[9] = 0.6788;
+      states_[10] = 0.00042;
+      states_[11] = 3.288e-5;
+      states_[12] = 0.7026;
+      states_[13] = 0.9526;
+      states_[14] = 0.9942;
+      states_[15] = 0.999998;
+      states_[16] = 2.347e-8;
+      states_[17] = 4.272;
+      states_[18] = 0.8978;
+      break;
+     case 2: // epi
+      states_[0] = -85.23;
+      states_[1] = 136.89;
+      states_[2] = 8.604;
+      states_[3] = 0.000126;
+      states_[4] = 0.00621;
+      states_[5] = 0.4712;
+      states_[6] = 0.0095;
+      states_[7] = 0.00172;
+      states_[8] = 0.7444;
+      states_[9] = 0.7045;
+      states_[10] = 0.00036;
+      states_[11] = 3.373e-5;
+      states_[12] = 0.7888;
+      states_[13] = 0.9755;
+      states_[14] = 0.9953;
+      states_[15] = 0.999998;
+      states_[16] = 2.42e-8;
+      states_[17] = 3.64;
+      states_[18] = 0.9073;
+      break;
+     default:
+      assert(false);
+   }
+   
+}
+
+double TT06_RRG::computeRates(double dt, double iStim)
+{
    double algebraic[70];
    double rates[19];
-
-   double dummy = 0.0;
+   
    algebraic[12] = iStim;
-   states_[0] = Vm;
-   computeRates(dummy, constants_, rates, states_, algebraic);
+   algebraic[7] = 1.00000/(1.00000+(exp(((states_[0]+20.0000)/7.00000))));
+   algebraic[20] =  1102.50*(exp((- (pow((states_[0]+27.0000), 2.00000))/225.000)))+200.000/(1.00000+(exp(((13.0000 - states_[0])/10.0000))))+180.000/(1.00000+(exp(((states_[0]+30.0000)/10.0000))))+20.0000;
+   rates[12] = (algebraic[7] - states_[12])/algebraic[20];
+   algebraic[8] = 0.670000/(1.00000+(exp(((states_[0]+35.0000)/7.00000))))+0.330000;
+   algebraic[21] =  562.000*(exp((- (pow((states_[0]+27.0000), 2.00000))/240.000)))+31.0000/(1.00000+(exp(((25.0000 - states_[0])/10.0000))))+80.0000/(1.00000+(exp(((states_[0]+30.0000)/10.0000))));
+   rates[13] = (algebraic[8] - states_[13])/algebraic[21];
+   algebraic[9] = 0.600000/(1.00000+(pow((states_[10]/0.0500000), 2.00000)))+0.400000;
+   algebraic[22] = 80.0000/(1.00000+(pow((states_[10]/0.0500000), 2.00000)))+2.00000;
+   rates[14] = (algebraic[9] - states_[14])/algebraic[22];
+   switch (switchTauS_)
+   {
+     case 0:
+      algebraic[10] = 1.00000/(1.00000+(exp(((states_[0]+28.0000)/5.00000))));
+      algebraic[23] =  1000.00*(exp((- (pow((states_[0]+67.0000), 2.00000))/1000.00)))+8.00000;
+      break;
+     case 1:
+      algebraic[10] = 1.00000/(1.00000+(exp(((states_[0]+20.0000)/5.00000))));
+      algebraic[23] =  85.0000*(exp((- (pow((states_[0]+45.0000), 2.00000))/320.000)))+5.00000/(1.00000+(exp(((states_[0] - 20.0000)/5.00000))))+3.00000;
+      break;
+     default:
+      assert(false);
+   }
+
+   rates[15] = (algebraic[10] - states_[15])/algebraic[23];
+   algebraic[11] = 1.00000/(1.00000+(exp(((20.0000 - states_[0])/6.00000))));
+   algebraic[24] =  9.50000*(exp((- (pow((states_[0]+40.0000), 2.00000))/1800.00)))+0.800000;
+   rates[16] = (algebraic[11] - states_[16])/algebraic[24];
+   algebraic[0] = 1.00000/(1.00000+(exp(((- 26.0000 - states_[0])/7.00000))));
+   algebraic[13] = 450.000/(1.00000+(exp(((- 45.0000 - states_[0])/10.0000))));
+   algebraic[26] = 6.00000/(1.00000+(exp(((states_[0]+30.0000)/11.5000))));
+   algebraic[34] =  1.00000*algebraic[13]*algebraic[26];
+   rates[4] = (algebraic[0] - states_[4])/algebraic[34];
+   algebraic[1] = 1.00000/(1.00000+(exp(((states_[0]+88.0000)/24.0000))));
+   algebraic[14] = 3.00000/(1.00000+(exp(((- 60.0000 - states_[0])/20.0000))));
+   algebraic[27] = 1.12000/(1.00000+(exp(((states_[0] - 60.0000)/20.0000))));
+   algebraic[35] =  1.00000*algebraic[14]*algebraic[27];
+   rates[5] = (algebraic[1] - states_[5])/algebraic[35];
+   algebraic[2] = 1.00000/(1.00000+(exp(((- 5.00000 - states_[0])/14.0000))));
+   algebraic[15] = 1400.00/ pow((1.00000+(exp(((5.00000 - states_[0])/6.00000)))), 1.0 / 2);
+   algebraic[28] = 1.00000/(1.00000+(exp(((states_[0] - 35.0000)/15.0000))));
+   algebraic[36] =  1.00000*algebraic[15]*algebraic[28]+80.0000;
+   rates[6] = (algebraic[2] - states_[6])/algebraic[36];
+   algebraic[3] = 1.00000/(pow((1.00000+(exp(((- 56.8600 - states_[0])/9.03000)))), 2.00000));
+   algebraic[16] = 1.00000/(1.00000+(exp(((- 60.0000 - states_[0])/5.00000))));
+   algebraic[29] = 0.100000/(1.00000+(exp(((states_[0]+35.0000)/5.00000))))+0.100000/(1.00000+(exp(((states_[0] - 50.0000)/200.000))));
+   algebraic[37] =  1.00000*algebraic[16]*algebraic[29];
+   rates[7] = (algebraic[3] - states_[7])/algebraic[37];
+   algebraic[4] = 1.00000/(pow((1.00000+(exp(((states_[0]+71.5500)/7.43000)))), 2.00000));
+   algebraic[17] = (states_[0]<- 40.0000 ?  0.0570000*(exp((- (states_[0]+80.0000)/6.80000))) : 0.00000);
+   algebraic[30] = (states_[0]<- 40.0000 ?  2.70000*(exp(( 0.0790000*states_[0])))+ 310000.*(exp(( 0.348500*states_[0]))) : 0.770000/( 0.130000*(1.00000+(exp(((states_[0]+10.6600)/- 11.1000))))));
+   algebraic[38] = 1.00000/(algebraic[17]+algebraic[30]);
+   rates[8] = (algebraic[4] - states_[8])/algebraic[38];
+   algebraic[5] = 1.00000/(pow((1.00000+(exp(((states_[0]+71.5500)/7.43000)))), 2.00000));
+   algebraic[18] = (states_[0]<- 40.0000 ? (( ( - 25428.0*(exp(( 0.244400*states_[0]))) -  6.94800e-06*(exp(( - 0.0439100*states_[0]))))*(states_[0]+37.7800))/1.00000)/(1.00000+(exp(( 0.311000*(states_[0]+79.2300))))) : 0.00000);
+   algebraic[31] = (states_[0]<- 40.0000 ? ( 0.0242400*(exp(( - 0.0105200*states_[0]))))/(1.00000+(exp(( - 0.137800*(states_[0]+40.1400))))) : ( 0.600000*(exp(( 0.0570000*states_[0]))))/(1.00000+(exp(( - 0.100000*(states_[0]+32.0000))))));
+   algebraic[39] = 1.00000/(algebraic[18]+algebraic[31]);
+   rates[9] = (algebraic[5] - states_[9])/algebraic[39];
+   algebraic[6] = 1.00000/(1.00000+(exp(((- 8.00000 - states_[0])/7.50000))));
+   algebraic[19] = 1.40000/(1.00000+(exp(((- 35.0000 - states_[0])/13.0000))))+0.250000;
+   algebraic[32] = 1.40000/(1.00000+(exp(((states_[0]+5.00000)/5.00000))));
+   algebraic[40] = 1.00000/(1.00000+(exp(((50.0000 - states_[0])/20.0000))));
+   algebraic[42] =  1.00000*algebraic[19]*algebraic[32]+algebraic[40];
+   rates[11] = (algebraic[6] - states_[11])/algebraic[42];
+   algebraic[55] = (( (( P_NaK_*constants_[10])/(constants_[10]+constants_[22]))*states_[2])/(states_[2]+constants_[23]))/(1.00000+ 0.124500*(exp((( - 0.100000*states_[0]*constants_[2])/( constants_[0]*constants_[1]))))+ 0.0353000*(exp((( - states_[0]*constants_[2])/( constants_[0]*constants_[1])))));
+   algebraic[25] =  (( constants_[0]*constants_[1])/constants_[2])*(log((constants_[11]/states_[2])));
+   algebraic[50] =  constants_[16]*(pow(states_[7], 3.00000))*states_[8]*states_[9]*(states_[0] - algebraic[25]);
+   algebraic[51] =  constants_[17]*(states_[0] - algebraic[25]);
+   algebraic[56] = ( constants_[24]*( (exp((( constants_[27]*states_[0]*constants_[2])/( constants_[0]*constants_[1]))))*(pow(states_[2], 3.00000))*constants_[12] -  (exp((( (constants_[27] - 1.00000)*states_[0]*constants_[2])/( constants_[0]*constants_[1]))))*(pow(constants_[11], 3.00000))*states_[3]*constants_[26]))/( ((pow(constants_[29], 3.00000))+(pow(constants_[11], 3.00000)))*(constants_[28]+constants_[12])*(1.00000+ constants_[25]*(exp((( (constants_[27] - 1.00000)*states_[0]*constants_[2])/( constants_[0]*constants_[1]))))));
+   rates[2] =  (( - 1.00000*(algebraic[50]+algebraic[51]+ 3.00000*algebraic[55]+ 3.00000*algebraic[56]))/( 1.00000*constants_[4]*constants_[2]))*constants_[3];
+   algebraic[33] =  (( constants_[0]*constants_[1])/constants_[2])*(log((constants_[10]/states_[1])));
+   algebraic[44] = 0.100000/(1.00000+(exp(( 0.0600000*((states_[0] - algebraic[33]) - 200.000)))));
+   algebraic[45] = ( 3.00000*(exp(( 0.000200000*((states_[0] - algebraic[33])+100.000))))+(exp(( 0.100000*((states_[0] - algebraic[33]) - 10.0000)))))/(1.00000+(exp(( - 0.500000*(states_[0] - algebraic[33])))));
+   algebraic[46] = algebraic[44]/(algebraic[44]+algebraic[45]);
+   algebraic[47] =  constants_[13]*algebraic[46]* pow((constants_[10]/5.40000), 1.0 / 2)*(states_[0] - algebraic[33]);
+   algebraic[54] =  g_to_*states_[16]*states_[15]*(states_[0] - algebraic[33]);
+   algebraic[48] =  constants_[14]* pow((constants_[10]/5.40000), 1.0 / 2)*states_[4]*states_[5]*(states_[0] - algebraic[33]);
+   algebraic[41] =  (( constants_[0]*constants_[1])/constants_[2])*(log(((constants_[10]+ constants_[9]*constants_[11])/(states_[1]+ constants_[9]*states_[2]))));
+   algebraic[49] =  g_Ks_*(pow(states_[6], 2.00000))*(states_[0] - algebraic[41]);
+   algebraic[52] = ( (( constants_[18]*states_[11]*states_[12]*states_[13]*states_[14]*4.00000*(states_[0] - 15.0000)*(pow(constants_[2], 2.00000)))/( constants_[0]*constants_[1]))*( 0.250000*states_[10]*(exp((( 2.00000*(states_[0] - 15.0000)*constants_[2])/( constants_[0]*constants_[1])))) - constants_[12]))/((exp((( 2.00000*(states_[0] - 15.0000)*constants_[2])/( constants_[0]*constants_[1])))) - 1.00000);
+   algebraic[43] =  (( 0.500000*constants_[0]*constants_[1])/constants_[2])*(log((constants_[12]/states_[3])));
+   algebraic[53] =  constants_[19]*(states_[0] - algebraic[43]);
+   algebraic[58] = ( constants_[32]*(states_[0] - algebraic[33]))/(1.00000+(exp(((25.0000 - states_[0])/5.98000))));
+   algebraic[57] = ( constants_[30]*states_[3])/(states_[3]+constants_[31]);
+   rates[0] = - (algebraic[47]+algebraic[54]+algebraic[48]+algebraic[49]+algebraic[52]+algebraic[55]+algebraic[50]+algebraic[51]+algebraic[56]+algebraic[53]+algebraic[58]+algebraic[57]);
+   rates[1] =  (( - 1.00000*((algebraic[47]+algebraic[54]+algebraic[48]+algebraic[49]+algebraic[58]+algebraic[12]) -  2.00000*algebraic[55]))/( 1.00000*constants_[4]*constants_[2]))*constants_[3];
+   algebraic[59] = constants_[44]/(1.00000+(pow(constants_[42], 2.00000))/(pow(states_[3], 2.00000)));
+   algebraic[60] =  constants_[43]*(states_[17] - states_[3]);
+   algebraic[61] =  constants_[41]*(states_[10] - states_[3]);
+   algebraic[63] = 1.00000/(1.00000+( constants_[45]*constants_[46])/(pow((states_[3]+constants_[46]), 2.00000)));
+   rates[3] =  algebraic[63]*((( (algebraic[60] - algebraic[59])*constants_[51])/constants_[4]+algebraic[61]) - ( 1.00000*((algebraic[53]+algebraic[57]) -  2.00000*algebraic[56])*constants_[3])/( 2.00000*1.00000*constants_[4]*constants_[2]));
+   algebraic[62] = constants_[38] - (constants_[38] - constants_[39])/(1.00000+(pow((constants_[37]/states_[17]), 2.00000)));
+   algebraic[65] =  constants_[34]*algebraic[62];
+   rates[18] =  - algebraic[65]*states_[10]*states_[18]+ constants_[36]*(1.00000 - states_[18]);
+   algebraic[64] = constants_[33]/algebraic[62];
+   algebraic[66] = ( algebraic[64]*(pow(states_[10], 2.00000))*states_[18])/(constants_[35]+ algebraic[64]*(pow(states_[10], 2.00000)));
+   algebraic[67] =  constants_[40]*algebraic[66]*(states_[17] - states_[10]);
+   algebraic[68] = 1.00000/(1.00000+( constants_[47]*constants_[48])/(pow((states_[17]+constants_[48]), 2.00000)));
+   rates[17] =  algebraic[68]*(algebraic[59] - (algebraic[67]+algebraic[60]));
+   algebraic[69] = 1.00000/(1.00000+( constants_[49]*constants_[50])/(pow((states_[10]+constants_[50]), 2.00000)));
+   rates[10] =  algebraic[69]*((( - 1.00000*algebraic[52]*constants_[3])/( 2.00000*1.00000*constants_[52]*constants_[2])+( algebraic[67]*constants_[51])/constants_[52]) - ( algebraic[61]*constants_[4])/constants_[52]);
 
    // forward euler for all states except rushLarsen for fast sodium m gate.
    for (unsigned jj=1; jj<7; ++jj)
@@ -37,37 +328,11 @@ double TT06_RRG::calc(double dt, double Vm, double iStim)
    for (unsigned jj=8; jj<19; ++jj)
       states_[jj] += rates[jj] * dt;
 
-   return rates[0]+iStim;
+   return rates[0];
 }
 
 
-/** Everything below this point started life as the TT06 mid model
- *  generated code from the CellML web site (retrieved 8-Nov-2011).
- *  This code has been altered as follows:
- *
- *  1.  Placed in the anonymous namespace so that it will not conflict
- *  with other compilation units.
- *
- *  2. The computeVariables function was deleted since it is not needed
- *  for a forward Euler method
- *
- *  3. The computation of ALGEBRAIC[12] in computeRates is commented
- *  out.  ALGEBRAIC[12] corresponds to the stimulus current.  It is
- *  expected that ALGEBRAIC[12] will be loaded with a physically relevant
- *  value by the caller.  Note that VOI is used only in the calculation
- *  of ALGEBRAIC[12] so it effectively becomes an unused parameter as do
- *  CONSTANTS[5:8] that specify the waveform of the stimulus.
- *
- *  Note that we have not modified the calculation of RATE[0].  This
- *  means it still includes the contribution due to iStim (aka
- *  ALGEBRAIC[12]).  This is not the convention that we use in our code.
- *  We expect that the reaction model will return only the dVm/dt due to
- *  reaction part only.  The external current contribution will be added
- *  and integrated in the main loop.  We have not changed the code so as
- *  to use the lightest possible touch on the CellML code. */
-
-namespace
-{
+// This is the original variable key from cellML.
 /*
    There are a total of 70 entries in the algebraic variable array.
    There are a total of 19 entries in each of the rate and state variable arrays.
@@ -237,173 +502,4 @@ namespace
  * RATES[2] is d/dt Na_i in component sodium_dynamics (millimolar).
  * RATES[1] is d/dt K_i in component potassium_dynamics (millimolar).
  */
-void
-initConsts(double* CONSTANTS, double* /*RATES*/, double *STATES)
-{
-STATES[0] = -85.423;
-CONSTANTS[0] = 8314.472;
-CONSTANTS[1] = 310;
-CONSTANTS[2] = 96485.3415;
-CONSTANTS[3] = 0.185;
-CONSTANTS[4] = 0.016404;
-CONSTANTS[5] = 10;
-CONSTANTS[6] = 1000;
-CONSTANTS[7] = 1;
-CONSTANTS[8] = 52;
-CONSTANTS[9] = 0.03;
-CONSTANTS[10] = 5.4;
-CONSTANTS[11] = 140;
-STATES[1] = 138.52;
-STATES[2] = 10.132;
-CONSTANTS[12] = 2;
-STATES[3] = 0.000153;
-CONSTANTS[13] = 5.405;
-CONSTANTS[14] = 0.153;
-STATES[4] = 0.0165;
-STATES[5] = 0.473;
-CONSTANTS[15] = 0.098;
-STATES[6] = 0.0174;
-CONSTANTS[16] = 14.838;
-STATES[7] = 0.00165;
-STATES[8] = 0.749;
-STATES[9] = 0.6788;
-CONSTANTS[17] = 0.00029;
-CONSTANTS[18] = 0.0000398;
-STATES[10] = 0.00042;
-STATES[11] = 3.288e-5;
-STATES[12] = 0.7026;
-STATES[13] = 0.9526;
-STATES[14] = 0.9942;
-CONSTANTS[19] = 0.000592;
-CONSTANTS[20] = 0.294;
-STATES[15] = 0.999998;
-STATES[16] = 2.347e-8;
-CONSTANTS[21] = 2.724;
-CONSTANTS[22] = 1;
-CONSTANTS[23] = 40;
-CONSTANTS[24] = 1000;
-CONSTANTS[25] = 0.1;
-CONSTANTS[26] = 2.5;
-CONSTANTS[27] = 0.35;
-CONSTANTS[28] = 1.38;
-CONSTANTS[29] = 87.5;
-CONSTANTS[30] = 0.1238;
-CONSTANTS[31] = 0.0005;
-CONSTANTS[32] = 0.0146;
-STATES[17] = 4.272;
-STATES[18] = 0.8978;
-CONSTANTS[33] = 0.15;
-CONSTANTS[34] = 0.045;
-CONSTANTS[35] = 0.06;
-CONSTANTS[36] = 0.005;
-CONSTANTS[37] = 1.5;
-CONSTANTS[38] = 2.5;
-CONSTANTS[39] = 1;
-CONSTANTS[40] = 0.102;
-CONSTANTS[41] = 0.0038;
-CONSTANTS[42] = 0.00025;
-CONSTANTS[43] = 0.00036;
-CONSTANTS[44] = 0.006375;
-CONSTANTS[45] = 0.2;
-CONSTANTS[46] = 0.001;
-CONSTANTS[47] = 10;
-CONSTANTS[48] = 0.3;
-CONSTANTS[49] = 0.4;
-CONSTANTS[50] = 0.00025;
-CONSTANTS[51] = 0.001094;
-CONSTANTS[52] = 0.00005468;
-}
-void
-computeRates(double /*VOI*/, double* CONSTANTS, double* RATES, double* STATES, double* ALGEBRAIC)
-{
-ALGEBRAIC[7] = 1.00000/(1.00000+(exp(((STATES[0]+20.0000)/7.00000))));
-ALGEBRAIC[20] =  1102.50*(exp((- (pow((STATES[0]+27.0000), 2.00000))/225.000)))+200.000/(1.00000+(exp(((13.0000 - STATES[0])/10.0000))))+180.000/(1.00000+(exp(((STATES[0]+30.0000)/10.0000))))+20.0000;
-RATES[12] = (ALGEBRAIC[7] - STATES[12])/ALGEBRAIC[20];
-ALGEBRAIC[8] = 0.670000/(1.00000+(exp(((STATES[0]+35.0000)/7.00000))))+0.330000;
-ALGEBRAIC[21] =  562.000*(exp((- (pow((STATES[0]+27.0000), 2.00000))/240.000)))+31.0000/(1.00000+(exp(((25.0000 - STATES[0])/10.0000))))+80.0000/(1.00000+(exp(((STATES[0]+30.0000)/10.0000))));
-RATES[13] = (ALGEBRAIC[8] - STATES[13])/ALGEBRAIC[21];
-ALGEBRAIC[9] = 0.600000/(1.00000+(pow((STATES[10]/0.0500000), 2.00000)))+0.400000;
-ALGEBRAIC[22] = 80.0000/(1.00000+(pow((STATES[10]/0.0500000), 2.00000)))+2.00000;
-RATES[14] = (ALGEBRAIC[9] - STATES[14])/ALGEBRAIC[22];
-ALGEBRAIC[10] = 1.00000/(1.00000+(exp(((STATES[0]+20.0000)/5.00000))));
-ALGEBRAIC[23] =  85.0000*(exp((- (pow((STATES[0]+45.0000), 2.00000))/320.000)))+5.00000/(1.00000+(exp(((STATES[0] - 20.0000)/5.00000))))+3.00000;
-RATES[15] = (ALGEBRAIC[10] - STATES[15])/ALGEBRAIC[23];
-ALGEBRAIC[11] = 1.00000/(1.00000+(exp(((20.0000 - STATES[0])/6.00000))));
-ALGEBRAIC[24] =  9.50000*(exp((- (pow((STATES[0]+40.0000), 2.00000))/1800.00)))+0.800000;
-RATES[16] = (ALGEBRAIC[11] - STATES[16])/ALGEBRAIC[24];
-ALGEBRAIC[0] = 1.00000/(1.00000+(exp(((- 26.0000 - STATES[0])/7.00000))));
-ALGEBRAIC[13] = 450.000/(1.00000+(exp(((- 45.0000 - STATES[0])/10.0000))));
-ALGEBRAIC[26] = 6.00000/(1.00000+(exp(((STATES[0]+30.0000)/11.5000))));
-ALGEBRAIC[34] =  1.00000*ALGEBRAIC[13]*ALGEBRAIC[26];
-RATES[4] = (ALGEBRAIC[0] - STATES[4])/ALGEBRAIC[34];
-ALGEBRAIC[1] = 1.00000/(1.00000+(exp(((STATES[0]+88.0000)/24.0000))));
-ALGEBRAIC[14] = 3.00000/(1.00000+(exp(((- 60.0000 - STATES[0])/20.0000))));
-ALGEBRAIC[27] = 1.12000/(1.00000+(exp(((STATES[0] - 60.0000)/20.0000))));
-ALGEBRAIC[35] =  1.00000*ALGEBRAIC[14]*ALGEBRAIC[27];
-RATES[5] = (ALGEBRAIC[1] - STATES[5])/ALGEBRAIC[35];
-ALGEBRAIC[2] = 1.00000/(1.00000+(exp(((- 5.00000 - STATES[0])/14.0000))));
-ALGEBRAIC[15] = 1400.00/ pow((1.00000+(exp(((5.00000 - STATES[0])/6.00000)))), 1.0 / 2);
-ALGEBRAIC[28] = 1.00000/(1.00000+(exp(((STATES[0] - 35.0000)/15.0000))));
-ALGEBRAIC[36] =  1.00000*ALGEBRAIC[15]*ALGEBRAIC[28]+80.0000;
-RATES[6] = (ALGEBRAIC[2] - STATES[6])/ALGEBRAIC[36];
-ALGEBRAIC[3] = 1.00000/(pow((1.00000+(exp(((- 56.8600 - STATES[0])/9.03000)))), 2.00000));
-ALGEBRAIC[16] = 1.00000/(1.00000+(exp(((- 60.0000 - STATES[0])/5.00000))));
-ALGEBRAIC[29] = 0.100000/(1.00000+(exp(((STATES[0]+35.0000)/5.00000))))+0.100000/(1.00000+(exp(((STATES[0] - 50.0000)/200.000))));
-ALGEBRAIC[37] =  1.00000*ALGEBRAIC[16]*ALGEBRAIC[29];
-RATES[7] = (ALGEBRAIC[3] - STATES[7])/ALGEBRAIC[37];
-ALGEBRAIC[4] = 1.00000/(pow((1.00000+(exp(((STATES[0]+71.5500)/7.43000)))), 2.00000));
-ALGEBRAIC[17] = (STATES[0]<- 40.0000 ?  0.0570000*(exp((- (STATES[0]+80.0000)/6.80000))) : 0.00000);
-ALGEBRAIC[30] = (STATES[0]<- 40.0000 ?  2.70000*(exp(( 0.0790000*STATES[0])))+ 310000.*(exp(( 0.348500*STATES[0]))) : 0.770000/( 0.130000*(1.00000+(exp(((STATES[0]+10.6600)/- 11.1000))))));
-ALGEBRAIC[38] = 1.00000/(ALGEBRAIC[17]+ALGEBRAIC[30]);
-RATES[8] = (ALGEBRAIC[4] - STATES[8])/ALGEBRAIC[38];
-ALGEBRAIC[5] = 1.00000/(pow((1.00000+(exp(((STATES[0]+71.5500)/7.43000)))), 2.00000));
-ALGEBRAIC[18] = (STATES[0]<- 40.0000 ? (( ( - 25428.0*(exp(( 0.244400*STATES[0]))) -  6.94800e-06*(exp(( - 0.0439100*STATES[0]))))*(STATES[0]+37.7800))/1.00000)/(1.00000+(exp(( 0.311000*(STATES[0]+79.2300))))) : 0.00000);
-ALGEBRAIC[31] = (STATES[0]<- 40.0000 ? ( 0.0242400*(exp(( - 0.0105200*STATES[0]))))/(1.00000+(exp(( - 0.137800*(STATES[0]+40.1400))))) : ( 0.600000*(exp(( 0.0570000*STATES[0]))))/(1.00000+(exp(( - 0.100000*(STATES[0]+32.0000))))));
-ALGEBRAIC[39] = 1.00000/(ALGEBRAIC[18]+ALGEBRAIC[31]);
-RATES[9] = (ALGEBRAIC[5] - STATES[9])/ALGEBRAIC[39];
-ALGEBRAIC[6] = 1.00000/(1.00000+(exp(((- 8.00000 - STATES[0])/7.50000))));
-ALGEBRAIC[19] = 1.40000/(1.00000+(exp(((- 35.0000 - STATES[0])/13.0000))))+0.250000;
-ALGEBRAIC[32] = 1.40000/(1.00000+(exp(((STATES[0]+5.00000)/5.00000))));
-ALGEBRAIC[40] = 1.00000/(1.00000+(exp(((50.0000 - STATES[0])/20.0000))));
-ALGEBRAIC[42] =  1.00000*ALGEBRAIC[19]*ALGEBRAIC[32]+ALGEBRAIC[40];
-RATES[11] = (ALGEBRAIC[6] - STATES[11])/ALGEBRAIC[42];
-ALGEBRAIC[55] = (( (( CONSTANTS[21]*CONSTANTS[10])/(CONSTANTS[10]+CONSTANTS[22]))*STATES[2])/(STATES[2]+CONSTANTS[23]))/(1.00000+ 0.124500*(exp((( - 0.100000*STATES[0]*CONSTANTS[2])/( CONSTANTS[0]*CONSTANTS[1]))))+ 0.0353000*(exp((( - STATES[0]*CONSTANTS[2])/( CONSTANTS[0]*CONSTANTS[1])))));
-ALGEBRAIC[25] =  (( CONSTANTS[0]*CONSTANTS[1])/CONSTANTS[2])*(log((CONSTANTS[11]/STATES[2])));
-ALGEBRAIC[50] =  CONSTANTS[16]*(pow(STATES[7], 3.00000))*STATES[8]*STATES[9]*(STATES[0] - ALGEBRAIC[25]);
-ALGEBRAIC[51] =  CONSTANTS[17]*(STATES[0] - ALGEBRAIC[25]);
-ALGEBRAIC[56] = ( CONSTANTS[24]*( (exp((( CONSTANTS[27]*STATES[0]*CONSTANTS[2])/( CONSTANTS[0]*CONSTANTS[1]))))*(pow(STATES[2], 3.00000))*CONSTANTS[12] -  (exp((( (CONSTANTS[27] - 1.00000)*STATES[0]*CONSTANTS[2])/( CONSTANTS[0]*CONSTANTS[1]))))*(pow(CONSTANTS[11], 3.00000))*STATES[3]*CONSTANTS[26]))/( ((pow(CONSTANTS[29], 3.00000))+(pow(CONSTANTS[11], 3.00000)))*(CONSTANTS[28]+CONSTANTS[12])*(1.00000+ CONSTANTS[25]*(exp((( (CONSTANTS[27] - 1.00000)*STATES[0]*CONSTANTS[2])/( CONSTANTS[0]*CONSTANTS[1]))))));
-RATES[2] =  (( - 1.00000*(ALGEBRAIC[50]+ALGEBRAIC[51]+ 3.00000*ALGEBRAIC[55]+ 3.00000*ALGEBRAIC[56]))/( 1.00000*CONSTANTS[4]*CONSTANTS[2]))*CONSTANTS[3];
-ALGEBRAIC[33] =  (( CONSTANTS[0]*CONSTANTS[1])/CONSTANTS[2])*(log((CONSTANTS[10]/STATES[1])));
-ALGEBRAIC[44] = 0.100000/(1.00000+(exp(( 0.0600000*((STATES[0] - ALGEBRAIC[33]) - 200.000)))));
-ALGEBRAIC[45] = ( 3.00000*(exp(( 0.000200000*((STATES[0] - ALGEBRAIC[33])+100.000))))+(exp(( 0.100000*((STATES[0] - ALGEBRAIC[33]) - 10.0000)))))/(1.00000+(exp(( - 0.500000*(STATES[0] - ALGEBRAIC[33])))));
-ALGEBRAIC[46] = ALGEBRAIC[44]/(ALGEBRAIC[44]+ALGEBRAIC[45]);
-ALGEBRAIC[47] =  CONSTANTS[13]*ALGEBRAIC[46]* pow((CONSTANTS[10]/5.40000), 1.0 / 2)*(STATES[0] - ALGEBRAIC[33]);
-ALGEBRAIC[54] =  CONSTANTS[20]*STATES[16]*STATES[15]*(STATES[0] - ALGEBRAIC[33]);
-ALGEBRAIC[48] =  CONSTANTS[14]* pow((CONSTANTS[10]/5.40000), 1.0 / 2)*STATES[4]*STATES[5]*(STATES[0] - ALGEBRAIC[33]);
-ALGEBRAIC[41] =  (( CONSTANTS[0]*CONSTANTS[1])/CONSTANTS[2])*(log(((CONSTANTS[10]+ CONSTANTS[9]*CONSTANTS[11])/(STATES[1]+ CONSTANTS[9]*STATES[2]))));
-ALGEBRAIC[49] =  CONSTANTS[15]*(pow(STATES[6], 2.00000))*(STATES[0] - ALGEBRAIC[41]);
-ALGEBRAIC[52] = ( (( CONSTANTS[18]*STATES[11]*STATES[12]*STATES[13]*STATES[14]*4.00000*(STATES[0] - 15.0000)*(pow(CONSTANTS[2], 2.00000)))/( CONSTANTS[0]*CONSTANTS[1]))*( 0.250000*STATES[10]*(exp((( 2.00000*(STATES[0] - 15.0000)*CONSTANTS[2])/( CONSTANTS[0]*CONSTANTS[1])))) - CONSTANTS[12]))/((exp((( 2.00000*(STATES[0] - 15.0000)*CONSTANTS[2])/( CONSTANTS[0]*CONSTANTS[1])))) - 1.00000);
-ALGEBRAIC[43] =  (( 0.500000*CONSTANTS[0]*CONSTANTS[1])/CONSTANTS[2])*(log((CONSTANTS[12]/STATES[3])));
-ALGEBRAIC[53] =  CONSTANTS[19]*(STATES[0] - ALGEBRAIC[43]);
-ALGEBRAIC[58] = ( CONSTANTS[32]*(STATES[0] - ALGEBRAIC[33]))/(1.00000+(exp(((25.0000 - STATES[0])/5.98000))));
-ALGEBRAIC[57] = ( CONSTANTS[30]*STATES[3])/(STATES[3]+CONSTANTS[31]);
-//ALGEBRAIC[12] = (VOI -  (floor((VOI/CONSTANTS[6])))*CONSTANTS[6]>=CONSTANTS[5]&&VOI -  (floor((VOI/CONSTANTS[6])))*CONSTANTS[6]<=CONSTANTS[5]+CONSTANTS[7] ? - CONSTANTS[8] : 0.00000);
-RATES[0] = - (ALGEBRAIC[47]+ALGEBRAIC[54]+ALGEBRAIC[48]+ALGEBRAIC[49]+ALGEBRAIC[52]+ALGEBRAIC[55]+ALGEBRAIC[50]+ALGEBRAIC[51]+ALGEBRAIC[56]+ALGEBRAIC[53]+ALGEBRAIC[58]+ALGEBRAIC[57]+ALGEBRAIC[12]);
-RATES[1] =  (( - 1.00000*((ALGEBRAIC[47]+ALGEBRAIC[54]+ALGEBRAIC[48]+ALGEBRAIC[49]+ALGEBRAIC[58]+ALGEBRAIC[12]) -  2.00000*ALGEBRAIC[55]))/( 1.00000*CONSTANTS[4]*CONSTANTS[2]))*CONSTANTS[3];
-ALGEBRAIC[59] = CONSTANTS[44]/(1.00000+(pow(CONSTANTS[42], 2.00000))/(pow(STATES[3], 2.00000)));
-ALGEBRAIC[60] =  CONSTANTS[43]*(STATES[17] - STATES[3]);
-ALGEBRAIC[61] =  CONSTANTS[41]*(STATES[10] - STATES[3]);
-ALGEBRAIC[63] = 1.00000/(1.00000+( CONSTANTS[45]*CONSTANTS[46])/(pow((STATES[3]+CONSTANTS[46]), 2.00000)));
-RATES[3] =  ALGEBRAIC[63]*((( (ALGEBRAIC[60] - ALGEBRAIC[59])*CONSTANTS[51])/CONSTANTS[4]+ALGEBRAIC[61]) - ( 1.00000*((ALGEBRAIC[53]+ALGEBRAIC[57]) -  2.00000*ALGEBRAIC[56])*CONSTANTS[3])/( 2.00000*1.00000*CONSTANTS[4]*CONSTANTS[2]));
-ALGEBRAIC[62] = CONSTANTS[38] - (CONSTANTS[38] - CONSTANTS[39])/(1.00000+(pow((CONSTANTS[37]/STATES[17]), 2.00000)));
-ALGEBRAIC[65] =  CONSTANTS[34]*ALGEBRAIC[62];
-RATES[18] =  - ALGEBRAIC[65]*STATES[10]*STATES[18]+ CONSTANTS[36]*(1.00000 - STATES[18]);
-ALGEBRAIC[64] = CONSTANTS[33]/ALGEBRAIC[62];
-ALGEBRAIC[66] = ( ALGEBRAIC[64]*(pow(STATES[10], 2.00000))*STATES[18])/(CONSTANTS[35]+ ALGEBRAIC[64]*(pow(STATES[10], 2.00000)));
-ALGEBRAIC[67] =  CONSTANTS[40]*ALGEBRAIC[66]*(STATES[17] - STATES[10]);
-ALGEBRAIC[68] = 1.00000/(1.00000+( CONSTANTS[47]*CONSTANTS[48])/(pow((STATES[17]+CONSTANTS[48]), 2.00000)));
-RATES[17] =  ALGEBRAIC[68]*(ALGEBRAIC[59] - (ALGEBRAIC[67]+ALGEBRAIC[60]));
-ALGEBRAIC[69] = 1.00000/(1.00000+( CONSTANTS[49]*CONSTANTS[50])/(pow((STATES[10]+CONSTANTS[50]), 2.00000)));
-RATES[10] =  ALGEBRAIC[69]*((( - 1.00000*ALGEBRAIC[52]*CONSTANTS[3])/( 2.00000*1.00000*CONSTANTS[52]*CONSTANTS[2])+( ALGEBRAIC[67]*CONSTANTS[51])/CONSTANTS[52]) - ( ALGEBRAIC[61]*CONSTANTS[4])/CONSTANTS[52]);
-}
-}
+
