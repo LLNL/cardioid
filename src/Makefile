@@ -28,13 +28,14 @@ HEARTSRC=cardioid.cc \
 	 ReactionFHN.cc \
 	 TT04_CellML_Reaction.cc \
 	 TT06_CellML_Reaction.cc  \
+	 TT06Dev_Reaction.cc \
+	 TT06_RRG_Reaction.cc \
 	 TT06Tau.cc \
 	 TT06Func.cc \
          pade.cc \
-	 TT06Dev_Reaction.cc \
 	 TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc \
 	 TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc \
-	 TT06_JRG_Reaction.cc \
+	 TT06_RRG.cc \
 	 TestStimulus.cc PointStimulus.cc BoxStimulus.cc \
 	 PointListSensor.cc ActivationTimeSensor.cc
 

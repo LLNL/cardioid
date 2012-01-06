@@ -28,6 +28,8 @@ HEART_FILES = \
 	TT06Tau.hh \
 	pade.hh \
 	pade.cc \
+	TT06_RRG.cc \
+	TT06_RRG.hh \
 	Reaction.hh \
 	TT04Dev_Reaction.cc \
 	TT04Dev_Reaction.hh \
@@ -39,6 +41,8 @@ HEART_FILES = \
 	TT06_CellML_Reaction.hh \
 	ReactionFHN.cc \
 	ReactionFHN.hh \
+	TT06_RRG_Reaction.cc \
+	TT06_RRG_Reaction.hh \
 	Anatomy.hh \
 	AnatomyCell.hh \
 	Tuple.hh \
