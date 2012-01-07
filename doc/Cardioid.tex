@@ -1,7 +1,11 @@
 \documentclass{article}
+\usepackage[pdftex]{color}
+\usepackage{graphicx}
 \begin{document}
 
 \def\path#1{#1}
+
+\long\def\issue#1{{\color{red} #1}}
 
 \section{Building Cardioid}
 
@@ -131,7 +135,9 @@ name ClassName {
 }
 \end{verbatim}
 Values may be string, floats, or integers and may be vector or scalar
-valued.  Units are supported.  The set of keywords is open and
+valued.  Units are supported. \issue{Cardioid does not currently use the
+  units capability of the object.data system.  Hence, units are ignored
+  if specified.}  The set of keywords is open and
 arbitrary.  Both C and C++ style comments are supported.  All
 identifiers are case sensitive.  The order of objects in the file is
 arbitrary.  If two objects with the same name and class name appear in
@@ -161,7 +167,7 @@ appendix.
     Keyword & Description \\ \hline
   }
   {
-  \end{tabular}
+  \end{tabular}\par
 }
 
 \def\kw#1#2#3{%
@@ -171,13 +177,20 @@ appendix.
 
 \subsection{ANATOMY}
 \begin{keywords}
-  \kw{dx}{}{0.2~mm}
-  \kw{dy}{}{0.2~mm}
-  \kw{dz}{}{0.2~mm}
+  \kw{dx}{Cell size in the $x$-direction.}{0.2~mm}
+  \kw{dy}{Cell size in the $y$-direction.}{0.2~mm}
+  \kw{dz}{Cell size in the $z$-direction.}{0.2~mm}
   \kw{method}{Choose from ``brick'' or ``'pio''}{pio}
 \end{keywords}
 
 \subsubsection{brick method}
+
+Generates an orthorhombic ``brick'' of cells of a specified size.  All
+cells are of the same type.
+
+\issue{Something should be said about the layout of the discretization
+  with respect to the specfied box.}
+
 \begin{keywords}
   \kw{cellType}{The cell type in the brick}{102}
   \kw{xSize}{Size of the simulation in the $x$-direction in mm}{3~mm}
@@ -185,11 +198,40 @@ appendix.
   \kw{zSize}{Size of the simulation in the $z$-direction in mm}{20~mm}
 \end{keywords}
 
+\begin{verbatim}
+niederer ANATOMY 
+{
+   method = brick;
+   cellType = 102;
+   dx = 0.1;
+   dy = 0.1;
+   dz = 0.1;
+   xSize = 3; 
+   ySize = 7;
+   zSize = 20;
+}
+\end{verbatim}
+
 \subsubsection{pio method}
+
+Specifies that the anatomy should be read from a file.  \issue{Why don't
+  we store the cell size (or at least the default cell size) in the
+  anatomy file?}
 \begin{keywords}
-  \kw{filename}{}{snapshot.initial/anatomy\#}
+  \kw{filename}{Path to pio file to read.  Includes the \#-sign, but not
+  a six digit sequence number.}{snapshot.initial/anatomy\#}
 \end{keywords}
 
+\begin{verbatim}
+pioAnatomy ANATOMY 
+{
+   method = pio;
+   fileName = snapshot.initial/anatomy#;
+   dx = 0.167;   // in mm
+   dy = 0.167;   // in mm
+   dz = 0.167;   // in mm
+}
+\end{verbatim}
 
 \subsection{CONDUCTIVITY}
 \begin{keywords}
@@ -217,7 +259,7 @@ appendix.
 The SIMULATE object is the master object of the simulation.  It
 specifies simulation parameters such as the time step, maximum loop
 count, etc, as well as the names of the other objects that define the
-reaction and diffusion models, as well as the stimulus and sensor
+reaction and diffusion models, and the stimulus and sensor
 protocols.
 
 \begin{keywords}
@@ -237,13 +279,113 @@ protocols.
   \kw{snapshotRate}{The rate (in time steps) at which snapshot directories are
     created}{100 time steps}
   \kw{stimulus}{The name of the STIMULUS object(s) to use in this
-    simulation. Multiple stimuli may be specified.}{No Stimulus}
+    simulation. Multiple stimuli may be specified.  If this keyword is
+    not specified there will be no external stimulus in the simulation.}
+  {No Stimulus}
   \kw{time}{The initial simulation time.}{0~msec}
 \end{keywords}
 
 \subsection{STIMULUS}
 
+Specifies an external stimulus current that is applied to a cell or
+group of cells.  
+
+\begin{keywords}
+  \kw{method}{Choose from ``box'', ``point'', or ``test''}{No default.}
+  \kw{t0}{Specifies a time before which the simulus is zero.  Regardless
+    of all other parameter values, at all
+    $t<t0$ the stimulus current is zero.}{-1000~msec}
+  \kw{tf}{Specifies a time after which the simulus is zero.  Regardless
+    of all other parameter values, at all
+    $t>tf$ the stimulus current is zero.}{$10^{30}$~msec}
+\end{keywords}
+
+\subsubsection{Periodic Pulse Trains}
+\label{sssec:pulseTrains}
+Many of the stimulus methods apply a periodic square wave pulse train
+(See Figure~\ref{fig:pulseTrain}) to selected cells.  They share a
+common set of keywords to specify the pulse train.  These keywords are:
+\begin{keywords}
+  \kw{duration}{The length of time the stimulus is on (in msec).}{Varies
+    with method.}  
+  \kw{iStim}{The amplitude of the stimulus (in mV/msec).  This value is
+    negative by convention.}{Varies with method.}
+  \kw{period}{The period of the pulse train (in msec).}{Varies with method.}  
+  \kw{tStart}{The delay from the start of each period to start the
+    simulus (in msec).  This parameter sets the phase of the wave.}
+  {Varies with method.}
+\end{keywords}
+
+\begin{figure}
+  {\centering\includegraphics{graphics/pulseTrain.png}}
+  \caption{Periodic pulse train.}
+  \label{fig:pulseTrain}
+\end{figure}
+
+\issue{Would it be better to specify iStim in units of current/volume?}
+
+\issue{How to describe why iStim is negative?  Should it be?}
+
+\issue{The behavior of multiple STIMULUS objects is not carefully
+  implemented.  Should it always be the sum?}
+
+\subsubsection{Box Stimulus}
+
+Applies the stimulus to all cells inside a specified box.  \issue{The
+  concept of inside a specified box is vague, especially since the cell
+  can only be stimulated at a discretization point.  What about points
+  that are on the boundary?  Should there be some kind of integration of
+  the amount of volume associated with the point that is inside the box?
+  This is closely related to the issue that the layout of the
+  discretization in the box method for ANATOMY is not well defined.}
+
+\begin{keywords}
+  \kw{duration}{See Section~\ref{sssec:pulseTrains}.}{1~msec}
+  \kw{iStim}{See Section~\ref{sssec:pulseTrains}.}{-52~mV/msec}
+  \kw{period}{See Section~\ref{sssec:pulseTrains}.}{1000~msec}
+  \kw{tStart}{See Section~\ref{sssec:pulseTrains}.}{1~msec}
+  \kw{xMin}{Minimum grid index in the $x$-direction to stimulate.}{-1}
+  \kw{xMax}{Maximum grid index in the $x$-direction to stimulate.}{Size of global grid in $x$-direction.}
+  \kw{xMin}{Minimum grid index in the $y$-direction to stimulate.}{-1}
+  \kw{xMax}{Maximum grid index in the $y$-direction to stimulate.}{Size of global grid in $y$-direction.}
+  \kw{xMin}{Minimum grid index in the $z$-direction to stimulate.}{-1}
+  \kw{xMax}{Maximum grid index in the $z$-direction to stimulate.}{Size of global grid in $z$-direction.}
+\end{keywords}
+
+\issue{Isn't it awkward that we specify the box in units of grid cells?
+  Should it be in length units (like mm) instead?}
+
+
+\subsubsection{Point Stimulus}
+Applies the stimulus to a single cell specified by its global grid index.
+
+\begin{keywords}
+  \kw{cell}{The global grid index of the cell to stimulate.  See
+    Section~\ref{sec:AnatomyFormat} for an explanation of the global grid
+  index.}{0}
+  \kw{duration}{See Section~\ref{sssec:pulseTrains}.}{1~msec}
+  \kw{iStim}{See Section~\ref{sssec:pulseTrains}.}{-52~mV/msec}
+  \kw{period}{See Section~\ref{sssec:pulseTrains}.}{1000~msec}
+  \kw{tStart}{See Section~\ref{sssec:pulseTrains}.}{0~msec}
+\end{keywords}
+
+\subsubsection{Test Stimulus}
+Intended for testing only.  Applies stimulus to a single cell specified
+by a local index and an MPI rank.
+
+\begin{keywords}
+  \kw{cell}{The local index of the cell to stimulate.}{0}
+  \kw{duration}{See Section~\ref{sssec:pulseTrains}.}{1~msec}
+  \kw{iStim}{See Section~\ref{sssec:pulseTrains}.}{-52~mV/msec}
+  \kw{period}{See Section~\ref{sssec:pulseTrains}.}{1000~msec}
+  \kw{rank}{The MPI rank of the cell to stimulate.}{0}
+  \kw{tStart}{See Section~\ref{sssec:pulseTrains}.}{1~msec}
+\end{keywords}
+
+
+
 \section{Anatomy File Format}
+\label{sec:AnatomyFormat}
 
 Anatom files are written using a parallel I/O system known as ``pio.''
 The pio system is designed to provide extremely high I/O performance on
@@ -256,11 +398,11 @@ on the system or some other hardware parameter that limits performance
 such as the number of storage targets.
 
 
-The $n$ physical files in a pio logical file all share common base name
-and end with the \#-sign and a six digit sequence number.  For example,
-anatomy\#000000, anatomy\#000001, \ldots You can think of this set of
-files as being logically concatenated in numerical order.  Pio files may
-contain either ascii or binary data.
+The filenames of the $n$ physical files in a pio logical file all share
+common base name and end with the \#-sign and a six digit sequence
+number.  For example, anatomy\#000000, anatomy\#000001, \ldots You can
+think of this set of files as being logically concatenated in numerical
+order.  Pio files may contain either ascii or binary data.
 
 The zeroth file contains a human readable ascii header that describes
 the data.  This header is of the form
@@ -292,10 +434,12 @@ anatomy FILEHEADER{
   lrec=12;
 }
 \end{verbatim}
-The meaning of most of the keywords should be fairly self-evident.  Most
-are needed by pio to determine how to read the file.   (For now we're
-using ascii to facilitate debugging.  Binary files will be available in
-the future to improve performance and decrease storage cost.)
+The meaning of most of the keywords should be fairly self-evident.
+\issue{However, this documentation should describe them and specify
+  which keywords are manditory.}  Most are needed by pio to determine
+how to read the file.  \issue{For now we're using ascii to facilitate
+  debugging.  Binary files will be available in the future to improve
+  performance and decrease storage cost.}
 
 
 Note that the names and types of the data fields are specified.  
@@ -311,7 +455,7 @@ strings.  Binary files have types such as i4, i8, f4, f8, b1, b2, b3, \ldots,
 bn where bn is an unsigned integer stored in n bytes.
 
 The gid field contains the 3D index of the cell converted to a single
-integer by the formula $ix + nx*(iy + ny*iz)$.  (If necesary for
+integer by the formula $ix + nx*(iy + ny*iz)$.  (If necessary for
 performance we could change this formula and use bit shifting operations
 instead.)
 
@@ -337,10 +481,10 @@ $\theta\pi/256$ or $\varphi\pi/256$.  (In Blue Beats theta and phi were
 effectively limited to values in the range [0..254]  This is not the
 case in Cardioid.)
 
-I realize that the coordinate system is not rigorously defined.  This
+\issue{The coordinate system is not rigorously defined.  This
 needs to be fixed, but I'm not familiar with the conventions of the
 field so I need some help here to make sure that we define things in a
-way that is consistent with conventions.
+way that is consistent with conventions.}
 
 All records (lines) must be exactly lrec long.  (Should we ever need it,
 pio does contain support for variable length records.)

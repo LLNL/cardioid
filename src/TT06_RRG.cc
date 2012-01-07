@@ -51,7 +51,9 @@ double TT06_RRG::calc(double dt, double Vm, double iStim)
  *  only).
  *
  *  4.  Integration of the internal state variables is included in
- *  computeRates. 
+ *  computeRates.
+ *
+ *  5.  Additional state variable added for a slow Na gate.
  */ 
 
 
