@@ -13,6 +13,7 @@
 #include "TT06Dev_Reaction.hh"
 #include "TT06_RRG_Reaction.hh"
 #include "ReactionFHN.hh"
+   void write_tauRMax(); 
 
 using namespace std;
 
@@ -167,6 +168,7 @@ int main(int argc, char *argv[])
         fflush (stdout);
       }
    } // end time loop
+   write_tauRMax(); 
 
    return 0;
 

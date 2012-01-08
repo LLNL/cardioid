@@ -94,7 +94,7 @@ static void makeFunctionTable(PADE *pade)
    for (int i = 0; i < nmax; i++)
    {
       double xn = pade->x0 + deltaX * i ; 
-      if (  -60.0 < xn && xn < -10.0 ) continue; 
+      if (  -50.0 < xn && xn < -30.0 ) continue; 
       x[n]=xn; 
       y[n]=pade->func(x[n], pade->parms); 
 

@@ -33,6 +33,8 @@ HEART_FILES = \
 	Reaction.hh \
 	TT04Dev_Reaction.cc \
 	TT04Dev_Reaction.hh \
+        TT04Dev.cc \
+        TT04Dev.hh \
 	TT06Dev_Reaction.cc \
 	TT06Dev_Reaction.hh \
 	TT04_CellML_Reaction.cc \
@@ -49,6 +51,8 @@ HEART_FILES = \
 	gsl.h \
 	mpiUtils.h \
 	mpiUtils.c \
+        gsl.c\
+        gsl.h\
 	IndexToTuple.hh \
 	Long64.hh \
 
@@ -56,8 +60,8 @@ CXX=mpig++
 CC=mpigcc
 
 LDFLAGS=  -lgsl -lgslcblas  
-OPTFLAGS=-g -O3    
-#OPTFLAGS=-g    
+#OPTFLAGS=-g -O3     -DHAVE_GSL
+OPTFLAGS=-g      -DHAVE_GSL
 
 CXXFLAGS += $(OPTFLAGS)
 CXXFLAGS += -MMD

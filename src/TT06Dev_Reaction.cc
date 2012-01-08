@@ -20,7 +20,14 @@ TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int m
       initialized = true;
       initCnst();
    }
-   mod_=mod; 
+   {
+      double V0 = -100.0; 
+      double V1 =  50.0; 
+      double deltaV = 0.1; 
+      int maxCost=128; 
+      int maxOrder=64; 
+      makeFit(tolerance_,V0,V1,deltaV,maxOrder,maxCost,mod); 
+   }
    dtForFit_=0.0; 
    tolerance_=tolerance; 
    ttType_.resize(256, -1); 
@@ -41,17 +48,6 @@ TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int m
       s_[ii].cellType = cellType; 
       initState(s_[ii].state,cellType); 
    }
-   //if (dtForFit_ != dt) 
-   {
-      double V0 = -90.0; 
-      double V1 =  40.0; 
-      double deltaV = 0.1; 
-      int maxCost=128; 
-      int maxOrder=64; 
-      double dt = 0.02; 
-      makeFit(tolerance_,V0,V1,deltaV,maxOrder,maxCost,dt,mod_); 
-   	dtForFit_=dt; 
-   }
    
 }
 TT06Dev_Reaction::~TT06Dev_Reaction()
@@ -64,10 +60,11 @@ void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<do
 
 
    double c9 = get_c9(); 
+   double rates[nStateVar];
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
-      double dVdt = computeUpdates(dt, Vm[ii], s_[ii].state, s_[ii].cellType);
-      dVm[ii] = dVdt; 
+      dVm[ii] = computeUpdates(dt, Vm[ii], s_[ii].state, s_[ii].cellType, rates);
+      for (int i=0;i<nStateVar;i++) s_[ii].state[i] += dt*rates[i]; 
       s_[ii].state[K_i] += iStim[ii]*c9*dt ;
    }
 }
