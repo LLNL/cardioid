@@ -54,11 +54,17 @@ int main(int argc, char** argv)
    
    Simulate sim;
    initializeSimulate("simulate", sim);
-   
+
+   //ewd:  turn on mpiP
+   MPI_Pcontrol(1);
+
    profileStart("Loop");
    simulationLoop(sim);  
    profileStop("Loop");
    
+   //ewd:  turn off mpiP
+   MPI_Pcontrol(0);
+
    profileStop("Total");
    if (mype == 0)
    {

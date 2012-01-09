@@ -34,6 +34,6 @@ void TT06_RRG_Reaction::calc(double dt,
    assert(cells_.size() == dVm.size());
 
 #pragma omp parallel for
-   for (unsigned ii=0; ii<cells_.size(); ++ii)
+   for (int ii=0; ii<cells_.size(); ++ii)
       dVm[ii] = cells_[ii].calc(dt, Vm[ii], iStim[ii]);
 }

@@ -118,8 +118,12 @@ profile:
 	BUILD_SUFFIX=$(ARCH)-prof OBJDIR=objs-$(ARCH)-prof \
 	CFLAGS="$(CFLAGS_PROF)" CXXFLAGS="$(CXXFLAGS_PROF)" \
 	LDFLAGS="$(LDFLAGS_PROF)"  EXENAME=cardioid-$(ARCH)-prof
-
-
+mpip:
+	@$(MAKE) --no-print-directory COMMON_TARGETS \
+	$(BINDIR)/cardioid-$(ARCH)-mpip \
+	BUILD_SUFFIX=$(ARCH)-mpip OBJDIR=objs-$(ARCH)-mpip \
+	CFLAGS="$(CFLAGS_MPIP)" CXXFLAGS="$(CXXFLAGS_MPIP)" \
+	LDFLAGS="$(LDFLAGS_MPIP)"  EXENAME=cardioid-$(ARCH)-mpip
 
 
 $(OBJDIR)/%.o: %.cc
