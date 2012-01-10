@@ -1,0 +1,67 @@
+simulate SIMULATE 
+{
+   anatomy = pioAnatomy;
+   decomposition = koradi;
+   diffusion = null;
+   reaction = TT06_rrg;
+   stimulus = box;
+   sensor = pointSensor;
+   loop = 0;            // in timesteps
+   maxLoop = 50000;     // in timesteps
+   dt = 0.01;           // msec
+   time = 0;            // msec
+   printRate = 50;      // in timesteps
+   snapshotRate = 5000; // in timesteps
+}
+
+pioAnatomy ANATOMY 
+{
+   method = pio;
+   fileName = snapshot.initial/anatomy#;
+   dx = 0.1;   // in mm
+   dy = 0.1;   // in mm
+   dz = 0.1;   // in mm
+}
+
+koradi DECOMPOSITION 
+{
+   method = koradi;
+   verbose = 1;
+   alpha = 0.5;
+   maxVoronoiSteps = 100;
+   maxSteps = 500;
+   tolerance = 0.01;
+   outputRate = 1;
+   nbrDeltaR = 2;
+}
+
+null DIFFUSION
+{
+   method = null;
+}
+
+TT06_rrg REACTION
+{
+    method = TT06_RRG;
+    integrator = rushLarsen;
+}
+
+box STIMULUS
+{
+     method = box;
+     iStim = -52; // mV/msec
+     tStart = 1; // msec
+     tEnd = 2; // msec
+     freq = 1000; // msec
+}
+
+pointSensor SENSOR
+{
+  method = pointlist;
+  pointlist = 13 ; // gids to print out (celltype must be nonzero, or no output)
+  startTime = 0.0;   // in ms
+  printRate = 50;    // in timesteps
+  printDerivs = 1;   // print dVm terms in addition to Vm (default = 0, i.e. off)
+  filebase = sensorData/vm_vs_t;  // this directory needs to exist before the run
+}
+
