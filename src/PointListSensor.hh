@@ -11,10 +11,11 @@ class Anatomy;
 
 struct PointListSensorParms
 {
-  vector<unsigned> pointlist;
+  vector<unsigned> pointList;
   double startTime;
   double endTime;
-  string filebase;
+   string filename;
+   string dirname;
   int printDerivs;
 };
 
@@ -35,12 +36,11 @@ class PointListSensor : public Sensor
    void printDerivs(double time, const vector<double>& Vm, const vector<double>& dVm_r,
                     const vector<double>& dVm_d, const vector<double>& dVm_e);
 
-   vector<unsigned> pointlist_loc_;  // grid gids owned by this task
+   vector<unsigned> localCells_;  // grid gids owned by this task
    vector<unsigned> sensorind_;      // corresponding local array index 
    vector<ofstream*> fout_loc_;
    double startTime_;
    double endTime_;
-   string filebase_;
    bool printDerivs_;
 };
 

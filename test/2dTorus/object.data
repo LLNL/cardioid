@@ -61,8 +61,8 @@ box STIMULUS
    xMax = 80;
    yMin = 47;
    yMax = 53;
-   iStim = -35.71429;
+   vStim = -35.71429;
    tStart = 0;
    duration = 2;
-   freq = 1000;
+   period = 1000;
 }

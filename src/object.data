@@ -102,42 +102,43 @@ test STIMULUS
      method = test;
      rank = 0;
      cell = 0;
-     iStim = -52; // mV/msec
+     vStim = -52; // mV/msec
      tStart = 1; // msec
-     tEnd = 2; // msec
-     freq = 1000; // msec
+     duration =1; // msec
+     period = 1000; // msec
 }
 
 pointStimulus STIMULUS
 {
   method = point;
   cell = 0;       // grid index of cell to stimulate
-  freq = 1000.0;  // msec
+  period = 1000.0;  // msec
   duration = 1.0; // msec
-  iStim = -52.0;  // mV/msec
+  vStim = -52.0;  // mV/msec
   tStart = 10.0;  // time in msec of first stimulus 
-//tStop = 5000.0;  // no stimulus after this time (in msec)
+//tf = 5000.0;  // no stimulus after this time (in msec)
 }
 
 boxStimulus STIMULUS
 {
    method = box;
    yMax = 15;
-   iStim = -40;
+   vStim = -40;
    tStart = 0;
    duration = 5;
-   freq = 1000;
+   period = 1000;
 }
    
 
 pointSensor SENSOR
 {
-  method = pointlist;
-  pointlist = 13 400; // gids to print out (celltype must be nonzero, or no output)
+  method = pointList;
+  pointList = 13 400; // gids to print out (celltype must be nonzero, or no output)
   startTime = 0.0;   // in ms
   printRate = 50;    // in timesteps
   printDerivs = 1;   // print dVm terms in addition to Vm (default = 0, i.e. off)
-  filebase = sensorData/vm_vs_t;  // this directory needs to exist before the run
+  dirname = sensorData; // created if necessary
+  filename = vm_vs_t;
 }
 
 activationTime SENSOR

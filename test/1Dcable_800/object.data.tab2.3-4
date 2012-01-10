@@ -89,11 +89,12 @@ TT04_CellML REACTION
 
 pointSensor SENSOR
 {
-  method = pointlist;
-  pointlist = 13 22 400 3604; // gids to print out
+  method = pointList;
+  pointList = 13 22 400 3604; // gids to print out
   startTime = 0.0;   // in ms
   printRate = 100;    // in timesteps
-  filebase = sensorData/vm_vs_t_tab2_3-4;
+  dirname = sensorData;
+  filename = vm_vs_t_tab2_3-4;
   printDerivs = 1;
 }
 
@@ -101,8 +102,8 @@ pointStimulus STIMULUS
 {
   method = point;
   cell = 13;
-  freq = 1000.0;
+  period = 1000.0;
   duration = 1.0;
-  iStim = -52.0;
+  vStim = -52.0;
   tStart = 0.0;
 }

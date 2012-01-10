@@ -5,10 +5,8 @@
 using namespace std;
 
 BoxStimulus::BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy)
-: dVmStim_(-p.iStim),
-  tStart_(p.tStart),
-  freq_(p.freq),
-  duration_(p.duration)
+: Stimulus(p.baseParms),
+  pulse_(p.period, p.duration, -p.vStim, p.tStart)
 {
    // Loop through local points and store the indices of any that are in
    // the stimulated region.
@@ -22,13 +20,12 @@ BoxStimulus::BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy)
    }
 }
 
-void BoxStimulus::stim(double time,
-                       vector<double>& dVmDiffusion,
-                       vector<double>& dVmExternal)
+void BoxStimulus::subClassStim(double time,
+                               vector<double>& dVmDiffusion,
+                               vector<double>& dVmExternal)
 {
-   double trel = time - tStart_;  // stimulus starts at tStart_
-   double t = trel - floor(trel/freq_)*freq_;  
-   if (t < duration_)
+   double value = pulse_.eval(time);
+   if (value != 0)
       for (unsigned ii=0; ii<stimList_.size(); ++ii)
-         dVmExternal[stimList_[ii]] = dVmStim_;
+         dVmExternal[stimList_[ii]] += value;
 }

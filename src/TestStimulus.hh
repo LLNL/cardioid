@@ -2,33 +2,32 @@
 #define TEST_STIMULUS_HH
 
 #include "Stimulus.hh"
+#include "PeriodicPulse.hh"
 
 struct TestStimulusParms
 {
    int rank;
    int cell;
-   double iStim;
+   double vStim;
    double tStart;
-   double tEnd;
-   double freq;
+   double duration;
+   double period;
+   StimulusBaseParms baseParms;
 };
 
 class TestStimulus : public Stimulus
 {
  public:
    TestStimulus(const TestStimulusParms& p);
-   void stim(double time,
-             std::vector<double>& dVmDiffusion,
-             std::vector<double>& dVmExternal);
+   void subClassStim(double time,
+                     std::vector<double>& dVmDiffusion,
+                     std::vector<double>& dVmExternal);
    
  private:
    int targetRank_;
    int targetCell_;
    int myRank_;
-   double dVmStim_;
-   double tStart_;
-   double tEnd_;
-   double freq_;
+   PeriodicPulse pulse_;
 };
 
 #endif

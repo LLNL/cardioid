@@ -13,25 +13,29 @@ using namespace std;
 
 namespace
 {
-   Stimulus* scanPointStimulus(OBJECT* obj, const Anatomy& anatomy);
-   Stimulus* scanTestStimulus(OBJECT* obj);
-   Stimulus* scanBoxStimulus(OBJECT* obj, const Anatomy& anatomy);
+   Stimulus* scanPointStimulus(OBJECT* obj, const StimulusBaseParms& p, const Anatomy& anatomy);
+   Stimulus* scanTestStimulus(OBJECT* obj, const StimulusBaseParms& p);
+   Stimulus* scanBoxStimulus(OBJECT* obj, const StimulusBaseParms& p, const Anatomy& anatomy);
 }
 
 
 Stimulus* stimulusFactory(const std::string& name, const Anatomy& anatomy)
 {
    OBJECT* obj = objectFind(name, "STIMULUS");
-   string method; objectGet(obj, "method", method, "undefined");
-
+   string method;
+   StimulusBaseParms p;
+   objectGet(obj, "method", method, "undefined");
+   objectGet(obj, "t0", p.t0, "-1000");
+   objectGet(obj, "tf", p.tf, "1e30");
+   
    if (method == "undefined")
       assert(false);
    else if (method == "point")
-     return scanPointStimulus(obj, anatomy);
+      return scanPointStimulus(obj, p, anatomy);
    else if (method == "test")
-      return scanTestStimulus(obj);
+      return scanTestStimulus(obj, p);
    else if (method == "box")
-      return scanBoxStimulus(obj, anatomy);
+      return scanBoxStimulus(obj, p, anatomy);
 
    assert(false); // reachable only due to bad input
    return 0;
@@ -40,37 +44,38 @@ Stimulus* stimulusFactory(const std::string& name, const Anatomy& anatomy)
 
 namespace
 {
-   Stimulus* scanPointStimulus(OBJECT* obj, const Anatomy& anatomy)
+   Stimulus* scanPointStimulus(OBJECT* obj, const StimulusBaseParms& bp, const Anatomy& anatomy)
    {
       PointStimulusParms p;
-      objectGet(obj, "cell",   p.cell,   "0");
-      objectGet(obj, "freq",   p.freq,   "1000");
-      objectGet(obj, "duration",   p.duration,   "1");
-      objectGet(obj, "iStim",  p.iStim,  "-52");
-      objectGet(obj, "tStart", p.tStart, "0");
-      objectGet(obj, "tStop",   p.tStop,   "-1");
+      p.baseParms = bp;
+      objectGet(obj, "cell",     p.cell,     "0");
+      objectGet(obj, "duration", p.duration, "1");
+      objectGet(obj, "period",   p.period,   "1000");
+      objectGet(obj, "tStart",   p.tStart,   "0");
+      objectGet(obj, "vStim",    p.vStim,    "-52");
       return new PointStimulus(p, anatomy);
    }
 }
 
 namespace
 {
-   Stimulus* scanTestStimulus(OBJECT* obj)
+   Stimulus* scanTestStimulus(OBJECT* obj, const StimulusBaseParms& bp)
    {
       TestStimulusParms p;
-      objectGet(obj, "cell",   p.cell,   "0");
-      objectGet(obj, "freq",   p.freq,   "1000");
-      objectGet(obj, "iStim",  p.iStim,  "-52");
-      objectGet(obj, "rank",   p.rank,   "0");
-      objectGet(obj, "tEnd",   p.tEnd,   "2");
-      objectGet(obj, "tStart", p.tStart, "1");
+      p.baseParms = bp;
+      objectGet(obj, "cell",     p.cell,     "0");
+      objectGet(obj, "rank",     p.rank,     "0");
+      objectGet(obj, "duration", p.duration, "1");
+      objectGet(obj, "period",   p.period,   "1000");
+      objectGet(obj, "tStart",   p.tStart,   "1");
+      objectGet(obj, "vStim",    p.vStim,    "-52");
       return new TestStimulus(p);
    }
 }
 
 namespace
 {
-   Stimulus* scanBoxStimulus(OBJECT* obj, const Anatomy& anatomy)
+   Stimulus* scanBoxStimulus(OBJECT* obj, const StimulusBaseParms& bp, const Anatomy& anatomy)
    {
       stringstream buf;
       buf << anatomy.nx(); string nxString = buf.str(); buf.str(string());
@@ -78,10 +83,11 @@ namespace
       buf << anatomy.nz(); string nzString = buf.str(); buf.str(string());
 
       BoxStimulusParms p;
-      objectGet(obj, "tStart",   p.tStart,   "1");
+      p.baseParms = bp;
       objectGet(obj, "duration", p.duration, "1");
-      objectGet(obj, "freq",     p.freq,     "1000");
-      objectGet(obj, "iStim",    p.iStim,    "-52");
+      objectGet(obj, "period",   p.period,   "1000");
+      objectGet(obj, "tStart",   p.tStart,   "1");
+      objectGet(obj, "vStim",    p.vStim,    "-52");
       objectGet(obj, "xMin",     p.xMin,     "-1");
       objectGet(obj, "yMin",     p.yMin,     "-1");
       objectGet(obj, "zMin",     p.zMin,     "-1");

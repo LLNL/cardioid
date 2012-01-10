@@ -93,3 +93,6 @@ conductivity tensor in the computation of the diffusion weights.
 31. The decomposition is setup by two functions: assignCellsToTasks and
 getRemoteCells.  Right now both scan the DECOMPOSITION object.  Perhaps
 these should be brought together somehow.
+
+32. Why does the PointListSensor have a vector of pointers to streams
+instead of just a vector of streams?

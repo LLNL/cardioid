@@ -43,25 +43,25 @@ null DIFFUSION
 TT06_rrg REACTION
 {
     method = TT06_RRG;
-    integrator = rushLarsen;
 }
 
 box STIMULUS
 {
      method = box;
-     iStim = -52; // mV/msec
+     vStim = -52; // mV/msec
      tStart = 1; // msec
-     tEnd = 2; // msec
-     freq = 1000; // msec
+     duration = 1; // msec
+     period = 1000; // msec
 }
 
 pointSensor SENSOR
 {
-  method = pointlist;
-  pointlist = 13 ; // gids to print out (celltype must be nonzero, or no output)
+  method = pointList;
+  pointList = 13 ; // gids to print out (celltype must be nonzero, or no output)
   startTime = 0.0;   // in ms
   printRate = 50;    // in timesteps
   printDerivs = 1;   // print dVm terms in addition to Vm (default = 0, i.e. off)
-  filebase = sensorData/vm_vs_t;  // this directory needs to exist before the run
+  filename = vm_vs_t;
+  dirname = sensorData;
 }
 

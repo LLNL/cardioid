@@ -1,12 +1,11 @@
 #include "PointStimulus.hh"
 #include "Anatomy.hh"
-#include <mpi.h>
-#include <cmath>
-#include <iostream>
+
 using namespace std;
 
 PointStimulus::PointStimulus(const PointStimulusParms& p, const Anatomy& anatomy)
-    : dVmStim_(-p.iStim),tStart_(p.tStart),tStop_(p.tStop),freq_(p.freq), duration_(p.duration)
+: Stimulus(p.baseParms),
+  pulse_(p.period, p.duration, -p.vStim, p.tStart)
 {
 
   // loop through grid points on this task, check against target cell
@@ -22,25 +21,12 @@ PointStimulus::PointStimulus(const PointStimulusParms& p, const Anatomy& anatomy
   }
 }
 
-void PointStimulus::stim(double time,
-                        vector<double>& dVmDiffusion,
-                        vector<double>& dVmExternal)
+void PointStimulus::subClassStim(double time,
+                                 vector<double>& dVmDiffusion,
+                                 vector<double>& dVmExternal)
 {
-  // apply stimulus only within tStart_ to tStop_ window
-  if (time >= tStart_ && (time <= tStop_ || tStop_ <= 0.0))
-  {
-    if (cellLocal_)
-    {
-      double trel = time - tStart_;  // stimulus starts at tStart_
-
-      double t = trel - floor(trel/freq_)*freq_;  
-      if (t < duration_)
-      {
-         //dVmDiffusion[localInd_] = 0.;  //ewd:  set this to zero to prevent stimulus from diffusing away
-        dVmExternal[localInd_] = dVmStim_;
-      }
-      else
-        dVmExternal[localInd_] = 0.;
-    }
-  }
+   if (cellLocal_)
+   {
+      dVmExternal[localInd_] += pulse_.eval(time);
+   }
 }

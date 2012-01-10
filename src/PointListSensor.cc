@@ -1,5 +1,6 @@
 #include "PointListSensor.hh"
 #include "Anatomy.hh"
+#include "ioUtils.h"
 #include <mpi.h>
 #include <cmath>
 #include <cassert>
@@ -11,11 +12,15 @@ using namespace std;
 
 PointListSensor::PointListSensor(const SensorParms& sp, const PointListSensorParms& p, const Anatomy& anatomy)
 : Sensor(sp),
-  startTime_(p.startTime), endTime_(p.endTime),
-      filebase_(p.filebase),
-      printDerivs_(p.printDerivs)
+  startTime_(p.startTime),
+  endTime_(p.endTime),
+  printDerivs_(p.printDerivs)
 {
-  const int plistsize = p.pointlist.size();
+  int myRank;
+  MPI_Comm comm = MPI_COMM_WORLD;
+  MPI_Comm_rank(comm, &myRank);
+
+  const int plistsize = p.pointList.size();
   assert(plistsize > 0);
 
   vector<string> outfiles_loc;  // filenames of output files owned by this task
@@ -24,19 +29,19 @@ PointListSensor::PointListSensor(const SensorParms& sp, const PointListSensorPar
   // loop through grid points on this task, check against pointlist
   for (unsigned ii=0; ii<plistsize; ++ii)
   {
-    const unsigned gid = p.pointlist[ii];
+    const unsigned gid = p.pointList[ii];
     //for (unsigned jj=0; jj<anatomy.size(); ++jj)
     for (unsigned jj=0; jj<anatomy.nLocal(); ++jj)
     {
       if (anatomy.gid(jj) == gid)
       {
-        pointlist_loc_.push_back(gid);
+        localCells_.push_back(gid);
         sensorind_.push_back(jj);
         ostringstream ossnum;
         ossnum.width(5);
         ossnum.fill('0');
         ossnum << ii;
-        string filename = filebase_ + "." + ossnum.str();
+        string filename = p.dirname + "/" + p.filename + "." + ossnum.str();
         outfiles_loc.push_back(filename);
         gidfound[ii] = 1;
       }
@@ -45,22 +50,22 @@ PointListSensor::PointListSensor(const SensorParms& sp, const PointListSensorPar
 
   //ewd:  error checking, print out warning when no cell of this gid is found (i.e. type is probably zero)
   vector<int> gidsum(plistsize,0);
-  MPI_Allreduce(&gidfound[0], &gidsum[0], plistsize, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-  int myRank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+  MPI_Allreduce(&gidfound[0], &gidsum[0], plistsize, MPI_INT, MPI_SUM, comm);
   if (myRank == 0)
   {
     for (unsigned ii=0; ii<plistsize; ++ii)
     {
       if (gidsum[ii] == 0)
-        cout << "Warning:  PointListSensor could not find non-zero cell type with gid " << p.pointlist[ii] << "!  Skipping." << endl;
+        cout << "Warning:  PointListSensor could not find non-zero cell type with gid " << p.pointList[ii] << "!  Skipping." << endl;
       else if (gidsum[ii] > 1)
-        cout << "ERROR:  PointListSensor found multiple processors which own cell gid = " << p.pointlist[ii] << "!" << endl;
+        cout << "ERROR:  PointListSensor found multiple processors which own cell gid = " << p.pointList[ii] << "!" << endl;
     }
   }
       
-
-
+  if (myRank == 0)
+     DirTestCreate(p.dirname.c_str());
+  MPI_Barrier(comm); // none shall pass before task 0 creates directory
+  
   // loop through local files, initialize ofstream, print header
   if (outfiles_loc.size() > 0)
   {
@@ -71,9 +76,9 @@ PointListSensor::PointListSensor(const SensorParms& sp, const PointListSensorPar
       fout_loc_[ii]->open(outfiles_loc[ii].c_str(),ofstream::out);
       fout_loc_[ii]->setf(ios::scientific,ios::floatfield);
       if (printDerivs_)
-        (*fout_loc_[ii]) << "#    time   V_m  dVm_r  dVm_d  dVm_e   for grid point " << pointlist_loc_[ii] << endl;
+        (*fout_loc_[ii]) << "#    time   V_m  dVm_r  dVm_d  dVm_e   for grid point " << localCells_[ii] << endl;
       else
-        (*fout_loc_[ii]) << "#    time   V_m   for grid point " << pointlist_loc_[ii] << endl;
+        (*fout_loc_[ii]) << "#    time   V_m   for grid point " << localCells_[ii] << endl;
     }
   }
 }

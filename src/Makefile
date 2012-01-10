@@ -37,6 +37,7 @@ HEARTSRC=cardioid.cc \
 	 TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc \
 	 TT06_RRG.cc \
 	 TestStimulus.cc PointStimulus.cc BoxStimulus.cc \
+	 PeriodicPulse.cc \
 	 PointListSensor.cc ActivationTimeSensor.cc
 
 

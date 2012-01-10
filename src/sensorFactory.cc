@@ -27,7 +27,7 @@ Sensor* sensorFactory(const std::string& name, const Anatomy& anatomy)
 
   if (method == "undefined")
     assert(false);
-  else if (method == "pointlist")
+  else if (method == "pointList")
      return scanPointListSensor(obj, sp, anatomy);
   else if (method == "activationTime")
      return scanActivationTimeSensor(obj, sp, anatomy);
@@ -42,11 +42,12 @@ namespace
    Sensor* scanPointListSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy)
    {
       PointListSensorParms p;
-      objectGet(obj, "pointlist",   p.pointlist);
+      objectGet(obj, "pointList",   p.pointList);
       objectGet(obj, "startTime",   p.startTime,   "0.0");
       objectGet(obj, "endTime",     p.endTime,     "-1.0");
       objectGet(obj, "printDerivs", p.printDerivs, "0");
-      objectGet(obj, "filebase",    p.filebase,    "sensor.pointlist");
+      objectGet(obj, "filename",    p.filename,    "cell");
+      objectGet(obj, "dirname",     p.dirname,     "sensorData");
       return new PointListSensor(sp, p, anatomy);
    }
 }

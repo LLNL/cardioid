@@ -248,11 +248,45 @@ pioAnatomy ANATOMY
 
 \subsection{REACTION}
 \begin{keywords}
+  \kw{method}{Choose from: TT04\_CellML, TT06\_CellML, TT06Dev,
+    TT06\_RRG, FHN, null}{No default}
 \end{keywords}
 
 \subsection{SENSOR}
+
+Used to write values of interest to a file.
+
+\issue{At present the sensors are limited to quantities related to
+  membrane voltage.  A significant limitation is they cannot print any
+  of the internal state variables of the reaction model.  This will be
+  fixed in a future version.}
+
 \begin{keywords}
+  \kw{evalRate}{Rate in time steps at which the sensor eval function is called.}{1}
+  \kw{method}{Choose from ``pointList'' and ``activationTime''.}{No
+    default}
+  \kw{printRate}{Rate in time steps at which the sensor print
+    function is called.}{1}
 \end{keywords}
+
+\subsubsection{PointList Sensor}
+Prints information at points specified by grid index.  The evalRate is
+ignored for this sensor.
+\begin{keywords}
+  \kw{dirname}{Directory in which output files are written.}{sensorData}
+  \kw{endTime}{For time $>$ endTime sensor prints nothing.  Negative value
+    implies no endTime.}{-1~msec}
+  \kw{filename}{Base name for output file.  Each cell is written to a
+    separate file with its grid index appended to this name.}{cell}
+  \kw{pointList}{List of grid coordinates of cells to print values}{No
+    Default}
+  \kw{printDerivs}{Set to non-zero value to activate printing of certain
+    derivatives of the membrane voltage}{0}
+  \kw{startTime}{For time$<$startTime sensor prints nothing}{0~msec}
+  
+\end{keywords}
+
+
 
 \subsection{SIMULATE}
 
@@ -308,12 +342,13 @@ common set of keywords to specify the pulse train.  These keywords are:
 \begin{keywords}
   \kw{duration}{The length of time the stimulus is on (in msec).}{Varies
     with method.}  
-  \kw{iStim}{The amplitude of the stimulus (in mV/msec).  This value is
-    negative by convention.}{Varies with method.}
   \kw{period}{The period of the pulse train (in msec).}{Varies with method.}  
   \kw{tStart}{The delay from the start of each period to start the
     simulus (in msec).  This parameter sets the phase of the wave.}
   {Varies with method.}
+  \kw{vStim}{The amplitude of the stimulus (in mV/msec).  This value is
+    negative by convention to specify depolarization.  A negative vStim
+    corresponds to a positive $dV/dt$.}{Varies with method.}
 \end{keywords}
 
 \begin{figure}
@@ -322,12 +357,18 @@ common set of keywords to specify the pulse train.  These keywords are:
   \label{fig:pulseTrain}
 \end{figure}
 
-\issue{Would it be better to specify iStim in units of current/volume?}
-
-\issue{How to describe why iStim is negative?  Should it be?}
+\issue{Jeremy has indicated that it is more natural to specify the
+  stimulus current in units of current/volume rather than the stimulus
+  voltage.  We will add an iStim keyword in a future version.}
 
 \issue{The behavior of multiple STIMULUS objects is not carefully
   implemented.  Should it always be the sum?}
+
+\issue{As implemented, the Stimulus class can access and modify the
+  value of $dV/dt$ sue to diffusion.  This is a carry over from
+  BlueBeats.  Is this a good idea?  Should we eliminate this possiblity?
+   Should it be under keyword control?  Note that this imposes some
+   potentially undesirable serialization constraints.}
 
 \subsubsection{Box Stimulus}
 
@@ -341,9 +382,9 @@ Applies the stimulus to all cells inside a specified box.  \issue{The
 
 \begin{keywords}
   \kw{duration}{See Section~\ref{sssec:pulseTrains}.}{1~msec}
-  \kw{iStim}{See Section~\ref{sssec:pulseTrains}.}{-52~mV/msec}
   \kw{period}{See Section~\ref{sssec:pulseTrains}.}{1000~msec}
   \kw{tStart}{See Section~\ref{sssec:pulseTrains}.}{1~msec}
+  \kw{vStim}{See Section~\ref{sssec:pulseTrains}.}{-52~mV/msec}
   \kw{xMin}{Minimum grid index in the $x$-direction to stimulate.}{-1}
   \kw{xMax}{Maximum grid index in the $x$-direction to stimulate.}{Size of global grid in $x$-direction.}
   \kw{xMin}{Minimum grid index in the $y$-direction to stimulate.}{-1}
@@ -364,9 +405,9 @@ Applies the stimulus to a single cell specified by its global grid index.
     Section~\ref{sec:AnatomyFormat} for an explanation of the global grid
   index.}{0}
   \kw{duration}{See Section~\ref{sssec:pulseTrains}.}{1~msec}
-  \kw{iStim}{See Section~\ref{sssec:pulseTrains}.}{-52~mV/msec}
   \kw{period}{See Section~\ref{sssec:pulseTrains}.}{1000~msec}
   \kw{tStart}{See Section~\ref{sssec:pulseTrains}.}{0~msec}
+  \kw{vStim}{See Section~\ref{sssec:pulseTrains}.}{-52~mV/msec}
 \end{keywords}
 
 \subsubsection{Test Stimulus}
@@ -376,10 +417,10 @@ by a local index and an MPI rank.
 \begin{keywords}
   \kw{cell}{The local index of the cell to stimulate.}{0}
   \kw{duration}{See Section~\ref{sssec:pulseTrains}.}{1~msec}
-  \kw{iStim}{See Section~\ref{sssec:pulseTrains}.}{-52~mV/msec}
   \kw{period}{See Section~\ref{sssec:pulseTrains}.}{1000~msec}
   \kw{rank}{The MPI rank of the cell to stimulate.}{0}
   \kw{tStart}{See Section~\ref{sssec:pulseTrains}.}{1~msec}
+  \kw{vStim}{See Section~\ref{sssec:pulseTrains}.}{-52~mV/msec}
 \end{keywords}
 
 
@@ -481,13 +522,17 @@ $\theta\pi/256$ or $\varphi\pi/256$.  (In Blue Beats theta and phi were
 effectively limited to values in the range [0..254]  This is not the
 case in Cardioid.)
 
-\issue{The coordinate system is not rigorously defined.  This
-needs to be fixed, but I'm not familiar with the conventions of the
-field so I need some help here to make sure that we define things in a
-way that is consistent with conventions.}
+\issue{The coordinate system is not rigorously defined.  Presumeably
+  theta is measured from the z-axis and phi from the x-axis.  This needs
+  to be checked.  In any case I'm not familiar with the conventions of
+  the field so I need some help here to make sure that we define things
+  in a way that is consistent with conventions.}
 
-All records (lines) must be exactly lrec long.  (Should we ever need it,
-pio does contain support for variable length records.)
+All records (lines) must be exactly lrec long.  \issue{This is not quite
+  true.  Fixed length records are a current implementation requirement,
+  however, pio supports variable length records.  Somebody just needs to
+  remember how to set up a reader that can use the variable record
+  length features.}
 
 
 \end{document}
