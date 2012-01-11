@@ -16,6 +16,7 @@ class TT06Dev_Reaction : public Reaction
    ~TT06Dev_Reaction();
 
    void calc(double dt, const std::vector<double>& Vm, const std::vector<double>& iStim, std::vector<double>& dVm);
+   void initializeMembraneVoltage(std::vector<double>& Vm);
 
  private:
 

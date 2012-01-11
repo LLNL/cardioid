@@ -1,6 +1,7 @@
 #include "TT06Func.hh"
 #include <stdio.h>
 #include <math.h>
+#include <cassert>
 #include "gsl.h"
 #include "TT06Tau.hh"
 #include "pade.hh"
@@ -435,6 +436,27 @@ void makeFit(double tol, double V0, double V1, double deltaV , int maxOrder, int
       fclose(file); 
    }
 }
+
+double defaultVoltage(int cellType)
+{
+   switch (cellType)
+   {
+     case 0:
+      return -86.709;
+      break;
+     case 1:
+      return -85.423;
+      break;
+     case 2:
+      return -85.23;
+      break;
+     default:
+      assert(false);
+   }
+}
+
+
+
 #define logSeries(x) ((x)*(1.0+(x)*(-0.5+(x)/3.0)))
 double computeUpdates(double dt, double Vm, double* STATES, int cellType, double *rates)
 {

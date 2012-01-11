@@ -11,4 +11,6 @@ void initCnst();
 double computeUpdates(double dt, double Vm, double* state, int cellType, double *rates);
 double get_c9();
 void makeFit(double tol, double V0, double V1, double deltaV, int maxOrder, int maxCost, int mod);
+double defaultVoltage(int cellType);
+
 #endif

@@ -142,7 +142,8 @@ int main(int argc, char *argv[])
    unsigned loop = 0;
    unsigned nLocal = anatomy.nLocal();
    double tmp = stimFunction(time);
-   vector<double> Vm(nLocal, -85.23);
+   vector<double> Vm(nLocal);
+   cellModel->initializeMembraneVoltage(Vm);
    vector<double> iStim(nLocal, tmp);
    vector<double> dVmReaction(nLocal, 0);
    

@@ -6,6 +6,7 @@ class TT04Dev
  public:
    TT04Dev(int);
    double calc(double dt, double Vm, double iStim);
+   double defaultState(int index);
  private:
    static double constants_[52];
    static double defaultState_[17];

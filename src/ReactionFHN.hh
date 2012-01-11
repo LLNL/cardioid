@@ -13,6 +13,7 @@ class ReactionFHN : public Reaction
              const std::vector<double>& Vm,
              const std::vector<double>& iStim,
              std::vector<double>& dVm);
+   void initializeMembraneVoltage(std::vector<double>& Vm);
 
  private:
    unsigned nCells_;

@@ -41,4 +41,12 @@ void TT04Dev_Reaction::calc(double dt,
    }
 }
 
+void TT04Dev_Reaction::initializeMembraneVoltage(std::vector<double>& Vm)
+{
+   assert(Vm.size() == cellModel_.size());
+   for (unsigned ii=0; ii<cellModel_.size(); ++ii)
+      Vm[ii] = cellModel_[ii].defaultState(0);
+}
+
+
 

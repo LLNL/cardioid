@@ -6,17 +6,12 @@ using namespace std;
 
 double TT06_RRG::constants_[53];
 
-namespace
-{
-   void
-      computeRates(double VOI, double* CONSTANTS, double* RATES, double* STATES, double* ALGEBRAIC);
-}
-
 
 TT06_RRG::TT06_RRG(int cellType)
 {
    initConsts(cellType);
    initStates(cellType);
+   defaultVoltage_ = states_[0];
 }
 
 double TT06_RRG::calc(double dt, double Vm, double iStim)
@@ -25,6 +20,12 @@ double TT06_RRG::calc(double dt, double Vm, double iStim)
    double dVmdt = computeRates(dt, iStim);
    return dVmdt;
 }
+
+double TT06_RRG::defaultVoltage()
+{
+   return defaultVoltage_;
+}
+
 
 
 /** Everything below this point started life as the TT06 mid model

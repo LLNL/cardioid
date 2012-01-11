@@ -49,6 +49,11 @@ double TT04Dev::calc(double dt, double Vm, double iStim)
    return rates[0]+iStim;
 }
 
+double TT04Dev::defaultState(int index)
+{
+   return defaultState_[index];
+}
+
 
 
 namespace

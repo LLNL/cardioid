@@ -28,9 +28,11 @@ void simulationLoop(Simulate& sim)
   vector<double> dVmExternal(sim.anatomy_.nLocal(), 0.0);
   vector<double> iStim(sim.anatomy_.nLocal(), 0.0);
    
-  // for now, hardcode initialization of voltage.
-  // use TT04 value from BlueBeats
-  sim.VmArray_.resize(sim.anatomy_.size(), -85.23); // in mVolts
+  // initialize membrane voltage with a default value from the reaction
+  // model. 
+  sim.VmArray_.resize(sim.anatomy_.size());
+  sim.reaction_->initializeMembraneVoltage(sim.VmArray_);
+  
   for (unsigned ii=sim.anatomy_.nLocal(); ii<sim.anatomy_.size(); ++ii)
      sim.VmArray_[ii] = 0;
    
