@@ -26,10 +26,9 @@ TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int m
       double deltaV = 0.1; 
       int maxCost=128; 
       int maxOrder=64; 
-      makeFit(tolerance_,V0,V1,deltaV,maxOrder,maxCost,mod); 
+      makeFit(tolerance,V0,V1,deltaV,maxOrder,maxCost,mod); 
    }
    dtForFit_=0.0; 
-   tolerance_=tolerance; 
    ttType_.resize(256, -1); 
    ttType_[30] = 0;
    ttType_[31] = 0;
@@ -63,9 +62,10 @@ void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<do
    double rates[nStateVar];
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
-      dVm[ii] = computeUpdates(dt, Vm[ii], s_[ii].state, s_[ii].cellType, rates);
+      dVm[ii] = computeNonGateRates(dt, Vm[ii], s_[ii].state, s_[ii].cellType, rates);
+      computeGateRates(dt, Vm[ii], s_[ii].state, s_[ii].cellType, rates);
+      rates[K_i] += iStim[ii]*c9 ;
       for (int i=0;i<nStateVar;i++) s_[ii].state[i] += dt*rates[i]; 
-      s_[ii].state[K_i] += iStim[ii]*c9*dt ;
    }
 }
 

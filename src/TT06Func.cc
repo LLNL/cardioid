@@ -10,28 +10,6 @@
 #define C(i) (gsl_vector_get(c,(i)))
 #define sigm(x)   ((x)/(1.0+(x)) )
 
-#if (0) 
-typedef double (*GATE)(double Vm, double *gate, int cellType, double *A, double *B); 
-typedef struct {double (*update)(double Vm, double *x0, int cellType, double *A, double *B); int cellType;  }GateParms;  
-double update_fCassGate(double Ca_aa, double *gate, int cellType, double *a, double *b);
-double update_Xr1Gate(double Vm, double *gate, int cellType, double *a, double *b);
-double update_Xr2Gate(double Vm, double *gate,  int cellType, double *a, double *b);
-double update_XsGate(double Vm, double *gate,  int cellType, double *a, double *b);
-double update_mGate(double Vm, double *gate, int cellType, double *a, double *b);
-double update_hGate(double Vm, double *gate, int cellType, double *a, double *b);
-double update_hGateMod(double Vm, double *gate, int cellType, double *a, double *b);
-double update_jGate(double Vm, double *gate, int cellType, double *a, double *b);
-double update_jGateMod(double Vm, double *gate, int cellType, double *a, double *b);
-double update_rGate(double Vm, double *gate, int cellType, double *a, double *b);
-double update_dGate(double Vm, double *gate, int cellType, double *a, double *b);
-double update_fGate(double Vm, double *gate, int cellType, double *a, double *b);
-double update_f2Gate(double Vm, double *gate, int cellType, double *a, double *b);
-double update_sGate(double Vm, double *gate, int cellType,double *a, double *b);
-static    GATE gate[] ={ update_fCassGate, update_Xr1Gate, update_Xr2Gate,update_XsGate,update_mGate,update_hGate,update_jGate,update_rGate,update_dGate,update_fGate,update_f2Gate, update_sGate}; 
-static    char *nameA[] ={ "fCassGateA", "Xr1GateA", "Xr2GateA","XsGateA","mGateA","hGateA","jGateA","rGateA","dGateA","fGateA","f2GateA","sGateA"}; 
-static    char *nameB[] ={ "fCassGateB", "Xr1GateB", "Xr2GateB","XsGateB","mGateB","hGateB","jGateB","rGateB","dGateB","fGateB","f2GateB","sGateA"}; 
-#endif 
-
 double Xr1Mhu(double Vm, void *parms) ;
 double Xr2Mhu(double Vm, void *parms) ;
 double XsMhu(double Vm, void *parms) ;
@@ -41,7 +19,8 @@ double rMhu(double Vm, void *parms) ;
 double dMhu(double Vm, void *parms) ;
 double fMhu(double Vm, void *parms) ;
 double f2Mhu(double Vm, void *parms) ;
-double sMhu(double Vm, void *parms) ;
+double sMhu0(double Vm, void *parms) ;
+double sMhu1(double Vm, void *parms) ;
 double fCassMhu(double Vm, void *parms);
 
 double Xr1TauR(double Vm, void *parms) ;
@@ -58,11 +37,9 @@ double sTauR0(double Vm, void *parms) ;
 double sTauR1(double Vm, void *parms) ;
 double fCassTauR(double Vm, void *parms) ;
 
-static double tauRMax[] = { 0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
-static int cnt = 0; 
 static TauRecipParms *jParms;
 static TauRecipParms *hParms;
-static PADE *fit[35]; 
+static PADE *fit[36]; 
 static double cA[3],cB[3]; 
 static double c1,c2,c3,c4,c5,c6,c7,c8,c9;
 static double c10,c11,c12,c13,c14,c15,c16,c17,c18,c19;
@@ -70,15 +47,14 @@ static double c20,c21,c22,c23,c24,c25,c26,c27,c28,c29;
 static double c30,c31,c32,c33,c34,c36,c40,c43,c44;
 static double f1,f2,f3,f4,f5,f6,f7,f7a,f9,f9a,f10; 
 typedef double (*OVF)(double x, void *parms) ;
-static    OVF  mhuFunc[] ={ fCassMhu, mMhu, hjMhu, hjMhu ,Xr1Mhu, Xr2Mhu,XsMhu,rMhu,dMhu,fMhu,f2Mhu, sMhu}; 
-static    char *mhuName[] ={ "fCassMhu", "mMhu", "hjMhu","hjMhu","Xr1Mhu", "Xr2Mhu","XsMhu","rMhu","dMhu","fMhu","f2Mhu", "sMhu"}; 
-static    OVF  tauRFunc[]  ={  fCassTauR ,  mTauR , hTauR ,  jTauR,  Xr1TauR,   Xr2TauR,  XsTauR,  rTauR,  dTauR,  fTauR,  f2TauR,   sTauR0,   sTauR1}; 
-static    char *tauRName[] ={ "fCassTauR", "mTauR", "hTauR", "jTauR","Xr1TauR", "Xr2TauR","XsTauR","rTauR","dTauR","fTauR","f2TauR", "sTauR0", "sTauR1"}; 
+static    OVF  mhuFunc[] ={    fCassMhu,  mMhu,   hjMhu,  hjMhu , Xr1Mhu, Xr2Mhu,XsMhu,rMhu,dMhu,fMhu,f2Mhu, sMhu0, sMhu1}; 
+static  const  char *mhuName[] ={ "fCassMhu", "mMhu", "hjMhu","hjMhu","Xr1Mhu", "Xr2Mhu","XsMhu","rMhu","dMhu","fMhu","f2Mhu", "sMhu0","sMhu1"}; 
+static    OVF  tauRFunc[]  ={ fCassTauR , mTauR , hTauR ,  jTauR,  Xr1TauR,   Xr2TauR,  XsTauR,  rTauR,  dTauR,  fTauR,  f2TauR,   sTauR0,   sTauR1}; 
+static  const   char *tauRName[] ={ "fCassTauR", "mTauR", "hTauR", "jTauR","Xr1TauR", "Xr2TauR","XsTauR","rTauR","dTauR","fTauR","f2TauR", "sTauR0", "sTauR1"}; 
 void initState(double *STATES,int cellType)
 {
 if (cellType == 0) 
 {
-//STATES[Vmembrane] = -86.709;
 STATES[K_i] = 138.4;
 STATES[Na_i] = 10.355;
 STATES[Ca_i] = 0.00013;
@@ -101,7 +77,6 @@ STATES[s_gate] = 0.3212;
 
 if (cellType == 1) 
 {
-//STATES[Vmembrane] = -85.423;
 STATES[K_i] = 138.52;
 STATES[Na_i] = 10.132;
 STATES[Ca_i] = 0.000153;
@@ -124,7 +99,6 @@ STATES[s_gate] = 0.999998;
 
 if (cellType==2) 
 {
-//STATES[Vmembrane] = -85.23;
 STATES[K_i] = 136.89;
 STATES[Na_i] = 8.604;
 STATES[Ca_i] = 0.000126;
@@ -379,12 +353,6 @@ double fv6(double dV0, void *parm)
 {
    double xx  =  (3.0*exp(0.0002*dV0 + 0.02)+exp(0.1*dV0 - 1.0))/(1.0+exp( -0.5*dV0))*(10.0+10*exp(0.06*dV0 -12.0));
    double fv6 = c9*c12/(1.0+xx);
-
-   //static FILE *file=NULL; 
-   //static double t =0.0; 
-   //if (file==NULL) {file =fopen("fv6.data","w");  t=0.0; }
-    //fprintf(file,"%f %e %e %e\n",t,dV0,xx,fv6); 
-    //t+=0.02; 
    return fv6; 
    
 }
@@ -407,24 +375,8 @@ void makeFit(double tol, double V0, double V1, double deltaV , int maxOrder, int
      fit[nPade++]=padeApprox( mhuName[k], mhuFunc[k],NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
      fit[nPade++]=padeApprox(tauRName[k],tauRFunc[k],NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
    }
+   fit[nPade++]=padeApprox(mhuName[k], mhuFunc[k],NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
    fit[nPade++]=padeApprox(tauRName[k],tauRFunc[k],NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
-/*
-    int k=0; 
-   parms.update = gate[k] ;
-   fit[nPade++]=padeApprox(mhuName[k],getGateA,(void*)&parms,sizeof(parms),tol,deltaV,0.0,2.0,maxOrder,maxCost); 
-   fit[nPade++]=padeApprox(tauRName[k],getGateB,(void*)&parms,sizeof(parms),tol,deltaV,0.0,2.0,maxOrder,maxCost); 
-   for (k=1;k<12;k++) 
-   {
-      parms.update = gate[k] ;
-      fit[nPade++]=padeApprox(mhuName[k],getGateA,(void*)&parms,sizeof(parms),tol,deltaV,V0,V1,maxOrder,maxCost); 
-      fit[nPade++]=padeApprox(tauRName[k],getGateB,(void*)&parms,sizeof(parms),tol,deltaV,V0,V1,maxOrder,maxCost); 
-   }
-   parms.cellType = 1; 
-   parms.update = gate[11]; 
-   fit[nPade++]=padeApprox("sGateA_1",getGateA,(void*)&parms,sizeof(parms),tol,deltaV,V0,V1,maxOrder,maxCost); 
-   fit[nPade++]=padeApprox("sGateB_1",getGateB,(void*)&parms,sizeof(parms),tol,deltaV,V0,V1,maxOrder,maxCost); 
-
-*/
    if (getRank(0)==0) 
    {
       FILE *file=fopen("pade.data","w"); 
@@ -458,9 +410,8 @@ double defaultVoltage(int cellType)
 
 
 #define logSeries(x) ((x)*(1.0+(x)*(-0.5+(x)/3.0)))
-double computeUpdates(double dt, double Vm, double* STATES, int cellType, double *rates)
+double computeNonGateRates(double dt, double Vm, double* STATES, int cellType, double *rates)
 {
-
    
    double x[8]; 
    x[0] = STATES[Na_i]*c25; 
@@ -485,9 +436,7 @@ double computeUpdates(double dt, double Vm, double* STATES, int cellType, double
    //double ss = c2*(STATES[Na_i]/STATES[K_i]);
    //double dV2 =Vm-c3*log(STATES[K_i]) -c3*log(1+ss) -c6;
    //double dV2 =Vm-c3*log(STATES[K_i])-c3*logSeries(c2*STATES[Na_i]/STATES[K_i]) -c6;
-   //double dV2 = 1.0*Vm -c3*log(STATES[K_i]+c2*STATES[Na_i]) -c6;
-   
-   
+   //double dV2 = Vm -c3*log(STATES[K_i]+c2*STATES[Na_i]) -c6;
    
    double fv[5]; 
    for (int i=0;i<5;i++) fv[i]=fit[i]->afunc(Vm, fit[i]->aparms); 
@@ -514,63 +463,57 @@ double computeUpdates(double dt, double Vm, double* STATES, int cellType, double
    
    double dVdt  = itmp1+itmp2*c22+itmp3*c22-itmp4*c10;
 
-   double Ca_SS     = STATES[Ca_ss]; 
    rates[K_i]     = (itmp3);
    rates[Na_i]    = (itmp2+2.0*itmp0);
    rates[Ca_i]    = (sigm3*(itmp4-itmp0+itmp6*c15-itmp5*c16));
    rates[Ca_ss]   = (sigm6*(itmp6+itmp7*c14+itmp1*c13));    
    rates[Ca_SR]   = (sigm5*(itmp5-c40*itmp7));
    rates[R_prime] = (c36 - tmp9*STATES[R_prime]);
+   return dVdt; 
+}
 
 
 // Update Gates; 
+void computeGateRates(double dt, double Vm, double* STATES, int cellType, double *rates)
+{
    
    double mhu,tauR; 
    double *gate = STATES+gateOffset; 
    double *grate = rates+gateOffset; 
    PADE **gatefit = fit + 7; 
    int i=0;
-   mhu=gatefit[2*i]  ->afunc(Ca_SS,gatefit[2*i  ]->aparms);    //fCassGate
-   tauR=gatefit[2*i+1]->afunc(Ca_SS,gatefit[2*i+1]->aparms); 
+   mhu=gatefit[2*i]  ->afunc(STATES[Ca_ss],gatefit[2*i  ]->aparms);    //fCassGate
+   tauR=gatefit[2*i+1]->afunc(STATES[Ca_ss],gatefit[2*i+1]->aparms); 
    grate[i] =  (mhu - gate[i])*tauR; 
-   if ( tauR > tauRMax[i]) tauRMax[i] = tauR; 
    i++; 
 
    mhu=gatefit[2*i]  ->afunc(Vm,gatefit[2*i  ]->aparms);       //mGate
    tauR=gatefit[2*i+1]->afunc(Vm,gatefit[2*i+1]->aparms); 
    grate[i] =  (mhu - gate[i])*tauR; 
    grate[i]  *= (1-exp(-dt*tauR))/(dt*tauR);                   //mtauR can be very large   ~1140.0 use Rush_Larson to integrate. 
-   if ( tauR > tauRMax[i]) tauRMax[i] = tauR; 
    i++;
 
    mhu=gatefit[2*i]  ->afunc(Vm,gatefit[2*i  ]->aparms);      // hGate 
    tauR=gatefit[2*i+1]->afunc(Vm,gatefit[2*i+1]->aparms); 
    grate[i] =  (mhu - gate[i])*tauR; 
-   if ( tauR > tauRMax[i]) tauRMax[i] = tauR; 
    i++;
 
-   //mhu=gatefit[2*i]  ->afunc(Vm,gatefit[2*i  ]->aparms);    //jGate        note hMhu and  hMhu are equal. 
+   //mhu=gatefit[2*i]  ->afunc(Vm,gatefit[2*i  ]->aparms);    //jGate        note hMhu and  jMhu are equal. 
    tauR=gatefit[2*i+1]->afunc(Vm,gatefit[2*i+1]->aparms); 
    grate[i] =  (mhu - gate[i])*tauR; 
-   if ( tauR > tauRMax[i]) tauRMax[i] = tauR; 
 
    for (i=4;i<11;i++)                    // other Gates. 
    {
       mhu=gatefit[2*i]  ->afunc(Vm,gatefit[2*i  ]->aparms); 
       tauR=gatefit[2*i+1]->afunc(Vm,gatefit[2*i+1]->aparms); 
       grate[i] =  (mhu - gate[i])*tauR; 
-      if ( tauR > tauRMax[i]) tauRMax[i] = tauR; 
    }
-   mhu=gatefit[2*i]  ->afunc(Vm,gatefit[2*i  ]->aparms);                //sGate
-   tauR=gatefit[2*i+1+(cellType != 0)  ]->afunc(Vm,gatefit[2*i+1+(cellType != 0)  ]->aparms);  //Note  sTauR depends on celltype
+   //mhu=gatefit[2*i]  ->afunc(Vm,gatefit[2*i  ]->aparms);                //sGate
+   int l = 2*(i+(cellType != 0)) ; 
+   mhu=gatefit[ l ]->afunc(Vm,gatefit[l ]->aparms);  //Note  sMhu depends on celltype
+   tauR=gatefit[l + 1 ]->afunc(Vm,gatefit[ l+1  ]->aparms);  //Note  sTauR depends on celltype
    grate[i] =  (mhu - gate[i])*tauR; 
-   if ( tauR > tauRMax[i]) tauRMax[i] = tauR; 
 
-   return dVdt; 
-}
-void write_tauRMax()
-{
-	for (int i=0;i<12;i++) fprintf(stderr,"%d %s %14.8f\n",i,tauRName[i],tauRMax[i]); 
 }
 double fCassMhu(double Ca_SS, void *parms) 
 { 
@@ -647,7 +590,8 @@ double hTauR(double Vm, void *parms)
 double jTauR(double Vm, void *parms) 
 { 
    double t1  = (Vm < -40.0 ? (( ( - 25428.0*(exp(( 0.244400*Vm))) -  6.94800e-06*(exp(( - 0.0439100*Vm))))*(Vm+37.7800))/1.0)/(1.0+(exp(( 0.311000*(Vm+79.2300))))) : 0.0);
-   double t2 = (Vm < -40.0 ? ( 0.0242400*(exp(( - 0.0105200*Vm))))/(1.0+(exp(( - 0.137800*(Vm+40.1400))))) : ( 0.600000*(exp(( 0.0570000*Vm))))/(1.0+(exp(( - 0.100000*(Vm+32.0))))));
+   //double t2 = (Vm < -40.0 ?  0.0242400*exp( -0.0105200*Vm)/(1.0+exp(-0.137800*(Vm+40.1400))) :  0.600000*exp(0.0570000*Vm)/(1.0+exp(-0.100000*(Vm+32.0))));
+ double t2 = (Vm < -40.0 ? ( 0.0242400*(exp(( - 0.0105200*Vm))))/(1.0+(exp(( - 0.137800*(Vm+40.1400))))) : ( 0.600000*(exp(( 0.0570000*Vm))))/(1.0+(exp(( - 0.100000*(Vm+32.0))))));
    double tauR  = (t1+t2);
    return tauR;
 }
@@ -688,6 +632,7 @@ double fTauR(double Vm, void *parms)
 }
 double f2Mhu(double Vm, void *parms) 
 { 
+ //double mhu = 0.670000/(1.0+(exp ((Vm+35.0)/7.0)) )+0.330000;
    double mhu = 0.670000/(1.0+(exp(((Vm+35.0)/7.0))))+0.330000;
    return mhu;
 }
@@ -697,9 +642,14 @@ double f2TauR(double Vm, void *parms)
    double tauR = 1/tau; 
    return tauR;
 }
-double sMhu(double Vm, void *parms) 
+double sMhu0(double Vm, void *parms) 
 { 
    double mhu = 1.0/(1.0+(exp(((Vm+28.0)/5.0))));
+   return mhu;
+}
+double sMhu1(double Vm, void *parms) 
+{ 
+   double  mhu=1.00000/(1.00000+(exp(((Vm+20.0000)/5.00000))));
    return mhu;
 }
 double sTauR0(double Vm, void *parms) 
@@ -710,7 +660,8 @@ double sTauR0(double Vm, void *parms)
 }
 double sTauR1(double Vm, void *parms) 
 { 
-   double   tau =  85.0*(exp((- SQ(Vm+45.0)/320.0)))+5.0/(1.0+(exp(((Vm - 20.0)/5.0))))+3.0;
+   //double    tau =  85.0*(exp((- SQ(Vm+45.0)/320.0)))+5.0/(1.0+(exp(((Vm - 20.0)/5.0))))+3.0;
+ double tau =  85.0000*(exp((- (pow((Vm+45.0000), 2.00000))/320.000)))+5.00000/(1.00000+(exp(((Vm - 20.0000)/5.00000))))+3.00000;
    double tauR = 1/tau; 
    return tauR;
 }

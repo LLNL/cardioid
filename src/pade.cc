@@ -23,9 +23,18 @@ double padeFunc(double x, PADE *pade)
    double sum2=0;    
    int k = m+l-1; 
    for (int j=m-1;j>=0;j--)sum1 =  a[j] + x*sum1; 
-   if (l<2) return sum1; 
+//   if (l<2) return sum1; 
    for (int j=k;j>=m;j--)  sum2 =  a[j] + x*sum2; 
    return sum1/sum2; 
+}
+double polyFunc(double x, PADE *pade) 
+{
+   int l=pade->l; 
+   int m=pade->m; 
+   double *a=pade->coef; 
+   double sum1=0; 
+   for (int j=m-1;j>=0;j--)sum1 =  a[j] + x*sum1; 
+   return sum1; 
 }
 
 static void padeError(int l,int m,double *a,int n,double *x,double *y,double *errMax, double *errRMS)
@@ -62,9 +71,10 @@ void  findPadeApprox(int l, int m, int n, double *x, double *y, double *a )
      for (int i = 0; i < n; i++)
      {
            double xj=1.0; 
-           for (int j=0;j<m;j++) { gsl_matrix_set (X, i, j, xj); xj *= x[i]; }
-           xj=y[i]*x[i]; 
-           for (int j=m;j<k;j++) { gsl_matrix_set (X, i, j, xj); xj *= x[i]; }
+	   double xi = x[i]; 
+           for (int j=0;j<m;j++) { gsl_matrix_set (X, i, j, xj); xj *= xi; }
+           xj=y[i]*xi; 
+           for (int j=m;j<k;j++) { gsl_matrix_set (X, i, j, xj); xj *= xi; }
            gsl_vector_set (yy, i, y[i]);
            gsl_vector_set (w, i, 1.0);
       }
@@ -94,7 +104,7 @@ static void makeFunctionTable(PADE *pade)
    for (int i = 0; i < nmax; i++)
    {
       double xn = pade->x0 + deltaX * i ; 
-      if (  -50.0 < xn && xn < -30.0 ) continue; 
+      //if (  -50.0 < xn && xn < -30.0 ) continue; 
       x[n]=xn; 
       y[n]=pade->func(x[n], pade->parms); 
 
@@ -177,7 +187,7 @@ void padeWrite(FILE *file,PADE pade)
         for (int i=0;i<(pade.l+pade.m);i++) fprintf(file, "%21.14e ",pade.coef[i]); 
 	fprintf(file, ";}\n"); 
 }
-PADE   *padeApprox (char *name, double (*func)(double x, void *parms), void *parms, int size_parms,double tol, double deltaX, double x0, double x1, int maxOrder, int maxCost)
+PADE   *padeApprox (const char *name, double (*func)(double x, void *parms), void *parms, int size_parms,double tol, double deltaX, double x0, double x1, int maxOrder, int maxCost)
 {
    PADE *pade=(PADE *)malloc(sizeof(PADE)); 
    pade->name = strdup(name); 
@@ -201,7 +211,11 @@ PADE   *padeApprox (char *name, double (*func)(double x, void *parms), void *par
    pade->coef = NULL; 
    pade->cost=0 ;
    makeFunctionTable(pade) ;
-   if (tol > 0)  minimizeCost(pade, tol, maxCost, maxOrder+1, maxOrder+1);
+   if (tol > 0)  
+   {
+      minimizeCost(pade, tol, maxCost, maxOrder+1, maxOrder+1);
+      if (pade->l < 2  )  pade->afunc = (double (*)(double , void *))polyFunc; 
+   }
    else { pade->afunc = func ; pade->aparms= pade->parms; }
    return pade; 
 }
