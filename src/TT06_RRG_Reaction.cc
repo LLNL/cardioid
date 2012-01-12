@@ -41,7 +41,7 @@ void TT06_RRG_Reaction::calc(double dt,
 
 void TT06_RRG_Reaction::initializeMembraneVoltage(std::vector<double>& Vm)
 {
-   assert(Vm.size() == cells_.size());
+   assert(Vm.size() >= cells_.size());
    for (unsigned ii=0; ii<cells_.size(); ++ii)
       Vm[ii] = cells_[ii].defaultVoltage();
 }

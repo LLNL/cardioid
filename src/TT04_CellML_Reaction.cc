@@ -94,7 +94,7 @@ void TT04_CellML_Reaction::calc(double dt,
 }
 void TT04_CellML_Reaction::initializeMembraneVoltage(std::vector<double>& Vm)
 {
-   assert(Vm.size() == s_.size());
+   assert(Vm.size() >= s_.size());
    for (unsigned ii=0; ii<s_.size(); ++ii)
       Vm[ii] = cellModel_[ii]->defaultState(0);
 }

@@ -39,7 +39,7 @@ void ReactionFHN::calc(double dt, const vector<double>& Vm,
 
 void ReactionFHN::initializeMembraneVoltage(std::vector<double>& Vm)
 {
-   assert(Vm.size() == nCells_);
+   assert(Vm.size() >= nCells_);
    Vm.assign(Vm.size(), -85.0);
 }
 

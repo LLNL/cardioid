@@ -72,7 +72,7 @@ void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<do
 
 void TT06Dev_Reaction::initializeMembraneVoltage(std::vector<double>& Vm)
 {
-   assert(Vm.size() == s_.size());
+   assert(Vm.size() >= s_.size());
    for (unsigned ii=0; ii<s_.size(); ++ii)
       Vm[ii] = defaultVoltage(s_[ii].cellType);
 }
