@@ -4,6 +4,7 @@
 #include "Reaction.hh"
 class Anatomy;
 class TT06_RRG;
+class BucketOfBits;
 
 class TT06_RRG_Reaction : public Reaction
 {
@@ -17,6 +18,8 @@ class TT06_RRG_Reaction : public Reaction
              std::vector<double>& dVm);
    void initializeMembraneVoltage(std::vector<double>& Vm);
 
+   void loadState(const BucketOfBits& data);
+   
  private:
 
    std::vector<int>      ttType_; // maps cellType to ttType

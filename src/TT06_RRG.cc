@@ -1,6 +1,7 @@
 #include "TT06_RRG.hh"
 #include <cmath>
 #include <cassert>
+#include <map>
 
 using namespace std;
 
@@ -24,6 +25,54 @@ double TT06_RRG::calc(double dt, double Vm, double iStim)
 double TT06_RRG::defaultVoltage()
 {
    return defaultVoltage_;
+}
+
+/** This function maps the string representation of a variable name to
+ * the handle representation.  Returns the value undefinedName for
+ * unrecognized varName. */
+TT06_RRG::VarHandle TT06_RRG::getVarHandle(const string& varName)
+{
+   typedef map<string, VarHandle> HandleMap; 
+   static HandleMap handleMap;
+   if (handleMap.size() == 0)
+   {
+      handleMap["switchTauS"] = switchTauS;
+      handleMap["g_Ks"] = g_Ks;
+      handleMap["g_to"] = g_to;
+      handleMap["P_NaK"] = P_NaK;
+      handleMap["g_NaL"] = g_NaL;
+      assert(handleMap.size() == nVars-1);
+   }
+   handleMap[varName];
+}
+
+
+void TT06_RRG::setVariable(VarHandle varHandle, double value)
+{
+   switch (varHandle)
+   {
+     case undefinedName:
+      assert(false);
+      break;
+     case switchTauS:
+      switchTauS_ = int(value);
+      break;
+     case g_Ks:
+       g_Ks_ = value;
+      break;
+     case g_to:
+       g_to_ = value;
+      break;
+     case P_NaK:
+       P_NaK_ = value;
+      break;
+     case g_NaL:
+      g_NaL_ = value;
+      break;
+     case nVars:
+      assert(false);
+      break;
+   }
 }
 
 

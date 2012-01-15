@@ -10,6 +10,7 @@
 #include "ioUtils.h"
 #include "GridAssignmentObject.h"
 #include "mpiUtils.h"
+#include "mpiTpl.hh"
 #include "Drand48Object.hh"
 #include "Simulate.hh"
 #include "writeCells.hh"
@@ -48,27 +49,6 @@ class AnatomyCellDestSort
    }
 };
 
-template<typename T>
-inline void
-allGather(vector<T>& data, size_t nDataPerTask, MPI_Comm comm)
-{
-   int myRank;
-   MPI_Comm_rank(comm, &myRank);
-
-   size_t localStart = myRank*nDataPerTask;
-   typename vector<T>::const_iterator first = data.begin() + localStart;
-   typename vector<T>::const_iterator last = first + nDataPerTask;
-//   assert( data[localStart] == *first);
-
-   vector<T> tmp(first, last);
-
-   void* sendBuf = (void*) &tmp[0];
-   void* recvBuf = (void*) &data[0];
-   int nSend = nDataPerTask * sizeof(T);
-   int nRecv = nDataPerTask * sizeof(T);
-   
-   MPI_Allgather(sendBuf, nSend, MPI_CHAR, recvBuf, nRecv, MPI_CHAR, comm);
-}
 
 
 
@@ -227,7 +207,7 @@ void Koradi::calculateCellDestinations()
    {
       GRID_ASSIGNMENT_OBJECT* gao = gao_init(centers_.size(),
                                              (const void*) &(centers_[0]),
-                                             sizeof(THREE_VECTOR));
+                                             sizeof(Vector));
    
       for (unsigned ii=0; ii<cells_.size(); ++ii)
       {

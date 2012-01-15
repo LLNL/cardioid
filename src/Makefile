@@ -15,6 +15,8 @@ BINDIR = ../bin
 HEARTSRC=cardioid.cc \
 	 Vector.cc PerformanceTimers.cc unionOfStrings.cc \
          GDLoadBalancer.cc CommTable.cc \
+	 BucketOfBits.cc \
+	 stateLoader.cc \
 	 AnatomyReader.cc object_cc.cc \
 	 Koradi.cc GridRouter.cc Grid3DStencil.cc writeCells.cc \
 	 DomainInfo.cc \
@@ -25,6 +27,7 @@ HEARTSRC=cardioid.cc \
 	 conductivityFactory.cc stimulusFactory.cc sensorFactory.cc \
 	 FibreConductivity.cc UniformConductivity.cc JHUConductivity.cc\
 	 Saleheen98Diffusion.cc SaleheenDev.cc \
+	 Reaction.cc \
 	 ReactionFHN.cc \
 	 TT04_CellML_Reaction.cc \
 	 TT06_CellML_Reaction.cc  \

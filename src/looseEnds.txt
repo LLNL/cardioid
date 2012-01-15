@@ -96,3 +96,14 @@ these should be brought together somehow.
 
 32. Why does the PointListSensor have a vector of pointers to streams
 instead of just a vector of streams?
+
+33.  The loadState function in TT06_RRG_Reaction silently ignores
+unknown fieldsName.  It also merrily goes about its way when not all of
+the variables that are possible to set are in the BucketOfBits.
+
+34.  The way we have structured the loading of restart files all of the
+data gets tokenized twice.  Once in the cell model when the cell state
+is extracted from the BucketOfBits and a second time when the simulation
+loop gets the membrane voltage.  If this turns out to be a performance
+bottleneck we can instead store each record in tokenized form (or
+perhaps store the token offsets) when we constrcut the BucketOfBits

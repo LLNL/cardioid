@@ -30,6 +30,7 @@ HEART_FILES = \
 	pade.cc \
 	TT06_RRG.cc \
 	TT06_RRG.hh \
+	Reaction.cc \
 	Reaction.hh \
 	TT04Dev_Reaction.cc \
 	TT04Dev_Reaction.hh \

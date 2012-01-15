@@ -15,6 +15,8 @@
 #include "ioUtils.h"
 #include "writeCells.hh"
 #include "PerformanceTimers.hh"
+#include "BucketOfBits.hh"
+#include "stateLoader.hh"
 
 using namespace std;
 
@@ -35,6 +37,22 @@ void simulationLoop(Simulate& sim)
   
   for (unsigned ii=sim.anatomy_.nLocal(); ii<sim.anatomy_.size(); ++ii)
      sim.VmArray_[ii] = 0;
+
+  // Load state file, assign corresponding values to membrane voltage
+  // and cell model
+  if (!sim.stateFilename_.empty())
+  {
+     BucketOfBits stateData =
+        loadAndDistributeState(sim.stateFilename_, sim.anatomy_);
+     assert(stateData.nRecords() == sim.anatomy_.nLocal());
+     sim.reaction_->loadState(stateData);
+     unsigned vmIndex = stateData.getIndex("Vm");
+     if (vmIndex != stateData.nFields())
+        for (unsigned ii=0; ii<stateData.nRecords(); ++ii)
+           stateData.getRecord(ii).getValue(vmIndex, sim.VmArray_[ii]);
+  }
+  
+  
    
   HaloExchange<double> voltageExchange(sim.sendMap_, *(sim.commTable_));
 

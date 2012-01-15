@@ -1,7 +1,10 @@
 #include "TT06_RRG_Reaction.hh"
 #include <cmath>
+#include <string>
+#include <map>
 #include "Anatomy.hh"
 #include "TT06_RRG.hh"
+#include "BucketOfBits.hh"
 
 using namespace std;
 
@@ -44,4 +47,45 @@ void TT06_RRG_Reaction::initializeMembraneVoltage(std::vector<double>& Vm)
    assert(Vm.size() >= cells_.size());
    for (unsigned ii=0; ii<cells_.size(); ++ii)
       Vm[ii] = cells_[ii].defaultVoltage();
+}
+
+void TT06_RRG_Reaction::loadState(const BucketOfBits& data)
+{
+   assert(cells_.size() == data.nRecords());
+
+   typedef map<int, TT06_RRG::VarHandle> FieldMap;
+   FieldMap fieldMap;
+
+   for (unsigned ii=0; ii<data.nFields(); ++ii)
+   {
+      TT06_RRG::VarHandle handle = TT06_RRG::getVarHandle(data.fieldName(ii));
+      if (handle != TT06_RRG::undefinedName)
+         fieldMap[ii] = handle;
+   }
+   
+   for (unsigned ii=0; ii<cells_.size(); ++ii)
+   {
+      BucketOfBits::Record iRec = data.getRecord(ii);
+      for (FieldMap::const_iterator iter=fieldMap.begin();
+           iter!=fieldMap.end(); ++iter)
+      {
+         int iField = iter->first;
+         TT06_RRG::VarHandle handle = iter->second;
+         double value;
+         switch (data.dataType(iField))
+         {
+           case BucketOfBits::floatType:
+            iRec.getValue(iField, value);
+            break;
+           case BucketOfBits::intType:
+            int tmp;
+            iRec.getValue(iField, tmp);
+            value = double(tmp);
+            break;
+           default:
+            assert(false);
+         }
+         cells_[ii].setVariable(handle, value);
+      }
+   }
 }

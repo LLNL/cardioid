@@ -3,6 +3,8 @@
 
 #include <vector>
 
+class BucketOfBits;
+
 class Reaction
 {
  public:
@@ -16,6 +18,8 @@ class Reaction
     * the anatomy that was used to create the concrete reaction class.
     */
    virtual void initializeMembraneVoltage(std::vector<double>& Vm) = 0;
+
+   virtual void loadState(const BucketOfBits& data);
 };
 
 #endif

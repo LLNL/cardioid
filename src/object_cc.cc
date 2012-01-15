@@ -15,8 +15,13 @@ void objectGet(OBJECT* obj, const string& name, string& value, const string& def
 {
    char* tmp;
    object_get(obj, name.c_str(), &tmp, STRING, 1, defVal.c_str());
-   value = tmp;
-   ddcFree(tmp);
+   if (tmp != 0)
+   {
+      value = tmp;
+      ddcFree(tmp);
+   }
+   else
+      value = "";
 }
 
 void objectGet(OBJECT* obj, const string& name, double& value, const string& defVal)
