@@ -3,6 +3,7 @@
 #include "Anatomy.hh"
 #include "Conductivity.hh"
 #include "conductivityFactory.hh"
+#include <cstdio> 
 #include <algorithm>
 #include <iostream>
 
