@@ -391,20 +391,22 @@ void makeFit(double tol, double V0, double V1, double deltaV , int maxOrder, int
 
 double defaultVoltage(int cellType)
 {
+   double voltage = 0;
    switch (cellType)
    {
      case 0:
-      return -86.709;
+      voltage = -86.709;
       break;
      case 1:
-      return -85.423;
+      voltage = -85.423;
       break;
      case 2:
-      return -85.23;
+      voltage = -85.23;
       break;
      default:
       assert(false);
    }
+   return voltage;
 }
 
 

@@ -315,7 +315,7 @@ BucketOfBits loadAndDistributeState(const std::string& filename,
 
    vector<unsigned char> records;
    vector<Long64> gid;
-   unsigned lRec;
+   unsigned lRec=0;
 
    BucketOfBits bucket = readStateData(filename, comm, // inputs
                                        records, gid, lRec); // outputs

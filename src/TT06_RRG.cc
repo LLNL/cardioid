@@ -43,7 +43,7 @@ TT06_RRG::VarHandle TT06_RRG::getVarHandle(const string& varName)
       handleMap["g_NaL"] = g_NaL;
       assert(handleMap.size() == nVars-1);
    }
-   handleMap[varName];
+   return handleMap[varName];
 }
 
 
