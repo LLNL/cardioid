@@ -30,21 +30,21 @@ do
   mkdir -p $dirname
 
   case $dx in
-      0.5)
+      0.50)
       stimBox=4
       nTasks=64
       nNodes=64
       xGrid=4; yGrid=4; zGrid=4
       tMax=150
       ;;
-      0.2)
+      0.20)
       stimBox=8
       nTasks=128
       nNodes=64
       xGrid=4; yGrid=4; zGrid=8
       tMax=60
       ;;
-      0.1)
+      0.10)
       stimBox=16
       nTasks=256
       nNodes=64
@@ -64,10 +64,10 @@ do
   esac
 
   case $dt in
-      0.05)
+      0.050)
       snapshotRate=20
       ;;
-      0.01)
+      0.010)
       snapshotRate=100
       ;;
       0.005)
