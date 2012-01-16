@@ -11,11 +11,19 @@ OBJECT* objectFind(const std::string& name, const std::string& objClass)
    return object_find(name.c_str(), objClass.c_str());
 }
 
+/** The object_get code doesn't handle empty strings for a default value
+ *  very well.  The problem is that object_parse attempts to tokenize
+ *  the default value and strtok_r returns a NULL pointer.  This results
+ *  in a situation where the pointer passed to object_get (i.e., tmp)
+ *  isn't set by object_get.  Fortunately, this can be detected by the
+ *  fact that object_get will return 0 instead of 1.  We can catch this
+ *  case and do the right thing with the value we return to the caller.
+ */
 void objectGet(OBJECT* obj, const string& name, string& value, const string& defVal)
 {
    char* tmp;
-   object_get(obj, name.c_str(), &tmp, STRING, 1, defVal.c_str());
-   if (tmp != 0)
+   int nFound = object_get(obj, name.c_str(), &tmp, STRING, 1, defVal.c_str());
+   if (nFound != 0)
    {
       value = tmp;
       ddcFree(tmp);
