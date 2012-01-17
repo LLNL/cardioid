@@ -9,7 +9,7 @@ class TT06_RRG
    // There is a map of strings to VarHandle in getVarHandle that must
    // be maintained in parallel with this enum.  The value undefinedName
    // must be first and nVars must be last in this enum.
-   enum VarHandle{undefinedName, switchTauS, g_Ks, g_to, P_NaK, g_NaL, nVars};
+   enum VarHandle{undefinedName, s_switch, g_Ks, g_to, P_NaK, g_NaL, nVars};
       
 
 
@@ -27,7 +27,7 @@ class TT06_RRG
    double computeRates(double dt, double iStim);
 
    static double constants_[53];
-   int switchTauS_;
+   int s_switch_;
    double defaultVoltage_;
    double g_Ks_;  // formerly CONSTANTS[15]
    double g_to_;  // formerly CONSTANTS[20]

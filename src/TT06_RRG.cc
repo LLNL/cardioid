@@ -37,7 +37,7 @@ TT06_RRG::VarHandle TT06_RRG::getVarHandle(const string& varName)
    static HandleMap handleMap;
    if (handleMap.size() == 0)
    {
-      handleMap["switchTauS"] = switchTauS;
+      handleMap["s_switch"] = s_switch;
       handleMap["g_Ks"] = g_Ks;
       handleMap["g_to"] = g_to;
       handleMap["P_NaK"] = P_NaK;
@@ -57,8 +57,8 @@ void TT06_RRG::setVariable(VarHandle varHandle, double value)
      case undefinedName:
       assert(false);
       break;
-     case switchTauS:
-      switchTauS_ = int(value);
+     case s_switch:
+      s_switch_ = int(value);
       break;
      case g_Ks:
        g_Ks_ = value;
@@ -178,21 +178,21 @@ void TT06_RRG::initConsts(int cellType)
       g_to_ = 0.073;
       P_NaK_ = 3.0;
       g_NaL_ = 0.15;
-      switchTauS_ = 0;
+      s_switch_ = 0;
       break;
      case 1: // Mid
       g_Ks_ = 0.098;
       g_to_ = 0.294;
       P_NaK_ = 3.1;
       g_NaL_ = 0.3;
-      switchTauS_ = 1;
+      s_switch_ = 1;
       break;
      case 2: // Epi
       g_Ks_ = 0.392;
       g_to_ = 0.294;
       P_NaK_ = 3.0;
       g_NaL_ = 0.15;
-      switchTauS_ = 1;
+      s_switch_ = 1;
       break;
      default:
       assert(false);
@@ -290,7 +290,7 @@ double TT06_RRG::computeRates(double dt, double iStim)
    algebraic[9] = 0.600000/(1.00000+(pow((states_[10]/0.0500000), 2.00000)))+0.400000;
    algebraic[22] = 80.0000/(1.00000+(pow((states_[10]/0.0500000), 2.00000)))+2.00000;
    rates[14] = (algebraic[9] - states_[14])/algebraic[22];
-   switch (switchTauS_)
+   switch (s_switch_)
    {
      case 0:
       algebraic[10] = 1.00000/(1.00000+(exp(((states_[0]+28.0000)/5.00000))));
