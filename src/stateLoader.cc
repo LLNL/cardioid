@@ -12,6 +12,7 @@
 #include "GridAssignmentObject.h"
 #include <algorithm>
 #include <map>
+//ddt #include <iostream>
 
 using namespace std;
 
@@ -48,7 +49,7 @@ bool operator<(const RecordRequest& a, const RecordRequest& b)
 BucketOfBits readStateData(const string& filename, MPI_Comm comm,
                            vector<unsigned char>& records,
                            vector<Long64>& gid,
-                           unsigned lRec)
+                           unsigned& lRec)
 {
    PFILE* file = Popen(filename.c_str(), "r", comm);
    assert(file);
@@ -71,7 +72,8 @@ BucketOfBits readStateData(const string& filename, MPI_Comm comm,
       assert(recordType == "FIXRECORDASCII");
       
       lRec = file->recordLength;
-      unsigned nRecords = file->bufsize%lRec;
+      unsigned nRecords = file->bufsize/lRec;
+      assert(file->bufsize%lRec == 0);
       
       records.resize(nRecords*lRec);
       for (unsigned ii=0; ii<nRecords; ++ii)
@@ -86,8 +88,8 @@ BucketOfBits readStateData(const string& filename, MPI_Comm comm,
       unsigned gidIndex = here - fieldNames.begin();
       string format;
       for (unsigned ii=0; ii<gidIndex; ++ii)
-         format += "*s ";
-      format += "llu";
+         format += "%*s ";
+      format += "%llu";
 
       gid.resize(nRecords);
       for (unsigned ii=0; ii<nRecords; ++ii)
@@ -155,9 +157,11 @@ void findDestinations(const Anatomy& anatomy,
    gao_destroy(gao);
 }
 
-void sendRecordsToDropOff(vector<unsigned>& dropTask, MPI_Comm comm,
-                          const unsigned lRec,
-                          vector<unsigned char>& records, vector<Long64>& gid)
+/** Returns the number of records that were received on this task */
+unsigned sendRecordsToDropOff(vector<unsigned>& dropTask, MPI_Comm comm,
+                              const unsigned lRec,
+                              vector<unsigned char>& records,
+                              vector<Long64>& gid)
 {
    int nTasks;
    int myRank;
@@ -176,7 +180,7 @@ void sendRecordsToDropOff(vector<unsigned>& dropTask, MPI_Comm comm,
    // Find the number of records each task will receive.
    int nRecv;
    {
-      vector<int> buf;
+      vector<int> buf(nTasks, 0);
       for (unsigned ii=0; ii<sortMap.size(); ++ii)
          ++buf[sortMap[ii].dest];
       vector<int> recvCnt(nTasks, 1);
@@ -187,9 +191,8 @@ void sendRecordsToDropOff(vector<unsigned>& dropTask, MPI_Comm comm,
    // using sort key to sort records by destination
    int capacity = max(int(gid.size()), nRecv);
    int itemSize = lRec + sizeof(Long64);
-   unsigned rawDataSize = records.size();
+   vector<unsigned char> rawData(records.begin(), records.end());
    records.resize(capacity * itemSize);
-   vector<unsigned char> rawData(records.begin(), records.begin()+rawDataSize);
    for (unsigned ii=0; ii<gid.size(); ++ii)
    {
       unsigned iRec = sortMap[ii].index;
@@ -211,7 +214,8 @@ void sendRecordsToDropOff(vector<unsigned>& dropTask, MPI_Comm comm,
                &dropTask[0],
                0,
                comm);
-   records.resize(nLocal);
+   records.resize(nLocal*itemSize);
+   return nLocal;
 }
 
 void sendRequestsToDropOff(vector<unsigned>& requestDest,
@@ -319,17 +323,37 @@ BucketOfBits loadAndDistributeState(const std::string& filename,
 
    BucketOfBits bucket = readStateData(filename, comm, // inputs
                                        records, gid, lRec); // outputs
-                 
+
+   //ddt
+//    for (unsigned ii=0; ii<gid.size(); ++ii)
+//    {
+//       string tmp((char*)&records[ii*lRec], lRec);
+//       cout << "gid /"<< gid[ii] <<"/ : \"" << tmp <<"\""<< endl;
+//    }
+   
+
+
+   
    vector<unsigned> recordDest;
    vector<unsigned> requestDest;
    findDestinations(anatomy, gid, comm, // inputs
                     recordDest, requestDest); // outputs
 
-   sendRecordsToDropOff(recordDest, comm, lRec,
-                        records, gid);
+   unsigned nRecv = sendRecordsToDropOff(recordDest, comm, lRec,
+                                         records, gid);
 
+   // From this point on, gid array is no longer in sync with records.
+   // It should not be used.  In fact, we ought to dellocate its memory.
+   
+   //ddt
+//    for (unsigned ii=0; ii<nRecv; ++ii)
+//    {
+//       string tmp((char*)&records[ii*(lRec+8)], lRec+8);
+//       cout << tmp << endl;
+//    }
+   
    vector<RecordRequest> requests;
-   sendRequestsToDropOff(requestDest, comm, anatomy, records.size(),
+   sendRequestsToDropOff(requestDest, comm, anatomy, nRecv,
                          requests);
 
    sendRecordsToRequests(requests, lRec, records, anatomy, comm);

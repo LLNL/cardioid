@@ -38,6 +38,11 @@ void simulationLoop(Simulate& sim)
   for (unsigned ii=sim.anatomy_.nLocal(); ii<sim.anatomy_.size(); ++ii)
      sim.VmArray_[ii] = 0;
 
+//ddt  for (unsigned ii=0; ii<sim.anatomy_.nLocal(); ++ii)
+//ddt  cout << sim.anatomy_.gid(ii) <<endl;
+  
+
+  
   // Load state file, assign corresponding values to membrane voltage
   // and cell model
   if (!sim.stateFilename_.empty())

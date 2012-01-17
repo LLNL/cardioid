@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cassert>
 #include <map>
+//ddt #include <iostream>
 
 using namespace std;
 
@@ -49,6 +50,8 @@ TT06_RRG::VarHandle TT06_RRG::getVarHandle(const string& varName)
 
 void TT06_RRG::setVariable(VarHandle varHandle, double value)
 {
+//ddt   cout << "Setting var "<< varHandle << "=" << value<<endl;
+   
    switch (varHandle)
    {
      case undefinedName:
