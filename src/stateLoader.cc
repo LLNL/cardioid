@@ -40,6 +40,41 @@ bool operator<(const RecordRequest& a, const RecordRequest& b)
    return a.dest < b.dest;
 }
 
+/** This is an internal self test that makes sure that the number of
+ *  records headed for a drop-off site and the number of requests headed
+ *  for that site match. */
+void testDestinations(const vector<unsigned>& recordDest,
+                      const vector<unsigned>& requestDest,
+                      MPI_Comm comm)
+{
+   int nTasks;
+   int myRank;
+   MPI_Comm_size(comm, &nTasks);
+   MPI_Comm_rank(comm, &myRank);
+
+   vector<unsigned> sendBuf(nTasks, 0);
+   vector<int> recvCnt(nTasks, 1);
+
+   for (unsigned ii=0; ii<recordDest.size(); ++ii)
+      ++sendBuf[recordDest[ii]];
+
+   unsigned nRecDest;
+   MPI_Reduce_scatter(&sendBuf[0], &nRecDest, &recvCnt[0], MPI_INT, MPI_SUM, comm);
+
+   sendBuf.assign(nTasks, 0);
+   for (unsigned ii=0; ii<requestDest.size(); ++ii)
+      ++sendBuf[requestDest[ii]];
+
+   unsigned nReqDest;
+   MPI_Reduce_scatter(&sendBuf[0], &nReqDest, &recvCnt[0], MPI_INT, MPI_SUM, comm);
+
+   assert(nRecDest == nReqDest);
+//   cout << "Rank " << myRank << " Records " << nRecDest << " Requests " << nReqDest << endl;
+//   cout << "Test Passed" << endl;
+}
+
+
+
 /** Populates the records and gid array from the named pio file.  The
  *  records array will contain the raw record data exactly as it was read
  *  with record ii starting at records[ii*lRec].  This routine does
@@ -153,6 +188,8 @@ void findDestinations(const Anatomy& anatomy,
       THREE_VECTOR r = indexTo3Vector(anatomy.gid(ii));
       requestDest[ii] = gao_nearestCenter(gao, r);
    }
+
+   testDestinations(recordDest, requestDest, comm);
    
    gao_destroy(gao);
 }
@@ -339,6 +376,7 @@ BucketOfBits loadAndDistributeState(const std::string& filename,
    findDestinations(anatomy, gid, comm, // inputs
                     recordDest, requestDest); // outputs
 
+   
    unsigned nRecv = sendRecordsToDropOff(recordDest, comm, lRec,
                                          records, gid);
 
@@ -360,13 +398,10 @@ BucketOfBits loadAndDistributeState(const std::string& filename,
 
    // At this point we should have all of our records.
 
-   // 1. Construct BucketOfBits.  Need to hand over pio header info.
-   // We could have returned the bucket from the readStateDate call.
-
    map<Long64, unsigned> recordMap;
    unsigned itemSize = lRec + sizeof(Long64);
    unsigned nRecords = records.size()/itemSize;
-   assert(nRecords == requests.size());
+   assert(nRecords == anatomy.nLocal());
    for (unsigned ii=0; ii<nRecords; ++ii)
    {
       Long64* gidPtr = (Long64*) &(records[ii*itemSize]);
