@@ -9,10 +9,11 @@
 
 #include "Anatomy.hh"
 #include "Reaction.hh"
-#include "TT04_bbReaction.hh"
 #include "TT04_CellML_Reaction.hh"
 #include "TT04Dev_Reaction.hh"
 #include "TT06_CellML_Reaction.hh"
+#include "TT06Dev_Reaction.hh"
+#include "TT06_RRG_Reaction.hh"
 #include "ReactionFHN.hh"
 
 using namespace std;
@@ -36,18 +37,19 @@ Anatomy buildAnatomy(int cellType)
   return a;
 }
 
-Reaction* factory(const string& name, const Anatomy& anatomy)
+Reaction* factory(const string& name, const Anatomy& anatomy, double tolerance,int mod)
 {
-   if (name == "bb_tt04")        return new TT04_bbReaction(anatomy);
    if (name == "cellml_tt04")    return new TT04_CellML_Reaction(anatomy, TT04_CellML_Reaction::rushLarsen);
    if (name == "cellml_tt04_fe") return new TT04_CellML_Reaction(anatomy, TT04_CellML_Reaction::forwardEuler);
-   if (name == "cellml_tt06_fe") return new TT06_CellML_Reaction(anatomy);
+   if (name == "cellml_tt06")    return new TT06_CellML_Reaction(anatomy, TT06_CellML_Reaction::rushLarsen);
+   if (name == "cellml_tt06_fe") return new TT06_CellML_Reaction(anatomy, TT06_CellML_Reaction::forwardEuler);
+   if (name == "tt06rrg")        return new TT06_RRG_Reaction(anatomy);
    if (name == "fhn")            return new ReactionFHN(anatomy);
    if (name == "tt04dev")        return new TT04Dev_Reaction(anatomy);
+   if (name == "tt06dev")        return new TT06Dev_Reaction(anatomy,tolerance,mod);
    assert(false);
    return 0;
 }
-
 
 
 int main(int argc, char *argv[])
@@ -57,10 +59,10 @@ int main(int argc, char *argv[])
   const double stimOffset = 0.0;  // delay onset of stim at each beat, msec
   const int printRate = 50;       // frequency of voltage printing
   
-  if (argc < 10)
+  if (argc < 11)
   {
     cout << "program arguments:" << endl;
-    cout << "argv[1] - method name (bb, mr, cellml, cellml_tt06)" << endl;
+    cout << "argv[1] - method name (see list below)" << endl;
     cout << "argv[2] - amplitude of stimulus -52.0" << endl;
     cout << "argv[3] - length of stimulus [ms] 1 ms" << endl;
     cout << "argv[4] - time step [ms] 2e-4 ms"<< endl;
@@ -69,6 +71,19 @@ int main(int argc, char *argv[])
     cout << "argv[7] - beats per restitution block  50" << endl;
     cout << "argv[8] - extra time between blocks [ms]  0 ms" << endl; 
     cout << "argv[9] - cell position [endo=0; mid=1; epi=2]" << endl;
+    cout << "argv[10] - tolerance for pade approximations" << endl;
+    cout << "argv[11] - mod (used by tt06dev only)" << endl;
+      cout <<endl;
+      cout << "Supported cell models:" <<endl;
+      cout << "----------------------" <<endl;
+      cout << "   cellml_tt04      TT04 from CellML.  Rush-Larsen integrator" << endl;
+      cout << "   cellml_tt04_fe   TT04 from CellML.  Forward Euler integrator" << endl;
+      cout << "   cellml_tt06      TT06 from CellML.  Rush-Larsen integrator" << endl;
+      cout << "   cellml_tt06_fe   TT06 from CellML.  Forward Euler integrator" << endl;
+      cout << "   tt06rrg          TT06 as modified by Rice et al." << endl;
+      cout << "   fhn              FitzHugh-Nagumo" << endl;
+      cout << "   tt04dev          Developmental version of TT04" << endl;
+      cout << "   tt06dev          Developmental version of TT06" << endl;
     return 0;
   }
 
@@ -85,9 +100,13 @@ int main(int argc, char *argv[])
   int nBeatsPerBlock =       atoi(argv[7]);
   double timeBetween =       atof(argv[8]);
   int cellPosition =         atoi(argv[9]);
-
+  double tolerance =        atof(argv[10]);
+  int mod = 0;
+  if (argc > 11) 
+     mod =                atoi(argv[11]);
+  
   Anatomy anatomy = buildAnatomy(cellPosition);
-  Reaction* cellModel = factory(method, anatomy);
+  Reaction* cellModel = factory(method, anatomy,tolerance,mod);
      
   cout << "# method: " << method
        << "\tstimMagnitude " << stimMagnitude
