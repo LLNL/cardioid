@@ -169,7 +169,7 @@ makedirs:
 #------------------------------------------------------------------------------
 #  Cleanup object files
 clean :
-	rm -rf $(OBJDIR)-*/*.o
+	rm -rf $(OBJDIR)/*.o
 	rm -f $(BINDIR)/$(EXENAME)-$(ARCH)*
 	rm -f .depend_$(ARCH)*
 	rm -f testLoadBalancer
