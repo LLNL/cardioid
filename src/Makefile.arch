@@ -53,6 +53,9 @@ endif
 ifeq ($(HOSTNAME),blackcomb)
   ARCHGUESS = osx
 endif
+ifeq ($(HOSTNAME),sierra)
+  ARCHGUESS = peloton
+endif
 
 ifndef ARCHGUESS
    $(error Unrecognized build host.  Edit Makefile.arch)
