@@ -345,7 +345,7 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98Constants(
    diffConst[x][y][z].A6  = -(conductivityMatrix[i-1][j+1][k].a12 * diffConst[x][y][z].A6);
    diffConst[x][y][z].A7  = conductivityMatrix[i-1][j-1][k].a12 * diffConst[x][y][z].A7;
    diffConst[x][y][z].A8  = -(conductivityMatrix[i+1][j-1][k].a12 * diffConst[x][y][z].A8);
-   if (conductivityMatrix[i][j][k].a11 == 0.0)
+   if (conductivityMatrix[i][j][k].a33 == 0.0)
    {
       diffConst[x][y][z].A9  = conductivityMatrix[i][j][k+1].a33 * dzdzInv;
       diffConst[x][y][z].A10 = conductivityMatrix[i][j][k-1].a33 * dzdzInv;
