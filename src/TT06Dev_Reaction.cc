@@ -5,11 +5,6 @@
 
 using namespace std;
 
-struct TT06DevState
-{
-   double state[nStateVar];
-   int cellType; 
-};
 
 TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int mod)
 : nCells_(anatomy.nLocal())
@@ -62,7 +57,7 @@ void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<do
    double rates[nStateVar];
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
-      dVm[ii] = computeNonGateRates(dt, Vm[ii], s_[ii].state, s_[ii].cellType, rates);
+      computeNonGateRates(1,&(Vm[ii]), &(s_[ii]), &dVm[ii],rates);
       computeGateRates(dt, Vm[ii], s_[ii].state, s_[ii].cellType, rates);
       rates[K_i] += iStim[ii]*c9 ;
       for (int i=0;i<nStateVar;i++) s_[ii].state[i] += dt*rates[i]; 
