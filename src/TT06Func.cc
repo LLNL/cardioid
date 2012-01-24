@@ -359,24 +359,38 @@ double fv6(double dV0, void *parm)
 void makeFit(double tol, double V0, double V1, double deltaV , int maxOrder, int maxCost,int mod) 
 {
    int nPade=0;; 
-   fit[nPade++]=padeApprox("fv0",fv0,NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
-   fit[nPade++]=padeApprox("fv1",fv1,NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
-   fit[nPade++]=padeApprox("fv2",fv2,NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
-   fit[nPade++]=padeApprox("fv3",fv3,NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
-   fit[nPade++]=padeApprox("fv4",fv4,NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
-   fit[nPade++]=padeApprox("fv5",fv5,NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
-   fit[nPade++]=padeApprox("fv6",fv6,NULL,0,tol,deltaV,0,130,maxOrder,maxCost); 
+   int nT = maxOrder+1; 
+   if (1) 
+   {
+   fit[nPade++]=padeApprox("fv0",fv0,NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
+   fit[nPade++]=padeApprox("fv1",fv1,NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
+   fit[nPade++]=padeApprox("fv2",fv2,NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
+   fit[nPade++]=padeApprox("fv3",fv3,NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
+   fit[nPade++]=padeApprox("fv4",fv4,NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
+   fit[nPade++]=padeApprox("fv5",fv5,NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
+   }
+   else
+   {
+   fit[nPade++]=padeApprox("fv0",fv0,NULL,0,tol,deltaV,V0,V1,-1,-6,maxCost); 
+   fit[nPade++]=padeApprox("fv1",fv1,NULL,0,tol,deltaV,V0,V1,-1,-6,maxCost); 
+   fit[nPade++]=padeApprox("fv2",fv2,NULL,0,tol,deltaV,V0,V1,-1,-6,maxCost); 
+   fit[nPade++]=padeApprox("fv3",fv3,NULL,0,tol,deltaV,V0,V1,-1,-6,maxCost); 
+   fit[nPade++]=padeApprox("fv4",fv4,NULL,0,tol,deltaV,V0,V1,-1,-6,maxCost); 
+   fit[nPade++]=padeApprox("fv5",fv5,NULL,0,tol,deltaV,V0,V1,-3,-6,maxCost); 
+   }
+
+   fit[nPade++]=padeApprox("fv6",fv6,NULL,0,tol,deltaV,0,130,nT,nT,maxCost); 
 
    int k=0; 
-   fit[nPade++]=padeApprox( mhuName[k], mhuFunc[k],NULL,0,tol,deltaV,0.0,2.0,maxOrder,maxCost); 
-   fit[nPade++]=padeApprox(tauRName[k],tauRFunc[k],NULL,0,tol,deltaV,0.0,2.0,maxOrder,maxCost); 
+   fit[nPade++]=padeApprox( mhuName[k], mhuFunc[k],NULL,0,tol,deltaV,0.0,2.0,nT,nT,maxCost); 
+   fit[nPade++]=padeApprox(tauRName[k],tauRFunc[k],NULL,0,tol,deltaV,0.0,2.0,nT,nT,maxCost); 
    for (k=1;k<12;k++) 
    {
-     fit[nPade++]=padeApprox( mhuName[k], mhuFunc[k],NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
-     fit[nPade++]=padeApprox(tauRName[k],tauRFunc[k],NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
+     fit[nPade++]=padeApprox( mhuName[k], mhuFunc[k],NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
+     fit[nPade++]=padeApprox(tauRName[k],tauRFunc[k],NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
    }
-   fit[nPade++]=padeApprox(mhuName[k], mhuFunc[k],NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
-   fit[nPade++]=padeApprox(tauRName[k],tauRFunc[k],NULL,0,tol,deltaV,V0,V1,maxOrder,maxCost); 
+   fit[nPade++]=padeApprox( mhuName[k], mhuFunc[k],NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
+   fit[nPade++]=padeApprox(tauRName[k],tauRFunc[k],NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
    if (getRank(0)==0) 
    {
       FILE *file=fopen("pade.data","w"); 
@@ -410,19 +424,36 @@ double defaultVoltage(int cellType)
 }
 
 
+void  nonGateVoltageFunc(int nCells, const double *VM, double *fv)
+{
+
+   for (int k=0;k<nCells;k++)
+   {
+   for (int i=0;i<6;i++) fv[6*k+i]=fit[i]->afunc(VM[k], fit[i]->aparms); 
+   }
+}
+
 
 #define logSeries(x) ((x)*(1.0+(x)*(-0.5+(x)/3.0)))
-double computeNonGateRates(double dt, double Vm, double* STATES, int cellType, double *rates)
+void computeNonGateRates(int nCells, const double *VM, TT06DevState* States, double *dVdt, double *rates)
 {
    
+ //double FV[nCells*6]; 
+ //double *fv = FV; 
+ //nonGateVoltageFunc(nCells,VM,FV); 
+ for (int ii=0;ii<nCells;ii++) 
+ {
+   double Vm = VM[ii]; 
+   double *states = States->state; 
+   int cellType = States->cellType; 
    double x[8]; 
-   x[0] = STATES[Na_i]*c25; 
-   x[1] = STATES[Ca_i]*c26; 
-   x[2] = SQ(STATES[Ca_i]*c27); 
-   x[3] = SQ(STATES[Ca_i]*c28+c29); 
-   x[4] = SQ(STATES[Ca_SR]*c30); 
-   x[5] = SQ(STATES[Ca_SR]*c31+c32); 
-   x[6] = SQ(STATES[Ca_ss]*c33+c34); 
+   x[0] = states[Na_i]*c25; 
+   x[1] = states[Ca_i]*c26; 
+   x[2] = SQ(states[Ca_i]*c27); 
+   x[3] = SQ(states[Ca_i]*c28+c29); 
+   x[4] = SQ(states[Ca_SR]*c30); 
+   x[5] = SQ(states[Ca_SR]*c31+c32); 
+   x[6] = SQ(states[Ca_ss]*c33+c34); 
    double sigm0 = sigm(x[0]); 
    double sigm1 = sigm(x[1]); 
    double sigm2 = sigm(x[2]); 
@@ -431,47 +462,52 @@ double computeNonGateRates(double dt, double Vm, double* STATES, int cellType, d
    double sigm5 = sigm(x[5]); 
    double sigm6 = sigm(x[6]); 
    
-   double dV0 = Vm -c3*log(STATES[K_i]) -c5;
-   double dV1 = Vm -c3*log(STATES[Na_i])-c4;
-   double dV2 = dV0-c3*logSeries(c2*STATES[Na_i]/STATES[K_i])+c5-c6; // Assumption:  c2*STATES[Na_i]/STATES[K_i] is small; 
-   double dV3 = Vm- 0.5*c3*log(STATES[Ca_i]) - c8;
-   //double ss = c2*(STATES[Na_i]/STATES[K_i]);
-   //double dV2 =Vm-c3*log(STATES[K_i]) -c3*log(1+ss) -c6;
-   //double dV2 =Vm-c3*log(STATES[K_i])-c3*logSeries(c2*STATES[Na_i]/STATES[K_i]) -c6;
-   //double dV2 = Vm -c3*log(STATES[K_i]+c2*STATES[Na_i]) -c6;
+   double dV0 = Vm -c3*log(states[K_i]) -c5;
+   double dV1 = Vm -c3*log(states[Na_i])-c4;
+   double dV2 = dV0-c3*logSeries(c2*states[Na_i]/states[K_i])+c5-c6; // Assumption:  c2*states[Na_i]/states[K_i] is small; 
+   double dV3 = Vm- 0.5*c3*log(states[Ca_i]) - c8;
+   //double ss = c2*(states[Na_i]/states[K_i]);
+   //double dV2 =Vm-c3*log(states[K_i]) -c3*log(1+ss) -c6;
+   //double dV2 =Vm-c3*log(states[K_i])-c3*logSeries(c2*states[Na_i]/states[K_i]) -c6;
+   //double dV2 = Vm -c3*log(states[K_i]+c2*states[Na_i]) -c6;
    
-   double fv[5]; 
-   for (int i=0;i<5;i++) fv[i]=fit[i]->afunc(Vm, fit[i]->aparms); 
-   double fd = fit[5]->afunc(Vm, fit[5]->aparms) +fit[6]->afunc(dV0, fit[6]->aparms); 
+   double fv[6]; 
+   for (int i=0;i<6;i++) fv[i]=fit[i]->afunc(Vm, fit[i]->aparms); 
+   double fd =  fv[5]  +fit[6]->afunc(dV0, fit[6]->aparms); 
 
-   double tmp0 =    fd +  cB[cellType]*STATES[r_gate]*STATES[s_gate]+ c11*STATES[Xr1_gate]*STATES[Xr2_gate] ;
-   double tmp1 =  c20*CUBE(STATES[m_gate])*STATES[h_gate]*STATES[j_gate]+c21;
-   double tmp2 =  cA[cellType]*SQ(STATES[Xs_gate]);
+   double tmp0 =  fd +  cB[cellType]*states[r_gate]*states[s_gate]+ c11*states[Xr1_gate]*states[Xr2_gate] ;
+   double tmp1 =  c20*CUBE(states[m_gate])*states[h_gate]*states[j_gate]+c21;
+   double tmp2 =  cA[cellType]*SQ(states[Xs_gate]);
    double tmp8  = c18+c19*sigm4; //Sigm4
+   double  tmp9 =    tmp8*states[Ca_ss]+c36; 
    
-   double sigmCa_ss =   SQ(STATES[Ca_ss])/(tmp8*c17 + SQ(STATES[Ca_ss]));
-   double  tmp9 =    tmp8*STATES[Ca_ss]+c36; 
    
    double itmpA =  sigm0 * fv[0];                          //Sigm0
-   double itmp0 = CUBE(STATES[Na_i])*fv[1]-STATES[Ca_i]*fv[2]; 
-   double itmp1 = STATES[d_gate]*STATES[f_gate]*STATES[f2_gate]*STATES[fCass_gate]*(fv[4]-STATES[Ca_ss]*fv[3]);
+   double itmp0 = CUBE(states[Na_i])*fv[1]-states[Ca_i]*fv[2]; 
+   double itmp1 = states[d_gate]*states[f_gate]*states[f2_gate]*states[fCass_gate]*(fv[4]-states[Ca_ss]*fv[3]);
    double itmp2 = itmp0 - 1.5*itmpA+tmp1*dV1; 
    double itmp3 = itmpA + tmp0*dV0 +tmp2*dV2; 
    double itmp4 = c7*dV3+c24*sigm1; 
 
-   double itmp5=  c43*(STATES[Ca_i] - STATES[Ca_SR])+c44*sigm2;      
-   double itmp6 = c23*(STATES[Ca_ss] - STATES[Ca_i]);
-   double itmp7 = sigmCa_ss*STATES[R_prime]*(STATES[Ca_SR] - STATES[Ca_ss]);
+   double itmp5=  c43*(states[Ca_i] - states[Ca_SR])+c44*sigm2;      
+   double itmp6 = c23*(states[Ca_ss] - states[Ca_i]);
+
+   double sigmCa_ss =   SQ(states[Ca_ss])/(tmp8*c17 + SQ(states[Ca_ss]));
+   double itmp7 = sigmCa_ss*states[R_prime]*(states[Ca_SR] - states[Ca_ss]);
+
    
-   double dVdt  = itmp1+itmp2*c22+itmp3*c22-itmp4*c10;
+   dVdt[ii]  = itmp1+itmp2*c22+itmp3*c22-itmp4*c10;
 
    rates[K_i]     = (itmp3);
    rates[Na_i]    = (itmp2+2.0*itmp0);
    rates[Ca_i]    = (sigm3*(itmp4-itmp0+itmp6*c15-itmp5*c16));
+
    rates[Ca_ss]   = (sigm6*(itmp6+itmp7*c14+itmp1*c13));    
    rates[Ca_SR]   = (sigm5*(itmp5-c40*itmp7));
-   rates[R_prime] = (c36 - tmp9*STATES[R_prime]);
-   return dVdt; 
+
+   rates[R_prime] = (c36 - tmp9*states[R_prime]);
+   //fv += 6; 
+   }
 }
 
 

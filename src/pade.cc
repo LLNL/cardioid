@@ -29,7 +29,6 @@ double padeFunc(double x, PADE *pade)
 }
 double polyFunc(double x, PADE *pade) 
 {
-   int l=pade->l; 
    int m=pade->m; 
    double *a=pade->coef; 
    double sum1=0; 
@@ -141,6 +140,12 @@ void padeErrorInfo(PADE pade)
 }
 static void  minimizeCost(PADE *pade,double tol, int maxCost, int lMax, int mMax)
 {
+   int lMin = 1; 
+   int mMin = 1; 
+   int minCost=4; 
+   if (lMax < 0 && mMax < 0)  minCost = costFunc(lMax,mMax); 
+   if (lMax < 0) { lMax *= -1; lMin=lMax; }
+   if (mMax < 0) { mMax *= -1; mMin=mMax; }
    int n = pade->n; 
    double *x = pade->x; 
    double *y = pade->y; 
@@ -151,10 +156,10 @@ static void  minimizeCost(PADE *pade,double tol, int maxCost, int lMax, int mMax
    double amin[lMax+mMax]; 
    double errMaxMin = -1.0; 
    double errRMSMin ; 
-   for (int kk=4;kk<maxCost;kk++) 
+   for (int kk=minCost;kk<=maxCost;kk++) 
    {
-        for (int l=1;l<=lMax;l+=1)
-        for (int m=1;m<=mMax;m+=1)
+        for (int l=lMin;l<=lMax;l+=1)
+        for (int m=mMin;m<=mMax;m+=1)
         {
            if (costFunc(l,m) != kk) continue; 
            double a[l+m], errMax, errRMS; 
@@ -187,7 +192,7 @@ void padeWrite(FILE *file,PADE pade)
         for (int i=0;i<(pade.l+pade.m);i++) fprintf(file, "%21.14e ",pade.coef[i]); 
 	fprintf(file, ";}\n"); 
 }
-PADE   *padeApprox (const char *name, double (*func)(double x, void *parms), void *parms, int size_parms,double tol, double deltaX, double x0, double x1, int maxOrder, int maxCost)
+PADE   *padeApprox (const char *name, double (*func)(double x, void *parms), void *parms, int size_parms,double tol, double deltaX, double x0, double x1, int lMax,int mMax, int maxCost)
 {
    PADE *pade=(PADE *)malloc(sizeof(PADE)); 
    pade->name = strdup(name); 
@@ -213,7 +218,7 @@ PADE   *padeApprox (const char *name, double (*func)(double x, void *parms), voi
    makeFunctionTable(pade) ;
    if (tol > 0)  
    {
-      minimizeCost(pade, tol, maxCost, maxOrder+1, maxOrder+1);
+      minimizeCost(pade, tol, maxCost, lMax, mMax);
       if (pade->l < 2  )  pade->afunc = (double (*)(double , void *))polyFunc; 
    }
    else { pade->afunc = func ; pade->aparms= pade->parms; }

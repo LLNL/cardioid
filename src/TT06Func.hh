@@ -27,10 +27,16 @@
 // int mapCell2Dev[]                  {1,2,3,10,17,18,14,7,8,9,4,5,6,16,11,12,13,15};
 enum TT06STATE { K_i, Na_i, Ca_i, Ca_ss, Ca_SR, R_prime, fCass_gate, m_gate, h_gate, j_gate, Xr1_gate, Xr2_gate, Xs_gate, r_gate, d_gate, f_gate, f2_gate, s_gate, nStateVar} ; 
 
+struct TT06DevState
+{
+   double state[nStateVar];
+   int cellType; 
+};
+
 #define gateOffset 6
 void initState(double *state,int cellType);
 void initCnst();
-double computeNonGateRates(double dt, double Vm, double* state, int cellType, double *rates);
+void computeNonGateRates(int n, const double *Vm, TT06DevState *State,  double *dVdt,double *rates);
 void computeGateRates(double dt, double Vm, double* state, int cellType, double *rates);
 double get_c9();
 void makeFit(double tol, double V0, double V1, double deltaV, int maxOrder, int maxCost, int mod);
