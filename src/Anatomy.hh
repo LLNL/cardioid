@@ -5,7 +5,12 @@
 #include <cassert>
 #include "AnatomyCell.hh"
 #include "Tuple.hh"
+#include "SymmetricTensor.hh"
 #include "IndexToTuple.hh"
+
+class SigmaTensorMatrix;
+class Conductivity;
+
 class Anatomy
 {
  public:
@@ -39,11 +44,10 @@ class Anatomy
    double dz() const;
    
    int gid(unsigned ii) const;
-   int theta(unsigned ii) const;
-   int phi(unsigned ii) const;
+   SymmetricTensor conductivity(unsigned ii) const;
    int cellType(unsigned ii) const;
    Tuple globalTuple(unsigned ii) const;
-
+   
    std::vector<AnatomyCell>& cellArray();
    const std::vector<AnatomyCell>& cellArray() const;
    
@@ -87,8 +91,7 @@ inline double  Anatomy::dy() const { return dy_;}
 inline double  Anatomy::dz() const { return dz_;}
 
 inline int  Anatomy::gid(unsigned ii) const { return cell_[ii].gid_;}
-inline int  Anatomy::theta(unsigned ii) const { return cell_[ii].theta_;}
-inline int  Anatomy::phi(unsigned ii) const { return cell_[ii].phi_;}
+inline SymmetricTensor Anatomy::conductivity(unsigned ii) const {return cell_[ii].sigma_;}
 inline int  Anatomy::cellType(unsigned ii) const { return cell_[ii].cellType_;}
 
 inline Tuple Anatomy::globalTuple(unsigned ii) const

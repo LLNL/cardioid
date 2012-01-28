@@ -24,6 +24,7 @@ niederer ANATOMY
    xSize = 3; 
    ySize = 7;
    zSize = 20;
+   conductivity = conductivity;
 }
 
 koradi DECOMPOSITION 
@@ -50,7 +51,6 @@ Saleheen98Fast DIFFUSION
 {
    method = Saleheen98;
    variant = precompute;
-   conductivity = conductivity;
    diffusionScale = 714.2857143;      // mm^3/mF
 }
 
@@ -61,24 +61,11 @@ conductivity CONDUCTIVITY
     sigmaTi = 0.0000176062;  // units S/mm
 }
 
-uniform CONDUCTIVITY
-{
-    method = uniform;
-    sigma11 = 0.0001;  // S/mm
-    sigma22 = 0.0001;  // S/mm
-    sigma33 = 0.0001;  // S/mm
-    sigma12 = 0.0;
-    sigma13 = 0.0;
-    sigma23 = 0.0;
-}
-
-
 tt06 REACTION
 {
     method = TT06_CellML;
     integrator = rushLarsen;
 }
-
 
 boxStimulus STIMULUS
 {
@@ -91,8 +78,6 @@ boxStimulus STIMULUS
    duration = 2;
    period = 1000;
 }
-   
-
 
 activationTime SENSOR
 {

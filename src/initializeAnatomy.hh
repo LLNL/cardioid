@@ -4,8 +4,8 @@
 #include <mpi.h>
 #include <string>
 
-class Simulate;
+class Anatomy;
 
-void initializeAnatomy(Simulate& sim, const std::string& name, MPI_Comm comm);
+void initializeAnatomy(Anatomy& anatomy, const std::string& name, MPI_Comm comm);
 
 #endif

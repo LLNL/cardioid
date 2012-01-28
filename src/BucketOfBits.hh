@@ -18,6 +18,7 @@ class BucketOfBits
    
       void getValue(unsigned fieldIndex, double& value) const;
       void getValue(unsigned fieldIndex, int& value) const;
+      void getValue(unsigned fieldIndex, unsigned long long& value) const;
       void getValue(unsigned fieldIndex, std::string& value) const;
       
     private:

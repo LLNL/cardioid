@@ -1,7 +1,7 @@
 #ifndef FIBRE_CONDUCTIVTY_HH
 #define FIBRE_CONDUCTIVTY_HH
 
-#include "Conductivity.hh"
+#include "SymmetricTensor.hh"
 
 struct FibreConductivityParms
 {
@@ -10,12 +10,12 @@ struct FibreConductivityParms
 };
 
 
-class FibreConductivity : public Conductivity
+class FibreConductivity
 {
  public:
    FibreConductivity(const FibreConductivityParms& p);
    
-   void compute(const AnatomyCell& cell, SigmaTensorMatrix& sigma);
+   void compute(double theta, double phi, SymmetricTensor& sigma);
    
  private:
    double sigmaTi_;

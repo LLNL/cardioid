@@ -28,7 +28,7 @@ void initializeSimulate(const string& name, Simulate& sim)
 
    string nameTmp;
    objectGet(obj, "anatomy", nameTmp, "anatomy");
-   initializeAnatomy(sim, nameTmp, MPI_COMM_WORLD);
+   initializeAnatomy(sim.anatomy_, nameTmp, MPI_COMM_WORLD);
    sim.nx_ = sim.anatomy_.nx();
    sim.ny_ = sim.anatomy_.ny();
    sim.nz_ = sim.anatomy_.nz();

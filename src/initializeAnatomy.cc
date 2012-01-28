@@ -3,52 +3,79 @@
 #include <iostream>
 #include <cassert>
 
-#include "Simulate.hh"
 #include "AnatomyReader.hh"
 #include "object_cc.hh"
 #include "Anatomy.hh"
 #include "TupleToIndex.hh"
+#include "setConductivity.hh"
+#include "BucketOfBits.hh"
+
 using namespace std;
 
 namespace
 {
-   void readUsingPio(Simulate& sim, OBJECT* obj, MPI_Comm comm);
-   void generateTissueBrick(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+   // Caller is resposible to delete the returned pointer
+   BucketOfBits* readUsingPio(Anatomy& anatomy, const set<int>& typeSet,
+                              OBJECT* obj, MPI_Comm comm);
+   BucketOfBits* generateTissueBrick(Anatomy& anatomy, OBJECT* obj, MPI_Comm comm);
 }
 
    
 
-void initializeAnatomy(Simulate& sim, const string& name, MPI_Comm comm)
+void initializeAnatomy(Anatomy& anatomy, const string& name, MPI_Comm comm)
 {
    OBJECT* obj = object_find(name.c_str(), "ANATOMY");
 
+   string conductivityName;
+   objectGet(obj, "conductivity", conductivityName, "");
    double dx, dy, dz;
    objectGet(obj, "dx", dx, "0.2");
    objectGet(obj, "dy", dy, "0.2");
    objectGet(obj, "dz", dz, "0.2");
-   sim.anatomy_.dx() = dx;
-   sim.anatomy_.dy() = dy;
-   sim.anatomy_.dz() = dz;
+   anatomy.dx() = dx;
+   anatomy.dy() = dy;
+   anatomy.dz() = dz;
 
+   set<int> typeSet;
+   typeSet.insert(100);
+   typeSet.insert(101);
+   typeSet.insert(102);
+   typeSet.insert(30);
+   typeSet.insert(31);
+   typeSet.insert(32);
+   typeSet.insert(33);
+   typeSet.insert(34);
+   typeSet.insert(35);
+   typeSet.insert(75);
+   typeSet.insert(76);
+   typeSet.insert(77);
+   
+   BucketOfBits* data = 0;
+   
    string method;
    objectGet(obj, "method", method, "pio");
-
    if (method == "pio")
-      readUsingPio(sim, obj, comm);
+      data = readUsingPio(anatomy, typeSet, obj, comm);
    else if (method == "brick")
-      generateTissueBrick(sim, obj, comm);
+      data = generateTissueBrick(anatomy, obj, comm);
    else if (method == "simple")
       // We can wire in the simple load code that Erik originally wrote
       // here if we still need it.
       assert(1==0);
    else
       assert(1==0);
+
+   Tuple globalGridSize(anatomy.nx(), anatomy.ny(), anatomy.nz());
+   
+   setConductivity(conductivityName, *data, globalGridSize, typeSet, anatomy.cellArray());
+   delete data;
 }
 
 
 namespace
 {
-   void readUsingPio(Simulate& sim, OBJECT* obj, MPI_Comm comm)
+   BucketOfBits* readUsingPio(Anatomy& anatomy, const set<int>& typeSet,
+                              OBJECT* obj, MPI_Comm comm)
    {
       int myRank;
       MPI_Comm_rank(comm, &myRank);
@@ -58,14 +85,15 @@ namespace
       
       if (myRank==0) cout << "Starting read" <<endl;
 
-      AnatomyReader reader(fileName, comm, sim);
+      BucketOfBits* bucketP = readAnatomy(fileName, comm, anatomy, typeSet);
       if (myRank==0) cout << "Finished read" <<endl;
+      return bucketP;
    }
 }
 
 namespace
 {
-   void generateTissueBrick(Simulate& sim, OBJECT* obj, MPI_Comm comm)
+   BucketOfBits*  generateTissueBrick(Anatomy& anatomy, OBJECT* obj, MPI_Comm comm)
    {
       int myRank;
       int nTasks;
@@ -79,8 +107,6 @@ namespace
       objectGet(obj, "zSize", zSize, "20");
       objectGet(obj, "cellType", cellType, "102");
 
-      Anatomy& anatomy = sim.anatomy_;
-      
       int nx = int(xSize/anatomy.dx());
       int ny = int(ySize/anatomy.dy());
       int nz = int(zSize/anatomy.dz());
@@ -95,16 +121,16 @@ namespace
       Long64 gidEnd   = min(maxGid, gidBegin+Long64(cellsPerTask));
       unsigned nLocal = gidEnd - gidBegin;
 
-      vector<AnatomyCell>& cells = sim.anatomy_.cellArray();
+      vector<AnatomyCell>& cells = anatomy.cellArray();
       cells.reserve(nLocal);
       for (Long64 ii=gidBegin; ii<gidEnd; ++ii)
       {
          AnatomyCell tmp;
          tmp.gid_ = ii;
-         tmp.theta_= 0;
-         tmp.phi_ = 0;
          tmp.cellType_ = cellType;
          cells.push_back(tmp);
       }
+      return new BucketOfBits(vector<string>(), vector<string>());
    }
 }
+

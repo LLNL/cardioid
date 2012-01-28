@@ -7,8 +7,7 @@
 #include "LocalGrid.hh"
 
 class Anatomy;
-class Conductivity;
-class SigmaTensorMatrix;
+class SymmetricTensor;
 class Tuple;
 
 
@@ -16,7 +15,6 @@ class Tuple;
 struct Saleheen98DiffusionParms
 {
    double diffusionScale_;
-   std::string conductivityName_;
 };
 
 
@@ -77,20 +75,19 @@ class Saleheen98PrecomputeDiffusion : public Diffusion
    double boundaryFDLaplacianSaleheen98SumPhi(const Tuple& tuple);
    void   boundaryFDLaplacianSaleheen98Constants(
       const int*** tissue,
-      const SigmaTensorMatrix*** sigmaMatrix,
+      const SymmetricTensor*** sigmaMatrix,
       const int& x, const int& y, const int& z,
       const double& dxInv, const double& dyInv, const double& dzInv);
       
    
    void updateVoltageBlock(const std::vector<double>& Vm);
    void printAllConductivities(const Array3d<int>& tissue,
-                               const Array3d<SigmaTensorMatrix>& sigma);
+                               const Array3d<SymmetricTensor>& sigma);
    void printAllDiffusionWeights(const Array3d<int>& tissue);
 
 
    LocalGrid                      localGrid_;
    double                         diffusionScale_;
-   Conductivity*                  conductivity_;
    std::vector<unsigned>          blockIndex_; // for local and remote cells
    std::vector<Tuple>             localTuple_; // only for local cells
    Array3d<DiffusionCoefficients> diffIntra_;

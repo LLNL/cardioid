@@ -1,8 +1,7 @@
 #include "SaleheenDev.hh"
 
 #include "Anatomy.hh"
-#include "Conductivity.hh"
-#include "conductivityFactory.hh"
+#include "SymmetricTensor.hh"
 #include <algorithm>
 #include <iostream>
 
@@ -120,7 +119,6 @@ SaleheenDev::SaleheenDev(
 
    buildTupleArray(anatomy);
    buildBlockIndex(anatomy);
-   conductivity_ = conductivityFactory(parms.conductivityName_, anatomy);
    precomputeCoefficients(anatomy);
 
    int base = VmBlock_.tupleToIndex(1, 1, 1);
@@ -213,15 +211,15 @@ SaleheenDev::precomputeCoefficients(const Anatomy& anatomy)
    unsigned nyGlobal = anatomy.ny();
    unsigned nzGlobal = anatomy.nz();
 
-   SigmaTensorMatrix sigmaZero = {0};
-   Array3d<SigmaTensorMatrix> sigmaMintra(nx, ny, nz, sigmaZero);
+   SymmetricTensor sigmaZero = {0};
+   Array3d<SymmetricTensor> sigmaMintra(nx, ny, nz, sigmaZero);
    Array3d<int> tissue(nx, ny, nz, 0);
 
    const vector<AnatomyCell>& cell = anatomy.cellArray();
    for (unsigned ii=0; ii<anatomy.size(); ++ii)
    {
       unsigned ib = blockIndex_[ii];
-      conductivity_->compute(cell[ii], sigmaMintra(ib));
+      sigmaMintra(ib) = anatomy.conductivity(ii);
       tissue(ib) = anatomy.cellType(ii);
    }
 
@@ -237,8 +235,8 @@ SaleheenDev::precomputeCoefficients(const Anatomy& anatomy)
       
       // compute diffIntra_(ix, iy, iz)
       const int*** tt = (const int***) tissue.cArray();
-      const SigmaTensorMatrix*** ss =
-         (const SigmaTensorMatrix***) sigmaMintra.cArray();
+      const SymmetricTensor*** ss =
+         (const SymmetricTensor***) sigmaMintra.cArray();
       boundaryFDLaplacianSaleheen98Constants(
          tt, ss, ix, iy, iz, dxInv, dyInv, dzInv);
    }
@@ -286,7 +284,7 @@ SaleheenDev::boundaryFDLaplacianSaleheen98SumPhi(const int index)
 void
 SaleheenDev::boundaryFDLaplacianSaleheen98Constants(
    const int*** tissue,
-   const SigmaTensorMatrix*** sigmaMatrix,
+   const SymmetricTensor*** sigmaMatrix,
    const int& x, const int& y, const int& z,
    const double& dxInv, const double& dyInv, const double& dzInv)
 {
@@ -294,7 +292,7 @@ SaleheenDev::boundaryFDLaplacianSaleheen98Constants(
 
 
 
-   SigmaTensorMatrix conductivityMatrix[3][3][3];
+   SymmetricTensor conductivityMatrix[3][3][3];
   
    for (int i=0; i<3; ++i)
       for (int j=0; j<3; ++j)

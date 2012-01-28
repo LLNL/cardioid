@@ -12,6 +12,15 @@ if ($#ARGV != 1 && $#ARGV != 2) {
 
 $file1 = $ARGV[0];
 $file2 = $ARGV[1];
+if (!-e $file1) {
+   print "File $file1 not found!\n";
+   exit;
+}
+if (!-e $file2) {
+   print "File $file2 not found!\n";
+   exit;
+}
+
 if ($#ARGV == 2) {
    $distance = $ARGV[2];
 }
@@ -26,9 +35,9 @@ my @downzeroes2;
 
 
 open FILE1, "$file1";
-my $first = 1;
-my $lastval = 0.0;
-my $lasttime = 0.0;
+$first = 1;
+$lastval = 0.0;
+$lasttime = 0.0;
 LOOP1: while ($line = <FILE1>) {
    $firstchar = substr($line,0,1);
    if ($firstchar eq '#') { next LOOP1; }   # skip comment lines
@@ -56,9 +65,9 @@ LOOP1: while ($line = <FILE1>) {
 close FILE1;
 
 open FILE2, "$file2";
-my $first = 1;
-my $lastval = 0.0;
-my $lasttime = 0.0;
+$first = 1;
+$lastval = 0.0;
+$lasttime = 0.0;
 LOOP2: while ($line = <FILE2>) {
    $firstchar = substr($line,0,1);
    if ($firstchar eq '#') { next LOOP2; }   # skip comment lines
@@ -94,10 +103,10 @@ for ($i=0; $i<$#upzeroes2; $i++) {
       $deltat = $upzeroes2[$i]-$upzeroes1[$i];
       if ($#ARGV == 2) {
          $velocity = $distance/$deltat;
-         printf "pulse $i, deltat = %0.3f, velocity = %0.3f\n",$deltat,$velocity;
+         printf "pulse $i, deltat = %0.4f, velocity = %0.4f\n",$deltat,$velocity;
       }
       else {
-         printf "pulse $i, deltat = %0.3f\n",$deltat;
+         printf "pulse $i, deltat = %0.4f\n",$deltat;
       }
    }
 }

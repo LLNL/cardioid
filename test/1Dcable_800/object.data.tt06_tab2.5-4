@@ -1,17 +1,17 @@
 simulate SIMULATE 
 {
    anatomy = pioAnatomy;
-   decomposition = koradi;
+   decomposition = grid;
    diffusion = Saleheen98Fast;
-   reaction = TT04_CellML;
-   stimulus = test;
+   reaction = TT06_CellML;
+   stimulus = pointStimulus;
    sensor = pointSensor;
    loop = 0;            // in timesteps
-   maxLoop = 50000;     // in timesteps
-   dt = 0.01;           // msec
+   maxLoop = 6000000;
+   dt = 0.02;           // msec
    time = 0;            // msec
-   printRate = 50;      // in timesteps
-   snapshotRate = 5000; // in timesteps
+   printRate = 10000;      // in timesteps
+   snapshotRate = 1000000000; // in timesteps
 }
 
 pioAnatomy ANATOMY 
@@ -19,10 +19,10 @@ pioAnatomy ANATOMY
    method = pio;
    fileName = snapshot.initial/anatomy#;
    cellTypes = -1;
-   dx = 0.167;   // in mm
-   dy = 0.167;   // in mm
-   dz = 0.167;   // in mm
-   conductivity = conductivity;
+   dx = 0.4;   // in mm
+   dy = 0.4;   // in mm
+   dz = 0.4;   // in mm
+   conductivity = uniform;
 }
 
 koradi DECOMPOSITION 
@@ -41,9 +41,12 @@ koradi DECOMPOSITION
 grid DECOMPOSITION 
 {
     method = grid;
-    nx = 16;
-    ny = 16;
-    nz = 32;
+    nx = 1;
+    ny = 1;
+    nz = 16;
+    ninner = 2;
+    threshold = 2;
+    visgrid = 0;
 }
 
 Saleheen98Fast DIFFUSION
@@ -63,9 +66,9 @@ conductivity CONDUCTIVITY
 uniform CONDUCTIVITY
 {
     method = uniform;
-    sigma11 = 0.0001;  // S/mm
-    sigma22 = 0.0001;  // S/mm
-    sigma33 = 0.0001;  // S/mm
+    sigma11 = 0.0;       // S/mm
+    sigma22 = 0.0;       // S/mm
+    sigma33 = 6.1728E-4; // S/mm
     sigma12 = 0.0;
     sigma13 = 0.0;
     sigma23 = 0.0;
@@ -92,6 +95,12 @@ TT04_CellML REACTION
     integrator = rushLarsen;
 }
 
+TT06_CellML REACTION
+{
+    method = TT06_CellML;
+    integrator = rushLarsen;
+}
+
 FHN REACTION
 {
     method = FHN;
@@ -111,10 +120,10 @@ test STIMULUS
 pointStimulus STIMULUS
 {
   method = point;
-  cell = 0;       // grid index of cell to stimulate
+  cell = 13;       // grid index of cell to stimulate
   period = 1000.0;  // msec
-  duration = 1.0; // msec
-  vStim = -52.0;  // mV/msec
+  duration = 2.0; // msec
+  vStim = -100.0;  // mV/msec
   tStart = 10.0;  // time in msec of first stimulus 
 //tf = 5000.0;  // no stimulus after this time (in msec)
 }
@@ -128,17 +137,16 @@ boxStimulus STIMULUS
    duration = 5;
    period = 1000;
 }
-   
 
 pointSensor SENSOR
 {
   method = pointList;
-  pointList = 13 400; // gids to print out (celltype must be nonzero, or no output)
+  pointList = 13 400 3604; // gids to print out (celltype must be nonzero, or no output)
   startTime = 0.0;   // in ms
-  printRate = 50;    // in timesteps
+  printRate = 100;    // in timesteps
   printDerivs = 1;   // print dVm terms in addition to Vm (default = 0, i.e. off)
   dirname = sensorData; // created if necessary
-  filename = vm_vs_t;
+  filename = vm_vs_t_tt06_tab2_5-4;
 }
 
 activationTime SENSOR

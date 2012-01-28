@@ -20,12 +20,16 @@ namespace
 {
    Diffusion* saleheen98DiffusionFactory(OBJECT* obj, const Anatomy& anatomy);
    Diffusion* saleheenDevFactory(OBJECT* obj, const Anatomy& anatomy);
+   void checkForObsoleteKeywords(OBJECT* obj);
 }
 
 
 Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy)
 {
    OBJECT* obj = objectFind(name, "DIFFUSION");
+
+   checkForObsoleteKeywords(obj);
+
    string method; objectGet(obj, "method", method, "undefined");
 
    if (method == "undefined")
@@ -48,7 +52,6 @@ namespace
    Diffusion* saleheen98DiffusionFactory(OBJECT* obj, const Anatomy& anatomy)
    {
       Saleheen98DiffusionParms p;
-      objectGet(obj, "conductivity", p.conductivityName_, "conductivity");
       objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0");
 
       string variant;
@@ -67,7 +70,6 @@ namespace
    Diffusion* saleheenDevFactory(OBJECT* obj, const Anatomy& anatomy)
    {
       SaleheenDevParms p;
-      objectGet(obj, "conductivity", p.conductivityName_, "conductivity");
       objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0");
 
       string variant;
@@ -81,3 +83,10 @@ namespace
    }
 }
 
+namespace
+{
+   void checkForObsoleteKeywords(OBJECT* obj)
+   {
+      assert (object_testforkeyword(obj, "conductivity") == 0);
+   }
+}

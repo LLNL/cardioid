@@ -42,8 +42,12 @@ Anatomy buildAnatomy(int cellType)
    AnatomyCell c;
    c.gid_ = 0;
    c.cellType_ = 100+cellType;
-   c.theta_ = 0;
-   c.phi_ = 0;
+   c.sigma_.a11 = 0;
+   c.sigma_.a12 = 0;
+   c.sigma_.a13 = 0;
+   c.sigma_.a22 = 0;
+   c.sigma_.a23 = 0;
+   c.sigma_.a33 = 0;
    Anatomy a;
    a.setGridSize(1, 1, 1);
    a.cellArray().push_back(c);

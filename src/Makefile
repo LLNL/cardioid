@@ -17,15 +17,17 @@ HEARTSRC=cardioid.cc \
          GDLoadBalancer.cc CommTable.cc \
 	 BucketOfBits.cc \
 	 stateLoader.cc \
+	 readPioFile.cc \
 	 AnatomyReader.cc object_cc.cc \
 	 Koradi.cc GridRouter.cc Grid3DStencil.cc writeCells.cc \
 	 DomainInfo.cc \
 	 initializeSimulate.cc \
-	 initializeAnatomy.cc assignCellsToTasks.cc getRemoteCells.cc \
+	 initializeAnatomy.cc setConductivity.cc assignCellsToTasks.cc \
+	 getRemoteCells.cc \
 	 simulationLoop.cc \
 	 diffusionFactory.cc reactionFactory.cc \
-	 conductivityFactory.cc stimulusFactory.cc sensorFactory.cc \
-	 FibreConductivity.cc UniformConductivity.cc JHUConductivity.cc\
+	 stimulusFactory.cc sensorFactory.cc \
+	 FibreConductivity.cc JHUConductivity.cc\
 	 Saleheen98Diffusion.cc SaleheenDev.cc \
 	 Reaction.cc \
 	 ReactionFHN.cc \

@@ -1,8 +1,9 @@
 #ifndef JHU_CONDUCTIVITY_HH
 #define JHU_CONDUCTIVITY_HH
 
-#include "Conductivity.hh"
 #include "IndexToTuple.hh"
+
+class AnatomyCell;
 
 // ToDo:
 //
@@ -47,11 +48,11 @@ struct JHUConductivityParms
 };
 
 
-class JHUConductivity : public Conductivity
+class JHUConductivity
 {
  public:
    JHUConductivity(const JHUConductivityParms& p);
-   void compute(const AnatomyCell& cell, SigmaTensorMatrix& sigma);
+   void compute(AnatomyCell& cell);
    
  private:
 

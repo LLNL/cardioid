@@ -57,6 +57,12 @@ void BucketOfBits::Record::getValue(unsigned fieldIndex, int& value) const
    value = strtol(rawFields_[fieldIndex].c_str(), NULL, 10);
 }
 
+void BucketOfBits::Record::getValue(unsigned fieldIndex, unsigned long long& value) const
+{
+   assert(fieldTypes_[fieldIndex] == intType);
+   value = strtol(rawFields_[fieldIndex].c_str(), NULL, 10);
+}
+
 void BucketOfBits::Record::getValue(unsigned fieldIndex, string& value) const
 {
    assert(fieldTypes_[fieldIndex] == stringType);

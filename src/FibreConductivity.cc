@@ -4,9 +4,9 @@
 #include <iostream>
 
 inline void
-calcConductivityMatrixIBT(SigmaTensorMatrix& conductivity,
+calcConductivityMatrixIBT(SymmetricTensor& conductivity,
                           double sigmal, double sigmat,
-                          int phi, int theta);
+                          double phi, double theta);
 
 
 
@@ -16,10 +16,8 @@ FibreConductivity::FibreConductivity(const FibreConductivityParms& p)
 }
 
 
-void FibreConductivity::compute(const AnatomyCell& cell, SigmaTensorMatrix& sigma)
+void FibreConductivity::compute(double theta, double phi, SymmetricTensor& sigma)
 {
-   int theta = cell.theta_;
-   int phi = cell.phi_;
    calcConductivityMatrixIBT(sigma, sigmaLi_, sigmaTi_, phi, theta);
 }
 
@@ -27,14 +25,14 @@ void FibreConductivity::compute(const AnatomyCell& cell, SigmaTensorMatrix& sigm
 /** Adapted from conductivity.h in BlueBeats code.
  */
 inline void
-calcConductivityMatrixIBT(SigmaTensorMatrix& conductivity,
+calcConductivityMatrixIBT(SymmetricTensor& conductivity,
                           double sigmal, double sigmat,
-                          int phi, int theta)
+                          double phi, double theta)
 {
-   double sinPhi   = std::sin(  phi*M_PI/256); // SinTable[phi];
-   double cosPhi   = std::cos(  phi*M_PI/256); // CosTable[phi];
-   double sinTheta = std::sin(theta*M_PI/256); // SinTable[theta];
-   double cosTheta = std::cos(theta*M_PI/256); // CosTable[theta];
+   double sinPhi   = std::sin(  phi); // SinTable[phi];
+   double cosPhi   = std::cos(  phi); // CosTable[phi];
+   double sinTheta = std::sin(theta); // SinTable[theta];
+   double cosTheta = std::cos(theta); // CosTable[theta];
    
    
    double sinPhiSquared = sinPhi * sinPhi;

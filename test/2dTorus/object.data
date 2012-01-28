@@ -21,6 +21,7 @@ pioAnatomy ANATOMY
    dx = 0.1;
    dy = 0.1;
    dz = 0.1;
+   conductivity = conductivity;
 }
 
 koradi DECOMPOSITION 
@@ -36,8 +37,7 @@ Saleheen98 DIFFUSION
 {
    method = Saleheen98;
    variant = precompute;
-   conductivity = conductivity;
-    diffusionScale = 714.2857143; 
+   diffusionScale = 714.2857143; 
 }
 
 conductivity CONDUCTIVITY

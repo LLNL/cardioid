@@ -2,22 +2,26 @@
 
 #include <cassert>
 #include <set>
+#include <vector>
 #include "pio.h"
-#include "pioFixedRecordHelper.h"
 #include "object_cc.hh"
-#include "Simulate.hh"
+#include "Anatomy.hh"
+#include "BucketOfBits.hh"
+#include "readPioFile.hh"
 
 using std::string;
 using std::set;
+using std::vector;
 
-
-AnatomyReader::AnatomyReader(const string& filename, MPI_Comm comm,
-                             Simulate& sim)
-: _anatomy(sim.anatomy_.cellArray())
+namespace
 {
-   int myRank;
-   MPI_Comm_rank(comm, &myRank);
+   void readBucket(Anatomy& anatomy, const set<int>& typeSet,
+                   BucketOfBits* bucketP);
+}
 
+BucketOfBits* readAnatomy(const string& filename, MPI_Comm comm,
+                          Anatomy& anatomy, const set<int>& typeSet)
+{
    PFILE* file = Popen(filename.c_str(), "r", comm);
 
    OBJECT* hObj = file->headerObject;
@@ -31,61 +35,37 @@ AnatomyReader::AnatomyReader(const string& filename, MPI_Comm comm,
    assert(nx*ny*nz > 0);
 //   assert(cellType_s.size() > 0);
 
-   sim.anatomy_.setGridSize(nx, ny,nz);
-   
-   switch (file->datatype)
-   {
-     case FIXRECORDASCII:
-      asciiReader(file);
-      break;
-     case FIXRECORDBINARY:
-      binaryReader(file);
-      break;
-     default:
-      assert(1==0);
-   }
+   anatomy.setGridSize(nx, ny,nz);
 
-   for (unsigned ii=0; ii<_anatomy.size(); ++ii)
-     _anatomy[ii].dest_ = myRank;
-   
+   BucketOfBits* bucketP = readPioFile(file);
    Pclose(file);
+
+   readBucket(anatomy, typeSet, bucketP);
+   return bucketP;
 }
 
-void AnatomyReader::asciiReader(PFILE* file)
+namespace
 {
-   set<int> typeSet;
-   typeSet.insert(100);
-   typeSet.insert(101);
-   typeSet.insert(102);
-   typeSet.insert(30);
-   typeSet.insert(31);
-   typeSet.insert(32);
-   typeSet.insert(33);
-   typeSet.insert(34);
-   typeSet.insert(35);
-   typeSet.insert(75);
-   typeSet.insert(76);
-   typeSet.insert(77);
-   
-
-   PIO_FIXED_RECORD_HELPER* helper = (PIO_FIXED_RECORD_HELPER*) file->helper;
-   unsigned lrec = helper->lrec;
-   unsigned nRecords = file->bufsize/lrec;
-   assert(file->bufsize%lrec == 0);
-   
-   for (unsigned ii=0; ii<nRecords; ++ii)
+   void readBucket(Anatomy& anatomy, const set<int>& typeSet,
+                   BucketOfBits* bucketP)
    {
-      char buf[file->recordLength];
-      AnatomyCell tmp;
-      buf[0] = '\0';
-      Pfgets(buf, file->recordLength, file);
-      sscanf(buf, "%llu %d %d %d", &(tmp.gid_), &(tmp.cellType_), &(tmp.theta_), &(tmp.phi_));
-      if (typeSet.find(tmp.cellType_) != typeSet.end())
-         _anatomy.push_back(tmp);
+      vector<AnatomyCell>& cells = anatomy.cellArray();
+      
+      unsigned nRecords =  bucketP->nRecords();
+      unsigned nFields =   bucketP->nFields();
+      unsigned gidIndex =  bucketP->getIndex("gid");
+      unsigned typeIndex = bucketP->getIndex("cellType");
+      assert( gidIndex != nFields &&
+              typeIndex != nFields);
+      for (unsigned ii=0; ii<nRecords; ++ii)
+      {
+         AnatomyCell tmp;
+         BucketOfBits::Record rr = bucketP->getRecord(ii);
+         rr.getValue(gidIndex, tmp.gid_);
+         rr.getValue(typeIndex, tmp.cellType_);
+         
+         if (typeSet.count(tmp.cellType_) != 0)
+            cells.push_back(tmp);
+      }
    }
-}
-
-void AnatomyReader::binaryReader(PFILE* file)
-{
-   assert(1==0);
 }

@@ -2,14 +2,14 @@
 #define ANATOMY_CELL_HH
 
 #include "Long64.hh"
+#include "SymmetricTensor.hh"
 
 class AnatomyCell
 {
   public:
    Long64 gid_;
    int cellType_;
-   int theta_;
-   int phi_;
+   SymmetricTensor sigma_;
    int dest_;
    int sortind_;
    static bool destLessThan(const AnatomyCell &a, const AnatomyCell &b)

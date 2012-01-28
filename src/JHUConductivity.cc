@@ -23,7 +23,7 @@ JHUConductivity::JHUConductivity(const JHUConductivityParms& p)
 }
 
 /** Adapted from GetDiffusionTensorJHU in BlueBeats conductivity.h */
-void JHUConductivity::compute(const AnatomyCell& cell, SigmaTensorMatrix& sigma)
+void JHUConductivity::compute(AnatomyCell& cell)
 {
    //D = R* [G_L 0 0; 0 G_T 0; 0 0 G_N]*R' where R = [E1 E2 E3] = Euler Vecotr Rotation Matrix
    
@@ -106,12 +106,12 @@ void JHUConductivity::compute(const AnatomyCell& cell, SigmaTensorMatrix& sigma)
 //   assert( abs(determinant_D - 1) < 1e-10 );
    
    // setting the conductivity matrix of the IBM code
-   sigma.a11 = D[0][0];
-   sigma.a12 = D[1][0];
-   sigma.a13 = D[2][0];
-   sigma.a22 = D[1][1];
-   sigma.a23 = D[1][2];
-   sigma.a33 = D[2][2];
+   cell.sigma_.a11 = D[0][0];
+   cell.sigma_.a12 = D[1][0];
+   cell.sigma_.a13 = D[2][0];
+   cell.sigma_.a22 = D[1][1];
+   cell.sigma_.a23 = D[1][2];
+   cell.sigma_.a33 = D[2][2];
 }
 
 

@@ -44,6 +44,7 @@ HEART_FILES = \
 	ReactionFHN.hh \
 	TT06_RRG_Reaction.cc \
 	TT06_RRG_Reaction.hh \
+	SymmetricTensor.hh \
 	BucketOfBits.hh \
 	BucketOfBits.cc \
 	Anatomy.hh \

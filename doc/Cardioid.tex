@@ -68,7 +68,7 @@ The only things you need to know about ddcMD are:
 \item You should not put files in \path{src/ddcMD\_files} since this
   directory is deleted by the distclean target of make.
 \item The files that Cardioid needs from ddcMD are distributed as a
-  compressed tarfile as part of the source code distribution.
+  compressed tar file as part of the source code distribution.
   Occaisionally this distribution needs updating.  When this happens you
   will need to make distclean to erase stale files.  Whenever you see
   build errors after an svn update your first reaction should always be
@@ -95,7 +95,7 @@ pointing at active ddcMD sources that are under version control.
 If it is necessary to modify the ddcMD sources that are used by
 Cardioid, the changes should be made in the linked ddcMD source tree.
 Once a developer is satisfied the changes are correct the following
-procedure is used to create the new tarfile that other Cardioid
+procedure is used to create the new tar file that other Cardioid
 developers and users will need.  Don't skip steps.
 \begin{enumerate}
 \item Confirm that both Cardioid and ddcMD build and function correctly
@@ -106,7 +106,7 @@ developers and users will need.  Don't skip steps.
   a trailing ``M'' or a pair of numbers separated by a ``:''.  (If it
   does, you skipped a step.)
 \item In the Cardioid build directory do make distclean and make
-  ddcMD\_dist.  You should now have two compressed tarfiles with names
+  ddcMD\_dist.  You should now have two compressed tar files with names
   like ddcMD\_files\_rXXXX.tgz where XXXX is an svn revision number.
 \item Do svn rm on the older .tgz file to remove it from the
   distribution, and svn add on the new .tgz file.  
@@ -176,12 +176,18 @@ appendix.
 
 
 \subsection{ANATOMY}
+
+Defines the anatomical structure to simulate.
+
 \begin{keywords}
+  \kw{conductivity}{The name of the CONDUCTIVITY object which specifies
+    the method and parameters to determine cell conductivity.}{No Default}
   \kw{dx}{Cell size in the $x$-direction.}{0.2~mm}
   \kw{dy}{Cell size in the $y$-direction.}{0.2~mm}
   \kw{dz}{Cell size in the $z$-direction.}{0.2~mm}
   \kw{method}{Choose from ``brick'' or ``'pio''}{pio}
 \end{keywords}
+
 
 \subsubsection{brick method}
 
@@ -216,11 +222,31 @@ niederer ANATOMY
 
 Specifies that the anatomy should be read from a file.  \issue{Why don't
   we store the cell size (or at least the default cell size) in the
-  anatomy file?}
+  anatomy file?}  The file format for the anatomy file is described in
+section~\ref{sec:AnatomyFormat}. 
 \begin{keywords}
   \kw{filename}{Path to pio file to read.  Includes the \#-sign, but not
   a six digit sequence number.}{snapshot.initial/anatomy\#}
 \end{keywords}
+
+\subsubsection{Conductivity}
+Note: prior to r261 the name of the CONDUCTIVITY object was specified in
+the DIFFUSION object.  Input of Conductivity tensors and floating point
+fibre angles are not supported prior to r261.
+
+There are several ways to specify the conductivity tensors for each cell
+in the anatomy.  The most direct method is to include the conductity
+tensor in the anatomy file.  (Section~/ref{AnatomyFormat} contains a
+description of the anatomy file contents.)  When the tensor is present
+in the anatomy file no other conductity specification is necessary.  If
+any other specification is present it may override the tensor values in
+the anatomy file.
+
+If no tensor data is present in the file, a CONDUCTIVITY object that
+specifies a method such as ``uniform'' or ``fibre'' must be present in
+the ANATOMY object.
+
+
 
 \begin{verbatim}
 pioAnatomy ANATOMY 
@@ -235,7 +261,45 @@ pioAnatomy ANATOMY
 
 \subsection{CONDUCTIVITY}
 \begin{keywords}
+  \kw{method}{Choose from ``pio'', ``fibre'', ``JHU'' or
+    ``uniform''}{``pio''}
 \end{keywords}
+
+\subsubsection{pio}
+The conductivity tensor will be read from the input anatomy file.
+
+\subsubsection{fibre}
+The conductivity tensor will be generated from the fibre angles
+given in the anatomy and the longitudinal and transverse
+conductivities.  If the anatomy does not provide fibre angles, then the
+values 0, 0 are assumed for all cells.
+\begin{keywords}
+  \kw{sigmaLi}{Longitudinal conductivity (i.e., in the direction of the
+    fibre) in \issue{units!}}{0.3}
+  \kw{sigmaTi}{Transverse conductivity (i.e., perpendicular to the direction of the
+    fibre) in \issue{units!}}{0.0315}
+\end{keywords}
+
+\subsubsection{JHU}
+\begin{keywords}
+  \kw{homogeneousFiber}{}{0}
+  \kw{rotationMatrix}{}{1}
+  \kw{sigmaLi}{}{0.3}
+  \kw{sigmaTi}{}{0.0315}
+  \kw{sheetAngle}{}{45}
+\end{keywords}
+
+\subsubsection{uniform} 
+A specified tensor for all cells.
+\begin{keywords}
+  \kw{sigma11}{Component of the conductivity tensor \issue{units}}{0.1}
+  \kw{sigma22}{Component of the conductivity tensor \issue{units}}{0.1}
+  \kw{sigma33}{Component of the conductivity tensor \issue{units}}{0.1}
+  \kw{sigma12}{Component of the conductivity tensor \issue{units}}{0.0}
+  \kw{sigma13}{Component of the conductivity tensor \issue{units}}{0.0}
+  \kw{sigma23}{Component of the conductivity tensor \issue{units}}{0.0}
+\end{keywords}
+
 
 \subsection{DECOMPOSITION}
 \begin{keywords}
@@ -246,11 +310,34 @@ pioAnatomy ANATOMY
 \begin{keywords}
 \end{keywords}
 
+Note: Starting from r261 the conductivity is no longer specified in the
+DIFFUSION object but rather in the ANATOMY object.
+
 \subsection{REACTION}
+A variety of tissue models are available to calcuate the reaction terms:
+
+\begin{description}
+  \item[TT04\_CellML] TT04 model straight from the code generated by
+    CellML.  Code is written for absolute fidelity to the generated
+    code, not for performance.
+  \item[TT06\_CellML] TT06 model straight from the code generated by
+    CellML.  Code is written for absolute fidelity to the generated
+    code, not for performance.
+  \item[TT06Dev] Developmental version of TT06 with Pade approximations,
+    optimizations, etc.
+  \item[TT06\_RRG] TT06 based on CellML with added Na equation from
+    Jeremy.  Some parameters can be set on a cell-by-bell basis.
+  \item[FHN] FitzHugh Nagumo model.
+  \item[null] No reaction model is computed
+\end{description}
+
+
+
 \begin{keywords}
   \kw{method}{Choose from: TT04\_CellML, TT06\_CellML, TT06Dev,
     TT06\_RRG, FHN, null}{No default}
 \end{keywords}
+
 
 \subsection{SENSOR}
 
@@ -312,6 +399,8 @@ protocols.
     Multiple sensors may be specified.}{No sensors}
   \kw{snapshotRate}{The rate (in time steps) at which snapshot directories are
     created}{100 time steps}
+  \kw{stateFile}{The name of the file from which to load cell model
+    state data.}{No default.} 
   \kw{stimulus}{The name of the STIMULUS object(s) to use in this
     simulation. Multiple stimuli may be specified.  If this keyword is
     not specified there will be no external stimulus in the simulation.}
@@ -462,14 +551,14 @@ identify the file.  The maximum header length is something like 4k but
 that could be easily extended if it became a limitation.  The header
 ends with two newline characters in a row.
 
-The header for an ascii anatomy file looks like this:
+An example header for an ascii anatomy file looks like this:
 \begin{verbatim}
 anatomy FILEHEADER{
   datatype = FIXRECORDASCII;
   nfiles = 1;
   nfields = 4;
   field_names = gid cellType theta phi;
-  field_types = u u u u;
+  field_types = u u f f;
   nx = 3; ny = 3; nz = 3;
   nrecord = 27;
   lrec=12;
@@ -483,17 +572,26 @@ how to read the file.  \issue{For now we're using ascii to facilitate
   performance and decrease storage cost.}
 
 
-Note that the names and types of the data fields are specified.  
-
-It is fairly simple to write reader code that is sensitive to the list
-of data fields that are present.  For example the reader could notice
-that only the cellType is in the file, read two columns instead of four
-and synthesize the orientation data (or set a flag to tell someone else
-it needs to be synthesized).
-
-For ascii files the types can be f, u, and s, for integers, floats, and
-strings.  Binary files have types such as i4, i8, f4, f8, b1, b2, b3, \ldots,
-bn where bn is an unsigned integer stored in n bytes.
+The allowed field names and corrsponding field types are as follows:
+\begin{tabular}{l|l|l|p{.6\textwidth}}
+  Field Name & Field Type & Required? & Description\\
+  \hline
+  gid &      8-byte integer   & Required & Cell index (described below)\\
+  cellType & integer          & Required & Cell type (described below)\\
+  theta &    integer or float & Optional & Polar angle of fibre\\
+  phi &      integer or float & Optional & Azimuthal angle of fibre\\
+  sigma11 &  float            & Optional & Component of conductivity tensor\\
+  sigma22 &  float            & Optional & Component of conductivity tensor\\
+  sigma33 &  float            & Optional & Component of conductivity tensor\\
+  sigma12 &  float            & Optional & Component of conductivity tensor\\
+  sigma13 &  float            & Optional & Component of conductivity tensor\\
+  sigma23 &  float            & Optional & Component of conductivity tensor\\
+\end{tabular}
+If either fibre angle is specified, both must be specified.  Both angles
+must be of the same type.  If any tensor component is specified, all
+must be specified.  It is ok to specify both fibre angle and
+conductivity tensor, however only the tensor or the fibre will be used
+in any given simulation.
 
 The gid field contains the 3D index of the cell converted to a single
 integer by the formula $ix + nx*(iy + ny*iz)$.  (If necessary for
@@ -513,14 +611,16 @@ following conventions:
   \end{tabular}
 \end{center}
 
-The fibre angle is stored in theta and phi.  Theta is the polar angle,
-phi the azimuthal.  In Blue Beats, angles were not stored as real
-numbers in radians or degress, but rather as 8-bit unsigned integers.
-We can choose to maintain this convention to save storage costs.  In
-this convention the angle (in radians) is computed by the formula
-$\theta\pi/256$ or $\varphi\pi/256$.  (In Blue Beats theta and phi were
-effectively limited to values in the range [0..254]  This is not the
-case in Cardioid.)
+The fibre angle theta and phi can be given as either floating point or
+integer values.  Theta is the polar angle, phi the azimuthal.  Usign
+floating point values in radians is the preferred method of specifying
+theta and phi.  In BlueBeats, angles were not stored as real numbers in
+radians or degress, but rather as 8-bit unsigned integers.  This
+convention is supported, but is discouraged as it can lead to inaacurate
+gradients in the conductivity.  In this convention the angle (in
+radians) is computed by the formula $\theta\pi/256$ or $\varphi\pi/256$.
+(In Blue Beats theta and phi were effectively limited to values in the
+range [0..254] This is not the case in Cardioid.)
 
 \issue{The coordinate system is not rigorously defined.  Presumeably
   theta is measured from the z-axis and phi from the x-axis.  This needs
@@ -528,11 +628,25 @@ case in Cardioid.)
   the field so I need some help here to make sure that we define things
   in a way that is consistent with conventions.}
 
-All records (lines) must be exactly lrec long.  \issue{This is not quite
-  true.  Fixed length records are a current implementation requirement,
-  however, pio supports variable length records.  Somebody just needs to
-  remember how to set up a reader that can use the variable record
-  length features.}
+The conductivity tensor requires six
+fields with the names sigma11, sigma12, sigma13, sigma22, sigma23, and
+sigma33.  These fields represent the six unique values in the symmetric
+conductity tensor.  The fields may appear in any order. issue{Units!}
+
+
+The anatomy reader code is sensitive to the list of data fields
+that are present.  For example the reader will notice that only the
+cellType is in the file, read two columns instead of four and synthesize
+the orientation data (or set a flag to tell someone else it needs to be
+synthesized).
+
+For ascii files the types can be f, u, and s, for integers, floats, and
+strings.  Binary files have types such as i4, i8, f4, f8, b1, b2, b3, \ldots,
+bn where bn is an unsigned integer stored in n bytes.
+
+
+Both fixed and variable length ascii records are supported.
+
 
 
 \end{document}

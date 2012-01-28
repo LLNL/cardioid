@@ -98,7 +98,7 @@ BucketOfBits readStateData(const string& filename, MPI_Comm comm,
 
    { // limit scope
       // This block populates records and gid for fixed record length
-      // ascii files.  It should be too hard to generalize later.  What
+      // ascii files.  It shouldn't be too hard to generalize later.  What
       // ever the data type, the reader must pack the data into a
       // vector<unsigned char> in such a way that record ii starts at
       // index ii*lRec.  lRec must be the same on all tasks.  The reader
