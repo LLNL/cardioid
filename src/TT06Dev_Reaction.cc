@@ -57,8 +57,8 @@ void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<do
    double rates[nStateVar];
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
-      computeNonGateRates(1,&(Vm[ii]), &(s_[ii]), &dVm[ii],rates);
-      computeGateRates(dt, Vm[ii], s_[ii].state, s_[ii].cellType, rates);
+      computeNonGateRates(dt,1,&(Vm[ii]), &(s_[ii]), &dVm[ii]);
+      computeGateRates(dt, 1, &(Vm[ii]), &(s_[ii]));
       rates[K_i] += iStim[ii]*c9 ;
       for (int i=0;i<nStateVar;i++) s_[ii].state[i] += dt*rates[i]; 
    }
