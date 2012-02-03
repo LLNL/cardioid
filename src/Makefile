@@ -28,7 +28,7 @@ HEARTSRC=cardioid.cc \
 	 diffusionFactory.cc reactionFactory.cc \
 	 stimulusFactory.cc sensorFactory.cc \
 	 FibreConductivity.cc JHUConductivity.cc\
-	 Saleheen98Diffusion.cc SaleheenDev.cc \
+	 DiffusionUtils.cc Saleheen98Diffusion.cc SaleheenDev.cc \
 	 Reaction.cc \
 	 ReactionFHN.cc \
 	 TT04_CellML_Reaction.cc \
