@@ -30,7 +30,7 @@ namespace
 {
    void pioConductivity(const BucketOfBits& data,
                         const set<int>& typeSet,
-                        vector<AnatomyCell> cell);
+                        vector<AnatomyCell>& cell);
    void fibreConductivity(OBJECT* obj,
                           const BucketOfBits& data,
                           const set<int>& typeSet,
@@ -72,7 +72,7 @@ namespace
 {
    void pioConductivity(const BucketOfBits& data,
                         const set<int>& typeSet,
-                        vector<AnatomyCell> cell)
+                        vector<AnatomyCell>& cell)
    {
       unsigned nFields = data.nFields();
       
