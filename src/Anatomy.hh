@@ -8,7 +8,6 @@
 #include "SymmetricTensor.hh"
 #include "IndexToTuple.hh"
 
-class SigmaTensorMatrix;
 class Conductivity;
 
 class Anatomy

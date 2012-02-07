@@ -13,7 +13,8 @@ include arch/$(ARCH).mk
 BINDIR = ../bin
 
 HEARTSRC=cardioid.cc \
-	 Vector.cc PerformanceTimers.cc unionOfStrings.cc \
+	 Vector.cc SymmetricTensor.cc \
+	 PerformanceTimers.cc unionOfStrings.cc \
          GDLoadBalancer.cc CommTable.cc \
 	 BucketOfBits.cc \
 	 stateLoader.cc \
@@ -29,6 +30,7 @@ HEARTSRC=cardioid.cc \
 	 stimulusFactory.cc sensorFactory.cc \
 	 FibreConductivity.cc JHUConductivity.cc\
 	 DiffusionUtils.cc Saleheen98Diffusion.cc SaleheenDev.cc \
+	 FGRDiffusion.cc \
 	 Reaction.cc \
 	 ReactionFHN.cc \
 	 TT04_CellML_Reaction.cc \

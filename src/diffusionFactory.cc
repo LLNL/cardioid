@@ -7,6 +7,7 @@
 
 #include "Saleheen98Diffusion.hh"
 #include "SaleheenDev.hh"
+#include "FGRDiffusion.hh"
 #include "NullDiffusion.hh"
 
 class Anatomy;
@@ -18,6 +19,7 @@ using namespace std;
 
 namespace
 {
+   Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy);
    Diffusion* saleheen98DiffusionFactory(OBJECT* obj, const Anatomy& anatomy);
    Diffusion* saleheenDevFactory(OBJECT* obj, const Anatomy& anatomy);
    void checkForObsoleteKeywords(OBJECT* obj);
@@ -30,10 +32,12 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy)
 
    checkForObsoleteKeywords(obj);
 
-   string method; objectGet(obj, "method", method, "undefined");
+   string method; objectGet(obj, "method", method, "");
 
-   if (method == "undefined")
+   if (method.empty())
       assert(1==0);
+   else if (method == "FGR")
+      return fgrDiffusionFactory(obj, anatomy);
    else if (method == "Saleheen98")
       return saleheen98DiffusionFactory(obj, anatomy);
    else if (method == "SaleheenDev")
@@ -45,6 +49,16 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy)
    return 0;
 }
 
+namespace
+{
+   Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy)
+   {
+      FGRDiffusionParms p;
+      objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0");
+
+      return new FGRDiffusion(p, anatomy);
+   }
+}
 
 
 namespace

@@ -344,7 +344,7 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98Constants(
 
 
 void Saleheen98PrecomputeDiffusion::updateVoltageBlock(
-   const std::vector<double>& Vm)
+   const vector<double>& Vm)
 {
    for (unsigned ii=0; ii<Vm.size(); ++ii)
    {
