@@ -89,16 +89,33 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm)
    
    for (unsigned iCell=0; iCell<Vm.size(); ++iCell)
    {
+      bool verbose = false;
+//       if (iCell == 0) verbose = true;
+
       dVm[iCell] = 0.0;
       int ib = blockIndex_[iCell];
       
       double* phi = & (VmBlock_(ib));
       const double* A = weight_(ib).A;
       for (unsigned ii=0; ii<19; ++ii)
-         dVm[iCell] -= A[ii] * ( *(phi+offset_[ii]));
+      {
+         dVm[iCell] += A[ii] * ( *(phi+offset_[ii]));
+         if (verbose)
+            printf("%2u %5d: A: %18.10f phi0: %18.10f phi_i %18.10f dVm %18.10f\n",
+                   ii, offset_[ii], A[ii], *phi, *(phi+offset_[ii]), dVm[iCell]);
+      }
       
-      dVm[iCell] *= diffusionScale_;
+      dVm[iCell] *= diffusionScale_* 0.001;
    }
+
+//   vector<double>::const_iterator big = max_element(dVm.begin(), dVm.end());
+//   vector<double>::const_iterator sml = min_element(dVm.begin(), dVm.end());
+
+//   printf("min %18.10f (%d)   max %18.10f (%d)\n", *sml, sml-dVm.begin(),
+   //         *big, big-dVm.begin());
+   
+   
+
 }
 
 
@@ -179,6 +196,11 @@ void FGRDiffusion::precomputeCoefficients(const Anatomy& anatomy)
             for (unsigned jj=0; jj<3; ++jj)
                weight_(ib).A[ii] += sigmaTimesS[jj] * gradPhi[jj][ii] * hInv[jj];
       }
+      double sum = 0;
+      for (unsigned ii=0; ii<19; ++ii)
+         sum += weight_(ib).A[ii];
+      assert(abs(sum) < 1e-14);
+      
    }
 //   printAllWeights(tissueBlk);
 }
@@ -241,7 +263,7 @@ namespace
          w1 = w5 = 0.5; w2 = w4 = -0.5;
          break;
         case 10:
-         w1 = 1.0; w3 = -1.0;
+         w1 = 0.5; w3 = -0.5;
          break;
         case 11:
          w1 = 0.5; w5 = 0.25; w2 = w3 = w4 = -0.25;
@@ -253,7 +275,7 @@ namespace
          w4 = -0.5; w2 = -0.25; w0 = w1 = w5 = 0.25;
          break;
         case 14:
-         w5 = -0.5; w5 = -0.25; w0 = w1 = w2 = 0.25;
+         w3 = -0.5; w5 = -0.25; w0 = w1 = w2 = 0.25;
          break;
         case 15:
          w0 = w1 = 0.25; w3 = w4 = -0.25;
@@ -274,8 +296,8 @@ namespace
          gradPhi[0][ZZZ] = 1.0;
          gradPhi[0][MZZ] = -1.0;
          setGradientWeights(gradPhi[1], tissue,
-                            ZMZ, ZZZ, ZPZ,
-                            PMZ, PZZ, PPZ);
+                            MMZ, MZZ, MPZ,
+                            ZMZ, ZZZ, ZPZ);
          setGradientWeights(gradPhi[2], tissue,
                             ZZM, ZZZ, ZZP,
                             MZM, MZZ, MZP);
@@ -294,8 +316,8 @@ namespace
          gradPhi[0][PZZ] = 1.0;
          gradPhi[0][ZZZ] = -1.0;
          setGradientWeights(gradPhi[1], tissue,
-                            MMZ, MZZ, MPZ,
-                            ZMZ, ZZZ, ZPZ);
+                            ZMZ, ZZZ, ZPZ,
+                            PMZ, PZZ, PPZ);
          setGradientWeights(gradPhi[2], tissue,
                             PZM, PZZ, PZP,
                             ZZM, ZZZ, ZZP);
