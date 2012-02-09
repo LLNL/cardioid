@@ -105,7 +105,7 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm)
                    ii, offset_[ii], A[ii], *phi, *(phi+offset_[ii]), dVm[iCell]);
       }
       
-      dVm[iCell] *= diffusionScale_* 0.001;
+      dVm[iCell] *= diffusionScale_;
    }
 
 //   vector<double>::const_iterator big = max_element(dVm.begin(), dVm.end());
@@ -159,7 +159,9 @@ void FGRDiffusion::precomputeCoefficients(const Anatomy& anatomy)
    unsigned nyGlobal = anatomy.ny();
    unsigned nzGlobal = anatomy.nz();
    Vector hInv(1.0/anatomy.dx(), 1.0/anatomy.dy(), 1.0/anatomy.dz());
-
+   Vector h(anatomy.dx(), anatomy.dy(), anatomy.dz());
+   double gridCellVolume = h[0]*h[1]*h[2];
+   
    SymmetricTensor sigmaZero = {0};
    Array3d<SymmetricTensor> sigmaBlk(nx, ny, nz, sigmaZero);
    Array3d<int> tissueBlk(nx, ny, nz, 0);
@@ -188,7 +190,7 @@ void FGRDiffusion::precomputeCoefficients(const Anatomy& anatomy)
          if (tissueBlk(faceNbrIndex) == 0)
             continue;
 
-         Vector sigmaTimesS = f1(ib, iFace, hInv, sigmaBlk);
+         Vector sigmaTimesS = f1(ib, iFace, h, sigmaBlk)/gridCellVolume;
          double gradPhi[3][19] = {0};
          f2(iFace, tissue, gradPhi);
          
@@ -366,7 +368,7 @@ void FGRDiffusion::mkTissueArray(
 }
 
 
-Vector FGRDiffusion::f1(int ib, int iFace, const Vector& hInv,
+Vector FGRDiffusion::f1(int ib, int iFace, const Vector& h,
                         const Array3d<SymmetricTensor>& sigmaBlk)
 {
    SymmetricTensor
@@ -375,22 +377,22 @@ Vector FGRDiffusion::f1(int ib, int iFace, const Vector& hInv,
    switch (iFace)
    {
      case 0:
-      S[0] = -hInv[1]*hInv[2];
+      S[0] = -h[1]*h[2];
       break;
      case 1:
-      S[1] = -hInv[0]*hInv[2];
+      S[1] = -h[0]*h[2];
       break;
      case 2:
-      S[0] = hInv[1]*hInv[2];
+      S[0] = h[1]*h[2];
       break;
      case 3:
-      S[1] = hInv[0]*hInv[2];
+      S[1] = h[0]*h[2];
       break;
      case 4:
-      S[2] = -hInv[0]*hInv[1];
+      S[2] = -h[0]*h[1];
       break;
      case 5:
-      S[2] = hInv[0]*hInv[1];
+      S[2] = h[0]*h[1];
       break;
       
      default:

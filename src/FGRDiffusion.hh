@@ -35,7 +35,7 @@ class FGRDiffusion : public Diffusion
 
    void updateVoltageBlock(const std::vector<double>& Vm);
    void mkTissueArray(const Array3d<int>& tissueBlk, int ib, int* tissue);
-   Vector f1(int ib, int iFace, const Vector& hInv,
+   Vector f1(int ib, int iFace, const Vector& h,
              const Array3d<SymmetricTensor>& sigmaBlk);
    void printAllWeights(const Array3d<int>& tissue);
 
