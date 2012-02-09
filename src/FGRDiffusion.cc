@@ -87,35 +87,18 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm)
 {
    updateVoltageBlock(Vm);
    
-   for (unsigned iCell=0; iCell<Vm.size(); ++iCell)
+   for (unsigned iCell=0; iCell<dVm.size(); ++iCell)
    {
-      bool verbose = false;
-//       if (iCell == 0) verbose = true;
-
       dVm[iCell] = 0.0;
       int ib = blockIndex_[iCell];
       
       double* phi = & (VmBlock_(ib));
       const double* A = weight_(ib).A;
       for (unsigned ii=0; ii<19; ++ii)
-      {
          dVm[iCell] += A[ii] * ( *(phi+offset_[ii]));
-         if (verbose)
-            printf("%2u %5d: A: %18.10f phi0: %18.10f phi_i %18.10f dVm %18.10f\n",
-                   ii, offset_[ii], A[ii], *phi, *(phi+offset_[ii]), dVm[iCell]);
-      }
       
       dVm[iCell] *= diffusionScale_;
    }
-
-//   vector<double>::const_iterator big = max_element(dVm.begin(), dVm.end());
-//   vector<double>::const_iterator sml = min_element(dVm.begin(), dVm.end());
-
-//   printf("min %18.10f (%d)   max %18.10f (%d)\n", *sml, sml-dVm.begin(),
-   //         *big, big-dVm.begin());
-   
-   
-
 }
 
 
