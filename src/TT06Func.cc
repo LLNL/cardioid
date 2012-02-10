@@ -10,6 +10,13 @@
 #define C(i) (gsl_vector_get(c,(i)))
 #define sigm(x)   ((x)/(1.0+(x)) )
 
+double fv0(double Vm, void *parms) ;
+double fv1(double Vm, void *parms) ;
+double fv2(double Vm, void *parms) ;
+double fv3(double Vm, void *parms) ;
+double fv4(double Vm, void *parms) ;
+double fv5(double Vm, void *parms) ;
+double fv6(double Vm, void *parms) ;
 double Xr1Mhu(double Vm, void *parms) ;
 double Xr2Mhu(double Vm, void *parms) ;
 double XsMhu(double Vm, void *parms) ;
@@ -37,86 +44,112 @@ double f2TauR(double Vm, void *parms) ;
 double sTauR0(double Vm, void *parms) ;
 double sTauR1(double Vm, void *parms) ;
 
+typedef double (*OVF)(double x, void *parms) ;
+OVF mhuFunc[] ={    mMhu,   hjMhu,  hjMhu , Xr1Mhu, Xr2Mhu,XsMhu,rMhu,dMhu,fMhu,f2Mhu, sMhu0, sMhu1}; 
+const  char *mhuName[] ={ "mMhu", "hMhu","jMhu","Xr1Mhu", "Xr2Mhu","XsMhu","rMhu","dMhu","fMhu","f2Mhu", "sMhu0","sMhu1"}; 
+OVF  tauRFunc[]  ={ mTauR , hTauR ,  jTauR,  Xr1TauR,   Xr2TauR,  XsTauR,  rTauR,  dTauR,  fTauR,  f2TauR,   sTauR0,   sTauR1}; 
+const   char *tauRName[] ={ "mTauR", "hTauR", "jTauR","Xr1TauR", "Xr2TauR","XsTauR","rTauR","dTauR","fTauR","f2TauR", "sTauR0", "sTauR1"}; 
+
+const  char *fitName[] ={ "fv0", "fv1", "fv2", "fv3", "fv4", "fv5", "fv6", "mMhu", "mTauR", "hMhu", "hTauR", "jMhu", "jTauR", "Xr1Mhu", "Xr1TauR", "Xr2Mhu", "Xr2mTauR", 
+                           "XsMhu", "XsTauR", "rMhu", "rTauR", "dMhu", "dTauR", "fMhu", "fTauR", "f2Mhu", "f2TauR", "sMhu0", "sTauR0", "sMhu1", "sTauR0" ,NULL}; 
+OVF fitFunc[] ={ fv0, fv1, fv2, fv3, fv4, fv5, fv6, mMhu, mTauR, hjMhu, hTauR, hjMhu, jTauR, Xr1Mhu, Xr1TauR, Xr2Mhu, Xr2TauR, 
+                           XsMhu, XsTauR, rMhu, rTauR, dMhu, dTauR, fMhu, fTauR, f2Mhu, f2TauR, sMhu0, sTauR0, sMhu1, sTauR0 ,NULL}; 
+
 static TauRecipParms *jParms;
 static TauRecipParms *hParms;
-static PADE *fit[36]; 
-static double cA[3],cB[3]; 
+#define NFIT 31 
+static PADE *fit[NFIT+1]; 
+static double P_NaK,g_Ks[3],g_to[3]; 
+static double g_NaL =0.0; 
+//static double cA[3],cB[3]; 
 static double c1,c2,c3,c4,c5,c6,c7,c8,c9;
 static double c10,c11,c12,c13,c14,c15,c16,c17,c18,c19;
 static double c20,c21,c22,c23,c24,c25,c26,c27,c28,c29;
 static double c30,c31,c32,c33,c34,c36,c40,c43,c44;
 static double f1,f2,f3,f4,f5,f6,f7,f7a,f9,f9a,f10; 
-typedef double (*OVF)(double x, void *parms) ;
-static    OVF  mhuFunc[] ={    mMhu,   hjMhu,  hjMhu , Xr1Mhu, Xr2Mhu,XsMhu,rMhu,dMhu,fMhu,f2Mhu, sMhu0, sMhu1}; 
-static  const  char *mhuName[] ={ "mMhu", "hjMhu","hjMhu","Xr1Mhu", "Xr2Mhu","XsMhu","rMhu","dMhu","fMhu","f2Mhu", "sMhu0","sMhu1"}; 
-static    OVF  tauRFunc[]  ={ mTauR , hTauR ,  jTauR,  Xr1TauR,   Xr2TauR,  XsTauR,  rTauR,  dTauR,  fTauR,  f2TauR,   sTauR0,   sTauR1}; 
-static  const   char *tauRName[] ={ "mTauR", "hTauR", "jTauR","Xr1TauR", "Xr2TauR","XsTauR","rTauR","dTauR","fTauR","f2TauR", "sTauR0", "sTauR1"}; 
-void initState(double *STATES,int cellType)
+void initState(TT06DevState *cell,int cellType)
 {
+cell->cellType=cellType; 
+double *states = cell->state;
 if (cellType == 0) 
 {
-STATES[K_i] = 138.4;
-STATES[Na_i] = 10.355;
-STATES[Ca_i] = 0.00013;
-STATES[Ca_ss] = 0.00036;
-STATES[Ca_SR] = 3.715;
-STATES[R_prime] = 0.9068;
-STATES[fCass_gate] = 0.9953;
-STATES[Xr1_gate] = 0.00448;
-STATES[Xr2_gate] = 0.476;
-STATES[Xs_gate] = 0.0087;
-STATES[m_gate] = 0.00155;
-STATES[h_gate] = 0.7573;
-STATES[j_gate] = 0.7225;
-STATES[r_gate] = 2.235e-8;
-STATES[d_gate] = 3.164e-5;
-STATES[f_gate] = 0.8009;
-STATES[f2_gate] = 0.9778;
-STATES[s_gate] = 0.3212;
+cell->P_NaK=2.724;
+cell->g_Ks = 0.392; 
+cell->g_to = 0.073; 
+cell->g_NaL=0.0; 
+states[K_i] = 138.4;
+states[Na_i] = 10.355;
+states[Ca_i] = 0.00013;
+states[Ca_ss] = 0.00036;
+states[Ca_SR] = 3.715;
+states[R_prime] = 0.9068;
+states[fCass_gate] = 0.9953;
+states[Xr1_gate] = 0.00448;
+states[Xr2_gate] = 0.476;
+states[Xs_gate] = 0.0087;
+states[m_gate] = 0.00155;
+states[h_gate] = 0.7573;
+states[j_gate] = 0.7225;
+states[r_gate] = 2.235e-8;
+states[d_gate] = 3.164e-5;
+states[f_gate] = 0.8009;
+states[f2_gate] = 0.9778;
+states[s_gate] = 0.3212;
+states[jL_gate] = 0.066;
 }
 
 if (cellType == 1) 
 {
-STATES[K_i] = 138.52;
-STATES[Na_i] = 10.132;
-STATES[Ca_i] = 0.000153;
-STATES[Ca_ss] = 0.00042;
-STATES[Ca_SR] = 4.272;
-STATES[R_prime] = 0.8978;
-STATES[fCass_gate] = 0.9942;
-STATES[Xr1_gate] = 0.0165;
-STATES[Xr2_gate] = 0.473;
-STATES[Xs_gate] = 0.0174;
-STATES[m_gate] = 0.00165;
-STATES[h_gate] = 0.749;
-STATES[j_gate] = 0.6788;
-STATES[r_gate] = 2.347e-8;
-STATES[d_gate] = 3.288e-5;
-STATES[f_gate] = 0.7026;
-STATES[f2_gate] = 0.9526;
-STATES[s_gate] = 0.999998;
+cell->P_NaK=2.724;
+cell->g_Ks = 0.098; 
+cell->g_to = 0.294; 
+cell->g_NaL=0.0; 
+states[K_i] = 138.52;
+states[Na_i] = 10.132;
+states[Ca_i] = 0.000153;
+states[Ca_ss] = 0.00042;
+states[Ca_SR] = 4.272;
+states[R_prime] = 0.8978;
+states[fCass_gate] = 0.9942;
+states[Xr1_gate] = 0.0165;
+states[Xr2_gate] = 0.473;
+states[Xs_gate] = 0.0174;
+states[m_gate] = 0.00165;
+states[h_gate] = 0.749;
+states[j_gate] = 0.6788;
+states[r_gate] = 2.347e-8;
+states[d_gate] = 3.288e-5;
+states[f_gate] = 0.7026;
+states[f2_gate] = 0.9526;
+states[s_gate] = 0.999998;
+states[jL_gate] = 0.066;
 }
 
 if (cellType==2) 
 {
-STATES[K_i] = 136.89;
-STATES[Na_i] = 8.604;
-STATES[Ca_i] = 0.000126;
-STATES[Ca_ss] = 0.00036;
-STATES[Ca_SR] = 3.64;
-STATES[R_prime] = 0.9073;
-STATES[fCass_gate] = 0.9953;
-STATES[Xr1_gate] = 0.00621;
-STATES[Xr2_gate] = 0.4712;
-STATES[Xs_gate] = 0.0095;
-STATES[m_gate] = 0.00172;
-STATES[h_gate] = 0.7444;
-STATES[j_gate] = 0.7045;
-STATES[r_gate] = 2.42e-8;
-STATES[d_gate] = 3.373e-5;
-STATES[f_gate] = 0.7888;
-STATES[f2_gate] = 0.9755;
-STATES[s_gate] = 0.999998;
+cell->P_NaK=2.724;
+cell->g_Ks = 0.392; 
+cell->g_to = 0.294; 
+cell->g_NaL=0.0; 
+states[K_i] = 136.89;
+states[Na_i] = 8.604;
+states[Ca_i] = 0.000126;
+states[Ca_ss] = 0.00036;
+states[Ca_SR] = 3.64;
+states[R_prime] = 0.9073;
+states[fCass_gate] = 0.9953;
+states[Xr1_gate] = 0.00621;
+states[Xr2_gate] = 0.4712;
+states[Xs_gate] = 0.0095;
+states[m_gate] = 0.00172;
+states[h_gate] = 0.7444;
+states[j_gate] = 0.7045;
+states[r_gate] = 2.42e-8;
+states[d_gate] = 3.373e-5;
+states[f_gate] = 0.7888;
+states[f2_gate] = 0.9755;
+states[s_gate] = 0.999998;
+states[jL_gate] = 0.066;
 }
 }
 void initCnst()
@@ -255,13 +288,21 @@ void initCnst()
    double g_to_Endo = 0.073;
    double g_to_Mid_Epi = 0.294;
    
-   cA[0] =  c9*g_Ks_Endo_Epi; 
-   cA[1] =  c9*g_Ks_Mid; 
-   cA[2] =  c9*g_Ks_Endo_Epi; 
+   //cA[0] =  c9*g_Ks_Endo_Epi; 
+   //cA[1] =  c9*g_Ks_Mid; 
+   //cA[2] =  c9*g_Ks_Endo_Epi; 
+
+   g_Ks[0] =  g_Ks_Endo_Epi; 
+   g_Ks[1] =  g_Ks_Mid; 
+   g_Ks[2] =  g_Ks_Endo_Epi; 
    
-   cB[0] =  c9*g_to_Endo; 
-   cB[1] =  c9*g_to_Mid_Epi; 
-   cB[2] =  c9*g_to_Mid_Epi; 
+   //cB[0] =  c9*g_to_Endo; 
+   //cB[1] =  c9*g_to_Mid_Epi; 
+   //cB[2] =  c9*g_to_Mid_Epi; 
+
+   g_to[0] =  g_to_Endo; 
+   g_to[1] =  g_to_Mid_Epi; 
+   g_to[2] =  g_to_Mid_Epi; 
    
    c10= 1/(0.5*c9);
    c7 =  (0.50*cnst[19]*c9);
@@ -294,15 +335,19 @@ void initCnst()
    c43  =  cnst[43]; 
    c44  =  cnst[44]; 
    
+   P_NaK= cnst[21]; 
+   g_NaL =0.0; 
+   
    f1 = c1; 
-   f2 =  -2.0*c9*cnst[21]*cnst[10]/(cnst[10]+cnst[22]);
+   //f2 =  -2.0*c9*cnst[21]*cnst[10]/(cnst[10]+cnst[22]);
+   f2 =  -2.0*c9*cnst[10]/(cnst[10]+cnst[22]);
    f3 =  ((CUBE(cnst[29])+CUBE(cnst[11]))*(cnst[28]+cnst[12]))/(cnst[24]*cnst[12]*c9); 
    f4 =  f3*cnst[25]; 
    f5 =  cnst[27]*f1; 
    f6 =  (CUBE(cnst[11])*cnst[26]/cnst[12]);
    f7 = cnst[18]*cnst[2]*f1;
    f7a = 0.5*cnst[18]*cnst[2];
-   f9 = 4.0*cnst[12];
+   f9  = 4.0*cnst[12];
    f9a = 4.0*cnst[12]*f7a;
    f10 = c9*cnst[32];
    jParms =makeTauRecipParms(-48.85,-17.6,jTauRecip); 
@@ -310,12 +355,12 @@ void initCnst()
    
 }
 double get_c9() { return c9; }
-double fv0(double Vm, void *parm) 
+double fv0(double Vm, void *) 
 { 
    double expV1 = exp(-f1*Vm); 
    return f2/(1.0+0.1245*exp(-0.1*Vm*f1)+0.0353*expV1);
 }
-double fv1(double Vm, void *parm) 
+double fv1(double Vm, void *) 
 { 
    double expV1 = exp(-f1*Vm); 
    double expV5 = exp(f5*Vm); 
@@ -323,7 +368,7 @@ double fv1(double Vm, void *parm)
    double fva = 1.0/(f3+ f4*expV);
    return expV5*fva ; 
 }
-double fv2(double Vm, void *parm) 
+double fv2(double Vm, void *) 
 { 
    double expV1 = exp(-f1*Vm); 
    double expV5 = exp(f5*Vm); 
@@ -331,83 +376,64 @@ double fv2(double Vm, void *parm)
    double fva = 1.0/(f3+ f4*expV);
    return expV* fva*f6 ; 
 }
-double fv3(double Vm, void *parm) 
+double fv3(double Vm, void *) 
 { 
    double x = 2.0*f1*(Vm-15.0);
    double x2 =x*x;  
    if (x2 < 1e-4) return (1 + 0.5*x + x2/12.0-x2*x2/720)*f7a ;
    return f7a*x/(1.0-exp(-x));
 }
-double fv4(double Vm, void *parm) 
+double fv4(double Vm, void *) 
 {
    double x = 2*f1*(Vm-15.0);
    double x2 =x*x;  
    if (x2 < 1e-4) return (1 - 0.5*x + x2/12.0-x2*x2/720)*f9a ;
    return f9a*x/(exp(x)-1.0);
 }
-double fv5(double Vm, void *parm) 
+double fv5(double Vm, void *) 
 {
    return f10/(1.0+exp((25.0 - Vm)/5.98));
 }
-double fv6(double dV0, void *parm) 
+double fv6(double dV0, void *) 
 {
    double xx  =  (3.0*exp(0.0002*dV0 + 0.02)+exp(0.1*dV0 - 1.0))/(1.0+exp( -0.5*dV0))*(10.0+10*exp(0.06*dV0 -12.0));
    double fv6 = c9*c12/(1.0+xx);
    return fv6; 
    
 }
-void makeFit(double tol, double V0, double V1, double deltaV , int maxOrder, int maxCost,int mod) 
+void writeFit(PADE **fit)
+{
+   if (getRank(0)==0) 
+   {
+      FILE *file=fopen("pade.data","w"); 
+      while( *fit != NULL ) 
+      {
+         padeErrorInfo(**fit); 
+         padeWrite(file,**fit); 
+        fit++; 
+      }
+      fclose(file); 
+   }
+}
+PADE **makeFit(double tol, double V0, double V1, double deltaV,int mod) 
 {
    if (mod)
    {
       
-        tauRFunc[1]      = hTauRMod;
-        tauRName[1]  = "hTauRMod";
-        tauRFunc[2]      = jTauRMod;
-        tauRName[2]  = "jTauRMod";
+        fitFunc[10]      = hTauRMod;
+        fitName[10]  = "hTauRMod";
+        fitFunc[12]      = jTauRMod;
+        fitName[12]  = "jTauRMod";
    }
 
    int nPade=0;; 
-   int nT = maxOrder+1; 
-   if (1) 
-   {
-   fit[nPade++]=padeApprox("fv0",fv0,NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
-   fit[nPade++]=padeApprox("fv1",fv1,NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
-   fit[nPade++]=padeApprox("fv2",fv2,NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
-   fit[nPade++]=padeApprox("fv3",fv3,NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
-   fit[nPade++]=padeApprox("fv4",fv4,NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
-   fit[nPade++]=padeApprox("fv5",fv5,NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
-   }
-   else
-   {
-   fit[nPade++]=padeApprox("fv0",fv0,NULL,0,tol,deltaV,V0,V1,-1,-6,maxCost); 
-   fit[nPade++]=padeApprox("fv1",fv1,NULL,0,tol,deltaV,V0,V1,-1,-6,maxCost); 
-   fit[nPade++]=padeApprox("fv2",fv2,NULL,0,tol,deltaV,V0,V1,-1,-6,maxCost); 
-   fit[nPade++]=padeApprox("fv3",fv3,NULL,0,tol,deltaV,V0,V1,-1,-6,maxCost); 
-   fit[nPade++]=padeApprox("fv4",fv4,NULL,0,tol,deltaV,V0,V1,-1,-6,maxCost); 
-   fit[nPade++]=padeApprox("fv5",fv5,NULL,0,tol,deltaV,V0,V1,-3,-6,maxCost); 
-   }
-
-   fit[nPade++]=padeApprox("fv6",fv6,NULL,0,tol,deltaV,0,130,nT,nT,maxCost); 
-
-   int k;
-   for (k=0;k<11;k++) 
-   {
-     fit[nPade++]=padeApprox( mhuName[k], mhuFunc[k],NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
-     fit[nPade++]=padeApprox(tauRName[k],tauRFunc[k],NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
-   }
-   fit[nPade++]=padeApprox( mhuName[k], mhuFunc[k],NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
-   fit[nPade++]=padeApprox(tauRName[k],tauRFunc[k],NULL,0,tol,deltaV,V0,V1,nT,nT,maxCost); 
-   if (getRank(0)==0) 
-   {
-      FILE *file=fopen("pade.data","w"); 
-      for (int  i=0;i<nPade;i++) 
-      {
-         padeErrorInfo(*fit[i]); 
-         padeWrite(file,*fit[i]); 
-      }
-      fclose(file); 
-   }
+   int i=0; 
+   for ( i =0; i< 6;i++) fit[nPade++]=padeApprox(fitName[i],fitFunc[i],NULL,0,tol,deltaV,V0,V1); 
+   fit[nPade++]=padeApprox(fitName[i],fitFunc[i],NULL,0,tol,deltaV,0,130.0); 
+   for ( i=7; fitName[i] != NULL;i++) fit[nPade++]=padeApprox(fitName[i],fitFunc[i],NULL,0,tol,deltaV,V0,V1); 
+   assert(nPade==NFIT); 
+   fit[NFIT]=NULL; 
+   return fit; 
 }
 
 double defaultVoltage(int cellType)
@@ -438,14 +464,18 @@ double defaultVoltage(int cellType)
      //double dV2 = Vm -c3*log(states[K_i]+c2*states[Na_i]) -c6;
 
 #define logSeries(x) ((x)*(1.0+(x)*(-0.5+(x)/3.0)))
-void computeNonGateRates(double dt, int nCells, const double *VM, TT06DevState* States, double *dVdt)
+void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, double *dVdt)
 {
    
  for (int ii=0;ii<nCells;ii++) 
  {
    double Vm = VM[ii]; 
-   double *states = States[ii].state; 
-   int cellType = States[ii].cellType; 
+   double *states = cell[ii].state; 
+   int cellType = cell[ii].cellType; 
+   double P_NaK = cell[ii].P_NaK; 
+   double g_Ks = cell[ii].g_Ks; 
+   double g_to = cell[ii].g_to; 
+   double g_NaL = cell[ii].g_NaL; 
 
    dVdt[ii]=0.0; 
    double itmp0,itmp5,itmp6 ; 
@@ -471,27 +501,30 @@ void computeNonGateRates(double dt, int nCells, const double *VM, TT06DevState* 
    {
 
      double x0 = states[Na_i]*c25; 
-     double sigm0 = sigm(x0); 
+     double sigm0 = P_NaK*sigm(x0); 
+     //double sigm0 = sigm(x0); 
 
      double dV0 = Vm -c3*log(states[K_i]) -c5;
      double dV1 = Vm -c3*log(states[Na_i])-c4;
      double dV2 = dV0-c3*logSeries(c2*states[Na_i]/states[K_i])+c5-c6; // Assumption:  c2*states[Na_i]/states[K_i] is small; 
+
 
      double fv0=fit[0]->afunc(Vm, fit[0]->aparms); 
      double fv5=fit[5]->afunc(Vm, fit[5]->aparms); 
      double fv6=fit[6]->afunc(dV0,fit[6]->aparms); 
      double fd =  fv5  +  fv6; 
 
-     double tmp0 =  fd +  cB[cellType]*states[r_gate]*states[s_gate]+ c11*states[Xr1_gate]*states[Xr2_gate] ;
+     double tmp0 =  fd +  c9*g_to*states[r_gate]*states[s_gate]+ c11*states[Xr1_gate]*states[Xr2_gate] ;
      double tmp1 =  c20*CUBE(states[m_gate])*states[h_gate]*states[j_gate]+c21;
-     double tmp2 =  cA[cellType]*SQ(states[Xs_gate]);
+     double tmp2 =  c9*g_Ks*SQ(states[Xs_gate]);
      double itmpA =  sigm0 * fv0;                          //Sigm0
      double itmp2 = itmp0 - 1.5*itmpA+tmp1*dV1; 
      double itmp3 = itmpA + tmp0*dV0 +tmp2*dV2; 
+     double iNaL = g_NaL*CUBE(states[m_gate])*states[jL_gate]*dV1;
 
      states[K_i]     += dt*itmp3;
-     states[Na_i]    += dt*(itmp2+2.0*itmp0);
-     dVdt[ii]  += itmp2*c22+itmp3*c22;
+     states[Na_i]    += dt*(iNaL+itmp2+2.0*itmp0);
+     dVdt[ii]  += iNaL + itmp2*c22+itmp3*c22;
    }
 
    {
@@ -524,20 +557,21 @@ void computeNonGateRates(double dt, int nCells, const double *VM, TT06DevState* 
 
 
 // Update Gates; 
-void computeGateRates(double dt, int nCells, const double *VM, TT06DevState* States)
+void updateGate(double dt, int nCells, const double *VM, TT06DevState* cell)
 {
    
  PADE **gatefit = fit + 7; 
  for (int ii=0;ii<nCells;ii++) 
  {
    double Vm = VM[ii]; 
-   double *states = States[ii].state; 
-   int cellType = States[ii].cellType; 
+   double *states = cell[ii].state; 
+   int cellType = cell[ii].cellType; 
    double *gate = states+gateOffset; 
    
    double mhu,tauR; 
 
    int i=0;
+
 
    mhu=gatefit[2*i]  ->afunc(Vm,gatefit[2*i  ]->aparms);       //mGate
    tauR=gatefit[2*i+1]->afunc(Vm,gatefit[2*i+1]->aparms); 
@@ -567,105 +601,111 @@ void computeGateRates(double dt, int nCells, const double *VM, TT06DevState* Sta
    mhu=gatefit[ l ]->afunc(Vm,gatefit[l ]->aparms);  //Note  sMhu depends on celltype
    tauR=gatefit[l + 1 ]->afunc(Vm,gatefit[ l+1  ]->aparms);  //Note  sTauR depends on celltype
    gate[i] +=  dt*(mhu - gate[i])*tauR;     //sGate
+
+   mhu =exp(-(Vm+91.0)*2/6.1);  // jL_gate
+   //jLinf *= jLinf;
+   tauR = 1.0/670.0 ; 
+   gate[jL_gate] += dt*(mhu - gate[jL_gate])*tauR;
+
 }
 
 }
-double Xr1Mhu(double Vm, void *parms) 
+double Xr1Mhu(double Vm, void *) 
 { 
    double mhu=1.0/(1.0+(exp(((-26.0 - Vm)/7.0))));
    return mhu ; 
 }
-double Xr1TauR(double Vm, void *parms) 
+double Xr1TauR(double Vm, void *) 
 { 
    double t1 = (1.0+(exp(((-45.0 - Vm)/10.0))))/450;
    double t2 = (1.0+(exp(((Vm+30.0)/11.5000))))/6.0;
    double tauR =  t1*t2;
    return tauR;
 }
-double Xr2Mhu(double Vm, void *parms) 
+double Xr2Mhu(double Vm, void *) 
 { 
    double mhu=1.0/(1.0+(exp(((Vm+88.0)/24.0))));
    return mhu;
 }
-double Xr2TauR(double Vm, void *parms) 
+double Xr2TauR(double Vm, void *) 
 { 
    double t1 = (1.0+(exp(((-60.0 - Vm)/20.0))))/3.0;
    double t2 = (1.0+(exp(((Vm - 60.0)/20.0))))/1.120;
    double tauR =  t1*t2;
    return tauR;
 }
-double XsMhu(double Vm, void *parms) 
+double XsMhu(double Vm, void *) 
 { 
    double mhu = 1.0/(1.0+(exp(((-5.0 - Vm)/14.0))));
    return mhu;
 }
-double XsTauR(double Vm, void *parms) 
+double XsTauR(double Vm, void *) 
 { 
    double t1 = 1400.00/sqrt(1.0+exp((5.0 - Vm)/6.0));
    double t2 = 1.0/(1.0+(exp(((Vm - 35.0)/15.0))));
    double tauR  =  1.0/(t1*t2+80.0);
    return tauR;
 }
-double mMhu(double Vm, void *parms) 
+double mMhu(double Vm, void *) 
 { 
    double mhu = 1.0/SQ(1.0+exp((-56.8600 - Vm)/9.03000));
    return mhu;
 }
-double mTauR(double Vm, void *parms) 
+double mTauR(double Vm, void *) 
 { 
    double t1  = 1.0/(1.0+(exp(((- 60.0 - Vm)/5.0))));
    double t2  =  0.10000/(1.0+(exp(((Vm+35.0)/5.0))))+0.100000/(1.0+(exp(((Vm - 50.0)/200.0))));
    double tauR =  1.0/(t1*t2);
    return tauR;
 }
-double hjMhu(double Vm, void *parms) 
+double hjMhu(double Vm, void *) 
 { 
    double mhu = 1.0/SQ((1.0+(exp(((Vm+71.5500)/7.43000)))));
    return mhu;
 }
-double hTauR(double Vm, void *parms) 
+double hTauR(double Vm, void *) 
 { 
    double t1  = (Vm<- 40.0 ?  0.0570000*(exp((- (Vm+80.0)/6.80000))) : 0.0);
    double t2  = (Vm<- 40.0 ?  2.70000*(exp(( 0.0790000*Vm)))+ 310000.*(exp(( 0.348500*Vm))) : 0.770000/( 0.130000*(1.0+(exp(((Vm+10.6600)/- 11.1000))))));
    double tauR = (t1+t2);
    return tauR;
 }
-double hTauRMod(double Vm, void *parms) 
+double hTauRMod(double Vm, void *) 
 { 
    double dtauR,ddtauR; 
    double tauR = TauRecipMod(Vm,hParms,&dtauR,&ddtauR); 
    return tauR;
 }
-double jTauR(double Vm, void *parms) 
+double jTauR(double Vm, void *) 
 { 
    double t1  = (Vm < -40.0 ? (( ( - 25428.0*(exp(( 0.244400*Vm))) -  6.94800e-06*(exp(( - 0.0439100*Vm))))*(Vm+37.7800))/1.0)/(1.0+(exp(( 0.311000*(Vm+79.2300))))) : 0.0);
    double t2 = (Vm < -40.0 ? ( 0.0242400*(exp(( - 0.0105200*Vm))))/(1.0+(exp(( - 0.137800*(Vm+40.1400))))) : ( 0.600000*(exp(( 0.0570000*Vm))))/(1.0+(exp(( - 0.100000*(Vm+32.0))))));
    double tauR  = (t1+t2);
    return tauR;
 }
-double jTauRMod(double Vm, void *parms) 
+double jTauRMod(double Vm, void *) 
 { 
    double dtauR,ddtauR; 
    double tauR = TauRecipMod(Vm,jParms,&dtauR,&ddtauR); 
    return tauR;
 }
-double rMhu(double Vm, void *parms) 
+double rMhu(double Vm, void *) 
 { 
    double mhu = 1.0/(1.0+(exp(((20.0 - Vm)/6.0))));
    return mhu;
 }
-double rTauR(double Vm, void *parms) 
+double rTauR(double Vm, void *) 
 { 
    double tau =  9.50000*(exp((- SQ((Vm+40.0)))/1800.00))+0.800000;
    double tauR = 1.0/tau; 
    return tauR;
 }
-double dMhu(double Vm, void *parms) 
+double dMhu(double Vm, void *) 
 { 
    double mhu = 1.0/(1.0+(exp(((- 8.0 - Vm)/7.50000))));
    return mhu;
 }
-double dTauR(double Vm, void *parms) 
+double dTauR(double Vm, void *) 
 { 
    double t1  = 1.40000/(1.0+(exp(((- 35.0 - Vm)/13.0))))+0.250000;
    double t2 = 1.40000/(1.0+(exp(((Vm+5.0)/5.0))));
@@ -673,46 +713,45 @@ double dTauR(double Vm, void *parms)
    double tauR =  1/(t1*t2+t3);
    return tauR;
 }
-double fMhu(double Vm, void *parms) 
+double fMhu(double Vm, void *) 
 { 
    double mhu = 1.0/(1.0+(exp(((Vm+20.0)/7.0))));
    return mhu;
 }
-double fTauR(double Vm, void *parms) 
+double fTauR(double Vm, void *) 
 { 
    double tau =  1102.50*(exp((- SQ(Vm+27.0)/225.0)))+200.0/(1.0+(exp(((13.0 - Vm)/10.0))))+180.0/(1.0+(exp(((Vm+30.0)/10.0))))+20.0;
    double tauR = 1/tau; 
    return tauR;
 }
-double f2Mhu(double Vm, void *parms) 
+double f2Mhu(double Vm, void *) 
 { 
- //double mhu = 0.670000/(1.0+(exp ((Vm+35.0)/7.0)) )+0.330000;
    double mhu = 0.670000/(1.0+(exp(((Vm+35.0)/7.0))))+0.330000;
    return mhu;
 }
-double f2TauR(double Vm, void *parms) 
+double f2TauR(double Vm, void *) 
 { 
    double tau =  562.0*exp(-SQ((Vm+27.0))/240.0)+31.0/(1.0+(exp(((25.0 - Vm)/10.0))))+80.0/(1.0+(exp(((Vm+30.0)/10.0))));
    double tauR = 1/tau; 
    return tauR;
 }
-double sMhu0(double Vm, void *parms) 
+double sMhu0(double Vm, void *) 
 { 
    double mhu = 1.0/(1.0+(exp(((Vm+28.0)/5.0))));
    return mhu;
 }
-double sMhu1(double Vm, void *parms) 
+double sMhu1(double Vm, void *) 
 { 
    double  mhu=1.00000/(1.00000+(exp(((Vm+20.0000)/5.00000))));
    return mhu;
 }
-double sTauR0(double Vm, void *parms) 
+double sTauR0(double Vm, void *) 
 { 
    double   tau =  1000.0*(exp((-SQ(Vm+67.0)/1000.0)))+8.0;
    double tauR = 1/tau; 
    return tauR;
 }
-double sTauR1(double Vm, void *parms) 
+double sTauR1(double Vm, void *) 
 { 
    double tau =  85.0000*(exp((- (pow((Vm+45.0000), 2.00000))/320.000)))+5.00000/(1.00000+(exp(((Vm - 20.0000)/5.00000))))+3.00000;
    double tauR = 1/tau; 

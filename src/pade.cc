@@ -138,7 +138,7 @@ void padeErrorInfo(PADE pade)
    }
    fclose(file); 
 }
-static void  minimizeCost(PADE *pade,double tol, int maxCost, int lMax, int mMax)
+static void  minimizeCost(PADE *pade,int maxCost, int lMax, int mMax)
 {
    int lMin = 1; 
    int mMin = 1; 
@@ -149,13 +149,13 @@ static void  minimizeCost(PADE *pade,double tol, int maxCost, int lMax, int mMax
    int n = pade->n; 
    double *x = pade->x; 
    double *y = pade->y; 
-   pade->tol = tol; 
+   double tol = pade->tol; 
    double errTol = tol*(pade->ymax-pade->ymin); 
    int lmin=0,mmin=0; 
    int length; 
    double amin[lMax+mMax]; 
    double errMaxMin = -1.0; 
-   double errRMSMin ; 
+   double errRMSMin=0.0 ; 
    for (int kk=minCost;kk<=maxCost;kk++) 
    {
         for (int l=lMin;l<=lMax;l+=1)
@@ -187,12 +187,21 @@ static void  minimizeCost(PADE *pade,double tol, int maxCost, int lMax, int mMax
 }
 void padeWrite(FILE *file,PADE pade)
 {
-	fprintf(file,"%10s PADE { l=%d;m=%d;",pade.name,pade.l,pade.m);
+	fprintf(file,"%10s PADE { tol=%e; l=%d;m=%d;",pade.name,pade.tol, pade.l,pade.m);
 	fprintf(file, " coef="); 
         for (int i=0;i<(pade.l+pade.m);i++) fprintf(file, "%21.14e ",pade.coef[i]); 
 	fprintf(file, ";}\n"); 
 }
-PADE   *padeApprox (const char *name, double (*func)(double x, void *parms), void *parms, int size_parms,double tol, double deltaX, double x0, double x1, int lMax,int mMax, int maxCost)
+void padeCalc(PADE *pade, int lMax, int mMax, int maxCost)
+{
+   if (pade->tol > 0)  
+   {
+      minimizeCost(pade, maxCost, lMax, mMax);
+      if (pade->l < 2  )  pade->afunc = (double (*)(double , void *))polyFunc; 
+   }
+   else { pade->afunc = pade->func ; pade->aparms= pade->parms; }
+}
+PADE   *padeApprox(const char *name, double (*func)(double x, void *parms), void *parms, int size_parms,double tol, double deltaX, double x0, double x1)
 {
    PADE *pade=(PADE *)malloc(sizeof(PADE)); 
    pade->name = strdup(name); 
@@ -205,6 +214,7 @@ PADE   *padeApprox (const char *name, double (*func)(double x, void *parms), voi
      pade->parms = malloc(size_parms); 
      for (int i=0;i<size_parms;i++) ((char *)pade->parms)[i] = ((char*)parms)[i]; 
    }
+   pade->tol=tol; 
    pade->deltaX = deltaX; 
    pade->n = 0; 
    pade->x0 = x0; 
@@ -216,11 +226,5 @@ PADE   *padeApprox (const char *name, double (*func)(double x, void *parms), voi
    pade->coef = NULL; 
    pade->cost=0 ;
    makeFunctionTable(pade) ;
-   if (tol > 0)  
-   {
-      minimizeCost(pade, tol, maxCost, lMax, mMax);
-      if (pade->l < 2  )  pade->afunc = (double (*)(double , void *))polyFunc; 
-   }
-   else { pade->afunc = func ; pade->aparms= pade->parms; }
    return pade; 
 }

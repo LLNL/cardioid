@@ -2,6 +2,7 @@
 #include <cmath>
 #include "Anatomy.hh"
 #include "TT06Func.hh"
+#include "pade.hh"
 
 using namespace std;
 
@@ -20,8 +21,10 @@ TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int m
       double V1 =  50.0; 
       double deltaV = 0.1; 
       int maxCost=128; 
-      int maxOrder=64; 
-      makeFit(tolerance,V0,V1,deltaV,maxOrder,maxCost,mod); 
+      int maxTerms=64; 
+      PADE **fit=makeFit(tolerance,V0,V1,deltaV,mod); 
+      for (int i=0;fit[i]!=NULL;i++) padeCalc(fit[i],maxTerms,maxTerms,maxCost); 
+      writeFit(fit); 
    }
    dtForFit_=0.0; 
    ttType_.resize(256, -1); 
@@ -39,8 +42,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int m
    {
       assert(anatomy.cellType(ii) >= 0 && anatomy.cellType(ii) < 256);
       int cellType = ttType_[anatomy.cellType(ii)];
-      s_[ii].cellType = cellType; 
-      initState(s_[ii].state,cellType); 
+      initState(&(s_[ii]),cellType); 
    }
    
 }
@@ -50,18 +52,10 @@ TT06Dev_Reaction::~TT06Dev_Reaction()
 
 void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<double>& iStim, vector<double>& dVm)
 {
-   assert(nCells_ == dVm.size());
-
-
+   updateNonGate(dt, nCells_,&Vm[0], &(s_[0]), &dVm[0]);
+   updateGate(dt, nCells_,&Vm[0], &(s_[0]));
    double c9 = get_c9(); 
-   double rates[nStateVar];
-   for (unsigned ii=0; ii<nCells_; ++ii)
-   {
-      computeNonGateRates(dt,1,&(Vm[ii]), &(s_[ii]), &dVm[ii]);
-      computeGateRates(dt, 1, &(Vm[ii]), &(s_[ii]));
-      rates[K_i] += iStim[ii]*c9 ;
-      for (int i=0;i<nStateVar;i++) s_[ii].state[i] += dt*rates[i]; 
-   }
+   for (unsigned ii=0; ii<nCells_; ++ii) s_[ii].state[K_i] += dt*iStim[ii]*c9 ;
 }
 
 

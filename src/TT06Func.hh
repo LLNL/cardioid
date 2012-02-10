@@ -1,5 +1,6 @@
 #ifndef TT06FUNC_HH
 #define TT06FUNC_HH
+#include "pade.hh" 
 #define SQ(x) ((x)*(x))
 #define CUBE(x) ((x)*(x)*(x))
 
@@ -25,21 +26,23 @@
  * RATES[1] is d/dt K_i in component potassium_dynamics (millimolar).
 */
 // int mapCell2Dev[]                  {1,2,3,10,17,18,14,7,8,9,4,5,6,16,11,12,13,15};
-enum TT06STATE { Ca_i, K_i, Na_i, Ca_ss, Ca_SR, R_prime, fCass_gate, m_gate, h_gate, j_gate, Xr1_gate, Xr2_gate, Xs_gate, r_gate, d_gate, f_gate, f2_gate, s_gate, nStateVar} ; 
+enum TT06STATE { Ca_i, K_i, Na_i, Ca_ss, Ca_SR, R_prime, fCass_gate, m_gate, h_gate, j_gate, Xr1_gate, Xr2_gate, Xs_gate, r_gate, d_gate, f_gate, f2_gate, s_gate, jL_gate, nStateVar} ; 
 
 struct TT06DevState
 {
-   double state[nStateVar];
    int cellType; 
+   double P_NaK,g_Ks,g_to,g_NaL; 
+   double state[nStateVar];
 };
 
 #define gateOffset 7
-void initState(double *state,int cellType);
+void initState(TT06DevState *cell,int cellType);
 void initCnst();
-void computeNonGateRates(double dt, int n, const double *Vm, TT06DevState *State,  double *dVdt);
-void computeGateRates(double dt, int n, const double *Vm, TT06DevState *State);
+void updateNonGate(double dt, int n, const double *Vm, TT06DevState *cell,  double *dVdt);
+void updateGate(double dt, int n, const double *Vm, TT06DevState *cell);
 double get_c9();
-void makeFit(double tol, double V0, double V1, double deltaV, int maxOrder, int maxCost, int mod);
+PADE **makeFit(double tol, double V0, double V1, double deltaV, int mod);
+void writeFit(PADE **fit); 
 double defaultVoltage(int cellType);
 
 #endif
