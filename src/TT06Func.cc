@@ -601,11 +601,12 @@ void updateGate(double dt, int nCells, const double *VM, TT06DevState* cell)
    mhu=gatefit[ l ]->afunc(Vm,gatefit[l ]->aparms);  //Note  sMhu depends on celltype
    tauR=gatefit[l + 1 ]->afunc(Vm,gatefit[ l+1  ]->aparms);  //Note  sTauR depends on celltype
    gate[i] +=  dt*(mhu - gate[i])*tauR;     //sGate
+   i++;
 
    mhu =exp(-(Vm+91.0)*2/6.1);  // jL_gate
    //jLinf *= jLinf;
    tauR = 1.0/670.0 ; 
-   gate[jL_gate] += dt*(mhu - gate[jL_gate])*tauR;
+   gate[i] += dt*(mhu - gate[i])*tauR;
 
 }
 
