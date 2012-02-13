@@ -2,7 +2,7 @@ simulate SIMULATE
 {
    anatomy = niederer;
    decomposition = XX_BALANCER_XX;
-   diffusion = Saleheen98Fast;
+   diffusion = fgr;
    reaction = tt06;
    stimulus = boxStimulus;
    sensor = activationTime;
@@ -47,10 +47,9 @@ grid DECOMPOSITION
     nz = XX_ZGRID_XX;
 }
 
-Saleheen98Fast DIFFUSION
+fgr DIFFUSION
 {
-   method = Saleheen98;
-   variant = precompute;
+   method = FGR;
    diffusionScale = 714.2857143;      // mm^3/mF
 }
 
@@ -63,7 +62,7 @@ conductivity CONDUCTIVITY
 
 tt06 REACTION
 {
-    method = TT06_CellML;
+    method = TT06Dev;
     integrator = rushLarsen;
 }
 
