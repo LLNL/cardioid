@@ -119,7 +119,7 @@ namespace
       static string whitespace(" \n\t");
       string::size_type begin = buf.find_first_not_of(whitespace, pos);
       pos = buf.find_first_of(whitespace, begin);
-      return buf.substr(begin, pos);
+      return buf.substr(begin, pos-begin);
    }
 }
 
