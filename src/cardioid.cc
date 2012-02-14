@@ -45,7 +45,6 @@ int main(int argc, char** argv)
    profileSetPrintOrder("Loop");
    profileSetPrintOrder("");
    profileSetRefTimer("Loop");
-
    heap_start(100);
 
    if (mype == 0)
@@ -56,6 +55,7 @@ int main(int argc, char** argv)
    initializeSimulate("simulate", sim);
 
    //ewd:  turn on mpiP
+   MPI_Barrier(MPI_COMM_WORLD);
    MPI_Pcontrol(1);
 
    profileStart("Loop");
@@ -72,7 +72,6 @@ int main(int argc, char** argv)
       cout << "\n" << endl;
    }
    profileDumpStats(cout);
-   
    stringstream dirname;
    dirname << "snapshot."<<setfill('0')<<setw(8)<<sim.loop_;
    profileDumpAll(dirname.str());

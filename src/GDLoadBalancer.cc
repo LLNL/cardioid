@@ -88,10 +88,6 @@ void GDLoadBalancer::initialDistribution(vector<AnatomyCell>& cells, int nx, int
    //    if (nTasks >= nz)     destRank = gid.z   (one plane per task for myRank < nz)
    //    else if (nTasks < nz) destRank = gid.z*nTasks/nz  (multiple planes per task)
 
-   //ewd DEBUG
-   if (myRank_ == 0) 
-      cout << "GDLB.initialDistribution: data grid = " << nx << " x " << ny << " x " << nz << ", process grid = " << npex_ << " x " << npey_ << " x " << npez_ << endl;
-
    /*
    //ewd DEBUG:  compute radii and centers after initial distribution
    vector<double> radius(npegrid_,0.0);
@@ -599,24 +595,6 @@ bool GDLoadBalancer::diffuseDest(vector<AnatomyCell>& cells)
       sort(xgid_sort.begin(),xgid_sort.end());
       sort(ygid_sort.begin(),ygid_sort.end());
       sort(zgid_sort.begin(),zgid_sort.end());
-
-      //ewd DEBUG
-      /*
-      if (myRank_ == 105) {
-         for (int i=0; i<ngidloc; i++)
-         {
-            int sortgid = xgid_sort[i];
-            int gid = -1;
-            for (int j=0; j<ngidloc; j++)
-               if (xgid[j] == sortgid)
-                  gid = locgid_[j];
-            
-            GridPoint tgp(gid,nx_,ny_,nz_);
-            cout << "GDLB.DDESTX, pe 105, gidloc " << i << ", xgidsort = " << gid << ": " << tgp.x << " " << tgp.y << " " << tgp.z << endl;
-         }
-      }
-      */
-      //ewd DEBUG
       
       int nleft = ngidloc;
       for (int n=0; n<nnbr_; n++)

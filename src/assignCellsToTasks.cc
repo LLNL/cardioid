@@ -115,7 +115,6 @@ namespace
           cells[ii].dest_ = gpt.z*nTasks/sim.nz_;
       }
 
-      //ewd DEBUG
       if (myRank == 0)
          cout << "GDLoadBalancer:  global grid " << sim.nx_ << " x " << sim.ny_ << " x " << sim.nz_ << ", process grid " << npex << " x " << npey << " x " << npez << endl;
       
@@ -138,13 +137,13 @@ namespace
       cells.resize(nLocal);
 
       GDLoadBalancer loadbal(comm, npex, npey, npez);
-      
+
       // compute initial data decomposition
       profileStart("gd_assign_init");
       loadbal.initialDistribution(cells, sim.nx_, sim.ny_, sim.nz_);
       profileStop("gd_assign_init");
 
-      //ewd DEBUG set up visualization of initial distribution
+      // set up visualization of initial distribution
       int visgrid;
       objectGet(obj, "visgrid", visgrid, "0");
       if (visgrid == 1)
@@ -169,7 +168,6 @@ namespace
       loadbal.balanceLoop(cells,ninner,threshold,nmax);
       profileStop("gd_balance");
 
-      //ewd DEBUG:  print out load balance data
       if (visgrid == 1)
       {
         stringstream name;
@@ -179,38 +177,8 @@ namespace
            DirTestCreate(fullname.c_str());
         fullname += "/anatomy";
         writeCells(sim.anatomy_.cellArray(), sim.nx_, sim.ny_, sim.nz_, fullname.c_str());
-
-        //ewd DEBUG
-        /*
-        for (unsigned ii=0; ii<cells.size(); ++ii)
-        {
-          if (cells[ii].dest_ == 105)
-          {
-            GridPoint gpt(cells[ii].gid_,sim.nx_,sim.ny_,sim.nz_);
-            cout << " X  " << gpt.x << "  " << gpt.y << "  " << gpt.z << endl;
-          }
-        }
-        */
-        //ewd DEBUG
-
-        
       }
-      //ewd DEBUG
       
-      //ewd print out load balance timing
-      /*
-      if (myRank == 0)
-      {
-        cout.setf(ios::fixed,ios::floatfield);
-        for ( map<std::string,Timer>::iterator i = sim.tmap_.begin(); i != sim.tmap_.end(); i++ ) {
-          double time = (*i).second.real();
-          cout << "timing name=" << setw(15) << (*i).first << ":   time=" << setprecision(6) << setw(12) << time << " sec" << endl;
-        }
-      }
-      */
-      // ewd DEBUG
-
-
       bool testingOnly = (npegrid != nTasks);
       if (testingOnly)
       {

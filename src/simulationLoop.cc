@@ -20,11 +20,20 @@
 
 using namespace std;
 
+#ifdef TIMING
+extern "C"{ long long timebase();}
+#endif
+
 void simulationLoop(Simulate& sim)
 {
   int myRank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-   
+
+#ifdef TIMING
+  const double cycles_to_usec = 1.0/850.0;  // BG/P = 850 MHz
+  long long treact = 0.0;
+#endif
+  
   vector<double> dVmDiffusion(sim.anatomy_.nLocal(), 0.0);
   vector<double> dVmReaction(sim.anatomy_.nLocal(), 0.0);
   vector<double> dVmExternal(sim.anatomy_.nLocal(), 0.0);
@@ -84,18 +93,36 @@ void simulationLoop(Simulate& sim)
   {
     int nLocal = sim.anatomy_.nLocal();
     
-    static TimerHandle barrierHandle = profileGetHandle("Barrier");
+#ifdef TIMING
+    static TimerHandle barrierHandle = profileGetHandle("Barrier1");
     profileStart(barrierHandle);
     MPI_Barrier(MPI_COMM_WORLD);
     profileStop(barrierHandle);
-
+#endif
+    
     static TimerHandle haloHandle = profileGetHandle("Halo Exchange");
     profileStart(haloHandle);
+#ifdef TIMING
+    long long t1a = timebase();
+    long long t1b = timebase();
+#endif
     voltageExchange.execute(sim.VmArray_, nLocal);
+#ifdef TIMING
+    long long t2a = timebase();
+    if (myRank == 0)
+       cout << "TIMING: iteration " << sim.loop_ << ", haloExchange time = " << (t2a-t1b) << ", halo+timer = " << (t2a-t1a) << endl;
+#endif
     profileStop(haloHandle);
 
     for (unsigned ii=0; ii<nLocal; ++ii)
        dVmExternal[ii] = 0;
+    
+#ifdef TIMING
+    static TimerHandle barrierHandle2 = profileGetHandle("Barrier2");
+    profileStart(barrierHandle2);
+    MPI_Barrier(MPI_COMM_WORLD);
+    profileStop(barrierHandle2);
+#endif
     
     // DIFFUSION
     static TimerHandle diffusionHandle = profileGetHandle("Diffusion");
@@ -103,6 +130,13 @@ void simulationLoop(Simulate& sim)
     sim.diffusion_->calc(sim.VmArray_, dVmDiffusion);
     profileStop(diffusionHandle);
 
+#ifdef TIMING
+    static TimerHandle barrierHandle3 = profileGetHandle("Barrier3");
+    profileStart(barrierHandle3);
+    MPI_Barrier(MPI_COMM_WORLD);
+    profileStop(barrierHandle3);
+#endif
+    
     // code to limit or set iStimArray goes here.
     static TimerHandle stimulusHandle = profileGetHandle("Stimulus");
     profileStart(stimulusHandle);
@@ -116,8 +150,23 @@ void simulationLoop(Simulate& sim)
     // REACTION
     static TimerHandle reactionHandle = profileGetHandle("Reaction");
     profileStart(reactionHandle);
+#ifdef TIMING
+    long long t3a = timebase();
+#endif
     sim.reaction_->calc(sim.dt_, sim.VmArray_, iStim, dVmReaction);
+#ifdef TIMING
+    long long t4a = timebase();
+    treact += (t4a-t3a);
+    cout << "TIMING: myRank = " << myRank << ", iteration " << sim.loop_ << ", reaction time = " << (t4a-t3a) << " cycles, " << (t4a-t3a)*cycles_to_usec << " usec" << endl;
+#endif
     profileStop(reactionHandle);
+
+#ifdef TIMING
+    static TimerHandle barrierHandle4 = profileGetHandle("Barrier4");
+    profileStart(barrierHandle4);
+    MPI_Barrier(MPI_COMM_WORLD);
+    profileStop(barrierHandle4);
+#endif
     
     static TimerHandle integratorHandle = profileGetHandle("Integrator");
     profileStart(integratorHandle);
@@ -171,4 +220,10 @@ void simulationLoop(Simulate& sim)
     profileStop(loopIOHandle);
       
   }
+
+#ifdef TIMING  
+  cout << "TIMING: myRank = " << myRank << ", total reaction time = " << (double)treact << " cycles, " << setprecision(14) << (double)treact*cycles_to_usec << " usec" << endl;
+#endif
+
+
 }

@@ -10,9 +10,13 @@ DFLAGS = -DWITH_PIO -DWITH_MPI -DBGP \
 INCLUDE =  -I/bgsys/drivers/ppcfloor/arch/include \
 	-I/usr/local/tools/gsl/include/
 
-CFLAGS_BASE =   -qsmp=omp -qarch=450d $(INCLUDE) $(DFLAGS)
-CXXFLAGS_BASE = -qsmp=omp -qarch=450d $(INCLUDE) $(DFLAGS)
 
+CFLAGS_BASE =   -qarch=450d $(INCLUDE) $(DFLAGS)
+CXXFLAGS_BASE = -qarch=450d $(INCLUDE) $(DFLAGS)
+#ewd DEBUG: add floating-point exception traps
+#CFLAGS_BASE =   -qarch=450 $(INCLUDE) $(DFLAGS) -qflttrap=enable:nanq:overflow:zerodivide
+#CXXFLAGS_BASE = -qarch=450 $(INCLUDE) $(DFLAGS) -qflttrap=enable:nanq:overflow:zerodivide
+OMP_FLAGS = -qsmp=omp 
 
 HAVE_GSL = 1
 ifeq ($(HAVE_GSL),1) 
@@ -21,15 +25,15 @@ ifeq ($(HAVE_GSL),1)
    LDFLAGS_BASE += -L/usr/local/tools/gsl/lib -lgsl -lgslcblas
 endif
 
-CFLAGS_OPT =   $(CFLAGS_BASE) -g -O3 -qtune=450 
-CFLAGS_DEBUG = $(CFLAGS_BASE) -g -O0
-CFLAGS_PROF =  $(CFLAGS_BASE) -g -pg -O3 -DPROFILE
-CFLAGS_MPIP =  -qarch=450d $(INCLUDE) $(DFLAGS) -g -O3 -qtune=450 
+CFLAGS_OPT =   $(CFLAGS_BASE) $(OMP_FLAGS) -g -O3 -qtune=450 
+CFLAGS_DEBUG = $(CFLAGS_BASE) $(OMP_FLAGS) -g -O0
+CFLAGS_PROF =  $(CFLAGS_BASE) $(OMP_FLAGS) -g -pg -O3 -DPROFILE
+CFLAGS_MPIP =  $(CFLAGS_BASE) -g -O3 -qtune=450 
 
-CXXFLAGS_OPT =   $(CXXFLAGS_BASE) -g -O3 -qtune=450 
-CXXFLAGS_DEBUG = $(CXXFLAGS_BASE) -g -O0
-CXXFLAGS_PROF =  $(CXXFLAGS_BASE) -g -pg -O3 -DPROFILE
-CXXFLAGS_MPIP =  -qarch=450d $(INCLUDE) $(DFLAGS) -g -O3 -qtune=450 
+CXXFLAGS_OPT =   $(CXXFLAGS_BASE) $(OMP_FLAGS) -g -O3 -qtune=450 
+CXXFLAGS_DEBUG = $(CXXFLAGS_BASE) $(OMP_FLAGS) -g -O0
+CXXFLAGS_PROF =  $(CXXFLAGS_BASE) $(OMP_FLAGS) -g -pg -O3 -DPROFILE
+CXXFLAGS_MPIP =  $(CXXFLAGS_BASE) -g -O3 -qtune=450 
 
 LDFLAGS_OPT   = $(LDFLAGS_BASE) $(CFLAGS_OPT) $(CXXFLAGS_OPT)
 LDFLAGS_DEBUG = $(LDFLAGS_BASE) $(CFLAGS_DEBUG) $(CXXFLAGS_DEBUG)

@@ -87,7 +87,7 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
 void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm)
 {
    updateVoltageBlock(Vm);
-   
+
    for (unsigned iCell=0; iCell<dVm.size(); ++iCell)
    {
       dVm[iCell] = 0.0;

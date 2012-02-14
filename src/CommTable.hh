@@ -48,6 +48,7 @@ class CommTable
    std::vector<int> _sendOffset; // offsets to sendBuf. offsets are size n+1
    std::vector<int> _recvOffset; // offsets to recvBuf
    MPI_Comm  _comm;
+   int myId_;
 };
 
 #endif // #ifndef COMM_TABLE_HH

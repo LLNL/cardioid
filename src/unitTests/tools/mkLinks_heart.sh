@@ -11,6 +11,6 @@ do
     echo $file
     if [ ! -r $file ]
     then
-	ln -s $searchPath/$file
+        ln -s $searchPath/$file
     fi
 done

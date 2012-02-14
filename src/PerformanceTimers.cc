@@ -34,7 +34,7 @@ namespace PerformanceTimers
    
    double getTime()
    {
-      double t;
+      double t = 0.0;
 #ifdef BGL
       unsigned long long rts_get_timebase(void);
       double seconds_per_cycle = 1.4285714285714285714e-9;
@@ -42,7 +42,8 @@ namespace PerformanceTimers
 #else
       struct timeval ptime;
       gettimeofday(&ptime, (struct timezone *)NULL);
-      t = ptime.tv_sec + 1e-6*ptime.tv_usec;
+      t = (double)ptime.tv_sec + 1.e-6*(double)ptime.tv_usec;
+
 #endif
       return t;
    }
@@ -222,7 +223,7 @@ void profileDumpStats(ostream& out)
 
    vector<string> outputOrder = generateOutputOrder(timerName);
    unsigned nTimers = outputOrder.size();
-
+   
    vector<double> aveTime(nTimers);
    vector<int>    nActive(nTimers);
    {
@@ -245,10 +246,11 @@ void profileDumpStats(ostream& out)
       }
       double recvBuf[bufSize];
       MPI_Allreduce(sendBuf, recvBuf, bufSize, MPI_DOUBLE, MPI_SUM, comm);
+
       for (unsigned ii=0; ii<nTimers; ++ii)
       {
          nActive[ii] = (int) recvBuf[2*ii+0];
-         aveTime[ii] = recvBuf[2*ii+1]/nActive[ii];
+         aveTime[ii] = (nActive[ii] > 0 ? recvBuf[2*ii+1]/nActive[ii] : 0.0);
       }
    }
    struct DoubleInt
@@ -279,10 +281,15 @@ void profileDumpStats(ostream& out)
          }
          else
          {
+            //ewd: should these be set to zero for case when nActive[ii] == 0?
             minLocSendBuf[ii].val = timers_[here->second].totalTime;
             maxLocSendBuf[ii].val = timers_[here->second].totalTime;
             sigmaSendBuf[ii] = (timers_[here->second].totalTime - aveTime[ii]);
-            sigmaSendBuf[ii] *= sigmaSendBuf[ii]/nActive[ii];
+            if (nActive[ii] > 0)
+               sigmaSendBuf[ii] *= sigmaSendBuf[ii]/nActive[ii];
+            else
+               sigmaSendBuf[ii] = 0.0;
+               
          }
       }
       MPI_Reduce(minLocSendBuf, minLoc, nTimers, MPI_DOUBLE_INT, MPI_MINLOC, 0, comm);

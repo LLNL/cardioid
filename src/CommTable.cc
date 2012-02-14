@@ -2,9 +2,14 @@
 
 #include "CommTable.hh"
 
+#include <iostream>
 #include <cassert>
 
 using std::vector;
+
+#ifdef TIMING
+extern "C"{ long long timebase();}
+#endif
 
 /** Given the send-side routing information, the constructor figures out
  *  the corresponding recv side information, nRecv, sourceTask, and
@@ -17,8 +22,7 @@ CommTable::CommTable(
    const int tag = 141414;
    int nTasks;
    MPI_Comm_size(_comm, &nTasks);
-   int myId;
-   MPI_Comm_rank(_comm, &myId);
+   MPI_Comm_rank(_comm, &myId_);
    
    // How many tasks will we receive data from?
    int* msgCount = new int[nTasks];
@@ -51,16 +55,33 @@ CommTable::CommTable(
    {
       MPI_Irecv(recvBuf+2*ii, 2, MPI_INT, MPI_ANY_SOURCE, tag, _comm, recvReq+ii);
    }
+
+#ifdef TIMING
+   //long long t1, t2;
+   //vector<long long> sendTimes(_sendTask.size());
+#endif   
    for (unsigned ii=0; ii<_sendTask.size(); ++ii)
    {
-      sendBuf[2*ii] = myId;
+      sendBuf[2*ii] = myId_;
       sendBuf[2*ii+1] = _sendOffset[ii+1] - _sendOffset[ii];
       int dest = _sendTask[ii];
+#ifdef TIMING
+      //t1 = timebase();
+#endif      
       MPI_Isend(sendBuf+2*ii, 2, MPI_INT, dest, tag, _comm, sendReq+ii);
+#ifdef TIMING
+      //t2 = timebase();
+      //sendTimes[ii] = (t2-t1);
+#endif      
    }
    MPI_Waitall(_sendTask.size(), sendReq, MPI_STATUSES_IGNORE);
    MPI_Waitall(_recvTask.size(), recvReq, MPI_STATUSES_IGNORE);
-        
+
+#ifdef TIMING
+   //for (unsigned ii=0; ii<_sendTask.size(); ++ii)
+   //   std::cout << "CommTable.timing1, myRank = " << myId_ << ", Isend to task " << _sendTask[ii] << " of size " << _sendOffset[ii+1]-_sendOffset[ii] << " :  " << sendTimes[ii] << " cycles" << std::endl;
+#endif
+   
    // set recvTask and recvOffset arrays.
    _recvOffset[0] = 0;
    for (unsigned ii=0; ii<_recvTask.size(); ++ii)
@@ -99,6 +120,10 @@ void CommTable::execute(void* sendBufV, void* recvBufV, unsigned width)
       MPI_Irecv(recvPtr, len, MPI_CHAR, sender, tag, _comm, recvReq+ii);
    }
 
+#ifdef TIMING
+   //long long t1, t2;
+   //vector<long long> sendTimes(_sendTask.size());
+#endif   
    for (unsigned ii=0; ii<_sendTask.size(); ++ii)
    {
       assert(sendBuf);
@@ -106,11 +131,22 @@ void CommTable::execute(void* sendBufV, void* recvBufV, unsigned width)
       unsigned nItems = _sendOffset[ii+1] - _sendOffset[ii];
       unsigned len = nItems * width;
       char* sendPtr = sendBuf + _sendOffset[ii]*width;
+#ifdef TIMING
+      //t1 = timebase();
+#endif      
       MPI_Isend(sendPtr, len, MPI_CHAR, target, tag, _comm, sendReq+ii);
+#ifdef TIMING
+      //t2 = timebase();
+      //sendTimes[ii] = (t2-t1);
+#endif      
    }
 
    MPI_Waitall(_sendTask.size(), sendReq, MPI_STATUS_IGNORE);
    MPI_Waitall(_recvTask.size(), recvReq, MPI_STATUS_IGNORE);
+#ifdef TIMING
+   //for (unsigned ii=0; ii<_sendTask.size(); ++ii)
+   //   std::cout << "CommTable.timing2, myRank = " << myId_ << ", Isend to task " << _sendTask[ii] << " of size " << _sendOffset[ii+1]-_sendOffset[ii] << " :  " << sendTimes[ii] << " cycles" << std::endl;
+#endif
 }
 
 unsigned CommTable::nRemote()

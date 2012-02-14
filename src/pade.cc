@@ -56,42 +56,44 @@ static void padeError(int l,int m,double *a,int n,double *x,double *y,double *er
 }
 void  findPadeApprox(int l, int m, int n, double *x, double *y, double *a )
 {
-   gsl_matrix *X=NULL, *cov=NULL;
-   gsl_vector *yy=NULL, *w=NULL, *c=NULL;
+   gsl_matrix *XX=NULL, *cov=NULL;
+   gsl_vector *yy=NULL, *w=NULL, *cc=NULL;
    int k = m+l-1 ; 
       
-    X = gsl_matrix_alloc(n, k);
-    yy= gsl_vector_alloc(n);
-    w = gsl_vector_alloc(n);
+   XX = gsl_matrix_alloc(n, k);
+   yy= gsl_vector_alloc(n);
+   w = gsl_vector_alloc(n);
         
-     c = gsl_vector_alloc(k);
-     cov = gsl_matrix_alloc(k, k);
+   cc = gsl_vector_alloc(k);
+   cov = gsl_matrix_alloc(k, k);
          
-     for (int i = 0; i < n; i++)
-     {
-           double xj=1.0; 
-	   double xi = x[i]; 
-           for (int j=0;j<m;j++) { gsl_matrix_set (X, i, j, xj); xj *= xi; }
-           xj=y[i]*xi; 
-           for (int j=m;j<k;j++) { gsl_matrix_set (X, i, j, xj); xj *= xi; }
-           gsl_vector_set (yy, i, y[i]);
-           gsl_vector_set (w, i, 1.0);
-      }
-      for (int i = 0; i < n; i++) gsl_vector_set(w, i, 1.0);
-      double chisq; 
-      {
-          gsl_multifit_linear_workspace * work = gsl_multifit_linear_alloc (n, k);
-          gsl_multifit_wlinear (X, w, yy, c, cov, &chisq, work);
-          gsl_multifit_linear_free (work);
-       }
-       for (int j=0;j<m;j++) a[j] = C(j);
-       a[m]=1.0; 
-       for (int j=m;j<k;j++) a[j+1] =-C(j);
-      gsl_matrix_free (X);
-      gsl_vector_free (yy);
-      gsl_vector_free (w);
-      gsl_vector_free (c);
-      gsl_matrix_free (cov);
+   for (int i = 0; i < n; i++)
+   {
+      double xj=1.0; 
+      double xi = x[i]; 
+      for (int j=0;j<m;j++) { gsl_matrix_set(XX, i, j, xj); xj *= xi; }
+      xj=y[i]*xi; 
+      for (int j=m;j<k;j++) { gsl_matrix_set(XX, i, j, xj); xj *= xi; }
+      gsl_vector_set (yy, i, y[i]);
+      gsl_vector_set (w, i, 1.0);
+   }
+   for (int i = 0; i < n; i++) gsl_vector_set(w, i, 1.0);
+   double chisq; 
+   {
+      gsl_multifit_linear_workspace *work = gsl_multifit_linear_alloc(n, k);
+      gsl_multifit_wlinear(XX, w, yy, cc, cov, &chisq, work);
+      gsl_multifit_linear_free (work);
+   }
+   //for (int j=0;j<m;j++) a[j] = C(j);
+   for (int j=0;j<m;j++) a[j] = gsl_vector_get(cc,(j));
+   a[m]=1.0; 
+   //for (int j=m;j<k;j++) a[j+1] =-C(j);
+   for (int j=m;j<k;j++) a[j+1] =-1.0*gsl_vector_get(cc,(j));
+   gsl_matrix_free(XX);
+   gsl_vector_free(yy);
+   gsl_vector_free(w);
+   gsl_vector_free(cc);
+   gsl_matrix_free(cov);
 }
 static void makeFunctionTable(PADE *pade) 
 {
@@ -163,7 +165,7 @@ static void  minimizeCost(PADE *pade,int maxCost, int lMax, int mMax)
         {
            if (costFunc(l,m) != kk) continue; 
            double a[l+m], errMax, errRMS; 
-	   findPadeApprox(l,m,n,x, y,a);
+           findPadeApprox(l,m,n,x,y,a);
            padeError(l,m,a,n,x,y,&errMax,&errRMS);
            if (errMax < errMaxMin || errMaxMin==-1.0) 
            {
