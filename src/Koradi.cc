@@ -78,7 +78,7 @@ Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
    load_.resize(nTasks_*nCentersPerTask_, 0.0);
    nbrDomains_.resize(nCentersPerTask_);
 
-   if (centers_.size() == 1 ) maxVoronoiSteps_ = 0;
+   if (centers_.size() == 1 ) maxVoronoiSteps_ = 1;
 
    distributeCellsEvenly();
    pickInitialCenters();
