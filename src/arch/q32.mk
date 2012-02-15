@@ -4,6 +4,7 @@ LD=$(CXX)
 
 DFLAGS = -DWITH_PIO -DWITH_MPI -DBGQ \
 	 -DADD_ -DUSE_CSTDIO_LFS -DMPICH_IGNORE_CXX_SEEK
+LDFLAGS_BASE = -lc -lnss_files -lnss_dns -lresolv
 
 INCLUDE = 
 OPTFLAGS = -g -O3
