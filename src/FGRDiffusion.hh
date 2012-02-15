@@ -26,14 +26,14 @@ class FGRDiffusion : public Diffusion
       const FGRDiffusionParms& parms,
       const Anatomy& anatomy);
    
-   void calc(const std::vector<double>& Vm, std::vector<double>& dVm);
+   void calc(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf, int nLocal);
 
  private:
    void buildTupleArray(const Anatomy& anatomy);
    void buildBlockIndex(const Anatomy& anatomy);
    void precomputeCoefficients(const Anatomy& anatomy);
 
-   void updateVoltageBlock(const std::vector<double>& Vm);
+   void updateVoltageBlock(const std::vector<double>& Vm, double *recv_buf, int nLocal);
    void mkTissueArray(const Array3d<int>& tissueBlk, int ib, int* tissue);
    Vector f1(int ib, int iFace, const Vector& h,
              const Array3d<SymmetricTensor>& sigmaBlk);

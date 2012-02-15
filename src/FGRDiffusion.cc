@@ -84,10 +84,10 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
 
 
 
-void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm)
+void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *recv_buf, int nLocal)
 {
-   updateVoltageBlock(Vm);
-
+   updateVoltageBlock(Vm, recv_buf, nLocal);
+   
    for (unsigned iCell=0; iCell<dVm.size(); ++iCell)
    {
       dVm[iCell] = 0.0;
@@ -185,19 +185,25 @@ void FGRDiffusion::precomputeCoefficients(const Anatomy& anatomy)
       double sum = 0;
       for (unsigned ii=0; ii<19; ++ii)
          sum += weight_(ib).A[ii];
-      assert(abs(sum) < 1e-13);
+      assert(abs(sum) < 1e-14);
       
    }
 //   printAllWeights(tissueBlk);
 }
 
 
-void FGRDiffusion::updateVoltageBlock(const vector<double>& Vm)
+void FGRDiffusion::updateVoltageBlock(const vector<double>& Vm, double *recv_buf, int nLocal)
 {
-   for (unsigned ii=0; ii<Vm.size(); ++ii)
+   for (unsigned ii=0; ii<nLocal; ++ii)
    {
       int index = blockIndex_[ii];
       VmBlock_(index) = Vm[ii];
+   }
+   assert(nLocal < Vm.size());
+   for (unsigned ii=nLocal; ii<Vm.size(); ++ii)
+   {
+      int index = blockIndex_[ii];
+      VmBlock_(index) = recv_buf[ii-nLocal];
    }
 }
 
@@ -394,6 +400,7 @@ void FGRDiffusion::printAllWeights(const Array3d<int>& tissue)
       int xx = localTuple_[ii].x();
       int yy = localTuple_[ii].y();
       int zz = localTuple_[ii].z();
+
       printf("DiffusionWeight: %5d %5d %5d %4d"
              " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
              " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
