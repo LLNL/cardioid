@@ -100,9 +100,9 @@ SaleheenDev::SaleheenDev(
 
    
 void SaleheenDev::calc(
-   const vector<double>& Vm, vector<double>& dVm)
+   const vector<double>& Vm, vector<double>& dVm, double *recv_buf, int nLocal)
 {
-   updateVoltageBlock(Vm);
+   updateVoltageBlock(Vm, recv_buf, nLocal);
 
    int n = dVm.size();
 #pragma omp parallel for
@@ -357,12 +357,18 @@ SaleheenDev::boundaryFDLaplacianSaleheen98Constants(
 
 
 void SaleheenDev::updateVoltageBlock(
-   const std::vector<double>& Vm)
+   const std::vector<double>& Vm, double *recv_buf, int nLocal)
 {
-   for (unsigned ii=0; ii<Vm.size(); ++ii)
+   for (unsigned ii=0; ii<nLocal; ++ii)
    {
       int index = blockIndex_[ii];
       VmBlock_(index) = Vm[ii];
+   }
+   assert(nLocal < Vm.size());
+   for (unsigned ii=nLocal; ii<Vm.size(); ++ii)
+   {
+      int index = blockIndex_[ii];
+      VmBlock_(index) = recv_buf[ii-nLocal];
    }
 }
 
