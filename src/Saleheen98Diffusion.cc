@@ -80,9 +80,9 @@ Saleheen98PrecomputeDiffusion::Saleheen98PrecomputeDiffusion(
 
    
 void Saleheen98PrecomputeDiffusion::calc(
-   const vector<double>& Vm, vector<double>& dVm)
+   const vector<double>& Vm, vector<double>& dVm, double *recv_buf_, int nLocal)
 {
-   updateVoltageBlock(Vm);
+   updateVoltageBlock(Vm, recv_buf_, nLocal);
 
    const int n = dVm.size();
 #pragma omp parallel for
@@ -344,12 +344,19 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98Constants(
 
 
 void Saleheen98PrecomputeDiffusion::updateVoltageBlock(
-   const vector<double>& Vm)
+   const vector<double>& Vm, double *recv_buf, int nLocal)
 {
-   for (unsigned ii=0; ii<Vm.size(); ++ii)
+// hfwen
+   for (unsigned ii=0; ii<nLocal; ++ii)
    {
       int index = blockIndex_[ii];
       VmBlock_(index) = Vm[ii];
+   }
+   assert(nLocal < Vm.size());
+   for (unsigned ii=nLocal; ii<Vm.size(); ++ii)
+   {
+      int index = blockIndex_[ii];
+      VmBlock_(index) = recv_buf[ii-nLocal];
    }
 }
 

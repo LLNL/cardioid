@@ -65,7 +65,7 @@ class Saleheen98PrecomputeDiffusion : public Diffusion
       const Saleheen98DiffusionParms& parms,
       const Anatomy& anatomy);
    
-   void calc(const std::vector<double>& Vm, std::vector<double>& dVm);
+   void calc(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf_, int nLocal);
    
  private:
    void   buildTupleArray(const Anatomy& anatomy);
@@ -80,7 +80,7 @@ class Saleheen98PrecomputeDiffusion : public Diffusion
       const double& dxInv, const double& dyInv, const double& dzInv);
       
    
-   void updateVoltageBlock(const std::vector<double>& Vm);
+   void updateVoltageBlock(const std::vector<double>& Vm, double *recv_buf, int nLocal);
    void printAllConductivities(const Array3d<int>& tissue,
                                const Array3d<SymmetricTensor>& sigma);
    void printAllDiffusionWeights(const Array3d<int>& tissue);
