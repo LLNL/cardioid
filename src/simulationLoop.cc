@@ -67,9 +67,12 @@ void simulationLoop(Simulate& sim)
   }
   
   
-   
-  HaloExchange<double> voltageExchange(sim.sendMap_, *(sim.commTable_));
-
+#ifdef SPI   
+  spi_HaloExchange<double> voltageExchange(sim.sendMap_, (sim.commTable_));
+#else
+  HaloExchange<double> voltageExchange(sim.sendMap_, (sim.commTable_));
+#endif
+  
 
   if ( myRank == 0)
   {
@@ -127,7 +130,8 @@ void simulationLoop(Simulate& sim)
     // DIFFUSION
     static TimerHandle diffusionHandle = profileGetHandle("Diffusion");
     profileStart(diffusionHandle);
-    sim.diffusion_->calc(sim.VmArray_, dVmDiffusion);
+//    sim.diffusion_->calc(sim.VmArray_, dVmDiffusion);
+    sim.diffusion_->calc(sim.VmArray_, dVmDiffusion, voltageExchange.get_recv_buf_(), nLocal);
     profileStop(diffusionHandle);
 
 #ifdef TIMING

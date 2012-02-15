@@ -92,6 +92,7 @@ DDCMD_FILES = \
 	units.h \
 	utilities.c \
 	utilities.h \
+	spi_impl.c 
 
 
 DDCMDSRC = $(filter %.c, $(DDCMD_FILES))

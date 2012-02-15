@@ -4,6 +4,8 @@
 
 #include <mpi.h>
 #include <vector>
+#include <iostream>
+#include <inttypes.h>
 
 /** Implements a communications table
  *
@@ -36,20 +38,31 @@ class CommTable
              MPI_Comm comm);
    ~CommTable();
 
-   void execute(void* sendBuf, void* recvBuf, unsigned width);
-   unsigned nRemote(); // total number of remote items to recv.
+   void dump_put();
+   inline uint32_t sendSize() const { return _sendOffset[_sendTask.size()]; };
+   inline uint32_t recvSize() const { return _recvOffset[_recvTask.size()]; };
+
+   unsigned nRemote();
    unsigned nNbrs();
    std::vector<int> msgSize(); // nItems in each msg that will be sent
 
-  private:
 
-   std::vector<int> _sendTask;   // ranks to send to
-   std::vector<int> _recvTask;   // ranks to recv from
-   std::vector<int> _sendOffset; // offsets to sendBuf. offsets are size n+1
-   std::vector<int> _recvOffset; // offsets to recvBuf
-   MPI_Comm  _comm;
-   int myId_;
+  MPI_Comm  _comm;
+
+  std::vector<int> _sendTask;   // ranks to send to
+  std::vector<int> _recvTask;   // ranks to recv from
+  std::vector<int> _putTask; // offsets to sendBuf. offsets are size n+1
+
+  std::vector<int> _sendOffset; // offsets to sendBuf. offsets are size n+1
+  std::vector<int> _recvOffset; // offsets to recvBuf
+  std::vector<int> _putOffset; 
+  std::vector<int> _putCntOffset; 
+  std::vector<int> _putIdx; 
+  std::vector<int> _recvIdx; 
+  int** _offsets;
+
 };
+
 
 #endif // #ifndef COMM_TABLE_HH
 
