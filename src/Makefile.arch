@@ -2,7 +2,6 @@
 # guess hostname with hostname command, stripping off all numbers
 HOSTNAME := $(shell hostname -s | sed  's/[0-9]*//g')
 
-HOSTNAME = bgqfen
 ifeq ($(HOSTNAME),bgqfen)  
 #  ARCHGUESS = spi
   ARCHGUESS = q32
