@@ -70,7 +70,7 @@ void simulationLoop(Simulate& sim)
 #ifdef SPI   
   spi_HaloExchange<double> voltageExchange(sim.sendMap_, (sim.commTable_));
 #else
-  HaloExchange<double> voltageExchange(sim.sendMap_, (sim.commTable_));
+  mpi_HaloExchange<double> voltageExchange(sim.sendMap_, (sim.commTable_));
 #endif
   
 

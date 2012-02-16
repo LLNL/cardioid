@@ -1,6 +1,8 @@
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef SPI
 #include <spi/include/kernel/gi.h>
 #include <spi/include/kernel/location.h>
 #include <spi/include/kernel/memory.h>
@@ -638,3 +640,4 @@ uint32_t mapping_table(spi_hdl_t* spi_hdl)
   //MUSPI_GIBarrierInit( &barrier, 0 );
   //MUSPI_GIBarrierEnterAndWait( &barrier );
   //printf("GI Barrier done\n");
+#endif

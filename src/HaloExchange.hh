@@ -4,11 +4,12 @@
 #include <vector>
 #include <cassert>
 #include "CommTable.hh"
-#include "spi_impl.h"
 #include <iostream>
 
 using namespace std;
 
+#ifdef SPI
+#include "spi_impl.h"
 extern "C"{
 uint32_t mapping_table(spi_hdl_t* spi_hdl);
 void spi_dump_mapping(spi_hdl_t* spi_hdl);
@@ -23,6 +24,7 @@ void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size,int bw);
 void free_spi(spi_hdl_t* spi_hdl);
 void global_sync(spi_hdl_t* spi_hdl);
 }
+#endif
 
 template <class T>
 class HaloExchange
