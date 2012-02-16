@@ -38,10 +38,30 @@ TT06_RRG::VarHandle TT06_RRG::getVarHandle(const string& varName)
    if (handleMap.size() == 0)
    {
       handleMap["s_switch"] = s_switch;
-      handleMap["g_Ks"] = g_Ks;
-      handleMap["g_to"] = g_to;
-      handleMap["P_NaK"] = P_NaK;
-      handleMap["g_NaL"] = g_NaL;
+      handleMap["g_Ks"]     = g_Ks;
+      handleMap["g_to"]     = g_to;
+      handleMap["P_NaK"]    = P_NaK;
+      handleMap["g_NaL"]    = g_NaL;
+      handleMap["Vm"]       = Vm;
+      handleMap["K_i"]      = K_i;
+      handleMap["Na_i"]     = Na_i;
+      handleMap["Ca_i"]     = Ca_i;
+      handleMap["Xr1"]      = Xr1;
+      handleMap["Xr2"]      = Xr2;
+      handleMap["Xs"]       = Xs;
+      handleMap["m"]        = m;
+      handleMap["h"]        = h;
+      handleMap["j"]        = j;
+      handleMap["Ca_ss"]    = Ca_ss;
+      handleMap["d"]        = d;
+      handleMap["f"]        = f;
+      handleMap["f2"]       = f2;
+      handleMap["fCass"]    = fCass;
+      handleMap["s"]        = s;
+      handleMap["r"]        = r;
+      handleMap["Ca_SR"]    = Ca_SR;
+      handleMap["R_prime"]  = R_prime;
+      handleMap["NaL_i"]    = NaL_i;
       assert(handleMap.size() == nVars-1);
    }
    return handleMap[varName];
@@ -57,21 +77,31 @@ void TT06_RRG::setVariable(VarHandle varHandle, double value)
      case undefinedName:
       assert(false);
       break;
-     case s_switch:
-      s_switch_ = int(value);
-      break;
-     case g_Ks:
-       g_Ks_ = value;
-      break;
-     case g_to:
-       g_to_ = value;
-      break;
-     case P_NaK:
-       P_NaK_ = value;
-      break;
-     case g_NaL:
-      g_NaL_ = value;
-      break;
+     case s_switch:   s_switch_ = int(value);  break;
+     case g_Ks:       g_Ks_ = value;           break;
+     case g_to:       g_to_ = value;           break;
+     case P_NaK:      P_NaK_ = value;          break;
+     case g_NaL:      g_NaL_ = value;          break;
+     case Vm:         states_[0] = value;      break;
+     case K_i:        states_[1] = value;      break;
+     case Na_i:       states_[2] = value;      break;
+     case Ca_i:       states_[3] = value;      break;
+     case Xr1:        states_[4] = value;      break;
+     case Xr2:        states_[5] = value;      break;
+     case Xs:         states_[6] = value;      break;
+     case m:          states_[7] = value;      break;
+     case h:          states_[8] = value;      break;
+     case j:          states_[9] = value;      break;
+     case Ca_ss:      states_[10] = value;     break;
+     case d:          states_[11] = value;     break;
+     case f:          states_[12] = value;     break;
+     case f2:         states_[13] = value;     break;
+     case fCass:      states_[14] = value;     break;
+     case s:          states_[15] = value;     break;
+     case r:          states_[16] = value;     break;
+     case Ca_SR:      states_[17] = value;     break;
+     case R_prime:    states_[18] = value;     break;
+     case NaL_i:      states_[19] = value;     break;
      case nVars:
       assert(false);
       break;
