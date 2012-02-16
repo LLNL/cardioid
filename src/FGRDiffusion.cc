@@ -88,6 +88,7 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *r
 {
    updateVoltageBlock(Vm, recv_buf, nLocal);
    
+#pragma omp parallel for
    for (unsigned iCell=0; iCell<dVm.size(); ++iCell)
    {
       dVm[iCell] = 0.0;
