@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 
 CXX=mpig++
-CC=mpigcc
+CC=mpigcc --std=gnu99 
 LD=$(CXX)
 
 DFLAGS = -DWITH_PIO -DWITH_MPI \
@@ -9,7 +9,7 @@ DFLAGS = -DWITH_PIO -DWITH_MPI \
 
 INCLUDE =
 
-CFLAGS_BASE = --std=gnu99 $(INCLUDE) $(DFLAGS)
+CFLAGS_BASE = $(INCLUDE) $(DFLAGS)
 CXXFLAGS_BASE = $(INCLUDE) $(DFLAGS)
 
 HAVE_GSL = 1
