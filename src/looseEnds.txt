@@ -107,3 +107,10 @@ is extracted from the BucketOfBits and a second time when the simulation
 loop gets the membrane voltage.  If this turns out to be a performance
 bottleneck we can instead store each record in tokenized form (or
 perhaps store the token offsets) when we constrcut the BucketOfBits
+
+35.  The CommTable class as revised by Changhoan leaks memory when
+destroyed.  (_offsets)
+
+36.  SPI causes problems with the former design that the remote data was
+appended to the local data and appeared to be a single array.  This is
+especially acute for the membrane voltage.

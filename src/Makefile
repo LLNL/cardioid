@@ -45,7 +45,8 @@ HEARTSRC=cardioid.cc \
 	 TT06_RRG.cc \
 	 TestStimulus.cc PointStimulus.cc BoxStimulus.cc \
 	 PeriodicPulse.cc \
-	 PointListSensor.cc ActivationTimeSensor.cc
+	 PointListSensor.cc ActivationTimeSensor.cc \
+	 spi_impl.c
 
 
 DDCMD_FILES = \
@@ -91,9 +92,7 @@ DDCMD_FILES = \
 	units.c \
 	units.h \
 	utilities.c \
-	utilities.h \
-	spi_impl.c 
-
+	utilities.h 
 
 DDCMDSRC = $(filter %.c, $(DDCMD_FILES))
 

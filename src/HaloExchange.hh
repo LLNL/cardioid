@@ -67,7 +67,7 @@ class HaloExchange
 
    //virtual void execute(std::vector<T>& data, unsigned nLocal);
    //virtual void complete(std::vector<T>& data, unsigned nLocal);
-   public:
+ protected:
    
    unsigned width_;
    const CommTable* commTable_;
@@ -144,11 +144,16 @@ template <class T>
 class mpi_HaloExchange : public HaloExchange<T>
 {
   public:
+   using HaloExchange<T>::commTable_;
+   using HaloExchange<T>::send_buf_;
+   using HaloExchange<T>::recv_buf_;
+   using HaloExchange<T>::width_;
+
    mpi_HaloExchange(const std::vector<int>& sendMap, const CommTable* comm) 
     : HaloExchange<T>(sendMap,comm)
    {};
 
-   T* get_recv_buf_() { return recv_buf_; }
+   T* get_recv_buf_() { return this->recv_buf_; }
    void execute(vector<T>& Data,int nLocal)
    {
       move2Buf(Data);
