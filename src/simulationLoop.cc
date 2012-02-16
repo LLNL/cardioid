@@ -104,7 +104,8 @@ void simulationLoop(Simulate& sim)
 #endif
 
 #ifdef SPI
-    MPI_Barrier(MPI_COMM_WORLD);
+//    MPI_Barrier(MPI_COMM_WORLD);
+//    voltageExchange.barrier();
 #endif
     
     static TimerHandle haloHandle = profileGetHandle("Halo Exchange");
@@ -114,6 +115,7 @@ void simulationLoop(Simulate& sim)
     long long t1b = timebase();
 #endif
     voltageExchange.execute(sim.VmArray_, nLocal);
+    voltageExchange.complete();
 #ifdef TIMING
     long long t2a = timebase();
     if (myRank == 0)

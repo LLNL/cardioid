@@ -52,11 +52,12 @@
   MUHWI_DESCRIPTOR_TORUS_FIFO_MAP_EM |          \
   MUHWI_DESCRIPTOR_TORUS_FIFO_MAP_EP )
 
-//#define spi_debug
 //#define spi_debug_fifo
 //#define spi_debug_bat
 //#define spi_debug_desc
-#define MAX_WAIT 1000000
+//#define spi_debug_exec
+//#define spi_debug_compl
+#define MAX_WAIT 1000000000
 #define MAX_PUT_NUM 128
 #define SizeInjMemFifo 128
 
@@ -385,16 +386,22 @@ void execute_spi(spi_hdl_t* spi_hdl, uint32_t put_size)
 void execute_spi_alter(spi_hdl_t* spi_hdl, uint32_t put_size,int bw)
 {
     int rc;
-    //printf("initiate sending %d messages with bw=%d\n",put_size,bw);
+#ifdef spi_debug_exec
+    printf("initiate sending %d messages with bw=%d\n",put_size,bw);
+#endif
     MUSPI_InjFifo_t* IF = (MUSPI_InjFifo_t*)(spi_hdl -> inj_fifo_hdl);
     MUSPI_InjFifoSubGroup_t* IF_subgroup=(MUSPI_InjFifoSubGroup_t*)(spi_hdl -> inj_fifo_subgrp);
     rc = Kernel_InjFifoActivate( IF_subgroup,1, spi_hdl->free_fifo_id, KERNEL_INJ_FIFO_DEACTIVATE );
-//    assert(rc==0);
-//    _bgq_msync();
-    //printf("InjFifo Deactivated \n");
+    assert(rc==0);
+    _bgq_msync();
+#ifdef spi_debug_exec
+    printf("InjFifo Deactivated \n");
+#endif
     IF->numInjected = put_size;
     IF->hw_injfifo->descCount=0;
-    //printf("before:HwTail,HwHead,Start: %p,%p,%p\n",MUSPI_getHwTail(&(IF->_fifo)),MUSPI_getHwHead(&(IF->_fifo)),MUSPI_getHwStart(&(IF->_fifo)));
+#ifdef spi_debug_exec
+    printf("before:HwTail,HwHead,Start: %p,%p,%p\n",MUSPI_getHwTail(&(IF->_fifo)),MUSPI_getHwHead(&(IF->_fifo)),MUSPI_getHwStart(&(IF->_fifo)));
+#endif
     if(bw == 0 )
     {
       IF->_fifo.hwfifo->pa_head = IF->_fifo.hwfifo->pa_start;
@@ -405,29 +412,29 @@ void execute_spi_alter(spi_hdl_t* spi_hdl, uint32_t put_size,int bw)
       IF->_fifo.hwfifo->pa_head = IF->_fifo.hwfifo->pa_start + 64*put_size;
       IF->_fifo.hwfifo->pa_tail = IF->_fifo.hwfifo->pa_start + 2*64*put_size;
     }
-    //printf("after:HwTail,HwHead,Start: %p,%p,%p\n",MUSPI_getHwTail(&(IF->_fifo)),MUSPI_getHwHead(&(IF->_fifo)),MUSPI_getHwStart(&(IF->_fifo)));
-
-
-    //printf("InjFifo Activating...");
-//    _bgq_msync();
+#ifdef spi_debug_exec
+    printf("after:HwTail,HwHead,Start: %p,%p,%p\n",MUSPI_getHwTail(&(IF->_fifo)),MUSPI_getHwHead(&(IF->_fifo)),MUSPI_getHwStart(&(IF->_fifo)));
+    printf("InjFifo Activating...");
+#endif
+    _bgq_msync();
     rc = Kernel_InjFifoActivate( IF_subgroup,1, spi_hdl->free_fifo_id, KERNEL_INJ_FIFO_ACTIVATE );
-//    assert(rc==0);
-    //printf("Done \n");
+    assert(rc==0);
+#ifdef spi_debug_exec
+    printf("Done \n");
+#endif
 
 }
 void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size,int bw)
 {
   volatile uint64_t* recv_cnt = spi_hdl -> recv_cnt;
   //checking if fifo is done.
-  #ifdef spi_debug
-  //printf("completion check\n");
+  #ifdef spi_debug_compl
+  printf("completion check...");
   #endif
   MUSPI_InjFifo_t*    IF = (MUSPI_InjFifo_t*)spi_hdl->inj_fifo_hdl;
-  //for(int ii=0;(ii<1000000 && MUSPI_getHwTail(&(IF->_fifo)) != MUSPI_getHwHead(&(IF->_fifo)));ii++ ) ;
   while(MUSPI_getHwTail(&(IF->_fifo)) != MUSPI_getHwHead(&(IF->_fifo)));
-  #ifdef spi_debug
-  //printf("complete:Injected :%d \n", IF->numInjected);
-  //printf("complete:descCount :%d \n", MUSPI_getHwDescCount(IF));
+  #ifdef spi_debug_compl
+  printf("head=tail done...");
   #endif
 
   uint64_t knt=0,sum=1;
@@ -437,11 +444,13 @@ void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size,int bw)
     if(bw==0) for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii] == 0 ? 1 : 0);
     else for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii+MAX_PUT_NUM] == 0 ? 1 : 0);
   }
-  //assert(knt <  MAX_WAIT); 
-  _bgq_msync();
+  assert(knt <  MAX_WAIT); 
+  #ifdef spi_debug_compl
+  printf("counter touched\n");
+  #endif
 
 
-  #ifdef spi_debug
+  #ifdef spi_debug_compl
   //for(int ii=0;ii<recv_size;ii++)
   //{
   //  if(bw==0)printf("%dth packet is at %x\n",ii,recv_cnt[ii]);
@@ -450,7 +459,7 @@ void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size,int bw)
   #endif
 
   for(int ii=0;ii<recv_size;ii++)
-    recv_cnt[ii]=recv_cnt[ii+MAX_PUT_NUM]=0;
+    recv_cnt[ii+MAX_PUT_NUM*bw]=0;
 }
 
 

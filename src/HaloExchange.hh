@@ -120,14 +120,12 @@ class spi_HaloExchange : public HaloExchange<T>
      move2Buf(Data);
      bw=1-bw;
      execute_spi_alter(&spi_hdl,commTable_->_putTask.size(),bw);
-     complete();
    };
 
    void execute()
    {
      bw=1-bw;
      execute_spi_alter(&spi_hdl,commTable_->_putTask.size(),bw);
-     complete();
    };
    void complete() {complete_spi_alter(&spi_hdl, commTable_->_recvTask.size(),bw);};
 
