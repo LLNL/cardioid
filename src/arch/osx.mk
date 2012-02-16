@@ -1,7 +1,7 @@
 #------------------------------------------------------------------------
 
 CXX=mpic++
-CC =mpicc
+CC =mpicc --std=gnu99
 LD=$(CXX)
 
 DFLAGS = -DOSX -DWITH_PIO -DWITH_MPI \
@@ -9,7 +9,7 @@ DFLAGS = -DOSX -DWITH_PIO -DWITH_MPI \
 
 INCLUDE = -I/opt/local/include/
 
-CFLAGS_BASE = --std=gnu99 $(INCLUDE) $(DFLAGS)
+CFLAGS_BASE =   $(INCLUDE) $(DFLAGS)
 CXXFLAGS_BASE = $(INCLUDE) $(DFLAGS)
 
 HAVE_GSL = 1
