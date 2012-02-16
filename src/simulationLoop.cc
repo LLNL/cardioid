@@ -102,6 +102,10 @@ void simulationLoop(Simulate& sim)
     MPI_Barrier(MPI_COMM_WORLD);
     profileStop(barrierHandle);
 #endif
+
+#ifdef SPI
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
     
     static TimerHandle haloHandle = profileGetHandle("Halo Exchange");
     profileStart(haloHandle);
