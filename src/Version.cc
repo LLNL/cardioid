@@ -41,4 +41,5 @@ ostream& Version::versionPrint(ostream& out) const
        << "  LDFLAGS:      " << ldFlags_ << "\n"
        << "_________________________________________________________________\n"
        << endl;
+   return out;
 }
