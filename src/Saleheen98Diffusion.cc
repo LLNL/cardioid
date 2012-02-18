@@ -352,7 +352,7 @@ void Saleheen98PrecomputeDiffusion::updateVoltageBlock(
       int index = blockIndex_[ii];
       VmBlock_(index) = Vm[ii];
    }
-   assert(nLocal < Vm.size());
+   assert(nLocal <= Vm.size());
    for (unsigned ii=nLocal; ii<Vm.size(); ++ii)
    {
       int index = blockIndex_[ii];
