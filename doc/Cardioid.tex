@@ -307,10 +307,30 @@ A specified tensor for all cells.
 \end{keywords}
 
 \subsection{DIFFUSION}
+
 \begin{keywords}
   \kw{method}{Choose from ``FGR'', ``Saleheen98'', or ``SaleheenDev''}
-{No Default}
+  {No Default. Note that the FGR method is strongly preferred and the
+    Saleheen methods are deprecated.  }
+  \kw{diffusionScale}{An overall scaling factor applied to $dV/dt$
+    computed by the diffusion solver.  Presently, it is used to account
+    for the membrane capacitance and surface to volume ratio.  The value
+    should be set to $1/(S*C_m)$ where $S$ is the surface to volume ratio
+    in mm$^{-1}$ and $C_m$ is the membrane capacitance per unit area in
+    mF/mm$^2$. 
+    \issue{The default is not a very sensible value}}{1 mm$^3$/mF}
 \end{keywords}
+
+
+Example:
+Assuming $C_m = 0.01~\mu$F/mm$^2$ and $S=140$~mm$^{-1}$
+\begin{verbatim}
+fgr DIFFUSION
+{
+   method = FGR;
+   diffusionScale = 714.285; // mm^3/mF
+}
+\end{verbatim}
 
 Note: Starting from r261 the conductivity is no longer specified in the
 DIFFUSION object but rather in the ANATOMY object.
