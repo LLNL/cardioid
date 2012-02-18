@@ -7,6 +7,9 @@ include Makefile.arch
 # If defined, use architecture file set with ARCH variable
 ARCH ?= $(ARCHGUESS)
 include arch/$(ARCH).mk
+
+SVNVERSION := $(shell svnversion ./ )
+
 #------------------------------------------------------------------------------
 #
 
@@ -152,8 +155,16 @@ $(OBJDIR)/%.o: %.cc
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(BINDIR)/$(EXENAME): $(HEARTOBJS)
-	$(LD) $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(LDFLAGS)
+$(BINDIR)/$(EXENAME): $(HEARTOBJS) Version.cc
+	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(LDFLAGS) \
+	-DSVNVERSION="$(SVNVERSION)" \
+	-DCXXFLAGS="$(CXXFLAGS)" \
+	-DCFLAGS="$(CFLAGS)" \
+	-DLDFLAGS="$(LDFLAGS)" \
+	-DPATH="$(PWD)" \
+	-DTARGET=$(EXENAME) \
+	-DARCH=$(ARCH) 
+
 
 testLoadBalancer: makedirs $(HEARTOBJS) $(OBJDIR)/testLoadBalancer.o
 	$(LD) $(DFLAGS) -o testLoadBalancer $(OBJDIR)/testLoadBalancer.o $(HEARTOBJS) $(LDFLAGS)

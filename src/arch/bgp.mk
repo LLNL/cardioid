@@ -13,9 +13,10 @@ INCLUDE =  -I/bgsys/drivers/ppcfloor/arch/include \
 
 CFLAGS_BASE =   -qarch=450d $(INCLUDE) $(DFLAGS)
 CXXFLAGS_BASE = -qarch=450d $(INCLUDE) $(DFLAGS)
-#ewd DEBUG: add floating-point exception traps
-#CFLAGS_BASE =   -qarch=450 $(INCLUDE) $(DFLAGS) -qflttrap=enable:nanq:overflow:zerodivide
-#CXXFLAGS_BASE = -qarch=450 $(INCLUDE) $(DFLAGS) -qflttrap=enable:nanq:overflow:zerodivide
+#ewd: add floating-point exception traps
+#FPE_TRAP_FLAGS = -qflttrap=enable:nanq:overflow:zerodivide
+CFLAGS_BASE   += $FPE_TRAP_FLAGS
+CXXFLAGS_BASE += $FPE_TRAP_FLAGS
 OMP_FLAGS = -qsmp=omp 
 
 HAVE_GSL = 1

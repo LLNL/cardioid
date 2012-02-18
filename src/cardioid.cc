@@ -18,6 +18,7 @@
 #include "simulationLoop.hh"
 #include "heap.h"
 #include "object_cc.hh"
+#include "Version.hh"
 
 using namespace std;
 
@@ -127,5 +128,7 @@ void printBanner()
       "Unclassified/Code in development Distribution\n"
       "LLNL-CODE-508771\n"
       "Do not redistribute without permission\n\n";
+
+   Version::getInstance().versionPrint(cout);
 }
 }
