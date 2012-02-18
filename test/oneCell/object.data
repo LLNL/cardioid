@@ -18,6 +18,7 @@ pioAnatomy ANATOMY
 {
    method = pio;
    fileName = snapshot.initial/anatomy#;
+   conductivity = conductivity;
    dx = 0.1;   // in mm
    dy = 0.1;   // in mm
    dz = 0.1;   // in mm
@@ -33,6 +34,11 @@ koradi DECOMPOSITION
    tolerance = 0.01;
    outputRate = 1;
    nbrDeltaR = 2;
+}
+
+conductivity CONDUCTIVITY
+{
+   method = fibre;
 }
 
 null DIFFUSION
