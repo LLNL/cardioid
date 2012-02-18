@@ -23,7 +23,7 @@ using namespace std;
 
 namespace
 {
-   void parseCommandLineAndReadInputFile(int argc, char** argv, int rank);
+   void parseCommandLineAndReadInputFile(int argc, char** argv, MPI_Comm comm);
    void printBanner();
 }
 
@@ -49,7 +49,7 @@ int main(int argc, char** argv)
 
    if (mype == 0)
      printBanner();
-   parseCommandLineAndReadInputFile(argc, argv, mype);
+   parseCommandLineAndReadInputFile(argc, argv, MPI_COMM_WORLD);
    
    Simulate sim;
    initializeSimulate("simulate", sim);
@@ -83,13 +83,16 @@ int main(int argc, char** argv)
 
 namespace
 {
-void parseCommandLineAndReadInputFile(int argc, char** argv, int rank)
+void parseCommandLineAndReadInputFile(int argc, char** argv, MPI_Comm comm)
 {
+   int myRank;
+   MPI_Comm_rank(comm, &myRank);      
+
    // get input file name from command line argument
    if (argc != 2 && argc != 1)
    {
-      if (rank == 0)
-         cout << "Usage:  bigHeart [input file]" << endl;
+      if (myRank == 0)
+         cout << "Usage:  cardioid [input file]" << endl;
       exit(-1);
    }
 
@@ -99,11 +102,18 @@ void parseCommandLineAndReadInputFile(int argc, char** argv, int rank)
    {
       string argfile(argv[1]);
       inputfile = argfile;
-      //if (rank == 0)
-      //cout << "argc = " << argc << endl;
    }
 
-   object_compilefile(inputfile.c_str());
+   if (myRank == 0)
+   {
+      object_compilefile(inputfile.c_str());
+      printf("\nContents of object database:\n"
+              "----------------------------------------------------------------------\n");
+      object_print_all(stdout);
+      printf("----------------------------------------------------------------------\n"
+             "End of object database\n\n");
+   }
+   object_Bcast(0, MPI_COMM_WORLD);
 }
 }
 
@@ -115,6 +125,7 @@ void printBanner()
    cout <<
       "Cardioid v1.0\n"
       "Unclassified/Code in development Distribution\n"
-      "LLNL-CODE-508771\n\n";
+      "LLNL-CODE-508771\n"
+      "Do not redistribute without permission\n\n";
 }
 }
