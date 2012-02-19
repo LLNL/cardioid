@@ -15,8 +15,8 @@ CFLAGS_BASE =   -qarch=450d $(INCLUDE) $(DFLAGS)
 CXXFLAGS_BASE = -qarch=450d $(INCLUDE) $(DFLAGS)
 #ewd: add floating-point exception traps
 #FPE_TRAP_FLAGS = -qflttrap=enable:nanq:overflow:zerodivide
-CFLAGS_BASE   += $FPE_TRAP_FLAGS
-CXXFLAGS_BASE += $FPE_TRAP_FLAGS
+CFLAGS_BASE   += $(FPE_TRAP_FLAGS)
+CXXFLAGS_BASE += $(FPE_TRAP_FLAGS)
 OMP_FLAGS = -qsmp=omp 
 
 HAVE_GSL = 1
