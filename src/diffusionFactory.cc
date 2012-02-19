@@ -54,7 +54,7 @@ namespace
    Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy)
    {
       FGRDiffusionParms p;
-      objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0");
+      objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0", "l^3/capacitance");
 
       return new FGRDiffusion(p, anatomy);
    }
@@ -66,7 +66,7 @@ namespace
    Diffusion* saleheen98DiffusionFactory(OBJECT* obj, const Anatomy& anatomy)
    {
       Saleheen98DiffusionParms p;
-      objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0");
+      objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0", "l^3/capacitance");
 
       string variant;
       objectGet(obj, "variant", variant, "precompute");
@@ -84,7 +84,7 @@ namespace
    Diffusion* saleheenDevFactory(OBJECT* obj, const Anatomy& anatomy)
    {
       SaleheenDevParms p;
-      objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0");
+      objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0", "l^3/capacitance");
 
       string variant;
       objectGet(obj, "variant", variant, "precompute");

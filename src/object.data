@@ -8,8 +8,8 @@ simulate SIMULATE
    sensor = pointSensor;
    loop = 0;            // in timesteps
    maxLoop = 50000;     // in timesteps
-   dt = 0.01;           // msec
-   time = 0;            // msec
+   dt = 0.01 ms;
+   time = 0 ms; 
    printRate = 50;      // in timesteps
    snapshotRate = 5000; // in timesteps
 }
@@ -19,9 +19,9 @@ pioAnatomy ANATOMY
    method = pio;
    fileName = snapshot.initial/anatomy#;
    cellTypes = -1;
-   dx = 0.167;   // in mm
-   dy = 0.167;   // in mm
-   dz = 0.167;   // in mm
+   dx = 0.167 mm;
+   dy = 0.167 mm;
+   dz = 0.167 mm;
    conductivity = conductivity;
 }
 
@@ -50,22 +50,22 @@ Saleheen98Fast DIFFUSION
 {
    method = Saleheen98;
    variant = precompute;
-   diffusionScale = 250.0;      // mm^3/mF
+   diffusionScale = 250.0 mm^3/mF;
 }
 
 conductivity CONDUCTIVITY
 {
     method = fibre;
-    sigmaLi = 0.0003;   // units S/mm
-    sigmaTi = 0.00003;  // units S/mm
+    sigmaLi = 0.0003 S/mm;
+    sigmaTi = 0.00003 S/mm;
 }
 
 uniform CONDUCTIVITY
 {
     method = uniform;
-    sigma11 = 0.0001;  // S/mm
-    sigma22 = 0.0001;  // S/mm
-    sigma33 = 0.0001;  // S/mm
+    sigma11 = 0.0001 S/mm;
+    sigma22 = 0.0001 S/mm;
+    sigma33 = 0.0001 S/mm;
     sigma12 = 0.0;
     sigma13 = 0.0;
     sigma23 = 0.0;
@@ -74,8 +74,8 @@ uniform CONDUCTIVITY
 jhu CONDUCTIVITY
 {
     method = JHU;
-    sigmaLi = 0.0000315; // S/mm
-    sigmaTi = 0.0003;    // S/mm
+    sigmaLi = 0.0000315 S/mm;
+    sigmaTi = 0.0003 S/mm;
     sheetAngle = 45;
     rotationMatrix = 1;
     homogeneousFiber = 0;
@@ -102,31 +102,31 @@ test STIMULUS
      method = test;
      rank = 0;
      cell = 0;
-     vStim = -52; // mV/msec
-     tStart = 1; // msec
-     duration =1; // msec
-     period = 1000; // msec
+     vStim = -52 mV/ms;
+     tStart = 1 ms;
+     duration = 1 ms;
+     period = 1000 ms;
 }
 
 pointStimulus STIMULUS
 {
   method = point;
   cell = 0;       // grid index of cell to stimulate
-  period = 1000.0;  // msec
-  duration = 1.0; // msec
-  vStim = -52.0;  // mV/msec
-  tStart = 10.0;  // time in msec of first stimulus 
-//tf = 5000.0;  // no stimulus after this time (in msec)
+  period = 1000.0 ms;
+  duration = 1.0 ms;
+  vStim = -52.0 mV/ms;
+  tStart = 10.0 ms;  // time in msec of first stimulus 
+//tf = 5000.0 ms;  // no stimulus after this time (in msec)
 }
 
 boxStimulus STIMULUS
 {
    method = box;
    yMax = 15;
-   vStim = -40;
-   tStart = 0;
-   duration = 5;
-   period = 1000;
+   vStim = -40 mV/ms;
+   tStart = 0 ms;
+   duration = 5 ms;
+   period = 1000 ms;
 }
    
 
@@ -134,7 +134,7 @@ pointSensor SENSOR
 {
   method = pointList;
   pointList = 13 400; // gids to print out (celltype must be nonzero, or no output)
-  startTime = 0.0;   // in ms
+  startTime = 0.0 ms;   // in ms
   printRate = 50;    // in timesteps
   printDerivs = 1;   // print dVm terms in addition to Vm (default = 0, i.e. off)
   dirname = sensorData; // created if necessary

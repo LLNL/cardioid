@@ -29,9 +29,9 @@ void initializeAnatomy(Anatomy& anatomy, const string& name, MPI_Comm comm)
    string conductivityName;
    objectGet(obj, "conductivity", conductivityName, "");
    double dx, dy, dz;
-   objectGet(obj, "dx", dx, "0.2");
-   objectGet(obj, "dy", dy, "0.2");
-   objectGet(obj, "dz", dz, "0.2");
+   objectGet(obj, "dx", dx, "0.2", "l");
+   objectGet(obj, "dy", dy, "0.2", "l");
+   objectGet(obj, "dz", dz, "0.2", "l");
    anatomy.dx() = dx;
    anatomy.dy() = dy;
    anatomy.dz() = dz;
@@ -102,9 +102,9 @@ namespace
 
       double xSize, ySize, zSize;
       int cellType;
-      objectGet(obj, "xSize", xSize, "3");
-      objectGet(obj, "ySize", ySize, "7");
-      objectGet(obj, "zSize", zSize, "20");
+      objectGet(obj, "xSize", xSize, "3", "l");
+      objectGet(obj, "ySize", ySize, "7", "l");
+      objectGet(obj, "zSize", zSize, "20","l");
       objectGet(obj, "cellType", cellType, "102");
 
       int nx = int(xSize/anatomy.dx());

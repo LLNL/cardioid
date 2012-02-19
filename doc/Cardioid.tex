@@ -135,9 +135,7 @@ name ClassName {
 }
 \end{verbatim}
 Values may be string, floats, or integers and may be vector or scalar
-valued.  Units are supported. \issue{Cardioid does not currently use the
-  units capability of the object.data system.  Hence, units are ignored
-  if specified.}  The set of keywords is open and
+valued.  Units are supported.  The set of keywords is open and
 arbitrary.  Both C and C++ style comments are supported.  All
 identifiers are case sensitive.  The order of objects in the file is
 arbitrary.  If two objects with the same name and class name appear in
@@ -152,7 +150,95 @@ object and the job is configured according to its settings.  A complete
 list of the supported object classes and their keywords is given in the
 appendix.
 
+\section{Units}
 
+Values in the input deck may include a unit specification.  For reasons
+of clarity, units are strongly encouraged.  
+
+Because standard unit systems such as MKS and cgs are not convenient for
+electrophysiolgy simulation, Cardioid defines a custom unit system.
+In this system the seven fundamental units are:
+\begin{description}
+\item[length] millimeter
+\item[mass]   microgram
+\item[time] millisecond
+\item[current] milliamp
+\item[temperature] Kelvin
+\item[amount] mol
+\item[luminous intensity] candella
+\end{description}
+Derived units follow from these seven fundamentals.  For example, the
+dimensionality of voltage is 
+\[
+voltage = \frac{mass * length^2}{current * time^3} 
+\]
+Substituting our base units we obtain
+\[
+\frac{ug*mm^2}{mA*ms^3} = \frac{10^{-15}}{10^{-12}}\frac{kg*m^2}{A*sec^3} =
+10^{-3}volts
+\]
+Hence the unit for voltage is millivolts.  The default units for typical quantities
+of interest include
+\begin{description}
+\item[voltage] millivolt
+\item[capacitance] millifarad
+\item[conductivity] siemen
+\item[charge] microcoulomb
+\end{description}
+Internally all quanties are represented in this unit system.  When no
+unit is specified, all quantities in the input deck are assumed to be in
+these units.
+
+\subsubsection{Supported Units}
+
+Supported units are as follows:
+\begin{description}
+\item[Length] meter, mm, um, nm.  (Do not use ``m'' for meter.)
+\item[Mass] gram, g, kg, mg, ug.
+\item[Time] second, s, ms, us, ns, ps, fs.  (Do not use sec.)
+\item[Current] amp, A, mA, uA.
+\item[Temperature] K.
+\item[Voltage] volt, V, mV, uV.
+\item[Capacitance] farad, F, mF, uF, nF, pF.
+\item[Resistivity] siemens, S, mS, uS.
+\item[Charge] coulomb, C, mC, uC.
+\end{description}
+
+
+\subsubsection{Examples}
+
+Here are several examples of valid unit specifications:
+
+\begin{verbatim}
+diffusionScale = 714 mm^3/mF;
+dx = 0.1 mm;
+sigmaLi = 0.3 mS/mm;
+sigmaLi = 0.0003 S/mm;
+dt =0.01 ms;
+vSitm = -52 mV/ms;
+\end{verbatim}
+
+\subsubsection{Limitations}
+
+\begin{enumerate}
+\item For tecnical reasons, ``m'' is not a valid specification for
+  ``meter''.  You may use meter, mm, um, and nm.
+  \item The unit parser is limited in the expressions it can handle.
+    Epressions may contain multiplication (*), division (/) and
+    exponentiation (\^) with integer valued exponents both positive and
+    negative.  It cannot handle parentheses.  
+\end{enumerate}
+
+Given the limitations above, here are a few more examples showing right
+and wrong ways to specify complex units.
+\begin{verbatim}
+voltage = 1 V;
+voltage = 1 volt;
+voltage = 1 kg*m^2/A/s^3;       // Invalid.  Don't use m for meter.
+voltage = 1 kg*meter^2/(A*s^3); // Invalid.  Parentheses not allowed.
+voltage = 1 kg*meter^2/A/s^3;
+voltage = 1 kg*meter^2*A^-1*s^-3;
+\end{verbatim}
 
 
 \appendix
@@ -275,29 +361,30 @@ conductivities.  If the anatomy does not provide fibre angles, then the
 values 0, 0 are assumed for all cells.
 \begin{keywords}
   \kw{sigmaLi}{Longitudinal conductivity (i.e., in the direction of the
-    fibre) in \issue{units!}}{0.3}
-  \kw{sigmaTi}{Transverse conductivity (i.e., perpendicular to the direction of the
-    fibre) in \issue{units!}}{0.0315}
+    fibre) in Siemens/mm.}{0.3e-3~S/mm} 
+  \kw{sigmaTi}{Transverse conductivity (i.e., perpendicular to the
+    direction of the fibre) in Siemens/mm}{0.0315e-3~S/mm}
 \end{keywords}
-
+\issue{Check that the units really are Siemens/mm.  If so, these aren't
+  very good default values.}
 \subsubsection{JHU}
 \begin{keywords}
   \kw{homogeneousFiber}{}{0}
   \kw{rotationMatrix}{}{1}
-  \kw{sigmaLi}{}{0.3}
-  \kw{sigmaTi}{}{0.0315}
+  \kw{sigmaLi}{}{0.3e-3}
+  \kw{sigmaTi}{}{0.0315e-3}
   \kw{sheetAngle}{}{45}
 \end{keywords}
 
 \subsubsection{uniform} 
-A specified tensor for all cells.
+A specified tensor for all cells.  All components are given in Siemens/mm.
 \begin{keywords}
-  \kw{sigma11}{Component of the conductivity tensor \issue{units}}{0.1}
-  \kw{sigma22}{Component of the conductivity tensor \issue{units}}{0.1}
-  \kw{sigma33}{Component of the conductivity tensor \issue{units}}{0.1}
-  \kw{sigma12}{Component of the conductivity tensor \issue{units}}{0.0}
-  \kw{sigma13}{Component of the conductivity tensor \issue{units}}{0.0}
-  \kw{sigma23}{Component of the conductivity tensor \issue{units}}{0.0}
+  \kw{sigma11}{Component of the conductivity tensor.}{0.1e-3~S/mm}
+  \kw{sigma22}{Component of the conductivity tensor.}{0.1e-3~S/mm}
+  \kw{sigma33}{Component of the conductivity tensor.}{0.1e-3~S/mm}
+  \kw{sigma12}{Component of the conductivity tensor.}{0.0~S/mm}
+  \kw{sigma13}{Component of the conductivity tensor.}{0.0~S/mm}
+  \kw{sigma23}{Component of the conductivity tensor.}{0.0~S/mm}
 \end{keywords}
 
 

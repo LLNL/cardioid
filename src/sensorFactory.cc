@@ -43,8 +43,8 @@ namespace
    {
       PointListSensorParms p;
       objectGet(obj, "pointList",   p.pointList);
-      objectGet(obj, "startTime",   p.startTime,   "0.0");
-      objectGet(obj, "endTime",     p.endTime,     "-1.0");
+      objectGet(obj, "startTime",   p.startTime,   "0.0",  "t");
+      objectGet(obj, "endTime",     p.endTime,     "-1.0", "t");
       objectGet(obj, "printDerivs", p.printDerivs, "0");
       objectGet(obj, "filename",    p.filename,    "cell");
       objectGet(obj, "dirname",     p.dirname,     "sensorData");

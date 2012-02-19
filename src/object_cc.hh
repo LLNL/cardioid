@@ -14,6 +14,9 @@ void objectGet(OBJECT* obj, const std::string& name, bool& value,        const s
 void objectGet(OBJECT* obj, const std::string& name, int& value,         const std::string& defVal);
 void objectGet(OBJECT* obj, const std::string& name, unsigned& value,    const std::string& defVal);
 
+void objectGet(OBJECT* obj, const std::string& name, double& value, const std::string& defVal,
+               const std::string& unitConvertTo);
+
 
 void objectGet(OBJECT* obj, const std::string& name, std::vector<std::string>& value);
 void objectGet(OBJECT* obj, const std::string& name, std::vector<unsigned>&    value);

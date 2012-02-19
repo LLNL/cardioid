@@ -60,6 +60,15 @@ void objectGet(OBJECT* obj, const string& name, unsigned& value, const string& d
    value = tmp;
 }
 
+void objectGet(OBJECT* obj, const std::string& name, double& value, const std::string& defVal,
+               const std::string& unitConvertTo)
+{
+   double tmp;
+   object_get(obj, name.c_str(), &tmp, WITH_UNITS, 1, defVal.c_str(), unitConvertTo.c_str(), NULL);
+   value = tmp;
+}
+
+
 void objectGet(OBJECT* obj, const string& name, vector<string>& value)
 {
    value.clear();

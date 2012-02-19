@@ -13,6 +13,7 @@
 #include "PerformanceTimers.hh"
 #include "mpiUtils.h"
 #include "pio.h"
+#include "units.h"
 
 #include "initializeSimulate.hh"
 #include "simulationLoop.hh"
@@ -28,7 +29,26 @@ namespace
    void printBanner();
 }
 
-
+/**
+ * Units:
+ *
+ *  For Cardioid, the internal and external units are the same.  The
+ *  seven fundamental units are:
+ *  - length:             millimeter
+ *  - mass:               microgram
+ *  - time:               millisecond
+ *  - current:            milliamp
+ *  - temperature:        Kelvin
+ *  - amount:             mol
+ *  - luminous intensity: candella
+ *
+ *  This seven imply derived units as follows:
+ *  - voltage:      millivolts
+ *  - conductivity: Siemens
+ *  - capacitance:  millifarad
+ *  - charge:       microcoulomb
+ *  
+ */
 
 // Sorry about this.
 MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
@@ -40,6 +60,10 @@ int main(int argc, char** argv)
    MPI_Comm_size(MPI_COMM_WORLD, &npes);
    MPI_Comm_rank(MPI_COMM_WORLD, &mype);  
 
+   // See units above.
+   units_internal(1e-3, 1e-9, 1e-3, 1e-3, 1, 1, 1);
+   units_external(1e-3, 1e-9, 1e-3, 1e-3, 1, 1, 1);
+   
    profileStart("Total");
    profileSetPrintOrder("Total");
    profileSetPrintOrder("Assignment");

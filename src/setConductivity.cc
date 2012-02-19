@@ -125,8 +125,8 @@ namespace
                           vector<AnatomyCell>& cell)
    {
       FibreConductivityParms p;
-      objectGet(obj, "sigmaTi", p.sigmaTi, "0.0315");
-      objectGet(obj, "sigmaLi", p.sigmaLi, "0.3");
+      objectGet(obj, "sigmaTi", p.sigmaTi, "0.0315e-3", "resistivity/l");
+      objectGet(obj, "sigmaLi", p.sigmaLi, "0.3e-3",    "resistivity/l");
       FibreConductivity fibre(p);
 
       vector<double> theta(cell.size()); // angles default to zero
@@ -197,8 +197,8 @@ namespace
       p.nz = globalGridSize.z();
       p.transmuralAxis = globalGridSize.y() - 2;
 
-      objectGet(obj, "sigmaTi", p.sigmaTi, "0.0315");
-      objectGet(obj, "sigmaLi", p.sigmaLi, "0.3");
+      objectGet(obj, "sigmaTi", p.sigmaTi, "0.0315e-3", "resistivity/l");
+      objectGet(obj, "sigmaLi", p.sigmaLi, "0.3e-3",    "resistivity/l");
 
       objectGet(obj, "sheetAngle", p.sheetAngle, "45");
       objectGet(obj, "rotatationMatrix", p.rotatationMatrix, "1");
@@ -217,12 +217,12 @@ namespace
    void uniformConductivity(OBJECT* obj, vector<AnatomyCell>& cell)
    {
       SymmetricTensor sigma;
-      objectGet(obj, "sigma11", sigma.a11, "0.1");
-      objectGet(obj, "sigma22", sigma.a22, "0.1");
-      objectGet(obj, "sigma33", sigma.a33, "0.1");
-      objectGet(obj, "sigma12", sigma.a12, "0.0");
-      objectGet(obj, "sigma13", sigma.a13, "0.0");
-      objectGet(obj, "sigma23", sigma.a23, "0.0");
+      objectGet(obj, "sigma11", sigma.a11, "0.1e-3", "resistivity/l");
+      objectGet(obj, "sigma22", sigma.a22, "0.1e-3", "resistivity/l");
+      objectGet(obj, "sigma33", sigma.a33, "0.1e-3", "resistivity/l");
+      objectGet(obj, "sigma12", sigma.a12, "0.0e-3", "resistivity/l");
+      objectGet(obj, "sigma13", sigma.a13, "0.0e-3", "resistivity/l");
+      objectGet(obj, "sigma23", sigma.a23, "0.0e-3", "resistivity/l");
 
       for (unsigned ii=0; ii<cell.size(); ++ii)
          cell[ii].sigma_ = sigma;

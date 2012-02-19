@@ -25,8 +25,8 @@ Stimulus* stimulusFactory(const std::string& name, const Anatomy& anatomy)
    string method;
    StimulusBaseParms p;
    objectGet(obj, "method", method, "undefined");
-   objectGet(obj, "t0", p.t0, "-1000");
-   objectGet(obj, "tf", p.tf, "1e30");
+   objectGet(obj, "t0", p.t0, "-1000", "t");
+   objectGet(obj, "tf", p.tf, "1e30",  "t");
    
    if (method == "undefined")
       assert(false);
@@ -49,10 +49,10 @@ namespace
       PointStimulusParms p;
       p.baseParms = bp;
       objectGet(obj, "cell",     p.cell,     "0");
-      objectGet(obj, "duration", p.duration, "1");
-      objectGet(obj, "period",   p.period,   "1000");
-      objectGet(obj, "tStart",   p.tStart,   "0");
-      objectGet(obj, "vStim",    p.vStim,    "-52");
+      objectGet(obj, "duration", p.duration, "1",    "t");
+      objectGet(obj, "period",   p.period,   "1000", "t");
+      objectGet(obj, "tStart",   p.tStart,   "0",    "t");
+      objectGet(obj, "vStim",    p.vStim,    "-52",  "voltage/t");
       return new PointStimulus(p, anatomy);
    }
 }
@@ -65,10 +65,10 @@ namespace
       p.baseParms = bp;
       objectGet(obj, "cell",     p.cell,     "0");
       objectGet(obj, "rank",     p.rank,     "0");
-      objectGet(obj, "duration", p.duration, "1");
-      objectGet(obj, "period",   p.period,   "1000");
-      objectGet(obj, "tStart",   p.tStart,   "1");
-      objectGet(obj, "vStim",    p.vStim,    "-52");
+      objectGet(obj, "duration", p.duration, "1",    "t");
+      objectGet(obj, "period",   p.period,   "1000", "t");
+      objectGet(obj, "tStart",   p.tStart,   "1",    "t");
+      objectGet(obj, "vStim",    p.vStim,    "-52",  "voltage/t");
       return new TestStimulus(p);
    }
 }
@@ -84,10 +84,10 @@ namespace
 
       BoxStimulusParms p;
       p.baseParms = bp;
-      objectGet(obj, "duration", p.duration, "1");
-      objectGet(obj, "period",   p.period,   "1000");
-      objectGet(obj, "tStart",   p.tStart,   "1");
-      objectGet(obj, "vStim",    p.vStim,    "-52");
+      objectGet(obj, "duration", p.duration, "1",    "t");
+      objectGet(obj, "period",   p.period,   "1000", "t");
+      objectGet(obj, "tStart",   p.tStart,   "1",    "t");
+      objectGet(obj, "vStim",    p.vStim,    "-52",  "voltage/t");
       objectGet(obj, "xMin",     p.xMin,     "-1");
       objectGet(obj, "yMin",     p.yMin,     "-1");
       objectGet(obj, "zMin",     p.zMin,     "-1");
