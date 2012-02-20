@@ -20,6 +20,9 @@ class Reaction
    virtual void initializeMembraneVoltage(std::vector<double>& Vm) = 0;
 
    virtual void loadState(const BucketOfBits& data);
+   virtual void updateNonGate(double dt, const std::vector<double>&Vm, std::vector<double>&dVR) {};
+   virtual void updateGate   (double dt, const std::vector<double>&Vm) {};
+   virtual void updateByStim (double dt, const std::vector<double>& dVD) {};
 };
 
 #endif

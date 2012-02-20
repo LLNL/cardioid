@@ -26,6 +26,8 @@
  * RATES[1] is d/dt K_i in component potassium_dynamics (millimolar).
 */
 // int mapCell2Dev[]                  {1,2,3,10,17,18,14,7,8,9,4,5,6,16,11,12,13,15};
+namespace TT06Func
+{
 enum TT06STATE { Ca_i, K_i, Na_i, Ca_ss, Ca_SR, R_prime, fCass_gate, m_gate, h_gate, j_gate, Xr1_gate, Xr2_gate, Xs_gate, r_gate, d_gate, f_gate, f2_gate, s_gate, jL_gate, nStateVar} ; 
 
 struct TT06DevState
@@ -44,5 +46,6 @@ double get_c9();
 PADE **makeFit(double tol, double V0, double V1, double deltaV, int mod);
 void writeFit(PADE **fit); 
 double defaultVoltage(int cellType);
+};
 
 #endif

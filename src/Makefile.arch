@@ -60,6 +60,9 @@ endif
 ifeq ($(HOSTNAME),blackcomb)
   ARCHGUESS = osx
 endif
+ifeq ($(HOSTNAME),whistler)
+  ARCHGUESS = osx
+endif
 ifeq ($(HOSTNAME),sierra)
   ARCHGUESS = peloton
 endif

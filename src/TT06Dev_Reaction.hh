@@ -1,8 +1,9 @@
 #ifndef TT06DEV_REACTION_HH
 #define TT06DEV_REACTION_HH
 #include "Reaction.hh"
+#include "TT06Func.hh"
 class Anatomy;
-class TT06DevState;
+class TT06Func::TT06DevState;
 
 class TT06Dev_Reaction : public Reaction
 {
@@ -15,8 +16,12 @@ class TT06Dev_Reaction : public Reaction
    TT06Dev_Reaction& operator=(const TT06Dev_Reaction&);
    ~TT06Dev_Reaction();
 
+   void updateNonGate(double dt, const std::vector<double>&Vm, std::vector<double>&dVR);
+   void updateGate   (double dt, const std::vector<double>&Vm) ;
+   void updateByStim (double dt, const std::vector<double>& dVD) ;
    void calc(double dt, const std::vector<double>& Vm, const std::vector<double>& iStim, std::vector<double>& dVm);
    void initializeMembraneVoltage(std::vector<double>& Vm);
+   void writeStateDev(int loop); 
 
  private:
 
@@ -26,7 +31,7 @@ class TT06Dev_Reaction : public Reaction
    int mod_; 
    
    std::vector<int>              ttType_; // maps cellType to ttType
-   std::vector<TT06DevState> s_;
+   std::vector<TT06Func::TT06DevState> s_;
 };
 
 #endif

@@ -2,7 +2,7 @@
 
 # $Id$
 
-searchPath_ddcMD="$DDCMD_SRC $HOME/src/ddcMD/src $HOME/ddcMD/src ddcMD_files/src"
+searchPath_ddcMD="$DDCMD_SRC $HOME/src/ddcMD/src $HOME/ddcMD/src $HOME/projects/ddcMD/current/src ddcMD_files/src"
 
 files_ddcMD="$@"
 

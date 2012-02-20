@@ -10,6 +10,8 @@
 #define C(i) (gsl_vector_get(c,(i)))
 #define sigm(x)   ((x)/(1.0+(x)) )
 
+namespace TT06Func
+{
 double fv0(double Vm, void *parms) ;
 double fv1(double Vm, void *parms) ;
 double fv2(double Vm, void *parms) ;
@@ -51,9 +53,9 @@ OVF  tauRFunc[]  ={ mTauR , hTauR ,  jTauR,  Xr1TauR,   Xr2TauR,  XsTauR,  rTauR
 const   char *tauRName[] ={ "mTauR", "hTauR", "jTauR","Xr1TauR", "Xr2TauR","XsTauR","rTauR","dTauR","fTauR","f2TauR", "sTauR0", "sTauR1"}; 
 
 const  char *fitName[] ={ "fv0", "fv1", "fv2", "fv3", "fv4", "fv5", "fv6", "mMhu", "mTauR", "hMhu", "hTauR", "jMhu", "jTauR", "Xr1Mhu", "Xr1TauR", "Xr2Mhu", "Xr2mTauR", 
-                           "XsMhu", "XsTauR", "rMhu", "rTauR", "dMhu", "dTauR", "fMhu", "fTauR", "f2Mhu", "f2TauR", "sMhu0", "sTauR0", "sMhu1", "sTauR0" ,NULL}; 
+                           "XsMhu", "XsTauR", "rMhu", "rTauR", "dMhu", "dTauR", "fMhu", "fTauR", "f2Mhu", "f2TauR", "sMhu0", "sTauR0", "sMhu1", "sTauR1" ,NULL}; 
 OVF fitFunc[] ={ fv0, fv1, fv2, fv3, fv4, fv5, fv6, mMhu, mTauR, hjMhu, hTauR, hjMhu, jTauR, Xr1Mhu, Xr1TauR, Xr2Mhu, Xr2TauR, 
-                           XsMhu, XsTauR, rMhu, rTauR, dMhu, dTauR, fMhu, fTauR, f2Mhu, f2TauR, sMhu0, sTauR0, sMhu1, sTauR0 ,NULL}; 
+                           XsMhu, XsTauR, rMhu, rTauR, dMhu, dTauR, fMhu, fTauR, f2Mhu, f2TauR, sMhu0, sTauR0, sMhu1, sTauR1 ,NULL}; 
 
 static TauRecipParms *jParms;
 static TauRecipParms *hParms;
@@ -67,10 +69,14 @@ static double c10,c11,c12,c13,c14,c15,c16,c17,c18,c19;
 static double c20,c21,c22,c23,c24,c25,c26,c27,c28,c29;
 static double c30,c31,c32,c33,c34,c36,c40,c43,c44;
 static double f1,f2,f3,f4,f5,f6,f7,f7a,f9,f9a,f10; 
+}
+namespace TT06Func 
+{
 void initState(TT06DevState *cell,int cellType)
 {
 cell->cellType=cellType; 
 double *states = cell->state;
+
 if (cellType == 0) 
 {
 cell->P_NaK=2.724;
@@ -305,21 +311,22 @@ void initCnst()
    g_to[2] =  g_to_Mid_Epi; 
    
    c10= 1/(0.5*c9);
-   c7 =  (0.50*cnst[19]*c9);
-   c11= c9*cnst[14]*sqrt(cnst[10]/5.4);
+   c7 =  (0.50*cnst[19]);
+   c11= cnst[14]*sqrt(cnst[10]/5.4);
    c12= cnst[13]*sqrt(cnst[10]/5.4);
-   c13= cnst[3]/(2.0*cnst[52]*cnst[2]);
-   c14 = cnst[51]*cnst[40]/cnst[52]; 
+   c13= cnst[3]/(2.0*cnst[52]*cnst[2]*c9);
+   c14 = cnst[51]*cnst[40]/(cnst[52]*c9); 
    c15 = -cnst[52]/cnst[4]; 
    c16 = cnst[51]/cnst[4];
-   c17 = cnst[35]/(cnst[33]*cnst[34]);
-   c18 = cnst[34]*cnst[38] ;
-   c19  = -cnst[34]*(cnst[38]-cnst[39]); 
-   c20  = c9*cnst[16]; 
-   c21  = c9*cnst[17]; 
-   c22  = -1/c9; 
-   c23  = cnst[41]/c15; 
-   c24  = cnst[30]/c10; 
+   c17 = cnst[35]/(cnst[33]*cnst[34])*c9;
+   c18 = cnst[34]*cnst[38]/c9 ;
+   c19  = -cnst[34]*(cnst[38]-cnst[39])/c9; 
+   c20  = cnst[16]; 
+   c21  = cnst[17]; 
+   c22  = 1/c9; 
+   c23  = cnst[41]/(c15*c9); 
+   //c24  = cnst[30]/c10; 
+   c24  =  0.5*cnst[30]; 
    c25  =  1.0/cnst[23]; 
    c26  =  1.0/cnst[31]; 
    c27  =  1.0/cnst[42]; 
@@ -330,18 +337,17 @@ void initCnst()
    c32  =  cnst[48]*c31; 
    c33  =  1.0/sqrt(cnst[49]*cnst[50]); 
    c34  =  cnst[50]*c33; 
-   c36  =  cnst[36]; 
-   c40  =  cnst[40]; 
-   c43  =  cnst[43]; 
-   c44  =  cnst[44]; 
+   c36  =  cnst[36]/c9; 
+   c40  =  cnst[40]/c9; 
+   c43  =  cnst[43]/c9; 
+   c44  =  cnst[44]/c9; 
    
    P_NaK= cnst[21]; 
    g_NaL =0.0; 
    
    f1 = c1; 
-   //f2 =  -2.0*c9*cnst[21]*cnst[10]/(cnst[10]+cnst[22]);
-   f2 =  -2.0*c9*cnst[10]/(cnst[10]+cnst[22]);
-   f3 =  ((CUBE(cnst[29])+CUBE(cnst[11]))*(cnst[28]+cnst[12]))/(cnst[24]*cnst[12]*c9); 
+   f2 =  -2.0*cnst[10]/(cnst[10]+cnst[22]);
+   f3 =  ((CUBE(cnst[29])+CUBE(cnst[11]))*(cnst[28]+cnst[12]))/(cnst[24]*cnst[12]); 
    f4 =  f3*cnst[25]; 
    f5 =  cnst[27]*f1; 
    f6 =  (CUBE(cnst[11])*cnst[26]/cnst[12]);
@@ -349,7 +355,7 @@ void initCnst()
    f7a = 0.5*cnst[18]*cnst[2];
    f9  = 4.0*cnst[12];
    f9a = 4.0*cnst[12]*f7a;
-   f10 = c9*cnst[32];
+   f10 = cnst[32];
    jParms =makeTauRecipParms(-48.85,-17.6,jTauRecip); 
    hParms =makeTauRecipParms(-64.20,-23.3,hTauRecip); 
    
@@ -397,7 +403,7 @@ double fv5(double Vm, void *)
 double fv6(double dV0, void *) 
 {
    double xx  =  (3.0*exp(0.0002*dV0 + 0.02)+exp(0.1*dV0 - 1.0))/(1.0+exp( -0.5*dV0))*(10.0+10*exp(0.06*dV0 -12.0));
-   double fv6 = c9*c12/(1.0+xx);
+   double fv6 = c12/(1.0+xx);
    return fv6; 
    
 }
@@ -463,7 +469,8 @@ double defaultVoltage(int cellType)
      //double dV2 =Vm-c3*log(states[K_i])-c3*logSeries(c2*states[Na_i]/states[K_i]) -c6;
      //double dV2 = Vm -c3*log(states[K_i]+c2*states[Na_i]) -c6;
 
-#define logSeries(x) ((x)*(1.0+(x)*(-0.5+(x)/3.0)))
+//#define logSeries(x) ((x)*(1.0+(x)*(-0.5+(x)/3.0)))
+#define logSeries(x)    (log(1+(x)) )
 void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, double *dVdt)
 {
    
@@ -477,7 +484,7 @@ void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, 
    double g_to = cell[ii].g_to; 
    double g_NaL = cell[ii].g_NaL; 
 
-   dVdt[ii]=0.0; 
+   double dVR = 0.0; 
    double itmp0,itmp5,itmp6 ; 
    {
      double fv1=fit[1]->afunc(Vm, fit[1]->aparms); 
@@ -490,12 +497,12 @@ void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, 
      double sigm3 = sigm(x3); 
      double dV3 = Vm- 0.5*c3*log(states[Ca_i]) - c8;
 
-     itmp0 = CUBE(states[Na_i])*fv1-states[Ca_i]*fv2; 
-     double itmp4 = c7*dV3+c24*sigm1; 
-     itmp5=  c43*(states[Ca_i] -  states[Ca_SR])+c44*sigm2;      
-     itmp6 = c23*(states[Ca_ss] - states[Ca_i]);
-     states[Ca_i]    += dt*(sigm3*(itmp4-itmp0+itmp6*c15-itmp5*c16));
-     dVdt[ii] -= itmp4*c10;
+     itmp0 = (CUBE(states[Na_i])*fv1-states[Ca_i]*fv2); 
+     double itmp4 = (c7*dV3+c24*sigm1); 
+     itmp5=  (c43*(states[Ca_i] -  states[Ca_SR])+c44*sigm2);      
+     itmp6 = (c23*(states[Ca_ss] - states[Ca_i]));
+     states[Ca_i]   += (dt*c9)*(sigm3*(itmp4-itmp0+itmp6*c15-itmp5*c16));
+     dVR  -= 2*itmp4;
     }
 
    {
@@ -514,17 +521,18 @@ void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, 
      double fv6=fit[6]->afunc(dV0,fit[6]->aparms); 
      double fd =  fv5  +  fv6; 
 
-     double tmp0 =  fd +  c9*g_to*states[r_gate]*states[s_gate]+ c11*states[Xr1_gate]*states[Xr2_gate] ;
-     double tmp1 =  c20*CUBE(states[m_gate])*states[h_gate]*states[j_gate]+c21;
-     double tmp2 =  c9*g_Ks*SQ(states[Xs_gate]);
-     double itmpA =  sigm0 * fv0;                          //Sigm0
+     double tmp0 =  (fd +  g_to*states[r_gate]*states[s_gate]+ c11*states[Xr1_gate]*states[Xr2_gate] );
+     double tmp1 =  (c20*CUBE(states[m_gate])*states[h_gate]*states[j_gate]+c21);
+     double tmp2 =  g_Ks*SQ(states[Xs_gate]);
+     double itmpA = sigm0 * fv0;                          //Sigm0
      double itmp2 = itmp0 - 1.5*itmpA+tmp1*dV1; 
      double itmp3 = itmpA + tmp0*dV0 +tmp2*dV2; 
      double iNaL = g_NaL*CUBE(states[m_gate])*states[jL_gate]*dV1;
 
-     states[K_i]     += dt*itmp3;
-     states[Na_i]    += dt*(iNaL+itmp2+2.0*itmp0);
-     dVdt[ii]  += iNaL + itmp2*c22+itmp3*c22;
+
+     states[K_i]     += (dt*c9)*itmp3;
+     states[Na_i]    += (dt*c9)*(iNaL*c22+itmp2+2.0*itmp0);
+     dVR +=  iNaL - itmp2-itmp3;
    }
 
    {
@@ -536,7 +544,7 @@ void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, 
      double sigm4 = sigm(x4); 
      double sigm5 = sigm(x5); 
      double sigm6 = sigm(x6); 
-     double tmp8  = c18+c19*sigm4; //Sigm4
+     double tmp8  = (c18+c19*sigm4); //Sigm4
      double tmp9  = tmp8*states[Ca_ss]+c36; 
      double itmp1 = states[d_gate]*states[f_gate]*states[f2_gate]*states[fCass_gate]*(fv4-states[Ca_ss]*fv3);
      double sigmCa_ss =   SQ(states[Ca_ss])/(tmp8*c17 + SQ(states[Ca_ss]));
@@ -546,12 +554,14 @@ void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, 
      double mhu = 0.600000*t1+0.4000000;
      double tauR =    1.0/(80.0*t1+2.0);
 
-     states[Ca_ss]   += dt*(sigm6*(itmp6+itmp7*c14+itmp1*c13));    
-     states[Ca_SR]   += dt*(sigm5*(itmp5-c40*itmp7));
-     states[R_prime] += dt*(c36 - tmp9*states[R_prime]);
+     states[Ca_ss]   += (dt*c9)*sigm6*(itmp6+itmp7*c14+itmp1*c13);    
+     states[Ca_SR]   += (dt*c9)*sigm5*(itmp5-c40*itmp7);
+     states[R_prime] += (dt*c9)*(c36 - tmp9*states[R_prime]);
      states[fCass_gate] +=  dt*(mhu - states[fCass_gate])*tauR; 
-     dVdt[ii] += itmp1;
+     dVR += itmp1; 
    }
+   states[K_i]     += (dt*c9)*dVR;
+   dVdt[ii]  = dVR;
    }
 }
 
@@ -757,4 +767,5 @@ double sTauR1(double Vm, void *)
    double tau =  85.0000*(exp((- (pow((Vm+45.0000), 2.00000))/320.000)))+5.00000/(1.00000+(exp(((Vm - 20.0000)/5.00000))))+3.00000;
    double tauR = 1/tau; 
    return tauR;
+}
 }
