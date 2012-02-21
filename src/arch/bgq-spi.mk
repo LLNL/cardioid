@@ -1,15 +1,27 @@
+BGQ_SDK_PATH = /bgsys/drivers/ppcfloor
+
+#### SPI ####
+BGSYS_INC := -I$(BGQ_SDK_PATH)/comm/sys/include                 \
+        -I$(BGQ_SDK_PATH) -I$(BGQ_SDK_PATH)/spi/include                 \
+        -I$(BGQ_SDK_PATH)/spi/include/kernel/cnk                        \
+        -I$(BGQ_SDK_PATH)/spi/include/mu/default/
+
+SPI_INC := -I$(SPI_PATH)/libutil/include
+BGSYS_LIBS := -L$(BGQ_SDK_PATH)/lib -lrt -L$(BGQ_SDK_PATH)/spi/lib -lSPI -lSPI_cnk
+############
+
 CXX=/bgsys/drivers/ppcfloor/comm/xl/bin/mpixlcxx_r
 CC=/bgsys/drivers/ppcfloor/comm/xl/bin/mpixlc_r
 LD=$(CXX)
 
-DFLAGS = -DWITH_PIO -DWITH_MPI -DBGQ \
+DFLAGS = -DWITH_PIO -DWITH_MPI -DBGQ -DSPI \
 	 -DADD_ -DUSE_CSTDIO_LFS -DMPICH_IGNORE_CXX_SEEK
-
-INCLUDE = -I/usr/gapps/emhm/include
-OPTFLAGS = -g -O3
-CFLAGS_BASE =   -qsmp=omp $(INCLUDE) $(DFLAGS)
-CXXFLAGS_BASE = -qsmp=omp $(INCLUDE) $(DFLAGS)
 LDFLAGS_BASE = -lc -lnss_files -lnss_dns -lresolv
+
+INCLUDE = -I/usr/gapps/emhm/include -I$(SPI_PATH)/include
+OPTFLAGS = -g -O3
+CFLAGS_BASE =   -qsmp=omp $(INCLUDE) $(DFLAGS) $(BGSYS_INC) $(SPI_INC)
+CXXFLAGS_BASE = -qsmp=omp $(INCLUDE) $(DFLAGS) $(BGSYS_INC) $(SPI_INC)
 
 HAVE_GSL = 1
 ifeq ($(HAVE_GSL),1) 
