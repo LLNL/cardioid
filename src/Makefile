@@ -105,8 +105,8 @@ ifdef TIMEOBJ
   HEARTOBJS += $(TIMEOBJ)
 endif
 
-BUILD_SUFFIX := $(ARCH)
-OBJDIR := objs-$(BUILD_SUFFIX)
+#BUILD_SUFFIX := $(ARCH)
+#OBJDIR := objs-$(BUILD_SUFFIX)
 EXENAME = cardioid
 
 
@@ -187,11 +187,11 @@ makedirs:
 # generate dependencies in makefile: use -Y to avoid library header files
 # that are likely to be different on other platforms.
  depend :
-	@makedepend -f .depend_$(BUILD_SUFFIX) -p'$(OBJDIR)/' -o '.o' -Y $(CFLAGS) $(CXXFLAGS) *.cc *.c *.hh *.h 2> /dev/null
+	makedepend -f .depend_$(BUILD_SUFFIX) -p'$(OBJDIR)/' -o '.o' -Y -- $(CFLAGS) $(CXXFLAGS) -- *.cc *.c *.hh *.h 2> /dev/null
 
 .depend_$(BUILD_SUFFIX): $(HEARTSRC)
 	@touch .depend_$(BUILD_SUFFIX)
-	@$(MAKE) depend
+	@$(MAKE) depend BUILD_SUFFIX=$(BUILD_SUFFIX)
 
 #------------------------------------------------------------------------------
 #  Cleanup object files
@@ -206,8 +206,10 @@ clean :
 distclean: clean
 	rm -f $(DDCMD_FILES)
 	rm -rf ddcMD_files
-	rm -rf $(OBJDIR)*
+	rm -rf objs-*
 	rm -f .depend*
 	rm -rf $(BINDIR)
 
--include .depend_$(ARCH)
+ifdef BUILD_SUFFIX
+  -include .depend_$(BUILD_SUFFIX)
+endif
