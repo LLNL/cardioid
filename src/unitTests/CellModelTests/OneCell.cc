@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
    printf("# Starting the computation time loop\n");
    printf("# time Vm iStim dVmReaction\n");
    if (firstStepToPrint == 0)
-     printf("%f %le %le %le\n",time,Vm[0],iStim[0],dVmReaction[0]); 
+   printf("%f %le %le %le\n",time,Vm[0],iStim[0],dVmReaction[0]); 
    fflush (stdout);
 
    while (time < tEnd)
@@ -171,6 +171,7 @@ int main(int argc, char *argv[])
         printf("%f %le %le %le\n",time-equilTime,Vm[0],iStim[0],dVmReaction[0]); 
         fflush (stdout);
       }
+
    } // end time loop
 
    return 0;

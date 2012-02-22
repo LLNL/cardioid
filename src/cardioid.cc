@@ -8,6 +8,7 @@
 #include <mpi.h>
 #include <cstdlib>
 #include <sstream>
+#include <omp.h>
 
 #include "Simulate.hh"
 #include "PerformanceTimers.hh"
@@ -84,7 +85,8 @@ int main(int argc, char** argv)
    MPI_Pcontrol(1);
 
    profileStart("Loop");
-   simulationLoop(sim);  
+   if ( !sim.parallelDiffusionReaction_) simulationLoop(sim);  
+   else  simulationLoopParallelDiffusionReaction(sim);
    profileStop("Loop");
    
    //ewd:  turn off mpiP

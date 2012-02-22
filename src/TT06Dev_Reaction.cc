@@ -51,7 +51,7 @@ TT06Dev_Reaction::~TT06Dev_Reaction()
 }
 void TT06Dev_Reaction::writeStateDev(int loop)
 {
-int  map[] = { K_i , Na_i , Ca_i , Xr1_gate , Xr2_gate , Xs_gate , m_gate , h_gate , j_gate , Ca_ss , d_gate , f_gate , f2_gate , fCass_gate , s_gate , r_gate , Ca_SR , R_prime , jL_gate};
+int  map[] = { dVK_i , Na_i , Ca_i , Xr1_gate , Xr2_gate , Xs_gate , m_gate , h_gate , j_gate , Ca_ss , d_gate , f_gate , f2_gate , fCass_gate , s_gate , r_gate , Ca_SR , R_prime , jL_gate};
 	for (int i=0;i<nStateVar;i++) 
 	{
 		int k = map[i]; 
@@ -64,8 +64,8 @@ void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<do
 {
    TT06Func::updateNonGate(dt, nCells_,&Vm[0], &(s_[0]), &dVm[0]);
    TT06Func::updateGate(dt, nCells_,&Vm[0], &(s_[0]));
-   double c9 = TT06Func::get_c9(); 
-   for (unsigned ii=0; ii<nCells_; ++ii) s_[ii].state[TT06Func::K_i] += dt*((-dVm[ii]+iStim[ii])*c9) ;
+   //double c9 = TT06Func::get_c9(); 
+   //for (unsigned ii=0; ii<nCells_; ++ii) s_[ii].state[TT06Func::K_i] += dt*((-dVm[ii]+iStim[ii])*c9) ;
 }
 void TT06Dev_Reaction::updateNonGate(double dt, const vector<double>& Vm, vector<double>& dVR)
 {
@@ -74,11 +74,6 @@ void TT06Dev_Reaction::updateNonGate(double dt, const vector<double>& Vm, vector
 void TT06Dev_Reaction::updateGate(double dt, const vector<double>& Vm)
 {
    TT06Func::updateGate(dt, nCells_,&Vm[0], &(s_[0]));
-}
-void TT06Dev_Reaction::updateByStim(double dt, const vector<double>& dVD)
-{
-    double c9 = TT06Func::get_c9(); 
-    for (unsigned ii=0; ii<nCells_; ++ii) s_[ii].state[TT06Func::K_i] -= dt*dVD[ii]*c9 ;
 }
 
 

@@ -83,7 +83,9 @@ cell->P_NaK=2.724;
 cell->g_Ks = 0.392; 
 cell->g_to = 0.073; 
 cell->g_NaL=0.0; 
-states[K_i] = 138.4;
+double  Vm = -86.709;
+states[dVK_i] = 138.4/c9+Vm;
+//states[K_i] = 138.4;
 states[Na_i] = 10.355;
 states[Ca_i] = 0.00013;
 states[Ca_ss] = 0.00036;
@@ -110,7 +112,9 @@ cell->P_NaK=2.724;
 cell->g_Ks = 0.098; 
 cell->g_to = 0.294; 
 cell->g_NaL=0.0; 
-states[K_i] = 138.52;
+double Vm = -85.423;
+states[dVK_i] = 138.52/c9+Vm;
+//states[K_i] = 138.52;
 states[Na_i] = 10.132;
 states[Ca_i] = 0.000153;
 states[Ca_ss] = 0.00042;
@@ -137,7 +141,9 @@ cell->P_NaK=2.724;
 cell->g_Ks = 0.392; 
 cell->g_to = 0.294; 
 cell->g_NaL=0.0; 
-states[K_i] = 136.89;
+double Vm  = -85.23;
+states[dVK_i] = 136.89/c9+Vm;
+//states[K_i] = 136.89;
 states[Na_i] = 8.604;
 states[Ca_i] = 0.000126;
 states[Ca_ss] = 0.00036;
@@ -506,14 +512,14 @@ void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, 
     }
 
    {
-
+     double stateK_i  = c9*(-Vm + states[dVK_i]);
      double x0 = states[Na_i]*c25; 
      double sigm0 = P_NaK*sigm(x0); 
      //double sigm0 = sigm(x0); 
 
-     double dV0 = Vm -c3*log(states[K_i]) -c5;
+     double dV0 = Vm -c3*log(stateK_i) -c5;
      double dV1 = Vm -c3*log(states[Na_i])-c4;
-     double dV2 = dV0-c3*logSeries(c2*states[Na_i]/states[K_i])+c5-c6; // Assumption:  c2*states[Na_i]/states[K_i] is small; 
+     double dV2 = dV0-c3*logSeries(c2*states[Na_i]/stateK_i)+c5-c6; // Assumption:  c2*states[Na_i]/stateK_i is small; 
 
 
      double fv0=fit[0]->afunc(Vm, fit[0]->aparms); 
@@ -530,7 +536,7 @@ void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, 
      double iNaL = g_NaL*CUBE(states[m_gate])*states[jL_gate]*dV1;
 
 
-     states[K_i]     += (dt*c9)*itmp3;
+     states[dVK_i]     += dt*itmp3;
      states[Na_i]    += (dt*c9)*(iNaL*c22+itmp2+2.0*itmp0);
      dVR +=  iNaL - itmp2-itmp3;
    }
@@ -560,7 +566,7 @@ void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, 
      states[fCass_gate] +=  dt*(mhu - states[fCass_gate])*tauR; 
      dVR += itmp1; 
    }
-   states[K_i]     += (dt*c9)*dVR;
+   states[dVK_i] +=  dt*dVR ; 
    dVdt[ii]  = dVR;
    }
 }

@@ -18,7 +18,6 @@ class TT06Dev_Reaction : public Reaction
 
    void updateNonGate(double dt, const std::vector<double>&Vm, std::vector<double>&dVR);
    void updateGate   (double dt, const std::vector<double>&Vm) ;
-   void updateByStim (double dt, const std::vector<double>& dVD) ;
    void calc(double dt, const std::vector<double>& Vm, const std::vector<double>& iStim, std::vector<double>& dVm);
    void initializeMembraneVoltage(std::vector<double>& Vm);
    void writeStateDev(int loop); 

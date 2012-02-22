@@ -24,6 +24,7 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "time", sim.time_, "0", "t");
    objectGet(obj, "printRate", sim.printRate_, "20");
    objectGet(obj, "snapshotRate", sim.snapshotRate_, "100");
+   objectGet(obj, "parallelDiffusionReaction", sim.parallelDiffusionReaction_, "0");
    
 
    string nameTmp;
