@@ -15,6 +15,7 @@
 #include "mpiUtils.h"
 #include "pio.h"
 #include "units.h"
+#include "ioUtils.h"
 
 #include "initializeSimulate.hh"
 #include "simulationLoop.hh"
@@ -124,16 +125,30 @@ void parseCommandLineAndReadInputFile(int argc, char** argv, MPI_Comm comm)
    }
 
    // parse input file
-   string inputfile("object.data");
+   string objectFile("object.data");
+   string restartFile("restart");
    if (argc > 1)
    {
       string argfile(argv[1]);
-      inputfile = argfile;
+      objectFile = argfile;
    }
 
    if (myRank == 0)
    {
-      object_compilefile(inputfile.c_str());
+      if (filetest(objectFile.c_str(), S_IFREG) != 0)
+      {
+         printf("objectfile=%s does not exist or wrong type\n", objectFile.c_str());
+         assert(false);
+      }
+
+      string inputFiles = objectFile;
+      if (filetest(restartFile.c_str(), S_IFREG) == 0)
+         inputFiles += " " + restartFile;
+
+      object_set("files", inputFiles.c_str());
+
+      
+      object_compile();
       printf("\nContents of object database:\n"
               "----------------------------------------------------------------------\n");
       object_print_all(stdout);
