@@ -110,7 +110,7 @@ void loopIO(const Simulate& sim, const vector<double>& dVmReaction,
       writeCells(sim, fullname.c_str());
    }
       
-   if (sim.loop_ % sim.checkpointRate_ == 0)
+   if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
    {
       stringstream name;
       name << "snapshot."<<setfill('0')<<setw(8)<<sim.loop_;
