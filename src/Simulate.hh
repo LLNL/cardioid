@@ -31,6 +31,10 @@ class Simulate
    int printRate_;
    int snapshotRate_;
    int parallelDiffusionReaction_;
+   int nProcs_;
+   int maxThreads_;
+   int nDiffusionThreads_; 
+   int nReactionThreads_; 
    double dt_;
    double time_;
    
