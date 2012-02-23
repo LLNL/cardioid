@@ -16,6 +16,7 @@
 #include "GridRouter.hh"
 #include "ioUtils.h"
 #include "writeCells.hh"
+#include "writeCheckpoint.hh"
 #include "PerformanceTimers.hh"
 #include "BucketOfBits.hh"
 #include "stateLoader.hh"
@@ -24,12 +25,12 @@
 using namespace std;
 
 
-static const int nDiffuse = 1;
-static int nReact =0; 
 static L2_Barrier_t reactionBarrier;
 static L2_Barrier_t diffusionBarrier;
    
-void simulationProlog(Simulate& sim, vector<double> dVmReaction, vector < double> dVmDiffusion, vector < double> dVmExternal,int myRank)
+void simulationProlog(Simulate& sim, const vector<double>& dVmReaction,
+                      const vector<double>& dVmDiffusion,
+                      const vector<double>& dVmExternal, int myRank)
 {
    // initialize membrane voltage with a default value from the reaction
    // model. 
@@ -46,13 +47,15 @@ void simulationProlog(Simulate& sim, vector<double> dVmReaction, vector < double
    // and cell model
    if (!sim.stateFilename_.empty())
    {
-      BucketOfBits stateData = loadAndDistributeState(sim.stateFilename_, sim.anatomy_);
-      assert(stateData.nRecords() == sim.anatomy_.nLocal());
-      sim.reaction_->loadState(stateData);
-      unsigned vmIndex = stateData.getIndex("Vm");
-      if (vmIndex != stateData.nFields())
-         for (unsigned ii=0; ii<stateData.nRecords(); ++ii)
-            stateData.getRecord(ii).getValue(vmIndex, sim.VmArray_[ii]);
+      BucketOfBits* stateData = 
+         loadAndDistributeState(sim.stateFilename_, sim.anatomy_);
+      assert(stateData->nRecords() == sim.anatomy_.nLocal());
+      sim.reaction_->loadState(*stateData);
+      unsigned vmIndex = stateData->getIndex("Vm");
+      if (vmIndex != stateData->nFields())
+         for (unsigned ii=0; ii<stateData->nRecords(); ++ii)
+            stateData->getRecord(ii).getValue(vmIndex, sim.VmArray_[ii]);
+      delete stateData;
    }
    if ( myRank == 0)
    {
@@ -70,18 +73,21 @@ void simulationProlog(Simulate& sim, vector<double> dVmReaction, vector < double
       sim.sensor_[ii]->print(sim.time_, sim.loop_, sim.VmArray_, dVmReaction, dVmDiffusion, dVmExternal);
    }
 }
-void loopIO(Simulate& sim, vector<double> dVmReaction, vector < double> dVmDiffusion, vector < double> dVmExternal,int myRank)
+
+void loopIO(const Simulate& sim, const vector<double>& dVmReaction,
+            const vector<double>& dVmDiffusion,
+            const vector<double>& dVmExternal, int myRank)
 {
-    
+      
    static TimerHandle loopIOHandle = profileGetHandle("LoopIO");
    profileStart(loopIOHandle);
-
+      
    for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
    {
       if (sim.loop_ % sim.sensor_[ii]->printRate() == 0)
          sim.sensor_[ii]->print(sim.time_, sim.loop_, sim.VmArray_, dVmReaction, dVmDiffusion, dVmExternal);
    }
-    
+      
    if ( (sim.loop_ % sim.printRate_ == 0) && myRank == 0)
    {
       cout << setw(8) << sim.loop_ <<" "
@@ -92,7 +98,7 @@ void loopIO(Simulate& sim, vector<double> dVmReaction, vector < double> dVmDiffu
            << setw(12) << dVmExternal[0]  << " "
            << setw(12) << sim.anatomy_.gid(0)  << endl;
    }
-    
+      
    if (sim.loop_ % sim.snapshotRate_ == 0)
    {
       stringstream name;
@@ -103,8 +109,21 @@ void loopIO(Simulate& sim, vector<double> dVmReaction, vector < double> dVmDiffu
       fullname += "/anatomy";
       writeCells(sim, fullname.c_str());
    }
+      
+   if (sim.loop_ % sim.checkpointRate_ == 0)
+   {
+      stringstream name;
+      name << "snapshot."<<setfill('0')<<setw(8)<<sim.loop_;
+      string fullname = name.str();
+      if (myRank == 0)
+         DirTestCreate(fullname.c_str());
+      fullname += "/state";
+      writeCheckpoint(sim, fullname.c_str(), MPI_COMM_WORLD);
+   }
+      
    profileStop(loopIOHandle);
 }
+
 
 void simulationLoop(Simulate& sim)
 {
@@ -216,7 +235,7 @@ void diffusionLoop(Simulate& sim, vector<double>& dVmReaction, int myRank, L2_Ba
       for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii) sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion, dVmExternal);
       for (unsigned ii=0; ii<nLocal; ++ii) dVmDiffusion[ii] += dVmExternal[ii];
       //profileStop(stimulusHandle);
-      L2_BarrierWithSync_WaitAndReset(&reactionBarrier, &reactionHandle, nReact);
+      L2_BarrierWithSync_WaitAndReset(&reactionBarrier, &reactionHandle, sim.nReactionThreads_);
       //static TimerHandle integratorHandle = profileGetHandle("Integrator");
       //profileStart(integratorHandle);
       for (unsigned ii=0; ii<nLocal; ++ii)
@@ -228,8 +247,8 @@ void diffusionLoop(Simulate& sim, vector<double>& dVmReaction, int myRank, L2_Ba
       ++sim.loop_;
       //profileStop(integratorHandle);
 
-      L2_BarrierWithSync_Arrive(&diffusionBarrier, &diffusionHandle, nDiffuse);
-      L2_BarrierWithSync_Reset(&diffusionBarrier, &diffusionHandle, nDiffuse);
+      L2_BarrierWithSync_Arrive(&diffusionBarrier, &diffusionHandle, sim.nDiffusionThreads_);
+      L2_BarrierWithSync_Reset(&diffusionBarrier, &diffusionHandle, sim.nDiffusionThreads_);
       // SENSORS
       //static TimerHandle sensorHandle = profileGetHandle("Sensors");
       //profileStart(sensorHandle);
@@ -243,6 +262,7 @@ void diffusionLoop(Simulate& sim, vector<double>& dVmReaction, int myRank, L2_Ba
       loopIO(sim, dVmReaction, dVmDiffusion, dVmExternal, myRank);
    }
 }
+
 void reactionLoop(Simulate& sim, vector<double>& dVmReaction,L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle)
 {
    int ompTid = omp_get_thread_num();
@@ -256,11 +276,10 @@ void reactionLoop(Simulate& sim, vector<double>& dVmReaction,L2_BarrierHandle_t&
       sim.reaction_->updateNonGate(sim.dt_, sim.VmArray_, dVmReaction);
       sim.reaction_->updateGate(sim.dt_, sim.VmArray_);
       // profileStop(reactionHandle);
-      L2_BarrierWithSync_Arrive(&reactionBarrier, &reactionHandle, nReact);
-      L2_BarrierWithSync_Reset(&reactionBarrier, &reactionHandle, nReact);
-      L2_BarrierWithSync_WaitAndReset(&diffusionBarrier, &diffusionHandle, nDiffuse);
+      L2_BarrierWithSync_Arrive(&reactionBarrier, &reactionHandle, sim.nReactionThreads_);
+      L2_BarrierWithSync_Reset(&reactionBarrier, &reactionHandle, sim.nReactionThreads_);
+      L2_BarrierWithSync_WaitAndReset(&diffusionBarrier, &diffusionHandle, sim.nDiffusionThreads_);
    }
-
 }
 
 void simulationLoopParallelDiffusionReaction(Simulate& sim)
@@ -275,17 +294,15 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
 #pragma omp parallel
    {
       int ompTid = omp_get_thread_num();
-
-#pragma omp master
-      nReact = omp_get_num_threads() - nDiffuse;
-
+      
+      
       L2_BarrierHandle_t reactionHandle;
       L2_BarrierHandle_t diffusionHandle;
       L2_BarrierWithSync_InitInThread(&reactionBarrier, &reactionHandle);
       L2_BarrierWithSync_InitInThread(&diffusionBarrier, &diffusionHandle);
-
+      
 #pragma omp barrier
-      if ( ompTid < nDiffuse ) diffusionLoop(sim, dVmReaction,  myRank, reactionHandle, diffusionHandle);
+      if ( ompTid < sim.nDiffusionThreads_ ) diffusionLoop(sim, dVmReaction,  myRank, reactionHandle, diffusionHandle);
       else reactionLoop(sim, dVmReaction, reactionHandle, diffusionHandle);
    }
 }

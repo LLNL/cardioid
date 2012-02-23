@@ -8,6 +8,7 @@ class NullReaction : public Reaction
  public:
    
    NullReaction(){};
+   std::string methodName() const {return "null";}
 
    void calc(double dt,
              const std::vector<double>& Vm,

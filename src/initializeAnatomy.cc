@@ -65,6 +65,11 @@ void initializeAnatomy(Anatomy& anatomy, const string& name, MPI_Comm comm)
    else
       assert(1==0);
 
+   int nGlobal;
+   int nLocal = anatomy.size();
+   MPI_Allreduce(&nGlobal, &nLocal, 1, MPI_INT, MPI_SUM, comm);
+   anatomy.nGlobal() = nGlobal;
+   
    Tuple globalGridSize(anatomy.nx(), anatomy.ny(), anatomy.nz());
    
    setConductivity(conductivityName, *data, globalGridSize, typeSet, anatomy.cellArray());
@@ -130,7 +135,7 @@ namespace
          tmp.cellType_ = cellType;
          cells.push_back(tmp);
       }
-      return new BucketOfBits(vector<string>(), vector<string>());
+      return new BucketOfBits(vector<string>(), vector<string>(), vector<string>());
    }
 }
 

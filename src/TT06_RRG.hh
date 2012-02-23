@@ -2,6 +2,8 @@
 #define TT06_RRG_HH
 
 #include <string>
+#include <vector>
+#include <map>
 
 class TT06_RRG
 {
@@ -18,16 +20,42 @@ class TT06_RRG
                   // end marker
                   nVars};
       
+   class VarInfo
+   {
+    public:
+      VarInfo()
+      : handle_(undefinedName), checkpoint_(false), unit_("1")
+      {};
+      VarInfo(VarHandle handle, bool checkpoint, std::string unit)
+      : handle_(handle), checkpoint_(checkpoint), unit_(unit)
+      {};
+      
+      VarHandle   handle_;
+      bool        checkpoint_;
+      std::string unit_; // output unit
+   };
 
+   typedef std::map<std::string, VarInfo> HandleMap; 
 
    TT06_RRG(int cellType);
    double calc(double dt, double Vm, double iStim);
    double defaultVoltage();
    static VarHandle getVarHandle(const std::string& varName);
+   static std::vector<int> getVarHandle(const std::vector<std::string>& varName);
    void setVariable(VarHandle varHandle, double value);
 
+   double getValue(VarHandle handle) const;
+   void getValue(const std::vector<int>& handle,
+                 std::vector<double>& value) const;
+
+   static void getCheckpointInfo(std::vector<std::string>& fieldNames,
+                                 std::vector<std::string>& fieldUnits);
+
+
+   
  private:
 
+   static HandleMap& getHandleMap();
    void initConsts(int cellType);
    void initStates(int cellType);
 

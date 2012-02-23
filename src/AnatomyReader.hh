@@ -11,6 +11,7 @@ struct pfile_st;
 class Anatomy;
 class BucketOfBits;
 
+/** Caller must delete returned pointer */
 BucketOfBits* readAnatomy(const std::string& filename, MPI_Comm comm,
                           Anatomy& anatomy, const std::set<int>& typeSet);
 

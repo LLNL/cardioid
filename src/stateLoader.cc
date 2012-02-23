@@ -33,6 +33,7 @@ struct RecordRequest
    Long64 gid;
    unsigned dest;
 };
+
 bool operator<(const RecordRequest& a, const RecordRequest& b)
 {
    if (a.dest == b.dest)
@@ -81,21 +82,26 @@ void testDestinations(const vector<unsigned>& recordDest,
  *  extract the gid data from the record and store it separately since
  *  the gid data is needed for other steps in the load and distribute
  *  process */
-BucketOfBits readStateData(const string& filename, MPI_Comm comm,
-                           vector<unsigned char>& records,
-                           vector<Long64>& gid,
-                           unsigned& lRec)
+BucketOfBits* readStateData(const string& filename, MPI_Comm comm,
+                            vector<unsigned char>& records,
+                            vector<Long64>& gid,
+                            unsigned& lRec)
 {
    PFILE* file = Popen(filename.c_str(), "r", comm);
    assert(file);
 
-   vector<string> fieldNames;
-   objectGet(file->headerObject, "field_names", fieldNames);
-   vector<string> fieldTypes;
-   objectGet(file->headerObject, "field_types", fieldTypes);
    string recordType;
    objectGet(file->headerObject, "datatype", recordType, "unknown");
-
+   vector<string> fieldNames;
+   vector<string> fieldTypes;
+   vector<string> fieldUnits;
+   objectGet(file->headerObject, "field_names", fieldNames);
+   objectGet(file->headerObject, "field_types", fieldTypes);
+   if (object_testforkeyword(file->headerObject, "field_units"))
+      objectGet(file->headerObject, "field_units", fieldUnits);
+   else
+      fieldUnits.assign(fieldNames.size(), "1");
+   
    { // limit scope
       // This block populates records and gid for fixed record length
       // ascii files.  It shouldn't be too hard to generalize later.  What
@@ -137,8 +143,7 @@ BucketOfBits readStateData(const string& filename, MPI_Comm comm,
    
    Pclose(file);
 
-   BucketOfBits bucket(fieldNames, fieldTypes);
-   return bucket;
+   return new BucketOfBits(fieldNames, fieldTypes, fieldUnits);
 }
 
 /** There are two sets of destinations that we need to calculate.  Each
@@ -349,7 +354,7 @@ void sendRecordsToRequests(const vector<RecordRequest>& requests,
 }
 
 
-BucketOfBits loadAndDistributeState(const std::string& filename,
+BucketOfBits* loadAndDistributeState(const std::string& filename,
                                     const Anatomy& anatomy)
 {
    MPI_Comm comm = MPI_COMM_WORLD;
@@ -358,8 +363,8 @@ BucketOfBits loadAndDistributeState(const std::string& filename,
    vector<Long64> gid;
    unsigned lRec=0;
 
-   BucketOfBits bucket = readStateData(filename, comm, // inputs
-                                       records, gid, lRec); // outputs
+   BucketOfBits* bucket = readStateData(filename, comm, // inputs
+                                        records, gid, lRec); // outputs
 
    //ddt
 //    for (unsigned ii=0; ii<gid.size(); ++ii)
@@ -416,7 +421,7 @@ BucketOfBits loadAndDistributeState(const std::string& filename,
       unsigned iRec = here->second;
 
       string tmp( (char*) &records[iRec*itemSize+sizeof(Long64)], lRec);
-      bucket.addRecord(tmp);
+      bucket->addRecord(tmp);
    }
    
 

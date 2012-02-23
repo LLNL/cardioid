@@ -19,15 +19,23 @@ namespace
 
 
 
+/** We can always count on a pio file to have field_names and
+ *  field_types, but field_units are optional.  If there are no units
+ *  then we just claim that all fields are dimensionless. */
 BucketOfBits* readPioFile(PFILE* file)
 {
    OBJECT* hObj = file->headerObject;
    vector<string> fieldNames;
    vector<string> fieldTypes;
+   vector<string> fieldUnits;
    objectGet(hObj, "field_names", fieldNames);
    objectGet(hObj, "field_types", fieldTypes);
-
-   BucketOfBits* bucketP = new BucketOfBits(fieldNames, fieldTypes);
+   if (object_testforkeyword(hObj, "field_units"))
+      objectGet(hObj, "field_units", fieldUnits);
+   else
+      fieldUnits.assign(fieldNames.size(), "1");
+   
+   BucketOfBits* bucketP = new BucketOfBits(fieldNames, fieldTypes, fieldUnits);
 
    switch (file->datatype)
    {

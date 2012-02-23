@@ -8,6 +8,7 @@ class ReactionFHN : public Reaction
 {
  public:
    ReactionFHN(const Anatomy& anatomy);
+   std::string methodName() const {return "FHN";}
    
    void calc(double dt,
              const std::vector<double>& Vm,

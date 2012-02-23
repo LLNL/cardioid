@@ -22,7 +22,9 @@ class Anatomy
    unsigned& nLocal();
    unsigned nRemote() const;
    unsigned& nRemote();
-
+   unsigned nGlobal() const;
+   unsigned& nGlobal();
+   
 //    unsigned nx();
 //    unsigned ny();
 //    unsigned nz();
@@ -56,6 +58,7 @@ class Anatomy
    double dx_, dy_, dz_;
    unsigned nLocal_;
    unsigned nRemote_;
+   unsigned nGlobal_;
    IndexToTuple i2t_;
 
    std::vector<AnatomyCell> cell_; 
@@ -67,6 +70,8 @@ inline unsigned  Anatomy::nLocal() const { return nLocal_;}
 inline unsigned& Anatomy::nLocal()       { return nLocal_;}
 inline unsigned  Anatomy::nRemote() const { return nRemote_;}
 inline unsigned& Anatomy::nRemote()       { return nRemote_;}
+inline unsigned  Anatomy::nGlobal() const { return nGlobal_;}
+inline unsigned& Anatomy::nGlobal()       { return nGlobal_;}
 
 // inline unsigned  Anatomy::nx() { return nx_;}
 // inline unsigned  Anatomy::ny() { return ny_;}

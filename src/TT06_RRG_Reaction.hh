@@ -11,6 +11,7 @@ class TT06_RRG_Reaction : public Reaction
  public:
    
    TT06_RRG_Reaction(const Anatomy& anatomy);
+   std::string methodName() const {return "TT06_RRG";}
 
    void calc(double dt,
              const std::vector<double>& Vm,
@@ -19,6 +20,14 @@ class TT06_RRG_Reaction : public Reaction
    void initializeMembraneVoltage(std::vector<double>& Vm);
 
    void loadState(const BucketOfBits& data);
+
+   void getCheckpointInfo(std::vector<std::string>& fieldNames,
+                          std::vector<std::string>& fieldUnits) const;
+   std::vector<int> getHandle(const std::vector<std::string>& varName) const;
+   void getValue(int iCell,
+                 const std::vector<int>& handle,
+                 std::vector<double>& value) const;
+   
    
  private:
 

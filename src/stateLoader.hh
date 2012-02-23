@@ -6,8 +6,9 @@
 class BucketOfBits;
 class Anatomy;
 
-BucketOfBits loadAndDistributeState(const std::string& filename,
-                                    const Anatomy& anatomy);
+/** Caller must delete returned pointer */
+BucketOfBits* loadAndDistributeState(const std::string& filename,
+                                     const Anatomy& anatomy);
 
 
 #endif

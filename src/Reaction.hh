@@ -2,6 +2,7 @@
 #define REACTION_HH
 
 #include <vector>
+#include <string>
 
 class BucketOfBits;
 
@@ -9,6 +10,7 @@ class Reaction
 {
  public:
    virtual ~Reaction(){};
+   virtual std::string methodName() const = 0;
    virtual void calc(double dt,
                      const std::vector<double>& Vm,
                      const std::vector<double>& iStim,
@@ -22,6 +24,13 @@ class Reaction
    virtual void loadState(const BucketOfBits& data);
    virtual void updateNonGate(double dt, const std::vector<double>&Vm, std::vector<double>&dVR) {};
    virtual void updateGate   (double dt, const std::vector<double>&Vm) {};
+   virtual void getCheckpointInfo(std::vector<std::string>& fieldNames,
+                                  std::vector<std::string>& fieldUnits) const;
+   virtual std::vector<int> getHandle(const std::vector<std::string>& varName) const;
+   virtual void getValue(int iCell,
+                         const std::vector<int>& handle,
+                         std::vector<double>& value) const;
+   
 };
 
 #endif

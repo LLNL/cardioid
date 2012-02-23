@@ -89,3 +89,21 @@ void TT06_RRG_Reaction::loadState(const BucketOfBits& data)
       }
    }
 }
+
+void TT06_RRG_Reaction::getCheckpointInfo(vector<string>& fieldNames,
+                                          vector<string>& fieldUnits) const
+{
+   TT06_RRG::getCheckpointInfo(fieldNames, fieldUnits);
+}
+
+vector<int> TT06_RRG_Reaction::getHandle(const vector<string>& varName) const
+{
+   return TT06_RRG::getVarHandle(varName);
+}
+
+void TT06_RRG_Reaction::getValue(int iCell,
+                                 const vector<int>& handle,
+                                 vector<double>& value) const
+{
+   cells_[iCell].getValue(handle, value);
+}

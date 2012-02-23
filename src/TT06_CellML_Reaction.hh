@@ -12,6 +12,7 @@ class TT06_CellML_Reaction : public Reaction
    enum IntegratorType {forwardEuler, rushLarsen};
    
    TT06_CellML_Reaction(const Anatomy& anatomy, IntegratorType integrator);
+   std::string methodName() const {return "TT06_CellML";}
    // copy constructor and assignment operator intentionally
    // left unimplemented.
    TT06_CellML_Reaction(const TT06_CellML_Reaction&);

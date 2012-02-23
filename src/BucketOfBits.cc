@@ -15,11 +15,18 @@ namespace
    string nextWord(const string& buf, string::size_type& pos);
 }
 
+/** All fields are expected to have a name, a type, and a unit.  If a
+ * field is dimensionless, or if there are no units provided with the
+ * data being places in the bucket, use "1" as the unit for the
+ * corresponding field. */
 BucketOfBits::BucketOfBits(const vector<string>& fieldNames,
-                           const vector<string>& fieldTypes)
-:fieldNames_(fieldNames)
+                           const vector<string>& fieldTypes,
+                           const vector<string>& fieldUnits)
+:fieldNames_(fieldNames),
+ fieldUnits_(fieldUnits)
 {
    assert(fieldNames.size() == fieldTypes.size());
+   assert(fieldNames.size() == fieldUnits.size());
 
    for (unsigned ii=0; ii<fieldTypes.size(); ++ii)
    {
@@ -93,6 +100,11 @@ unsigned BucketOfBits::getIndex(const std::string& fieldName) const
 const std::string& BucketOfBits::fieldName(unsigned index) const
 {
    return fieldNames_[index];
+}
+
+const std::string& BucketOfBits::units(unsigned index) const
+{
+   return fieldUnits_[index];
 }
 
 BucketOfBits::DataType BucketOfBits::dataType(unsigned index) const

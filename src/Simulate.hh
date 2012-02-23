@@ -30,6 +30,7 @@ class Simulate
    int maxLoop_;
    int printRate_;
    int snapshotRate_;
+   int checkpointRate_;
    int parallelDiffusionReaction_;
    int nProcs_;
    int maxThreads_;

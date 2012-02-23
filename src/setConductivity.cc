@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "object_cc.hh"
+#include "units.h"
 #include "BucketOfBits.hh"
 #include "Tuple.hh"
 #include "AnatomyCell.hh"
@@ -94,6 +95,15 @@ namespace
               indexGid != nFields &&
               indexType != nFields);
 
+      // get factor to convert input resisitivities to internal units.
+      const char* to = "resistivity_internal/length_internal";
+      double uc11 = units_convert(1.0, data.units(index11).c_str(), to);
+      double uc12 = units_convert(1.0, data.units(index12).c_str(), to);
+      double uc13 = units_convert(1.0, data.units(index13).c_str(), to);
+      double uc22 = units_convert(1.0, data.units(index22).c_str(), to);
+      double uc23 = units_convert(1.0, data.units(index23).c_str(), to);
+      double uc33 = units_convert(1.0, data.units(index33).c_str(), to);
+      
       unsigned iCell = 0;
       for (unsigned ii=0; ii<data.nRecords(); ++ii)
       {
@@ -109,6 +119,13 @@ namespace
          rr.getValue(index23, cell[iCell].sigma_.a23);
          rr.getValue(index33, cell[iCell].sigma_.a33);
 
+         cell[iCell].sigma_.a11 *= uc11;
+         cell[iCell].sigma_.a12 *= uc12;
+         cell[iCell].sigma_.a13 *= uc13;
+         cell[iCell].sigma_.a22 *= uc22;
+         cell[iCell].sigma_.a23 *= uc23;
+         cell[iCell].sigma_.a33 *= uc33;
+         
          Long64 gid;
          rr.getValue(indexGid, gid);
          assert(gid == cell[iCell].gid_);

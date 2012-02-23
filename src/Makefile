@@ -24,6 +24,7 @@ HEARTSRC=cardioid.cc \
 	 readPioFile.cc \
 	 AnatomyReader.cc object_cc.cc \
 	 Koradi.cc GridRouter.cc Grid3DStencil.cc writeCells.cc \
+	 writeCheckpoint.cc \
 	 DomainInfo.cc \
 	 initializeSimulate.cc \
 	 initializeAnatomy.cc setConductivity.cc assignCellsToTasks.cc \

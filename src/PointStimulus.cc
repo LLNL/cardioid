@@ -17,6 +17,7 @@ PointStimulus::PointStimulus(const PointStimulusParms& p, const Anatomy& anatomy
     {        
       cellLocal_ = true;
       localInd_ = jj;
+      break;
     }
   }
 }

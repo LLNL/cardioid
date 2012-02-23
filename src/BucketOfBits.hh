@@ -27,12 +27,14 @@ class BucketOfBits
    };
 
    BucketOfBits(const std::vector<std::string>& fieldNames,
-                const std::vector<std::string>& fieldTypes);
+                const std::vector<std::string>& fieldTypes,
+                const std::vector<std::string>& fieldUnits);
    
    unsigned nRecords() const;
    unsigned nFields() const;
    unsigned getIndex(const std::string& fieldName) const;
    const std::string& fieldName(unsigned index) const;
+   const std::string& units(unsigned index) const;
    DataType dataType(unsigned index) const;
    Record getRecord(unsigned index) const;
 
@@ -41,6 +43,7 @@ class BucketOfBits
  private:
    std::vector<DataType>    fieldTypes_;
    std::vector<std::string> fieldNames_;
+   std::vector<std::string> fieldUnits_;
    std::vector<std::string> records_;
 };
 
