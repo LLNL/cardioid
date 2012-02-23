@@ -180,7 +180,6 @@ ddcMD_dist:
 
 makedirs:
 	@if [ ! -d $(OBJDIR) ]; then mkdir -p $(OBJDIR) ; fi
-	@if [ ! -e .depend_$(ARCH) ]; then touch .depend_$(ARCH) ; fi
 	@if [ ! -d $(BINDIR) ]; then mkdir -p $(BINDIR) ; fi
 
 #------------------------------------------------------------------------------
