@@ -2,9 +2,11 @@
 
 #include <cassert>
 #include <cmath>
+#include <iostream>
 
 #include "object_cc.hh"
 #include "units.h"
+#include "mpiUtils.h"
 #include "BucketOfBits.hh"
 #include "Tuple.hh"
 #include "AnatomyCell.hh"
@@ -41,6 +43,9 @@ namespace
                         vector<AnatomyCell> cell);
    void uniformConductivity(OBJECT* obj,
                             vector<AnatomyCell>& cell);
+
+   void unitConsistencyError();
+   void missingFieldError();
 }
 
 
@@ -86,23 +91,27 @@ namespace
       unsigned indexGid = data.getIndex("gid");
       unsigned indexType = data.getIndex("cellType");
       
-      assert (index11 != nFields &&
-              index12 != nFields &&
-              index13 != nFields &&
-              index22 != nFields &&
-              index23 != nFields &&
-              index33 != nFields &&
-              indexGid != nFields &&
-              indexType != nFields);
+      if (index11 == nFields || index12 == nFields ||
+          index13 == nFields || index22 == nFields ||
+          index23 == nFields || index33 == nFields ||
+          indexGid == nFields || indexType == nFields)
+         missingFieldError();
 
       // get factor to convert input resisitivities to internal units.
-      char* to = "resistivity_internal/length_internal";
-      double uc11 = units_convert(1.0, (char*)data.units(index11).c_str(), to);
-      double uc12 = units_convert(1.0, (char*)data.units(index12).c_str(), to);
-      double uc13 = units_convert(1.0, (char*)data.units(index13).c_str(), to);
-      double uc22 = units_convert(1.0, (char*)data.units(index22).c_str(), to);
-      double uc23 = units_convert(1.0, (char*)data.units(index23).c_str(), to);
-      double uc33 = units_convert(1.0, (char*)data.units(index33).c_str(), to);
+      const char* to = "resistivity_internal/length_internal";
+      if ( units_check(data.units(index11).c_str(), to) == 1 ||
+           units_check(data.units(index12).c_str(), to) == 1 ||
+           units_check(data.units(index13).c_str(), to) == 1 ||
+           units_check(data.units(index22).c_str(), to) == 1 ||
+           units_check(data.units(index23).c_str(), to) == 1 ||
+           units_check(data.units(index33).c_str(), to) == 1 )
+         unitConsistencyError();
+      double uc11 = units_convert(1.0, data.units(index11).c_str(), to);
+      double uc12 = units_convert(1.0, data.units(index12).c_str(), to);
+      double uc13 = units_convert(1.0, data.units(index13).c_str(), to);
+      double uc22 = units_convert(1.0, data.units(index22).c_str(), to);
+      double uc23 = units_convert(1.0, data.units(index23).c_str(), to);
+      double uc33 = units_convert(1.0, data.units(index33).c_str(), to);
       
       unsigned iCell = 0;
       for (unsigned ii=0; ii<data.nRecords(); ++ii)
@@ -243,5 +252,36 @@ namespace
 
       for (unsigned ii=0; ii<cell.size(); ++ii)
          cell[ii].sigma_ = sigma;
+   }
+}
+
+namespace
+{
+   void unitConsistencyError()
+   {
+      int myRank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+      if (myRank == 0)
+         cout << "Fatal Error in anatomy file.\n"
+            "Anatomy files that contain conductivity tensor data must specify\n"
+            "the field_units keyword in the header.  Units for conductivity\n"
+            "must be resistivity per length." << endl;
+      abortAll(1);
+   }
+}
+
+namespace
+{
+   void missingFieldError()
+   {
+      int myRank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+      if (myRank == 0)
+         cout << "Fatal Error in anatomy file.\n"
+            "You have chosen to read conductivty tensor data from the anatomy\n"
+            "file.  However at least one component of the tensor is missing.\n"
+            "Your anatomy file must contain sigma11, sigma12, sigma13, \n"
+            "sigma22, sigma23, sigma33, gid, and cellType." << endl;
+      abortAll(1);
    }
 }

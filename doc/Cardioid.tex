@@ -700,7 +700,10 @@ If either fibre angle is specified, both must be specified.  Both angles
 must be of the same type.  If any tensor component is specified, all
 must be specified.  It is ok to specify both fibre angle and
 conductivity tensor, however only the tensor or the fibre will be used
-in any given simulation.
+in any given simulation.  If tensor fields are used the file header must
+contain the field_units keyword to specify the units for the tensor
+elements.  The tensor component values must be given in units of
+resistivity per length.
 
 The gid field contains the 3D index of the cell converted to a single
 integer by the formula $ix + nx*(iy + ny*iz)$.  (If necessary for
