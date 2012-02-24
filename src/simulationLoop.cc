@@ -117,7 +117,6 @@ void loopIO(const Simulate& sim, const vector<double>& dVmReaction,
       string fullname = name.str();
       if (myRank == 0)
          DirTestCreate(fullname.c_str());
-      fullname += "/state";
       writeCheckpoint(sim, fullname.c_str(), MPI_COMM_WORLD);
    }
       

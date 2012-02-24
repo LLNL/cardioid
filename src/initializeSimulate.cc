@@ -15,6 +15,7 @@ using namespace std;
 
 void initializeSimulate(const string& name, Simulate& sim)
 {
+   sim.name_ = name;
 
    OBJECT* obj = objectFind(name, "SIMULATE");
 
@@ -36,6 +37,9 @@ void initializeSimulate(const string& name, Simulate& sim)
    sim.nz_ = sim.anatomy_.nz();
 
    objectGet(obj, "stateFile", sim.stateFilename_, "");
+   if (!sim.stateFilename_.empty())
+      if (sim.stateFilename_[sim.stateFilename_.size()-1] != '#')
+          sim.stateFilename_ += "#";
    objectGet(obj, "decomposition", nameTmp, "decomposition");
    assignCellsToTasks(sim, nameTmp, MPI_COMM_WORLD);
    
