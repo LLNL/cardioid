@@ -5,9 +5,29 @@
 #include <fstream>
 #include <vector>
 #include <map>
-#if USE_MPI
+#if WITH_MPI
 #include <mpi.h>
 #endif
+
+using std::cout;
+using std::endl;
+using std::string;
+
+MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
+
+int main(int argc, char** argv)
+{
+
+  cout << "Hello world." << endl;
+  return 0;
+}
+
+
+//ewd:  testLoadBalancer is now obsolete -- I've replaced it with a Hello world test code to use
+// as a model for adding independent test codes to the make system.  If we need it, I can go through and
+// update the objects with the appropriate interfaces.
+
+/*
 #include "Control.h"
 #include "Heart.h"
 #include "TT04Model.h"
@@ -177,3 +197,6 @@ int main(int argc, char** argv)
 
   return 0;
 }
+
+*/
+                                                                                                                

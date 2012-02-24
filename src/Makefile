@@ -15,7 +15,7 @@ SVNVERSION := $(shell svnversion ./ )
 
 BINDIR = ../bin
 
-HEARTSRC=cardioid.cc \
+HEARTSRC= \
 	 Vector.cc SymmetricTensor.cc \
 	 PerformanceTimers.cc unionOfStrings.cc \
          GDLoadBalancer.cc CommTable.cc \
@@ -156,7 +156,7 @@ $(OBJDIR)/%.o: %.cc
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(BINDIR)/$(EXENAME): $(HEARTOBJS) Version.cc
+$(BINDIR)/$(EXENAME): $(HEARTOBJS) $(BINDIR)/cardioid.o Version.cc
 	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(LDFLAGS) \
 	-DSVNVERSION="$(SVNVERSION)" \
 	-DCXXFLAGS="$(CXXFLAGS)" \
@@ -166,9 +166,15 @@ $(BINDIR)/$(EXENAME): $(HEARTOBJS) Version.cc
 	-DTARGET=$(EXENAME) \
 	-DARCH=$(ARCH) 
 
+testLoadBalancer:
+	@$(MAKE) --no-print-directory makedirs testLoadBalancer-target \
+	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH) \
+	CFLAGS="$(CFLAGS_OPT)" CXXFLAGS="$(CXXFLAGS_OPT)" \
+	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=testLoadBalancer-$(ARCH)
 
-testLoadBalancer: makedirs $(HEARTOBJS) $(OBJDIR)/testLoadBalancer.o
-	$(LD) $(DFLAGS) -o testLoadBalancer $(OBJDIR)/testLoadBalancer.o $(HEARTOBJS) $(LDFLAGS)
+testLoadBalancer-target: $(HEARTOBJS) $(OBJDIR)/testLoadBalancer.o
+	$(LD) $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(OBJDIR)/testLoadBalancer.o $(HEARTOBJS) $(LDFLAGS)
+
 
 testGridRouter: makedirs $(HEARTOBJS) $(OBJDIR)/testGridRouter.o
 	$(LD) $(DFLAGS) -o testGridRouter $(OBJDIR)/testGridRouter.o $(HEARTOBJS) $(LDFLAGS)
@@ -200,7 +206,7 @@ clean :
 	rm -rf $(BINDIR)/$(EXENAME)-$(ARCH)*.*
 	rm -f $(BINDIR)/$(EXENAME)-$(ARCH)*
 	rm -f .depend_$(ARCH)*
-	rm -f testLoadBalancer
+	rm -f $(BINDIR)/testLoadBalancer-$(ARCH)
 	rm -f testGridRouter
 
 distclean: clean

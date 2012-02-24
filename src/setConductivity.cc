@@ -96,13 +96,13 @@ namespace
               indexType != nFields);
 
       // get factor to convert input resisitivities to internal units.
-      const char* to = "resistivity_internal/length_internal";
-      double uc11 = units_convert(1.0, data.units(index11).c_str(), to);
-      double uc12 = units_convert(1.0, data.units(index12).c_str(), to);
-      double uc13 = units_convert(1.0, data.units(index13).c_str(), to);
-      double uc22 = units_convert(1.0, data.units(index22).c_str(), to);
-      double uc23 = units_convert(1.0, data.units(index23).c_str(), to);
-      double uc33 = units_convert(1.0, data.units(index33).c_str(), to);
+      char* to = "resistivity_internal/length_internal";
+      double uc11 = units_convert(1.0, (char*)data.units(index11).c_str(), to);
+      double uc12 = units_convert(1.0, (char*)data.units(index12).c_str(), to);
+      double uc13 = units_convert(1.0, (char*)data.units(index13).c_str(), to);
+      double uc22 = units_convert(1.0, (char*)data.units(index22).c_str(), to);
+      double uc23 = units_convert(1.0, (char*)data.units(index23).c_str(), to);
+      double uc33 = units_convert(1.0, (char*)data.units(index33).c_str(), to);
       
       unsigned iCell = 0;
       for (unsigned ii=0; ii<data.nRecords(); ++ii)
