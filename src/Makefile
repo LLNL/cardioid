@@ -15,7 +15,7 @@ SVNVERSION := $(shell svnversion ./ )
 
 BINDIR = ../bin
 
-HEARTSRC= \
+HEARTSRC= cardioid.cc \
 	 Vector.cc SymmetricTensor.cc \
 	 PerformanceTimers.cc unionOfStrings.cc \
          GDLoadBalancer.cc CommTable.cc \
@@ -156,7 +156,7 @@ $(OBJDIR)/%.o: %.cc
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(BINDIR)/$(EXENAME): $(HEARTOBJS) $(BINDIR)/cardioid.o Version.cc
+$(BINDIR)/$(EXENAME): $(HEARTOBJS) Version.cc
 	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(LDFLAGS) \
 	-DSVNVERSION="$(SVNVERSION)" \
 	-DCXXFLAGS="$(CXXFLAGS)" \
