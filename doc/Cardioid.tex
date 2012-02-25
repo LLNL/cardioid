@@ -177,17 +177,24 @@ Substituting our base units we obtain
 \frac{ug*mm^2}{mA*ms^3} = \frac{10^{-15}}{10^{-12}}\frac{kg*m^2}{A*sec^3} =
 10^{-3}volts
 \]
-Hence the unit for voltage is millivolts.  The default units for typical quantities
-of interest include
+Hence the unit for voltage is millivolts.  The default units for typical
+quantities of interest include
 \begin{description}
 \item[voltage] millivolt
 \item[capacitance] millifarad
 \item[conductivity] siemen
 \item[charge] microcoulomb
+\item[concentration] megamolar
 \end{description}
 Internally all quanties are represented in this unit system.  When no
 unit is specified, all quantities in the input deck are assumed to be in
-these units.
+these units.  \issue{Megamolar isn't a very nice unit.  Do we want to
+  make our amount base unit micomol so that concentrations will be molar?
+  How about nanomol so we get mM?}
+
+The usual unit rules do not apply to code in the cell models.  Code in
+the cell models may come from other sources (such as CellML) that use
+different unit conventions.  Use caution.
 
 \subsubsection{Supported Units}
 
@@ -321,12 +328,14 @@ the DIFFUSION object.  Input of Conductivity tensors and floating point
 fibre angles are not supported prior to r261.
 
 There are several ways to specify the conductivity tensors for each cell
-in the anatomy.  The most direct method is to include the conductity
-tensor in the anatomy file.  (Section~/ref{AnatomyFormat} contains a
-description of the anatomy file contents.)  When the tensor is present
-in the anatomy file no other conductity specification is necessary.  If
-any other specification is present it may override the tensor values in
-the anatomy file.
+in the anatomy.  The most direct method is to include the conductivity
+tensor in the anatomy file.  Note that the units of the tensor elements
+must be specified in the header and must have the dimensionality of
+resistivity/length.  (Section~/ref{AnatomyFormat} contains a description
+of the anatomy file contents.)  When the tensor is present in the
+anatomy file no other conductity specification is necessary.  If any
+other specification is present it may override the tensor values in the
+anatomy file.
 
 If no tensor data is present in the file, a CONDUCTIVITY object that
 specifies a method such as ``uniform'' or ``fibre'' must be present in
@@ -494,6 +503,8 @@ protocols.
 
 \begin{keywords}
   \kw{anatomy}{The name of the ANATOMY object for this simulation}{anatomy}
+  \kw{checkpointRate}{The rate (in time steps) at which
+    checkpoint/restart files are created}{10000 time steps}
   \kw{decomposition}{The name of the DECOMPOSITION object for this
     simulation.}
   {decomposition}
