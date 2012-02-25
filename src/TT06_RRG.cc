@@ -132,6 +132,13 @@ void TT06_RRG::getValue(const vector<int>& handle,
 }
 
 
+const string& TT06_RRG::getUnit(const string& varName)
+{
+   return getHandleMap()[varName].unit_;
+}
+
+   
+
 void TT06_RRG::getCheckpointInfo(vector<string>& name,
                                  vector<string>& unit)
 {

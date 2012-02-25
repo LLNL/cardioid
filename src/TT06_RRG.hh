@@ -48,6 +48,8 @@ class TT06_RRG
    void getValue(const std::vector<int>& handle,
                  std::vector<double>& value) const;
 
+   static const std::string& getUnit(const std::string& varName);
+
    static void getCheckpointInfo(std::vector<std::string>& fieldNames,
                                  std::vector<std::string>& fieldUnits);
 

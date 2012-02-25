@@ -5,6 +5,7 @@
 #include "Anatomy.hh"
 #include "TT06_RRG.hh"
 #include "BucketOfBits.hh"
+#include "units.h"
 
 using namespace std;
 
@@ -53,6 +54,7 @@ void TT06_RRG_Reaction::loadState(const BucketOfBits& data)
 {
    assert(cells_.size() == data.nRecords());
 
+   vector<double> unitConvert(data.nFields(), 1.0);
    typedef map<int, TT06_RRG::VarHandle> FieldMap;
    FieldMap fieldMap;
 
@@ -60,7 +62,12 @@ void TT06_RRG_Reaction::loadState(const BucketOfBits& data)
    {
       TT06_RRG::VarHandle handle = TT06_RRG::getVarHandle(data.fieldName(ii));
       if (handle != TT06_RRG::undefinedName)
+      {
          fieldMap[ii] = handle;
+         string from = data.units(ii);
+         string to = TT06_RRG::getUnit(data.fieldName(ii));
+         unitConvert[ii] = units_convert(1.0, from.c_str(), to.c_str());
+      }
    }
    
    for (unsigned ii=0; ii<cells_.size(); ++ii)
@@ -85,6 +92,7 @@ void TT06_RRG_Reaction::loadState(const BucketOfBits& data)
            default:
             assert(false);
          }
+         value *= unitConvert[iField];
          cells_[ii].setVariable(handle, value);
       }
    }
