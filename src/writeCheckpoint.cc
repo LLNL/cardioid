@@ -67,7 +67,7 @@ namespace
       const Version& vv = Version::getInstance();
       
       Pprintf(file, "state FILEHEADER {\n");
-      Pprintf(file, "   create_time = %s;\n", timestamp_string);
+      Pprintf(file, "   create_time = %s;\n",  timestamp_string());
       Pprintf(file, "   user = %s;",           vv.user().c_str());
       Pprintf(file, "   host = %s;\n",         vv.host().c_str());
       Pprintf(file, "   exe_version = %s;",    vv.version().c_str());
@@ -160,7 +160,7 @@ void writeCheckpoint(const Simulate& sim, const string& dirName, MPI_Comm comm)
    headerData.nFields_ = 2+ fieldNames.size();
    headerData.fieldNames_ = "gid Vm " + concat(fieldNames);
    headerData.fieldTypes_ = "u f " + concat(vector<string>(fieldNames.size(), "f"));
-   headerData.fieldUnits_ = "1 mV/ms " + concat(fieldUnits);
+   headerData.fieldUnits_ = "1 mV " + concat(fieldUnits);
    headerData.nx_ = anatomy.nx();
    headerData.ny_ = anatomy.ny();
    headerData.nz_ = anatomy.nz();
