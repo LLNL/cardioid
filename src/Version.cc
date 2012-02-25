@@ -1,6 +1,7 @@
 #include "Version.hh"
 #include <iostream>
 #include <unistd.h>
+#include <pwd.h>
 
 #define xstr(x) str(x)
 #define str(x) #x
@@ -22,7 +23,7 @@ Version::Version()
    char tmp[256];
    gethostname(tmp, 256);
    host_        = tmp;
-   user_        = getlogin();
+   user_        = getpwuid(getuid())->pw_name;
 }
 
 const Version& Version::getInstance()
