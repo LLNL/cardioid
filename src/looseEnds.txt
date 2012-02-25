@@ -114,3 +114,6 @@ destroyed.  (_offsets)
 36.  SPI causes problems with the former design that the remote data was
 appended to the local data and appeared to be a single array.  This is
 especially acute for the membrane voltage.
+
+37.  sigmaLi and sigmaTi are probably crappy choices for keywords since
+they likely evoke bi-domain concepts.

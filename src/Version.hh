@@ -23,6 +23,8 @@ class Version
    std::string ldFlags_;
    std::string buildTarget_;
    std::string buildArch_;
+   std::string host_;
+   std::string user_;
 };
 
 #endif

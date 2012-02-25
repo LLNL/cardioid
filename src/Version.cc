@@ -1,5 +1,6 @@
 #include "Version.hh"
 #include <iostream>
+#include <unistd.h>
 
 #define xstr(x) str(x)
 #define str(x) #x
@@ -17,6 +18,11 @@ Version::Version()
    ldFlags_     = xstr(LDFLAGS);
    buildTarget_ = xstr(TARGET);
    buildArch_   = xstr(ARCH);
+
+   char tmp[256];
+   gethostname(tmp, 256);
+   host_        = tmp;
+   user_        = getlogin();
 }
 
 const Version& Version::getInstance()
@@ -31,6 +37,8 @@ ostream& Version::versionPrint(ostream& out) const
 {
    out << "Version info:\n"
        << "-------------\n"
+       << "  hostname      " << host_ << "\n"
+       << "  user          " << user_ << "\n"
        << "  svn revision: " << svnVersion_ << "\n"
        << "  compile time: " << compileDate_ << " " << compileTime_ << "\n"
        << "  source path:  " << srcPath_ << "\n"
