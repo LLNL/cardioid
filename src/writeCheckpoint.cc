@@ -9,6 +9,8 @@
 #include "Reaction.hh"
 #include "Long64.hh"
 #include "units.h"
+#include "Version.hh"
+#include "utilities.h"
 
 using namespace std;
 
@@ -62,8 +64,15 @@ namespace
       memcpy(&endianKey, "1234", 4);
       int nFiles = file->ngroup;
       
+      const Version& vv = Version::getInstance();
       
       Pprintf(file, "state FILEHEADER {\n");
+      Pprintf(file, "   create_time = %s;\n", timestamp_string);
+      Pprintf(file, "   user = %s;",           vv.user().c_str());
+      Pprintf(file, "   host = %s;\n",         vv.host().c_str());
+      Pprintf(file, "   exe_version = %s;",    vv.version().c_str());
+      Pprintf(file, "   srcpath = %s;\n",      vv.srcPath().c_str());
+      Pprintf(file, "   compile_time = %s;\n", vv.compileTime().c_str());
       Pprintf(file, "   datatype = %s;\n", dataType.c_str());
       Pprintf(file, "   nfiles = %d;\n", nFiles);
       Pprintf(file, "   nrecord = %d;\n", headerData.nRecord_);

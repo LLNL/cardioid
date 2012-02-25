@@ -10,6 +10,11 @@ class Version
    static const Version& getInstance();
 
    std::ostream& versionPrint(std::ostream& out) const;
+   std::string version() const {return buildTarget_ + " r" + svnVersion_;}
+   std::string compileTime() const {return compileDate_ + " " + compileTime_;}
+   const std::string& srcPath() const {return srcPath_;}
+   const std::string& host()    const {return host_;}
+   const std::string& user()    const {return user_;}
    
  private:
    Version();
