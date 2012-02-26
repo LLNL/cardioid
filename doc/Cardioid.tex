@@ -121,9 +121,10 @@ Cardioid does not recognize any command line arguments
 
 \section{Input Files}
 
-The input parameters for a Cardioid job are read from the file
-\path{object.data}.  This file consists of a number of ``object'' blocks
-that can be used to control all aspects of the job.
+The input parameters for a Cardioid job are read from the files
+\path{object.data} and, if it is present, \path{restart}.  These two
+files consists of a number of ``object'' blocks that can be used to
+control all aspects of the job.
 
 An object block is of the form
 \begin{verbatim}
@@ -145,10 +146,54 @@ single object the last value overrides all others.  By convention,
 object names are mixed case, class names are all caps.
 
 
-The primary or root object in the object.data file is the SIMULATE
-object and the job is configured according to its settings.  A complete
-list of the supported object classes and their keywords is given in the
-appendix.
+The primary or root object in the \path{object.data} file is the
+SIMULATE object and the job is configured according to its settings.  A
+complete list of the supported object classes and their keywords is
+given in the appendix.
+
+The \path{restart} file is typically present only when restarting jobs
+from a checkpoint file.  The \path{restart} file is generated
+automatically along with a checkpoint file and is always read after the
+\path{object.data} file.  This order is important because is allows the
+\path{restart} file to override certain settings that change over the
+course of the simulation such as the time and loop count.  It also
+contains the location of the checkpoint file.  One way to think of the
+relationship between \path{object.data} and \path{restart} is that
+\path{object.data} contains parameters that do not change as the
+simulation progreses while \path{restart} contains those that do.
+
+\subsection{Conventions for Input Files}
+
+When Cardioid writes files with large amounts of data (such as
+checkpoint or visualization files) it uses the pio system described in
+section~\ref{sec:pio}.  Pio files are always written in snapshot
+directories.  A snapshot directory is named \path{snapshot.xxxxxxxx}
+where \path{xxxxxxxx} is the value of the simulation loop counter when
+the directory was created.  The \path{restart} file that corresponds to
+a checkpoint file written in the corresponding snapshot directory and a
+symbolic link to the restart file is created in the run directory.  Each
+time a new checkpoint file is written the link is updated to point at
+the most recent restart file.  You can easily change which checkpoint
+file you want to use for restart by pointing the symbolic link at the 
+\path{restart} file in the corresponding snapshot directory.
+
+Here are some suggested best practices that will help organize files.
+\begin{enumerate}
+\item  Place all pio style files (anatomy, state, etc) in a snapshot
+  directory.  This applies even to files that are created by tools other
+  than Cardioid.  Frequently we use the directory
+  \path{snapshot.initial} to hold the files that are used to initialize
+  the simulation.  Do not use \path{snapshot.00000000} for this purpose
+  as Cardioid may overwrite files in any numbered snapshot directory.
+\item Never place an actual file named \path{restart} in the run
+  directory.  Use only symbolic links (created with the command ln -s)
+  that point actual files someplace else (such as in a snapshot
+  directory).  Cardioid deletes the old \path{restart} file in the run
+  directory each time it creates a new checkpoint file.  Using symbolic
+  links assures that no actual data will be deleted, only pointers to
+  the data.
+\end{enumerate}
+
 
 \section{Units}
 
@@ -504,7 +549,7 @@ protocols.
 \begin{keywords}
   \kw{anatomy}{The name of the ANATOMY object for this simulation}{anatomy}
   \kw{checkpointRate}{The rate (in time steps) at which
-    checkpoint/restart files are created}{10000 time steps}
+    checkpoint/restart files are created}{-1 (no checkpointing)<}
   \kw{decomposition}{The name of the DECOMPOSITION object for this
     simulation.}
   {decomposition}
@@ -633,16 +678,16 @@ by a local index and an MPI rank.
 \end{keywords}
 
 
+\section{Pio Files}
+\label{sec:pio}
 
-\section{Anatomy File Format}
-\label{sec:AnatomyFormat}
-
-Anatom files are written using a parallel I/O system known as ``pio.''
-The pio system is designed to provide extremely high I/O performance on
-a variety of machines.  Because file-per-task and file-per-job
-approaches to parallel I/O both have serious problems at large scale we
-take a middle road and divide the data into $n$ physical files where $n$
-is typically in the range of 1--2000.  For very large scale jobs and
+Cardioid reads and writes large files such as anatomy, visualization, or
+state files using a parallel I/O system known as ``pio.''  The pio
+system is designed to provide extremely high I/O performance on a
+variety of machines.  Because file-per-task and file-per-job approaches
+to parallel I/O both have serious problems at large scale we take a
+middle road and divide the data into $n$ physical files where $n$ is
+typically in the range of 1--2000.  For very large scale jobs and
 highest throughput $n$ can be tuned according to the number of I/O nodes
 on the system or some other hardware parameter that limits performance
 such as the number of storage targets.
@@ -669,9 +714,9 @@ or scalar valued.  Units are supported.  The set of keywords is open and
 arbitrary.  You can put whatever data you want in the header to help
 identify the file.  The maximum header length is something like 4k but
 that could be easily extended if it became a limitation.  The header
-ends with two newline characters in a row.
+ends with two newline characters in a row.  
 
-An example header for an ascii anatomy file looks like this:
+An example header for an ascii pio file looks like this:
 \begin{verbatim}
 anatomy FILEHEADER{
   datatype = FIXRECORDASCII;
@@ -684,6 +729,37 @@ anatomy FILEHEADER{
   lrec=12;
 }
 \end{verbatim}
+
+Most of the  keywords in the header represent metadata that describe the
+structure of the files and the data they contain.  This metadata is used
+by both the pio system to read the files correctly and by various other
+routines to understand how to load data into memory.
+
+\issue{There should be a keyword table here that lists the pio keywords.}
+
+
+
+\section{Anatomy File Format}
+\label{sec:AnatomyFormat}
+
+All I/O of anatomy files is handled by the pio system described in
+Section~\ref{sec:pio}.  
+An example header for an ascii anatomy file looks like this:
+\issue{This could be a more realistic example such as for a file with
+  conductivities.  It would contain units etc.}
+\begin{verbatim}
+  anatomy FILEHEADER{
+  datatype = FIXRECORDASCII;
+  nfiles = 1;
+  nfields = 4;
+  field_names = gid cellType theta phi;
+  field_types = u u f f;
+  nx = 3; ny = 3; nz = 3;
+  nrecord = 27;
+  lrec=12;
+}
+\end{verbatim}
+
 The meaning of most of the keywords should be fairly self-evident.
 \issue{However, this documentation should describe them and specify
   which keywords are manditory.}  Most are needed by pio to determine
@@ -712,7 +788,7 @@ must be of the same type.  If any tensor component is specified, all
 must be specified.  It is ok to specify both fibre angle and
 conductivity tensor, however only the tensor or the fibre will be used
 in any given simulation.  If tensor fields are used the file header must
-contain the field_units keyword to specify the units for the tensor
+contain the field\_units keyword to specify the units for the tensor
 elements.  The tensor component values must be given in units of
 resistivity per length.
 
