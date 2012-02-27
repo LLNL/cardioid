@@ -50,63 +50,30 @@ void TT06_RRG_Reaction::initializeMembraneVoltage(std::vector<double>& Vm)
       Vm[ii] = cells_[ii].defaultVoltage();
 }
 
-void TT06_RRG_Reaction::loadState(const BucketOfBits& data)
-{
-   assert(cells_.size() == data.nRecords());
-
-   vector<double> unitConvert(data.nFields(), 1.0);
-   typedef map<int, TT06_RRG::VarHandle> FieldMap;
-   FieldMap fieldMap;
-
-   for (unsigned ii=0; ii<data.nFields(); ++ii)
-   {
-      TT06_RRG::VarHandle handle = TT06_RRG::getVarHandle(data.fieldName(ii));
-      if (handle != TT06_RRG::undefinedName)
-      {
-         fieldMap[ii] = handle;
-         string from = data.units(ii);
-         string to = TT06_RRG::getUnit(data.fieldName(ii));
-         unitConvert[ii] = units_convert(1.0, from.c_str(), to.c_str());
-      }
-   }
-   
-   for (unsigned ii=0; ii<cells_.size(); ++ii)
-   {
-      BucketOfBits::Record iRec = data.getRecord(ii);
-      for (FieldMap::const_iterator iter=fieldMap.begin();
-           iter!=fieldMap.end(); ++iter)
-      {
-         int iField = iter->first;
-         TT06_RRG::VarHandle handle = iter->second;
-         double value;
-         switch (data.dataType(iField))
-         {
-           case BucketOfBits::floatType:
-            iRec.getValue(iField, value);
-            break;
-           case BucketOfBits::intType:
-            int tmp;
-            iRec.getValue(iField, tmp);
-            value = double(tmp);
-            break;
-           default:
-            assert(false);
-         }
-         value *= unitConvert[iField];
-         cells_[ii].setVariable(handle, value);
-      }
-   }
-}
-
 void TT06_RRG_Reaction::getCheckpointInfo(vector<string>& fieldNames,
                                           vector<string>& fieldUnits) const
 {
    TT06_RRG::getCheckpointInfo(fieldNames, fieldUnits);
 }
 
-vector<int> TT06_RRG_Reaction::getHandle(const vector<string>& varName) const
+int TT06_RRG_Reaction::getVarHandle(const string& varName) const
 {
    return TT06_RRG::getVarHandle(varName);
+}
+
+vector<int> TT06_RRG_Reaction::getVarHandle(const vector<string>& varName) const
+{
+   return TT06_RRG::getVarHandle(varName);
+}
+
+void TT06_RRG_Reaction::setValue(int iCell, int varHandle, double value)
+{
+   cells_[iCell].setValue(varHandle, value);
+}
+
+double TT06_RRG_Reaction::getValue(int iCell, int varHandle) const
+{
+   return cells_[iCell].getValue(varHandle);
 }
 
 void TT06_RRG_Reaction::getValue(int iCell,
@@ -115,3 +82,9 @@ void TT06_RRG_Reaction::getValue(int iCell,
 {
    cells_[iCell].getValue(handle, value);
 }
+
+const string& TT06_RRG_Reaction::getUnit(const string& varName) const
+{
+   TT06_RRG::getUnit(varName);
+}
+

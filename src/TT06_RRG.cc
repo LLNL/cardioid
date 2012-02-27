@@ -26,10 +26,25 @@ double TT06_RRG::defaultVoltage()
    return defaultVoltage_;
 }
 
+void TT06_RRG::getCheckpointInfo(vector<string>& name,
+                                 vector<string>& unit)
+{
+   const HandleMap& handleMap = getHandleMap();
+   for (HandleMap::const_iterator
+           iter=handleMap.begin(); iter!=handleMap.end(); ++iter)
+   {
+      if (iter->second.checkpoint_)
+      {
+         name.push_back(iter->first);
+         unit.push_back(iter->second.unit_);
+      }
+   }
+}
+
 /** This function maps the string representation of a variable name to
  * the handle representation.  Returns the value undefinedName for
  * unrecognized varName. */
-TT06_RRG::VarHandle TT06_RRG::getVarHandle(const string& varName)
+int TT06_RRG::getVarHandle(const string& varName)
 {
    return getHandleMap()[varName].handle_;
 }
@@ -43,9 +58,7 @@ vector<int> TT06_RRG::getVarHandle(const vector<string>& varName)
    return handle;
 }
 
-
-
-void TT06_RRG::setVariable(VarHandle varHandle, double value)
+void TT06_RRG::setValue(int varHandle, double value)
 {
 //ddt   cout << "Setting var "<< varHandle << "=" << value<<endl;
    
@@ -63,29 +76,29 @@ void TT06_RRG::setVariable(VarHandle varHandle, double value)
      case K_i:        states_[1] = value;      break;
      case Na_i:       states_[2] = value;      break;
      case Ca_i:       states_[3] = value;      break;
-     case Xr1:        states_[4] = value;      break;
-     case Xr2:        states_[5] = value;      break;
-     case Xs:         states_[6] = value;      break;
-     case m:          states_[7] = value;      break;
-     case h:          states_[8] = value;      break;
-     case j:          states_[9] = value;      break;
+     case Xr1_gate:   states_[4] = value;      break;
+     case Xr2_gate:   states_[5] = value;      break;
+     case Xs_gate:    states_[6] = value;      break;
+     case m_gate:     states_[7] = value;      break;
+     case h_gate:     states_[8] = value;      break;
+     case j_gate:     states_[9] = value;      break;
      case Ca_ss:      states_[10] = value;     break;
-     case d:          states_[11] = value;     break;
-     case f:          states_[12] = value;     break;
-     case f2:         states_[13] = value;     break;
-     case fCass:      states_[14] = value;     break;
-     case s:          states_[15] = value;     break;
-     case r:          states_[16] = value;     break;
+     case d_gate:     states_[11] = value;     break;
+     case f_gate:     states_[12] = value;     break;
+     case f2_gate:    states_[13] = value;     break;
+     case fCass_gate: states_[14] = value;     break;
+     case s_gate:     states_[15] = value;     break;
+     case r_gate:     states_[16] = value;     break;
      case Ca_SR:      states_[17] = value;     break;
      case R_prime:    states_[18] = value;     break;
-     case NaL_i:      states_[19] = value;     break;
+     case jL_gate:    states_[19] = value;     break;
      case nVars:
       assert(false);
       break;
    }
 }
 
-double TT06_RRG::getValue(VarHandle handle) const
+double TT06_RRG::getValue(int handle) const
 {
    switch (handle)
    {
@@ -101,28 +114,27 @@ double TT06_RRG::getValue(VarHandle handle) const
      case K_i:        return states_[1];      break;
      case Na_i:       return states_[2];      break;
      case Ca_i:       return states_[3];      break;
-     case Xr1:        return states_[4];      break;
-     case Xr2:        return states_[5];      break;
-     case Xs:         return states_[6];      break;
-     case m:          return states_[7];      break;
-     case h:          return states_[8];      break;
-     case j:          return states_[9];      break;
+     case Xr1_gate:   return states_[4];      break;
+     case Xr2_gate:   return states_[5];      break;
+     case Xs_gate:    return states_[6];      break;
+     case m_gate:     return states_[7];      break;
+     case h_gate:     return states_[8];      break;
+     case j_gate:     return states_[9];      break;
      case Ca_ss:      return states_[10];     break;
-     case d:          return states_[11];     break;
-     case f:          return states_[12];     break;
-     case f2:         return states_[13];     break;
-     case fCass:      return states_[14];     break;
-     case s:          return states_[15];     break;
-     case r:          return states_[16];     break;
+     case d_gate:     return states_[11];     break;
+     case f_gate:     return states_[12];     break;
+     case f2_gate:    return states_[13];     break;
+     case fCass_gate: return states_[14];     break;
+     case s_gate:     return states_[15];     break;
+     case r_gate:     return states_[16];     break;
      case Ca_SR:      return states_[17];     break;
      case R_prime:    return states_[18];     break;
-     case NaL_i:      return states_[19];     break;
+     case jL_gate:    return states_[19];     break;
      case nVars:
       assert(false);
       break;
    }
 }
-
 
 void TT06_RRG::getValue(const vector<int>& handle,
                         vector<double>& value) const
@@ -137,22 +149,6 @@ const string& TT06_RRG::getUnit(const string& varName)
    return getHandleMap()[varName].unit_;
 }
 
-   
-
-void TT06_RRG::getCheckpointInfo(vector<string>& name,
-                                 vector<string>& unit)
-{
-   const HandleMap& handleMap = getHandleMap();
-   for (HandleMap::const_iterator
-           iter=handleMap.begin(); iter!=handleMap.end(); ++iter)
-   {
-      if (iter->second.checkpoint_)
-      {
-         name.push_back(iter->first);
-         unit.push_back(iter->second.unit_);
-      }
-   }
-}
 
 /** Remember that down in the cell models the units don't necessarily
  *  correspond to the internal units of Cardioid.  The units in this map
@@ -162,31 +158,31 @@ TT06_RRG::HandleMap& TT06_RRG::getHandleMap()
    static HandleMap handleMap;
    if (handleMap.size() == 0)
    {
-      handleMap["s_switch"] = VarInfo(s_switch, true,  "1");
-      handleMap["g_Ks"]     = VarInfo(g_Ks,     true,  "nS/pF");
-      handleMap["g_to"]     = VarInfo(g_to,     true,  "nS/pF");
-      handleMap["P_NaK"]    = VarInfo(P_NaK,    true,  "pA/pF");
-      handleMap["g_NaL"]    = VarInfo(g_NaL,    true,  "pS/pF");
-      handleMap["Vm"]       = VarInfo(Vm,       false, "mV");
-      handleMap["K_i"]      = VarInfo(K_i,      true,  "mM");
-      handleMap["Na_i"]     = VarInfo(Na_i,     true,  "mM");
-      handleMap["Ca_i"]     = VarInfo(Ca_i,     true,  "mM");
-      handleMap["Xr1"]      = VarInfo(Xr1,      true,  "1");
-      handleMap["Xr2"]      = VarInfo(Xr2,      true,  "1");
-      handleMap["Xs"]       = VarInfo(Xs,       true,  "1");
-      handleMap["m"]        = VarInfo(m,        true,  "1");
-      handleMap["h"]        = VarInfo(h,        true,  "1");
-      handleMap["j"]        = VarInfo(j,        true,  "1");
-      handleMap["Ca_ss"]    = VarInfo(Ca_ss,    true,  "mM");
-      handleMap["d"]        = VarInfo(d,        true,  "1");
-      handleMap["f"]        = VarInfo(f,        true,  "1");
-      handleMap["f2"]       = VarInfo(f2,       true,  "1");
-      handleMap["fCass"]    = VarInfo(fCass,    true,  "1");
-      handleMap["s"]        = VarInfo(s,        true,  "1");
-      handleMap["r"]        = VarInfo(r,        true,  "1");
-      handleMap["Ca_SR"]    = VarInfo(Ca_SR,    true,  "mM");
-      handleMap["R_prime"]  = VarInfo(R_prime,  true,  "1");
-      handleMap["NaL_i"]    = VarInfo(NaL_i,    true,  "mM");
+      handleMap["s_switch"]   = VarInfo(s_switch,   true,  "1");
+      handleMap["g_Ks"]       = VarInfo(g_Ks,       true,  "nS/pF");
+      handleMap["g_to"]       = VarInfo(g_to,       true,  "nS/pF");
+      handleMap["P_NaK"]      = VarInfo(P_NaK,      true,  "pA/pF");
+      handleMap["g_NaL"]      = VarInfo(g_NaL,      true,  "pS/pF");
+      handleMap["Vm"]         = VarInfo(Vm,         false, "mV");
+      handleMap["K_i"]        = VarInfo(K_i,        true,  "mM");
+      handleMap["Na_i"]       = VarInfo(Na_i,       true,  "mM");
+      handleMap["Ca_i"]       = VarInfo(Ca_i,       true,  "mM");
+      handleMap["Xr1_gate"]   = VarInfo(Xr1_gate,   true,  "1");
+      handleMap["Xr2_gate"]   = VarInfo(Xr2_gate,   true,  "1");
+      handleMap["Xs_gate"]    = VarInfo(Xs_gate,    true,  "1");
+      handleMap["m_gate"]     = VarInfo(m_gate,     true,  "1");
+      handleMap["h_gate"]     = VarInfo(h_gate,     true,  "1");
+      handleMap["j_gate"]     = VarInfo(j_gate,     true,  "1");
+      handleMap["Ca_ss"]      = VarInfo(Ca_ss,      true,  "mM");
+      handleMap["d_gate"]     = VarInfo(d_gate,     true,  "1");
+      handleMap["f_gate"]     = VarInfo(f_gate,     true,  "1");
+      handleMap["f2_gate"]    = VarInfo(f2_gate,    true,  "1");
+      handleMap["fCass_gate"] = VarInfo(fCass_gate, true,  "1");
+      handleMap["s_gate"]     = VarInfo(s_gate,     true,  "1");
+      handleMap["r_gate"]     = VarInfo(r_gate,     true,  "1");
+      handleMap["Ca_SR"]      = VarInfo(Ca_SR,      true,  "mM");
+      handleMap["R_prime"]    = VarInfo(R_prime,    true,  "1");
+      handleMap["jL_gate"]    = VarInfo(jL_gate,    true,  "mM");
       assert(handleMap.size() == nVars-1);
    }
    return handleMap;

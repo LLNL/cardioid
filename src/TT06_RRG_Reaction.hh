@@ -19,14 +19,17 @@ class TT06_RRG_Reaction : public Reaction
              std::vector<double>& dVm);
    void initializeMembraneVoltage(std::vector<double>& Vm);
 
-   void loadState(const BucketOfBits& data);
-
+   /** Functions needed for checkpoint/restart */
    void getCheckpointInfo(std::vector<std::string>& fieldNames,
                           std::vector<std::string>& fieldUnits) const;
-   std::vector<int> getHandle(const std::vector<std::string>& varName) const;
+   int getVarHandle(const std::string& varName) const;
+   std::vector<int> getVarHandle(const std::vector<std::string>& varName) const;
+   void setValue(int iCell, int varHandle, double value);
+   double getValue(int iCell, int varHandle) const;
    void getValue(int iCell,
                  const std::vector<int>& handle,
                  std::vector<double>& value) const;
+   const std::string& getUnit(const std::string& varName) const;
    
    
  private:

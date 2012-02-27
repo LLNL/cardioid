@@ -16,10 +16,8 @@
 #include "GridRouter.hh"
 #include "ioUtils.h"
 #include "writeCells.hh"
-#include "writeCheckpoint.hh"
+#include "checkpointIO.hh"
 #include "PerformanceTimers.hh"
-#include "BucketOfBits.hh"
-#include "stateLoader.hh"
 #include "fastBarrier.hh"
 
 using namespace std;
@@ -46,17 +44,8 @@ void simulationProlog(Simulate& sim, const vector<double>& dVmReaction,
    // Load state file, assign corresponding values to membrane voltage
    // and cell model
    if (!sim.stateFilename_.empty())
-   {
-      BucketOfBits* stateData = 
-         loadAndDistributeState(sim.stateFilename_, sim.anatomy_);
-      assert(stateData->nRecords() == sim.anatomy_.nLocal());
-      sim.reaction_->loadState(*stateData);
-      unsigned vmIndex = stateData->getIndex("Vm");
-      if (vmIndex != stateData->nFields())
-         for (unsigned ii=0; ii<stateData->nRecords(); ++ii)
-            stateData->getRecord(ii).getValue(vmIndex, sim.VmArray_[ii]);
-      delete stateData;
-   }
+      readCheckpoint(sim, MPI_COMM_WORLD);
+
    if ( myRank == 0)
    {
       cout << "    Loop     Time           Vm        dVm_r        dVm_d        dVm_e" <<endl;
@@ -102,7 +91,7 @@ void loopIO(const Simulate& sim, const vector<double>& dVmReaction,
    if (sim.loop_ % sim.snapshotRate_ == 0)
    {
       stringstream name;
-      name << "snapshot."<<setfill('0')<<setw(8)<<sim.loop_;
+      name << "snapshot."<<setfill('0')<<setw(12)<<sim.loop_;
       string fullname = name.str();
       if (myRank == 0)
          DirTestCreate(fullname.c_str());
@@ -111,14 +100,8 @@ void loopIO(const Simulate& sim, const vector<double>& dVmReaction,
    }
       
    if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
-   {
-      stringstream name;
-      name << "snapshot."<<setfill('0')<<setw(8)<<sim.loop_;
-      string fullname = name.str();
-      if (myRank == 0)
-         DirTestCreate(fullname.c_str());
-      writeCheckpoint(sim, fullname.c_str(), MPI_COMM_WORLD);
-   }
+      writeCheckpoint(sim, MPI_COMM_WORLD);
+
       
    profileStop(loopIOHandle);
 }

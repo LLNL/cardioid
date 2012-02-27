@@ -1,13 +1,17 @@
-#include "writeCheckpoint.hh"
+#include "checkpointIO.hh"
 
 #include <cassert>
 #include <vector>
-
+#include <sstream>
+#include <iomanip>
 #include "pio.h"
+#include "ioUtils.h"
 #include "Simulate.hh"
 #include "Anatomy.hh"
 #include "Reaction.hh"
 #include "Long64.hh"
+#include "BucketOfBits.hh"
+#include "stateLoader.hh"
 #include "units.h"
 #include "Version.hh"
 #include "utilities.h"
@@ -131,22 +135,26 @@ namespace
 
 
    
-void writeCheckpoint(const Simulate& sim, const string& dirName, MPI_Comm comm)
+void writeCheckpoint(const Simulate& sim, MPI_Comm comm)
 {
    int myRank;
    MPI_Comm_rank(comm, &myRank);
    const Anatomy& anatomy = sim.anatomy_;
 
+   stringstream name;
+   name << "snapshot."<<setfill('0')<<setw(12)<<sim.loop_;
+   string dirName = name.str();
+   if (myRank == 0)
+      DirTestCreate(dirName.c_str());
+   
    vector<string> fieldNames;
    vector<string> fieldUnits;
    sim.reaction_->getCheckpointInfo(fieldNames, fieldUnits);
-   vector<int> handle = sim.reaction_->getHandle(fieldNames);
+   vector<int> handle = sim.reaction_->getVarHandle(fieldNames);
 
    const char* gidVmFormat = "%12llu %21.13e";
    const char* itemFormat = " %21.13e";
    int lRec = 34 + 22*fieldNames.size() + 1;
-   
-
    
    CheckpointHeaderData headerData;
    headerData.stateFileName_ = dirName + "/state";
@@ -164,11 +172,6 @@ void writeCheckpoint(const Simulate& sim, const string& dirName, MPI_Comm comm)
    headerData.nx_ = anatomy.nx();
    headerData.ny_ = anatomy.ny();
    headerData.nz_ = anatomy.nz();
-//   headerData.comment_ = ""; assert(false);
-   
-      
-   
-   
    
 
    PFILE* file = Popen(headerData.stateFileName_.c_str(), "w", comm);
@@ -177,7 +180,6 @@ void writeCheckpoint(const Simulate& sim, const string& dirName, MPI_Comm comm)
       writeHeader(headerData, file);
       writeRestart(headerData, dirName);
    }
-   
    
    char buf[lRec+1];
    vector<double> value(handle.size(), 0.0);
@@ -197,6 +199,61 @@ void writeCheckpoint(const Simulate& sim, const string& dirName, MPI_Comm comm)
       string restartName = dirName + "/restart";
       symlink(restartName.c_str(), "restart");
    }
-   
 }
 
+void readCheckpoint(Simulate& sim, MPI_Comm comm)
+{
+   BucketOfBits* data = 
+      loadAndDistributeState(sim.stateFilename_, sim.anatomy_);
+   assert(data->nRecords() == sim.anatomy_.nLocal());
+
+   vector<double> unitConvert(data->nFields(), 1.0);
+   typedef map<int, int> FieldMap;
+   FieldMap fieldMap;
+
+   for (unsigned ii=0; ii<data->nFields(); ++ii)
+   {
+      int handle = sim.reaction_->getVarHandle(data->fieldName(ii));
+      if (handle != 0) // hendle==0 -> undefined name
+      {
+         fieldMap[ii] = handle;
+         string from = data->units(ii);
+         string to = sim.reaction_->getUnit(data->fieldName(ii));
+         unitConvert[ii] = units_convert(1.0, from.c_str(), to.c_str());
+      }
+   }
+   
+   for (unsigned ii=0; ii<sim.anatomy_.nLocal(); ++ii)
+   {
+      BucketOfBits::Record iRec = data->getRecord(ii);
+      for (FieldMap::const_iterator iter=fieldMap.begin();
+           iter!=fieldMap.end(); ++iter)
+      {
+         int iField = iter->first;
+         int handle = iter->second;
+         double value;
+         switch (data->dataType(iField))
+         {
+           case BucketOfBits::floatType:
+            iRec.getValue(iField, value);
+            break;
+           case BucketOfBits::intType:
+            int tmp;
+            iRec.getValue(iField, tmp);
+            value = double(tmp);
+            break;
+           default:
+            assert(false);
+         }
+         value *= unitConvert[iField];
+         sim.reaction_->setValue(ii, handle, value);
+      }
+   }
+
+   // Load membrane voltage from checkpoint file into VmArray.
+   unsigned vmIndex = data->getIndex("Vm");
+   if (vmIndex != data->nFields())
+      for (unsigned ii=0; ii<data->nRecords(); ++ii)
+         data->getRecord(ii).getValue(vmIndex, sim.VmArray_[ii]);
+   delete data;
+}

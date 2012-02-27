@@ -15,8 +15,9 @@ class TT06_RRG
                   // These are the cell-wise parameters:
                   s_switch, g_Ks, g_to, P_NaK, g_NaL,
                   // These are the state variables:
-                  Vm, K_i, Na_i, Ca_i, Xr1, Xr2, Xs, m, h, j,
-                  Ca_ss, d, f, f2, fCass, s, r, Ca_SR, R_prime, NaL_i,
+                  Vm, K_i, Na_i, Ca_i, Xr1_gate, Xr2_gate, Xs_gate, m_gate,
+                  h_gate, j_gate, Ca_ss, d_gate, f_gate, f2_gate, fCass_gate,
+                  s_gate, r_gate, Ca_SR, R_prime, jL_gate,
                   // end marker
                   nVars};
       
@@ -26,11 +27,11 @@ class TT06_RRG
       VarInfo()
       : handle_(undefinedName), checkpoint_(false), unit_("1")
       {};
-      VarInfo(VarHandle handle, bool checkpoint, std::string unit)
+      VarInfo(int handle, bool checkpoint, std::string unit)
       : handle_(handle), checkpoint_(checkpoint), unit_(unit)
       {};
       
-      VarHandle   handle_;
+      int         handle_;
       bool        checkpoint_;
       std::string unit_; // output unit
    };
@@ -40,18 +41,17 @@ class TT06_RRG
    TT06_RRG(int cellType);
    double calc(double dt, double Vm, double iStim);
    double defaultVoltage();
-   static VarHandle getVarHandle(const std::string& varName);
-   static std::vector<int> getVarHandle(const std::vector<std::string>& varName);
-   void setVariable(VarHandle varHandle, double value);
-
-   double getValue(VarHandle handle) const;
-   void getValue(const std::vector<int>& handle,
-                 std::vector<double>& value) const;
-
-   static const std::string& getUnit(const std::string& varName);
-
    static void getCheckpointInfo(std::vector<std::string>& fieldNames,
                                  std::vector<std::string>& fieldUnits);
+
+   static int getVarHandle(const std::string& varName);
+   static std::vector<int> getVarHandle(const std::vector<std::string>& varName);
+   void setValue(int varHandle, double value);
+
+   double getValue(int handle) const;
+   void getValue(const std::vector<int>& handle,
+                 std::vector<double>& value) const;
+   static const std::string& getUnit(const std::string& varName);
 
 
    

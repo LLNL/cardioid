@@ -2,6 +2,7 @@
 #define TT06_CELLML_REACTION_HH
 
 #include "Reaction.hh"
+#include <map>
 class Anatomy;
 class TT06_CellML;
 class TT06_CellMLState;
@@ -11,13 +12,37 @@ class TT06_CellML_Reaction : public Reaction
  public:
    enum IntegratorType {forwardEuler, rushLarsen};
    
+   // There is a map of strings to VarHandle in getVarHandle that must
+   // be maintained in parallel with this enum.  The value undefinedName
+   // must be first and nVars must be last in this enum.
+   enum VarHandle{undefinedName,
+                  // These are the state variables:
+                  Vm, K_i, Na_i, Ca_i, Xr1_gate, Xr2_gate, Xs_gate, m_gate,
+                  h_gate, j_gate, Ca_ss, d_gate, f_gate, f2_gate, fCass_gate,
+                  s_gate, r_gate, Ca_SR, R_prime,
+                  // end marker
+                  nVars};
+      
+   class VarInfo
+   {
+    public:
+      VarInfo()
+      : handle_(undefinedName), checkpoint_(false), unit_("1")
+      {};
+      VarInfo(int handle, bool checkpoint, std::string unit)
+      : handle_(handle), checkpoint_(checkpoint), unit_(unit)
+      {};
+      
+      int         handle_;
+      bool        checkpoint_;
+      std::string unit_; // output unit
+   };
+
+   typedef std::map<std::string, VarInfo> HandleMap; 
+
    TT06_CellML_Reaction(const Anatomy& anatomy, IntegratorType integrator);
-   std::string methodName() const {return "TT06_CellML";}
-   // copy constructor and assignment operator intentionally
-   // left unimplemented.
-   TT06_CellML_Reaction(const TT06_CellML_Reaction&);
-   TT06_CellML_Reaction& operator=(const TT06_CellML_Reaction&);
    ~TT06_CellML_Reaction();
+   std::string methodName() const {return "TT06_CellML";}
 
    void calc(double dt,
              const std::vector<double>& Vm,
@@ -25,12 +50,30 @@ class TT06_CellML_Reaction : public Reaction
              std::vector<double>& dVm);
    void initializeMembraneVoltage(std::vector<double>& Vm);
 
+   /** Functions needed for checkpoint/restart */
+   void getCheckpointInfo(std::vector<std::string>& fieldNames,
+                          std::vector<std::string>& fieldUnits) const;
+   int getVarHandle(const std::string& varName) const;
+   std::vector<int> getVarHandle(const std::vector<std::string>& varName) const;
+   void setValue(int iCell, int varHandle, double value);
+   double getValue(int iCell, int varHandle) const;
+   void getValue(int iCell,
+                 const std::vector<int>& handle,
+                 std::vector<double>& value) const;
+   const std::string& getUnit(const std::string& varName) const;
+
  private:
 
+   static HandleMap& getHandleMap();
    void forwardEulerIntegrator(double dt, const std::vector<double>& Vm,
       const std::vector<double>& iStim, std::vector<double>& dVm);
    void rushLarsenIntegrator(double dt, const std::vector<double>& Vm,
       const std::vector<double>& iStim, std::vector<double>& dVm);
+
+   // copy constructor and assignment operator intentionally
+   // left unimplemented.
+   TT06_CellML_Reaction(const TT06_CellML_Reaction&);
+   TT06_CellML_Reaction& operator=(const TT06_CellML_Reaction&);
 
    int nCells_;
    IntegratorType integrator_;
