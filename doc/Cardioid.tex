@@ -209,7 +209,7 @@ In this system the seven fundamental units are:
 \item[time] millisecond
 \item[current] milliamp
 \item[temperature] Kelvin
-\item[amount] mol
+\item[amount] nanomol
 \item[luminous intensity] candella
 \end{description}
 Derived units follow from these seven fundamentals.  For example, the
@@ -229,13 +229,11 @@ quantities of interest include
 \item[capacitance] millifarad
 \item[conductivity] siemen
 \item[charge] microcoulomb
-\item[concentration] megamolar
+\item[concentration] millimolar
 \end{description}
 Internally all quanties are represented in this unit system.  When no
 unit is specified, all quantities in the input deck are assumed to be in
-these units.  \issue{Megamolar isn't a very nice unit.  Do we want to
-  make our amount base unit micomol so that concentrations will be molar?
-  How about nanomol so we get mM?}
+these units.
 
 The usual unit rules do not apply to code in the cell models.  Code in
 the cell models may come from other sources (such as CellML) that use

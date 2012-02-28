@@ -41,14 +41,15 @@ namespace
  *  - time:               millisecond
  *  - current:            milliamp
  *  - temperature:        Kelvin
- *  - amount:             mol
+ *  - amount:             nanomol
  *  - luminous intensity: candella
  *
- *  This seven imply derived units as follows:
- *  - voltage:      millivolts
- *  - conductivity: Siemens
- *  - capacitance:  millifarad
- *  - charge:       microcoulomb
+ *  These seven imply derived units as follows:
+ *  - voltage:       millivolts
+ *  - conductivity:  Siemens
+ *  - capacitance:   millifarad
+ *  - charge:        microcoulomb
+ *  - concentration: millimolar
  *  
  */
 
@@ -63,8 +64,8 @@ int main(int argc, char** argv)
    MPI_Comm_rank(MPI_COMM_WORLD, &mype);  
 
    // See units above.
-   units_internal(1e-3, 1e-9, 1e-3, 1e-3, 1, 1, 1);
-   units_external(1e-3, 1e-9, 1e-3, 1e-3, 1, 1, 1);
+   units_internal(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
+   units_external(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
    
    profileStart("Total");
    profileSetPrintOrder("Total");
