@@ -162,7 +162,7 @@ TT06_RRG::HandleMap& TT06_RRG::getHandleMap()
       handleMap["g_Ks"]       = VarInfo(g_Ks,       true,  "nS/pF");
       handleMap["g_to"]       = VarInfo(g_to,       true,  "nS/pF");
       handleMap["P_NaK"]      = VarInfo(P_NaK,      true,  "pA/pF");
-      handleMap["g_NaL"]      = VarInfo(g_NaL,      true,  "pS/pF");
+      handleMap["g_NaL"]      = VarInfo(g_NaL,      true,  "nS/pF");
       handleMap["Vm"]         = VarInfo(Vm,         false, "mV");
       handleMap["K_i"]        = VarInfo(K_i,        true,  "mM");
       handleMap["Na_i"]       = VarInfo(Na_i,       true,  "mM");
