@@ -57,7 +57,7 @@
 //#define spi_debug_desc
 //#define spi_debug_exec
 //#define spi_debug_compl
-#define MAX_WAIT 1000000000
+#define MAX_WAIT 1600000000
 #define MAX_PUT_NUM 128
 #define SizeInjMemFifo 128
 
@@ -424,7 +424,7 @@ void execute_spi_alter(spi_hdl_t* spi_hdl, uint32_t put_size,int bw)
 #endif
 
 }
-void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size,int bw)
+void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size, uint32_t* recv_offset, int bw, int width)
 {
   volatile uint64_t* recv_cnt = spi_hdl -> recv_cnt;
   //checking if fifo is done.
@@ -437,14 +437,28 @@ void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size,int bw)
   printf("head=tail done...");
   #endif
 
+//  printf("recv size ");
+//  for(int ii=0;ii<recv_size;ii++)
+//    printf("%d ",(recv_offset[ii+1]-recv_offset[ii])*width);
+//  printf("\n");
+
   uint64_t knt=0,sum=1;
   for(knt=0;(knt<MAX_WAIT && sum != 0);knt++)
   {
     sum=0;
-    if(bw==0) for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii] == 0 ? 1 : 0);
-    else for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii+MAX_PUT_NUM] == 0 ? 1 : 0);
+    for(int ii=0;ii<recv_size;ii++)
+    {
+      int recved=recv_cnt[ii+bw*MAX_PUT_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
+//      if(knt%10==0) printf("%d ",recved);
+      sum+= (recved == 0 ? 0 : 1);
+    }
+//    printf("\n");
+//    if(bw==0) for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii] == 0 ? 1 : 0);
+//    else for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii+MAX_PUT_NUM] == 0 ? 1 : 0);
   }
   assert(knt <  MAX_WAIT); 
+//  //for(int ii=0;ii<recv_size;ii++) printf("%x ",recv_cnt[ii+MAX_PUT_NUM*bw]);
+  //printf("\n");
   #ifdef spi_debug_compl
   printf("counter touched\n");
   #endif
@@ -460,6 +474,8 @@ void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size,int bw)
 
   for(int ii=0;ii<recv_size;ii++)
     recv_cnt[ii+MAX_PUT_NUM*bw]=0;
+  _bgq_msync();
+
 }
 
 

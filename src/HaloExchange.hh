@@ -20,7 +20,7 @@ void execute_spi(spi_hdl_t* spi_hdl, uint32_t put_size);
 void execute_spi_2(spi_hdl_t* spi_hdl, uint32_t put_size);
 void execute_spi_alter(spi_hdl_t* spi_hdl, uint32_t put_size,int bw);
 void complete_spi(spi_hdl_t* spi_hdl, uint32_t recv_size);
-void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size,int bw);
+void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size, int* recv_offset, int bw, int width);
 void free_spi(spi_hdl_t* spi_hdl);
 void global_sync(spi_hdl_t* spi_hdl);
 }
@@ -114,7 +114,7 @@ class spi_HaloExchange : public HaloExchange<T>
      delete [] recv_buf_;
    };
 
-   T* get_recv_buf_() { return recv_buf_ + bw*commTable_->recvSize(); };
+   T* get_recv_buf_() { return &(recv_buf_[bw*commTable_->recvSize()]); };
 
    void execute(vector<T>& Data,int nLocal) {
      move2Buf(Data);
@@ -127,7 +127,7 @@ class spi_HaloExchange : public HaloExchange<T>
      bw=1-bw;
      execute_spi_alter(&spi_hdl,commTable_->_putTask.size(),bw);
    };
-   void complete() {complete_spi_alter(&spi_hdl, commTable_->_recvTask.size(),bw);};
+   void complete() {complete_spi_alter(&spi_hdl, commTable_->_recvTask.size(), commTable_->_offsets[3], bw, width_ );};
 
    void execute3() {execute_spi(&spi_hdl,commTable_->_putTask.size());};
    void execute2() {execute_spi_2(&spi_hdl,commTable_->_putTask.size());};
