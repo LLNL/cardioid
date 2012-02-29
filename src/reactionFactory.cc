@@ -9,8 +9,10 @@
 #include "TT06_RRG_Reaction.hh"    // TT06 with modifications from Rice et al.
 #include "ReactionFHN.hh"
 #include "NullReaction.hh"
+#include "ConstantReaction.hh"
 #include "Threading.hh"
 
+#include <iostream>
 using namespace std;
 
 namespace
@@ -20,6 +22,7 @@ namespace
    Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy,coreGroup *group);
    Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanFHN(OBJECT* obj, const Anatomy& anatomy);
+   Reaction* scanConstant(OBJECT* obj, const Anatomy& anatomy);
 }
 
 
@@ -28,9 +31,7 @@ Reaction* reactionFactory(const string& name, const Anatomy& anatomy, coreGroup*
    OBJECT* obj = objectFind(name, "REACTION");
    string method; objectGet(obj, "method", method, "undefined");
 
-   if (method == "undefined")
-      assert(1==0);
-   else if (method == "TT04_CellML" || method == "tenTusscher04_CellML")
+   if (method == "TT04_CellML" || method == "tenTusscher04_CellML")
       return scanTT04_CellML(obj, anatomy);
    else if (method == "TT06_CellML" || method == "tenTusscher06_CellML")
       return scanTT06_CellML(obj, anatomy);
@@ -42,6 +43,10 @@ Reaction* reactionFactory(const string& name, const Anatomy& anatomy, coreGroup*
       return scanFHN(obj, anatomy);
    else if (method == "null")
       return new NullReaction();
+   else if (method == "constant")
+      return scanConstant(obj, anatomy);
+   
+   cerr<<"ERROR: Undefined reaction model in reactionFactory"<<endl;
    assert(false); // reachable only due to bad input
    return 0;
 }
@@ -105,5 +110,53 @@ namespace
       // None of the FHN model parameters are currently wired to the
       // input deck.
       return new ReactionFHN(anatomy);
+   }
+}
+
+namespace
+{
+   Reaction* scanConstant(OBJECT* obj, const Anatomy& anatomy)
+   {
+      double eta[3];
+      int n = object_getv(obj, "eta", (void*)&eta[0], DOUBLE,IGNORE_IF_NOT_FOUND);
+
+      double alpha = 0.0; 
+      objectGet(obj, "alpha", alpha, "0.0") ;
+      double beta = 0.0; 
+      objectGet(obj, "beta", beta, "0.0") ;
+      double gamma = 0.0; 
+      objectGet(obj, "gamma", gamma, "0.0") ;
+
+      SymmetricTensor sigma1, sigma2, sigma3;
+      double* buffer;
+      int nn=object_getv(obj, "sigma1", (void*)&buffer, DOUBLE, ABORT_IF_NOT_FOUND);
+      assert( nn==6 );
+      sigma1.a11=buffer[0];
+      sigma1.a12=buffer[1];
+      sigma1.a13=buffer[2];
+      sigma1.a22=buffer[3];
+      sigma1.a23=buffer[4];
+      free(buffer);
+      nn=object_getv(obj, "sigma2", (void*)&buffer, DOUBLE, ABORT_IF_NOT_FOUND);
+      assert( nn==6 );
+      sigma2.a11=buffer[0];
+      sigma2.a12=buffer[1];
+      sigma2.a13=buffer[2];
+      sigma2.a22=buffer[3];
+      sigma2.a23=buffer[4];
+      free(buffer);
+      nn=object_getv(obj, "sigma3", (void*)&buffer, DOUBLE, ABORT_IF_NOT_FOUND);
+      assert( nn==6 );
+      sigma3.a11=buffer[0];
+      sigma3.a12=buffer[1];
+      sigma3.a13=buffer[2];
+      sigma3.a22=buffer[3];
+      sigma3.a23=buffer[4];
+      free(buffer);
+
+      return new ConstantReaction(anatomy,
+                                  eta,
+                                  sigma1, sigma2, sigma3,
+                                  alpha, beta, gamma);
    }
 }
