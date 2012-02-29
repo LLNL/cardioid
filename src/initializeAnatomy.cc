@@ -67,7 +67,7 @@ void initializeAnatomy(Anatomy& anatomy, const string& name, MPI_Comm comm)
 
    int nGlobal;
    int nLocal = anatomy.size();
-   MPI_Allreduce(&nGlobal, &nLocal, 1, MPI_INT, MPI_SUM, comm);
+   MPI_Allreduce(&nLocal, &nGlobal, 1, MPI_INT, MPI_SUM, comm);
    anatomy.nGlobal() = nGlobal;
    
    Tuple globalGridSize(anatomy.nx(), anatomy.ny(), anatomy.nz());
