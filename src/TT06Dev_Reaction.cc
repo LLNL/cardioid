@@ -1,5 +1,6 @@
 #include "TT06Dev_Reaction.hh"
 #include <cmath>
+#include  <omp.h>
 #include "Anatomy.hh"
 #include "TT06Func.hh"
 #include "pade.hh"
@@ -7,8 +8,9 @@
 using namespace std;
 using namespace TT06Func;
 
+static FILE *tfile[64]; 
 
-TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int mod)
+TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int mod, coreGroup *group)
 : nCells_(anatomy.nLocal())
 {
    static bool initialized = false;
@@ -27,6 +29,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int m
       for (int i=0;fit[i]!=NULL;i++) padeCalc(fit[i],maxTerms,maxTerms,maxCost); 
       TT06Func::writeFit(fit); 
    }
+   group_ = group; 
    dtForFit_=0.0; 
    ttType_.resize(256, -1); 
    ttType_[30] = 0;
@@ -44,6 +47,12 @@ TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int m
       int cellType = ttType_[anatomy.cellType(ii)];
       TT06Func::initState(&(s_[ii]),cellType); 
    }
+   for (int i=0;i<omp_get_max_threads();i++) 
+   {
+        char filename[512]; 
+        sprintf(filename,"TT06_%d",i); 
+	tfile[i] =fopen(filename,"w"); 
+   }
    
 }
 TT06Dev_Reaction::~TT06Dev_Reaction()
@@ -59,21 +68,50 @@ int  map[] = { dVK_i , Na_i , Ca_i , Xr1_gate , Xr2_gate , Xs_gate , m_gate , h_
 		printf("%d %24.14le\n",i,state); 
 	}
 }
+int partition(int index, int nItems, int nGroups , int& offset)
+{
+   int n = nItems/nGroups; 
+   int remainder = nItems-n*nGroups; 
+   int m = nGroups - remainder; 
+   if ( index <  m ) 
+   {
+      offset += n*index; 
+   }
+   else
+   {
+      offset += n*m + (n+1)*(index-m); 
+      n++; 
+   }
+   return n; 
+}
+int TT06Dev_Reaction::nonGateWorkPartition(int& offset)
+{
+    int coreID,hwThreadID,threadID,nCores,nHwThreads,nThreads;
+    groupInfo(group_,coreID,hwThreadID,threadID,nCores,nHwThreads,nThreads); 
+    offset=0; 
+    int nCellsCore= partition(coreID,nCells_,nCores,offset); 
+    int nCells  = partition(hwThreadID,nCellsCore,nHwThreads,offset); 
+    return nCells; 
+}
 
 void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<double>& iStim, vector<double>& dVm)
 {
    TT06Func::updateNonGate(dt, nCells_,&Vm[0], &(s_[0]), &dVm[0]);
    TT06Func::updateGate(dt, nCells_,&Vm[0], &(s_[0]));
-   //double c9 = TT06Func::get_c9(); 
-   //for (unsigned ii=0; ii<nCells_; ++ii) s_[ii].state[TT06Func::K_i] += dt*((-dVm[ii]+iStim[ii])*c9) ;
 }
 void TT06Dev_Reaction::updateNonGate(double dt, const vector<double>& Vm, vector<double>& dVR)
 {
-    TT06Func::updateNonGate(dt, nCells_,&Vm[0], &(s_[0]), &dVR[0]);
+   int offset; 
+   int nCells = nonGateWorkPartition(offset); 
+   int ompID = omp_get_thread_num(); 
+   fprintf(tfile[ompID],"offset=%d ncells=%d\n",offset,nCells); 
+   TT06Func::updateNonGate(dt, nCells,&Vm[offset], &(s_[offset]), &dVR[offset]);
 }
 void TT06Dev_Reaction::updateGate(double dt, const vector<double>& Vm)
 {
-   TT06Func::updateGate(dt, nCells_,&Vm[0], &(s_[0]));
+   int offset; 
+   int nCells = nonGateWorkPartition(offset); 
+   TT06Func::updateGate(dt, nCells,&Vm[offset], &(s_[offset]));
 }
 
 

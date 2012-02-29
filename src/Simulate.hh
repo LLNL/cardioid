@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Anatomy.hh"
+#include "Threading.hh"
 
 class Diffusion;
 class Reaction;
@@ -32,10 +33,10 @@ class Simulate
    int snapshotRate_;
    int checkpointRate_;
    int parallelDiffusionReaction_;
-   int nProcs_;
-   int maxThreads_;
-   int nDiffusionThreads_; 
-   int nReactionThreads_; 
+   coreGroup *diffusionGroup_; 
+   coreGroup *reactionGroup_; 
+   Threading tinfo_; 
+   
    double dt_;
    double time_;
    

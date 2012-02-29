@@ -9,6 +9,7 @@
 #include "TT06_RRG_Reaction.hh"    // TT06 with modifications from Rice et al.
 #include "ReactionFHN.hh"
 #include "NullReaction.hh"
+#include "Threading.hh"
 
 using namespace std;
 
@@ -16,13 +17,13 @@ namespace
 {
    Reaction* scanTT04_CellML(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanTT06_CellML(OBJECT* obj, const Anatomy& anatomy);
-   Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy);
+   Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy,coreGroup *group);
    Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanFHN(OBJECT* obj, const Anatomy& anatomy);
 }
 
 
-Reaction* reactionFactory(const string& name, const Anatomy& anatomy)
+Reaction* reactionFactory(const string& name, const Anatomy& anatomy, coreGroup* group)
 {
    OBJECT* obj = objectFind(name, "REACTION");
    string method; objectGet(obj, "method", method, "undefined");
@@ -34,7 +35,7 @@ Reaction* reactionFactory(const string& name, const Anatomy& anatomy)
    else if (method == "TT06_CellML" || method == "tenTusscher06_CellML")
       return scanTT06_CellML(obj, anatomy);
    else if (method == "TT06Dev" )
-      return scanTT06Dev(obj, anatomy);
+      return scanTT06Dev(obj, anatomy,group);
    else if (method == "TT06_RRG" )
       return scanTT06_RRG(obj, anatomy);
    else if (method == "FHN" || method == "FitzhughNagumo")
@@ -77,13 +78,13 @@ namespace
 
 namespace
 {
-   Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy)
+   Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy, coreGroup *group)
    {
-      double tolerance = 0.0; 
+      double tolerance=0.0 ; 
       int mod=0; 
       objectGet(obj, "tolerance", tolerance, "0.0") ;
       objectGet(obj, "mod", mod, "0") ;
-      Reaction *reaction = new TT06Dev_Reaction(anatomy, tolerance,mod);
+      Reaction *reaction = new TT06Dev_Reaction(anatomy, tolerance,mod, group);
       return  reaction; 
    }
 }

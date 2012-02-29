@@ -16,6 +16,7 @@ SVNVERSION := $(shell svnversion ./ )
 BINDIR = ../bin
 
 HEARTSRC= cardioid.cc \
+	 Threading.cc \
 	 Vector.cc SymmetricTensor.cc \
 	 PerformanceTimers.cc unionOfStrings.cc \
          GDLoadBalancer.cc CommTable.cc \

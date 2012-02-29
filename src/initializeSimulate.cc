@@ -1,3 +1,4 @@
+#include <omp.h> 
 #include "initializeSimulate.hh"
 #include "object_cc.hh"
 #include "Simulate.hh"
@@ -10,6 +11,7 @@
 #include "sensorFactory.hh"
 #include "getRemoteCells.hh"
 #include "Anatomy.hh"
+#include "Threading.hh"
 
 using namespace std;
 
@@ -27,6 +29,8 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "snapshotRate", sim.snapshotRate_, "100");
    objectGet(obj, "checkpointRate", sim.checkpointRate_, "-1");
    objectGet(obj, "parallelDiffusionReaction", sim.parallelDiffusionReaction_, "0");
+   sim.diffusionGroup_ = sim.tinfo_.mkGroup(1); 
+   sim.reactionGroup_  = sim.tinfo_.mkGroup(-1); 
    
 
    string nameTmp;
@@ -44,21 +48,21 @@ void initializeSimulate(const string& name, Simulate& sim)
    assignCellsToTasks(sim, nameTmp, MPI_COMM_WORLD);
    
    getRemoteCells(sim, nameTmp, MPI_COMM_WORLD);
-   
+
+// Assume thread are assigned in round robin order. 
+
    objectGet(obj, "diffusion", nameTmp, "diffusion");
    sim.diffusion_ = diffusionFactory(nameTmp, sim.anatomy_);
    
    objectGet(obj, "reaction", nameTmp, "reaction");
-   sim.reaction_ = reactionFactory(nameTmp, sim.anatomy_);
+   sim.reaction_ = reactionFactory(nameTmp, sim.anatomy_,sim.reactionGroup_);
 
    vector<string> names;
    objectGet(obj, "stimulus", names);
-   for (unsigned ii=0; ii<names.size(); ++ii)
-      sim.stimulus_.push_back(stimulusFactory(names[ii], sim.anatomy_));
+   for (unsigned ii=0; ii<names.size(); ++ii) sim.stimulus_.push_back(stimulusFactory(names[ii], sim.anatomy_));
 
    names.clear();
    objectGet(obj, "sensor", names);
-   for (unsigned ii=0; ii<names.size(); ++ii)
-     sim.sensor_.push_back(sensorFactory(names[ii], sim.anatomy_));
+   for (unsigned ii=0; ii<names.size(); ++ii) sim.sensor_.push_back(sensorFactory(names[ii], sim.anatomy_));
 
 }
