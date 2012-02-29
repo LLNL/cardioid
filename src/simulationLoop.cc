@@ -19,7 +19,7 @@
 #include "checkpointIO.hh"
 #include "PerformanceTimers.hh"
 #include "fastBarrier.hh"
-#include "threading.hh"
+#include "Threading.hh"
 
 using namespace std;
 

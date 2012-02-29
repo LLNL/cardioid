@@ -1,5 +1,6 @@
 #include "Threading.hh"
 #include <stdio.h> 
+#include <stdlib.h> 
 #include <omp.h> 
 #include <cassert>
 static int _nHwThreads;
