@@ -50,8 +50,9 @@ HEARTSRC= cardioid.cc \
 	 TT06_RRG.cc \
 	 TestStimulus.cc PointStimulus.cc BoxStimulus.cc \
 	 PeriodicPulse.cc \
-	 PointListSensor.cc ActivationTimeSensor.cc \
-	 spi_impl.c
+	 PointListSensor.cc ActivationTimeSensor.cc
+
+SPISRC=	 spi_impl.c
 
 
 DDCMD_FILES = \
@@ -103,6 +104,7 @@ DDCMDSRC = $(filter %.c, $(DDCMD_FILES))
 
 HEARTOBJS = $(HEARTSRC:%.cc=$(OBJDIR)/%.o)
 HEARTOBJS += $(DDCMDSRC:%.c=$(OBJDIR)/%.o)
+HEARTOBJS += $(SPISRC:%.c=$(OBJDIR)/%.o)
 ifdef TIMEOBJ
   HEARTOBJS += $(TIMEOBJ)
 endif
