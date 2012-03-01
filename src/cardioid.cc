@@ -67,6 +67,7 @@ int main(int argc, char** argv)
    units_internal(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
    units_external(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
    
+   profileInit();
    profileStart("Total");
    profileSetPrintOrder("Total");
    profileSetPrintOrder("Assignment");

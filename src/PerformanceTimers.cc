@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <sstream>
 #include <cmath>
+#include <omp.h>
 #include "pio.h"
 #include "ioUtils.h"
 #include "tagServer.h"
@@ -24,6 +25,13 @@ namespace PerformanceTimers
       double lastTime;
       double nCalls;
    };
+ TimerHandle loopIOHandle ;
+ TimerHandle sensorHandle ;
+ TimerHandle haloHandle ;
+ TimerHandle diffusionTimerHandle ;
+ TimerHandle stimulusHandle ;
+ TimerHandle reactionTimerHandle ;
+ TimerHandle integratorHandle ;
    
    vector<TimerStruct> timers_;
    typedef map<string, TimerHandle> HandleMap;
@@ -47,22 +55,35 @@ namespace PerformanceTimers
 #endif
       return t;
    }
-}
 
+}
 using namespace PerformanceTimers;
 
+void  profileInit()
+{
+loopIOHandle = profileGetHandle("LoopIO");
+sensorHandle = profileGetHandle("Sensors");
+haloHandle = profileGetHandle("Halo Exchange");
+diffusionTimerHandle = profileGetHandle("Diffusion");
+stimulusHandle = profileGetHandle("Stimulus");
+reactionTimerHandle = profileGetHandle("Reaction");
+integratorHandle = profileGetHandle("Integrator");
+haloHandle = profileGetHandle("Halo Exchange");
+}
 
        
 void profileStart(const TimerHandle& handle)
 {
-   timers_[handle].startTime = getTime();
-   ++timers_[handle].nCalls;
+   int id=omp_get_thread_num()+handle; 
+   timers_[id].startTime = getTime();
+   ++timers_[id].nCalls;
 }
 
 void profileStop(const TimerHandle& handle)
 {
-   timers_[handle].lastTime = getTime() - timers_[handle].startTime;
-   timers_[handle].totalTime += timers_[handle].lastTime;
+   int id=omp_get_thread_num()+handle; 
+   timers_[id].lastTime = getTime() - timers_[id].startTime;
+   timers_[id].totalTime += timers_[id].lastTime;
 }
 
 void profileStart(const std::string& timerName)
@@ -75,16 +96,33 @@ void profileStop(const std::string& timerName)
    profileStop(profileGetHandle(timerName));
 }
 
-TimerHandle profileGetHandle(const string& timerName)
+TimerHandle profileGetHandle(string timerName)
 {
-   HandleMap::const_iterator iter = handleMap_.find(timerName);
-   if (iter != handleMap_.end())
-      return iter->second;
-
-   TimerHandle handle = timers_.size();
-   handleMap_[timerName] = handle;
-   timers_.push_back(TimerStruct());
-   return handle;
+    TimerHandle handle ;
+    TimerHandle handleFirst ;
+    int id=0; 
+    
+    stringstream tmp;
+    tmp <<timerName<<"_"<<setfill('0')<<setw(2)<<id;
+    string timerNameID = tmp.str(); 
+    HandleMap::const_iterator iter = handleMap_.find(timerNameID);
+    if (iter != handleMap_.end())
+      return  iter->second;
+    else
+      {
+	int nThreads = omp_get_max_threads(); 
+	for (int id =0;id<nThreads;id++)
+	  {
+	    stringstream tmp;
+	    tmp  <<timerName<<"_"<<setfill('0')<<setw(2)<<id;
+	    string timerNameID = tmp.str(); 
+	    handle = timers_.size();
+	    if (id==0) handleFirst=handle; 
+	    handleMap_[timerNameID] = handle;
+	    timers_.push_back(TimerStruct());
+	  }
+      }
+    return handleFirst;
 }
 
 void profileSetRefTimer(const string& timerName)
