@@ -208,13 +208,14 @@ void profileDumpTimes(ostream& out)
    for (unsigned iName=0; iName<outputOrder.size(); ++iName)
    {
       const string& name = outputOrder[iName];
+      unsigned ii = handleMap_[name];
+      if (timers_[ii].totalTime < 0.0001) continue; 
       if (name.empty())
       {
          out << "--------------------------------------------------------------------------------" << endl;
          continue;
       }
       
-      unsigned ii = handleMap_[name];
       out << setw(maxLen) << left << name << " : "
           << setw(10) << right << int(timers_[ii].nCalls) << "  |"
           << setw(10) << setprecision(3) << timers_[ii].lastTime 
@@ -352,6 +353,7 @@ void profileDumpStats(ostream& out)
    out << "--------------------------------------------------------------------------------" << endl;
    for (unsigned ii=0; ii<nTimers; ++ii)
    {
+      if (aveTime[ii] < 0.0001) continue;
       if (outputOrder[ii].empty())
       {
          out << "--------------------------------------------------------------------------------" << endl;
