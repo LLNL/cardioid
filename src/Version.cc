@@ -23,7 +23,7 @@ Version::Version()
    char tmp[256];
    gethostname(tmp, 256);
    host_        = tmp;
-   user_        = getpwuid(getuid())->pw_name;
+   //user_        = getpwuid(getuid())->pw_name; //Not supported on all platforms  
 }
 
 const Version& Version::getInstance()
