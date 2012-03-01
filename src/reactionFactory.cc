@@ -1,6 +1,7 @@
 #include "reactionFactory.hh"
 
 #include <cassert>
+#include <cstdlib>
 #include "object_cc.hh"
 
 #include "TT04_CellML_Reaction.hh" // TT04 implementation from CellML (Nov 2011)
