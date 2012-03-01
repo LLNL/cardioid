@@ -4,7 +4,6 @@
 #include "TT06Func.hh"
 #include "Threading.hh"
 class Anatomy;
-class TT06Func::TT06DevState;
 
 class TT06Dev_Reaction : public Reaction
 {
