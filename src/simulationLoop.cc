@@ -30,15 +30,19 @@ static L2_Barrier_t diffusionBarrier;
    
 void simulationProlog(Simulate& sim)
 {
-   // initialize membrane voltage with a default value from the reaction model. 
+   // initialize membrane voltage with default value from the reaction model. 
    sim.VmArray_.resize(sim.anatomy_.size());
    sim.reaction_->initializeMembraneVoltage(sim.VmArray_);
   
-   for (unsigned ii=sim.anatomy_.nLocal(); ii<sim.anatomy_.size(); ++ii) sim.VmArray_[ii] = 0;
+   for (unsigned ii=sim.anatomy_.nLocal(); ii<sim.anatomy_.size(); ++ii)
+      sim.VmArray_[ii] = 0;
 
    // Load state file, assign corresponding values to membrane voltage and cell model
-   if (!sim.stateFilename_.empty()) readCheckpoint(sim, MPI_COMM_WORLD);
+   if (!sim.stateFilename_.empty())
+      readCheckpoint(sim, MPI_COMM_WORLD);
 }
+
+
 void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVmD,  const vector<double>& dVmE)
 {
    int diffusionID = groupThreadID(sim.diffusionGroup_); 
@@ -143,68 +147,124 @@ void simulationLoop(Simulate& sim)
 
    }
 }
-void nullDiffusionLoop(Simulate& sim, vector<double>& dVmReaction, L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle)
+
+
+/** One stop shopping for all of the data that we would rather create
+ *  before the parallel section, either because we want the data to
+ *  be shared across threads, or because it is just easier to create
+ *  it in a single thread environment.  This data is all gathered
+ *  into a struct so that it can be easily passed to the diffusion
+ *  and reaction loops without giant argument lists.
+ *
+ *  You might argue that all of this data could be just as well
+ *  stored in the Simulation class.  We choose not to that because
+ *  - It would turn the Simulation class into quite a kitchen sink
+ *  - It would make it even harder to construct the Simulation class
+ *    properly
+ *  - The data is only needed in the simulation loop.
+ */
+struct SimLoopData
 {
-   int ompTid = omp_get_thread_num();
-   //fprintf(tfile[ompTid],"nullDiffusionLoop: ompTid=%d\n",ompTid); fflush(stdout); 
-   while ( sim.loop_<=sim.maxLoop_ )
+   SimLoopData(const Simulate& sim)
+   : voltageExchange(sim.sendMap_, (sim.commTable_))
    {
-      L2_BarrierWithSync_WaitAndReset(&reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads);
-      L2_BarrierWithSync_Arrive(&diffusionBarrier, &diffusionHandle, sim.diffusionGroup_->nThreads);
-      L2_BarrierWithSync_Reset(&diffusionBarrier, &diffusionHandle, sim.diffusionGroup_->nThreads);
+      int nLocal = sim.anatomy_.nLocal();
+      dVmExternal.resize(nLocal, 0.0);
+      dVmDiffusion.resize(nLocal, 0.0);
+      dVmReactionCpy.resize(nLocal, 0.0);
+      dVmReaction.resize(nLocal, 0.0); 
    }
-}
-void diffusionLoop(Simulate& sim, vector<double>& dVmReaction, L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle)
+   
+   
+   vector<double> dVmReaction; 
+   vector<double> dVmExternal;
+   vector<double> dVmDiffusion;
+   vector<double> dVmReactionCpy;
+   #ifdef SPI   
+   spi_HaloExchange<double> voltageExchange;
+   #else
+   mpi_HaloExchange<double> voltageExchange;
+   #endif
+  
+};
+
+void diffusionLoop(Simulate& sim,
+                   SimLoopData& loopData,
+                   L2_BarrierHandle_t& reactionHandle,
+                   L2_BarrierHandle_t& diffusionHandle)
 {
-    assert(groupThreadID(sim.diffusionGroup_)==0); //DiffusionLoop current only works on one thread. 
-#ifdef SPI   
-   spi_HaloExchange<double> voltageExchange(sim.sendMap_, (sim.commTable_));
-#else
-   mpi_HaloExchange<double> voltageExchange(sim.sendMap_, (sim.commTable_));
-#endif
-   int nLocal = sim.anatomy_.nLocal();
-   vector<double> dVmExternal(nLocal, 0.0);
-   vector<double> dVmDiffusion(nLocal, 0.0);
-   vector<double> dVmReactionCpy(nLocal, 0.0);
+   int tid = groupThreadID(sim.diffusionGroup_);
+
    while ( sim.loop_ < sim.maxLoop_ )
    {
       int nLocal = sim.anatomy_.nLocal();
     
-      profileStart(haloHandle);
-      voltageExchange.execute(sim.VmArray_, nLocal);
-      voltageExchange.complete();
-      profileStop(haloHandle);
-
-      for (unsigned ii=0; ii<nLocal; ++ii) dVmDiffusion[ii] = 0;
-      for (unsigned ii=0; ii<nLocal; ++ii) dVmExternal[ii] = 0;
-    
-
-      // DIFFUSION
-      profileStart(diffusionTimerHandle);
-      sim.diffusion_->calc(sim.VmArray_, dVmDiffusion, voltageExchange.get_recv_buf_(), nLocal);
-      profileStop(diffusionTimerHandle);
-
-      profileStart(stimulusHandle);
-      for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii) sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion, dVmExternal);
-      profileStop(stimulusHandle);
-
-      L2_BarrierWithSync_WaitAndReset(&reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads);
-
-      dVmReactionCpy=dVmReaction; 
-      profileStart(integratorHandle);
-      for (unsigned ii=0; ii<nLocal; ++ii)
+      if (tid == 0)
       {
-         double dVm = dVmReaction[ii] + dVmDiffusion[ii]+dVmExternal[ii];
-         sim.VmArray_[ii] += sim.dt_*dVm;
-      }
-      sim.time_ += sim.dt_;
-      ++sim.loop_;
-      profileStop(integratorHandle);
+         profileStart(haloHandle);
+         loopData.voltageExchange.execute(sim.VmArray_, nLocal);
+         loopData.voltageExchange.complete();
+         profileStop(haloHandle);
 
-      L2_BarrierWithSync_Arrive(&diffusionBarrier, &diffusionHandle, sim.diffusionGroup_->nThreads);
-      L2_BarrierWithSync_Reset(&diffusionBarrier, &diffusionHandle, sim.diffusionGroup_->nThreads);
-      if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0) writeCheckpoint(sim, MPI_COMM_WORLD);
-      loopIO(sim,dVmReactionCpy,dVmDiffusion,dVmExternal);
+         for (unsigned ii=0; ii<nLocal; ++ii)
+            loopData.dVmDiffusion[ii] = 0;
+      }
+      
+      // Either need a barrier for the completion of the halo exchange.
+      
+      
+      // DIFFUSION
+      if (tid == 0)
+      {
+         profileStart(diffusionTimerHandle);
+         sim.diffusion_->calc(sim.VmArray_, loopData.dVmDiffusion,
+                              loopData.voltageExchange.get_recv_buf_(), nLocal);
+         profileStop(diffusionTimerHandle);
+      }
+      
+      if (tid == 0)
+      {
+         for (unsigned ii=0; ii<nLocal; ++ii)
+            loopData.dVmExternal[ii] = 0;
+         profileStart(stimulusHandle);
+         for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
+            sim.stimulus_[ii]->stim(sim.time_, loopData.dVmDiffusion,
+                                    loopData.dVmExternal);
+         profileStop(stimulusHandle);
+      }
+      
+      L2_BarrierWithSync_WaitAndReset(&reactionBarrier, &reactionHandle,
+                                      sim.reactionGroup_->nThreads);
+
+
+      if (tid == 0)
+      {
+         loopData.dVmReactionCpy = loopData.dVmReaction; 
+         profileStart(integratorHandle);
+         for (unsigned ii=0; ii<nLocal; ++ii)
+         {
+            double dVm = loopData.dVmReaction[ii] + loopData.dVmDiffusion[ii]
+               + loopData.dVmExternal[ii];
+            sim.VmArray_[ii] += sim.dt_*dVm;
+         }
+         sim.time_ += sim.dt_;
+         ++sim.loop_;
+         profileStop(integratorHandle);
+      }
+      // need barrier here.  Can't let any thread finsh loop until loop_
+      // has been incremented.
+
+      L2_BarrierWithSync_Arrive(&diffusionBarrier, &diffusionHandle,
+                                sim.diffusionGroup_->nThreads);
+      L2_BarrierWithSync_Reset(&diffusionBarrier, &diffusionHandle,
+                               sim.diffusionGroup_->nThreads);
+      if (tid == 0)
+      {
+         if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
+            writeCheckpoint(sim, MPI_COMM_WORLD);
+         loopIO(sim, loopData.dVmReactionCpy, loopData.dVmDiffusion,
+                loopData.dVmExternal);
+      }
    }
 }
 
@@ -235,12 +295,15 @@ void nullReactionLoop(Simulate& sim, vector<double>& dVmReaction,L2_BarrierHandl
 }
 
 
+
+
 void simulationLoopParallelDiffusionReaction(Simulate& sim)
 {
-   int nLocal = sim.anatomy_.nLocal();
-   vector<double> dVmReaction(nLocal, 0.0);
+   
+   SimLoopData loopData(sim);
+
    simulationProlog(sim);
-#pragma omp parallel
+   #pragma omp parallel
    {
       int ompTid = omp_get_thread_num();
       
@@ -249,17 +312,15 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
       L2_BarrierWithSync_InitInThread(&reactionBarrier, &reactionHandle);
       L2_BarrierWithSync_InitInThread(&diffusionBarrier, &diffusionHandle);
       
-#pragma omp barrier
+      #pragma omp barrier
       if ( sim.tinfo_.threadingMap_[ompTid] == sim.diffusionGroup_) 
       {
-          int dID = groupThreadID(sim.diffusionGroup_); 
-          if (dID ==0) diffusionLoop(sim, dVmReaction,  reactionHandle, diffusionHandle);
-          else nullDiffusionLoop(sim, dVmReaction,  reactionHandle, diffusionHandle);
+         diffusionLoop(sim, loopData, reactionHandle, diffusionHandle);
       }
       if ( sim.tinfo_.threadingMap_[ompTid] == sim.reactionGroup_) 
       {
           int rID = groupThreadID(sim.reactionGroup_); 
-          reactionLoop(sim, dVmReaction, reactionHandle, diffusionHandle);
+          reactionLoop(sim, loopData.dVmReaction, reactionHandle, diffusionHandle);
       } 
    }
 }

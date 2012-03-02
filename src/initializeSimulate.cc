@@ -51,8 +51,6 @@ void initializeSimulate(const string& name, Simulate& sim)
    
    getRemoteCells(sim, nameTmp, MPI_COMM_WORLD);
 
-// Assume thread are assigned in round robin order. 
-
    objectGet(obj, "diffusion", nameTmp, "diffusion");
    sim.diffusion_ = diffusionFactory(nameTmp, sim.anatomy_);
    
@@ -61,10 +59,12 @@ void initializeSimulate(const string& name, Simulate& sim)
 
    vector<string> names;
    objectGet(obj, "stimulus", names);
-   for (unsigned ii=0; ii<names.size(); ++ii) sim.stimulus_.push_back(stimulusFactory(names[ii], sim.anatomy_));
+   for (unsigned ii=0; ii<names.size(); ++ii)
+      sim.stimulus_.push_back(stimulusFactory(names[ii], sim.anatomy_));
 
    names.clear();
    objectGet(obj, "sensor", names);
-   for (unsigned ii=0; ii<names.size(); ++ii) sim.sensor_.push_back(sensorFactory(names[ii], sim.anatomy_));
+   for (unsigned ii=0; ii<names.size(); ++ii)
+      sim.sensor_.push_back(sensorFactory(names[ii], sim.anatomy_));
 
 }
