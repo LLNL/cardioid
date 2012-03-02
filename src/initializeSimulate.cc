@@ -1,4 +1,3 @@
-#include <omp.h> 
 #include "initializeSimulate.hh"
 #include "object_cc.hh"
 #include "Simulate.hh"

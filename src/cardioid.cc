@@ -8,7 +8,6 @@
 #include <mpi.h>
 #include <cstdlib>
 #include <sstream>
-#include <omp.h>
 
 #include "Simulate.hh"
 #include "PerformanceTimers.hh"

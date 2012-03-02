@@ -244,7 +244,6 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
    {
       int ompTid = omp_get_thread_num();
       
-      
       L2_BarrierHandle_t reactionHandle;
       L2_BarrierHandle_t diffusionHandle;
       L2_BarrierWithSync_InitInThread(&reactionBarrier, &reactionHandle);
