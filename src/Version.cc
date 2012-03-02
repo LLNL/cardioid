@@ -1,7 +1,6 @@
 #include "Version.hh"
 #include <iostream>
-#include <unistd.h>
-#include <pwd.h>
+#include "getUserInfo.hh"
 
 #define xstr(x) str(x)
 #define str(x) #x
@@ -19,11 +18,8 @@ Version::Version()
    ldFlags_     = xstr(LDFLAGS);
    buildTarget_ = xstr(TARGET);
    buildArch_   = xstr(ARCH);
-
-   char tmp[256];
-   gethostname(tmp, 256);
-   host_        = tmp;
-   //user_        = getpwuid(getuid())->pw_name; //Not supported on all platforms  
+   host_        = getHostName();
+   user_        = getUserName();
 }
 
 const Version& Version::getInstance()
