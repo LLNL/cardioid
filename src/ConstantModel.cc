@@ -30,18 +30,25 @@ ConstantModel::ConstantModel(const double eta[3],
 /** returns dVm/dt for the reaction part only. */
 double ConstantModel::calc(const double x, const double y, const double z)
 {
+   assert( x>0. );
+   assert( y>0. );
+   assert( z>0. );
+   assert( x<M_PI );
+   assert( y<M_PI );
+   assert( z<M_PI );
    double fx=-cos(x)*(
-       eta_[2]*sin(z)*(sigma2_.a11*alpha_+sigma2_.a12*beta_+sigma2_.a13*gamma_)
-      +eta_[3]*sin(y)*(sigma3_.a11*alpha_+sigma3_.a12*beta_+sigma3_.a13*gamma_));
+       eta_[1]*sin(z)*(sigma2_.a11*alpha_+sigma2_.a12*beta_+sigma2_.a13*gamma_)
+      +eta_[2]*sin(y)*(sigma3_.a11*alpha_+sigma3_.a12*beta_+sigma3_.a13*gamma_));
    double fy=-cos(y)*(
-       eta_[1]*sin(z)*(sigma1_.a12*alpha_+sigma1_.a22*beta_+sigma1_.a23*gamma_)
-      +eta_[3]*sin(x)*(sigma3_.a12*alpha_+sigma3_.a22*beta_+sigma3_.a23*gamma_));
+       eta_[0]*sin(z)*(sigma1_.a12*alpha_+sigma1_.a22*beta_+sigma1_.a23*gamma_)
+      +eta_[2]*sin(x)*(sigma3_.a12*alpha_+sigma3_.a22*beta_+sigma3_.a23*gamma_));
    double fz=-cos(z)*(
-       eta_[1]*sin(y)*(sigma1_.a13*alpha_+sigma1_.a23*beta_+sigma1_.a33*gamma_)
-      +eta_[2]*sin(x)*(sigma2_.a13*alpha_+sigma2_.a23*beta_+sigma2_.a33*gamma_));
+       eta_[0]*sin(y)*(sigma1_.a13*alpha_+sigma1_.a23*beta_+sigma1_.a33*gamma_)
+      +eta_[1]*sin(x)*(sigma2_.a13*alpha_+sigma2_.a23*beta_+sigma2_.a33*gamma_));
       
    assert( fx==fx );
    assert( fy==fy );
    assert( fz==fz );
+   
    return fx+fy+fz;
 }

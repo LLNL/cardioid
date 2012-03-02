@@ -5,11 +5,11 @@ simulate SIMULATE
    diffusion = diff1;
    reaction = constant;
    loop = 0;            // in timesteps
-   maxLoop = 1500;     // in timesteps
-   dt = 0.01;       // msec
+   maxLoop = 10000;     // in timesteps
+   dt = 1.5;       // msec
    time = 0;            // msec
-   printRate = 50;      // in timesteps
-   snapshotRate = 100;
+   printRate    = 100;  // in timesteps
+   snapshotRate = 10000;
 }
 
 cuboid ANATOMY 
