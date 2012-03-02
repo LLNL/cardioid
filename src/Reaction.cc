@@ -18,6 +18,7 @@ void Reaction::getCheckpointInfo(vector<string>& fieldNames,
 int Reaction::getVarHandle(const string& varName) const
 {
    assert(false);
+   return 0;
 }
 
 /** getVarHandle must return 0 for any name that is not defined in
@@ -25,6 +26,7 @@ int Reaction::getVarHandle(const string& varName) const
 vector<int> Reaction::getVarHandle(const vector<string>& varName) const
 {
    assert(false);
+   return vector<int>();
 }
 
 void Reaction::setValue(int iCell, int varHandle, double value)
@@ -36,6 +38,7 @@ void Reaction::setValue(int iCell, int varHandle, double value)
 double Reaction::getValue(int iCell, int handle) const
 {
    assert(false);
+   return 0.0;
 }
 
 void Reaction::getValue(int iCell,
@@ -46,8 +49,9 @@ void Reaction::getValue(int iCell,
       value[ii] = getValue(iCell, handle[ii]);
 }
 
-const string& Reaction::getUnit(const string& varName) const
+const string Reaction::getUnit(const string& varName) const
 {
    assert(false);
+   return string();
 }
 

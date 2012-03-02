@@ -200,6 +200,7 @@ double TT06_CellML_Reaction::getValue(int iCell, int handle) const
       assert(false);
       break;
    }
+   return 0.;
 }
 
 void TT06_CellML_Reaction::getValue(int iCell,
@@ -211,7 +212,7 @@ void TT06_CellML_Reaction::getValue(int iCell,
 }
 
 
-const string& TT06_CellML_Reaction::getUnit(const string& varName) const
+const string TT06_CellML_Reaction::getUnit(const string& varName) const
 {
    return getHandleMap()[varName].unit_;
 }

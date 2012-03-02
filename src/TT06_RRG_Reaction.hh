@@ -29,7 +29,7 @@ class TT06_RRG_Reaction : public Reaction
    void getValue(int iCell,
                  const std::vector<int>& handle,
                  std::vector<double>& value) const;
-   const std::string& getUnit(const std::string& varName) const;
+   const std::string getUnit(const std::string& varName) const;
    
    
  private:

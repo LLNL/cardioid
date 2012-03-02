@@ -34,7 +34,7 @@ class Reaction
    virtual void getValue(int iCell,
                          const std::vector<int>& handle,
                          std::vector<double>& value) const;
-   virtual const std::string& getUnit(const std::string& varName) const;
+   virtual const std::string getUnit(const std::string& varName) const;
 };
 
 #endif

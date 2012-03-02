@@ -83,8 +83,8 @@ void TT06_RRG_Reaction::getValue(int iCell,
    cells_[iCell].getValue(handle, value);
 }
 
-const string& TT06_RRG_Reaction::getUnit(const string& varName) const
+const string TT06_RRG_Reaction::getUnit(const string& varName) const
 {
-   TT06_RRG::getUnit(varName);
+   return TT06_RRG::getUnit(varName);
 }
 

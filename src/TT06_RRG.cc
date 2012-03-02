@@ -134,6 +134,7 @@ double TT06_RRG::getValue(int handle) const
       assert(false);
       break;
    }
+   return 0.;
 }
 
 void TT06_RRG::getValue(const vector<int>& handle,
@@ -144,7 +145,7 @@ void TT06_RRG::getValue(const vector<int>& handle,
 }
 
 
-const string& TT06_RRG::getUnit(const string& varName)
+const string TT06_RRG::getUnit(const string& varName)
 {
    return getHandleMap()[varName].unit_;
 }

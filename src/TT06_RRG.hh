@@ -51,7 +51,7 @@ class TT06_RRG
    double getValue(int handle) const;
    void getValue(const std::vector<int>& handle,
                  std::vector<double>& value) const;
-   static const std::string& getUnit(const std::string& varName);
+   static const std::string getUnit(const std::string& varName);
 
 
    
