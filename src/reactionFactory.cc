@@ -137,6 +137,7 @@ namespace
       sigma1.a13=buffer[2];
       sigma1.a22=buffer[3];
       sigma1.a23=buffer[4];
+      sigma1.a33=buffer[5];
       free(buffer);
       nn=object_getv(obj, "sigma2", (void*)&buffer, DOUBLE, ABORT_IF_NOT_FOUND);
       assert( nn==6 );
@@ -145,6 +146,7 @@ namespace
       sigma2.a13=buffer[2];
       sigma2.a22=buffer[3];
       sigma2.a23=buffer[4];
+      sigma2.a33=buffer[5];
       free(buffer);
       nn=object_getv(obj, "sigma3", (void*)&buffer, DOUBLE, ABORT_IF_NOT_FOUND);
       assert( nn==6 );
@@ -153,6 +155,7 @@ namespace
       sigma3.a13=buffer[2];
       sigma3.a22=buffer[3];
       sigma3.a23=buffer[4];
+      sigma3.a33=buffer[5];
       free(buffer);
 
       return new ConstantReaction(anatomy,
