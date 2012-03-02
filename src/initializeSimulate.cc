@@ -28,10 +28,11 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "snapshotRate", sim.snapshotRate_, "100");
    objectGet(obj, "checkpointRate", sim.checkpointRate_, "-1");
    objectGet(obj, "parallelDiffusionReaction", sim.parallelDiffusionReaction_, "0");
+   // Need the diffusionGroup to be initialized for loopIO in simulationLoop.cc
+   sim.diffusionGroup_ = sim.tinfo_.mkGroup(1); 
    if (sim.parallelDiffusionReaction_ == 1)    
    {
-   sim.diffusionGroup_ = sim.tinfo_.mkGroup(1); 
-   sim.reactionGroup_  = sim.tinfo_.mkGroup(-1); 
+      sim.reactionGroup_  = sim.tinfo_.mkGroup(-1); 
    }
    
 
