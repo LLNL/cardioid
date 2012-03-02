@@ -4,9 +4,11 @@
 #include "Anatomy.hh"
 #include "TT06Func.hh"
 #include "pade.hh"
+#include "PerformanceTimers.hh"
 
 using namespace std;
 using namespace TT06Func;
+using namespace PerformanceTimers;
 
 static FILE *tfile[64]; 
 
@@ -51,7 +53,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int m
    {
         char filename[512]; 
         sprintf(filename,"TT06_%d",i); 
-	tfile[i] =fopen(filename,"w"); 
+	//tfile[i] =fopen(filename,"w"); 
    }
    
 }
@@ -102,16 +104,20 @@ void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<do
 void TT06Dev_Reaction::updateNonGate(double dt, const vector<double>& Vm, vector<double>& dVR)
 {
    int offset; 
+   profileStart(nonGateTimerHandle);
    int nCells = nonGateWorkPartition(offset); 
    int ompID = omp_get_thread_num(); 
-   fprintf(tfile[ompID],"offset=%d ncells=%d\n",offset,nCells); 
+   //fprintf(tfile[ompID],"offset=%d ncells=%d\n",offset,nCells); 
    TT06Func::updateNonGate(dt, nCells,&Vm[offset], &(s_[offset]), &dVR[offset]);
+   profileStop(nonGateTimerHandle);
 }
 void TT06Dev_Reaction::updateGate(double dt, const vector<double>& Vm)
 {
    int offset; 
+   profileStart(GateTimerHandle);
    int nCells = nonGateWorkPartition(offset); 
    TT06Func::updateGate(dt, nCells,&Vm[offset], &(s_[offset]));
+   profileStop(GateTimerHandle);
 }
 
 

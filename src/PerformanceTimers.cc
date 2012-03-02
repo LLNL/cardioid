@@ -32,6 +32,8 @@ namespace PerformanceTimers
  TimerHandle stimulusHandle ;
  TimerHandle reactionTimerHandle ;
  TimerHandle integratorHandle ;
+ TimerHandle nonGateTimerHandle ;
+ TimerHandle GateTimerHandle ;
    
    vector<TimerStruct> timers_;
    typedef map<string, TimerHandle> HandleMap;
@@ -67,6 +69,8 @@ haloHandle = profileGetHandle("Halo Exchange");
 diffusionTimerHandle = profileGetHandle("Diffusion");
 stimulusHandle = profileGetHandle("Stimulus");
 reactionTimerHandle = profileGetHandle("Reaction");
+nonGateTimerHandle = profileGetHandle("nonGate");
+GateTimerHandle = profileGetHandle("Gate");
 integratorHandle = profileGetHandle("Integrator");
 haloHandle = profileGetHandle("Halo Exchange");
 }
