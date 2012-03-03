@@ -18,6 +18,9 @@ endif
 ifeq ($(HOSTNAME),udawn)
   ARCHGUESS = bgp
 endif
+ifeq ($(HOSTNAME),tambo)
+  ARCHGUESS = tambo
+endif
 ifeq ($(HOSTNAME),rzdawndev)
   ARCHGUESS = bgp
 endif
