@@ -4,7 +4,7 @@
 #include <iostream>
 using namespace std;
 
-ConstantModel::ConstantModel(const double eta[3],
+ConstantModel::ConstantModel(const vector<double>& eta,
                              const SymmetricTensor& sigma1,
                              const SymmetricTensor& sigma2,
                              const SymmetricTensor& sigma3,
@@ -22,6 +22,7 @@ ConstantModel::ConstantModel(const double eta[3],
    eta_[1]=eta[1];
    eta_[2]=eta[2];
    
+   assert( fabs(eta_[0])>1.e-15 || fabs(eta_[1])>1.e-15 || fabs(eta_[2])>1.e-15 );
    assert( alpha_==alpha_ );
    assert( beta_==beta_ );
    assert( gamma_==gamma_ );
@@ -50,5 +51,5 @@ double ConstantModel::calc(const double x, const double y, const double z)
    assert( fy==fy );
    assert( fz==fz );
    
-   return fx+fy+fz;
+   return 1.e-3*(fx+fy+fz); // factor 1.e-3 because we used a conductivity in [mS]
 }

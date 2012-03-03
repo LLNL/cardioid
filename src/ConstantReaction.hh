@@ -9,13 +9,14 @@ class ConstantReaction : public Reaction
 {
  public:
    ConstantReaction(const Anatomy& anatomy,
-                 const double eta[3],
+                 const vector<double>& eta,
                  const SymmetricTensor& sigma1,
                  const SymmetricTensor& sigma2,
                  const SymmetricTensor& sigma3,
                  const double alpha,
                  const double beta,
-                 const double gamma);
+                 const double gamma,
+                 const int printRate);
    ~ConstantReaction(){};
    std::string methodName() const {return "Constant";}
 
@@ -28,7 +29,9 @@ class ConstantReaction : public Reaction
  private:
    const Anatomy& anatomy_;
    ConstantModel* cellModel_;
+   int printRate_;
 
+   void compareWithExactSol(const std::vector<double>& Vm)const;
 };
 
 #endif

@@ -1,4 +1,11 @@
 #generate conductivity file
-python generateAnisotropicConductivityField.py 16 16 16 > anatomy#000000
+python generateAnisotropicConductivityField.py 16 16 16 > anatomy16#000000
+ln -sf object16.data object.data 
 
-srun -ppdebug -N1 -n8 ../../bin/cardioid-peloton
+srun -ppdebug -N1 -n16 ../../bin/cardioid-peloton
+
+python generateAnisotropicConductivityField.py 32 32 32 > anatomy32#000000
+ln -sf object32.data object.data 
+
+srun -ppdebug -N1 -n16 ../../bin/cardioid-peloton
+

@@ -118,15 +118,17 @@ namespace
 {
    Reaction* scanConstant(OBJECT* obj, const Anatomy& anatomy)
    {
-      double eta[3];
-      int n = object_getv(obj, "eta", (void*)&eta[0], DOUBLE,IGNORE_IF_NOT_FOUND);
-
+      vector<double> eta;
+      objectGet(obj, "eta", eta);
+      
       double alpha = 0.0; 
       objectGet(obj, "alpha", alpha, "0.0") ;
       double beta = 0.0; 
       objectGet(obj, "beta", beta, "0.0") ;
       double gamma = 0.0; 
       objectGet(obj, "gamma", gamma, "0.0") ;
+      int printRate;
+      objectGet(obj, "printRate", printRate, "0") ;
 
       SymmetricTensor sigma1, sigma2, sigma3;
       double* buffer;
@@ -161,6 +163,7 @@ namespace
       return new ConstantReaction(anatomy,
                                   eta,
                                   sigma1, sigma2, sigma3,
-                                  alpha, beta, gamma);
+                                  alpha, beta, gamma,
+                                  printRate);
    }
 }
