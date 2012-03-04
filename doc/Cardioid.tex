@@ -56,7 +56,7 @@ Several other build targets exist:
 \subsection{Relationship to ddcMD}
 \label{ssec:ddcMD}
 
-Cardioid uses a number of sorce code files that are developed and
+Cardioid uses a number of source code files that are developed and
 maintained as part of ddcMD.  For various reasons, these files have
 never been organized into a separately maintained library.  This makes
 it a challenge to use these files in the Cardioid build.  If you are not
@@ -154,7 +154,7 @@ given in the appendix.
 The \path{restart} file is typically present only when restarting jobs
 from a checkpoint file.  The \path{restart} file is generated
 automatically along with a checkpoint file and is always read after the
-\path{object.data} file.  This order is important because is allows the
+\path{object.data} file.  This order is important because it allows the
 \path{restart} file to override certain settings that change over the
 course of the simulation such as the time and loop count.  It also
 contains the location of the checkpoint file.  One way to think of the
@@ -171,7 +171,7 @@ directories.  A snapshot directory is named \path{snapshot.xxxxxxxx}
 where \path{xxxxxxxx} is the value of the simulation loop counter when
 the directory was created.  The \path{restart} file that corresponds to
 a checkpoint file written in the corresponding snapshot directory and a
-symbolic link to the restart file is created in the run directory.  Each
+symbolic link to the restart file are created in the run directory.  Each
 time a new checkpoint file is written the link is updated to point at
 the most recent restart file.  You can easily change which checkpoint
 file you want to use for restart by pointing the symbolic link at the 
@@ -187,7 +187,7 @@ Here are some suggested best practices that will help organize files.
   as Cardioid may overwrite files in any numbered snapshot directory.
 \item Never place an actual file named \path{restart} in the run
   directory.  Use only symbolic links (created with the command ln -s)
-  that point actual files someplace else (such as in a snapshot
+  that point to actual files someplace else (such as in a snapshot
   directory).  Cardioid deletes the old \path{restart} file in the run
   directory each time it creates a new checkpoint file.  Using symbolic
   links assures that no actual data will be deleted, only pointers to
@@ -274,7 +274,7 @@ vSitm = -52 mV/ms;
 \item For tecnical reasons, ``m'' is not a valid specification for
   ``meter''.  You may use meter, mm, um, and nm.
   \item The unit parser is limited in the expressions it can handle.
-    Epressions may contain multiplication (*), division (/) and
+    Expressions may contain multiplication (*), division (/) and
     exponentiation (\^) with integer valued exponents both positive and
     negative.  It cannot handle parentheses.  
 \end{enumerate}
@@ -374,7 +374,7 @@ There are several ways to specify the conductivity tensors for each cell
 in the anatomy.  The most direct method is to include the conductivity
 tensor in the anatomy file.  Note that the units of the tensor elements
 must be specified in the header and must have the dimensionality of
-resistivity/length.  (Section~/ref{AnatomyFormat} contains a description
+resistivity/length.  (Section~\ref{sec:AnatomyFormat} contains a description
 of the anatomy file contents.)  When the tensor is present in the
 anatomy file no other conductity specification is necessary.  If any
 other specification is present it may override the tensor values in the
@@ -617,7 +617,7 @@ common set of keywords to specify the pulse train.  These keywords are:
   implemented.  Should it always be the sum?}
 
 \issue{As implemented, the Stimulus class can access and modify the
-  value of $dV/dt$ sue to diffusion.  This is a carry over from
+  value of $dV/dt$ due to diffusion.  This is a carry over from
   BlueBeats.  Is this a good idea?  Should we eliminate this possiblity?
    Should it be under keyword control?  Note that this imposes some
    potentially undesirable serialization constraints.}
@@ -639,10 +639,10 @@ Applies the stimulus to all cells inside a specified box.  \issue{The
   \kw{vStim}{See Section~\ref{sssec:pulseTrains}.}{-52~mV/msec}
   \kw{xMin}{Minimum grid index in the $x$-direction to stimulate.}{-1}
   \kw{xMax}{Maximum grid index in the $x$-direction to stimulate.}{Size of global grid in $x$-direction.}
-  \kw{xMin}{Minimum grid index in the $y$-direction to stimulate.}{-1}
-  \kw{xMax}{Maximum grid index in the $y$-direction to stimulate.}{Size of global grid in $y$-direction.}
-  \kw{xMin}{Minimum grid index in the $z$-direction to stimulate.}{-1}
-  \kw{xMax}{Maximum grid index in the $z$-direction to stimulate.}{Size of global grid in $z$-direction.}
+  \kw{yMin}{Minimum grid index in the $y$-direction to stimulate.}{-1}
+  \kw{yMax}{Maximum grid index in the $y$-direction to stimulate.}{Size of global grid in $y$-direction.}
+  \kw{zMin}{Minimum grid index in the $z$-direction to stimulate.}{-1}
+  \kw{zMax}{Maximum grid index in the $z$-direction to stimulate.}{Size of global grid in $z$-direction.}
 \end{keywords}
 
 \issue{Isn't it awkward that we specify the box in units of grid cells?
@@ -766,8 +766,11 @@ how to read the file.  \issue{For now we're using ascii to facilitate
   performance and decrease storage cost.}
 
 
+\bigskip
 The allowed field names and corrsponding field types are as follows:
+
 \begin{tabular}{l|l|l|p{.6\textwidth}}
+  & & & \\
   Field Name & Field Type & Required? & Description\\
   \hline
   gid &      8-byte integer   & Required & Cell index (described below)\\
@@ -781,6 +784,8 @@ The allowed field names and corrsponding field types are as follows:
   sigma13 &  float            & Optional & Component of conductivity tensor\\
   sigma23 &  float            & Optional & Component of conductivity tensor\\
 \end{tabular}
+
+\bigskip
 If either fibre angle is specified, both must be specified.  Both angles
 must be of the same type.  If any tensor component is specified, all
 must be specified.  It is ok to specify both fibre angle and
@@ -819,7 +824,7 @@ radians) is computed by the formula $\theta\pi/256$ or $\varphi\pi/256$.
 (In Blue Beats theta and phi were effectively limited to values in the
 range [0..254] This is not the case in Cardioid.)
 
-\issue{The coordinate system is not rigorously defined.  Presumeably
+\issue{The coordinate system is not rigorously defined.  Presumably
   theta is measured from the z-axis and phi from the x-axis.  This needs
   to be checked.  In any case I'm not familiar with the conventions of
   the field so I need some help here to make sure that we define things
@@ -828,7 +833,8 @@ range [0..254] This is not the case in Cardioid.)
 The conductivity tensor requires six
 fields with the names sigma11, sigma12, sigma13, sigma22, sigma23, and
 sigma33.  These fields represent the six unique values in the symmetric
-conductity tensor.  The fields may appear in any order. issue{Units!}
+conductity tensor.  The fields may appear in any order.
+\issue{Units!}
 
 
 The anatomy reader code is sensitive to the list of data fields
@@ -836,6 +842,7 @@ that are present.  For example the reader will notice that only the
 cellType is in the file, read two columns instead of four and synthesize
 the orientation data (or set a flag to tell someone else it needs to be
 synthesized).
+\issue{typo above? AAM}
 
 For ascii files the types can be f, u, and s, for integers, floats, and
 strings.  Binary files have types such as i4, i8, f4, f8, b1, b2, b3, \ldots,
