@@ -87,7 +87,7 @@ Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
    for (unsigned ii=0; ii<maxSteps_; ++ii)
    {
       balanceStep();
-      if (ii>0  && ii%outputRate_ == 0)
+      if (ii>0  && outputRate_>0 && ii%outputRate_ == 0)
       {
          stringstream name;
          name << "balance."<< setfill('0') <<setw(8) << ii;

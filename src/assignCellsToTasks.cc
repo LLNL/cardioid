@@ -56,7 +56,7 @@ namespace
       objectGet(obj, "verbose",         kp.verbose,         "1");
       objectGet(obj, "maxVoronoiSteps", kp.maxVoronoiSteps, "50");
       objectGet(obj, "maxSteps",        kp.maxSteps,        "500");
-      objectGet(obj, "outputRate",      kp.outputRate,      "5");
+      objectGet(obj, "outputRate",      kp.outputRate,      "-1");
       objectGet(obj, "alpha",           kp.alpha,           "0.05");
       objectGet(obj, "tolerance",       kp.tolerance,       "0.01");
       objectGet(obj, "nbrDeltaR",       kp.nbrDeltaR,       "2");
