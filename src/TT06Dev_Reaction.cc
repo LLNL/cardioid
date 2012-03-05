@@ -104,20 +104,24 @@ void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<do
 void TT06Dev_Reaction::updateNonGate(double dt, const vector<double>& Vm, vector<double>& dVR)
 {
    int offset; 
-   profileStart(nonGateTimerHandle);
+   profileStart(nonGateTimer);
    int nCells = nonGateWorkPartition(offset); 
    int ompID = omp_get_thread_num(); 
    //fprintf(tfile[ompID],"offset=%d ncells=%d\n",offset,nCells); 
    TT06Func::updateNonGate(dt, nCells,&Vm[offset], &(s_[offset]), &dVR[offset]);
-   profileStop(nonGateTimerHandle);
+   profileStop(nonGateTimer);
 }
 void TT06Dev_Reaction::updateGate(double dt, const vector<double>& Vm)
 {
    int offset; 
-   profileStart(GateTimerHandle);
+   profileStart(gateTimer);
    int nCells = nonGateWorkPartition(offset); 
+   //TT06Func::update_mGate(dt, nCells_,&Vm[0], &(s_[0]));
+   //TT06Func::update_hGate(dt, nCells_,&Vm[0], &(s_[0]));
+   //TT06Func::update_jGate(dt, nCells_,&Vm[0], &(s_[0]));
    TT06Func::updateGate(dt, nCells,&Vm[offset], &(s_[offset]));
-   profileStop(GateTimerHandle);
+   //TT06Func::update_sGate(dt, nCells_,&Vm[0], &(s_[0]));
+   profileStop(gateTimer);
 }
 
 
