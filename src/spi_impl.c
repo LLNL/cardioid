@@ -661,6 +661,57 @@ uint32_t mapping_table(spi_hdl_t* spi_hdl)
   return node.node_id;
 
 };
+
+uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
+{
+  uint32_t a, b, c, d, e, id;
+  uint32_t rc;
+  uint32_t node_id = Kernel_GetRank();
+  BG_JobCoords_t sblock;
+  Kernel_JobCoords(&sblock); 
+  assert(sblock.corner.core == 0);
+  
+  node.dim[CR_AXIS_A] = node.a_nodes = sblock.shape.a;
+  node.dim[CR_AXIS_B] = node.b_nodes = sblock.shape.b;
+  node.dim[CR_AXIS_C] = node.c_nodes = sblock.shape.c;
+  node.dim[CR_AXIS_D] = node.d_nodes = sblock.shape.d;
+  node.dim[CR_AXIS_E] = node.e_nodes = sblock.shape.e;
+
+  uint64_t nodes = sblock.shape.a*sblock.shape.b*sblock.shape.c*sblock.shape.d*sblock.shape.e;
+  /* allocate the mapping table */
+  MUHWI_Destination_t* mapping = malloc( nodes * sizeof(  MUHWI_Destination_t ) );
+  assert(mapping);
+  spi_hdl->mapping_hdl = (void*) mapping; 
+
+  /* allocate BG_CoordinateMapping */
+  BG_CoordinateMapping_t* bg_map = malloc( nodes * sizeof(BG_CoordinateMapping_t));
+  assert(bg_map);
+  uint64_t totN;
+  Kernel_RanksToCoords(node.nodes * sizeof(BG_CoordinateMapping_t),bg_map,&totN);
+  assert(totN == nodes);
+
+  for( ii =0 ; ii < nodes ; ii++)
+  {
+    (mapping)[ii].Destination.A_Destination = bg_map[ii].a + sblock.cornet.a;
+    (mapping)[ii].Destination.B_Destination = bg_map[ii].b + sblock.cornet.b;
+    (mapping)[ii].Destination.C_Destination = bg_map[ii].c + sblock.cornet.c;
+    (mapping)[ii].Destination.D_Destination = bg_map[ii].d + sblock.cornet.d;
+    (mapping)[ii].Destination.E_Destination = bg_map[ii].e + sblock.cornet.e;
+  }
+
+
+  #ifdef spi_debug
+  printf("my id is %d\n",node_id);
+  printf("geom is %d x %d x %d x %d x %d\n", sblock.shape.a,sblock.shape.b,sblock.shape.c,sblock.shape.d,sblock.shape.e);
+  printf("my rel coord is %d x %d x %d x %d x %d\n", bg_map[node_id].a,bg_map[node_id].b,bg_map[node_id].c,bg_map[node_id].d,bg_map[node_id].e);
+
+  printf("completing init_mapping_table\n" );
+  #endif
+
+  free(bg_map);
+  return node_id;
+
+};
   //MUSPI_GIBarrier_t barrier;
   //MUSPI_GIBarrierInit( &barrier, 0 );
   //MUSPI_GIBarrierEnterAndWait( &barrier );
