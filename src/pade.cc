@@ -23,7 +23,6 @@ double padeFunc(double x, PADE *pade)
    double sum2=0;    
    int k = m+l-1; 
    for (int j=m-1;j>=0;j--)sum1 =  a[j] + x*sum1; 
-//   if (l<2) return sum1; 
    for (int j=k;j>=m;j--)  sum2 =  a[j] + x*sum2; 
    return sum1/sum2; 
 }
@@ -144,7 +143,7 @@ static void  minimizeCost(PADE *pade,int maxCost, int lMax, int mMax)
 {
    int lMin = 1; 
    int mMin = 1; 
-   int minCost=4; 
+   int minCost=0; 
    if (lMax < 0 && mMax < 0)  minCost = costFunc(lMax,mMax); 
    if (lMax < 0) { lMax *= -1; lMin=lMax; }
    if (mMax < 0) { mMax *= -1; mMin=mMax; }
@@ -152,7 +151,10 @@ static void  minimizeCost(PADE *pade,int maxCost, int lMax, int mMax)
    double *x = pade->x; 
    double *y = pade->y; 
    double tol = pade->tol; 
-   double errTol = tol*(pade->ymax-pade->ymin); 
+   double dy = (pade->ymax-pade->ymin); 
+   double norm = (fabs(pade->ymax)+fabs(pade->ymin)); 
+   double errTol = tol*dy; 
+   if ( errTol < 1e-14*norm)  errTol = tol*norm; 
    int lmin=0,mmin=0; 
    int length; 
    double amin[lMax+mMax]; 
@@ -164,6 +166,7 @@ static void  minimizeCost(PADE *pade,int maxCost, int lMax, int mMax)
         for (int m=mMin;m<=mMax;m+=1)
         {
            if (costFunc(l,m) != kk) continue; 
+            //printf("%s %d %d\n",pade->name,costFunc(l,m),kk); 
            double a[l+m], errMax, errRMS; 
            findPadeApprox(l,m,n,x,y,a);
            padeError(l,m,a,n,x,y,&errMax,&errRMS);

@@ -7,4 +7,5 @@ void padeCalc(PADE *pade,int lMax, int  mMax, int maxCost);
 void padeErrorInfo(PADE pade);
 void padeWrite(FILE *file,PADE pade);
 double padeFunc(double x, PADE *parms) ;
+double polyFunc(double x, PADE *parms) ;
 #endif
