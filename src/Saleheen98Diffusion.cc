@@ -92,6 +92,16 @@ void Saleheen98PrecomputeDiffusion::calc(
       dVm[ii] *= diffusionScale_;
    }
 }
+
+void Saleheen98PrecomputeDiffusion::calc_simd(
+   const vector<double>& Vm, vector<double>& dVm, double *recv_buf_, int nLocal)
+{
+   updateVoltageBlock(Vm, recv_buf_, nLocal);
+   uint32_t start = VmBlock_.tupleToIndex(1,1,1);
+   uint32_t end = VmBlock_.tupleToIndex(localGrid_.nx()-1,localGrid_.ny(),localGrid_.nz());
+   boundaryFDLaplacianSaleheen98SumPhi_All_simd(start,end-start,&(dVm[start]));
+}
+
 /** We're building the localTuple array only for local cells.  We can't
  * do stencil operations on remote particles so we shouldn't need
  * tuples.  We can use block indices instead.
@@ -217,6 +227,156 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi(
    double result = SumAphi - (diffConst[x][y][z].sumA * (phi[x][y][z]));
    return result;
 }
+
+// simdiazed version
+// 'start' cannot be in the middle. 'start' must point to (n,0,0). 
+
+void
+Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi_All_simd(const uint32_t start,const int32_t chunk_size, double* out)
+{
+  int ii;
+
+  const unsigned Nx2 = localGrid_.nx();
+  const unsigned Ny2 = localGrid_.ny();
+  const unsigned Nz2 = localGrid_.nz();
+
+  const double* VmM = VmBlock_.cBlock();
+
+  int xm1ym1z_ = ((-1) *Ny2 + (-1)) * Nz2;
+  int xm1yz_ =   ((-1) *Ny2 + (0)) * Nz2;
+  int xm1yp1z_ = ((-1) *Ny2 + (+1)) * Nz2;
+  int xym1z_ =   ((0)  *Ny2 + (-1)) * Nz2;
+  int xyp1z_ =   ((0)  *Ny2 + (+1)) * Nz2;
+  int xp1ym1z_ = ((+1) *Ny2 + (-1)) * Nz2;
+  int xp1yz_ =   ((+1) *Ny2 + (0)) * Nz2;
+  int xp1yp1z_ = ((+1) *Ny2 + (+1)) * Nz2;
+
+  const double* phi_xm1_ym1_z = VmM + start + xm1ym1z_;
+  const double* phi_xm1_y_z   = VmM + start + xm1yz_;
+  const double* phi_xm1_yp1_z = VmM + start + xm1yp1z_;
+  const double* phi_x_ym1_z   = VmM + start + xym1z_;
+  const double* phi_x_y_z     = VmM + start ;
+  const double* phi_x_yp1_z   = VmM + start + xyp1z_;
+  const double* phi_xp1_ym1_z = VmM + start + xp1ym1z_;
+  const double* phi_xp1_y_z   = VmM + start + xp1yz_;
+  const double* phi_xp1_yp1_z = VmM + start + xp1yp1z_;
+
+  //initial
+  vector4double B0,B1,B2,C0,C1,C2,Sum0,Sum2,Sum;
+
+  vector4double my_x_y_z      =vec_ld(0,      phi_x_y_z   );
+  vector4double my_xp1_y_z    =vec_ld(0,      phi_xp1_y_z );
+  vector4double my_x_yp1_z    =vec_ld(0,      phi_x_yp1_z );
+  vector4double my_xm1_y_z    =vec_ld(0,      phi_xm1_y_z );
+  vector4double my_x_ym1_z    =vec_ld(0,      phi_x_ym1_z );
+  vector4double my_xp1_yp1_z  =vec_ld(0,    phi_xp1_yp1_z );
+  vector4double my_xm1_yp1_z  =vec_ld(0,    phi_xm1_yp1_z );
+  vector4double my_xm1_ym1_z  =vec_ld(0,    phi_xm1_ym1_z );
+  vector4double my_xp1_ym1_z  =vec_ld(0,    phi_xp1_ym1_z );
+  vector4double my_zero_vec = vec_splats(0.0);
+ 
+  simd_diff_ += start - 4;
+
+  B0 =  vec_madd(vec_ld(0,simd_diff_+=4)  , my_xp1_y_z,
+        vec_madd(vec_ld(0,simd_diff_+=4)  , my_x_yp1_z,
+        vec_madd(vec_ld(0,simd_diff_+=4)  , my_xm1_y_z,
+        vec_madd(vec_ld(0,simd_diff_+=4)  , my_x_ym1_z,
+        vec_mul( vec_ld(0,simd_diff_+=4)  , my_x_y_z)))));
+
+ 
+  B1 = vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_y_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_yp1_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_y_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_ym1_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_yp1_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_yp1_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_ym1_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_ym1_z,
+       vec_mul ( vec_ld(0,simd_diff_+=4)  , my_x_y_z)))))))));
+//  printf("%f %f %f %f\n",my_x_y_z.v[0], my_x_y_z.v[1], my_x_y_z.v[2], my_x_y_z.v[3]);
+//  printf("%f %f %f %f\n",B1.v[0],B1.v[1],B1.v[2],B1.v[3]);
+
+
+  B2 = vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_y_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_yp1_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_y_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_ym1_z,
+       vec_mul ( vec_ld(0,simd_diff_+=4)  , my_x_y_z)))));
+
+  Sum2 = vec_sldw(my_zero_vec,B2,3);
+
+  for(ii=1;ii<chunk_size;ii+=4)  //start must be that os x chunk.
+  {
+    phi_xp1_y_z   +=4;
+    phi_x_yp1_z   +=4;
+    phi_xm1_y_z   +=4;
+    phi_x_ym1_z   +=4;
+    phi_xp1_yp1_z +=4;
+    phi_xm1_yp1_z +=4;
+    phi_xm1_ym1_z +=4;
+    phi_xp1_ym1_z +=4;
+    phi_x_y_z     +=4;
+
+    my_x_y_z      =vec_ld(0,      phi_x_y_z   );
+    my_xp1_y_z    =vec_ld(0,      phi_xp1_y_z );
+    my_x_yp1_z    =vec_ld(0,      phi_x_yp1_z );
+    my_xm1_y_z    =vec_ld(0,      phi_xm1_y_z );
+    my_x_ym1_z    =vec_ld(0,      phi_x_ym1_z );
+    my_xp1_yp1_z  =vec_ld(0,    phi_xp1_yp1_z );
+    my_xm1_yp1_z  =vec_ld(0,    phi_xm1_yp1_z );
+    my_xm1_ym1_z  =vec_ld(0,    phi_xm1_ym1_z );
+    my_xp1_ym1_z  =vec_ld(0,    phi_xp1_ym1_z );
+
+
+  C0 =  vec_madd(vec_ld(0,simd_diff_+=4)  , my_xp1_y_z,
+        vec_madd(vec_ld(0,simd_diff_+=4)  , my_x_yp1_z,
+        vec_madd(vec_ld(0,simd_diff_+=4)  , my_xm1_y_z,
+        vec_madd(vec_ld(0,simd_diff_+=4)  , my_x_ym1_z,
+        vec_mul( vec_ld(0,simd_diff_+=4)  , my_x_y_z)))));
+
+    Sum0 = vec_sldw(B0,C0,1);
+    B0 = C0;
+
+//  printf("%f %f %f %f\n",Sum0.v[0],Sum0.v[1],Sum0.v[2],Sum0.v[3]);
+//  printf("%f %f %f %f\n",Sum2.v[0],Sum2.v[1],Sum2.v[2],Sum2.v[3]);
+    // commit the previous
+    Sum = vec_add(vec_add(Sum0,B1),Sum2);
+
+    vec_st(Sum,0,out);
+//  printf("out:%f %f %f %f\n",out[0],out[1],out[2],out[3]);
+
+  B1 = vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_y_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_yp1_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_y_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_ym1_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_yp1_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_yp1_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_ym1_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_ym1_z,
+       vec_mul ( vec_ld(0,simd_diff_+=4)  , my_x_y_z)))))))));
+
+//  printf("B1 :%f %f %f %f\n",B1.v[0],B1.v[1],B1.v[2],B1.v[3]);
+//  printf("C0 :%f %f %f %f\n",C0.v[0],C0.v[1],C0.v[2],C0.v[3]);
+//  printf("C2 :%f %f %f %f\n",C2.v[0],C2.v[1],C2.v[2],C2.v[3]);
+//  printf("xyz:%f %f %f %f\n",my_x_y_z.v[0], my_x_y_z.v[1], my_x_y_z.v[2], my_x_y_z.v[3]);
+
+
+  C2 = vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_y_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_yp1_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_y_z,
+       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_ym1_z,
+       vec_mul ( vec_ld(0,simd_diff_+=4)  , my_x_y_z)))));
+
+    Sum2 = vec_sldw(B2,C2,3);
+    B2 = C2;
+
+   out +=4;
+
+  }
+}
+
+
+
 
 /** Make sure to use a one-sided difference approximation for the
  *  gradient of the conductivities for cells on the organ surface.
@@ -422,3 +582,51 @@ void Saleheen98PrecomputeDiffusion::printAllDiffusionWeights(const Array3d<int>&
              diffIntra_(xx, yy, zz).sumA);
    }
 }
+
+void Saleheen98PrecomputeDiffusion::reorder_Coeff()
+{
+  uint32_t idx=0,ll,ii,jj,kk;
+  const uint32_t Nx2 = localGrid_.nx();
+  const uint32_t Ny2 = localGrid_.ny();
+  const uint32_t Nz2 = localGrid_.nz();
+
+  DiffusionCoefficients*** diffConst = diffIntra_.cArray();
+  simd_diff_org_ = new double[Nx2*Ny2*Nz2+4]; //allocate but not aligend. 
+  double* tgt = (double*)((uint64_t)simd_diff_org_ + 32 - ((uint64_t)simd_diff_org_)%32) ; //aligning
+  simd_diff_ = tgt;
+
+  idx--;
+  for(ii=0;ii<Nx2;ii++)
+  for(jj=0;jj<Ny2;jj++)
+  for(kk=0;kk<Nz2;kk+=4)
+  {
+//    if(ii==1 && jj==1 && kk==0) printf("idx=%d\n",idx);
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll-1+Nz2)%Nz2].A9;
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll-1+Nz2)%Nz2].A14;
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll-1+Nz2)%Nz2].A16;
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll-1+Nz2)%Nz2].A11;
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll-1+Nz2)%Nz2].A15;
+
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].sumA * (-1);
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A8;
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A7;
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A6;
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A5;
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A4;
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A3;
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A2;
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A1;
+
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll+1+Nz2)%Nz2].A10;
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll+1+Nz2)%Nz2].A13;
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll+1+Nz2)%Nz2].A17;
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll+1+Nz2)%Nz2].A12;
+    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll+1+Nz2)%Nz2].A18;
+  }
+}
+
+
+
+
+
+
