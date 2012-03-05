@@ -120,3 +120,10 @@ they likely evoke bi-domain concepts.
 
 38.  There are at least four places in the code where the name of the
 snapshot directory is constructed.  We should call a common function.
+
+39.  The pio library will choke on checkpoint files where any one of the
+physical files contains no data.  The cause of the crash will be the
+assert(read_len > 0) at line 671 (r1825).  We should think through very
+carefully what will happen if a file has no data and how to be sure that
+case is properly supported.
+
