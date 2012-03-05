@@ -6,6 +6,7 @@
 #include "pioVariableRecordHelper.h"
 #include "object_cc.hh"
 #include "BucketOfBits.hh"
+#include <cstring>
 
 using namespace std;
 

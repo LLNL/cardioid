@@ -15,6 +15,7 @@
 #include "units.h"
 #include "Version.hh"
 #include "utilities.h"
+#include <cstring>
 
 using namespace std;
 
