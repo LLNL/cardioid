@@ -21,6 +21,7 @@ class Array3d
 
    T*** cArray();
    const T*** cArray() const;
+   const T* cBlock() const { return &(data_[0]); };
    
    unsigned size() const;
    unsigned nx() const;
