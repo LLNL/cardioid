@@ -102,7 +102,7 @@ int main(int argc, char** argv)
    }
    profileDumpStats(cout);
    stringstream dirname;
-   dirname << "snapshot."<<setfill('0')<<setw(8)<<sim.loop_;
+   dirname << "snapshot."<<setfill('0')<<setw(12)<<sim.loop_;
    profileDumpAll(dirname.str());
    MPI_Finalize();
    

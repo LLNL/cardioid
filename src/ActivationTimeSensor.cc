@@ -39,7 +39,7 @@ void ActivationTimeSensor::print(double time, int loop,
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
    stringstream name;
-   name << "snapshot."<<setfill('0')<<setw(8)<<loop;
+   name << "snapshot."<<setfill('0')<<setw(12)<<loop;
    string fullname = name.str();
    if (myRank == 0)
       DirTestCreate(fullname.c_str());

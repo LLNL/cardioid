@@ -117,3 +117,6 @@ especially acute for the membrane voltage.
 
 37.  sigmaLi and sigmaTi are probably crappy choices for keywords since
 they likely evoke bi-domain concepts.
+
+38.  There are at least four places in the code where the name of the
+snapshot directory is constructed.  We should call a common function.
