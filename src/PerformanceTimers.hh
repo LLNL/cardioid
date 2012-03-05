@@ -8,15 +8,20 @@ typedef unsigned TimerHandle;
 
 namespace PerformanceTimers
 {
- extern TimerHandle loopIOHandle ;
- extern TimerHandle sensorHandle ;
- extern TimerHandle haloHandle ;
- extern TimerHandle diffusionTimerHandle ;
- extern TimerHandle stimulusHandle ;
- extern TimerHandle reactionTimerHandle ;
- extern TimerHandle nonGateTimerHandle ;
- extern TimerHandle GateTimerHandle ;
- extern TimerHandle integratorHandle ;
+ extern TimerHandle loopIOTimer ;
+ extern TimerHandle sensorTimer ;
+ extern TimerHandle haloTimer ;
+ extern TimerHandle diffusionTimer;
+ extern TimerHandle stimulusTimer ;
+ extern TimerHandle reactionTimer;
+ extern TimerHandle nonGateTimer;
+ extern TimerHandle gateTimer ;
+ extern TimerHandle diffusionLoopTimer ;
+ extern TimerHandle integratorTimer ;
+ extern TimerHandle reactionLoopTimer ;
+ extern TimerHandle reactionWaitTimer ;
+ extern TimerHandle diffusionWaitTimer ;
+ extern TimerHandle diffusionStallTimer ;
 };
 
 void profileStart(const TimerHandle& handle);
