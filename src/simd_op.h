@@ -5,7 +5,7 @@ typedef struct
  double v[4]; 
 } vector4double; 
 
-inline vector4double vec_ld(uint32_t shift, const double* addr)
+inline vector4double vec_ld(uint32_t shift, double* addr)
 {
   vector4double tmp;
   tmp.v[0] = *(addr + shift);

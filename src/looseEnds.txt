@@ -127,3 +127,6 @@ assert(read_len > 0) at line 671 (r1825).  We should think through very
 carefully what will happen if a file has no data and how to be sure that
 case is properly supported.
 
+40.  The intrinsic vec_ld won't accept a const double* as an argument.
+If it did we could throw quite a few more consts into the calc
+function.  Mostly these were removed in r403 to get the code to compile.

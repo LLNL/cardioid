@@ -93,7 +93,6 @@ void Saleheen98PrecomputeDiffusion::calc(
    }
 }
 
-#if (0)
 void Saleheen98PrecomputeDiffusion::calc_simd(
    const vector<double>& Vm, vector<double>& dVm, double *recv_buf_, int nLocal)
 {
@@ -102,7 +101,6 @@ void Saleheen98PrecomputeDiffusion::calc_simd(
    uint32_t end = VmBlock_.tupleToIndex(localGrid_.nx()-1,localGrid_.ny(),localGrid_.nz());
    boundaryFDLaplacianSaleheen98SumPhi_All_simd(start,end-start,&(dVm[start]));
 }
-#endif
 
 /** We're building the localTuple array only for local cells.  We can't
  * do stencil operations on remote particles so we shouldn't need
@@ -233,7 +231,6 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi(
 // simdiazed version
 // 'start' cannot be in the middle. 'start' must point to (n,0,0). 
 
-#if (0) 
 void
 Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi_All_simd(const uint32_t start,const int32_t chunk_size, double* out)
 {
@@ -243,7 +240,7 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi_All_simd(cons
   const unsigned Ny2 = localGrid_.ny();
   const unsigned Nz2 = localGrid_.nz();
 
-  const double* VmM = VmBlock_.cBlock();
+  double* VmM = VmBlock_.cBlock();
 
   int xm1ym1z_ = ((-1) *Ny2 + (-1)) * Nz2;
   int xm1yz_ =   ((-1) *Ny2 + (0)) * Nz2;
@@ -254,15 +251,15 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi_All_simd(cons
   int xp1yz_ =   ((+1) *Ny2 + (0)) * Nz2;
   int xp1yp1z_ = ((+1) *Ny2 + (+1)) * Nz2;
 
-  const double* phi_xm1_ym1_z = VmM + start + xm1ym1z_;
-  const double* phi_xm1_y_z   = VmM + start + xm1yz_;
-  const double* phi_xm1_yp1_z = VmM + start + xm1yp1z_;
-  const double* phi_x_ym1_z   = VmM + start + xym1z_;
-  const double* phi_x_y_z     = VmM + start ;
-  const double* phi_x_yp1_z   = VmM + start + xyp1z_;
-  const double* phi_xp1_ym1_z = VmM + start + xp1ym1z_;
-  const double* phi_xp1_y_z   = VmM + start + xp1yz_;
-  const double* phi_xp1_yp1_z = VmM + start + xp1yp1z_;
+  double* phi_xm1_ym1_z = VmM + start + xm1ym1z_;
+  double* phi_xm1_y_z   = VmM + start + xm1yz_;
+  double* phi_xm1_yp1_z = VmM + start + xm1yp1z_;
+  double* phi_x_ym1_z   = VmM + start + xym1z_;
+  double* phi_x_y_z     = VmM + start ;
+  double* phi_x_yp1_z   = VmM + start + xyp1z_;
+  double* phi_xp1_ym1_z = VmM + start + xp1ym1z_;
+  double* phi_xp1_y_z   = VmM + start + xp1yz_;
+  double* phi_xp1_yp1_z = VmM + start + xp1yp1z_;
 
   //initial
   vector4double B0,B1,B2,C0,C1,C2,Sum0,Sum2,Sum;
@@ -377,7 +374,6 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi_All_simd(cons
 
   }
 }
-#endif
 
 
 
@@ -587,7 +583,6 @@ void Saleheen98PrecomputeDiffusion::printAllDiffusionWeights(const Array3d<int>&
    }
 }
 
-#if (0) 
 void Saleheen98PrecomputeDiffusion::reorder_Coeff()
 {
   uint32_t idx=0,ll,ii,jj,kk;
@@ -629,7 +624,6 @@ void Saleheen98PrecomputeDiffusion::reorder_Coeff()
     idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll+1+Nz2)%Nz2].A18;
   }
 }
-#endif
 
 
 

@@ -5,6 +5,7 @@
 #include <string>
 #include "Array3d.hh"
 #include "LocalGrid.hh"
+#include <inttypes.h>
 #ifndef BGQ
 #include "simd_op.h"
 #endif
@@ -81,7 +82,7 @@ class Saleheen98PrecomputeDiffusion : public Diffusion
    void   reorder_Coeff();  //reoder the diffusion coefficients for simdizaed calc
    
    double boundaryFDLaplacianSaleheen98SumPhi(const Tuple& tuple);
-   //void   boundaryFDLaplacianSaleheen98SumPhi_All_simd(const uint32_t start,const int32_t chunk_size,double * out);
+   void   boundaryFDLaplacianSaleheen98SumPhi_All_simd(const uint32_t start,const int32_t chunk_size,double * out);
    void   boundaryFDLaplacianSaleheen98Constants(
       const int*** tissue,
       const SymmetricTensor*** sigmaMatrix,
