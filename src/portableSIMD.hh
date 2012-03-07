@@ -1,9 +1,19 @@
+#ifndef PORTABLE_SIMD_HH
+#define PORTABLE_SIMD_HH
+
 #include <inttypes.h>
 
-typedef struct
+// Don't #include this file. #include "ibmInstrinsics.hh" instead.  That
+// file contains all of the portability logic so that you don't need any
+// #ifdefs to guard the #include.
+#ifndef USE_PORTABLE_SIMD
+#error "Don't include portableSIMD.hh directly.  Include ibmIntrinsics.hh instead"
+#endif
+
+struct vector4double
 {
  double v[4]; 
-} vector4double; 
+}; 
 
 inline vector4double vec_ld(uint32_t shift, double* addr)
 {
@@ -73,3 +83,4 @@ inline void vec_st(vector4double op1, uint32_t offset, double* addr)
   *(addr + offset + 3) = op1.v[3];
 }
 
+#endif

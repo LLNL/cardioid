@@ -6,9 +6,7 @@
 #include "Array3d.hh"
 #include "LocalGrid.hh"
 #include <inttypes.h>
-#ifndef BGQ
-#include "simd_op.h"
-#endif
+#include "ibmIntrinsics.hh"
 
 class Anatomy;
 class SymmetricTensor;
