@@ -93,6 +93,7 @@ void Saleheen98PrecomputeDiffusion::calc(
    }
 }
 
+#if (0)
 void Saleheen98PrecomputeDiffusion::calc_simd(
    const vector<double>& Vm, vector<double>& dVm, double *recv_buf_, int nLocal)
 {
@@ -101,6 +102,7 @@ void Saleheen98PrecomputeDiffusion::calc_simd(
    uint32_t end = VmBlock_.tupleToIndex(localGrid_.nx()-1,localGrid_.ny(),localGrid_.nz());
    boundaryFDLaplacianSaleheen98SumPhi_All_simd(start,end-start,&(dVm[start]));
 }
+#endif
 
 /** We're building the localTuple array only for local cells.  We can't
  * do stencil operations on remote particles so we shouldn't need
@@ -231,6 +233,7 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi(
 // simdiazed version
 // 'start' cannot be in the middle. 'start' must point to (n,0,0). 
 
+#if (0) 
 void
 Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi_All_simd(const uint32_t start,const int32_t chunk_size, double* out)
 {
@@ -374,6 +377,7 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi_All_simd(cons
 
   }
 }
+#endif
 
 
 
@@ -583,6 +587,7 @@ void Saleheen98PrecomputeDiffusion::printAllDiffusionWeights(const Array3d<int>&
    }
 }
 
+#if (0) 
 void Saleheen98PrecomputeDiffusion::reorder_Coeff()
 {
   uint32_t idx=0,ll,ii,jj,kk;
@@ -624,6 +629,7 @@ void Saleheen98PrecomputeDiffusion::reorder_Coeff()
     idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll+1+Nz2)%Nz2].A18;
   }
 }
+#endif
 
 
 
