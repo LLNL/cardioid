@@ -90,7 +90,6 @@ void Saleheen98PrecomputeDiffusion::calc(
 
    const int n = dVm.size();
 
-   cout << "calc called" << endl;
 #pragma omp parallel for
    for (int ii=0; ii<n; ++ii)
    {
