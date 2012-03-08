@@ -9,6 +9,7 @@ class NullDiffusion : public Diffusion
    NullDiffusion(){};
    
    void calc(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf, int nLocal){};
+   void calc_simd(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf, int nLocal){};
 };
 
 
