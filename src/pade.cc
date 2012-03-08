@@ -119,14 +119,14 @@ static void makeFunctionTable(PADE *pade)
    pade->ymin = ymin; 
    pade->ymax = ymax; 
 }
-void padeErrorInfo(PADE pade) 
+void padeErrorInfo(PADE pade,int index) 
 {
    
    double dy = pade.ymax-pade.ymin; 
    char filename[256]; 
    sprintf(filename,"func_tt06_%s",pade.name); 
    FILE *file = fopen(filename,"w"); 
-   fprintf(file,"#%10s: %6d %6d %6d ",pade.name,costFunc(pade.l,pade.m),pade.l,pade.m); fflush(stdout); 
+   fprintf(file,"#%10s: %3d %6d %6d %6d ",pade.name,index,costFunc(pade.l,pade.m),pade.l,pade.m); fflush(stdout); 
    fprintf(file,"%10.2e %10.2e %10.2e ",pade.tol,pade.errMax,pade.errMax/dy); 
    fprintf(file,"%10.2e %10.2e\n",pade.errRMS,pade.errRMS/dy); 
    for (int i=0;i<pade.n;i++) 
@@ -166,7 +166,6 @@ static void  minimizeCost(PADE *pade,int maxCost, int lMax, int mMax)
         for (int m=mMin;m<=mMax;m+=1)
         {
            if (costFunc(l,m) != kk) continue; 
-            //printf("%s %d %d\n",pade->name,costFunc(l,m),kk); 
            double a[l+m], errMax, errRMS; 
            findPadeApprox(l,m,n,x,y,a);
            padeError(l,m,a,n,x,y,&errMax,&errRMS);
@@ -181,6 +180,43 @@ static void  minimizeCost(PADE *pade,int maxCost, int lMax, int mMax)
        }
        if (errMaxMin  < errTol && errMaxMin >= 0.0 ) break ; 
    }
+/*
+   int flag=0; 
+   int l,m; 
+   if ( strcmp(pade->name,"Xr1Mhu") ==0) {  l = 4; m =8; flag=1; }
+   if ( strcmp(pade->name,"Xr1TauR") ==0) { l = 1; m =12; flag=1; }
+   if ( strcmp(pade->name,"Xr2Mhu") ==0) { l = 1; m =12; flag=1; }
+   if ( strcmp(pade->name,"Xr2TauR") ==0) {l = 1; m =12; flag=1; }
+   if ( strcmp(pade->name,"XsMhu") ==0) { l = 4; m =4; flag=1; }
+   if ( strcmp(pade->name,"XsTauR") ==0) {l = 8; m =8; flag=1; }
+   if ( strcmp(pade->name,"dMhu") ==0) { l = 4; m =8; flag=1; }
+   if ( strcmp(pade->name,"dTauR") ==0) {l = 8; m =8; flag=1; }
+   if ( strcmp(pade->name,"f2Mhu") ==0) { l = 8; m =4; flag=1; }
+   if ( strcmp(pade->name,"f2TauR") ==0) {l = 12; m =12; flag=1; }
+   if ( strcmp(pade->name,"fMhu") ==0) { l = 4; m =8; flag=1; }
+   if ( strcmp(pade->name,"fTauR") ==0) {l = 12; m =12; flag=1; }
+   if ( strcmp(pade->name,"hMhu") ==0) { l = 8; m =8; flag=1; }
+   if ( strcmp(pade->name,"hTauRMod") ==0) {l = 12; m =12; flag=1; }
+   if ( strcmp(pade->name,"jMhu") ==0) { l = 8; m =8; flag=1; }
+   if ( strcmp(pade->name,"jTauRMod") ==0) {l = 1; m =12; flag=1; }
+
+   if ( strcmp(pade->name,"mMhu") ==0) { l = 12; m =4; flag=1; }
+   if ( strcmp(pade->name,"mTauR") ==0) {l = 1; m =20; flag=1; }
+   if ( strcmp(pade->name,"rMhu") ==0) { l = 4; m =8; flag=1; }
+   if ( strcmp(pade->name,"rTauR") ==0) {l = 4; m =8; flag=1; }
+   if (flag ) 
+  {
+       int kk = costFunc(l,m)  ;
+       double a[l+m], errMax, errRMS; 
+       findPadeApprox(l,m,n,x,y,a);
+       padeError(l,m,a,n,x,y,&errMax,&errRMS);
+       lmin=l;
+       mmin=m;
+       for (int j=0;j<l+m;j++) amin[j] = a[j];
+        errMaxMin = errMax; 
+        errRMSMin = errRMS; 
+   }
+*/
    length = lmin+mmin; 
    pade->l = lmin; 
    pade->m = mmin; 

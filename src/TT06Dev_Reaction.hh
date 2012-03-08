@@ -37,6 +37,7 @@ class TT06Dev_Reaction : public Reaction
    
    std::vector<int>              ttType_; // maps cellType to ttType
    std::vector<TT06Func::TT06DevState> s_;
+   double **gates_; 
 };
 
 #endif

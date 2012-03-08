@@ -28,6 +28,7 @@ double rMhu(double Vm, void *parms) ;
 double dMhu(double Vm, void *parms) ;
 double fMhu(double Vm, void *parms) ;
 double f2Mhu(double Vm, void *parms) ;
+double jLMhu(double Vm, void *parms) ;
 double sMhu0(double Vm, void *parms) ;
 double sMhu1(double Vm, void *parms) ;
 
@@ -43,23 +44,20 @@ double rTauR(double Vm, void *parms) ;
 double dTauR(double Vm, void *parms) ;
 double fTauR(double Vm, void *parms) ;
 double f2TauR(double Vm, void *parms) ;
+double jLTauR(double Vm, void *parms) ;
 double sTauR0(double Vm, void *parms) ;
 double sTauR1(double Vm, void *parms) ;
 
 typedef double (*OVF)(double x, void *parms) ;
-OVF mhuFunc[] ={    mMhu,   hjMhu,  hjMhu , Xr1Mhu, Xr2Mhu,XsMhu,rMhu,dMhu,fMhu,f2Mhu, sMhu0, sMhu1}; 
-const  char *mhuName[] ={ "mMhu", "hMhu","jMhu","Xr1Mhu", "Xr2Mhu","XsMhu","rMhu","dMhu","fMhu","f2Mhu", "sMhu0","sMhu1"}; 
-OVF  tauRFunc[]  ={ mTauR , hTauR ,  jTauR,  Xr1TauR,   Xr2TauR,  XsTauR,  rTauR,  dTauR,  fTauR,  f2TauR,   sTauR0,   sTauR1}; 
-const   char *tauRName[] ={ "mTauR", "hTauR", "jTauR","Xr1TauR", "Xr2TauR","XsTauR","rTauR","dTauR","fTauR","f2TauR", "sTauR0", "sTauR1"}; 
 
-const  char *fitName[] ={ "fv0", "fv1", "fv2", "fv3", "fv4", "fv5", "fv6", "mMhu", "mTauR", "hMhu", "hTauR", "jMhu", "jTauR", "Xr1Mhu", "Xr1TauR", "Xr2Mhu", "Xr2mTauR", 
-                           "XsMhu", "XsTauR", "rMhu", "rTauR", "dMhu", "dTauR", "fMhu", "fTauR", "f2Mhu", "f2TauR", "sMhu0", "sTauR0", "sMhu1", "sTauR1" ,NULL}; 
+const  char *fitName[] ={ "fv0", "fv1", "fv2", "fv3", "fv4", "fv5", "fv6", "mMhu", "mTauR", "hMhu", "hTauR", "jMhu", "jTauR", "Xr1Mhu", "Xr1TauR", "Xr2Mhu", "Xr2TauR", 
+                           "XsMhu", "XsTauR", "rMhu", "rTauR", "dMhu", "dTauR", "fMhu", "fTauR", "f2Mhu", "f2TauR", "jLMhu", "jLTauR", "sMhu0", "sTauR0", "sMhu1", "sTauR1" ,NULL}; 
 OVF fitFunc[] ={ fv0, fv1, fv2, fv3, fv4, fv5, fv6, mMhu, mTauR, hjMhu, hTauR, hjMhu, jTauR, Xr1Mhu, Xr1TauR, Xr2Mhu, Xr2TauR, 
-                           XsMhu, XsTauR, rMhu, rTauR, dMhu, dTauR, fMhu, fTauR, f2Mhu, f2TauR, sMhu0, sTauR0, sMhu1, sTauR1 ,NULL}; 
+                           XsMhu, XsTauR, rMhu, rTauR, dMhu, dTauR, fMhu, fTauR, f2Mhu, f2TauR, jLMhu, jLTauR, sMhu0, sTauR0, sMhu1, sTauR1 ,NULL}; 
 
 static TauRecipParms *jParms;
 static TauRecipParms *hParms;
-#define NFIT 31 
+#define NFIT 33 
 static PADE *fit[NFIT+1]; 
 static double P_NaK,g_Ks[3],g_to[3]; 
 static double g_NaL =0.0; 
@@ -72,7 +70,11 @@ static double f1,f2,f3,f4,f5,f6,f7,f7a,f9,f9a,f10;
 }
 namespace TT06Func 
 {
-void initState(TT06DevState *cell,int cellType)
+void initGate(double **gates, int ii, double *gate)
+{
+	for (int jj=0;jj<nGatesVar;jj++) gates[jj][ii] = gate[jj]; 
+}
+void initState(TT06DevState *cell,double *gates, int cellType)
 {
 cell->cellType=cellType; 
 double *states = cell->state;
@@ -92,18 +94,18 @@ states[Ca_ss] = 0.00036;
 states[Ca_SR] = 3.715;
 states[R_prime] = 0.9068;
 states[fCass_gate] = 0.9953;
-states[Xr1_gate] = 0.00448;
-states[Xr2_gate] = 0.476;
-states[Xs_gate] = 0.0087;
-states[m_gate] = 0.00155;
-states[h_gate] = 0.7573;
-states[j_gate] = 0.7225;
-states[r_gate] = 2.235e-8;
-states[d_gate] = 3.164e-5;
-states[f_gate] = 0.8009;
-states[f2_gate] = 0.9778;
-states[s_gate] = 0.3212;
-states[jL_gate] = 0.066;
+gates[Xr1_gateN] = 0.00448;
+gates[Xr2_gateN] = 0.476;
+gates[Xs_gateN] = 0.0087;
+gates[m_gateN] = 0.00155;
+gates[h_gateN] = 0.7573;
+gates[j_gateN] = 0.7225;
+gates[r_gateN] = 2.235e-8;
+gates[d_gateN] = 3.164e-5;
+gates[f_gateN] = 0.8009;
+gates[f2_gateN] = 0.9778;
+gates[s_gateN] = 0.3212;
+gates[jL_gateN] = 0.066;
 }
 
 if (cellType == 1) 
@@ -121,18 +123,18 @@ states[Ca_ss] = 0.00042;
 states[Ca_SR] = 4.272;
 states[R_prime] = 0.8978;
 states[fCass_gate] = 0.9942;
-states[Xr1_gate] = 0.0165;
-states[Xr2_gate] = 0.473;
-states[Xs_gate] = 0.0174;
-states[m_gate] = 0.00165;
-states[h_gate] = 0.749;
-states[j_gate] = 0.6788;
-states[r_gate] = 2.347e-8;
-states[d_gate] = 3.288e-5;
-states[f_gate] = 0.7026;
-states[f2_gate] = 0.9526;
-states[s_gate] = 0.999998;
-states[jL_gate] = 0.066;
+gates[Xr1_gateN] = 0.0165;
+gates[Xr2_gateN] = 0.473;
+gates[Xs_gateN] = 0.0174;
+gates[m_gateN] = 0.00165;
+gates[h_gateN] = 0.749;
+gates[j_gateN] = 0.6788;
+gates[r_gateN] = 2.347e-8;
+gates[d_gateN] = 3.288e-5;
+gates[f_gateN] = 0.7026;
+gates[f2_gateN] = 0.9526;
+gates[s_gateN] = 0.999998;
+gates[jL_gateN] = 0.066;
 }
 
 if (cellType==2) 
@@ -150,18 +152,18 @@ states[Ca_ss] = 0.00036;
 states[Ca_SR] = 3.64;
 states[R_prime] = 0.9073;
 states[fCass_gate] = 0.9953;
-states[Xr1_gate] = 0.00621;
-states[Xr2_gate] = 0.4712;
-states[Xs_gate] = 0.0095;
-states[m_gate] = 0.00172;
-states[h_gate] = 0.7444;
-states[j_gate] = 0.7045;
-states[r_gate] = 2.42e-8;
-states[d_gate] = 3.373e-5;
-states[f_gate] = 0.7888;
-states[f2_gate] = 0.9755;
-states[s_gate] = 0.999998;
-states[jL_gate] = 0.066;
+gates[Xr1_gateN] = 0.00621;
+gates[Xr2_gateN] = 0.4712;
+gates[Xs_gateN] = 0.0095;
+gates[m_gateN] = 0.00172;
+gates[h_gateN] = 0.7444;
+gates[j_gateN] = 0.7045;
+gates[r_gateN] = 2.42e-8;
+gates[d_gateN] = 3.373e-5;
+gates[f_gateN] = 0.7888;
+gates[f2_gateN] = 0.9755;
+gates[s_gateN] = 0.999998;
+gates[jL_gateN] = 0.066;
 }
 }
 void initCnst()
@@ -418,11 +420,13 @@ void writeFit(PADE **fit)
    if (getRank(0)==0) 
    {
       FILE *file=fopen("pade.data","w"); 
+      int index=0; 
       while( *fit != NULL ) 
       {
-         padeErrorInfo(**fit); 
+         padeErrorInfo(**fit,index); 
          padeWrite(file,**fit); 
         fit++; 
+        index++;
       }
       fclose(file); 
    }
@@ -477,8 +481,20 @@ double defaultVoltage(int cellType)
 
 //#define logSeries(x) ((x)*(1.0+(x)*(-0.5+(x)/3.0)))
 #define logSeries(x)    (log(1+(x)) )
-void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, double *dVdt)
+void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, int offset, double **gates, double *dVdt)
 {
+  double *f2Gate = gates[f2_gateN]+offset; 
+  double *fGate = gates[f_gateN]+offset; 
+  double *dGate = gates[d_gateN]+offset; 
+  double *mGate = gates[m_gateN]+offset; 
+  double *jGate = gates[j_gateN]+offset; 
+  double *hGate = gates[h_gateN]+offset; 
+  double *rGate = gates[r_gateN]+offset; 
+  double *sGate = gates[s_gateN]+offset; 
+  double *Xr1Gate = gates[Xr1_gateN]+offset; 
+  double *Xr2Gate = gates[Xr2_gateN]+offset; 
+  double *XsGate = gates[Xs_gateN]+offset; 
+  double *jLGate = gates[jL_gateN]+offset; 
    
  for (int ii=0;ii<nCells;ii++) 
  {
@@ -515,7 +531,6 @@ void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, 
      double stateK_i  = c9*(-Vm + states[dVK_i]);
      double x0 = states[Na_i]*c25; 
      double sigm0 = P_NaK*sigm(x0); 
-     //double sigm0 = sigm(x0); 
 
      double dV0 = Vm -c3*log(stateK_i) -c5;
      double dV1 = Vm -c3*log(states[Na_i])-c4;
@@ -527,13 +542,16 @@ void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, 
      double fv6=fit[6]->afunc(dV0,fit[6]->aparms); 
      double fd =  fv5  +  fv6; 
 
-     double tmp0 =  (fd +  g_to*states[r_gate]*states[s_gate]+ c11*states[Xr1_gate]*states[Xr2_gate] );
-     double tmp1 =  (c20*CUBE(states[m_gate])*states[h_gate]*states[j_gate]+c21);
-     double tmp2 =  g_Ks*SQ(states[Xs_gate]);
+     //double tmp0 =  (fd +  g_to*gates[r_gate][ii]*states[s_gate]+ c11*states[Xr1_gate]*states[Xr2_gate] );
+     double tmp0 =  (fd +  g_to*rGate[ii]*sGate[ii]+ c11*Xr1Gate[ii]*Xr2Gate[ii] );
+     //double tmp1 =  (c20*CUBE(states[m_gate])*states[h_gate]*states[j_gate]+c21);
+     double tmp1 =  (c20*CUBE(mGate[ii])*hGate[ii]*jGate[ii]+c21);
+     //double tmp2 =  g_Ks*SQ(states[Xs_gate]);
+     double tmp2 =  g_Ks*SQ(XsGate[ii]);
      double itmpA = sigm0 * fv0;                          //Sigm0
      double itmp2 = itmp0 - 1.5*itmpA+tmp1*dV1; 
      double itmp3 = itmpA + tmp0*dV0 +tmp2*dV2; 
-     double iNaL = g_NaL*CUBE(states[m_gate])*states[jL_gate]*dV1;
+     double iNaL = g_NaL*CUBE(mGate[ii])*jLGate[ii]*dV1;
 
 
      states[dVK_i]     += dt*itmp3;
@@ -552,7 +570,7 @@ void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, 
      double sigm6 = sigm(x6); 
      double tmp8  = (c18+c19*sigm4); //Sigm4
      double tmp9  = tmp8*states[Ca_ss]+c36; 
-     double itmp1 = states[d_gate]*states[f_gate]*states[f2_gate]*states[fCass_gate]*(fv4-states[Ca_ss]*fv3);
+     double itmp1 = dGate[ii]*fGate[ii]*f2Gate[ii]*states[fCass_gate]*(fv4-states[Ca_ss]*fv3);
      double sigmCa_ss =   SQ(states[Ca_ss])/(tmp8*c17 + SQ(states[Ca_ss]));
      double itmp7 = sigmCa_ss*states[R_prime]*(states[Ca_SR] - states[Ca_ss]);
 
@@ -573,7 +591,198 @@ void updateNonGate(double dt, int nCells, const double *VM, TT06DevState* cell, 
 
 
 // Update Gates; 
-void updateGate(double dt, int nCells, const double *VM, TT06DevState* cell)
+void updateGate0(double dt, int nCells, const double *VM, TT06DevState* cell, int offset, double **gate)
+{
+   
+ PADE **gatefit = fit + 7; 
+ double *g; 
+ void *mhuParms ;
+ void *tauRParms ; 
+ double (*mhuFunc)(double V,void *parms); 
+ double (*tauRFunc)(double V,void *parms); 
+ int list[] = {1,3,5}; 
+ for (int k=0;k<3;k++)                    // other Gates. 
+ {
+   int i = list[k]; 
+   g = gate[i]+offset; 
+   mhuParms = (gatefit[2*i]->aparms); 
+   tauRParms = (gatefit[2*i+1]->aparms); 
+   mhuFunc  = (gatefit[2*i]->afunc); 
+   tauRFunc = (gatefit[2*i+1]->afunc); 
+   for (int ii=0;ii<nCells;ii++) 
+   {
+     double Vm = VM[ii]; 
+     double mhu=mhuFunc(Vm,mhuParms); 
+     double tauR=tauRFunc(Vm,tauRParms); 
+     g[ii] +=  dt*(mhu - g[ii])*tauR; 
+   }
+ }
+}
+void updateGate1(double dt, int nCells, const double *VM, TT06DevState* cell, int offset, double **gate)
+{
+   
+ PADE **gatefit = fit + 7; 
+ double *g; 
+ void *mhuParms;
+ void *tauRParms; 
+ double (*mhuFunc)(double V,void *parms); 
+ double (*tauRFunc)(double V,void *parms); 
+ int list[] = { 2, 4}; 
+ for (int k=0;k<2;k++)                    // other Gates. 
+ {
+   int i = list[k]; 
+   g = gate[i]+offset; 
+   mhuParms = (gatefit[2*i]->aparms); 
+   tauRParms = (gatefit[2*i+1]->aparms); 
+   mhuFunc  = (gatefit[2*i]->afunc); 
+   tauRFunc = (gatefit[2*i+1]->afunc); 
+   for (int ii=0;ii<nCells;ii++) 
+   {
+     double Vm = VM[ii]; 
+     double mhu=mhuFunc(Vm,mhuParms); 
+     double tauR=tauRFunc(Vm,tauRParms); 
+     g[ii] +=  dt*(mhu - g[ii])*tauR; 
+   }
+ }
+ g = gate[11]+offset; 
+ int i=11;
+ for (int ii=0;ii<nCells;ii++) 
+ {
+   double Vm = VM[ii]; 
+   int cellType = cell[ii].cellType; 
+   int kk = ii+ offset; 
+   
+   int l = 2*(cellType != 0) ; 
+   mhuParms = (gatefit[l+22]->aparms); 
+   tauRParms = (gatefit[l+23]->aparms); 
+   mhuFunc  = (gatefit[l+22]->afunc); 
+   tauRFunc = (gatefit[l+23]->afunc); 
+   double mhu =mhuFunc (Vm,mhuParms); 
+   double tauR=tauRFunc(Vm,tauRParms); 
+   g[ii] +=  dt*(mhu - g[ii])*tauR;     //sGate
+ }
+}
+void updateGate2(double dt, int nCells, const double *VM, TT06DevState* cell, int offset, double **gate)
+{
+   
+ PADE **gatefit = fit + 7; 
+ double *g; 
+ void *mhuParms  ;
+ void *tauRParms; 
+ double (*mhuFunc)(double V,void *parms); 
+ double (*tauRFunc)(double V,void *parms); 
+ int list[] = { 6, 7,8}; 
+ for (int k=0;k<3;k++)                    // other Gates. 
+ {
+   int i=list[k]; 
+   g = gate[i]+offset; 
+   mhuParms = (gatefit[2*i]->aparms); 
+   tauRParms = (gatefit[2*i+1]->aparms); 
+   mhuFunc  = (gatefit[2*i]->afunc); 
+   tauRFunc = (gatefit[2*i+1]->afunc); 
+   for (int ii=0;ii<nCells;ii++) 
+   {
+     double Vm = VM[ii]; 
+     double mhu=mhuFunc(Vm,mhuParms); 
+     double tauR=tauRFunc(Vm,tauRParms); 
+     g[ii] +=  dt*(mhu - g[ii])*tauR; 
+   }
+ }
+}
+void updateGate3(double dt, int nCells, const double *VM, TT06DevState* cell, int offset, double **gate)
+{
+   
+ PADE **gatefit = fit + 7; 
+ double *g; 
+ void *mhuParms  ;
+ void *tauRParms; 
+ double (*mhuFunc)(double V,void *parms); 
+ double (*tauRFunc)(double V,void *parms); 
+
+ g = gate[0]+offset; 
+ mhuParms = (gatefit[0]->aparms); 
+ tauRParms = (gatefit[1]->aparms); 
+ mhuFunc=gatefit[0]->afunc; 
+ tauRFunc=gatefit[1]->afunc; 
+ for (int ii=0;ii<nCells;ii++) 
+ {
+   double Vm = VM[ii]; 
+   double mhu =mhuFunc(Vm,mhuParms); 
+   double tauR=tauRFunc(Vm,tauRParms); 
+   g[ii] +=   (mhu - g[ii])*(1-exp(-dt*tauR));                   //mtauR can be very large   ~1140.0 use Rush_Larson to integrate. 
+ }
+
+ int list[] = {9,10}; 
+ for (int k=0;k<2;k++)                    // other Gates. 
+ {
+   int i = list[k]; 
+   g = gate[i]+offset; 
+   void *mhuParms = (gatefit[2*i]->aparms); 
+   void *tauRParms = (gatefit[2*i+1]->aparms); 
+   mhuFunc  = (gatefit[2*i]->afunc); 
+   tauRFunc = (gatefit[2*i+1]->afunc); 
+   for (int ii=0;ii<nCells;ii++) 
+   {
+     double Vm = VM[ii]; 
+     double mhu=mhuFunc(Vm,mhuParms); 
+     double tauR=tauRFunc(Vm,tauRParms); 
+     g[ii] +=  dt*(mhu - g[ii])*tauR; 
+   }
+ }
+}
+void updateGate(double dt, int nCells, const double *VM, TT06DevState* cell, int offset, double **gate)
+{
+   
+ PADE **gatefit = fit + 7; 
+ double *g; 
+ g = gate[0]+offset; 
+ void *mhuParms = (gatefit[0]->aparms); 
+ void *tauRParms = (gatefit[1]->aparms); 
+ double (*mhuFunc)(double V,void *parms)=gatefit[0]->afunc; 
+ double (*tauRFunc)(double V,void *parms)=gatefit[1]->afunc; 
+ for (int ii=0;ii<nCells;ii++) 
+ {
+   double Vm = VM[ii]; 
+   double mhu =mhuFunc(Vm,mhuParms); 
+   double tauR=tauRFunc(Vm,tauRParms); 
+   g[ii] +=   (mhu - g[ii])*(1-exp(-dt*tauR));                   //mtauR can be very large   ~1140.0 use Rush_Larson to integrate. 
+ }
+ for (int i=1;i<11;i++)                    // other Gates. 
+ {
+   g = gate[i]+offset; 
+   void *mhuParms = (gatefit[2*i]->aparms); 
+   void *tauRParms = (gatefit[2*i+1]->aparms); 
+   mhuFunc  = (gatefit[2*i]->afunc); 
+   tauRFunc = (gatefit[2*i+1]->afunc); 
+   for (int ii=0;ii<nCells;ii++) 
+   {
+     double Vm = VM[ii]; 
+     double mhu=mhuFunc(Vm,mhuParms); 
+     double tauR=tauRFunc(Vm,tauRParms); 
+     g[ii] +=  dt*(mhu - g[ii])*tauR; 
+   }
+ }
+ g = gate[11]+offset; 
+ int i=11;
+ for (int ii=0;ii<nCells;ii++) 
+ {
+   double Vm = VM[ii]; 
+   int cellType = cell[ii].cellType; 
+   int kk = ii+ offset; 
+   
+
+   int l = 2*(cellType != 0) ; 
+   void *mhuParms = (gatefit[l+22]->aparms); 
+   void *tauRParms = (gatefit[l+23]->aparms); 
+   mhuFunc  = (gatefit[l+22]->afunc); 
+   tauRFunc = (gatefit[l+23]->afunc); 
+   double mhu =mhuFunc (Vm,mhuParms); 
+   double tauR=tauRFunc(Vm,tauRParms); 
+   g[ii] +=  dt*(mhu - g[ii])*tauR;     //sGate
+ }
+}
+
+void updateGateOLD(double dt, int nCells, const double *VM, TT06DevState* cell)
 {
    
  PADE **gatefit = fit + 7; 
@@ -750,6 +959,16 @@ double f2TauR(double Vm, void *)
 { 
    double tau =  562.0*exp(-SQ((Vm+27.0))/240.0)+31.0/(1.0+(exp(((25.0 - Vm)/10.0))))+80.0/(1.0+(exp(((Vm+30.0)/10.0))));
    double tauR = 1/tau; 
+   return tauR;
+}
+double jLMhu(double Vm, void *) 
+{ 
+   double mhu =exp(-(Vm+91.0)*2/6.1);  // jL_gate
+   return mhu;
+}
+double jLTauR(double Vm, void *) 
+{ 
+   double tauR = 1.0/670.0 ; 
    return tauR;
 }
 double sMhu0(double Vm, void *) 

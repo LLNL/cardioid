@@ -28,7 +28,9 @@
 // int mapCell2Dev[]                  {1,2,3,10,17,18,14,7,8,9,4,5,6,16,11,12,13,15};
 namespace TT06Func
 {
-enum TT06STATE { Ca_i, dVK_i, Na_i, Ca_ss, Ca_SR, R_prime, fCass_gate, m_gate, h_gate, j_gate, Xr1_gate, Xr2_gate, Xs_gate, r_gate, d_gate, f_gate, f2_gate, s_gate, jL_gate, nStateVar} ; 
+//enum TT06STATE { Ca_i, dVK_i, Na_i, Ca_ss, Ca_SR, R_prime, fCass_gate, m_gate, h_gate, j_gate, Xr1_gate, Xr2_gate, Xs_gate, r_gate, d_gate, f_gate, f2_gate,  jL_gate, s_gate, nStateVar} ; 
+enum TT06STATE { Ca_i, dVK_i, Na_i, Ca_ss, Ca_SR, R_prime, fCass_gate, nStateVar} ; 
+enum TT06GATES { m_gateN, h_gateN, j_gateN, Xr1_gateN, Xr2_gateN, Xs_gateN, r_gateN, d_gateN, f_gateN, f2_gateN,  jL_gateN, s_gateN, nGatesVar} ; 
 
 struct TT06DevState
 {
@@ -38,10 +40,16 @@ struct TT06DevState
 };
 
 #define gateOffset 7
-void initState(TT06DevState *cell,int cellType);
+void initState(TT06DevState *cell,double *gate, int cellType);
+void initGate(double **gates, int ii, double *gateI);
 void initCnst();
-void updateNonGate(double dt, int n, const double *Vm, TT06DevState *cell,  double *dVdt);
-void updateGate(double dt, int n, const double *Vm, TT06DevState *cell);
+void updateNonGate(double dt, int n, const double *Vm, TT06DevState *cell, int offset, double **gates, double *dVdt);
+void updateGate(double dt, int n, const double *Vm, TT06DevState *cell, int offset, double **gates);
+void updateGate0(double dt, int n, const double *Vm, TT06DevState *cell, int offset, double **gates);
+void updateGate1(double dt, int n, const double *Vm, TT06DevState *cell, int offset, double **gates);
+void updateGate2(double dt, int n, const double *Vm, TT06DevState *cell, int offset, double **gates);
+void updateGate3(double dt, int n, const double *Vm, TT06DevState *cell, int offset, double **gates);
+void updateGateOLD(double dt, int n, const double *Vm, TT06DevState *cell);
 double get_c9();
 PADE **makeFit(double tol, double V0, double V1, double deltaV, int mod);
 void writeFit(PADE **fit); 

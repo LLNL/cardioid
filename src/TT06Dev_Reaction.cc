@@ -1,6 +1,5 @@
 #include "TT06Dev_Reaction.hh"
 #include <cmath>
-#include  <omp.h>
 #include "Anatomy.hh"
 #include "TT06Func.hh"
 #include "pade.hh"
@@ -43,17 +42,15 @@ TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int m
    ttType_[101] = 1;
    ttType_[102] = 2;
    s_.resize(nCells_);
+   gates_ = (double **) malloc(sizeof(double *)*nGatesVar); 
+   for (unsigned jj=0; jj<nGatesVar; ++jj) gates_[jj]= (double *)malloc(sizeof(double)*nCells_); 
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
+      double gate[nGatesVar]; 
       assert(anatomy.cellType(ii) >= 0 && anatomy.cellType(ii) < 256);
       int cellType = ttType_[anatomy.cellType(ii)];
-      TT06Func::initState(&(s_[ii]),cellType); 
-   }
-   for (int i=0;i<omp_get_max_threads();i++) 
-   {
-        char filename[512]; 
-        sprintf(filename,"TT06_%d",i); 
-	//tfile[i] =fopen(filename,"w"); 
+      TT06Func::initState(&(s_[ii]),gate,cellType); 
+      TT06Func::initGate(gates_,ii,gate); 
    }
    
 }
@@ -62,13 +59,22 @@ TT06Dev_Reaction::~TT06Dev_Reaction()
 }
 void TT06Dev_Reaction::writeStateDev(int loop)
 {
-int  map[] = { dVK_i , Na_i , Ca_i , Xr1_gate , Xr2_gate , Xs_gate , m_gate , h_gate , j_gate , Ca_ss , d_gate , f_gate , f2_gate , fCass_gate , s_gate , r_gate , Ca_SR , R_prime , jL_gate};
-	for (int i=0;i<nStateVar;i++) 
-	{
-		int k = map[i]; 
-		double state = s_[0].state[k];
-		printf("%d %24.14le\n",i,state); 
-	}
+   int  map[] = { dVK_i , Na_i , Ca_i , Xr1_gateN , Xr2_gateN , Xs_gateN , m_gateN , h_gateN , j_gateN , Ca_ss , d_gateN , f_gateN , f2_gateN , fCass_gate , s_gateN , r_gateN , Ca_SR , R_prime , jL_gateN};
+   int  isGate[] = {    0  ,     0, 0 , 1 , 1 , 1 , 1 , 1 , 1 , 0 , 1 , 1 , 1 , 0 , 1 , 1 , 0 , 0 , 1};
+   for (int i=0;i<nStateVar+nGatesVar;i++) 
+   {
+      int k = map[i]; 
+      double state; 
+      if (isGate[i]) 
+      {
+         state = gates_[k][0];
+      }
+      else 
+      {
+         state = s_[0].state[k];
+      }
+      printf("%d %24.14le\n",i,state); 
+   }
 }
 int partition(int index, int nItems, int nGroups , int& offset)
 {
@@ -98,29 +104,29 @@ int TT06Dev_Reaction::nonGateWorkPartition(int& offset)
 
 void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<double>& iStim, vector<double>& dVm)
 {
-   TT06Func::updateNonGate(dt, nCells_,&Vm[0], &(s_[0]), &dVm[0]);
-   TT06Func::updateGate(dt, nCells_,&Vm[0], &(s_[0]));
+   TT06Func::updateNonGate(dt, nCells_,&Vm[0], &(s_[0]), 0, gates_, &dVm[0]);
+   TT06Func::updateGate(dt, nCells_,&Vm[0], &(s_[0]),0,gates_);
 }
 void TT06Dev_Reaction::updateNonGate(double dt, const vector<double>& Vm, vector<double>& dVR)
 {
    int offset; 
    profileStart(nonGateTimer);
    int nCells = nonGateWorkPartition(offset); 
-   int ompID = omp_get_thread_num(); 
-   //fprintf(tfile[ompID],"offset=%d ncells=%d\n",offset,nCells); 
-   TT06Func::updateNonGate(dt, nCells,&Vm[offset], &(s_[offset]), &dVR[offset]);
+   TT06Func::updateNonGate(dt, nCells,&Vm[offset], &(s_[offset]), offset, gates_, &dVR[offset]);
    profileStop(nonGateTimer);
 }
 void TT06Dev_Reaction::updateGate(double dt, const vector<double>& Vm)
 {
-   int offset; 
+   int offset=0; 
+   int nCells=nCells_; 
    profileStart(gateTimer);
-   int nCells = nonGateWorkPartition(offset); 
-   //TT06Func::update_mGate(dt, nCells_,&Vm[0], &(s_[0]));
-   //TT06Func::update_hGate(dt, nCells_,&Vm[0], &(s_[0]));
-   //TT06Func::update_jGate(dt, nCells_,&Vm[0], &(s_[0]));
-   TT06Func::updateGate(dt, nCells,&Vm[offset], &(s_[offset]));
-   //TT06Func::update_sGate(dt, nCells_,&Vm[0], &(s_[0]));
+   nCells = nonGateWorkPartition(offset); 
+   TT06Func::updateGate(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
+   //int id = groupThreadID(group_); 
+   //if (id ==0) TT06Func::updateGate0(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
+   //if (id ==1) TT06Func::updateGate1(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
+   //if (id ==2) TT06Func::updateGate2(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
+   //if (id ==3) TT06Func::updateGate3(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
    profileStop(gateTimer);
 }
 
