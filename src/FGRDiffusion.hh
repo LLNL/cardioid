@@ -4,6 +4,7 @@
 #include "Diffusion.hh"
 #include "LocalGrid.hh"
 #include "Array3d.hh"
+#include "ibmIntrinsics.hh"
 
 class Anatomy;
 class Vector;
