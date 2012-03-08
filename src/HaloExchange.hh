@@ -12,6 +12,7 @@ using namespace std;
 #include "spi_impl.h"
 extern "C"{
 uint32_t mapping_table(spi_hdl_t* spi_hdl);
+uint32_t mapping_table_new(spi_hdl_t* spi_hdl);
 void spi_dump_mapping(spi_hdl_t* spi_hdl);
 void setup_bat(spi_hdl_t* spi_hdl,void* recv_buf,uint32_t recv_buf_size);
 uint32_t setup_inj_fifo(spi_hdl_t* spi_hdl);
@@ -92,7 +93,8 @@ class spi_HaloExchange : public HaloExchange<T>
     recv_buf_ = new T[commTable_->recvSize()*2];
 
     //create mapping table
-    mapping_table(&spi_hdl);
+//    mapping_table(&spi_hdl);
+    mapping_table_new(&spi_hdl);
  
     //setup base address table
     //search and allocate

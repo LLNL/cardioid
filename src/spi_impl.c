@@ -68,6 +68,7 @@ void* aligned_malloc( size_t size, size_t align_size );
 void aligned_free( void *ptr ); 
 uint32_t int_log2( uint32_t val );
 uint32_t mapping_table(spi_hdl_t* spi_hdl);
+uint32_t mapping_table_new(spi_hdl_t* spi_hdl);
 
 
 uint32_t compute_node_id( Personality_t* personality )
@@ -662,21 +663,21 @@ uint32_t mapping_table(spi_hdl_t* spi_hdl)
 
 };
 
-#if 0
+#if 1
 uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
 {
   uint32_t a, b, c, d, e, id;
-  uint32_t rc;
+  uint32_t rc,ii;
   uint32_t node_id = Kernel_GetRank();
   BG_JobCoords_t sblock;
   Kernel_JobCoords(&sblock); 
   assert(sblock.corner.core == 0);
   
-  node.dim[CR_AXIS_A] = node.a_nodes = sblock.shape.a;
-  node.dim[CR_AXIS_B] = node.b_nodes = sblock.shape.b;
-  node.dim[CR_AXIS_C] = node.c_nodes = sblock.shape.c;
-  node.dim[CR_AXIS_D] = node.d_nodes = sblock.shape.d;
-  node.dim[CR_AXIS_E] = node.e_nodes = sblock.shape.e;
+//  node.dim[CR_AXIS_A] = node.a_nodes = sblock.shape.a;
+//  node.dim[CR_AXIS_B] = node.b_nodes = sblock.shape.b;
+//  node.dim[CR_AXIS_C] = node.c_nodes = sblock.shape.c;
+//  node.dim[CR_AXIS_D] = node.d_nodes = sblock.shape.d;
+//  node.dim[CR_AXIS_E] = node.e_nodes = sblock.shape.e;
 
   uint64_t nodes = sblock.shape.a*sblock.shape.b*sblock.shape.c*sblock.shape.d*sblock.shape.e;
   /* allocate the mapping table */
@@ -688,16 +689,19 @@ uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
   BG_CoordinateMapping_t* bg_map = malloc( nodes * sizeof(BG_CoordinateMapping_t));
   assert(bg_map);
   uint64_t totN;
-  Kernel_RanksToCoords(node.nodes * sizeof(BG_CoordinateMapping_t),bg_map,&totN);
-  assert(totN == nodes);
+  Kernel_RanksToCoords(nodes * sizeof(BG_CoordinateMapping_t),bg_map,&totN);
+  if(node_id==0) printf("total nodes in this block :%d\n",nodes);
+  if(node_id==0) printf("number of node being used :%d\n",totN);
+  if(node_id==0) printf("the corner node is %d,%d,%d,%d,%d\n", sblock.corner.a,sblock.corner.b,sblock.corner.c,sblock.corner.d,sblock.corner.e);
+//  assert(totN == nodes);
 
   for( ii =0 ; ii < nodes ; ii++)
   {
-    (mapping)[ii].Destination.A_Destination = bg_map[ii].a + sblock.cornet.a;
-    (mapping)[ii].Destination.B_Destination = bg_map[ii].b + sblock.cornet.b;
-    (mapping)[ii].Destination.C_Destination = bg_map[ii].c + sblock.cornet.c;
-    (mapping)[ii].Destination.D_Destination = bg_map[ii].d + sblock.cornet.d;
-    (mapping)[ii].Destination.E_Destination = bg_map[ii].e + sblock.cornet.e;
+    (mapping)[ii].Destination.A_Destination = bg_map[ii].a + sblock.corner.a;
+    (mapping)[ii].Destination.B_Destination = bg_map[ii].b + sblock.corner.b;
+    (mapping)[ii].Destination.C_Destination = bg_map[ii].c + sblock.corner.c;
+    (mapping)[ii].Destination.D_Destination = bg_map[ii].d + sblock.corner.d;
+    (mapping)[ii].Destination.E_Destination = bg_map[ii].e + sblock.corner.e;
   }
 
 
