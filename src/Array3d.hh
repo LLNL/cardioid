@@ -24,7 +24,8 @@ class Array3d
    T*** cArray();
    const T*** cArray() const;
    T* cBlock() {return &(data_[align32_offset]);};
-   T*       cBlock()       { return &(data_[0]); };
+   const T* cBlock() const {return &(data_[align32_offset]);};
+
    
    unsigned size() const;
    unsigned nx() const;

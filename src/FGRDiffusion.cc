@@ -5,9 +5,8 @@
 #include "Vector.hh"
 #include <algorithm>
 #include <cstdio>
-#include "simd_op.h"
 
-#define check_same
+//#define check_same
 using namespace std;
 
 enum NodeLocation
@@ -129,13 +128,10 @@ void FGRDiffusion::calc_simd(const vector<double>& Vm, vector<double>& dVm, doub
      for(int kk=0;kk<nz_4;kk++)
      {
        (*VmTmp)(ii,jj,kk) = VmBlock_(ii,jj,kk);
-//       if ((*VmTmp)(ii,jj,kk) !=0 ) cout << VmBlock_(ii,jj,kk) << " ";
      }
-     cout << endl;
    }
 
    Array3d<double> tmp_dVm(VmTmp->nx(),VmTmp->ny(),VmTmp->nz(),0.0);
-
    uint32_t start = VmTmp->tupleToIndex(1,1,0);
    uint32_t end = VmTmp->tupleToIndex(VmTmp->nx()-2,VmTmp->ny()-2,VmTmp->nz());
 
@@ -584,7 +580,7 @@ FGRDiffusion::FGRDiff_simd(const uint32_t start,const int32_t chunk_size, Array3
   const unsigned Ny2 = VmTmp->ny();
   const unsigned Nz2 = VmTmp->nz();
 
-  const double* VmM = VmTmp->cBlock();
+  double* VmM = VmTmp->cBlock();
 
   int xm1ym1z_ = ((-1) *Ny2 + (-1)) * Nz2;
   int xm1yz_ =   ((-1) *Ny2 + ( 0)) * Nz2;
@@ -595,15 +591,15 @@ FGRDiffusion::FGRDiff_simd(const uint32_t start,const int32_t chunk_size, Array3
   int xp1yz_ =   ((+1) *Ny2 + ( 0)) * Nz2;
   int xp1yp1z_ = ((+1) *Ny2 + (+1)) * Nz2;
 
-  const double* phi_xm1_ym1_z = VmM + start + xm1ym1z_;
-  const double* phi_xm1_y_z   = VmM + start + xm1yz_;
-  const double* phi_xm1_yp1_z = VmM + start + xm1yp1z_;
-  const double* phi_x_ym1_z   = VmM + start + xym1z_;
-  const double* phi_x_y_z     = VmM + start ;
-  const double* phi_x_yp1_z   = VmM + start + xyp1z_;
-  const double* phi_xp1_ym1_z = VmM + start + xp1ym1z_;
-  const double* phi_xp1_y_z   = VmM + start + xp1yz_;
-  const double* phi_xp1_yp1_z = VmM + start + xp1yp1z_;
+  double* phi_xm1_ym1_z = VmM + start + xm1ym1z_;
+  double* phi_xm1_y_z   = VmM + start + xm1yz_;
+  double* phi_xm1_yp1_z = VmM + start + xm1yp1z_;
+  double* phi_x_ym1_z   = VmM + start + xym1z_;
+  double* phi_x_y_z     = VmM + start ;
+  double* phi_x_yp1_z   = VmM + start + xyp1z_;
+  double* phi_xp1_ym1_z = VmM + start + xp1ym1z_;
+  double* phi_xp1_y_z   = VmM + start + xp1yz_;
+  double* phi_xp1_yp1_z = VmM + start + xp1yp1z_;
 
   out += start;
 

@@ -8,6 +8,7 @@
 #include <iostream>
 #include <cmath>
 
+//#define check_same
 using namespace std;
 
 /** Helper function to compute the finite difference approximation of
@@ -104,6 +105,12 @@ void Saleheen98PrecomputeDiffusion::calc_simd(
    updateVoltageBlock(Vm, recv_buf_, nLocal);
    const int n = dVm.size();
 
+   #ifdef check_same
+   calc(Vm,dVm,recv_buf_,nLocal); //updateVoltageBlock twice may be ok
+   for(int ii=0;ii<20;ii++) std::cout << dVm[ii] << " " ;
+   std::cout << std::endl;
+   #endif
+
    Array3d<double> *VmTmp = &(VmBlock_);
    //make sure z is multiple of 4
    if(VmBlock_.nz()%4 != 0)
@@ -136,15 +143,23 @@ void Saleheen98PrecomputeDiffusion::calc_simd(
 
    if(VmBlock_.nz()%4 != 0) delete VmTmp;
 
-//   cout << "checking discrepancy... ";
+   #ifdef check_same
+   cout << "checking discrepancy... ";
    for (int ii=0; ii<n; ++ii)
    {
-//      double tmp = dVm[ii];
+      double tmp = dVm[ii];
       dVm[ii] = tmp_dVm(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
       dVm[ii] *= diffusionScale_;
-//      if( fabs(tmp - dVm[ii]) > 0.0000001 ) cout << ii << ":" << tmp-dVm[ii] << " " ;
+      if( fabs(tmp - dVm[ii]) > 0.0000001 ) cout << ii << ":" << tmp-dVm[ii] << " " ;
    }
-//   cout << "Done" << endl;
+   cout << "Done" << endl;
+   #else
+   for (int ii=0; ii<n; ++ii)
+   {
+      dVm[ii] = tmp_dVm(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
+      dVm[ii] *= diffusionScale_;
+   }
+   #endif
 }
 
 /** We're building the localTuple array only for local cells.  We can't
@@ -285,7 +300,7 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi_All_simd(cons
   const unsigned Ny2 = VmTmp->ny();
   const unsigned Nz2 = VmTmp->nz();
 
-  const double* VmM = VmTmp->cBlock();
+  double* VmM = VmTmp->cBlock();
 
   int xm1ym1z_ = ((-1) *Ny2 + (-1)) * Nz2;
   int xm1yz_ =   ((-1) *Ny2 + ( 0)) * Nz2;
@@ -570,14 +585,12 @@ void Saleheen98PrecomputeDiffusion::updateVoltageBlock(
    {
       int index = blockIndex_[ii];
       VmBlock_(index) = Vm[ii];
-      VmBlock_(index) = ((ii+3)*(ii+3)*(ii+3))%3892;
    }
    assert(nLocal <= Vm.size());
    for (unsigned ii=nLocal; ii<Vm.size(); ++ii)
    {
       int index = blockIndex_[ii];
       VmBlock_(index) = recv_buf[ii-nLocal];
-      VmBlock_(index) = ((ii+3)*(ii+3)*(ii+3))%3892
 ;
    }
 }
