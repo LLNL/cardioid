@@ -662,6 +662,7 @@ uint32_t mapping_table(spi_hdl_t* spi_hdl)
 
 };
 
+#if 0
 uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
 {
   uint32_t a, b, c, d, e, id;
@@ -712,7 +713,8 @@ uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
   return node_id;
 
 };
-  //MUSPI_GIBarrier_t barrier;
+#endif
+//MUSPI_GIBarrier_t barrier;
   //MUSPI_GIBarrierInit( &barrier, 0 );
   //MUSPI_GIBarrierEnterAndWait( &barrier );
   //printf("GI Barrier done\n");
