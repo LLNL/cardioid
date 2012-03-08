@@ -67,6 +67,7 @@ class SaleheenDev : public Diffusion
       const Anatomy& anatomy);
    
    void calc(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf, int nLocal);
+   void calc_simd(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf, int nLocal) {}; 
    
  private:
    void   buildTupleArray(const Anatomy& anatomy);
