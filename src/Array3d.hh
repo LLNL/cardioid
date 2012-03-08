@@ -4,6 +4,8 @@
 #include <vector>
 #include <cassert>
 #include <cstdlib>
+#include <inttypes.h>
+#include <iostream>
 
 template <class T>
 class Array3d
@@ -21,7 +23,7 @@ class Array3d
 
    T*** cArray();
    const T*** cArray() const;
-   const T* cBlock() const { return &(data_[0]); };
+   T* cBlock() {return &(data_[align32_offset]);};
    T*       cBlock()       { return &(data_[0]); };
    
    unsigned size() const;
@@ -33,6 +35,8 @@ class Array3d
    void resize(unsigned nx, unsigned ny, unsigned nz, const T& initValue);
    
    unsigned const tupleToIndex(unsigned ix, unsigned iy, unsigned iz) const;
+   
+   void dump(unsigned nx, unsigned ny, unsigned nz);
 
  private:
    void pointerSetup();
@@ -42,25 +46,28 @@ class Array3d
    unsigned nz_;
    std::vector<T> data_;
    T*** cArray_;
+   unsigned align32_offset;
 };
 
 template <class T> 
 Array3d<T>::Array3d()
-: nx_(0), ny_(0), nz_(0), data_(0), cArray_(0)
+: nx_(0), ny_(0), nz_(0), data_(0), cArray_(0), align32_offset(0)
 {
 }
 
 template <class T> 
 Array3d<T>::Array3d(unsigned nx, unsigned ny, unsigned nz)
-: nx_(nx), ny_(ny), nz_(nz), data_(nx*ny*nz)
+: nx_(nx), ny_(ny), nz_(nz), data_(nx*ny*nz+32)
 {
+   align32_offset = (32 - ((uint64_t)&(data_[0]) % 32))/sizeof(T);
    pointerSetup();
 }
 
 template <class T> 
 Array3d<T>::Array3d(unsigned nx, unsigned ny, unsigned nz, const T& initValue)
-: nx_(nx), ny_(ny), nz_(nz), data_(nx*ny*nz, initValue)
+: nx_(nx), ny_(ny), nz_(nz), data_(nx*ny*nz+32, initValue)
 {
+   align32_offset = (32 - ((uint64_t)&(data_[0]) % 32))/sizeof(T);
    pointerSetup();
 }
 
@@ -68,25 +75,25 @@ Array3d<T>::Array3d(unsigned nx, unsigned ny, unsigned nz, const T& initValue)
 template <class T> inline
 T& Array3d<T>::operator()(unsigned index)
 {
-   return data_[index];
+   return data_[index+align32_offset];
 }
 
 template <class T> inline
 const T& Array3d<T>::operator()(unsigned index) const
 {
-   return data_[index];
+   return data_[index+align32_offset];
 }
 
 template <class T> inline
 T& Array3d<T>::operator()(unsigned ix, unsigned iy, unsigned iz)
 {
-   return data_[tupleToIndex(ix, iy, iz)];
+   return data_[tupleToIndex(ix, iy, iz) + align32_offset];
 }
 
 template <class T> inline
 const T& Array3d<T>::operator()(unsigned ix, unsigned iy, unsigned iz) const
 {
-   return data_[tupleToIndex(ix, iy, iz)];
+   return data_[tupleToIndex(ix, iy, iz) + align32_offset];
 }
 
 template <class T> inline
@@ -104,7 +111,8 @@ const T*** Array3d<T>::cArray() const
 template <class T> inline
 unsigned Array3d<T>::size() const
 {
-   return nx_*ny_*nz_;
+//   return nx_*ny_*nz_;
+   return data_.size();
 }
 
 template <class T> inline
@@ -127,13 +135,28 @@ unsigned Array3d<T>::nz() const
 
 
 template <class T>  
+void Array3d<T>::dump(unsigned nx, unsigned ny, unsigned nz)
+{
+   for(int ii=0;ii<nx;ii++)
+   {
+   for(int jj=0;jj<ny;jj++)
+   {
+   for(int kk=0;kk<nz;kk++)
+     std::cout << (*this)(ii,jj,kk) << " ";
+   std::cout << std::endl;
+   }
+   }
+}
+
+template <class T>  
 void Array3d<T>::resize(unsigned nx, unsigned ny, unsigned nz)
 {
    assert(nx_ == 0 && ny_ == 0 && nz_ == 0);
-   data_.resize(nx*ny*nz);
+   data_.resize(nx*ny*nz + 32);
    nx_ = nx;
    ny_ = ny;
    nz_ = nz;
+   align32_offset = (32 - ((uint64_t)&(data_[0]) % 32))/sizeof(T);
    pointerSetup();
 }
                         
@@ -141,10 +164,11 @@ template <class T>
 void Array3d<T>::resize(unsigned nx, unsigned ny, unsigned nz, const T& initValue)
 {
    assert(nx_ == 0 && ny_ == 0 && nz_ == 0);
-   data_.resize(nx*ny*nz, initValue);
+   data_.resize(nx*ny*nz+32, initValue);
    nx_ = nx;
    ny_ = ny;
    nz_ = nz;
+   align32_offset = (32 - ((uint64_t)&(data_[0]) % 32))/sizeof(T);
    pointerSetup();
 }
 
@@ -163,7 +187,7 @@ void Array3d<T>::pointerSetup()
    {
       cArray_[ii] = (T**) malloc(sizeof(T*)*ny_);
       for (unsigned jj=0; jj<ny_; ++jj)
-         cArray_[ii][jj] = &data_[0] + nz_*(jj + ny_*(ii)); 
+         cArray_[ii][jj] = &data_[align32_offset] + nz_*(jj + ny_*(ii)); 
    }
 }
 
