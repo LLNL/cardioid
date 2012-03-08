@@ -4,7 +4,9 @@
 #include "SymmetricTensor.hh"
 #include "DiffusionUtils.hh"
 #include <cstdio> 
+#include <cstdlib> 
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 
@@ -76,6 +78,7 @@ Saleheen98PrecomputeDiffusion::Saleheen98PrecomputeDiffusion(
    buildTupleArray(anatomy);
    buildBlockIndex(anatomy);
    precomputeCoefficients(anatomy);
+   reorder_Coeff();  
 }
 
    
@@ -85,6 +88,8 @@ void Saleheen98PrecomputeDiffusion::calc(
    updateVoltageBlock(Vm, recv_buf_, nLocal);
 
    const int n = dVm.size();
+
+   cout << "calc called" << endl;
 #pragma omp parallel for
    for (int ii=0; ii<n; ++ii)
    {
@@ -97,9 +102,49 @@ void Saleheen98PrecomputeDiffusion::calc_simd(
    const vector<double>& Vm, vector<double>& dVm, double *recv_buf_, int nLocal)
 {
    updateVoltageBlock(Vm, recv_buf_, nLocal);
-   uint32_t start = VmBlock_.tupleToIndex(1,1,1);
-   uint32_t end = VmBlock_.tupleToIndex(localGrid_.nx()-1,localGrid_.ny(),localGrid_.nz());
-   boundaryFDLaplacianSaleheen98SumPhi_All_simd(start,end-start,&(dVm[start]));
+   const int n = dVm.size();
+
+   Array3d<double> *VmTmp = &(VmBlock_);
+   //make sure z is multiple of 4
+   if(VmBlock_.nz()%4 != 0)
+   {
+     int nz_4 = VmBlock_.nz() + 4-VmBlock_.nz()%4;
+     VmTmp = new Array3d<double>;
+     VmTmp->resize(VmBlock_.nx(),VmBlock_.ny(),nz_4);
+     for(int ii=0;ii<VmBlock_.nx();ii++)
+     for(int jj=0;jj<VmBlock_.ny();jj++)
+     for(int kk=0;kk<nz_4;kk++)
+     {
+       (*VmTmp)(ii,jj,kk) = VmBlock_(ii,jj,kk);
+     }
+   }
+
+   Array3d<double> tmp_dVm(VmTmp->nx(),VmTmp->ny(),VmTmp->nz());
+   uint32_t start = VmTmp->tupleToIndex(1,1,0);
+   uint32_t end = VmTmp->tupleToIndex(VmTmp->nx()-2,VmTmp->ny()-2,VmTmp->nz());
+
+//   cout << "start=" << start << endl;
+//   cout << "end=" << end << endl;
+//   cout << "tmp_dVm.cBlock()=" << tmp_dVm.cBlock() << endl;
+//   cout << "tmp_dVm.size=" << tmp_dVm.size() << " " << tmp_dVm.nx() << " " <<  tmp_dVm.ny()  << " " <<  tmp_dVm.nz() <<endl;
+//   cout << "VmTmp.size=" << VmTmp->size() << endl;
+//   cout << "diffCoef_T2.size=" << diffCoefT2_.size() << " " << diffCoefT2_.nx() << " " << diffCoefT2_.ny() <<  " " << diffCoefT2_.nz() << endl;
+
+//   diffCoefT2_.dump(2,2,40);
+
+   boundaryFDLaplacianSaleheen98SumPhi_All_simd(start,end-start,VmTmp,tmp_dVm.cBlock());
+
+   if(VmBlock_.nz()%4 != 0) delete VmTmp;
+
+//   cout << "checking discrepancy... ";
+   for (int ii=0; ii<n; ++ii)
+   {
+//      double tmp = dVm[ii];
+      dVm[ii] = tmp_dVm(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
+      dVm[ii] *= diffusionScale_;
+//      if( fabs(tmp - dVm[ii]) > 0.0000001 ) cout << ii << ":" << tmp-dVm[ii] << " " ;
+   }
+//   cout << "Done" << endl;
 }
 
 /** We're building the localTuple array only for local cells.  We can't
@@ -232,23 +277,23 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi(
 // 'start' cannot be in the middle. 'start' must point to (n,0,0). 
 
 void
-Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi_All_simd(const uint32_t start,const int32_t chunk_size, double* out)
+Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi_All_simd(const uint32_t start,const int32_t chunk_size, Array3d<double>* VmTmp, double* out)
 {
   int ii;
 
-  const unsigned Nx2 = localGrid_.nx();
-  const unsigned Ny2 = localGrid_.ny();
-  const unsigned Nz2 = localGrid_.nz();
+  const unsigned Nx2 = VmTmp->nx();
+  const unsigned Ny2 = VmTmp->ny();
+  const unsigned Nz2 = VmTmp->nz();
 
-  double* VmM = VmBlock_.cBlock();
+  const double* VmM = VmTmp->cBlock();
 
   int xm1ym1z_ = ((-1) *Ny2 + (-1)) * Nz2;
-  int xm1yz_ =   ((-1) *Ny2 + (0)) * Nz2;
+  int xm1yz_ =   ((-1) *Ny2 + ( 0)) * Nz2;
   int xm1yp1z_ = ((-1) *Ny2 + (+1)) * Nz2;
-  int xym1z_ =   ((0)  *Ny2 + (-1)) * Nz2;
-  int xyp1z_ =   ((0)  *Ny2 + (+1)) * Nz2;
+  int xym1z_ =   ((0 ) *Ny2 + (-1)) * Nz2;
+  int xyp1z_ =   ((0 ) *Ny2 + (+1)) * Nz2;
   int xp1ym1z_ = ((+1) *Ny2 + (-1)) * Nz2;
-  int xp1yz_ =   ((+1) *Ny2 + (0)) * Nz2;
+  int xp1yz_ =   ((+1) *Ny2 + ( 0)) * Nz2;
   int xp1yp1z_ = ((+1) *Ny2 + (+1)) * Nz2;
 
   double* phi_xm1_ym1_z = VmM + start + xm1ym1z_;
@@ -260,6 +305,19 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi_All_simd(cons
   double* phi_xp1_ym1_z = VmM + start + xp1ym1z_;
   double* phi_xp1_y_z   = VmM + start + xp1yz_;
   double* phi_xp1_yp1_z = VmM + start + xp1yp1z_;
+
+  out += start;
+
+  assert((uint64_t)phi_xm1_ym1_z%(4*sizeof(double)) == 0);
+  assert((uint64_t)phi_xm1_y_z  %(4*sizeof(double)) == 0);
+  assert((uint64_t)phi_xm1_yp1_z%(4*sizeof(double)) == 0);
+  assert((uint64_t)phi_x_ym1_z  %(4*sizeof(double)) == 0);
+  assert((uint64_t)phi_x_y_z    %(4*sizeof(double)) == 0);
+  assert((uint64_t)phi_x_yp1_z  %(4*sizeof(double)) == 0);
+  assert((uint64_t)phi_xp1_ym1_z%(4*sizeof(double)) == 0);
+  assert((uint64_t)phi_xp1_y_z  %(4*sizeof(double)) == 0);
+  assert((uint64_t)phi_xp1_yp1_z%(4*sizeof(double)) == 0);
+  assert((uint64_t)out          %(4*sizeof(double)) == 0);
 
   //initial
   vector4double B0,B1,B2,C0,C1,C2,Sum0,Sum2,Sum;
@@ -275,7 +333,9 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi_All_simd(cons
   vector4double my_xp1_ym1_z  =vec_ld(0,    phi_xp1_ym1_z );
   vector4double my_zero_vec = vec_splats(0.0);
  
-  simd_diff_ += start - 4;
+  double *simd_diff_ = diffCoefT2_.cBlock() + start*19 - 4;
+//  printf("simd_diff:%10f %10f %10f %10f\n",*(simd_diff_+4),*(simd_diff_+5),*(simd_diff_+6),*(simd_diff_+7));
+//  printf("simd_diff:%10f %10f %10f %10f\n",*(simd_diff_+8),*(simd_diff_+9),*(simd_diff_+10),*(simd_diff_+11));
 
   B0 =  vec_madd(vec_ld(0,simd_diff_+=4)  , my_xp1_y_z,
         vec_madd(vec_ld(0,simd_diff_+=4)  , my_x_yp1_z,
@@ -283,7 +343,6 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi_All_simd(cons
         vec_madd(vec_ld(0,simd_diff_+=4)  , my_x_ym1_z,
         vec_mul( vec_ld(0,simd_diff_+=4)  , my_x_y_z)))));
 
- 
   B1 = vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_y_z,
        vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_yp1_z,
        vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_y_z,
@@ -295,7 +354,6 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi_All_simd(cons
        vec_mul ( vec_ld(0,simd_diff_+=4)  , my_x_y_z)))))))));
 //  printf("%f %f %f %f\n",my_x_y_z.v[0], my_x_y_z.v[1], my_x_y_z.v[2], my_x_y_z.v[3]);
 //  printf("%f %f %f %f\n",B1.v[0],B1.v[1],B1.v[2],B1.v[3]);
-
 
   B2 = vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_y_z,
        vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_yp1_z,
@@ -339,6 +397,7 @@ Saleheen98PrecomputeDiffusion::boundaryFDLaplacianSaleheen98SumPhi_All_simd(cons
 
 //  printf("%f %f %f %f\n",Sum0.v[0],Sum0.v[1],Sum0.v[2],Sum0.v[3]);
 //  printf("%f %f %f %f\n",Sum2.v[0],Sum2.v[1],Sum2.v[2],Sum2.v[3]);
+//  printf("%f %f %f %f\n",(*simd_diff_),*(simd_diff_+1),*(simd_diff_+2),*(simd_diff_+3));
     // commit the previous
     Sum = vec_add(vec_add(Sum0,B1),Sum2);
 
@@ -511,12 +570,15 @@ void Saleheen98PrecomputeDiffusion::updateVoltageBlock(
    {
       int index = blockIndex_[ii];
       VmBlock_(index) = Vm[ii];
+      VmBlock_(index) = ((ii+3)*(ii+3)*(ii+3))%3892;
    }
    assert(nLocal <= Vm.size());
    for (unsigned ii=nLocal; ii<Vm.size(); ++ii)
    {
       int index = blockIndex_[ii];
       VmBlock_(index) = recv_buf[ii-nLocal];
+      VmBlock_(index) = ((ii+3)*(ii+3)*(ii+3))%3892
+;
    }
 }
 
@@ -588,40 +650,66 @@ void Saleheen98PrecomputeDiffusion::reorder_Coeff()
   uint32_t idx=0,ll,ii,jj,kk;
   const uint32_t Nx2 = localGrid_.nx();
   const uint32_t Ny2 = localGrid_.ny();
-  const uint32_t Nz2 = localGrid_.nz();
+  const uint32_t Nz2 = localGrid_.nz() + ((localGrid_.nz()%4)==0 ? 0 : (4-localGrid_.nz()%4));
 
-  DiffusionCoefficients*** diffConst = diffIntra_.cArray();
-  simd_diff_org_ = new double[Nx2*Ny2*Nz2+4]; //allocate but not aligend. 
-  double* tgt = (double*)((uint64_t)simd_diff_org_ + 32 - ((uint64_t)simd_diff_org_)%32) ; //aligning
-  simd_diff_ = tgt;
+  diffCoefT2_.resize(Nx2,Ny2,Nz2*19,0.0);
+  srand(21321);
 
-  idx--;
-  for(ii=0;ii<Nx2;ii++)
-  for(jj=0;jj<Ny2;jj++)
-  for(kk=0;kk<Nz2;kk+=4)
+  const int n_cell = localTuple_.size() ;
+  for(int ii=0;ii<n_cell;ii++)
   {
-//    if(ii==1 && jj==1 && kk==0) printf("idx=%d\n",idx);
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll-1+Nz2)%Nz2].A9;
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll-1+Nz2)%Nz2].A14;
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll-1+Nz2)%Nz2].A16;
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll-1+Nz2)%Nz2].A11;
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll-1+Nz2)%Nz2].A15;
+    int xx = localTuple_[ii].x();
+    int yy = localTuple_[ii].y();
+    int zz = localTuple_[ii].z();
+    int z4 = (int)(zz/4);
 
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].sumA * (-1);
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A8;
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A7;
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A6;
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A5;
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A4;
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A3;
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A2;
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][kk+ll].A1;
+    assert(zz > 0);
+    assert(zz < Nz2);
 
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll+1+Nz2)%Nz2].A10;
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll+1+Nz2)%Nz2].A13;
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll+1+Nz2)%Nz2].A17;
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll+1+Nz2)%Nz2].A12;
-    idx++; for(ll=0;ll<4;ll++) tgt[idx*4+ll]=diffConst[ii][jj][(kk+ll+1+Nz2)%Nz2].A18;
+    
+    diffCoefT2_(xx,yy,4*19*z4 +  4*0 + zz%4 ) =diffIntra_(xx,yy,zz-1).A9;
+    diffCoefT2_(xx,yy,4*19*z4 +  4*1 + zz%4 ) =diffIntra_(xx,yy,zz-1).A14;
+    diffCoefT2_(xx,yy,4*19*z4 +  4*2 + zz%4 ) =diffIntra_(xx,yy,zz-1).A16;
+    diffCoefT2_(xx,yy,4*19*z4 +  4*3 + zz%4 ) =diffIntra_(xx,yy,zz-1).A11;
+    diffCoefT2_(xx,yy,4*19*z4 +  4*4 + zz%4 ) =diffIntra_(xx,yy,zz-1).A15;
+                                 
+    diffCoefT2_(xx,yy,4*19*z4 +  4*5 + zz%4 ) =diffIntra_(xx,yy,zz).sumA * (-1);
+    diffCoefT2_(xx,yy,4*19*z4 +  4*6 + zz%4 ) =diffIntra_(xx,yy,zz).A8;
+    diffCoefT2_(xx,yy,4*19*z4 +  4*7 + zz%4 ) =diffIntra_(xx,yy,zz).A7;
+    diffCoefT2_(xx,yy,4*19*z4 +  4*8 + zz%4 ) =diffIntra_(xx,yy,zz).A6;
+    diffCoefT2_(xx,yy,4*19*z4 +  4*9 + zz%4 ) =diffIntra_(xx,yy,zz).A5;
+    diffCoefT2_(xx,yy,4*19*z4 + 4*10 + zz%4 ) =diffIntra_(xx,yy,zz).A4;
+    diffCoefT2_(xx,yy,4*19*z4 + 4*11 + zz%4 ) =diffIntra_(xx,yy,zz).A3;
+    diffCoefT2_(xx,yy,4*19*z4 + 4*12 + zz%4 ) =diffIntra_(xx,yy,zz).A2;
+    diffCoefT2_(xx,yy,4*19*z4 + 4*13 + zz%4 ) =diffIntra_(xx,yy,zz).A1;
+
+    diffCoefT2_(xx,yy,4*19*z4 + 4*14 + zz%4 ) =diffIntra_(xx,yy,zz+1).A10;
+    diffCoefT2_(xx,yy,4*19*z4 + 4*15 + zz%4 ) =diffIntra_(xx,yy,zz+1).A13;
+    diffCoefT2_(xx,yy,4*19*z4 + 4*16 + zz%4 ) =diffIntra_(xx,yy,zz+1).A17;
+    diffCoefT2_(xx,yy,4*19*z4 + 4*17 + zz%4 ) =diffIntra_(xx,yy,zz+1).A12;
+    diffCoefT2_(xx,yy,4*19*z4 + 4*18 + zz%4 ) =diffIntra_(xx,yy,zz+1).A18;
+    
+//    diffCoefT2_(xx,yy,4*19*z4 +  4*0 + zz%4 ) =diffIntra_(xx,yy,zz-1).A9 =rand();
+//    diffCoefT2_(xx,yy,4*19*z4 +  4*1 + zz%4 ) =diffIntra_(xx,yy,zz-1).A14=rand();
+//    diffCoefT2_(xx,yy,4*19*z4 +  4*2 + zz%4 ) =diffIntra_(xx,yy,zz-1).A16=rand();
+//    diffCoefT2_(xx,yy,4*19*z4 +  4*3 + zz%4 ) =diffIntra_(xx,yy,zz-1).A11=rand();
+//    diffCoefT2_(xx,yy,4*19*z4 +  4*4 + zz%4 ) =diffIntra_(xx,yy,zz-1).A15=rand();
+//                                 
+//    diffCoefT2_(xx,yy,4*19*z4 +  4*5 + zz%4 ) = -1*(diffIntra_(xx,yy,zz).sumA=rand());
+//    diffCoefT2_(xx,yy,4*19*z4 +  4*6 + zz%4 ) =diffIntra_(xx,yy,zz).A8=rand();
+//    diffCoefT2_(xx,yy,4*19*z4 +  4*7 + zz%4 ) =diffIntra_(xx,yy,zz).A7=rand();
+//    diffCoefT2_(xx,yy,4*19*z4 +  4*8 + zz%4 ) =diffIntra_(xx,yy,zz).A6=rand();
+//    diffCoefT2_(xx,yy,4*19*z4 +  4*9 + zz%4 ) =diffIntra_(xx,yy,zz).A5=rand();
+//    diffCoefT2_(xx,yy,4*19*z4 + 4*10 + zz%4 ) =diffIntra_(xx,yy,zz).A4=rand();
+//    diffCoefT2_(xx,yy,4*19*z4 + 4*11 + zz%4 ) =diffIntra_(xx,yy,zz).A3=rand();
+//    diffCoefT2_(xx,yy,4*19*z4 + 4*12 + zz%4 ) =diffIntra_(xx,yy,zz).A2=rand();
+//    diffCoefT2_(xx,yy,4*19*z4 + 4*13 + zz%4 ) =diffIntra_(xx,yy,zz).A1=rand();
+//
+//    diffCoefT2_(xx,yy,4*19*z4 + 4*14 + zz%4 ) =diffIntra_(xx,yy,zz+1).A10=rand();
+//    diffCoefT2_(xx,yy,4*19*z4 + 4*15 + zz%4 ) =diffIntra_(xx,yy,zz+1).A13=rand();
+//    diffCoefT2_(xx,yy,4*19*z4 + 4*16 + zz%4 ) =diffIntra_(xx,yy,zz+1).A17=rand();
+//    diffCoefT2_(xx,yy,4*19*z4 + 4*17 + zz%4 ) =diffIntra_(xx,yy,zz+1).A12=rand();
+//    diffCoefT2_(xx,yy,4*19*z4 + 4*18 + zz%4 ) =diffIntra_(xx,yy,zz+1).A18=rand();
   }
 }
 

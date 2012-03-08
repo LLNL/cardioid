@@ -67,8 +67,6 @@ class Saleheen98PrecomputeDiffusion : public Diffusion
       const Saleheen98DiffusionParms& parms,
       const Anatomy& anatomy);
 
-   ~Saleheen98PrecomputeDiffusion() { delete [] simd_diff_org_; }
-   
    
    void calc(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf_, int nLocal);
    void calc_simd(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf_, int nLocal);
@@ -80,7 +78,7 @@ class Saleheen98PrecomputeDiffusion : public Diffusion
    void   reorder_Coeff();  //reoder the diffusion coefficients for simdizaed calc
    
    double boundaryFDLaplacianSaleheen98SumPhi(const Tuple& tuple);
-   void   boundaryFDLaplacianSaleheen98SumPhi_All_simd(const uint32_t start,const int32_t chunk_size,double * out);
+   void   boundaryFDLaplacianSaleheen98SumPhi_All_simd(const uint32_t start,const int32_t chunk_size, Array3d<double>*  VmTmp, double* out);
    void   boundaryFDLaplacianSaleheen98Constants(
       const int*** tissue,
       const SymmetricTensor*** sigmaMatrix,
@@ -100,8 +98,7 @@ class Saleheen98PrecomputeDiffusion : public Diffusion
    std::vector<Tuple>             localTuple_; // only for local cells
    Array3d<DiffusionCoefficients> diffIntra_;
    Array3d<double>                VmBlock_;
-   double*                        simd_diff_;  //aligned
-   double*                        simd_diff_org_; // orginal
+   Array3d<double>                diffCoefT2_;
    
    
 };
