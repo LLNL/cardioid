@@ -4,6 +4,7 @@
 #include "TT06Func.hh"
 #include "pade.hh"
 #include "PerformanceTimers.hh"
+#include <cstdlib>
 
 using namespace std;
 using namespace TT06Func;
