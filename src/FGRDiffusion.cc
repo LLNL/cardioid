@@ -146,7 +146,7 @@ void FGRDiffusion::calc_simd(const vector<double>& Vm, vector<double>& dVm, doub
       double tmp = dVm[ii];
       dVm[ii] = tmp_dVm(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
       dVm[ii] *= diffusionScale_;
-      if( fabs(tmp - dVm[ii]) > 0.0000001 ) cout << ii << ":" << tmp-dVm[ii] << " " ;
+      if( fabs(tmp - dVm[ii]) >fabs(0.0000001*dVm[ii]) ) cout << ii << ":" << dVm[ii] << " " ;
    }
    cout << "Done" << endl;
    for(int ii=0;ii<20;ii++) std::cout << dVm[ii] << " " ;
@@ -255,12 +255,18 @@ void FGRDiffusion::updateVoltageBlock(const vector<double>& Vm, double *recv_buf
    {
       int index = blockIndex_[ii];
       VmBlock_(index) = Vm[ii];
+   #ifdef check_same
+      VmBlock_(index) = rand();
+   #endif
    }
    assert(nLocal <= Vm.size());
    for (unsigned ii=nLocal; ii<Vm.size(); ++ii)
    {
       int index = blockIndex_[ii];
       VmBlock_(index) = recv_buf[ii-nLocal];
+   #ifdef check_same
+      VmBlock_(index) = rand();
+   #endif
    }
 }
 
