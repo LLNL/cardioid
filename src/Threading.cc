@@ -10,7 +10,6 @@
 #include <sys/types.h> 
 #include <sys/sysctl.h> 
 #endif
-static int _nHwThreads;
 int cmpFuncOMPTABLE(const void *A, const void*B)
 {
    OMPTABLE *tA = (OMPTABLE *)A;
@@ -30,6 +29,7 @@ void Threading::probeHardware()
    #pragma omp parallel
    {
       int omp_id = omp_get_thread_num(); 
+      int ncpu;
       #pragma omp critical
       {
          int proc_id, core_id, hwThread_id; 
@@ -39,12 +39,11 @@ void Threading::probeHardware()
          core_id     = Kernel_ProcessorCoreID();   // 0-15
          hwThread_id = Kernel_ProcessorThreadID(); // 0-3
          flag =1; 
-         
          #endif
          #ifdef __APPLE__
 	 int requestNCPU[] = {CTL_HW,HW_NCPU}; 
 	 int requestAVAILCPU[] = {CTL_HW,HW_AVAILCPU}; 
-         int ncpu,physicalCores,availcpu; 
+         ncpu,physicalCores,availcpu; 
          size_t len = sizeof(int); 
          sysctl(requestNCPU,2,&ncpu,&len,NULL,0); 
          sysctl(requestAVAILCPU,2,&availcpu,&len,NULL,0); 
@@ -117,26 +116,25 @@ nThreads_  = omp_get_max_threads();
    
 }
 void groupInfo(coreGroup *group, int& coreID, int&hwThreadID, int& threadID, int& nCores, int& nHwThreads, int& nThreads) 
-{ 
+{
+   threadID=groupThreadID(group);
+   nThreads = group->nThreads;
+   nCores= group->nCores; 
+   nHwThreads=nThreads/nCores; 
+   coreID = threadID/nHwThreads; 
+   hwThreadID = threadID%nHwThreads; 
+}
+
+int groupThreadID(coreGroup *group) 
+{
   int ompID = omp_get_thread_num(); 
-  nHwThreads  = _nHwThreads; 
-  threadID=-1; 
-  coreID = -1; 
-  nThreads=group->nThreads; 
-  nCores = group->nCores; 
+  int threadID=-1; 
   for (int ii = 0;ii<group->nThreads;ii++) 
   {
      if ( ompID == group->ompID[ii] ) {threadID=ii; break;}
   }
   assert(threadID != -1) ; 
-  coreID = threadID/nHwThreads; 
-  hwThreadID = threadID%nHwThreads; 
-} 
-int groupThreadID(coreGroup *group) 
-{
-int coreID=0,hwThreadID=0,threadID=0,nCores=0,nHwThreads=0,nThreads=0; 
-groupInfo(group, coreID, hwThreadID, threadID, nCores, nHwThreads, nThreads) ;
-return threadID; 
+  return threadID; 
 }
 int Threading::nCores() { return nCores_ ; } 
 coreGroup* Threading::mkGroup(int nCores ) 
@@ -155,8 +153,8 @@ coreGroup* Threading::mkGroup(int nCores )
    for (int ii=0;ii<nCores;ii++) 
    {
       int nThreads=coreTable_[ii+firstCoreIndex].nThread; 
-      int first=coreTable_[ii].first; 
-      for(int jj=0;jj<nThreads_;jj++) 
+      int first=coreTable_[ii+firstCoreIndex].first; 
+      for(int jj=0;jj<nThreads;jj++) 
       {
          int ompID = ompTable_[first+jj].omp_id; 
        	 group.ompID[kk++]= ompID; 
@@ -164,10 +162,11 @@ coreGroup* Threading::mkGroup(int nCores )
       }
    }
    groups_[nGroups_++] = group; 
-   printf("group=%p nCores=%d nThreads=%d",groups_+nGroups_-1,group.nCores,group.nThreads); 
+   if (getRank(0)==0) printf("group=%p nCores=%d nThreads=%d",groups_+nGroups_-1,group.nCores,group.nThreads); 
    for(int ii=0;ii<group.nThreads;ii++) printf(" %d",group.ompID[ii]); printf("\n") ;
    return groups_+nGroups_-1;
 }
+#if (0) 
 main()
 {
    Threading info; 
@@ -176,3 +175,4 @@ main()
    coreGroup *groupB=info.mkGroup(-1); 
 }
 
+#endif
