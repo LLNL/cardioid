@@ -27,6 +27,7 @@ using namespace PerformanceTimers;
 
 static L2_Barrier_t reactionBarrier;
 static L2_Barrier_t diffusionBarrier;
+static L2_Barrier_t reactionWaitOnNonGateBarrier;
    
 void simulationProlog(Simulate& sim)
 {
@@ -277,6 +278,9 @@ void diffusionLoop(Simulate& sim,
 
 void reactionLoop(Simulate& sim, vector<double>& dVmReaction,L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle)
 {
+#include <omp.h>
+   L2_BarrierHandle_t reactionWaitOnNonGateHandle;
+   L2_BarrierWithSync_InitInThread(&reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle);
    while ( sim.loop_<sim.maxLoop_ )
    {
       profileStart(reactionLoopTimer);
@@ -284,6 +288,7 @@ void reactionLoop(Simulate& sim, vector<double>& dVmReaction,L2_BarrierHandle_t&
       
       profileStart(reactionTimer);
       sim.reaction_->updateNonGate(sim.dt_, sim.VmArray_, dVmReaction);
+      L2_BarrierWithSync_Barrier(&reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle, sim.reactionGroup_->nThreads);
       sim.reaction_->updateGate(sim.dt_, sim.VmArray_);
       profileStop(reactionTimer);
       L2_BarrierWithSync_Arrive(&reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads);

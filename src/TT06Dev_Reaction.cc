@@ -121,13 +121,16 @@ void TT06Dev_Reaction::updateGate(double dt, const vector<double>& Vm)
    int offset=0; 
    int nCells=nCells_; 
    profileStart(gateTimer);
+#if (1) 
    nCells = nonGateWorkPartition(offset); 
    TT06Func::updateGate(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
-   //int id = groupThreadID(group_); 
-   //if (id ==0) TT06Func::updateGate0(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
-   //if (id ==1) TT06Func::updateGate1(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
-   //if (id ==2) TT06Func::updateGate2(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
-   //if (id ==3) TT06Func::updateGate3(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
+#else
+   int id = groupThreadID(group_); 
+   if (id ==0) TT06Func::updateGate0(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
+   if (id ==1) TT06Func::updateGate1(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
+   if (id ==2) TT06Func::updateGate2(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
+   if (id ==3) TT06Func::updateGate3(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
+#endif
    profileStop(gateTimer);
 }
 

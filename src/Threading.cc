@@ -3,11 +3,28 @@
 #include <stdlib.h> 
 #include <omp.h> 
 #include <cassert>
+#include "mpiUtils.h"
 static int _nHwThreads;
+void probeHardware()
+{
+   int nThreads  = omp_get_max_threads(); 
+   #pragma omp parallel
+   {
+   int ompid = omp_get_thread_num(); 
+   printf("ompID = %d\n",ompid); 
+   }
+    
+}
 Threading::Threading()
 {
+nThreads_  = omp_get_max_threads(); 
+#ifdef BGQ 
+   nCores_=16; 
+   _nHwThreads=4; 
+   nThreadsPerCore_= nThreads_/nCores_; 
+   assert (nThreads_%nCores_ == 0) ; 
+#else
    nCores_    = omp_get_num_procs(); 
-   nThreads_  = omp_get_max_threads(); 
    binding_   = ROUNDROBIN; 
    if ( nThreads_ < nCores_)
    {
@@ -20,7 +37,8 @@ Threading::Threading()
       nThreadsPerCore_= nThreads_/nCores_; 
    }
    _nHwThreads = nThreadsPerCore_; 
-   printf("nCores=%d nThreads=%d\n",nCores_,nThreads_); fflush(stdout); 
+#endif
+   /*if (getRank(0) == 0) */printf("nCores=%d nThreads=%d\n",nCores_,nThreads_); fflush(stdout); 
    nGroups_=0; 
    nRemainingCores_=nCores_; 
    groups_ = (coreGroup*)malloc(nCores_*sizeof(coreGroup)); 
@@ -31,7 +49,6 @@ Threading::Threading()
 void groupInfo(coreGroup *group, int& coreID, int&hwThreadID, int& threadID, int& nCores, int& nHwThreads, int& nThreads) 
 { 
   int ompID = omp_get_thread_num(); 
-  nHwThreads  = omp_get_max_threads()/omp_get_num_procs(); 
   nHwThreads  = _nHwThreads; 
   threadID=-1; 
   coreID = -1; 
@@ -83,6 +100,7 @@ main()
 {
    Threading info; 
    int nCores=info.nCores_; 
+   probeHardware(); 
    coreGroup *groupA=info.mkGroup(1); 
    coreGroup *groupB=info.mkGroup(-1); 
 }
