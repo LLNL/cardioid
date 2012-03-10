@@ -84,7 +84,6 @@ void Threading::probeHardware()
         {
            if (ompTable_[i].core_id != core_id) 
            {
-		printf("%d %d %d\n",core_id,first,last); 
                 coreTable_[nCore].core_id=core_id; 
                 coreTable_[nCore].first=first; 
                 coreTable_[nCore].nThread=last-first+1; 
@@ -96,7 +95,6 @@ void Threading::probeHardware()
         coreTable_[nCore].core_id=core_id; 
         coreTable_[nCore].first=first; 
         coreTable_[nCore].nThread=last-first+1; 
-        printf("%d %d %d\n",core_id,first,last); 
         nCore++; 
         nCores_=nCore; 
       }
@@ -162,8 +160,11 @@ coreGroup* Threading::mkGroup(int nCores )
       }
    }
    groups_[nGroups_++] = group; 
-   if (getRank(0)==0) printf("group=%p nCores=%d nThreads=%d",groups_+nGroups_-1,group.nCores,group.nThreads); 
+   if (getRank(0)==0) 
+   {
+    printf("group=%p nCores=%d nThreads=%d",groups_+nGroups_-1,group.nCores,group.nThreads); 
    for(int ii=0;ii<group.nThreads;ii++) printf(" %d",group.ompID[ii]); printf("\n") ;
+   }
    return groups_+nGroups_-1;
 }
 #if (0) 
