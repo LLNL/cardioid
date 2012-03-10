@@ -4,14 +4,33 @@
 #include <omp.h> 
 #include <cassert>
 #include "mpiUtils.h"
+#ifdef BGQ 
+#include <spi/include/kernel/location.h> 
+#endif
 static int _nHwThreads;
 void probeHardware()
 {
+
    int nThreads  = omp_get_max_threads(); 
    #pragma omp parallel
    {
-   int ompid = omp_get_thread_num(); 
-   printf("ompID = %d\n",ompid); 
+      #pragma omp critical
+      {
+         int ompid = omp_get_thread_num(); 
+         int ompNProc = omp_get_num_procs(); 
+         int procid, coreid, hwthreadid; 
+         #ifdef BGQ 
+         procid   = Kernel_ProcessorID();       // 0-63
+         coreid     = Kernel_ProcessorCoreID();   // 0-15
+         hwthreadid = Kernel_ProcessorThreadID(); // 0-3
+         #else
+         procid = ompid; 
+         hwthreadid = 1; 
+
+         coreid = ompid%ompNProc; 
+         #endif
+         printf("ompID = %d %d %d %d\n",ompid,procid,coreid,hwthreadid); 
+      }
    }
     
 }
