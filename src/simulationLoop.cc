@@ -256,12 +256,12 @@ void diffusionLoop(Simulate& sim,
          ++sim.loop_;
          profileStop(integratorTimer);
       }
-      // need barrier here.  Can't let any thread finsh loop until loop_
-      // has been incremented.
-
+      
       L2_BarrierWithSync_Arrive(&diffusionBarrier, &diffusionHandle,
                                 sim.diffusionGroup_->nThreads);
-      L2_BarrierWithSync_Reset(&diffusionBarrier, &diffusionHandle,
+      // wait and reset to make this a barrier.  Can't let any thread
+      // past here until loop_ has been incremented.
+      L2_BarrierWithSync_WaitAndReset(&diffusionBarrier, &diffusionHandle,
                                sim.diffusionGroup_->nThreads);
       profileStop(diffusionStallTimer); 
 
@@ -314,7 +314,6 @@ void nullReactionLoop(Simulate& sim, vector<double>& dVmReaction,L2_BarrierHandl
 
 void simulationLoopParallelDiffusionReaction(Simulate& sim)
 {
-   
    SimLoopData loopData(sim);
 
    simulationProlog(sim);
