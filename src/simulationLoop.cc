@@ -278,7 +278,6 @@ void diffusionLoop(Simulate& sim,
 
 void reactionLoop(Simulate& sim, vector<double>& dVmReaction,L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle)
 {
-#include <omp.h>
    L2_BarrierHandle_t reactionWaitOnNonGateHandle;
    L2_BarrierWithSync_InitInThread(&reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle);
    while ( sim.loop_<sim.maxLoop_ )
