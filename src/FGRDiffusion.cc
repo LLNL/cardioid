@@ -509,32 +509,36 @@ void FGRDiffusion::reorder_Coeff()
     int xx = localTuple_[ii].x();
     int yy = localTuple_[ii].y();
     int zz = localTuple_[ii].z();
-    int z4 = (int)(zz/4);
+    int zz4 = (int)(zz/4);
+    int zp = zz + 1;
+    int zm = zz - 1;
+    int zp4 = (int)(zp/4);
+    int zm4 = (int)(zm/4);
 
     assert(zz > 0);
-    assert(zz < Nz2);
+    assert(zz < Nz2-1);
 
-    diffCoefT2_(xx,yy,4*19*z4 + 4* 0 + zz%4 ) =weight_(xx,yy,zz-1).A[ZZP];
-    diffCoefT2_(xx,yy,4*19*z4 + 4* 1 + zz%4 ) =weight_(xx,yy,zz-1).A[ZMP];
-    diffCoefT2_(xx,yy,4*19*z4 + 4* 2 + zz%4 ) =weight_(xx,yy,zz-1).A[MZP];
-    diffCoefT2_(xx,yy,4*19*z4 + 4* 3 + zz%4 ) =weight_(xx,yy,zz-1).A[ZPP];
-    diffCoefT2_(xx,yy,4*19*z4 + 4* 4 + zz%4 ) =weight_(xx,yy,zz-1).A[PZP];
+    diffCoefT2_(xx,yy,4*19*zp4 + 4* 0 + zp%4 ) =weight_(xx,yy,zz).A[ZZP];
+    diffCoefT2_(xx,yy,4*19*zp4 + 4* 1 + zp%4 ) =weight_(xx,yy,zz).A[ZMP];
+    diffCoefT2_(xx,yy,4*19*zp4 + 4* 2 + zp%4 ) =weight_(xx,yy,zz).A[MZP];
+    diffCoefT2_(xx,yy,4*19*zp4 + 4* 3 + zp%4 ) =weight_(xx,yy,zz).A[ZPP];
+    diffCoefT2_(xx,yy,4*19*zp4 + 4* 4 + zp%4 ) =weight_(xx,yy,zz).A[PZP];
                                  
-    diffCoefT2_(xx,yy,4*19*z4 + 4* 5 + zz%4 ) =weight_(xx,yy,zz).A[ZZZ];
-    diffCoefT2_(xx,yy,4*19*z4 + 4* 6 + zz%4 ) =weight_(xx,yy,zz).A[PMZ];
-    diffCoefT2_(xx,yy,4*19*z4 + 4* 7 + zz%4 ) =weight_(xx,yy,zz).A[MMZ];
-    diffCoefT2_(xx,yy,4*19*z4 + 4* 8 + zz%4 ) =weight_(xx,yy,zz).A[MPZ];
-    diffCoefT2_(xx,yy,4*19*z4 + 4* 9 + zz%4 ) =weight_(xx,yy,zz).A[PPZ];
-    diffCoefT2_(xx,yy,4*19*z4 + 4*10 + zz%4 ) =weight_(xx,yy,zz).A[ZMZ];
-    diffCoefT2_(xx,yy,4*19*z4 + 4*11 + zz%4 ) =weight_(xx,yy,zz).A[MZZ];
-    diffCoefT2_(xx,yy,4*19*z4 + 4*12 + zz%4 ) =weight_(xx,yy,zz).A[ZPZ];
-    diffCoefT2_(xx,yy,4*19*z4 + 4*13 + zz%4 ) =weight_(xx,yy,zz).A[PZZ];
+    diffCoefT2_(xx,yy,4*19*zz4 + 4* 5 + zz%4 ) =weight_(xx,yy,zz).A[ZZZ];
+    diffCoefT2_(xx,yy,4*19*zz4 + 4* 6 + zz%4 ) =weight_(xx,yy,zz).A[PMZ];
+    diffCoefT2_(xx,yy,4*19*zz4 + 4* 7 + zz%4 ) =weight_(xx,yy,zz).A[MMZ];
+    diffCoefT2_(xx,yy,4*19*zz4 + 4* 8 + zz%4 ) =weight_(xx,yy,zz).A[MPZ];
+    diffCoefT2_(xx,yy,4*19*zz4 + 4* 9 + zz%4 ) =weight_(xx,yy,zz).A[PPZ];
+    diffCoefT2_(xx,yy,4*19*zz4 + 4*10 + zz%4 ) =weight_(xx,yy,zz).A[ZMZ];
+    diffCoefT2_(xx,yy,4*19*zz4 + 4*11 + zz%4 ) =weight_(xx,yy,zz).A[MZZ];
+    diffCoefT2_(xx,yy,4*19*zz4 + 4*12 + zz%4 ) =weight_(xx,yy,zz).A[ZPZ];
+    diffCoefT2_(xx,yy,4*19*zz4 + 4*13 + zz%4 ) =weight_(xx,yy,zz).A[PZZ];
 
-    diffCoefT2_(xx,yy,4*19*z4 + 4*14 + zz%4 ) =weight_(xx,yy,zz+1).A[ZZM];
-    diffCoefT2_(xx,yy,4*19*z4 + 4*15 + zz%4 ) =weight_(xx,yy,zz+1).A[ZMM];
-    diffCoefT2_(xx,yy,4*19*z4 + 4*16 + zz%4 ) =weight_(xx,yy,zz+1).A[MZM];
-    diffCoefT2_(xx,yy,4*19*z4 + 4*17 + zz%4 ) =weight_(xx,yy,zz+1).A[ZPM];
-    diffCoefT2_(xx,yy,4*19*z4 + 4*18 + zz%4 ) =weight_(xx,yy,zz+1).A[PZM];
+    diffCoefT2_(xx,yy,4*19*zm4 + 4*14 + zm%4 ) =weight_(xx,yy,zz).A[ZZM];
+    diffCoefT2_(xx,yy,4*19*zm4 + 4*15 + zm%4 ) =weight_(xx,yy,zz).A[ZMM];
+    diffCoefT2_(xx,yy,4*19*zm4 + 4*16 + zm%4 ) =weight_(xx,yy,zz).A[MZM];
+    diffCoefT2_(xx,yy,4*19*zm4 + 4*17 + zm%4 ) =weight_(xx,yy,zz).A[ZPM];
+    diffCoefT2_(xx,yy,4*19*zm4 + 4*18 + zm%4 ) =weight_(xx,yy,zz).A[PZM];
 
   }
 }
@@ -599,34 +603,35 @@ FGRDiffusion::FGRDiff_simd(const uint32_t start,const int32_t chunk_size, Array3
   vector4double my_xp1_ym1_z  =vec_ld(0,    phi_xp1_ym1_z );
   vector4double my_zero_vec = vec_splats(0.0);
  
-  double *simd_diff_ = diffCoefT2_.cBlock() + start*19 - 4;
+  double *simd_diff_ = diffCoefT2_.cBlock() + start*19;
 
-  B0 =  vec_madd(vec_ld(0,simd_diff_+=4)  , my_xp1_y_z,
-        vec_madd(vec_ld(0,simd_diff_+=4)  , my_x_yp1_z,
-        vec_madd(vec_ld(0,simd_diff_+=4)  , my_xm1_y_z,
-        vec_madd(vec_ld(0,simd_diff_+=4)  , my_x_ym1_z,
-        vec_mul( vec_ld(0,simd_diff_+=4)  , my_x_y_z)))));
+  B0 =  vec_madd(vec_ld(4*4*8,simd_diff_)  , my_xp1_y_z,
+        vec_madd(vec_ld(3*4*8,simd_diff_)  , my_x_yp1_z,
+        vec_madd(vec_ld(2*4*8,simd_diff_)  , my_xm1_y_z,
+        vec_madd(vec_ld(1*4*8,simd_diff_)  , my_x_ym1_z,
+        vec_mul( vec_ld(0*4*8,simd_diff_)  , my_x_y_z)))));
 
-  B1 = vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_y_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_yp1_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_y_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_ym1_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_yp1_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_yp1_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_ym1_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_ym1_z,
-       vec_mul ( vec_ld(0,simd_diff_+=4)  , my_x_y_z)))))))));
+  B1 = vec_madd( vec_ld(13*4*8,simd_diff_)  , my_xp1_y_z,
+       vec_madd( vec_ld(12*4*8,simd_diff_)  , my_x_yp1_z,
+       vec_madd( vec_ld(11*4*8,simd_diff_)  , my_xm1_y_z,
+       vec_madd( vec_ld(10*4*8,simd_diff_)  , my_x_ym1_z,
+       vec_madd( vec_ld( 9*4*8,simd_diff_)  , my_xp1_yp1_z,
+       vec_madd( vec_ld( 8*4*8,simd_diff_)  , my_xm1_yp1_z,
+       vec_madd( vec_ld( 7*4*8,simd_diff_)  , my_xm1_ym1_z,
+       vec_madd( vec_ld( 6*4*8,simd_diff_)  , my_xp1_ym1_z,
+       vec_mul ( vec_ld( 5*4*8,simd_diff_)  , my_x_y_z)))))))));
 
-  B2 = vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_y_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_yp1_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_y_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_ym1_z,
-       vec_mul ( vec_ld(0,simd_diff_+=4)  , my_x_y_z)))));
+  B2 = vec_madd( vec_ld(18*4*8,simd_diff_)  , my_xp1_y_z,
+       vec_madd( vec_ld(17*4*8,simd_diff_)  , my_x_yp1_z,
+       vec_madd( vec_ld(16*4*8,simd_diff_)  , my_xm1_y_z,
+       vec_madd( vec_ld(15*4*8,simd_diff_)  , my_x_ym1_z,
+       vec_mul ( vec_ld(14*4*8,simd_diff_)  , my_x_y_z)))));
 
   Sum2 = vec_sldw(my_zero_vec,B2,3);
 
   for(ii=1;ii<chunk_size;ii+=4)  //start must be that os x chunk.
   {
+    simd_diff_ += 19*4;
     phi_xp1_y_z   +=4;
     phi_x_yp1_z   +=4;
     phi_xm1_y_z   +=4;
@@ -648,11 +653,11 @@ FGRDiffusion::FGRDiff_simd(const uint32_t start,const int32_t chunk_size, Array3
     my_xp1_ym1_z  =vec_ld(0,    phi_xp1_ym1_z );
 
 
-  C0 =  vec_madd(vec_ld(0,simd_diff_+=4)  , my_xp1_y_z,
-        vec_madd(vec_ld(0,simd_diff_+=4)  , my_x_yp1_z,
-        vec_madd(vec_ld(0,simd_diff_+=4)  , my_xm1_y_z,
-        vec_madd(vec_ld(0,simd_diff_+=4)  , my_x_ym1_z,
-        vec_mul( vec_ld(0,simd_diff_+=4)  , my_x_y_z)))));
+  C0 =  vec_madd(vec_ld(4*4*8,simd_diff_)  , my_xp1_y_z,
+        vec_madd(vec_ld(3*4*8,simd_diff_)  , my_x_yp1_z,
+        vec_madd(vec_ld(2*4*8,simd_diff_)  , my_xm1_y_z,
+        vec_madd(vec_ld(1*4*8,simd_diff_)  , my_x_ym1_z,
+        vec_mul( vec_ld(0*4*8,simd_diff_)  , my_x_y_z)))));
 
     Sum0 = vec_sldw(B0,C0,1);
     B0 = C0;
@@ -662,21 +667,21 @@ FGRDiffusion::FGRDiff_simd(const uint32_t start,const int32_t chunk_size, Array3
 
     vec_st(Sum,0,out);
 
-  B1 = vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_y_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_yp1_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_y_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_ym1_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_yp1_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_yp1_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_ym1_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_ym1_z,
-       vec_mul ( vec_ld(0,simd_diff_+=4)  , my_x_y_z)))))))));
+  B1 = vec_madd( vec_ld(13*4*8,simd_diff_)  , my_xp1_y_z,
+       vec_madd( vec_ld(12*4*8,simd_diff_)  , my_x_yp1_z,
+       vec_madd( vec_ld(11*4*8,simd_diff_)  , my_xm1_y_z,
+       vec_madd( vec_ld(10*4*8,simd_diff_)  , my_x_ym1_z,
+       vec_madd( vec_ld( 9*4*8,simd_diff_)  , my_xp1_yp1_z,
+       vec_madd( vec_ld( 8*4*8,simd_diff_)  , my_xm1_yp1_z,
+       vec_madd( vec_ld( 7*4*8,simd_diff_)  , my_xm1_ym1_z,
+       vec_madd( vec_ld( 6*4*8,simd_diff_)  , my_xp1_ym1_z,
+       vec_mul ( vec_ld( 5*4*8,simd_diff_)  , my_x_y_z)))))))));
 
-  C2 = vec_madd( vec_ld(0,simd_diff_+=4)  , my_xp1_y_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_yp1_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_xm1_y_z,
-       vec_madd( vec_ld(0,simd_diff_+=4)  , my_x_ym1_z,
-       vec_mul ( vec_ld(0,simd_diff_+=4)  , my_x_y_z)))));
+  C2 = vec_madd( vec_ld(18*4*8,simd_diff_)  , my_xp1_y_z,
+       vec_madd( vec_ld(17*4*8,simd_diff_)  , my_x_yp1_z,
+       vec_madd( vec_ld(16*4*8,simd_diff_)  , my_xm1_y_z,
+       vec_madd( vec_ld(15*4*8,simd_diff_)  , my_x_ym1_z,
+       vec_mul ( vec_ld(14*4*8,simd_diff_)  , my_x_y_z)))));
 
     Sum2 = vec_sldw(B2,C2,3);
     B2 = C2;

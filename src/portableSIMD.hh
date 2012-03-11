@@ -18,6 +18,7 @@ struct vector4double
 inline vector4double vec_ld(uint32_t shift, double* addr)
 {
   vector4double tmp;
+  shift /= sizeof(double);
   tmp.v[0] = *(addr + shift);
   tmp.v[1] = *(addr + shift + 1);
   tmp.v[2] = *(addr + shift + 2);
@@ -77,6 +78,7 @@ inline vector4double vec_sldw(vector4double op1, vector4double op2, uint32_t shi
 
 inline void vec_st(vector4double op1, uint32_t offset, double* addr)
 {
+  offset /= sizeof(double);
   *(addr + offset)     = op1.v[0];
   *(addr + offset + 1) = op1.v[1];
   *(addr + offset + 2) = op1.v[2];
