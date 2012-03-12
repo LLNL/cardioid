@@ -80,6 +80,8 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
 //   offsetsTest();
    precomputeCoefficients(anatomy);
    reorder_Coeff();
+
+   tmp_dVm.resize(nx,ny,nz + (nz%4==0 ? 0:4-(nz%4)));
    
 }
 

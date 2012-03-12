@@ -100,7 +100,7 @@ class Saleheen98PrecomputeDiffusion : public Diffusion
    Array3d<DiffusionCoefficients> diffIntra_;
    Array3d<double>                VmBlock_;
    Array3d<double>                diffCoefT2_;
-   
+   Array3d<double>                tmp_dVm ;
    
 };
 

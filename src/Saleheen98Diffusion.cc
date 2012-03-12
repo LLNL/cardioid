@@ -80,6 +80,7 @@ Saleheen98PrecomputeDiffusion::Saleheen98PrecomputeDiffusion(
    buildBlockIndex(anatomy);
    precomputeCoefficients(anatomy);
    reorder_Coeff();  
+   tmp_dVm.resize(nx,ny,nz + ((nz%4==0) ? 0:(4-nz%4)));
 }
 
    
@@ -111,6 +112,7 @@ void Saleheen98PrecomputeDiffusion::calc_simd(
    #endif
 
    Array3d<double> *VmTmp = &(VmBlock_);
+
    //make sure z is multiple of 4
    if(VmBlock_.nz()%4 != 0)
    {
@@ -125,7 +127,7 @@ void Saleheen98PrecomputeDiffusion::calc_simd(
      }
    }
 
-   Array3d<double> tmp_dVm(VmTmp->nx(),VmTmp->ny(),VmTmp->nz());
+   //   Array3d<double> tmp_dVm(VmTmp->nx(),VmTmp->ny(),VmTmp->nz());
 
    #ifdef thread_test
      uint32_t start = VmTmp->tupleToIndex(1,1,0);

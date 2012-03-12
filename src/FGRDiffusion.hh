@@ -53,6 +53,7 @@ class FGRDiffusion : public Diffusion
    Array3d<DiffWeight>            weight_;
    Array3d<double>                VmBlock_;
    Array3d<double>                diffCoefT2_;
+   Array3d<double>                tmp_dVm;
    
    
 };
