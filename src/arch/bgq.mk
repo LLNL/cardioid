@@ -1,5 +1,7 @@
-CXX=/bgsys/drivers/ppcfloor/comm/xl/bin/mpixlcxx_r
-CC=/bgsys/drivers/ppcfloor/comm/xl/bin/mpixlc_r
+#CXX=/bgsys/drivers/ppcfloor/comm/xl/bin/mpixlcxx_r
+#CC=/bgsys/drivers/ppcfloor/comm/xl/bin/mpixlc_r
+CXX=/bgsys/drivers/DRV2012_0229_1625/ppc64-rhel60/comm/xl/bin/mpixlcxx_r
+CC=/bgsys/drivers/DRV2012_0229_1625/ppc64-rhel60/comm/xl/bin/mpixlc_r
 LD=$(CXX)
 
 DFLAGS = -DWITH_PIO -DWITH_MPI -DBGQ \
