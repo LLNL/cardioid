@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <spi/include/l2/atomic.h>
+#include <builtins.h>
 
 #ifndef FAST_BARRIER_HH
 #error "Do not #include fastBarrierBGQ.hh.  #include fastBarrier.hh instead"
@@ -255,6 +256,15 @@ __INLINE__ void L2_BarrierWithSync_Barrier(
   L2_BarrierWithSync_WaitAndReset(b, h, eventNum);
 }
 
+/** Call this before the parallel region.  Replaces call to Init.
+ * Caller is responsible to free the returned pointer. */
+L2_Barrier_t* L2_BarrierWithSync_InitShared()
+{
+   L2_Barrier_t* bb = (L2_Barrier_t*) malloc(sizeof(L2_Barrier_t));
+   Kernel_L2AtomicsAllocate(bb, sizeof(L2_Barrier_t));
+   L2_BarrierWithSync_Init(bb);
+   return bb;
+}
 
 __END_DECLS
 

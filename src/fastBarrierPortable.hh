@@ -2,6 +2,7 @@
 #define FAST_BARRIER_PORTABLE_HH
 
 #include <stdint.h>
+#include <cstdlib>
 
 #ifndef FAST_BARRIER_HH
 #error "Do not #include fastBarrierPortable.hh.  #include fastBarrier.hh instead"
@@ -85,6 +86,17 @@ inline void L2_BarrierWithSync_Barrier(
    L2_BarrierWithSync_Arrive(b, h, eventNum);
    L2_BarrierWithSync_WaitAndReset(b, h, eventNum);
 }
+
+/** Call this before the parallel region.  Replaces call to Init.
+ * Caller is responsible to free the returned pointer. */
+L2_Barrier_t* L2_BarrierWithSync_InitShared()
+{
+   L2_Barrier_t* bb = (L2_Barrier_t*) malloc(sizeof(L2_Barrier_t));
+   L2_BarrierWithSync_Init(bb);
+   return bb;
+}
+
+   
 
 
 #endif

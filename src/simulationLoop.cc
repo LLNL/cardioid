@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <sstream>
 #include <cstdio>
+#include <cstdlib>
 #include <omp.h>
 
 #include "Simulate.hh"
@@ -25,10 +26,6 @@ using namespace std;
 using namespace PerformanceTimers;
 
 
-static L2_Barrier_t reactionBarrier;
-static L2_Barrier_t diffusionBarrier;
-static L2_Barrier_t reactionWaitOnNonGateBarrier;
-   
 void simulationProlog(Simulate& sim)
 {
    // initialize membrane voltage with default value from the reaction model. 
@@ -169,13 +166,27 @@ struct SimLoopData
    SimLoopData(const Simulate& sim)
    : voltageExchange(sim.sendMap_, (sim.commTable_))
    {
+      reactionBarrier = L2_BarrierWithSync_InitShared();
+      diffusionBarrier= L2_BarrierWithSync_InitShared();
+      reactionWaitOnNonGateBarrier= L2_BarrierWithSync_InitShared();
       int nLocal = sim.anatomy_.nLocal();
       dVmExternal.resize(nLocal, 0.0);
       dVmDiffusion.resize(nLocal, 0.0);
       dVmReactionCpy.resize(nLocal, 0.0);
       dVmReaction.resize(nLocal, 0.0); 
    }
+
+   ~SimLoopData()
+   {
+      free(reactionWaitOnNonGateBarrier);
+      free(diffusionBarrier);
+      free(reactionBarrier);
+   }
    
+   
+   L2_Barrier_t* reactionBarrier;
+   L2_Barrier_t* diffusionBarrier;
+   L2_Barrier_t* reactionWaitOnNonGateBarrier;
    
    vector<double> dVmReaction; 
    vector<double> dVmExternal;
@@ -236,7 +247,8 @@ void diffusionLoop(Simulate& sim,
       }
       
       profileStart(diffusionWaitTimer); 
-      L2_BarrierWithSync_WaitAndReset(&reactionBarrier, &reactionHandle,
+      L2_BarrierWithSync_WaitAndReset(loopData.reactionBarrier,
+                                      &reactionHandle,
                                       sim.reactionGroup_->nThreads());
       profileStop(diffusionWaitTimer); 
       profileStart(diffusionStallTimer); 
@@ -257,12 +269,13 @@ void diffusionLoop(Simulate& sim,
          profileStop(integratorTimer);
       }
       
-      L2_BarrierWithSync_Arrive(&diffusionBarrier, &diffusionHandle,
+      L2_BarrierWithSync_Arrive(loopData.diffusionBarrier, &diffusionHandle,
                                 sim.diffusionGroup_->nThreads());
       // wait and reset to make this a barrier.  Can't let any thread
       // past here until loop_ has been incremented.
-      L2_BarrierWithSync_WaitAndReset(&diffusionBarrier, &diffusionHandle,
-                               sim.diffusionGroup_->nThreads());
+      L2_BarrierWithSync_WaitAndReset(loopData.diffusionBarrier,
+                                      &diffusionHandle,
+                                      sim.diffusionGroup_->nThreads());
       profileStop(diffusionStallTimer); 
 
       if (tid == 0)
@@ -276,10 +289,11 @@ void diffusionLoop(Simulate& sim,
    }
 }
 
-void reactionLoop(Simulate& sim, vector<double>& dVmReaction,L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle)
+void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle)
 {
+   vector<double>& dVmReaction = loopData.dVmReaction;
    L2_BarrierHandle_t reactionWaitOnNonGateHandle;
-   L2_BarrierWithSync_InitInThread(&reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle);
+   L2_BarrierWithSync_InitInThread(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle);
    while ( sim.loop_<sim.maxLoop_ )
    {
       profileStart(reactionLoopTimer);
@@ -287,28 +301,27 @@ void reactionLoop(Simulate& sim, vector<double>& dVmReaction,L2_BarrierHandle_t&
       
       profileStart(reactionTimer);
       sim.reaction_->updateNonGate(sim.dt_, sim.VmArray_, dVmReaction);
-      L2_BarrierWithSync_Barrier(&reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle, sim.reactionGroup_->nThreads());
+      L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle, sim.reactionGroup_->nThreads());
       sim.reaction_->updateGate(sim.dt_, sim.VmArray_);
       profileStop(reactionTimer);
-      L2_BarrierWithSync_Arrive(&reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads());
-      L2_BarrierWithSync_Reset(&reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads());
+      L2_BarrierWithSync_Arrive(loopData.reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads());
+      L2_BarrierWithSync_Reset(loopData.reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads());
       profileStart(reactionWaitTimer);
-      L2_BarrierWithSync_WaitAndReset(&diffusionBarrier, &diffusionHandle, sim.diffusionGroup_->nThreads());
+      L2_BarrierWithSync_WaitAndReset(loopData.diffusionBarrier, &diffusionHandle, sim.diffusionGroup_->nThreads());
       profileStop(reactionWaitTimer);
       profileStop(reactionLoopTimer);
    }
 }
-void nullReactionLoop(Simulate& sim, vector<double>& dVmReaction,L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle)
+
+void nullReactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle)
 {
    while ( sim.loop_<=sim.maxLoop_ )
    {
-      
-      L2_BarrierWithSync_Arrive(&reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads());
-      L2_BarrierWithSync_Reset(&reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads());
-      L2_BarrierWithSync_WaitAndReset(&diffusionBarrier, &diffusionHandle, sim.diffusionGroup_->nThreads());
+      L2_BarrierWithSync_Arrive(loopData.reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads());
+      L2_BarrierWithSync_Reset(loopData.reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads());
+      L2_BarrierWithSync_WaitAndReset(loopData.diffusionBarrier, &diffusionHandle, sim.diffusionGroup_->nThreads());
    }
 }
-
 
 
 
@@ -323,8 +336,8 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
       
       L2_BarrierHandle_t reactionHandle;
       L2_BarrierHandle_t diffusionHandle;
-      L2_BarrierWithSync_InitInThread(&reactionBarrier, &reactionHandle);
-      L2_BarrierWithSync_InitInThread(&diffusionBarrier, &diffusionHandle);
+      L2_BarrierWithSync_InitInThread(loopData.reactionBarrier, &reactionHandle);
+      L2_BarrierWithSync_InitInThread(loopData.diffusionBarrier, &diffusionHandle);
       
       #pragma omp barrier
       if ( sim.tinfo_.threadingMap_[ompTid] == sim.diffusionGroup_) 
@@ -334,7 +347,7 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
       if ( sim.tinfo_.threadingMap_[ompTid] == sim.reactionGroup_) 
       {
           int rID = sim.reactionGroup_->threadID(); 
-          reactionLoop(sim, loopData.dVmReaction, reactionHandle, diffusionHandle);
+          reactionLoop(sim, loopData, reactionHandle, diffusionHandle);
       } 
    }
 }
