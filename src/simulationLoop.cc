@@ -106,6 +106,11 @@ void simulationLoop(Simulate& sim)
    {
       int nLocal = sim.anatomy_.nLocal();
     
+//       profileStart(imbalanceTimer);
+//       MPI_Barrier(MPI_COMM_WORLD);
+//       profileStop(imbalanceTimer);
+
+
       profileStart(haloTimer);
       voltageExchange.execute(sim.VmArray_, nLocal);
       voltageExchange.complete();
@@ -214,6 +219,10 @@ void diffusionLoop(Simulate& sim,
     
       if (tid == 0)
       {
+//          profileStart(diffusionImbalanceTimer);
+//          MPI_Barrier(MPI_COMM_WORLD);
+//          profileStop(diffusionImbalanceTimer);
+         
          profileStart(haloTimer);
          loopData.voltageExchange.execute(sim.VmArray_, nLocal);
          loopData.voltageExchange.complete();
@@ -254,6 +263,9 @@ void diffusionLoop(Simulate& sim,
       profileStart(diffusionStallTimer); 
 
 
+      profileStart(dummyTimer);
+      profileStop(dummyTimer);
+      
       if (tid == 0)
       {
          loopData.dVmReactionCpy = loopData.dVmReaction; 
@@ -306,6 +318,8 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       profileStop(reactionTimer);
       L2_BarrierWithSync_Arrive(loopData.reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads());
       L2_BarrierWithSync_Reset(loopData.reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads());
+      profileStart(dummyTimer);
+      profileStop(dummyTimer);
       profileStart(reactionWaitTimer);
       L2_BarrierWithSync_WaitAndReset(loopData.diffusionBarrier, &diffusionHandle, sim.diffusionGroup_->nThreads());
       profileStop(reactionWaitTimer);

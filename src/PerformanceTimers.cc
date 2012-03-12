@@ -25,20 +25,24 @@ namespace PerformanceTimers
       double lastTime;
       double nCalls;
    };
- TimerHandle loopIOTimer ;
- TimerHandle sensorTimer ;
- TimerHandle haloTimer ;
- TimerHandle diffusionTimer;
- TimerHandle stimulusTimer ;
- TimerHandle reactionTimer;
- TimerHandle integratorTimer ;
- TimerHandle nonGateTimer;
- TimerHandle gateTimer ;
- TimerHandle diffusionLoopTimer ;
- TimerHandle reactionLoopTimer ;
- TimerHandle reactionWaitTimer ;
- TimerHandle diffusionWaitTimer ;
- TimerHandle diffusionStallTimer ;
+   TimerHandle loopIOTimer;
+   TimerHandle sensorTimer;
+   TimerHandle haloTimer;
+   TimerHandle diffusionTimer;
+   TimerHandle stimulusTimer;
+   TimerHandle reactionTimer;
+   TimerHandle integratorTimer;
+   TimerHandle nonGateTimer;
+   TimerHandle gateTimer;
+   TimerHandle diffusionLoopTimer;
+   TimerHandle reactionLoopTimer;
+   TimerHandle reactionWaitTimer;
+   TimerHandle diffusionWaitTimer;
+   TimerHandle diffusionStallTimer;
+   TimerHandle diffusionImbalanceTimer;
+   TimerHandle imbalanceTimer;
+   TimerHandle dummyTimer;
+   
    
    vector<TimerStruct> timers_;
    typedef map<string, TimerHandle> HandleMap;
@@ -68,21 +72,24 @@ using namespace PerformanceTimers;
 
 void  profileInit()
 {
-loopIOTimer = profileGetHandle("LoopIO");
-sensorTimer = profileGetHandle("Sensors");
-haloTimer = profileGetHandle("Halo Exchange");
-diffusionTimer= profileGetHandle("Diffusion");
-stimulusTimer = profileGetHandle("Stimulus");
-reactionTimer= profileGetHandle("Reaction");
-nonGateTimer= profileGetHandle("Reaction_nonGate");
-gateTimer = profileGetHandle("Reaction_Gate");
-diffusionLoopTimer= profileGetHandle("DiffusionLoop");
-integratorTimer = profileGetHandle("Integrator");
-haloTimer = profileGetHandle("Halo Exchange");
-reactionLoopTimer = profileGetHandle("ReactionLoop");
-reactionWaitTimer = profileGetHandle("ReactionWait");
-diffusionWaitTimer = profileGetHandle("DiffusionWait");
-diffusionStallTimer = profileGetHandle("DiffusionStall");
+   loopIOTimer = profileGetHandle("LoopIO");
+   sensorTimer = profileGetHandle("Sensors");
+   haloTimer = profileGetHandle("Halo Exchange");
+   diffusionTimer= profileGetHandle("Diffusion");
+   stimulusTimer = profileGetHandle("Stimulus");
+   reactionTimer= profileGetHandle("Reaction");
+   nonGateTimer= profileGetHandle("Reaction_nonGate");
+   gateTimer = profileGetHandle("Reaction_Gate");
+   diffusionLoopTimer= profileGetHandle("DiffusionLoop");
+   integratorTimer = profileGetHandle("Integrator");
+   haloTimer = profileGetHandle("Halo Exchange");
+   reactionLoopTimer = profileGetHandle("ReactionLoop");
+   reactionWaitTimer = profileGetHandle("ReactionWait");
+   diffusionWaitTimer = profileGetHandle("DiffusionWait");
+   diffusionStallTimer = profileGetHandle("DiffusionStall");
+   diffusionImbalanceTimer = profileGetHandle("DiffusionImbalance");
+   imbalanceTimer = profileGetHandle("Imbalance");
+   dummyTimer = profileGetHandle("Dummy");
 }
 
        
@@ -112,8 +119,8 @@ void profileStop(const std::string& timerName)
 
 TimerHandle profileGetHandle(string timerName)
 {
-    TimerHandle handle ;
-    TimerHandle handleFirst ;
+    TimerHandle handle;
+    TimerHandle handleFirst;
     int id=0; 
     
     stringstream tmp;
