@@ -20,14 +20,14 @@ namespace
 {
    Reaction* scanTT04_CellML(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanTT06_CellML(OBJECT* obj, const Anatomy& anatomy);
-   Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy,coreGroup *group);
+   Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy, CoreGroup* group);
    Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanFHN(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanConstant(OBJECT* obj, const Anatomy& anatomy);
 }
 
 
-Reaction* reactionFactory(const string& name, const Anatomy& anatomy, coreGroup* group)
+Reaction* reactionFactory(const string& name, const Anatomy& anatomy, CoreGroup* group)
 {
    OBJECT* obj = objectFind(name, "REACTION");
    string method; objectGet(obj, "method", method, "undefined");
@@ -84,13 +84,13 @@ namespace
 
 namespace
 {
-   Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy, coreGroup *group)
+   Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy, CoreGroup* group)
    {
       double tolerance=0.0 ; 
       int mod=0; 
       objectGet(obj, "tolerance", tolerance, "0.0") ;
       objectGet(obj, "mod", mod, "0") ;
-      Reaction *reaction = new TT06Dev_Reaction(anatomy, tolerance,mod, group);
+      Reaction *reaction = new TT06Dev_Reaction(anatomy, tolerance, mod, group);
       return  reaction; 
    }
 }

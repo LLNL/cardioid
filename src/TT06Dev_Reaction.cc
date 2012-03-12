@@ -12,8 +12,9 @@ using namespace PerformanceTimers;
 
 static FILE *tfile[64]; 
 
-TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int mod, coreGroup *group)
-: nCells_(anatomy.nLocal())
+TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int mod, CoreGroup* group)
+: nCells_(anatomy.nLocal()),
+  group_(group)
 {
    static bool initialized = false;
    if (! initialized)
@@ -31,7 +32,6 @@ TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int m
       for (int i=0;fit[i]!=NULL;i++) padeCalc(fit[i],maxTerms,maxTerms,maxCost); 
       TT06Func::writeFit(fit); 
    }
-   group_ = group; 
    dtForFit_=0.0; 
    ttType_.resize(256, -1); 
    ttType_[30] = 0;

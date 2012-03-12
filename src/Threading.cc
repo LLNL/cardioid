@@ -10,10 +10,10 @@
 #include <sys/types.h> 
 #include <sys/sysctl.h> 
 #endif
-int cmpFuncOMPTABLE(const void *A, const void*B)
+int cmpFuncOMPTable(const void *A, const void*B)
 {
-   OMPTABLE *tA = (OMPTABLE *)A;
-   OMPTABLE *tB = (OMPTABLE *)B;
+   OMPTable *tA = (OMPTable *)A;
+   OMPTable *tB = (OMPTable *)B;
    if ( tA->core_id < tB->core_id)  return -1; 
    if ( tA->core_id > tB->core_id)  return  1; 
    if ( tA->hwThread_id < tB->hwThread_id)  return -1; 
@@ -25,7 +25,7 @@ void Threading::probeHardware()
 
    int omp_nThreads  = omp_get_max_threads(); 
    int omp_nProc = omp_get_num_procs(); 
-   ompTable_=(OMPTABLE *)malloc(omp_nThreads*sizeof(OMPTABLE)); 
+   ompTable_=(OMPTable *)malloc(omp_nThreads*sizeof(OMPTable)); 
    #pragma omp parallel
    {
       int omp_id = omp_get_thread_num(); 
@@ -43,7 +43,7 @@ void Threading::probeHardware()
          #ifdef __APPLE__
 	 int requestNCPU[] = {CTL_HW,HW_NCPU}; 
 	 int requestAVAILCPU[] = {CTL_HW,HW_AVAILCPU}; 
-         ncpu,physicalCores,availcpu; 
+         int physicalCores,availcpu; 
          size_t len = sizeof(int); 
          sysctl(requestNCPU,2,&ncpu,&len,NULL,0); 
          sysctl(requestAVAILCPU,2,&availcpu,&len,NULL,0); 
@@ -71,11 +71,11 @@ void Threading::probeHardware()
       #pragma omp barrier
       #pragma omp master
       {
-        qsort(ompTable_,omp_nThreads,sizeof(OMPTABLE),cmpFuncOMPTABLE); 
+        qsort(ompTable_,omp_nThreads,sizeof(OMPTable),cmpFuncOMPTable); 
         int core_id = -1; 
         int nCore=0; 
 	for (int i =0;i<omp_nThreads;i++) if (ompTable_[i].core_id != core_id) nCore++; 
-        coreTable_ = (CORETABLE *)malloc(nCore*sizeof(CORETABLE)); 
+        coreTable_ = (CoreTable *)malloc(nCore*sizeof(CoreTable)); 
         nCore=0; 
         int first=0; 
 	int last =0; 
@@ -104,48 +104,50 @@ void Threading::probeHardware()
 }
 Threading::Threading()
 {
-nThreads_  = omp_get_max_threads(); 
+   nThreads_  = omp_get_max_threads(); 
    probeHardware(); 
    nGroups_=0; 
    nRemainingCores_=nCores_; 
-   groups_ = (coreGroup*)malloc(nCores_*sizeof(coreGroup)); 
-   threadingMap_ =(coreGroup**)malloc(nThreads_*sizeof(coreGroup*)); 
-   for (int ii=0;ii<nThreads_;ii++) threadingMap_[ii]=(coreGroup*)NULL; 
+   groups_ = (CoreGroup*)malloc(nCores_*sizeof(CoreGroup)); 
+   threadingMap_ =(CoreGroup**)malloc(nThreads_*sizeof(CoreGroup*)); 
+   for (int ii=0;ii<nThreads_;ii++) threadingMap_[ii]=0;
    
 }
-void groupInfo(coreGroup *group, int& coreID, int&hwThreadID, int& threadID, int& nCores, int& nHwThreads, int& nThreads) 
+void groupInfo(CoreGroup *group, int& coreID, int&hwThreadID, int& threadID, int& nCores, int& nHwThreads, int& nThreads) 
 {
-   threadID=groupThreadID(group);
-   nThreads = group->nThreads;
-   nCores= group->nCores; 
+   threadID=group->threadID();
+   nThreads = group->nThreads_;
+   nCores= group->nCores_; 
    nHwThreads=nThreads/nCores; 
    coreID = threadID/nHwThreads; 
    hwThreadID = threadID%nHwThreads; 
 }
 
-int groupThreadID(coreGroup *group) 
+int CoreGroup::threadID() 
 {
   int ompID = omp_get_thread_num(); 
   int threadID=-1; 
-  for (int ii = 0;ii<group->nThreads;ii++) 
+  for (int ii = 0;ii<nThreads_;ii++) 
   {
-     if ( ompID == group->ompID[ii] ) {threadID=ii; break;}
+     if ( ompID == ompID_[ii] ) {threadID=ii; break;}
   }
   assert(threadID != -1) ; 
   return threadID; 
 }
-int Threading::nCores() { return nCores_ ; } 
-coreGroup* Threading::mkGroup(int nCores ) 
+
+
+CoreGroup* Threading::mkGroup(int nCores ) 
 {
-   coreGroup group; 
+   CoreGroup group; 
    if (nCores==-1) nCores = nRemainingCores_; 
-   group.nCores=nCores; 
+   group.nCores_=nCores; 
    int firstCoreIndex=nCores_-nRemainingCores_; 
    int nThreads=0; 
-   for(int ii=0;ii<nCores;ii++) nThreads+=coreTable_[ii+firstCoreIndex].nThread; 
-   group.nThreads=nThreads;
+   for (int ii=0;ii<nCores;ii++)
+      nThreads+=coreTable_[ii+firstCoreIndex].nThread; 
+   group.nThreads_=nThreads;
    nRemainingCores_-=nCores; 
-   group.ompID = (int *)malloc(group.nThreads*sizeof(int)); 
+   group.ompID_ = (int *)malloc(group.nThreads_*sizeof(int)); 
    assert(nRemainingCores_ >= 0); 
    int kk=0; 
    for (int ii=0;ii<nCores;ii++) 
@@ -155,15 +157,15 @@ coreGroup* Threading::mkGroup(int nCores )
       for(int jj=0;jj<nThreads;jj++) 
       {
          int ompID = ompTable_[first+jj].omp_id; 
-       	 group.ompID[kk++]= ompID; 
+       	 group.ompID_[kk++]= ompID; 
        	 threadingMap_[ompID] = groups_+nGroups_; 
       }
    }
    groups_[nGroups_++] = group; 
    if (getRank(0)==0) 
    {
-    printf("group=%p nCores=%d nThreads=%d",groups_+nGroups_-1,group.nCores,group.nThreads); 
-   for(int ii=0;ii<group.nThreads;ii++) printf(" %d",group.ompID[ii]); printf("\n") ;
+    printf("group=%p nCores=%d nThreads=%d",groups_+nGroups_-1,group.nCores_,group.nThreads_); 
+   for(int ii=0;ii<group.nThreads_;ii++) printf(" %d",group.ompID_[ii]); printf("\n") ;
    }
    return groups_+nGroups_-1;
 }

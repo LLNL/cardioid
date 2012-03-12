@@ -9,7 +9,7 @@ class TT06Dev_Reaction : public Reaction
 {
  public:
    
-   TT06Dev_Reaction(const Anatomy& anatomy, double tolerance, int mod, coreGroup *group);
+   TT06Dev_Reaction(const Anatomy& anatomy, double tolerance, int mod, CoreGroup *group);
    std::string methodName() const {return "TT06_Dev";}
    // copy constructor and assignment operator intentionally
    // left unimplemented.
@@ -33,7 +33,7 @@ class TT06Dev_Reaction : public Reaction
    double dtForFit_; 
    double tolerance_; 
    int mod_; 
-   coreGroup* group_;
+   CoreGroup* group_;
    
    std::vector<int>              ttType_; // maps cellType to ttType
    std::vector<TT06Func::TT06DevState> s_;

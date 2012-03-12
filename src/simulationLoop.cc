@@ -46,7 +46,7 @@ void simulationProlog(Simulate& sim)
 
 void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVmD,  const vector<double>& dVmE)
 {
-   int diffusionID = groupThreadID(sim.diffusionGroup_); 
+   int diffusionID = sim.diffusionGroup_->threadID(); 
    if (diffusionID != 0) return; 
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -194,7 +194,7 @@ void diffusionLoop(Simulate& sim,
                    L2_BarrierHandle_t& reactionHandle,
                    L2_BarrierHandle_t& diffusionHandle)
 {
-   int tid = groupThreadID(sim.diffusionGroup_);
+   int tid = sim.diffusionGroup_->threadID();
 
    while ( sim.loop_ < sim.maxLoop_ )
    {
@@ -237,7 +237,7 @@ void diffusionLoop(Simulate& sim,
       
       profileStart(diffusionWaitTimer); 
       L2_BarrierWithSync_WaitAndReset(&reactionBarrier, &reactionHandle,
-                                      sim.reactionGroup_->nThreads);
+                                      sim.reactionGroup_->nThreads());
       profileStop(diffusionWaitTimer); 
       profileStart(diffusionStallTimer); 
 
@@ -258,11 +258,11 @@ void diffusionLoop(Simulate& sim,
       }
       
       L2_BarrierWithSync_Arrive(&diffusionBarrier, &diffusionHandle,
-                                sim.diffusionGroup_->nThreads);
+                                sim.diffusionGroup_->nThreads());
       // wait and reset to make this a barrier.  Can't let any thread
       // past here until loop_ has been incremented.
       L2_BarrierWithSync_WaitAndReset(&diffusionBarrier, &diffusionHandle,
-                               sim.diffusionGroup_->nThreads);
+                               sim.diffusionGroup_->nThreads());
       profileStop(diffusionStallTimer); 
 
       if (tid == 0)
@@ -287,13 +287,13 @@ void reactionLoop(Simulate& sim, vector<double>& dVmReaction,L2_BarrierHandle_t&
       
       profileStart(reactionTimer);
       sim.reaction_->updateNonGate(sim.dt_, sim.VmArray_, dVmReaction);
-      L2_BarrierWithSync_Barrier(&reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle, sim.reactionGroup_->nThreads);
+      L2_BarrierWithSync_Barrier(&reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle, sim.reactionGroup_->nThreads());
       sim.reaction_->updateGate(sim.dt_, sim.VmArray_);
       profileStop(reactionTimer);
-      L2_BarrierWithSync_Arrive(&reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads);
-      L2_BarrierWithSync_Reset(&reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads);
+      L2_BarrierWithSync_Arrive(&reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads());
+      L2_BarrierWithSync_Reset(&reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads());
       profileStart(reactionWaitTimer);
-      L2_BarrierWithSync_WaitAndReset(&diffusionBarrier, &diffusionHandle, sim.diffusionGroup_->nThreads);
+      L2_BarrierWithSync_WaitAndReset(&diffusionBarrier, &diffusionHandle, sim.diffusionGroup_->nThreads());
       profileStop(reactionWaitTimer);
       profileStop(reactionLoopTimer);
    }
@@ -303,9 +303,9 @@ void nullReactionLoop(Simulate& sim, vector<double>& dVmReaction,L2_BarrierHandl
    while ( sim.loop_<=sim.maxLoop_ )
    {
       
-      L2_BarrierWithSync_Arrive(&reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads);
-      L2_BarrierWithSync_Reset(&reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads);
-      L2_BarrierWithSync_WaitAndReset(&diffusionBarrier, &diffusionHandle, sim.diffusionGroup_->nThreads);
+      L2_BarrierWithSync_Arrive(&reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads());
+      L2_BarrierWithSync_Reset(&reactionBarrier, &reactionHandle, sim.reactionGroup_->nThreads());
+      L2_BarrierWithSync_WaitAndReset(&diffusionBarrier, &diffusionHandle, sim.diffusionGroup_->nThreads());
    }
 }
 
@@ -333,7 +333,7 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
       }
       if ( sim.tinfo_.threadingMap_[ompTid] == sim.reactionGroup_) 
       {
-          int rID = groupThreadID(sim.reactionGroup_); 
+          int rID = sim.reactionGroup_->threadID(); 
           reactionLoop(sim, loopData.dVmReaction, reactionHandle, diffusionHandle);
       } 
    }

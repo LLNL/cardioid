@@ -33,8 +33,8 @@ class Simulate
    int snapshotRate_;
    int checkpointRate_;
    int parallelDiffusionReaction_;
-   coreGroup *diffusionGroup_; 
-   coreGroup *reactionGroup_; 
+   CoreGroup* diffusionGroup_; 
+   CoreGroup* reactionGroup_; 
    Threading tinfo_; 
    
    double dt_;
