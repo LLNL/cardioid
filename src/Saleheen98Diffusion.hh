@@ -79,6 +79,7 @@ class Saleheen98PrecomputeDiffusion : public Diffusion
    
    double boundaryFDLaplacianSaleheen98SumPhi(const Tuple& tuple);
    void   boundaryFDLaplacianSaleheen98SumPhi_All_simd(const uint32_t start,const int32_t chunk_size, Array3d<double>*  VmTmp, double* out);
+   void   boundaryFDLaplacianSaleheen98SumPhi_All_simd_thread(const uint32_t start,const int32_t chunk_size, Array3d<double>*  VmTmp, double* out);
    void   boundaryFDLaplacianSaleheen98Constants(
       const int*** tissue,
       const SymmetricTensor*** sigmaMatrix,

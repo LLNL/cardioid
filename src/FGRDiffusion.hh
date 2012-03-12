@@ -30,6 +30,7 @@ class FGRDiffusion : public Diffusion
    void calc(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf, int nLocal);
    void calc_simd(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf_, int nLocal);
    void FGRDiff_simd(const uint32_t start,const int32_t chunk_size, Array3d<double>* VmTmp, double* out);
+   void FGRDiff_simd_thread(const uint32_t start,const int32_t chunk_size, Array3d<double>* VmTmp, double* out);
 
  private:
    void buildTupleArray(const Anatomy& anatomy);
