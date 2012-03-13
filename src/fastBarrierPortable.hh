@@ -89,7 +89,7 @@ inline void L2_BarrierWithSync_Barrier(
 
 /** Call this before the parallel region.  Replaces call to Init.
  * Caller is responsible to free the returned pointer. */
-L2_Barrier_t* L2_BarrierWithSync_InitShared()
+inline L2_Barrier_t* L2_BarrierWithSync_InitShared()
 {
    L2_Barrier_t* bb = (L2_Barrier_t*) malloc(sizeof(L2_Barrier_t));
    L2_BarrierWithSync_Init(bb);

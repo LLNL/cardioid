@@ -94,7 +94,7 @@
  * All Producers and Consumers must execute the barrier at the same time
  */
 
-typedef struct {
+struct  L2_Barrier_t{
   // new cache line
   volatile __attribute__((aligned(L1D_CACHE_LINE_SIZE)))
   uint64_t start;  /*!< Thread count at start of current round. */
@@ -102,7 +102,7 @@ typedef struct {
   volatile __attribute__((aligned(L1D_CACHE_LINE_SIZE)))
   uint64_t count;  /*!< Current thread count. */
   char pad[L1D_CACHE_LINE_SIZE - 8];
-} L2_Barrier_t;
+};
 
 
 #define L2_BARRIER_INITIALIZER {0, 0, 0}
@@ -116,10 +116,10 @@ typedef struct {
  * the handle.
  */
 
-typedef struct {
+struct  L2_BarrierHandle_t{
   uint64_t localStart; // local (private start)
   volatile uint64_t *localCountPtr; // encoded fetch and inc address
-} L2_BarrierHandle_t;
+};
 
 __BEGIN_DECLS
 
@@ -258,7 +258,7 @@ __INLINE__ void L2_BarrierWithSync_Barrier(
 
 /** Call this before the parallel region.  Replaces call to Init.
  * Caller is responsible to free the returned pointer. */
-L2_Barrier_t* L2_BarrierWithSync_InitShared()
+__INLINE__ L2_Barrier_t* L2_BarrierWithSync_InitShared()
 {
    L2_Barrier_t* bb = (L2_Barrier_t*) malloc(sizeof(L2_Barrier_t));
    Kernel_L2AtomicsAllocate(bb, sizeof(L2_Barrier_t));
