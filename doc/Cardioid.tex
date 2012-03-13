@@ -648,6 +648,10 @@ Applies the stimulus to all cells inside a specified box.  \issue{The
 \issue{Isn't it awkward that we specify the box in units of grid cells?
   Should it be in length units (like mm) instead?}
 
+  Only cells
+that are strictly inside the box are stimulated.  Cells with indices
+that are equal to the min or max index are not stimulated.  For example,
+setting xMin=1, xMax=3 will stimulate cells with ix=2.
 
 \subsubsection{Point Stimulus}
 Applies the stimulus to a single cell specified by its global grid index.
@@ -798,7 +802,7 @@ resistivity per length.
 The gid field contains the 3D index of the cell converted to a single
 integer by the formula $ix + nx*(iy + ny*iz)$.  (If necessary for
 performance we could change this formula and use bit shifting operations
-instead.)
+instead.)  Indices are in the range $[0, nx-1]$, $[0, nx-1]$, and $[0, nz-1]$ 
 
 The cell type field contains the cell type encoded according to the
 following conventions:
