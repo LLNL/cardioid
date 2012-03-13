@@ -171,6 +171,7 @@ struct SimLoopData
    SimLoopData(const Simulate& sim)
    : voltageExchange(sim.sendMap_, (sim.commTable_))
    {
+      haloBarrier = L2_BarrierWithSync_InitShared();
       reactionBarrier = L2_BarrierWithSync_InitShared();
       diffusionBarrier= L2_BarrierWithSync_InitShared();
       reactionWaitOnNonGateBarrier= L2_BarrierWithSync_InitShared();
@@ -189,6 +190,7 @@ struct SimLoopData
    }
    
    
+   L2_Barrier_t* haloBarrier;
    L2_Barrier_t* reactionBarrier;
    L2_Barrier_t* diffusionBarrier;
    L2_Barrier_t* reactionWaitOnNonGateBarrier;
@@ -211,7 +213,9 @@ void diffusionLoop(Simulate& sim,
                    L2_BarrierHandle_t& diffusionHandle)
 {
    int tid = sim.diffusionGroup_->threadID();
-
+   L2_BarrierHandle_t haloBarrierHandle;
+   L2_BarrierWithSync_InitInThread(loopData.haloBarrier, &haloBarrierHandle);
+   
    while ( sim.loop_ < sim.maxLoop_ )
    {
       profileStart(diffusionLoopTimer);
@@ -232,18 +236,18 @@ void diffusionLoop(Simulate& sim,
             loopData.dVmDiffusion[ii] = 0;
       }
       
-      // Either need a barrier for the completion of the halo exchange.
-      
+      // Need a barrier for the completion of the halo exchange.
+      L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
+                                 sim.diffusionGroup_->nThreads());
       
       // DIFFUSION
-      if (tid == 0)
-      {
-         profileStart(diffusionTimer);
-         sim.diffusion_->calc(sim.VmArray_, loopData.dVmDiffusion,
-                              loopData.voltageExchange.get_recv_buf_(), nLocal);
-         profileStop(diffusionTimer);
-      }
+      profileStart(diffusionTimer);
+      sim.diffusion_->calc(sim.VmArray_, loopData.dVmDiffusion,
+                           loopData.voltageExchange.get_recv_buf_(), nLocal);
+      profileStop(diffusionTimer);
       
+      L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
+                                 sim.diffusionGroup_->nThreads());
       if (tid == 0)
       {
          for (unsigned ii=0; ii<nLocal; ++ii)

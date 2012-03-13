@@ -19,14 +19,14 @@ using namespace std;
 
 namespace
 {
-   Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy);
+   Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy, const CoreGroup& threadInfo);
    Diffusion* saleheen98DiffusionFactory(OBJECT* obj, const Anatomy& anatomy);
    Diffusion* saleheenDevFactory(OBJECT* obj, const Anatomy& anatomy);
    void checkForObsoleteKeywords(OBJECT* obj);
 }
 
 
-Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy)
+Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy, const CoreGroup& threadInfo)
 {
    OBJECT* obj = objectFind(name, "DIFFUSION");
 
@@ -37,7 +37,7 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy)
    if (method.empty())
       assert(1==0);
    else if (method == "FGR")
-      return fgrDiffusionFactory(obj, anatomy);
+      return fgrDiffusionFactory(obj, anatomy, threadInfo);
    else if (method == "Saleheen98")
       return saleheen98DiffusionFactory(obj, anatomy);
    else if (method == "SaleheenDev")
@@ -51,12 +51,12 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy)
 
 namespace
 {
-   Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy)
+   Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy, const CoreGroup& threadInfo)
    {
       FGRDiffusionParms p;
       objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0", "l^3/capacitance");
 
-      return new FGRDiffusion(p, anatomy);
+      return new FGRDiffusion(p, anatomy, threadInfo);
    }
 }
 

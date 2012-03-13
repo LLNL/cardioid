@@ -3,6 +3,8 @@
 #include "DiffusionUtils.hh"
 #include "Anatomy.hh"
 #include "Vector.hh"
+#include "Threading.hh"
+#include "fastBarrier.hh"
 #include <algorithm>
 #include <cstdio>
 
@@ -24,8 +26,10 @@ namespace
 }
 
 FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
-                           const Anatomy& anatomy)
+                           const Anatomy& anatomy,
+                           const CoreGroup& threadInfo)
 : localGrid_(DiffusionUtils::findBoundingBox(anatomy)),
+  threadInfo_(threadInfo),
   diffusionScale_(parms.diffusionScale_)
 {
 
@@ -42,6 +46,27 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
       assert(ll.x() < nx && ll.y() < ny && ll.z() < nz);
    }
    // This has been a test
+
+   int chunkSize = anatomy.nLocal() / threadInfo.nThreads();
+   int leftOver  = anatomy.nLocal() % threadInfo.nThreads();
+   threadOffset_.resize(threadInfo.nThreads()+1);
+   threadOffset_[0] = 0;
+   for (int ii=0; ii<threadInfo.nThreads(); ++ii)
+   {
+      threadOffset_[ii+1] = threadOffset_[ii] + chunkSize;
+      if (ii < leftOver)
+         ++threadOffset_[ii+1];
+   }
+   assert(threadOffset_[threadInfo_.nThreads()] == anatomy.nLocal());
+
+   barrierHandle_.resize(threadInfo.nThreads());
+   fgrBarrier_ = L2_BarrierWithSync_InitShared();
+   #pragma omp parallel
+   {
+      int tid = threadInfo.threadID();
+      if (tid >= 0)
+         L2_BarrierWithSync_InitInThread(fgrBarrier_, &barrierHandle_[tid]);
+   }         
    
    weight_.resize(nx, ny, nz);
    VmBlock_.resize(nx, ny, nz);
@@ -90,10 +115,16 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
 
 void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *recv_buf, int nLocal)
 {
-   updateVoltageBlock(Vm, recv_buf, nLocal);
+   int tid = threadInfo_.threadID();
    
-   int nCell = dVm.size();
-   for (int iCell=0; iCell<nCell; ++iCell)
+   updateVoltageBlock(Vm, recv_buf, nLocal);
+
+   L2_BarrierWithSync_Barrier(fgrBarrier_, &barrierHandle_[tid], threadInfo_.nThreads());
+
+   int begin = threadOffset_[tid];
+   int end   = threadOffset_[tid+1];
+   
+   for (int iCell=begin; iCell<end; ++iCell)
    {
       dVm[iCell] = 0.0;
       int ib = blockIndex_[iCell];

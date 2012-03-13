@@ -53,7 +53,7 @@ void initializeSimulate(const string& name, Simulate& sim)
    getRemoteCells(sim, nameTmp, MPI_COMM_WORLD);
 
    objectGet(obj, "diffusion", nameTmp, "diffusion");
-   sim.diffusion_ = diffusionFactory(nameTmp, sim.anatomy_);
+   sim.diffusion_ = diffusionFactory(nameTmp, sim.anatomy_, *sim.diffusionGroup_);
    
    objectGet(obj, "reaction", nameTmp, "reaction");
    sim.reaction_ = reactionFactory(nameTmp, sim.anatomy_,sim.reactionGroup_);

@@ -9,6 +9,9 @@
 class Anatomy;
 class Vector;
 class SymmetricTensor;
+class CoreGroup;
+class L2_Barrier_t;
+class L2_BarrierHandle_t;
 
 struct FGRDiffusionParms
 {
@@ -25,7 +28,8 @@ class FGRDiffusion : public Diffusion
  public:
    FGRDiffusion(
       const FGRDiffusionParms& parms,
-      const Anatomy& anatomy);
+      const Anatomy& anatomy,
+      const CoreGroup& threadInfo);
    
    void calc(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf, int nLocal);
    void calc_simd(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf_, int nLocal);
@@ -44,16 +48,20 @@ class FGRDiffusion : public Diffusion
              const Array3d<SymmetricTensor>& sigmaBlk);
    void printAllWeights(const Array3d<int>& tissue);
 
-   int                            offset_[19];
-   int                            faceNbrOffset_[6];
-   LocalGrid                      localGrid_;
-   double                         diffusionScale_;
-   std::vector<unsigned>          blockIndex_; // for local and remote cells
-   std::vector<Tuple>             localTuple_; // only for local cells
-   Array3d<DiffWeight>            weight_;
-   Array3d<double>                VmBlock_;
-   Array3d<double>                diffCoefT2_;
-   Array3d<double>                tmp_dVm;
+   int                             offset_[19];
+   int                             faceNbrOffset_[6];
+   LocalGrid                       localGrid_;
+   double                          diffusionScale_;
+   const CoreGroup&                threadInfo_;
+   L2_Barrier_t*                   fgrBarrier_;
+   std::vector<L2_BarrierHandle_t> barrierHandle_;
+   std::vector<int>                threadOffset_;
+   std::vector<unsigned>           blockIndex_; // for local and remote cells
+   std::vector<Tuple>              localTuple_; // only for local cells
+   Array3d<DiffWeight>             weight_;
+   Array3d<double>                 VmBlock_;
+   Array3d<double>                 diffCoefT2_;
+   Array3d<double>                 tmp_dVm;
    
    
 };

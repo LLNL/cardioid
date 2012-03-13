@@ -130,3 +130,8 @@ case is properly supported.
 40.  The intrinsic vec_ld won't accept a const double* as an argument.
 If it did we could throw quite a few more consts into the calc
 function.  Mostly these were removed in r403 to get the code to compile.
+
+41.  FGR diffusion leaks since it does not delete fgrBarrier_.  I'd
+really prefer not to have a raw pointer sitting around.  First I'll need
+to get the fast barrier stuff better designed.
+
