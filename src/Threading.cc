@@ -123,7 +123,7 @@ void groupInfo(CoreGroup *group, int& coreID, int&hwThreadID, int& threadID, int
    hwThreadID = threadID%nHwThreads; 
 }
 
-int CoreGroup::threadID() 
+int CoreGroup::threadID() const
 {
   int ompID = omp_get_thread_num(); 
   int threadID=-1; 
@@ -131,7 +131,7 @@ int CoreGroup::threadID()
   {
      if ( ompID == ompID_[ii] ) {threadID=ii; break;}
   }
-  assert(threadID != -1) ; 
+//  assert(threadID != -1) ; 
   return threadID; 
 }
 

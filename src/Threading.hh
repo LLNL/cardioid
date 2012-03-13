@@ -5,8 +5,8 @@
 class CoreGroup
 {
  public:
-   int threadID();
-   int nThreads(){return nThreads_;}
+   int threadID() const;
+   int nThreads() const {return nThreads_;}
 
    int nCores_;
    int firstCore_;
