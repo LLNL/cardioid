@@ -68,7 +68,7 @@ void ActivationTimeSensor::print(double time, int loop,
       Pprintf(file, "  field_names = rx ry rz tActiv;\n");
       Pprintf(file, "  field_types = u u u f;\n" );
       Pprintf(file, "  nfiles = %u;\n", nfiles);
-      Pprintf(file, "  dx = %f; dy = %f; dz = %f\n", dx_, dy_, dz_);
+      Pprintf(file, "  dx = %f; dy = %f; dz = %f;\n", dx_, dy_, dz_);
       Pprintf(file, "  printRate = %d; evalRate = %d;\n", printRate(), evalRate());
       Pprintf(file, "  h = %4u  0    0\n", nx_);
       Pprintf(file, "        0    %4u  0\n", ny_);
