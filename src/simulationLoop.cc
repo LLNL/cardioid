@@ -102,6 +102,13 @@ void simulationLoop(Simulate& sim)
 #else
    mpi_HaloExchange<double> voltageExchange(sim.sendMap_, (sim.commTable_));
 #endif
+
+#if defined(SPI) && defined(TRACESPI)
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+   cout << "Rank[" << myRank << "]: numOfNeighborToSend=" << sim.commTable_->_sendTask.size() << " numOfNeighborToRecv=" << sim.commTable_->_recvTask.size() << " numOfBytesToSend=" << sim.commTable_->_sendOffset[sim.commTable_->_sendTask.size()]*sizeof(double) << " numOfBytesToRecv=" << sim.commTable_->_recvOffset[sim.commTable_->_recvTask.size()]*sizeof(double) << endl;
+#endif
+
    while ( sim.loop_<sim.maxLoop_ )
    {
       int nLocal = sim.anatomy_.nLocal();
@@ -109,7 +116,6 @@ void simulationLoop(Simulate& sim)
 //       profileStart(imbalanceTimer);
 //       MPI_Barrier(MPI_COMM_WORLD);
 //       profileStop(imbalanceTimer);
-
 
       profileStart(haloTimer);
       voltageExchange.execute(sim.VmArray_, nLocal);
@@ -348,6 +354,13 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
    SimLoopData loopData(sim);
 
    simulationProlog(sim);
+
+#if defined(SPI) && defined(TRACESPI)
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+   cout << "Rank[" << myRank << "]: numOfNeighborToSend=" << sim.commTable_->_sendTask.size() << " numOfNeighborToRecv=" << sim.commTable_->_recvTask.size() << " numOfBytesToSend=" << sim.commTable_->_sendOffset[sim.commTable_->_sendTask.size()]*sizeof(double) << " numOfBytesToRecv=" << sim.commTable_->_recvOffset[sim.commTable_->_recvTask.size()]*sizeof(double) << endl;
+#endif
+
    #pragma omp parallel
    {
       int ompTid = omp_get_thread_num();
