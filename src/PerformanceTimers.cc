@@ -15,15 +15,33 @@
 #include "unionOfStrings.hh"
 
 using namespace std;
-
 namespace PerformanceTimers
 {
+enum TimerEnum { NCALLS, CYCLES} ;
+/*
+#ifdef BGL
+uint64_t getTime()
+{
+   unsigned long long rts_get_timebase(void);
+   uint64_t  t = 0.0;
+   t = rts_get_timebase();
+   return t; 
+}
+double getTick()
+{
+   double seconds_per_cycle = 1.4285714285714285714e-9;
+   return seconds_per_cycle; 
+}
+#endif
+*/
+
+#include "PerformanceTimersBGQ.hh"
+#include "PerformanceTimersGeneric.hh"
+
    struct TimerStruct
    {
-      double startTime;
-      double totalTime;
-      double lastTime;
-      double nCalls;
+      uint64_t start[8];
+      uint64_t total[8];
    };
    TimerHandle loopIOTimer;
    TimerHandle sensorTimer;
@@ -50,24 +68,8 @@ namespace PerformanceTimers
    vector<string> printOrder_;
    string refTimer_;
 
-   
-   double getTime()
-   {
-      double t = 0.0;
-#ifdef BGL
-      unsigned long long rts_get_timebase(void);
-      double seconds_per_cycle = 1.4285714285714285714e-9;
-      t = ((double)rts_get_timebase())*seconds_per_cycle;
-#else
-      struct timeval ptime;
-      gettimeofday(&ptime, (struct timezone *)NULL);
-      t = (double)ptime.tv_sec + 1.e-6*(double)ptime.tv_usec;
-
-#endif
-      return t;
-   }
-
 }
+
 using namespace PerformanceTimers;
 
 void  profileInit()
@@ -90,21 +92,36 @@ void  profileInit()
    diffusionImbalanceTimer = profileGetHandle("DiffusionImbalance");
    imbalanceTimer = profileGetHandle("Imbalance");
    dummyTimer = profileGetHandle("Dummy");
+   machineSpecficInit(); 
 }
-
        
 void profileStart(const TimerHandle& handle)
 {
-   int id=omp_get_thread_num()+handle; 
-   timers_[id].startTime = getTime();
-   ++timers_[id].nCalls;
+   int tid=omp_get_thread_num() ;
+   int id=handle+tid; 
+   timers_[id].start[CYCLES] = getTime();
+   for (int i=0; i<nCounters_;i++) 
+   {
+      uint64_t counter;
+      readCounter(counterHandle[tid], i, &counter);   
+      timers_[id].start[i+1] = counter; 
+   }
 }
 
 void profileStop(const TimerHandle& handle)
 {
-   int id=omp_get_thread_num()+handle; 
-   timers_[id].lastTime = getTime() - timers_[id].startTime;
-   timers_[id].totalTime += timers_[id].lastTime;
+   int tid=omp_get_thread_num() ;
+   int id=handle+tid; 
+   timers_[id].total[NCALLS] += 1;
+   uint64_t delta = getTime() - timers_[id].start[CYCLES];
+   timers_[id].total[CYCLES] += delta;
+   for (int i=0; i<nCounters_;i++) 
+   {
+      uint64_t counter;
+      readCounter(counterHandle[tid], i, &counter);
+      uint64_t delta  = counter - timers_[id].start[i+1];
+      timers_[id].total[i+1] += delta;
+   }
 }
 
 void profileStart(const std::string& timerName)
@@ -158,53 +175,52 @@ void profileSetPrintOrder(const string& timerName)
 
 
 
-vector<string> generateOutputOrder()
-{
-   vector<string> order;
-   set<string> printed;
-   
-   for (unsigned ii=0; ii<printOrder_.size(); ++ii)
-      if ( printOrder_[ii].empty() ||
-           handleMap_.count(printOrder_[ii]) == 1 )
-      {
-         order.push_back(printOrder_[ii]);
-         printed.insert(printOrder_[ii]);
-      }
-   
-   for (HandleMap::const_iterator iter=handleMap_.begin();
-        iter!=handleMap_.end(); ++iter)
-   {
-      if (printed.count(iter->first) == 0)
-         order.push_back(iter->first);
-   }
-   
-   return order;
-}
-
 vector<string> generateOutputOrder(const vector<string>& words)
 {
    vector<string> order;
    set<string> printed;
    
+   int nThreads = omp_get_max_threads(); 
+   for (int id =0;id<nThreads;id++)
+   {
+   stringstream tmp;
+   tmp  <<setfill('0')<<setw(2)<<id<<":";
+   string prefix = tmp.str(); 
    for (unsigned ii=0; ii<printOrder_.size(); ++ii)
-      if ( printOrder_[ii].empty() ||
-           find(words.begin(), words.end(), printOrder_[ii]) != words.end() )
+   {
+      string  name = prefix+printOrder_[ii]; 
+	//printf("name=%s\n",name.c_str()); 
+      if ( printOrder_[ii].empty() || 
+         find(words.begin(), words.end(), name) != words.end() )
       {
-         order.push_back(printOrder_[ii]);
-         printed.insert(printOrder_[ii]);
+         order.push_back(name);
+         printed.insert(name);
       }
-   
+   }
    for (unsigned ii=0; ii<words.size(); ++ii)
    {
-      if (printed.count(words[ii]) == 0)
+      if (printed.count(words[ii]) == 0 && prefix == words[ii].substr(0,3))
          order.push_back(words[ii]);
    }
-   
+   }
+   //for (int ii=0;ii<order.size();ii++)  printf("order %d %s\n",ii,order[ii].c_str()); 
    return order;
+}
+vector<string> generateOutputOrder()
+{
+   vector<string> words;
+   for (HandleMap::const_iterator iter=handleMap_.begin(); iter!=handleMap_.end(); ++iter)
+   {
+         words.push_back(iter->first);
+   }
+   //for (int ii=0;ii<words.size();ii++)  printf("%d %s\n",ii,words[ii].c_str()); 
+   
+   return generateOutputOrder(words);
 }
 
 void profileDumpTimes(ostream& out)
 {
+   double tick = getTick(); 
    string::size_type maxLen = 0;
    for (HandleMap::iterator iter=handleMap_.begin();
         iter!=handleMap_.end(); ++iter)
@@ -224,13 +240,13 @@ void profileDumpTimes(ostream& out)
    out << "--------------------------------------------------------------------------------"
        << endl;
 
-   double refTime = timers_[handleMap_[refTimer_]].totalTime;
+   double refTime = timers_[handleMap_[refTimer_]].total[CYCLES]*tick;
 
    for (unsigned iName=0; iName<outputOrder.size(); ++iName)
    {
       const string& name = outputOrder[iName];
       unsigned ii = handleMap_[name];
-      if (timers_[ii].totalTime < 0.0001) continue; 
+      if (timers_[ii].total[CYCLES]*tick < 0.0001) continue; 
       if (name.empty())
       {
          out << "--------------------------------------------------------------------------------" << endl;
@@ -238,12 +254,11 @@ void profileDumpTimes(ostream& out)
       }
       
       out << setw(maxLen) << left << name << " : "
-          << setw(10) << right << int(timers_[ii].nCalls) << "  |"
-          << setw(10) << setprecision(3) << timers_[ii].lastTime 
-          << setw(10) << timers_[ii].totalTime/timers_[ii].nCalls 
-          << setw(10) << timers_[ii].totalTime
+          << setw(10) << right << timers_[ii].total[NCALLS] << "  |"
+          << setw(10) << timers_[ii].total[CYCLES]*tick/timers_[ii].total[NCALLS] 
+          << setw(10) << timers_[ii].total[CYCLES]*tick 
           << "   "
-          << setw(8) << setprecision(2) << 100.0*(timers_[ii].totalTime/refTime)
+          << setw(8) << setprecision(2) << 100.0*((timers_[ii].total[CYCLES]*tick)/refTime)
           << endl;
    }
    out.setf(oldFlags);
@@ -267,6 +282,7 @@ void profileDumpAll(const string& dirname)
    profileDumpTimes(buf);
    Pprintf(file, "%s", buf.str().c_str());
    Pprintf(file, "\n\n");
+   //printf("end profileDumpTimes\n"); 
    Pclose(file);
 }
 
@@ -283,34 +299,43 @@ void profileDumpStats(ostream& out)
 
    vector<string> outputOrder = generateOutputOrder(timerName);
    unsigned nTimers = outputOrder.size();
+   double tick = getTick(); 
    
    vector<double> aveTime(nTimers);
    vector<int>    nActive(nTimers);
    {
-      unsigned bufSize = 2*nTimers;
-      double sendBuf[bufSize];
+      unsigned bufSize = (1+2)*nTimers;
+      uint64_t sendBuf[bufSize];
       
       for (unsigned ii=0; ii<nTimers; ++ii)
       {
          HandleMap::const_iterator here = handleMap_.find(outputOrder[ii]);
          if (here == handleMap_.end())
          {
-            sendBuf[2*ii+0] = 0; // inactive timer
-            sendBuf[2*ii+1] = 0;
+            sendBuf[3*ii+0] = 0; // inactive timer
+            sendBuf[3*ii+1] = 0;
+            sendBuf[3*ii+2] = 0;
          }
          else
          {
-            sendBuf[2*ii+0] = 1; // active timer
-            sendBuf[2*ii+1] = timers_[here->second].totalTime;
+	    uint64_t total=timers_[here->second].total[CYCLES];
+            uint64_t lower=total&0xffffffff; 
+            uint64_t upper=(total>>32)&0xffffffff; 
+            sendBuf[3*ii+0] = 1; // active timer
+            sendBuf[3*ii+1] = lower;
+            sendBuf[3*ii+2] = upper;
          }
       }
-      double recvBuf[bufSize];
-      MPI_Allreduce(sendBuf, recvBuf, bufSize, MPI_DOUBLE, MPI_SUM, comm);
+      uint64_t recvBuf[bufSize];
+      MPI_Allreduce(sendBuf, recvBuf, bufSize, MPI_LONG_LONG, MPI_SUM, comm);
 
       for (unsigned ii=0; ii<nTimers; ++ii)
       {
-         nActive[ii] = (int) recvBuf[2*ii+0];
-         aveTime[ii] = (nActive[ii] > 0 ? recvBuf[2*ii+1]/nActive[ii] : 0.0);
+         nActive[ii] = (int) recvBuf[3*ii+0];
+         uint64_t lower = recvBuf[3*ii+1]; 
+         uint64_t upper = recvBuf[3*ii+2]; 
+	 double time =  (upper*(tick*pow(2.0,32))) + (lower*tick);
+         aveTime[ii] = (nActive[ii] > 0 ? (time/nActive[ii]) : 0.0);
       }
    }
    struct DoubleInt
@@ -342,9 +367,9 @@ void profileDumpStats(ostream& out)
          else
          {
             //ewd: should these be set to zero for case when nActive[ii] == 0?
-            minLocSendBuf[ii].val = timers_[here->second].totalTime;
-            maxLocSendBuf[ii].val = timers_[here->second].totalTime;
-            sigmaSendBuf[ii] = (timers_[here->second].totalTime - aveTime[ii]);
+            minLocSendBuf[ii].val = timers_[here->second].total[CYCLES]*tick;
+            maxLocSendBuf[ii].val = timers_[here->second].total[CYCLES]*tick;
+            sigmaSendBuf[ii] = (timers_[here->second].total[CYCLES]*tick - aveTime[ii]);
             if (nActive[ii] > 0)
                sigmaSendBuf[ii] *= sigmaSendBuf[ii]/nActive[ii];
             else
@@ -357,8 +382,7 @@ void profileDumpStats(ostream& out)
       MPI_Reduce(sigmaSendBuf, sigma, nTimers, MPI_DOUBLE, MPI_SUM, 0, comm);
    }
    
-   if (myRank != 0)
-      return;
+   if (myRank != 0) return;
 
    string::size_type maxLen = 0;
    for (unsigned ii=0; ii<nTimers; ++ii)

@@ -68,11 +68,6 @@ int main(int argc, char** argv)
    
    profileInit();
    profileStart("Total");
-   profileSetPrintOrder("Total");
-   profileSetPrintOrder("Assignment");
-   profileSetPrintOrder("Loop");
-   profileSetPrintOrder("");
-   profileSetRefTimer("Loop");
    heap_start(100);
 
    if (mype == 0)
@@ -95,6 +90,15 @@ int main(int argc, char** argv)
    MPI_Pcontrol(0);
 
    profileStop("Total");
+
+   profileSetRefTimer("00:Loop");
+
+   profileSetPrintOrder("Total");
+   profileSetPrintOrder("Assignment");
+   profileSetPrintOrder("Loop");
+   profileSetPrintOrder("DiffusionLoop");
+   profileSetPrintOrder("ReactionLoop");
+   profileSetPrintOrder("");
    if (mype == 0)
    {
       profileDumpTimes(cout);

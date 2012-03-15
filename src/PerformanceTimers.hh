@@ -40,4 +40,5 @@ void profileDumpTimes(std::ostream&);
 void profileDumpAll(const std::string& dirname);
 void profileDumpStats(std::ostream& out);
 void profileInit();
+void profilePrintName();
 #endif
