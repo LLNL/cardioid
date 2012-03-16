@@ -1,4 +1,5 @@
 #ifdef BGQ
+#include <bgpm/include/bgpm.h>
 /*====================================================*/
 /* routine to set labels for each of the BGQ counters */
 /*====================================================*/
@@ -7,7 +8,7 @@ const int MAX_THREADS = 64; // maximum number of threads in BGQ
 const int MAX_A2_COUNTERS = 24; // maximum number of events collected by A2
 // predefined counter events; limited to 6 A2 events for now
 unsigned int counterSet[] = { PEVT_LSU_COMMIT_LD_MISSES, PEVT_LSU_COMMIT_CACHEABLE_LDS, PEVT_L1P_BAS_MISS, PEVT_INST_QFPU_FMA, PEVT_INST_QFPU_QMA, PEVT_INST_QFPU_FPGRP1};         
-int nCounter_ = sizeof(counterSet)/sizeof(unsigned); 
+int nCounters_ = sizeof(counterSet)/sizeof(unsigned); 
 static unsigned int counterHandle[MAX_THREADS]; // store the event set handler for each thread
 static char label[MAX_EVENTS][80]; // store the event name
 void set_labels(void)
@@ -451,8 +452,8 @@ void profileInitBGQ(void) {
       set_labels();
   }
 }
-void  (*readCounter)(unsigned int, int,  uint64_t*)=Bgpm_ReadEvent;
-void  (*machineSpecficInit()) = profileInitBGQ; 
+void  (*readCounter)(unsigned int, int,  uint64_t*)=(void (*)(unsigned, int, uint64_t*))Bgpm_ReadEvent;
+void (*machineSpecficInit)() = profileInitBGQ; 
 #define MACHINE BGQ
 #endif
 
