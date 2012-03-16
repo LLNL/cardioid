@@ -7,7 +7,7 @@ BGSYS_INC := -I$(BGQ_SDK_PATH)/comm/sys/include                 \
         -I$(BGQ_SDK_PATH)/spi/include/mu/default/
 
 SPI_INC := -I$(SPI_PATH)/libutil/include
-BGSYS_LIBS := -L$(BGQ_SDK_PATH)/lib -lrt -L$(BGQ_SDK_PATH)/spi/lib -lSPI -lSPI_cnk -L/bgsys/drivers/ppcfloor/bgpm/lib -lbgpm
+BGSYS_LIBS := -L$(BGQ_SDK_PATH)/lib -lrt -L$(BGQ_SDK_PATH)/spi/lib -lSPI -lSPI_cnk 
 ############
 
 CXX=$(BGQ_SDK_PATH)/comm/xl/bin/mpixlcxx_r
@@ -16,7 +16,7 @@ LD=$(CXX)
 
 DFLAGS = -DWITH_PIO -DWITH_MPI -DBGQ -DSPI \
 	 -DADD_ -DUSE_CSTDIO_LFS -DMPICH_IGNORE_CXX_SEEK
-LDFLAGS_BASE = -lc -lnss_files -lnss_dns -lresolv
+LDFLAGS_BASE = -lc -lnss_files -lnss_dns -lresolv -L/bgsys/drivers/ppcfloor/bgpm/lib -lbgpm
 
 INCLUDE = -I/usr/gapps/emhm/include -I$(SPI_PATH)/include
 OPTFLAGS = -g -O3
