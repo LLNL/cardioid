@@ -9,7 +9,7 @@ void  (*readCounter)(unsigned int, int,  uint64_t*)=genericReadCounter;
 uint64_t getTime()
 {
    struct timeval ptime;
-   uint64_t  t = 0.0;
+   uint64_t  t = 0;
    gettimeofday(&ptime, (struct timezone *)NULL);
    t = ((uint64_t)1000000)*(uint64_t)ptime.tv_sec + (uint64_t)ptime.tv_usec;
    return t; 

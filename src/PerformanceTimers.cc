@@ -280,7 +280,7 @@ void profileDumpAll(const string& dirname)
    Pprintf(file, "------------------------------\n\n");
    stringstream buf;
    profileDumpTimes(buf);
-   Pprintf(file, "%s", buf.str().c_str());
+   Pwrite(buf.str().c_str(),strlen(buf.str().c_str()),1,file);
    Pprintf(file, "\n\n");
    //printf("end profileDumpTimes\n"); 
    Pclose(file);
