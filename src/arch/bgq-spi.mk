@@ -7,7 +7,7 @@ BGSYS_INC := -I$(BGQ_SDK_PATH)/comm/sys/include                 \
         -I$(BGQ_SDK_PATH)/spi/include/mu/default/
 
 SPI_INC := -I$(SPI_PATH)/libutil/include
-BGSYS_LIBS := -L$(BGQ_SDK_PATH)/lib -lrt -L$(BGQ_SDK_PATH)/spi/lib -lSPI -lSPI_cnk
+BGSYS_LIBS := -L$(BGQ_SDK_PATH)/lib -lrt -L$(BGQ_SDK_PATH)/spi/lib -lSPI -lSPI_cnk -L/bgsys/drivers/ppcfloor/bgpm/lib -lbgpm
 ############
 
 CXX=$(BGQ_SDK_PATH)/comm/xl/bin/mpixlcxx_r

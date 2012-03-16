@@ -9,15 +9,15 @@ DFLAGS = -DWITH_PIO -DWITH_MPI -DBGQ \
 
 INCLUDE = -I/usr/gapps/emhm/include
 OPTFLAGS = -g -O3
-CFLAGS_BASE =   -qsmp=omp $(INCLUDE) $(DFLAGS)
-CXXFLAGS_BASE = -qsmp=omp $(INCLUDE) $(DFLAGS)
+CFLAGS_BASE =   -qlist -qsmp=omp $(INCLUDE) $(DFLAGS)
+CXXFLAGS_BASE = -qlist -qsmp=omp $(INCLUDE) $(DFLAGS)
 LDFLAGS_BASE = -lc -lnss_files -lnss_dns -lresolv
 
 HAVE_GSL = 1
 ifeq ($(HAVE_GSL),1) 
    CFLAGS_BASE  += -DHAVE_GSL
    CXXFLAGS_BASE  += -DHAVE_GSL
-   LDFLAGS_BASE += -L/usr/gapps/emhm/lib/gsl-1.15-bgq -lgsl -lgslcblas
+   LDFLAGS_BASE += -L/usr/gapps/emhm/lib/gsl-1.15-bgq -lgsl -lgslcblas -L/bgsys/drivers/ppcfloor/bgpm/lib -lbgpm
 endif
 
 CFLAGS_OPT =   $(CFLAGS_BASE) -g -O3  
