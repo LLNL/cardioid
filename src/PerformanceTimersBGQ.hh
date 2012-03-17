@@ -9,6 +9,7 @@ const int MAX_A2_COUNTERS = 24; // maximum number of events collected by A2
 // predefined counter events; limited to 6 A2 events for now
 unsigned int counterSet[] = { PEVT_LSU_COMMIT_LD_MISSES, PEVT_LSU_COMMIT_CACHEABLE_LDS, PEVT_L1P_BAS_MISS, PEVT_INST_QFPU_FMA, PEVT_INST_QFPU_QMA, PEVT_INST_QFPU_FPGRP1};         
 int nCounters_ = sizeof(counterSet)/sizeof(unsigned); 
+char *counterNames_[] = {"#Calls" , "Time","LD_MISESS", "L1_BASS_MISS" , "CACHEABLE_LDS", "L1P_BASEE_MISS", "QFPU_FMA", "QFPU_QMA", "QFPU_FPGR1"};
 static unsigned int counterHandle[MAX_THREADS]; // store the event set handler for each thread
 static char label[MAX_EVENTS][80]; // store the event name
 void set_labels(void)
@@ -425,6 +426,7 @@ void set_labels(void)
 /*=================================================================*/
 /* Initialize the counters                                         */
 /*=================================================================*/
+int nCounters_=8; 
 uint64_t getTime()
 {
    unsigned long long rts_get_timebase(void);

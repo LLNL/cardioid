@@ -100,10 +100,10 @@ void profileStart(const TimerHandle& handle)
    int tid=omp_get_thread_num() ;
    int id=handle+tid; 
    timers_[id].start[CYCLES] = getTime();
-   for (int i=0; i<nCounters_;i++) 
+   for (int i=2; i<nCounters_;i++) 
    {
       uint64_t counter;
-      readCounter(counterHandle[tid], i, &counter);   
+      readCounter(counterHandle[tid], i-2, &counter);   
       timers_[id].start[i+1] = counter; 
    }
 }
@@ -115,10 +115,10 @@ void profileStop(const TimerHandle& handle)
    timers_[id].total[NCALLS] += 1;
    uint64_t delta = getTime() - timers_[id].start[CYCLES];
    timers_[id].total[CYCLES] += delta;
-   for (int i=0; i<nCounters_;i++) 
+   for (int i=2; i<nCounters_;i++) 
    {
       uint64_t counter;
-      readCounter(counterHandle[tid], i, &counter);
+      readCounter(counterHandle[tid], i-2, &counter);
       uint64_t delta  = counter - timers_[id].start[i+1];
       timers_[id].total[i+1] += delta;
    }
@@ -220,6 +220,7 @@ vector<string> generateOutputOrder()
 
 void profileDumpTimes(ostream& out)
 {
+   char line[1024]; 
    double tick = getTick(); 
    string::size_type maxLen = 0;
    for (HandleMap::iterator iter=handleMap_.begin();
@@ -229,10 +230,13 @@ void profileDumpTimes(ostream& out)
    vector<string> outputOrder = generateOutputOrder();
 
    ios::fmtflags oldFlags = out.setf(ios::fixed, ios::floatfield);
+   
+   for(int counter=1;counter<nCounters_;counter++) 
+   {
 
-   out << setw(maxLen+3) << " "
+   out << setw(10) << counterNames_[counter] 
+       << setw(maxLen-7) << " "
        << setw(10)     << "#Calls" << "  |"
-       << setw(10)      << "Current" 
        << setw(10)      << "Average" 
        << setw(10)      << "Total"
        << "   "
@@ -240,29 +244,31 @@ void profileDumpTimes(ostream& out)
    out << "--------------------------------------------------------------------------------"
        << endl;
 
-   double refTime = timers_[handleMap_[refTimer_]].total[CYCLES]*tick;
+   double refCount = timers_[handleMap_[refTimer_]].total[CYCLES];
 
    for (unsigned iName=0; iName<outputOrder.size(); ++iName)
    {
       const string& name = outputOrder[iName];
       unsigned ii = handleMap_[name];
-      if (timers_[ii].total[CYCLES]*tick < 0.0001) continue; 
+      if (timers_[ii].total[counter]*tick < 0.0001) continue; 
       if (name.empty())
       {
          out << "--------------------------------------------------------------------------------" << endl;
          continue;
       }
       
+      double  ncalls = (double)timers_[ii].total[NCALLS]; 
+      double  count = (double)timers_[ii].total[counter]; 
       out << setw(maxLen) << left << name << " : "
-          << setw(10) << right << timers_[ii].total[NCALLS] << "  |"
-          << setw(10) << timers_[ii].total[CYCLES]*tick/timers_[ii].total[NCALLS] 
-          << setw(10) << timers_[ii].total[CYCLES]*tick 
+          << setw(10) << right << ncalls << "  |"
+          << setw(10) << timers_[ii].total[counter]*tick/ncalls 
+          << setw(10) << timers_[ii].total[counter]*tick 
           << "   "
-          << setw(8) << setprecision(2) << 100.0*((timers_[ii].total[CYCLES]*tick)/refTime)
+          << setw(8) << setprecision(2) << 100.0*((timers_[ii].total[counter])/refCount)
           << endl;
    }
+   }
    out.setf(oldFlags);
-   
 }
 
 void profileDumpAll(const string& dirname)
@@ -282,9 +288,9 @@ void profileDumpAll(const string& dirname)
    profileDumpTimes(buf);
    Pwrite(buf.str().c_str(),strlen(buf.str().c_str()),1,file);
    Pprintf(file, "\n\n");
-   //printf("end profileDumpTimes\n"); 
    Pclose(file);
 }
+
 
 void profileDumpStats(ostream& out)
 {
@@ -300,42 +306,41 @@ void profileDumpStats(ostream& out)
    vector<string> outputOrder = generateOutputOrder(timerName);
    unsigned nTimers = outputOrder.size();
    double tick = getTick(); 
+   ios::fmtflags oldFlags = out.setf(ios::fixed, ios::floatfield);
    
    vector<double> aveTime(nTimers);
    vector<int>    nActive(nTimers);
+   for (int counter=1;counter<nCounters_;counter++) 
    {
-      unsigned bufSize = (1+2)*nTimers;
-      uint64_t sendBuf[bufSize];
+   {
+      unsigned bufSize = 2*nTimers;
+      long double sendBuf[bufSize];
       
       for (unsigned ii=0; ii<nTimers; ++ii)
       {
          HandleMap::const_iterator here = handleMap_.find(outputOrder[ii]);
+         long double *buf = sendBuf+2*ii; 
          if (here == handleMap_.end())
          {
-            sendBuf[3*ii+0] = 0; // inactive timer
-            sendBuf[3*ii+1] = 0;
-            sendBuf[3*ii+2] = 0;
+            buf[0] = 0; // inactive timer
+            buf[1] = 0;
          }
          else
          {
-	    uint64_t total=timers_[here->second].total[CYCLES];
-            uint64_t lower=total&0xffffffff; 
-            uint64_t upper=(total>>32)&0xffffffff; 
-            sendBuf[3*ii+0] = 1; // active timer
-            sendBuf[3*ii+1] = lower;
-            sendBuf[3*ii+2] = upper;
+            buf[0] = 1; // active timer
+            buf[1] =timers_[here->second].total[counter];
          }
       }
-      uint64_t recvBuf[bufSize];
-      MPI_Allreduce(sendBuf, recvBuf, bufSize, MPI_LONG_LONG, MPI_SUM, comm);
+      long double recvBuf[bufSize];
+      MPI_Allreduce(sendBuf, recvBuf, bufSize, MPI_LONG_DOUBLE, MPI_SUM, comm);
 
       for (unsigned ii=0; ii<nTimers; ++ii)
       {
-         nActive[ii] = (int) recvBuf[3*ii+0];
-         uint64_t lower = recvBuf[3*ii+1]; 
-         uint64_t upper = recvBuf[3*ii+2]; 
-	 double time =  (upper*(tick*pow(2.0,32))) + (lower*tick);
+         nActive[ii] = recvBuf[2*ii]; 
+         long double count = recvBuf[2*ii+1]; 
+	 double time = count*tick; 
          aveTime[ii] = (nActive[ii] > 0 ? (time/nActive[ii]) : 0.0);
+       
       }
    }
    struct DoubleInt
@@ -367,9 +372,9 @@ void profileDumpStats(ostream& out)
          else
          {
             //ewd: should these be set to zero for case when nActive[ii] == 0?
-            minLocSendBuf[ii].val = timers_[here->second].total[CYCLES]*tick;
-            maxLocSendBuf[ii].val = timers_[here->second].total[CYCLES]*tick;
-            sigmaSendBuf[ii] = (timers_[here->second].total[CYCLES]*tick - aveTime[ii]);
+            minLocSendBuf[ii].val = timers_[here->second].total[counter]*tick;
+            maxLocSendBuf[ii].val = timers_[here->second].total[counter]*tick;
+            sigmaSendBuf[ii] =     (timers_[here->second].total[counter]*tick - aveTime[ii]);
             if (nActive[ii] > 0)
                sigmaSendBuf[ii] *= sigmaSendBuf[ii]/nActive[ii];
             else
@@ -387,8 +392,8 @@ void profileDumpStats(ostream& out)
    string::size_type maxLen = 0;
    for (unsigned ii=0; ii<nTimers; ++ii)
       maxLen = max(maxLen, outputOrder[ii].size());
-   ios::fmtflags oldFlags = out.setf(ios::fixed, ios::floatfield);
-   out << setw(maxLen+3) << " "
+   out << setw(10) << counterNames_[counter] 
+       << setw(maxLen-7) << " "
        << setw(6) << "nTasks" << " |"
        << setw(10) << "minTime" << " ( rank )"
        << setw(10) << "maxTime" << " ( rank )"
@@ -415,6 +420,6 @@ void profileDumpStats(ostream& out)
           << setw(10) << aveTime[ii]
           << endl;
    }
-
+   }
    out.setf(oldFlags);
 }
