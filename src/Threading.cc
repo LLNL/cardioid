@@ -3,6 +3,7 @@
 #include <stdlib.h> 
 #include <omp.h> 
 #include <cassert>
+#include <algorithm>
 #include "mpiUtils.h"
 #ifdef BGQ 
 #include <spi/include/kernel/location.h> 
@@ -10,22 +11,37 @@
 #include <sys/types.h> 
 #include <sys/sysctl.h> 
 #endif
-int cmpFuncOMPTable(const void *A, const void*B)
+
+using namespace std;
+
+
+// int cmpFuncOMPTable(const void *A, const void*B)
+// {
+//    OMPTable *tA = (OMPTable *)A;
+//    OMPTable *tB = (OMPTable *)B;
+//    if ( tA->core_id < tB->core_id)  return -1; 
+//    if ( tA->core_id > tB->core_id)  return  1; 
+//    if ( tA->hwThread_id < tB->hwThread_id)  return -1; 
+//    if ( tA->hwThread_id > tB->hwThread_id)  return  1; 
+//    return 0; 
+// }
+
+bool operator<(const OMPTable& a, const OMPTable& b)
 {
-   OMPTable *tA = (OMPTable *)A;
-   OMPTable *tB = (OMPTable *)B;
-   if ( tA->core_id < tB->core_id)  return -1; 
-   if ( tA->core_id > tB->core_id)  return  1; 
-   if ( tA->hwThread_id < tB->hwThread_id)  return -1; 
-   if ( tA->hwThread_id > tB->hwThread_id)  return  1; 
-   return 0; 
+   if ( a.core_id < b.core_id)  return true; 
+   if ( a.core_id == b.core_id &&
+        a.hwThread_id < b.hwThread_id)  return true;
+   return false;
 }
+
+   
+
 void Threading::probeHardware()
 {
 
    int omp_nThreads  = omp_get_max_threads(); 
    int omp_nProc = omp_get_num_procs(); 
-   ompTable_=(OMPTable *)malloc(omp_nThreads*sizeof(OMPTable)); 
+   ompTable_.resize(omp_nThreads); 
    #pragma omp parallel
    {
       int omp_id = omp_get_thread_num(); 
@@ -71,11 +87,12 @@ void Threading::probeHardware()
       #pragma omp barrier
       #pragma omp master
       {
-        qsort(ompTable_,omp_nThreads,sizeof(OMPTable),cmpFuncOMPTable); 
+         sort(ompTable_.begin(), ompTable_.end());
+//         qsort(ompTable_,omp_nThreads,sizeof(OMPTable),cmpFuncOMPTable); 
         int core_id = -1; 
         int nCore=0; 
 	for (int i =0;i<omp_nThreads;i++) if (ompTable_[i].core_id != core_id) nCore++; 
-        coreTable_ = (CoreTable *)malloc(nCore*sizeof(CoreTable)); 
+        coreTable_.resize(nCore);
         nCore=0; 
         int first=0; 
 	int last =0; 
@@ -116,8 +133,8 @@ Threading::Threading()
 void groupInfo(CoreGroup *group, int& coreID, int&hwThreadID, int& threadID, int& nCores, int& nHwThreads, int& nThreads) 
 {
    threadID=group->threadID();
-   nThreads = group->nThreads_;
-   nCores= group->nCores_; 
+   nThreads = group->nThreads();
+   nCores= group->nCores(); 
    nHwThreads=nThreads/nCores; 
    coreID = threadID/nHwThreads; 
    hwThreadID = threadID%nHwThreads; 
@@ -138,34 +155,34 @@ int CoreGroup::threadID() const
 
 CoreGroup* Threading::mkGroup(int nCores ) 
 {
-   CoreGroup group; 
    if (nCores==-1) nCores = nRemainingCores_; 
-   group.nCores_=nCores; 
    int firstCoreIndex=nCores_-nRemainingCores_; 
    int nThreads=0; 
    for (int ii=0;ii<nCores;ii++)
       nThreads+=coreTable_[ii+firstCoreIndex].nThread; 
-   group.nThreads_=nThreads;
    nRemainingCores_-=nCores; 
-   group.ompID_ = (int *)malloc(group.nThreads_*sizeof(int)); 
+   vector<int> ompID(nThreads);
    assert(nRemainingCores_ >= 0); 
-   int kk=0; 
    for (int ii=0;ii<nCores;ii++) 
    {
       int nThreads=coreTable_[ii+firstCoreIndex].nThread; 
       int first=coreTable_[ii+firstCoreIndex].first; 
-      for(int jj=0;jj<nThreads;jj++) 
+      for (int jj=0; jj<nThreads; jj++) 
       {
-         int ompID = ompTable_[first+jj].omp_id; 
-       	 group.ompID_[kk++]= ompID; 
-       	 threadingMap_[ompID] = groups_+nGroups_; 
+         int jid = ompTable_[first+jj].omp_id; 
+       	 ompID[jj] = jid; 
+       	 threadingMap_[jid] = groups_+nGroups_; 
       }
    }
-   groups_[nGroups_++] = group; 
+   groups_[nGroups_++] = CoreGroup(nCores, nThreads, ompID); 
    if (getRank(0)==0) 
    {
-    printf("group=%p nCores=%d nThreads=%d",groups_+nGroups_-1,group.nCores_,group.nThreads_); 
-   for(int ii=0;ii<group.nThreads_;ii++) printf(" %d",group.ompID_[ii]); printf("\n") ;
+      const CoreGroup& group = groups_[nGroups_-1];
+      printf("group=%p nCores=%d nThreads=%d",
+             groups_+nGroups_-1, group.nCores(), group.nThreads()); 
+      for (int ii=0; ii<group.nThreads(); ii++)
+         printf(" %d", group.ompID_[ii]);
+      printf("\n") ;
    }
    return groups_+nGroups_-1;
 }
