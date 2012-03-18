@@ -61,6 +61,7 @@ double getTick()
    TimerHandle diffusionImbalanceTimer;
    TimerHandle imbalanceTimer;
    TimerHandle dummyTimer;
+   TimerHandle parallelDiffReacTimer;
    
    
    vector<TimerStruct> timers_;
@@ -93,6 +94,7 @@ void  profileInit()
    diffusionImbalanceTimer = profileGetHandle("DiffusionImbalance");
    imbalanceTimer = profileGetHandle("Imbalance");
    dummyTimer = profileGetHandle("Dummy");
+   parallelDiffReacTimer = profileGetHandle("parallelDiffReac");
    machineSpecficInit(); 
 }
        
@@ -344,7 +346,7 @@ void profileDumpStats(ostream& out)
          nActive[ii]= recvBuf[2*ii]; 
          double countSum = recvBuf[2*ii+1]; 
          double count = sendBuf[2*ii+1]; 
-         perfCount[ii][counter] = (count+1e-100)/((double)nTasks); 
+         perfCount[ii][counter] = (count+1e-100); 
          aveCount[ii] = (nActive[ii] > 0 ? (count/nActive[ii]) : 0.0);
        
       }
@@ -434,11 +436,21 @@ void profileDumpStats(ostream& out)
    if (myRank ==0 && nCounters_ > 2) 
    {
       FILE *file=fopen("perfCount.data","w"); 
+      int nMarks = nTimers/nThreads;
+      int paraIndex = -1; 
+      for (unsigned ii=0; ii<nTimers; ++ii) { if ( outputOrder[ii] == "00:parallelDiffReac" ) {paraIndex = ii; break; }}
+      if (paraIndex != -1) 
+      {
+         double flopCount=0.0; 
+         for (unsigned ii=paraIndex; ii<nTimers; ii+=nMarks) flopCount += perfCount[ii][7]; 
+         double flops = flopCount / (perfCount[paraIndex][CYCLES]*tick);
+         printf("Flop Rate = %e GFLOP\n", flops*1e-9); 
+      }
       for (unsigned ii=0; ii<nTimers; ++ii)
       {
          int ompID=strtol((outputOrder[ii].substr(0,2)).c_str(),NULL,10);
+             
          int coreID = ompID%nCore; 
-         int nMarks = nTimers/nThreads;
          int timerID = ii%nMarks; 
          double cycle=0.0; 
          for (unsigned jj=0; jj<nTimers; ++jj)
@@ -452,8 +464,8 @@ void profileDumpStats(ostream& out)
          
          if (perfCount[ii][NCALLS]>1e-9) 
          {
-         fprintf(file,"%4d %-32s %2d %2d %3d %12.0f",ii,(outputOrder[ii].c_str())+3,ompID,coreID,timerID,perfCount[ii][0]); 
-         for (int jj=1;jj< nCounters_;jj++) fprintf(file," %7.3f", perfCount[ii][jj]*1e-9); 
+         fprintf(file,"%4d %-32s %2d %2d %3d %12.0f",ii,(outputOrder[ii].c_str())+3,ompID,coreID,timerID,perfCount[ii][0]/nTasks); 
+         for (int jj=1;jj< nCounters_;jj++) fprintf(file," %7.3f", perfCount[ii][jj]*1e-9/nTasks); 
          fprintf(file," %13.6f", flop*1e-9); 
          fprintf(file,"\n"); 
          fflush(file); 

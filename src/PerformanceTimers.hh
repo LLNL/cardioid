@@ -25,6 +25,7 @@ namespace PerformanceTimers
    extern TimerHandle diffusionImbalanceTimer;
    extern TimerHandle imbalanceTimer;
    extern TimerHandle dummyTimer;
+   extern TimerHandle parallelDiffReacTimer;
 };
 
 void profileStart(const TimerHandle& handle);

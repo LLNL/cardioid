@@ -371,14 +371,15 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
       L2_BarrierWithSync_InitInThread(loopData.diffusionBarrier, &diffusionHandle);
       
       #pragma omp barrier
+      profileStart(parallelDiffReacTimer);
       if ( sim.tinfo_.threadingMap_[ompTid] == sim.diffusionGroup_) 
       {
          diffusionLoop(sim, loopData, reactionHandle, diffusionHandle);
       }
       if ( sim.tinfo_.threadingMap_[ompTid] == sim.reactionGroup_) 
       {
-          int rID = sim.reactionGroup_->threadID(); 
           reactionLoop(sim, loopData, reactionHandle, diffusionHandle);
       } 
+      profileStop(parallelDiffReacTimer);
    }
 }

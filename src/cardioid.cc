@@ -96,6 +96,7 @@ int main(int argc, char** argv)
    profileSetPrintOrder("Total");
    profileSetPrintOrder("Assignment");
    profileSetPrintOrder("Loop");
+   profileSetPrintOrder("parallelDiffReac");
    profileSetPrintOrder("DiffusionLoop");
    profileSetPrintOrder("ReactionLoop");
    profileSetPrintOrder("");
