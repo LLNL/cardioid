@@ -1,0 +1,91 @@
+simulate SIMULATE 
+{
+   anatomy = niederer;
+   decomposition = grid;
+   diffusion = FGR;
+   reaction = tt06dev;
+   stimulus = boxStimulus;
+   loop = 0;            // in timesteps
+   maxLoop = 10000;     // in timesteps
+   dt = 10 us;
+   time = 0;            // msec
+   printRate = 100;      // in timesteps
+   snapshotRate = 100000; // in timesteps
+   parallelDiffusionReaction = 1;
+}
+
+niederer ANATOMY 
+{
+   method = brick;
+   cellType = 102;
+   dx = 0.10;   // in mm
+   dy = 0.10;   // in mm
+   dz = 0.10;   // in mm
+   xSize = 10.7; 
+   ySize = 10.7;
+   zSize = 21.4;
+   conductivity = conductivity;
+}
+
+koradi DECOMPOSITION 
+{
+   method = koradi;
+   verbose = 1;
+   alpha = 0.25;
+   maxVoronoiSteps = 30;
+   maxSteps = 500;
+   tolerance = 0.01;
+   outputRate = 1000;
+   nbrDeltaR = 2;
+}
+
+grid DECOMPOSITION 
+{
+    method = grid;
+    nx = 8;
+    ny = 8;
+    nz = 16;
+    threshold = 4;
+    printStats = 0;
+    visgrid = 0;
+}
+
+FGR DIFFUSION
+{
+   method = FGR;
+   diffusionScale = 714.2857143;      // mm^3/mF
+}
+
+conductivity CONDUCTIVITY
+{
+    method = fibre;
+    sigmaLi = 0.0001334177;   // units S/mm
+    sigmaTi = 0.0000176062;  // units S/mm
+}
+
+tt06dev REACTION
+{
+    method = TT06Dev;
+    tolerance = 0.0001;
+    mod = 1;
+}
+
+boxStimulus STIMULUS
+{
+   method = box;
+   xMax = 20;
+   yMax = 20;
+   zMax = 20;
+   vStim = -35.71429;
+   tStart = 0;
+   duration = 2;
+   period = 1000;
+}
+
+activationTime SENSOR
+{
+   method = activationTime;
+   filename = activationTime;
+   printRate = 15000;
+   evalRate = 1;
+}
