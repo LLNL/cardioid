@@ -8,8 +8,9 @@ const int MAX_THREADS = 64; // maximum number of threads in BGQ
 const int MAX_A2_COUNTERS = 24; // maximum number of events collected by A2
 // predefined counter events; limited to 6 A2 events for now
 unsigned int counterSet[] = { PEVT_LSU_COMMIT_LD_MISSES, PEVT_LSU_COMMIT_CACHEABLE_LDS, PEVT_L1P_BAS_MISS, PEVT_INST_QFPU_FMA, PEVT_INST_QFPU_QMA, PEVT_INST_QFPU_FPGRP1};         
-int nCounters_ = sizeof(counterSet)/sizeof(unsigned); 
-char *counterNames_[] = {"#Calls" , "Time","LD_MISESS", "L1_BASS_MISS" , "CACHEABLE_LDS", "L1P_BASEE_MISS", "QFPU_FMA", "QFPU_QMA", "QFPU_FPGR1"};
+//int nCounters_ = sizeof(counterSet)/sizeof(unsigned); 
+int nCounters_=8; 
+char *counterNames_[] = {"#Calls" , "Time","LD_MISSES",  "CACHEABLE_LDS", "L1P_BAS_MISS", "QFPU_FMA", "QFPU_QMA", "QFPU_FPGR1"};
 static unsigned int counterHandle[MAX_THREADS]; // store the event set handler for each thread
 static char label[MAX_EVENTS][80]; // store the event name
 void set_labels(void)
@@ -426,7 +427,6 @@ void set_labels(void)
 /*=================================================================*/
 /* Initialize the counters                                         */
 /*=================================================================*/
-int nCounters_=8; 
 uint64_t getTime()
 {
    unsigned long long rts_get_timebase(void);
@@ -454,6 +454,7 @@ void profileInitBGQ(void) {
       set_labels();
   }
 }
+int getNCores() { return 16;} 
 void  (*readCounter)(unsigned int, int,  uint64_t*)=(void (*)(unsigned, int, uint64_t*))Bgpm_ReadEvent;
 void (*machineSpecficInit)() = profileInitBGQ; 
 #define MACHINE BGQ

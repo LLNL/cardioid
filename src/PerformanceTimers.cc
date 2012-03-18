@@ -10,6 +10,7 @@
 #include <cmath>
 #include <omp.h>
 #include "pio.h"
+#include "mpiUtils.h"
 #include "ioUtils.h"
 #include "tagServer.h"
 #include "unionOfStrings.hh"
@@ -104,7 +105,7 @@ void profileStart(const TimerHandle& handle)
    {
       uint64_t counter;
       readCounter(counterHandle[tid], i-2, &counter);   
-      timers_[id].start[i+1] = counter; 
+      timers_[id].start[i] = counter; 
    }
 }
 
@@ -119,8 +120,8 @@ void profileStop(const TimerHandle& handle)
    {
       uint64_t counter;
       readCounter(counterHandle[tid], i-2, &counter);
-      uint64_t delta  = counter - timers_[id].start[i+1];
-      timers_[id].total[i+1] += delta;
+      uint64_t delta  = counter - timers_[id].start[i];
+      timers_[id].total[i] += delta;
    }
 }
 
@@ -213,7 +214,6 @@ vector<string> generateOutputOrder()
    {
          words.push_back(iter->first);
    }
-   //for (int ii=0;ii<words.size();ii++)  printf("%d %s\n",ii,words[ii].c_str()); 
    
    return generateOutputOrder(words);
 }
@@ -231,11 +231,11 @@ void profileDumpTimes(ostream& out)
 
    ios::fmtflags oldFlags = out.setf(ios::fixed, ios::floatfield);
    
-   for(int counter=1;counter<nCounters_;counter++) 
+   int counter=CYCLES; 
    {
 
-   out << setw(10) << counterNames_[counter] 
-       << setw(maxLen-7) << " "
+   out << setw(12) << counterNames_[counter] 
+       << setw(maxLen-5) << " "
        << setw(10)     << "#Calls" << "  |"
        << setw(10)      << "Average" 
        << setw(10)      << "Total"
@@ -297,6 +297,7 @@ void profileDumpStats(ostream& out)
    MPI_Comm comm = MPI_COMM_WORLD;
    int myRank;
    MPI_Comm_rank(comm, &myRank);
+   unsigned nTasks = getSize(0); 
    vector<string> timerName;
    for (HandleMap::const_iterator iter=handleMap_.begin();
         iter!=handleMap_.end(); ++iter)
@@ -308,10 +309,15 @@ void profileDumpStats(ostream& out)
    double tick = getTick(); 
    ios::fmtflags oldFlags = out.setf(ios::fixed, ios::floatfield);
    
-   vector<double> aveTime(nTimers);
-   vector<int>    nActive(nTimers);
-   for (int counter=1;counter<nCounters_;counter++) 
-   {
+   int nThreads=omp_get_max_threads(); 
+   int nMarks = nTimers/nThreads; 
+   int nCore =  getNCores(); 
+   double refCount = timers_[handleMap_[refTimer_]].total[CYCLES];
+
+   double aveCount[nTimers]; 
+   double nActive[nTimers]; 
+   double perfCount[nTimers][nCounters_];
+   for (int counter=0;counter<nCounters_;counter++)
    {
       unsigned bufSize = 2*nTimers;
       long double sendBuf[bufSize];
@@ -333,16 +339,17 @@ void profileDumpStats(ostream& out)
       }
       long double recvBuf[bufSize];
       MPI_Allreduce(sendBuf, recvBuf, bufSize, MPI_LONG_DOUBLE, MPI_SUM, comm);
-
       for (unsigned ii=0; ii<nTimers; ++ii)
       {
-         nActive[ii] = recvBuf[2*ii]; 
-         long double count = recvBuf[2*ii+1]; 
-	 double time = count*tick; 
-         aveTime[ii] = (nActive[ii] > 0 ? (time/nActive[ii]) : 0.0);
+         nActive[ii]= recvBuf[2*ii]; 
+         double countSum = recvBuf[2*ii+1]; 
+         double count = sendBuf[2*ii+1]; 
+         perfCount[ii][counter] = (count+1e-100)/((double)nTasks); 
+         aveCount[ii] = (nActive[ii] > 0 ? (count/nActive[ii]) : 0.0);
        
       }
-   }
+      if (counter!=CYCLES) continue; 
+
    struct DoubleInt
    {
       double val;
@@ -365,16 +372,16 @@ void profileDumpStats(ostream& out)
          HandleMap::const_iterator here = handleMap_.find(outputOrder[ii]);
          if (here == handleMap_.end())
          {
-            minLocSendBuf[ii].val = aveTime[ii];
-            maxLocSendBuf[ii].val = aveTime[ii];
+            minLocSendBuf[ii].val = aveCount[ii];
+            maxLocSendBuf[ii].val = aveCount[ii];
             sigmaSendBuf[ii] = 0;
          }
          else
          {
             //ewd: should these be set to zero for case when nActive[ii] == 0?
-            minLocSendBuf[ii].val = timers_[here->second].total[counter]*tick;
-            maxLocSendBuf[ii].val = timers_[here->second].total[counter]*tick;
-            sigmaSendBuf[ii] =     (timers_[here->second].total[counter]*tick - aveTime[ii]);
+            minLocSendBuf[ii].val = timers_[here->second].total[counter];
+            maxLocSendBuf[ii].val = timers_[here->second].total[counter];
+            sigmaSendBuf[ii] =     (timers_[here->second].total[counter] - aveCount[ii]);
             if (nActive[ii] > 0)
                sigmaSendBuf[ii] *= sigmaSendBuf[ii]/nActive[ii];
             else
@@ -385,9 +392,10 @@ void profileDumpStats(ostream& out)
       MPI_Reduce(minLocSendBuf, minLoc, nTimers, MPI_DOUBLE_INT, MPI_MINLOC, 0, comm);
       MPI_Reduce(maxLocSendBuf, maxLoc, nTimers, MPI_DOUBLE_INT, MPI_MAXLOC, 0, comm);
       MPI_Reduce(sigmaSendBuf, sigma, nTimers, MPI_DOUBLE, MPI_SUM, 0, comm);
-   }
    
-   if (myRank != 0) return;
+   if (myRank == 0) 
+   {
+   
 
    string::size_type maxLen = 0;
    for (unsigned ii=0; ii<nTimers; ++ii)
@@ -403,7 +411,7 @@ void profileDumpStats(ostream& out)
    out << "--------------------------------------------------------------------------------" << endl;
    for (unsigned ii=0; ii<nTimers; ++ii)
    {
-      if (aveTime[ii] < 0.0001) continue;
+      if (aveCount[ii]*tick < 0.0001) continue;
       if (outputOrder[ii].empty())
       {
          out << "--------------------------------------------------------------------------------" << endl;
@@ -412,14 +420,45 @@ void profileDumpStats(ostream& out)
       out << setw(maxLen) << left << outputOrder[ii] << " : " << right
           << setw(6) << nActive[ii] << " |"
           << setprecision(3)
-          << setw(10) << minLoc[ii].val
+          << setw(10) << minLoc[ii].val*tick
           << " (" << setw(6) << minLoc[ii].rank << ")"
-          << setw(10) << maxLoc[ii].val
+          << setw(10) << maxLoc[ii].val*tick
           << " (" << setw(6) << maxLoc[ii].rank << ")"
-          << setw(10) << sqrt(sigma[ii])
-          << setw(10) << aveTime[ii]
+          << setw(10) << sqrt(sigma[ii])*tick
+          << setw(10) << aveCount[ii]*tick
           << endl;
+    }
    }
+   }
+   }
+   if (myRank ==0 && nCounters_ > 2) 
+   {
+      FILE *file=fopen("perfCount.data","w"); 
+      for (unsigned ii=0; ii<nTimers; ++ii)
+      {
+         int ompID=strtol((outputOrder[ii].substr(0,2)).c_str(),NULL,10);
+         int coreID = ompID%nCore; 
+         int nMarks = nTimers/nThreads;
+         int timerID = ii%nMarks; 
+         double cycle=0.0; 
+         for (unsigned jj=0; jj<nTimers; ++jj)
+         {
+           int jjcoreID = ompID%nCore; 
+           int jjtimerID = ii%nMarks; 
+           if (jjcoreID == coreID && jjtimerID == timerID) cycle+=perfCount[jj][CYCLES]; 
+         }
+         double flop = 0.0 ; 
+         if (cycle > 1e-9) flop = perfCount[ii][7]/(cycle*tick);
+         
+         if (perfCount[ii][NCALLS]>1e-9) 
+         {
+         fprintf(file,"%4d %-32s %2d %2d %3d %12.0f",ii,(outputOrder[ii].c_str())+3,ompID,coreID,timerID,perfCount[ii][0]); 
+         for (int jj=1;jj< nCounters_;jj++) fprintf(file," %7.3f", perfCount[ii][jj]*1e-9); 
+         fprintf(file," %13.6f", flop*1e-9); 
+         fprintf(file,"\n"); 
+         fflush(file); 
+         }
+      }
    }
    out.setf(oldFlags);
 }

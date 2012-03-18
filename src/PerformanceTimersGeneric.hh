@@ -20,5 +20,6 @@ double getTick()
    double seconds_per_cycle = 1.0e-6;
    return seconds_per_cycle; 
 }
+int getNCores() { return 4;} 
 #define MACHINE GENERIC
 #endif
