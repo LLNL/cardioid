@@ -125,7 +125,8 @@ Threading::Threading()
    probeHardware(); 
    nGroups_=0; 
    nRemainingCores_=nCores_; 
-   groups_ = (CoreGroup*)malloc(nCores_*sizeof(CoreGroup)); 
+   groups_ = new CoreGroup[nCores_];
+   
    threadingMap_ =(CoreGroup**)malloc(nThreads_*sizeof(CoreGroup*)); 
    for (int ii=0;ii<nThreads_;ii++) threadingMap_[ii]=0;
    
