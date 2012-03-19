@@ -97,6 +97,29 @@ void  profileInit()
    parallelDiffReacTimer = profileGetHandle("parallelDiffReac");
    machineSpecficInit(); 
 }
+void profileFastStart(const TimerHandle& handle)
+{
+   int tid=omp_get_thread_num() ;
+   int id=handle+tid; 
+   timers_[id].start[CYCLES] = getTime();
+}
+void profileFastStop(const TimerHandle& handle)
+{
+   int tid=omp_get_thread_num() ;
+   int id=handle+tid; 
+   timers_[id].total[NCALLS] += 1;
+   uint64_t delta = getTime() - timers_[id].start[CYCLES];
+   timers_[id].total[CYCLES] += delta;
+}
+void profileFastStart(const std::string& timerName)
+{
+   profileFastStart(profileGetHandle(timerName));
+}
+
+void profileFastStop(const std::string& timerName)
+{
+   profileFastStop(profileGetHandle(timerName));
+}
        
 void profileStart(const TimerHandle& handle)
 {
@@ -343,14 +366,19 @@ void profileDumpStats(ostream& out)
       MPI_Allreduce(sendBuf, recvBuf, bufSize, MPI_LONG_DOUBLE, MPI_SUM, comm);
       for (unsigned ii=0; ii<nTimers; ++ii)
       {
-         nActive[ii]= recvBuf[2*ii]; 
          double countSum = recvBuf[2*ii+1]; 
-         double count = sendBuf[2*ii+1]; 
-         perfCount[ii][counter] = (count+1e-100); 
-         aveCount[ii] = (nActive[ii] > 0 ? (count/nActive[ii]) : 0.0);
+         perfCount[ii][counter] = (countSum+1e-100); 
        
       }
       if (counter!=CYCLES) continue; 
+      for (unsigned ii=0; ii<nTimers; ++ii)
+      {
+         double count = sendBuf[2*ii+1]; 
+         nActive[ii]= recvBuf[2*ii]; 
+         double countSum = recvBuf[2*ii+1]; 
+         aveCount[ii] = (nActive[ii] > 0 ? (countSum/nActive[ii]) : 0.0);
+       
+      }
 
    struct DoubleInt
    {

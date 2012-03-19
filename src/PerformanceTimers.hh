@@ -27,6 +27,10 @@ namespace PerformanceTimers
    extern TimerHandle dummyTimer;
    extern TimerHandle parallelDiffReacTimer;
 };
+void profileFastStart(const TimerHandle& handle);
+void profileFastStop(const TimerHandle& handle);
+void profileFastStart(const std::string& timerName);
+void profileFastStop(const std::string& timerName);
 
 void profileStart(const TimerHandle& handle);
 void profileStop(const TimerHandle& handle);

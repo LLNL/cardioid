@@ -427,12 +427,9 @@ void set_labels(void)
 /*=================================================================*/
 /* Initialize the counters                                         */
 /*=================================================================*/
-uint64_t getTime()
+inline uint64_t getTime()
 {
-   unsigned long long rts_get_timebase(void);
-   uint64_t  t = 0.0;
-   t = GetTimeBase();
-   return t; 
+   return GetTimeBase();
 }
 double getTick()
 {
