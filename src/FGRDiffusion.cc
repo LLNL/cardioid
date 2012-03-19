@@ -122,7 +122,7 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
    {
       threadOffsetSimd_[ii+1] += threadOffsetSimd_[ii];
    }
-   assert(nx-2 == threadOffsetSimd_(threadInfo.nThreads()) );
+   assert(nx-2 == threadOffsetSimd_[threadInfo.nThreads()] );
 }
 
 
