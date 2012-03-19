@@ -162,7 +162,8 @@ CoreGroup* Threading::mkGroup(int nCores )
    for (int ii=0;ii<nCores;ii++)
       nThreads+=coreTable_[ii+firstCoreIndex].nThread; 
    nRemainingCores_-=nCores; 
-   vector<int> ompID(nThreads);
+   vector<int> ompID;
+   ompID.reserve(nThreads);
    assert(nRemainingCores_ >= 0); 
    for (int ii=0;ii<nCores;ii++) 
    {
@@ -171,7 +172,7 @@ CoreGroup* Threading::mkGroup(int nCores )
       for (int jj=0; jj<nThreads; jj++) 
       {
          int jid = ompTable_[first+jj].omp_id; 
-       	 ompID[jj] = jid; 
+       	 ompID.push_back(jid);
        	 threadingMap_[jid] = groups_+nGroups_; 
       }
    }
