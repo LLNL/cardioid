@@ -108,6 +108,7 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
 
    tmp_dVm.resize(nx,ny,nz + (nz%4==0 ? 0:4-(nz%4)));
 
+   return ; 
    //simd thread offsets
    threadOffsetSimd_.resize(threadInfo.nThreads()+1);
    int tid=0;
