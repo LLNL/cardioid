@@ -6,7 +6,7 @@ unsigned int counterHandle[MAX_THREADS]; // store the event set handler for each
 void (*machineSpecficInit)() = genericInit; 
 void  (*readCounter)(unsigned int, int,  uint64_t*)=genericReadCounter;
 int nCounters_=2; 
-char *counterNames_[] = {"#Calls" , "Time" };
+const char *counterNames_[] = {"#Calls" , "Time" };
 uint64_t getTime()
 {
    struct timeval ptime;
