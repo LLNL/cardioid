@@ -56,6 +56,7 @@ class FGRDiffusion : public Diffusion
    L2_Barrier_t*                   fgrBarrier_;
    std::vector<L2_BarrierHandle_t> barrierHandle_;
    std::vector<int>                threadOffset_;
+   std::vector<int>                threadOffsetSimd_;
    std::vector<unsigned>           blockIndex_; // for local and remote cells
    std::vector<Tuple>              localTuple_; // only for local cells
    Array3d<DiffWeight>             weight_;

@@ -107,7 +107,22 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
    reorder_Coeff();
 
    tmp_dVm.resize(nx,ny,nz + (nz%4==0 ? 0:4-(nz%4)));
-   
+
+   //simd thread offsets
+   threadOffsetSimd_.resize(threadInfo.nThreads()+1);
+   int tid=0;
+   for (int ii=0; ii<threadInfo.nThreads(); ++ii) threadOffsetSimd_[ii+1]=0;
+   for (int ii=1; ii<(nx-1); ++ii)  //1 ... nx-2
+   {
+      threadOffsetSimd_[tid+1]++;
+      tid++; tid=tid % threadInfo.nThreads();
+   }
+   threadOffsetSimd_[0]=1;
+   for (int ii=0; ii<threadInfo.nThreads(); ++ii)
+   {
+      threadOffsetSimd_[ii+1] += threadOffsetSimd_[ii];
+   }
+   assert(nx-2 == threadOffsetSimd_(threadInfo.nThreads()) );
 }
 
 
@@ -140,14 +155,9 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *r
 
 void FGRDiffusion::calc_simd(const vector<double>& Vm, vector<double>& dVm, double *recv_buf_, int nLocal)
 {
-   updateVoltageBlock(Vm, recv_buf_, nLocal);
-   int nCell = dVm.size();
-
-   #ifdef check_same
-   calc(Vm,dVm,recv_buf_,nLocal); //updateVoltageBlock twice may be ok
-   for(int ii=0;ii<20;ii++) std::cout << dVm[ii] << " " ;
-   std::cout << std::endl;
-   #endif
+   int tid = threadInfo_.threadID();
+   if ( tid==0 ) updateVoltageBlock(Vm, recv_buf_, nLocal);
+   L2_BarrierWithSync_Barrier(fgrBarrier_, &barrierHandle_[tid], threadInfo_.nThreads());
 
    Array3d<double> *VmTmp = &(VmBlock_);
    //make sure z is multiple of 4
@@ -164,47 +174,24 @@ void FGRDiffusion::calc_simd(const vector<double>& Vm, vector<double>& dVm, doub
      }
    }
 
-   Array3d<double> tmp_dVm(VmTmp->nx(),VmTmp->ny(),VmTmp->nz(),0.0);
-
-   #ifdef thread_test
-   assert(VmTmp->nz() > 8 );
    {
-     uint32_t start = VmTmp->tupleToIndex(1,1,0);
-     uint32_t end = VmTmp->tupleToIndex(VmTmp->nx()-2,VmTmp->ny()-2,8);
-     FGRDiff_simd_thread(start,end-start,VmTmp,tmp_dVm.cBlock());
+     uint32_t start = VmTmp->tupleToIndex(threadOffsetSimd_[tid],1,0);
+     uint32_t end = VmTmp->tupleToIndex(threadOffsetSimd_[tid+1]-1,VmTmp->ny()-2,VmTmp->nz());
+     if (threadOffsetSimd_[tid] < threadOffsetSimd_[tid+1] )
+        FGRDiff_simd_thread(start,end-start,VmTmp,tmp_dVm.cBlock());
    }
-   {
-     uint32_t start = VmTmp->tupleToIndex(1,1,8);
-     uint32_t end = VmTmp->tupleToIndex(VmTmp->nx()-2,VmTmp->ny()-2,VmTmp->nz());
-     FGRDiff_simd_thread(start,end-start,VmTmp,tmp_dVm.cBlock());
-   }
-   #else
-     uint32_t start = VmTmp->tupleToIndex(1,1,0);
-     uint32_t end = VmTmp->tupleToIndex(VmTmp->nx()-2,VmTmp->ny()-2,VmTmp->nz());
-     FGRDiff_simd_thread(start,end-start,VmTmp,tmp_dVm.cBlock());
-   #endif
 
    if(VmBlock_.nz()%4 != 0) delete VmTmp;
 
-   #ifdef check_same
-   cout << "checking discrepancy... ";
-   for (int ii=0; ii<nCell; ++ii)
    {
-      double tmp = dVm[ii];
-      dVm[ii] = tmp_dVm(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
-      dVm[ii] *= diffusionScale_;
-      if( fabs(tmp - dVm[ii]) >fabs(0.0000001*dVm[ii]) ) cout << ii << ":" << dVm[ii] << " " ;
+     int begin = threadOffset_[tid];
+     int end   = threadOffset_[tid+1];
+     for (int ii=begin; ii<end; ++ii)
+     {
+        dVm[ii] = tmp_dVm(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
+        dVm[ii] *= diffusionScale_;
+     }
    }
-   cout << "Done" << endl;
-   for(int ii=0;ii<20;ii++) std::cout << dVm[ii] << " " ;
-   std::cout << std::endl;
-   #else
-   for (int ii=0; ii<nCell; ++ii)
-   {
-      dVm[ii] = tmp_dVm(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
-      dVm[ii] *= diffusionScale_;
-   }
-   #endif
 }
 
 /** We're building the localTuple array only for local cells.  We can't
