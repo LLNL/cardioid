@@ -108,7 +108,6 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
 
    tmp_dVm.resize(nx,ny,nz + (nz%4==0 ? 0:4-(nz%4)));
 
-   return ; 
    //simd thread offsets
    threadOffsetSimd_.resize(threadInfo.nThreads()+1);
    int tid=0;
@@ -118,11 +117,14 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
       threadOffsetSimd_[tid+1]++;
       tid++; tid=tid % threadInfo.nThreads();
    }
+   //printf("thread:1 ");
    threadOffsetSimd_[0]=1;
    for (int ii=0; ii<threadInfo.nThreads(); ++ii)
    {
+      //printf("%d ",threadOffsetSimd_[ii+1]);
       threadOffsetSimd_[ii+1] += threadOffsetSimd_[ii];
    }
+   //printf("\n");
    assert(nx-1 == threadOffsetSimd_[threadInfo.nThreads()] );
 }
 
@@ -175,23 +177,20 @@ void FGRDiffusion::calc_simd(const vector<double>& Vm, vector<double>& dVm, doub
      }
    }
 
-   {
-     uint32_t start = VmTmp->tupleToIndex(threadOffsetSimd_[tid],1,0);
-     uint32_t end = VmTmp->tupleToIndex(threadOffsetSimd_[tid+1]-1,VmTmp->ny()-2,VmTmp->nz());
-     if (threadOffsetSimd_[tid] < threadOffsetSimd_[tid+1] )
-        FGRDiff_simd_thread(start,end-start,VmTmp,tmp_dVm.cBlock());
-   }
+   uint32_t begin = VmTmp->tupleToIndex(threadOffsetSimd_[tid],1,0);
+   uint32_t end = VmTmp->tupleToIndex(threadOffsetSimd_[tid+1]-1,VmTmp->ny()-2,VmTmp->nz());
+   //   printf("simd version:%d-%d\n",begin,end);
+   if (threadOffsetSimd_[tid] < threadOffsetSimd_[tid+1] )
+      FGRDiff_simd_thread(begin,end-begin,VmTmp,tmp_dVm.cBlock());
 
    if(VmBlock_.nz()%4 != 0) delete VmTmp;
 
+   begin = threadOffset_[tid];
+   end   = threadOffset_[tid+1];
+   for (int ii=begin; ii<end; ++ii)
    {
-     int begin = threadOffset_[tid];
-     int end   = threadOffset_[tid+1];
-     for (int ii=begin; ii<end; ++ii)
-     {
-        dVm[ii] = tmp_dVm(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
-        dVm[ii] *= diffusionScale_;
-     }
+      dVm[ii] = tmp_dVm(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
+      dVm[ii] *= diffusionScale_;
    }
 }
 
