@@ -135,7 +135,7 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *r
    
    updateVoltageBlock(Vm, recv_buf, nLocal);
 
-//   L2_BarrierWithSync_Barrier(fgrBarrier_, &barrierHandle_[tid], threadInfo_.nThreads());
+   L2_BarrierWithSync_Barrier(fgrBarrier_, &barrierHandle_[tid], threadInfo_.nThreads());
 
    int begin = threadOffset_[tid];
    int end   = threadOffset_[tid+1];
