@@ -26,6 +26,14 @@ namespace PerformanceTimers
    extern TimerHandle imbalanceTimer;
    extern TimerHandle dummyTimer;
    extern TimerHandle parallelDiffReacTimer;
+   extern TimerHandle haloTimerExecute;
+   extern TimerHandle haloTimerComplete;
+#ifdef TIMING
+   extern TimerHandle DiffCalcVUpdateTimer;
+   extern TimerHandle DiffCalcBarrierTimer;
+   extern TimerHandle DiffCalcCellLoopTimer;
+   extern TimerHandle haloMove2BufTimer;
+#endif    
 };
 void profileFastStart(const TimerHandle& handle);
 void profileFastStop(const TimerHandle& handle);

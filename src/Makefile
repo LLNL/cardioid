@@ -143,15 +143,11 @@ mpip:
 	CFLAGS="$(CFLAGS_MPIP)" CXXFLAGS="$(CXXFLAGS_MPIP)" \
 	LDFLAGS="$(LDFLAGS_MPIP)"  EXENAME=cardioid-$(ARCH)-mpip
 time:
-	@$(MAKE) --no-print-directory COMMON_TARGETS timebase \
+	@$(MAKE) --no-print-directory COMMON_TARGETS \
 	$(BINDIR)/cardioid-$(ARCH)-time \
-	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH) \
+	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH)-time \
 	CFLAGS="$(CFLAGS_OPT) -DTIMING" CXXFLAGS="$(CXXFLAGS_OPT) -DTIMING" \
 	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=cardioid-$(ARCH)-time \
-	TIMEOBJ=objs-$(ARCH)/timebase.o
-
-timebase: timebase.c
-	/bgsys/drivers/ppcfloor/gnu-linux/bin/powerpc-bgp-linux-gcc -c -O timebase.c -o $(OBJDIR)/timebase.o
 
 $(OBJDIR)/%.o: %.cc
 	$(CXX) $(CXXFLAGS) -o $@ -c $<

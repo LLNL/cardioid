@@ -7,6 +7,10 @@
 #include "fastBarrier.hh"
 #include <algorithm>
 #include <cstdio>
+#ifdef TIMING
+#include "PerformanceTimers.hh"
+using namespace PerformanceTimers;
+#endif
 
 //#define check_same
 using namespace std;
@@ -135,9 +139,21 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *r
 {
    int tid = threadInfo_.threadID();
    
+#ifdef TIMING
+   profileFastStart(DiffCalcVUpdateTimer);
+#endif
    updateVoltageBlock(Vm, recv_buf, nLocal);
+#ifdef TIMING
+   profileFastStop(DiffCalcVUpdateTimer);
+   profileFastStart(DiffCalcBarrierTimer);
+#endif
 
    L2_BarrierWithSync_Barrier(fgrBarrier_, &barrierHandle_[tid], threadInfo_.nThreads());
+
+#ifdef TIMING
+   profileFastStop(DiffCalcBarrierTimer);
+   profileFastStart(DiffCalcCellLoopTimer);
+#endif
 
    int begin = threadOffset_[tid];
    int end   = threadOffset_[tid+1];
@@ -154,13 +170,27 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *r
       
       dVm[iCell] *= diffusionScale_;
    }
+#ifdef TIMING
+   profileFastStop(DiffCalcCellLoopTimer);
+#endif
 }
 
 void FGRDiffusion::calc_simd(const vector<double>& Vm, vector<double>& dVm, double *recv_buf_, int nLocal)
 {
    int tid = threadInfo_.threadID();
+#ifdef TIMING
+   profileFastStart(DiffCalcVUpdateTimer);
+#endif
    if ( tid==0 ) updateVoltageBlock(Vm, recv_buf_, nLocal);
+#ifdef TIMING
+   profileFastStop(DiffCalcVUpdateTimer);
+   profileFastStart(DiffCalcBarrierTimer);
+#endif
    L2_BarrierWithSync_Barrier(fgrBarrier_, &barrierHandle_[tid], threadInfo_.nThreads());
+#ifdef TIMING
+   profileFastStop(DiffCalcBarrierTimer);
+   profileFastStart(DiffCalcCellLoopTimer);
+#endif
 
    Array3d<double> *VmTmp = &(VmBlock_);
    //make sure z is multiple of 4
@@ -192,6 +222,9 @@ void FGRDiffusion::calc_simd(const vector<double>& Vm, vector<double>& dVm, doub
       dVm[ii] = tmp_dVm(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
       dVm[ii] *= diffusionScale_;
    }
+#ifdef TIMING
+   profileFastStop(DiffCalcCellLoopTimer);
+#endif
 }
 
 /** We're building the localTuple array only for local cells.  We can't

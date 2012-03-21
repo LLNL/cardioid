@@ -62,7 +62,14 @@ double getTick()
    TimerHandle imbalanceTimer;
    TimerHandle dummyTimer;
    TimerHandle parallelDiffReacTimer;
-   
+   TimerHandle haloTimerExecute;
+   TimerHandle haloTimerComplete;
+#ifdef TIMING
+   TimerHandle DiffCalcVUpdateTimer;
+   TimerHandle DiffCalcBarrierTimer;
+   TimerHandle DiffCalcCellLoopTimer;
+   TimerHandle haloMove2BufTimer;
+#endif   
    
    vector<TimerStruct> timers_;
    typedef map<string, TimerHandle> HandleMap;
@@ -86,7 +93,7 @@ void  profileInit()
    gateTimer = profileGetHandle("Reaction_Gate");
    diffusionLoopTimer= profileGetHandle("DiffusionLoop");
    integratorTimer = profileGetHandle("Integrator");
-   haloTimer = profileGetHandle("Halo Exchange");
+   haloTimer = profileGetHandle("HaloExchange");
    reactionLoopTimer = profileGetHandle("ReactionLoop");
    reactionWaitTimer = profileGetHandle("ReactionWait");
    diffusionWaitTimer = profileGetHandle("DiffusionWait");
@@ -95,6 +102,14 @@ void  profileInit()
    imbalanceTimer = profileGetHandle("Imbalance");
    dummyTimer = profileGetHandle("Dummy");
    parallelDiffReacTimer = profileGetHandle("parallelDiffReac");
+   haloTimerExecute = profileGetHandle("HaloExchangeExecute");
+   haloTimerComplete = profileGetHandle("HaloExchangeComplete");
+#ifdef TIMING
+   DiffCalcVUpdateTimer = profileGetHandle("DiffCalcVoltageUpdate");
+   DiffCalcBarrierTimer = profileGetHandle("DiffCalcBarrier");
+   DiffCalcCellLoopTimer = profileGetHandle("DiffCalcCellLoop");
+   haloMove2BufTimer = profileGetHandle("HaloExchMove2Buf");
+#endif   
    machineSpecficInit(); 
 }
 void profileFastStart(const TimerHandle& handle)
