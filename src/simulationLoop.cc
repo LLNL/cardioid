@@ -253,10 +253,10 @@ void diffusionLoop(Simulate& sim,
       
       // DIFFUSION
       profileFastStart(diffusionTimer);
-      sim.diffusion_->calc(sim.VmArray_, loopData.dVmDiffusion,
-                           loopData.voltageExchange.get_recv_buf_(), nLocal);
-      //sim.diffusion_->calc_simd(sim.VmArray_, loopData.dVmDiffusion,
+      //sim.diffusion_->calc(sim.VmArray_, loopData.dVmDiffusion,
       //                     loopData.voltageExchange.get_recv_buf_(), nLocal);
+      sim.diffusion_->calc_simd(sim.VmArray_, loopData.dVmDiffusion,
+                           loopData.voltageExchange.get_recv_buf_(), nLocal);
       profileFastStop(diffusionTimer);
       
       L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
