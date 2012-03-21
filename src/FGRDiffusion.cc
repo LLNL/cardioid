@@ -190,9 +190,11 @@ void FGRDiffusion::calc_simd(const vector<double>& Vm, vector<double>& dVm, doub
 #ifdef TIMING
    profileFastStop(DiffCalcBarrierTimer);
    profileFastStart(DiffCalcCellLoopTimer);
+   profileFastStart(DiffCalcCellLoopVmTmpTimer);
 #endif
 
    Array3d<double> *VmTmp = &(VmBlock_);
+
    //make sure z is multiple of 4
    if(VmBlock_.nz()%4 != 0)
    {
@@ -207,6 +209,10 @@ void FGRDiffusion::calc_simd(const vector<double>& Vm, vector<double>& dVm, doub
      }
    }
 
+#ifdef TIMING
+   profileFastStop(DiffCalcCellLoopVmTmpTimer);
+#endif
+   
    uint32_t begin = VmTmp->tupleToIndex(threadOffsetSimd_[tid],1,0);
    uint32_t end = VmTmp->tupleToIndex(threadOffsetSimd_[tid+1]-1,VmTmp->ny()-2,VmTmp->nz());
    //   printf("simd version:%d-%d\n",begin,end);
