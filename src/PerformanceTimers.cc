@@ -109,7 +109,7 @@ void  profileInit()
    DiffCalcVUpdateTimer = profileGetHandle("DiffCalcVoltageUpdate");
    DiffCalcBarrierTimer = profileGetHandle("DiffCalcBarrier");
    DiffCalcCellLoopTimer = profileGetHandle("DiffCalcCellLoop");
-   DiffCalcCellLoopTimer = profileGetHandle("DiffCalcCellLoopVmTmp");
+   DiffCalcCellLoopVmTmpTimer = profileGetHandle("DiffCalcCellLoopVmTmp");
    haloMove2BufTimer = profileGetHandle("HaloExchMove2Buf");
 #endif   
    machineSpecficInit(); 
