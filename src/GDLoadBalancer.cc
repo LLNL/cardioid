@@ -355,7 +355,7 @@ void GDLoadBalancer::balanceLoop(vector<AnatomyCell>& cells)
    // call balanceLoop w. default values
    const int bblock = 5;
    const int bthresh = 10;
-   const int maxiter = 100000000;
+   const int maxiter = 100000;
    balanceLoop(cells,bblock,bthresh,maxiter);
 }
 ////////////////////////////////////////////////////////////////////////////////

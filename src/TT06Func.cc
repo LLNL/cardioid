@@ -467,7 +467,8 @@ double defaultVoltage(int cellType)
       voltage = -85.23;
       break;
      default:
-      assert(false);
+         voltage = -86.709;
+         //ewdassert(false);
    }
    return voltage;
 }

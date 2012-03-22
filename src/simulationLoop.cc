@@ -113,10 +113,12 @@ void simulationLoop(Simulate& sim)
    {
       int nLocal = sim.anatomy_.nLocal();
     
+#ifdef TIMING
       profileFastStart(imbalanceTimer);
       voltageExchange.barrier();
       profileFastStop(imbalanceTimer);
-
+#endif
+      
       profileFastStart(haloTimer);
       voltageExchange.execute(sim.VmArray_, nLocal);
       voltageExchange.complete();
@@ -230,10 +232,11 @@ void diffusionLoop(Simulate& sim,
     
       if (tid == 0)
       {
+#ifdef TIMING
          profileFastStart(diffusionImbalanceTimer);
          loopData.voltageExchange.barrier();
          profileFastStop(diffusionImbalanceTimer);
-         
+#endif         
          profileFastStart(haloTimer);
          profileFastStart(haloTimerExecute);
          loopData.voltageExchange.execute(sim.VmArray_, nLocal);

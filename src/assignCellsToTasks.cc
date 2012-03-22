@@ -162,7 +162,7 @@ namespace
       int threshold;
       objectGet(obj, "ninner", ninner, "10");
       objectGet(obj, "threshold", threshold, "4");
-      int nmax = 10000000;
+      int nmax = 100000;
 
       profileStart("gd_balance");
       loadbal.balanceLoop(cells,ninner,threshold,nmax);
