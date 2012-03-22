@@ -110,7 +110,7 @@ ifdef TIMEOBJ
 endif
 
 #BUILD_SUFFIX := $(ARCH)
-#OBJDIR := objs-$(BUILD_SUFFIX)
+OBJDIR := objs-$(ARCH)
 EXENAME = cardioid
 
 
@@ -202,6 +202,7 @@ makedirs:
 #  Cleanup object files
 clean :
 	rm -rf $(OBJDIR)/*.o
+	rm -f *.lst
 	rm -rf $(BINDIR)/$(EXENAME)-$(ARCH)*.*
 	rm -f $(BINDIR)/$(EXENAME)-$(ARCH)*
 	rm -f .depend_$(ARCH)*
