@@ -44,7 +44,7 @@ class Anatomy
    double dy() const;
    double dz() const;
    
-   int gid(unsigned ii) const;
+   Long64 gid(unsigned ii) const;
    SymmetricTensor conductivity(unsigned ii) const;
    int cellType(unsigned ii) const;
    Tuple globalTuple(unsigned ii) const;
@@ -94,7 +94,7 @@ inline double  Anatomy::dx() const { return dx_;}
 inline double  Anatomy::dy() const { return dy_;}
 inline double  Anatomy::dz() const { return dz_;}
 
-inline int  Anatomy::gid(unsigned ii) const { return cell_[ii].gid_;}
+inline Long64  Anatomy::gid(unsigned ii) const { return cell_[ii].gid_;}
 inline SymmetricTensor Anatomy::conductivity(unsigned ii) const {return cell_[ii].sigma_;}
 inline int  Anatomy::cellType(unsigned ii) const { return cell_[ii].cellType_;}
 
