@@ -33,6 +33,8 @@ namespace PerformanceTimers
    extern TimerHandle DiffCalcBarrierTimer;
    extern TimerHandle DiffCalcCellLoopTimer;
    extern TimerHandle DiffCalcCellLoopVmTmpTimer;
+   extern TimerHandle DiffCalcCellLoopSIMDThreadTimer;
+   extern TimerHandle DiffCalcCellLoopdVmLoopTimer;
    extern TimerHandle haloMove2BufTimer;
 #endif    
 };

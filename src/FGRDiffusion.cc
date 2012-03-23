@@ -213,12 +213,19 @@ void FGRDiffusion::calc_simd(const vector<double>& Vm, vector<double>& dVm, doub
    profileFastStop(DiffCalcCellLoopVmTmpTimer);
 #endif
    
+#ifdef TIMING
+   profileFastStart(DiffCalcCellLoopSIMDThreadTimer);
+#endif
    uint32_t begin = VmTmp->tupleToIndex(threadOffsetSimd_[tid],1,0);
    uint32_t end = VmTmp->tupleToIndex(threadOffsetSimd_[tid+1]-1,VmTmp->ny()-2,VmTmp->nz());
    //   printf("simd version:%d-%d\n",begin,end);
    if (threadOffsetSimd_[tid] < threadOffsetSimd_[tid+1] )
       FGRDiff_simd_thread(begin,end-begin,VmTmp,tmp_dVm.cBlock());
 
+#ifdef TIMING
+   profileFastStop(DiffCalcCellLoopSIMDThreadTimer);
+   profileFastStart(DiffCalcCellLoopdVmLoopTimer);
+#endif
    if(VmBlock_.nz()%4 != 0) delete VmTmp;
 
    begin = threadOffset_[tid];
@@ -229,6 +236,7 @@ void FGRDiffusion::calc_simd(const vector<double>& Vm, vector<double>& dVm, doub
       dVm[ii] *= diffusionScale_;
    }
 #ifdef TIMING
+   profileFastStop(DiffCalcCellLoopdVmLoopTimer);
    profileFastStop(DiffCalcCellLoopTimer);
 #endif
 }

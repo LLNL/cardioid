@@ -69,6 +69,8 @@ double getTick()
    TimerHandle DiffCalcBarrierTimer;
    TimerHandle DiffCalcCellLoopTimer;
    TimerHandle DiffCalcCellLoopVmTmpTimer;
+   TimerHandle DiffCalcCellLoopSIMDThreadTimer;
+   TimerHandle DiffCalcCellLoopdVmLoopTimer;
    TimerHandle haloMove2BufTimer;
 #endif   
    
@@ -110,6 +112,8 @@ void  profileInit()
    DiffCalcBarrierTimer = profileGetHandle("DiffCalcBarrier");
    DiffCalcCellLoopTimer = profileGetHandle("DiffCalcCellLoop");
    DiffCalcCellLoopVmTmpTimer = profileGetHandle("DiffCalcCellLoopVmTmp");
+   DiffCalcCellLoopSIMDThreadTimer = profileGetHandle("DiffCalcCellLoopSIMDThread");
+   DiffCalcCellLoopdVmLoopTimer = profileGetHandle("DiffCalcCellLoopdVmLoop");
    haloMove2BufTimer = profileGetHandle("HaloExchMove2Buf");
 #endif   
    machineSpecficInit(); 
