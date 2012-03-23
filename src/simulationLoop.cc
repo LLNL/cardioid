@@ -36,8 +36,8 @@ void simulationProlog(Simulate& sim)
       sim.VmArray_[ii] = 0;
 
    // Load state file, assign corresponding values to membrane voltage and cell model
-   if (!sim.stateFilename_.empty())
-      readCheckpoint(sim, MPI_COMM_WORLD);
+   for (unsigned ii=0; ii<sim.stateFilename_.size(); ++ii)
+      readCheckpoint(sim.stateFilename_[ii], sim, MPI_COMM_WORLD);
 }
 
 

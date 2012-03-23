@@ -202,10 +202,10 @@ void writeCheckpoint(const Simulate& sim, MPI_Comm comm)
    }
 }
 
-void readCheckpoint(Simulate& sim, MPI_Comm comm)
+void readCheckpoint(const string& filename, Simulate& sim, MPI_Comm comm)
 {
    BucketOfBits* data = 
-      loadAndDistributeState(sim.stateFilename_, sim.anatomy_);
+      loadAndDistributeState(filename, sim.anatomy_);
    assert(data->nRecords() == sim.anatomy_.nLocal());
 
    vector<double> unitConvert(data->nFields(), 1.0);

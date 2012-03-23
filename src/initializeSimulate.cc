@@ -43,10 +43,13 @@ void initializeSimulate(const string& name, Simulate& sim)
    sim.ny_ = sim.anatomy_.ny();
    sim.nz_ = sim.anatomy_.nz();
 
-   objectGet(obj, "stateFile", sim.stateFilename_, "");
-   if (!sim.stateFilename_.empty())
-      if (sim.stateFilename_[sim.stateFilename_.size()-1] != '#')
-          sim.stateFilename_ += "#";
+   objectGet(obj, "stateFile", sim.stateFilename_);
+   for (unsigned ii=0; ii<sim.stateFilename_.size(); ++ii)
+   {
+      string& name = sim.stateFilename_[ii];
+      if (name[name.size()-1] != '#')
+         name += "#";
+   }
    objectGet(obj, "decomposition", nameTmp, "decomposition");
    assignCellsToTasks(sim, nameTmp, MPI_COMM_WORLD);
    

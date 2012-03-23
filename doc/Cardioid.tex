@@ -562,8 +562,10 @@ protocols.
     Multiple sensors may be specified.}{No sensors}
   \kw{snapshotRate}{The rate (in time steps) at which snapshot directories are
     created}{100 time steps}
-  \kw{stateFile}{The name of the file from which to load cell model
-    state data.}{No default.} 
+  \kw{stateFile}{The name of the file(s) from which to load cell model
+    state data.  Multiple files may be specified.  They are loaded in
+    the order specified.  If the same field is present in multiple
+    files, each load will overwrite previous values.}{No default.} 
   \kw{stimulus}{The name of the STIMULUS object(s) to use in this
     simulation. Multiple stimuli may be specified.  If this keyword is
     not specified there will be no external stimulus in the simulation.}

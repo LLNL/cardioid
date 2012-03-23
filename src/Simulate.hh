@@ -43,7 +43,7 @@ class Simulate
    int nx_, ny_, nz_; // global size of grid
 
    std::string name_;
-   std::string stateFilename_;
+   std::vector<std::string> stateFilename_;
 
    std::vector<int> sendMap_;
    CommTable* commTable_;
