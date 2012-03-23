@@ -5,13 +5,15 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include "Long64.hh"
+
 using namespace std;
 
 class Anatomy;
 
 struct PointListSensorParms
 {
-  vector<unsigned> pointList;
+  vector<Long64> pointList;
   double startTime;
   double endTime;
    string filename;
@@ -36,7 +38,7 @@ class PointListSensor : public Sensor
    void printDerivs(double time, const vector<double>& Vm, const vector<double>& dVm_r,
                     const vector<double>& dVm_d, const vector<double>& dVm_e);
 
-   vector<unsigned> localCells_;  // grid gids owned by this task
+   vector<Long64> localCells_;  // grid gids owned by this task
    vector<unsigned> sensorind_;      // corresponding local array index 
    vector<ofstream*> fout_loc_;
    double startTime_;

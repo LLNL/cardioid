@@ -1,7 +1,6 @@
 #include "object_cc.hh"
 
 #include "ddcMalloc.h"
-
 using std::string;
 using std::vector;
 
@@ -60,6 +59,13 @@ void objectGet(OBJECT* obj, const string& name, unsigned& value, const string& d
    value = tmp;
 }
 
+void objectGet(OBJECT* obj, const string& name, Long64& value, const string& defVal)
+{
+   int tmp;
+   object_get(obj, name.c_str(), &tmp, ULL, 1, defVal.c_str());
+   value = tmp;
+}
+
 void objectGet(OBJECT* obj, const std::string& name, double& value, const std::string& defVal,
                const std::string& unitConvertTo)
 {
@@ -74,6 +80,7 @@ void objectGet(OBJECT* obj, const string& name, vector<string>& value)
    value.clear();
    char** tmp;
    unsigned n = object_getv(obj, name.c_str(), (void**) &tmp, STRING, IGNORE_IF_NOT_FOUND);
+   value.reserve(n);
    for (unsigned ii=0; ii<n; ++ii)
    {
       value.push_back(tmp[ii]);
@@ -87,6 +94,18 @@ void objectGet(OBJECT* obj, const string& name, vector<unsigned>& value)
    value.clear();
    int* tmp;
    unsigned n = object_getv(obj, name.c_str(), (void**) &tmp, INT, IGNORE_IF_NOT_FOUND);
+   value.reserve(n);
+   for (unsigned ii=0; ii<n; ++ii)
+      value.push_back(tmp[ii]);
+   ddcFree(tmp);
+}
+
+void objectGet(OBJECT* obj, const string& name, vector<Long64>& value)
+{
+   value.clear();
+   int* tmp;
+   unsigned n = object_getv(obj, name.c_str(), (void**) &tmp, ULL, IGNORE_IF_NOT_FOUND);
+   value.reserve(n);
    for (unsigned ii=0; ii<n; ++ii)
       value.push_back(tmp[ii]);
    ddcFree(tmp);
@@ -97,6 +116,7 @@ void objectGet(OBJECT* obj, const string& name, vector<double>& value)
    value.clear();
    double* tmp;
    unsigned n = object_getv(obj, name.c_str(), (void**) &tmp, DOUBLE, IGNORE_IF_NOT_FOUND);
+   value.reserve(n);
    for (unsigned ii=0; ii<n; ++ii)
       value.push_back(tmp[ii]);
    ddcFree(tmp);

@@ -10,10 +10,9 @@ PointStimulus::PointStimulus(const PointStimulusParms& p, const Anatomy& anatomy
 
   // loop through grid points on this task, check against target cell
   cellLocal_ = false;
-  const unsigned gid = p.cell;
   for (unsigned jj=0; jj<anatomy.size(); ++jj)
   {
-    if (anatomy.gid(jj) == gid)
+    if (anatomy.gid(jj) == p.cell)
     {        
       cellLocal_ = true;
       localInd_ = jj;

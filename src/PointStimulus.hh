@@ -2,13 +2,14 @@
 #define POINT_STIMULUS_HH
 
 #include "Stimulus.hh"
+#include "Long64.hh"
 #include "PeriodicPulse.hh"
 
 class Anatomy;
 
 struct PointStimulusParms
 {
-   int cell;
+   Long64 cell;
    double vStim;
    double tStart;
    double period;
@@ -25,7 +26,7 @@ class PointStimulus : public Stimulus
                      std::vector<double>& dVmExternal);
    
  private:
-   int targetCell_;
+   Long64 targetCell_;
    bool cellLocal_;
    int localInd_;
    PeriodicPulse pulse_;

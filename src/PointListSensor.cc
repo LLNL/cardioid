@@ -29,7 +29,7 @@ PointListSensor::PointListSensor(const SensorParms& sp, const PointListSensorPar
   // loop through grid points on this task, check against pointlist
   for (unsigned ii=0; ii<plistsize; ++ii)
   {
-    const unsigned gid = p.pointList[ii];
+    const Long64& gid = p.pointList[ii];
     //for (unsigned jj=0; jj<anatomy.size(); ++jj)
     for (unsigned jj=0; jj<anatomy.nLocal(); ++jj)
     {

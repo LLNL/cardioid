@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "object.h"
+#include "Long64.hh"
 
 OBJECT* objectFind(const std::string& name, const std::string& objClass);
 
@@ -13,6 +14,7 @@ void objectGet(OBJECT* obj, const std::string& name, double& value,      const s
 void objectGet(OBJECT* obj, const std::string& name, bool& value,        const std::string& defVal);
 void objectGet(OBJECT* obj, const std::string& name, int& value,         const std::string& defVal);
 void objectGet(OBJECT* obj, const std::string& name, unsigned& value,    const std::string& defVal);
+void objectGet(OBJECT* obj, const std::string& name, Long64& value,    const std::string& defVal);
 
 void objectGet(OBJECT* obj, const std::string& name, double& value, const std::string& defVal,
                const std::string& unitConvertTo);
@@ -20,6 +22,7 @@ void objectGet(OBJECT* obj, const std::string& name, double& value, const std::s
 
 void objectGet(OBJECT* obj, const std::string& name, std::vector<std::string>& value);
 void objectGet(OBJECT* obj, const std::string& name, std::vector<unsigned>&    value);
+void objectGet(OBJECT* obj, const std::string& name, std::vector<Long64>&      value);
 void objectGet(OBJECT* obj, const std::string& name, std::vector<double >&     value);
 
 
