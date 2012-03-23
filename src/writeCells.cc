@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iostream>
 #include <algorithm>
+#include <set>
 
 #include "Simulate.hh"
 #include "Anatomy.hh"
@@ -40,6 +41,12 @@ void writeCells(const Simulate& sim,
    int lrec = 55;
    int nfields = 6; 
 
+   Long64 nSnapSub = -1;
+   if (sim.snapshotUseCellList_)
+   {
+      Long64 nSnapSubLoc = sim.snapshotCellList_.size();
+      MPI_Allreduce(&nSnapSubLoc, &nSnapSub, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+   }
 
    if (myRank == 0)
    {
@@ -49,7 +56,10 @@ void writeCells(const Simulate& sim,
       Pprintf(file, "cellViz FILEHEADER {\n");
       Pprintf(file, "  lrec = %d;\n", lrec);
       Pprintf(file, "  datatype = FIXRECORDASCII;\n");
-      Pprintf(file, "  nrecords = %llu;\n", nGlobal);
+      if (sim.snapshotUseCellList_)
+         Pprintf(file, "  nrecords = %llu;\n", nSnapSub);
+      else
+         Pprintf(file, "  nrecords = %llu;\n", nGlobal);
       Pprintf(file, "  nfields = %d;\n", nfields);
       Pprintf(file, "  field_names = rx ry rz cellType domain Vm;\n");
       Pprintf(file, "  field_types = u u u u u f;\n" );
@@ -64,19 +74,30 @@ void writeCells(const Simulate& sim,
    char line[lrec+1];
    for (unsigned ii=0; ii<nLocal; ++ii)
    {
-      Vector v = indexToVector(cells[ii].gid_);
-      int ix = int(v.x()) - halfNx;
-      int iy = int(v.y()) - halfNy;
-      int iz = int(v.z()) - halfNz;
-
-      int l = snprintf(line, lrec, fmt,
-                       ix, iy, iz, cells[ii].cellType_, cells[ii].dest_,
-                       sim.VmArray_[ii]);
+      bool writeIt = true;
+      if (sim.snapshotUseCellList_)
+      {
+         Long64 gid = cells[ii].gid_;
+         set<Long64>::iterator it = sim.snapshotCellList_.find(gid);
+         if (it == sim.snapshotCellList_.end())
+            writeIt = false;
+      }
+      if (writeIt)
+      {
+         Vector v = indexToVector(cells[ii].gid_);
+         int ix = int(v.x()) - halfNx;
+         int iy = int(v.y()) - halfNy;
+         int iz = int(v.z()) - halfNz;
+         
+         int l = snprintf(line, lrec, fmt,
+                          ix, iy, iz, cells[ii].cellType_, cells[ii].dest_,
+                          sim.VmArray_[ii]);
       
-      for (; l < lrec - 1; l++) line[l] = (char)' ';
-      line[l++] = (char)'\n';
-      assert (l==lrec);
-      Pwrite(line, lrec, 1, file);
+         for (; l < lrec - 1; l++) line[l] = (char)' ';
+         line[l++] = (char)'\n';
+         assert (l==lrec);
+         Pwrite(line, lrec, 1, file);
+      }
    }
    
    Pclose(file);

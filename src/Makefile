@@ -50,7 +50,7 @@ HEARTSRC= cardioid.cc \
 	 TT06_RRG.cc \
 	 TestStimulus.cc PointStimulus.cc BoxStimulus.cc \
 	 PeriodicPulse.cc \
-	 PointListSensor.cc ActivationTimeSensor.cc
+	 PointListSensor.cc ActivationTimeSensor.cc readSnapshotCellList.cc
 
 SPISRC=	 spi_impl.c
 

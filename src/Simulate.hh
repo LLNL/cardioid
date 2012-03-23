@@ -3,8 +3,10 @@
 
 #include <map>
 #include <string>
+#include <set>
 #include <vector>
 
+#include "Long64.hh"
 #include "Anatomy.hh"
 #include "Threading.hh"
 
@@ -31,6 +33,8 @@ class Simulate
    int maxLoop_;
    int printRate_;
    int snapshotRate_;
+   bool snapshotUseCellList_;
+   std::set<Long64> snapshotCellList_;
    int checkpointRate_;
    int parallelDiffusionReaction_;
    CoreGroup* diffusionGroup_; 

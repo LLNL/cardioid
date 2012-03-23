@@ -35,7 +35,6 @@ void initializeSimulate(const string& name, Simulate& sim)
       sim.reactionGroup_  = sim.tinfo_.mkGroup(-1); 
    }
    
-
    string nameTmp;
    objectGet(obj, "anatomy", nameTmp, "anatomy");
    initializeAnatomy(sim.anatomy_, nameTmp, MPI_COMM_WORLD);
