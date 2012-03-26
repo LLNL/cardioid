@@ -235,10 +235,12 @@ vector<string> generateOutputOrder(const vector<string>& words)
       string prefix = tmp.str(); 
       for (unsigned ii=0; ii<printOrder_.size(); ++ii)
       {
+         if (printOrder_[ii].empty())
+            order.push_back("");
+         
          string  name = prefix+printOrder_[ii]; 
          //printf("name=%s\n",name.c_str()); 
-         if ( printOrder_[ii].empty() || 
-              find(words.begin(), words.end(), name) != words.end() )
+         if (find(words.begin(), words.end(), name) != words.end() )
          {
             order.push_back(name);
             printed.insert(name);
@@ -281,7 +283,7 @@ void profileDumpTimes(ostream& out)
    {
 
       out << setw(12) << counterNames_[counter] 
-          << setw(maxLen-5) << " "
+          << setw(maxLen-9) << " "
           << setw(10)     << "#Calls" << "  |"
           << setw(10)      << "Average" 
           << setw(10)      << "Total"
@@ -459,13 +461,13 @@ void profileDumpStats(ostream& out)
                 << setw(10) << "sigma"
                 << setw(10) << "aveTime"
                 << endl;
-            out << "--------------------------------------------------------------------------------" << endl;
+            out << "--------------------------------------------------------------------------------------------------" << endl;
             for (unsigned ii=0; ii<nTimers; ++ii)
             {
                if (aveCount[ii]*tick < 0.0001) continue;
                if (outputOrder[ii].empty())
                {
-                  out << "--------------------------------------------------------------------------------" << endl;
+                  out << "--------------------------------------------------------------------------------------------------" << endl;
                   continue;
                }
                out << setw(maxLen) << left << outputOrder[ii] << " : " << right
