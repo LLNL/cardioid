@@ -14,7 +14,7 @@ spiTimeExe=${mpiExe}-spi-time
 
 for halo in spitime
 do
-for jobSize in 1k 2k 4k 8k
+for jobSize in 1k 2k 4k 8k 16k 24k
 do
 for cellsPerNode in 150 300
 do
@@ -83,6 +83,20 @@ do
       xGrid=16;  yGrid=16;  zGrid=32
       xSize=`echo $baseSize \* 2 | bc`
       ySize=`echo $baseSize \* 2 | bc`
+      zSize=`echo $baseSize \* 4 | bc`
+      ;;
+      16k)
+      nNodes=16384
+      xGrid=16;  yGrid=32;  zGrid=32
+      xSize=`echo $baseSize \* 2 | bc`
+      ySize=`echo $baseSize \* 4 | bc`
+      zSize=`echo $baseSize \* 4 | bc`
+      ;;
+      24k)
+      nNodes=24576
+      xGrid=24;  yGrid=32;  zGrid=32
+      xSize=`echo $baseSize \* 3 | bc`
+      ySize=`echo $baseSize \* 4 | bc`
       zSize=`echo $baseSize \* 4 | bc`
       ;;
       *)
