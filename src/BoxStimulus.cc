@@ -21,11 +21,10 @@ BoxStimulus::BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy)
 }
 
 void BoxStimulus::subClassStim(double time,
-                               vector<double>& dVmDiffusion,
-                               vector<double>& dVmExternal)
+                               vector<double>& dVmDiffusion)
 {
    double value = pulse_.eval(time);
    if (value != 0)
       for (unsigned ii=0; ii<stimList_.size(); ++ii)
-         dVmExternal[stimList_[ii]] += value;
+         dVmDiffusion[stimList_[ii]] += value;
 }

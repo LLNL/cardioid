@@ -22,11 +22,10 @@ PointStimulus::PointStimulus(const PointStimulusParms& p, const Anatomy& anatomy
 }
 
 void PointStimulus::subClassStim(double time,
-                                 vector<double>& dVmDiffusion,
-                                 vector<double>& dVmExternal)
+                                 vector<double>& dVmDiffusion)
 {
    if (cellLocal_)
    {
-      dVmExternal[localInd_] += pulse_.eval(time);
+      dVmDiffusion[localInd_] += pulse_.eval(time);
    }
 }

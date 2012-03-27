@@ -19,16 +19,14 @@ class Stimulus
    virtual ~Stimulus(){};
 
    void stim(double time,
-             std::vector<double>& dVmDiffusion,
-             std::vector<double>& dVmExternal)
+             std::vector<double>& dVmDiffusion)
    {
       if (time > t0_ && time < tf_)
-         subClassStim(time, dVmDiffusion, dVmExternal);
+         subClassStim(time, dVmDiffusion);
    }
 
    virtual void subClassStim(double time,
-             std::vector<double>& dVmDiffusion,
-             std::vector<double>& dVmExternal) = 0;
+             std::vector<double>& dVmDiffusion) = 0;
 
  private:
    double t0_;

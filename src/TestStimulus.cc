@@ -14,12 +14,10 @@ TestStimulus::TestStimulus(const TestStimulusParms& p)
 }
 
 void TestStimulus::subClassStim(double time,
-                                vector<double>& dVmDiffusion,
-                                vector<double>& dVmExternal)
+                                vector<double>& dVmDiffusion)
 {
    if ( myRank_ != targetRank_ )
       return;
 
-   dVmDiffusion[targetCell_] = 0;
-   dVmExternal[targetCell_] += pulse_.eval(time);
+   dVmDiffusion[targetCell_] = pulse_.eval(time);
 }

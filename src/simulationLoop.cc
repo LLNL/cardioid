@@ -154,8 +154,9 @@ void simulationLoop(Simulate& sim)
 
       // code to limit or set iStimArray goes here.
       profileFastStart(stimulusTimer);
-      for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii) sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion, dVmExternal);
-      for (unsigned ii=0; ii<nLocal; ++ii) iStim[ii] = -(dVmDiffusion[ii] + dVmExternal[ii]);
+      // add stimulus to dVmDiffusion
+      for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii) sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
+      for (unsigned ii=0; ii<nLocal; ++ii) iStim[ii] = -(dVmDiffusion[ii]);
       profileFastStop(stimulusTimer);
 
       
@@ -171,7 +172,7 @@ void simulationLoop(Simulate& sim)
 #else      
       for (unsigned ii=0; ii<nLocal; ++ii)
       {
-         double dVm = dVmReaction[ii] + dVmDiffusion[ii] + dVmExternal[ii] ;
+         double dVm = dVmReaction[ii] + dVmDiffusion[ii];
          sim.VmArray_[ii] += sim.dt_*dVm;
       }
 #endif
@@ -293,9 +294,9 @@ void diffusionLoop(Simulate& sim,
          for (unsigned ii=0; ii<nLocal; ++ii)
             loopData.dVmExternal[ii] = 0;
          profileFastStart(stimulusTimer);
+         // add stimulus to dVmDiffusion
          for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
-            sim.stimulus_[ii]->stim(sim.time_, loopData.dVmDiffusion,
-                                    loopData.dVmExternal);
+            sim.stimulus_[ii]->stim(sim.time_, loopData.dVmDiffusion);
          profileFastStop(stimulusTimer);
       }
       
@@ -320,8 +321,7 @@ void diffusionLoop(Simulate& sim,
 #else
          for (unsigned ii=0; ii<nLocal; ++ii)
          {
-            double dVm = loopData.dVmReaction[ii] + loopData.dVmDiffusion[ii]
-               + loopData.dVmExternal[ii];
+            double dVm = loopData.dVmReaction[ii] + loopData.dVmDiffusion[ii];
             sim.VmArray_[ii] += sim.dt_*dVm;
          }
 #endif         

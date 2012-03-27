@@ -26,8 +26,7 @@ class BoxStimulus : public Stimulus
  public:
    BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy);
    void subClassStim(double time,
-                     std::vector<double>& dVmDiffusion,
-                     std::vector<double>& dVmExternal);
+                     std::vector<double>& dVmDiffusion);
    
  private:
    PeriodicPulse pulse_;

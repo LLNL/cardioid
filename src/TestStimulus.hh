@@ -20,8 +20,7 @@ class TestStimulus : public Stimulus
  public:
    TestStimulus(const TestStimulusParms& p);
    void subClassStim(double time,
-                     std::vector<double>& dVmDiffusion,
-                     std::vector<double>& dVmExternal);
+                     std::vector<double>& dVmDiffusion);
    
  private:
    int targetRank_;
