@@ -365,10 +365,23 @@ void profileDumpStats(ostream& out)
    double aveCount[nTimers]; 
    double nActive[nTimers]; 
    double perfCount[nTimers][nCounters_];
+   // ordinarily I'd declare these variables inside the scope of the
+   // loop.  However, this seems to trigger a compiler bug on BGP.  So,
+   // for now, they stay here.
+   unsigned bufSize = 2*nTimers;
+   long double sendBuf[bufSize];
+   struct DoubleInt
+   {
+      double val;
+      int rank;
+   };
+   
+   DoubleInt minLoc[nTimers];
+   DoubleInt maxLoc[nTimers];
+   double sigma[nTimers];
+   // end of variable that should be in loop scope
    for (int counter=0;counter<nCounters_;counter++)
    {
-      unsigned bufSize = 2*nTimers;
-      long double sendBuf[bufSize];
       
       for (unsigned ii=0; ii<nTimers; ++ii)
       {
@@ -403,15 +416,6 @@ void profileDumpStats(ostream& out)
        
       }
 
-      struct DoubleInt
-      {
-         double val;
-         int rank;
-      };
-   
-      DoubleInt minLoc[nTimers];
-      DoubleInt maxLoc[nTimers];
-      double sigma[nTimers];
       {
          DoubleInt minLocSendBuf[nTimers];
          DoubleInt maxLocSendBuf[nTimers];
