@@ -56,7 +56,7 @@ HEARTSRC= cardioid.cc \
 	 PointListSensor.cc ActivationTimeSensor.cc readSnapshotCellList.cc
 
 SPISRC=	 spi_impl.c
-
+SIMDSRC=  clooper.c
 
 DDCMD_FILES = \
 	codata.h \
@@ -108,6 +108,7 @@ DDCMDSRC = $(filter %.c, $(DDCMD_FILES))
 HEARTOBJS = $(HEARTSRC:%.cc=$(OBJDIR)/%.o)
 HEARTOBJS += $(DDCMDSRC:%.c=$(OBJDIR)/%.o)
 HEARTOBJS += $(SPISRC:%.c=$(OBJDIR)/%.o)
+HEARTOBJS += $(SIMDSRC:%.c=$(OBJDIR)/%.o)
 ifdef TIMEOBJ
   HEARTOBJS += $(TIMEOBJ)
 endif

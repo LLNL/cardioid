@@ -60,7 +60,7 @@ void set_labels(void)
    strcpy(label[PEVT_IU_FXU_ISSUE_PRI_LOSS_CYC], " FXU Issue Priority Loss");
    strcpy(label[PEVT_IU_FXU_ISSUE_COUNT], " FXU Issue Count");
    strcpy(label[PEVT_IU_TOT_ISSUE_COUNT], " Total Issue Count");
-   strcpy(label[PEVT_IU_INSTR_MATCH_COUNT], " Instruction Match Count");
+   //strcpy(label[PEVT_IU_INSTR_MATCH_COUNT], " Instruction Match Count");
    strcpy(label[PEVT_XU_PROC_BUSY], " Processor Busy");
    strcpy(label[PEVT_XU_BR_COMMIT_CORE], " Branch Commit");
    strcpy(label[PEVT_XU_BR_MISPRED_COMMIT_CORE], " Branch Mispredict Commit");
@@ -86,7 +86,7 @@ void set_labels(void)
    strcpy(label[PEVT_XU_EXT_INT_PEND], " External Interrupt Pending");
    strcpy(label[PEVT_XU_CRIT_EXT_INT_PEND], " Critical External Interrupt Pending");
    strcpy(label[PEVT_XU_PERF_MON_INT_PEND], " Performance Monitor Interrupt Pending");
-   strcpy(label[PEVT_XU_OPCODE_MATCH], " Opcode Match");
+   //strcpy(label[PEVT_XU_OPCODE_MATCH], " Opcode Match");
    strcpy(label[PEVT_XU_RUN_INSTR], " Run Instructions");
    strcpy(label[PEVT_XU_INTS_TAKEN], " Interrupts Taken");
    strcpy(label[PEVT_XU_EXT_INT_TAKEN], " External Interrupt Taken");

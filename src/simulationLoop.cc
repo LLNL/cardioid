@@ -24,6 +24,9 @@
 #include "object_cc.hh"
 #include "readSnapshotCellList.hh"
 
+#ifdef BGQ
+extern "C" void integrateLoop(const int size, const double dt, double* dVmR, double* dVmD, double* Vm);
+#endif
 
 using namespace std;
 using namespace PerformanceTimers;
@@ -162,11 +165,16 @@ void simulationLoop(Simulate& sim)
       profileFastStop(reactionTimer);
 
       profileFastStart(integratorTimer);
+#ifdef BGQ
+      // BG/Q C++ compiler can't SIMDize, use C compiler
+      integrateLoop(nLocal,sim.dt_,(double*)&dVmReaction[0],(double*)&dVmDiffusion[0],(double*)&sim.VmArray_[0]);
+#else      
       for (unsigned ii=0; ii<nLocal; ++ii)
       {
          double dVm = dVmReaction[ii] + dVmDiffusion[ii] + dVmExternal[ii] ;
          sim.VmArray_[ii] += sim.dt_*dVm;
       }
+#endif
       sim.time_ += sim.dt_;
       ++sim.loop_;
       profileFastStop(integratorTimer);
@@ -306,12 +314,17 @@ void diffusionLoop(Simulate& sim,
       {
          loopData.dVmReactionCpy = loopData.dVmReaction; 
          profileFastStart(integratorTimer);
+#ifdef BGQ
+         // BG/Q C++ compiler can't SIMDize, use C compiler
+         integrateLoop(nLocal,sim.dt_,(double*)&loopData.dVmReaction[0],(double*)&loopData.dVmDiffusion[0],(double*)&sim.VmArray_[0]);
+#else
          for (unsigned ii=0; ii<nLocal; ++ii)
          {
             double dVm = loopData.dVmReaction[ii] + loopData.dVmDiffusion[ii]
                + loopData.dVmExternal[ii];
             sim.VmArray_[ii] += sim.dt_*dVm;
          }
+#endif         
          sim.time_ += sim.dt_;
          ++sim.loop_;
          profileFastStop(integratorTimer);

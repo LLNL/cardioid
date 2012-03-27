@@ -9,7 +9,7 @@ DFLAGS = -DWITH_PIO -DWITH_MPI -DBGQ \
 
 INCLUDE = -I/usr/gapps/emhm/include
 OPTFLAGS = -g -O3
-CFLAGS_BASE =   -qlist -qsmp=omp $(INCLUDE) $(DFLAGS)
+CFLAGS_BASE =   -qlist -qsmp=omp -qhot=novector -qsimd=auto $(INCLUDE) $(DFLAGS)
 CXXFLAGS_BASE = -qlist -qsmp=omp $(INCLUDE) $(DFLAGS)
 LDFLAGS_BASE = -lc -lnss_files -lnss_dns -lresolv
 

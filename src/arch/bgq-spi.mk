@@ -1,5 +1,5 @@
-#BGQ_SDK_PATH = /bgsys/drivers/ppcfloor
-BGQ_SDK_PATH=/bgsys/drivers/DRV2012_0229_1625/ppc64-rhel60
+BGQ_SDK_PATH = /bgsys/drivers/ppcfloor
+#BGQ_SDK_PATH=/bgsys/drivers/DRV2012_0229_1625/ppc64-rhel60
 #### SPI ####
 BGSYS_INC := -I$(BGQ_SDK_PATH)/comm/sys/include                 \
         -I$(BGQ_SDK_PATH) -I$(BGQ_SDK_PATH)/spi/include                 \
@@ -20,7 +20,7 @@ LDFLAGS_BASE = -lc -lnss_files -lnss_dns -lresolv -L/bgsys/drivers/ppcfloor/bgpm
 
 INCLUDE = -I/usr/gapps/emhm/include -I$(SPI_PATH)/include
 OPTFLAGS = -g -O3
-CFLAGS_BASE =   -qsmp=omp $(INCLUDE) $(DFLAGS) $(BGSYS_INC) $(SPI_INC)
+CFLAGS_BASE =   -qsmp=omp -qhot=novector -qsimd=auto $(INCLUDE) $(DFLAGS) $(BGSYS_INC) $(SPI_INC)
 CXXFLAGS_BASE = -qsmp=omp $(INCLUDE) $(DFLAGS) $(BGSYS_INC) $(SPI_INC)
 
 HAVE_GSL = 1
