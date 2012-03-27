@@ -61,7 +61,7 @@ void simulationProlog(Simulate& sim)
 }
 
 
-void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVmD,  const vector<double>& dVmE)
+void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVmD)
 {
    int diffusionID = sim.diffusionGroup_->threadID(); 
    if (diffusionID != 0) return; 
@@ -75,7 +75,7 @@ void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVm
    profileFastStart(sensorTimer);
    for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
    {
-       if (loop % sim.sensor_[ii]->evalRate() == 0) sim.sensor_[ii]->eval(sim.time_, loop, sim.VmArray_, dVmR, dVmD, dVmE);
+       if (loop % sim.sensor_[ii]->evalRate() == 0) sim.sensor_[ii]->eval(sim.time_, loop, sim.VmArray_, dVmR, dVmD);
    }
    profileFastStop(sensorTimer);
 
@@ -83,13 +83,13 @@ void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVm
       
    for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
    {
-      if (loop % sim.sensor_[ii]->printRate() == 0) sim.sensor_[ii]->print(sim.time_, loop, sim.VmArray_, dVmR, dVmD, dVmE);
+      if (loop % sim.sensor_[ii]->printRate() == 0) sim.sensor_[ii]->print(sim.time_, loop, sim.VmArray_, dVmR, dVmD);
    }
       
    if ( (loop % sim.printRate_ == 0) && myRank == 0)
    {
-      if (firstCall) printf("    Loop     Time         Vm(t)        dVm_r(t-h)      dVm_d(t-h)       dVm_e(t-h)\n");
-      printf("%8d %8.3f %15.8f %15.8f %15.8f %15.8f\n",loop,sim.time_,sim.VmArray_[0],dVmR[0],dVmD[0],dVmE[0]); 
+      if (firstCall) printf("    Loop     Time         Vm(t)        dVm_r(t-h)      dVm_d(t-h)\n");
+      printf("%8d %8.3f %15.8f %15.8f %15.8f\n",loop,sim.time_,sim.VmArray_[0],dVmR[0],dVmD[0]); 
    }
    if (!firstCall) 
    { 
@@ -114,7 +114,6 @@ void simulationLoop(Simulate& sim)
 
    vector<double> dVmDiffusion(sim.anatomy_.nLocal(), 0.0);
    vector<double> dVmReaction(sim.anatomy_.nLocal(), 0.0);
-   vector<double> dVmExternal(sim.anatomy_.nLocal(), 0.0);
    vector<double> iStim(sim.anatomy_.nLocal(), 0.0);
    simulationProlog(sim);
 #ifdef SPI   
@@ -143,9 +142,6 @@ void simulationLoop(Simulate& sim)
       voltageExchange.execute(sim.VmArray_, nLocal);
       voltageExchange.complete();
       profileFastStop(haloTimer);
-
-      for (unsigned ii=0; ii<nLocal; ++ii) dVmExternal[ii] = 0;
-    
 
       // DIFFUSION
       profileFastStart(diffusionTimer);
@@ -180,7 +176,7 @@ void simulationLoop(Simulate& sim)
       ++sim.loop_;
       profileFastStop(integratorTimer);
       if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0) writeCheckpoint(sim, MPI_COMM_WORLD);
-      loopIO(sim,dVmReaction,dVmDiffusion,dVmExternal);
+      loopIO(sim,dVmReaction,dVmDiffusion);
 
    }
 }
@@ -210,7 +206,6 @@ struct SimLoopData
       diffusionBarrier= L2_BarrierWithSync_InitShared();
       reactionWaitOnNonGateBarrier= L2_BarrierWithSync_InitShared();
       int nLocal = sim.anatomy_.nLocal();
-      dVmExternal.resize(nLocal, 0.0);
       dVmDiffusion.resize(nLocal, 0.0);
       dVmReactionCpy.resize(nLocal, 0.0);
       dVmReaction.resize(nLocal, 0.0); 
@@ -230,7 +225,6 @@ struct SimLoopData
    L2_Barrier_t* reactionWaitOnNonGateBarrier;
    
    vector<double> dVmReaction; 
-   vector<double> dVmExternal;
    vector<double> dVmDiffusion;
    vector<double> dVmReactionCpy;
    #ifdef SPI   
@@ -291,8 +285,6 @@ void diffusionLoop(Simulate& sim,
                                  sim.diffusionGroup_->nThreads());
       if (tid == 0)
       {
-         for (unsigned ii=0; ii<nLocal; ++ii)
-            loopData.dVmExternal[ii] = 0;
          profileFastStart(stimulusTimer);
          // add stimulus to dVmDiffusion
          for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
@@ -343,8 +335,7 @@ void diffusionLoop(Simulate& sim,
       {
          if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
             writeCheckpoint(sim, MPI_COMM_WORLD);
-         loopIO(sim, loopData.dVmReactionCpy, loopData.dVmDiffusion,
-                loopData.dVmExternal);
+         loopIO(sim, loopData.dVmReactionCpy, loopData.dVmDiffusion);
       }
       profileFastStop(diffusionLoopTimer);
    }

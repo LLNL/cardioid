@@ -76,7 +76,7 @@ PointListSensor::PointListSensor(const SensorParms& sp, const PointListSensorPar
       fout_loc_[ii]->open(outfiles_loc[ii].c_str(),ofstream::out);
       fout_loc_[ii]->setf(ios::scientific,ios::floatfield);
       if (printDerivs_)
-        (*fout_loc_[ii]) << "#    time   V_m  dVm_r  dVm_d  dVm_e   for grid point " << localCells_[ii] << endl;
+        (*fout_loc_[ii]) << "#    time   V_m  dVm_r  dVm_d   for grid point " << localCells_[ii] << endl;
       else
         (*fout_loc_[ii]) << "#    time   V_m   for grid point " << localCells_[ii] << endl;
     }
@@ -94,10 +94,10 @@ PointListSensor::~PointListSensor()
 
 void PointListSensor::print(double time, int /*loop*/,
                             const vector<double>& Vm, const vector<double>& dVm_r,
-                            const vector<double>& dVm_d, const vector<double>& dVm_e)
+                            const vector<double>& dVm_d)
 {
    if (printDerivs_)
-      printDerivs(time, Vm, dVm_r, dVm_d, dVm_e);
+      printDerivs(time, Vm, dVm_r, dVm_d);
    else
       print(time, Vm);
 }
@@ -115,14 +115,14 @@ void PointListSensor::print(double time, const vector<double>& Vm)
   }
 }
 
-void PointListSensor::printDerivs(double time, const vector<double>& Vm, const vector<double>& dVm_r, const vector<double>& dVm_d, const vector<double>& dVm_e)
+void PointListSensor::printDerivs(double time, const vector<double>& Vm, const vector<double>& dVm_r, const vector<double>& dVm_d)
 {
   if (time >= startTime_ && (endTime_ <= 0.0 || time <= endTime_))
   {
     for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
     {
       int ind = sensorind_[ii];
-      (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << Vm[ind] << "   " << dVm_r[ind] << "   " << dVm_d[ind] << "   " << dVm_e[ind] << endl;
+      (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << Vm[ind] << "   " << dVm_r[ind] << "   " << dVm_d[ind] << endl;
     }
   }
 }

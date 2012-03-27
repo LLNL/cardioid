@@ -24,10 +24,10 @@ class ActivationTimeSensor : public Sensor
 
    void print(double time, int loop,
               const std::vector<double>& Vm, const std::vector<double>& dVm_r,
-              const std::vector<double>& dVm_d, const std::vector<double>& dVm_e);
+              const std::vector<double>& dVm_d);
    void eval(double time, int loop,
              const std::vector<double>& Vm, const std::vector<double>& dVm_r,
-             const std::vector<double>& dVm_d, const std::vector<double>& dVm_e);
+             const std::vector<double>& dVm_d);
    
 
  private:

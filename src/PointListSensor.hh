@@ -27,16 +27,16 @@ class PointListSensor : public Sensor
    PointListSensor(const SensorParms& sp, const PointListSensorParms& p, const Anatomy& anatomy);
    ~PointListSensor();
 
-   void print(double time, int loop, const vector<double>& Vm, const vector<double>& dVm_r, const vector<double>& dVm_d, const vector<double>& dVm_e);
+   void print(double time, int loop, const vector<double>& Vm, const vector<double>& dVm_r, const vector<double>& dVm_d);
    void eval(double time, int loop,
              const std::vector<double>& Vm, const std::vector<double>& dVm_r,
-             const std::vector<double>& dVm_d, const std::vector<double>& dVm_e)
+             const std::vector<double>& dVm_d)
    {} // no eval function.
     
  private:
    void print(double time, const vector<double>& Vm);
    void printDerivs(double time, const vector<double>& Vm, const vector<double>& dVm_r,
-                    const vector<double>& dVm_d, const vector<double>& dVm_e);
+                    const vector<double>& dVm_d);
 
    vector<Long64> localCells_;  // grid gids owned by this task
    vector<unsigned> sensorind_;      // corresponding local array index 

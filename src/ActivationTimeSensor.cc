@@ -33,7 +33,7 @@ ActivationTimeSensor::ActivationTimeSensor(const SensorParms& sp,
 
 void ActivationTimeSensor::print(double time, int loop,
                                  const vector<double>& Vm, const vector<double>&,
-                                 const vector<double>&,    const vector<double>&)
+                                 const vector<double>&)
 {
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -99,7 +99,7 @@ void ActivationTimeSensor::print(double time, int loop,
 
 void ActivationTimeSensor::eval(double time, int loop,
                                 const vector<double>& Vm, const vector<double>&,
-                                const vector<double>&,    const vector<double>&)
+                                const vector<double>&)
 {
    for (unsigned ii=0; ii<nLocal_; ++ii)
    {
