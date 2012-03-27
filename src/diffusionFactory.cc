@@ -8,6 +8,8 @@
 #include "Saleheen98Diffusion.hh"
 #include "SaleheenDev.hh"
 #include "FGRDiffusion.hh"
+#include "FGRDiffusionOMP.hh"
+#include "FGRDiffusionThreads.hh"
 #include "NullDiffusion.hh"
 
 class Anatomy;
@@ -19,14 +21,16 @@ using namespace std;
 
 namespace
 {
-   Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy, const CoreGroup& threadInfo);
+   Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy,
+                                  const CoreGroup& threadInfo, int simLoopType);
    Diffusion* saleheen98DiffusionFactory(OBJECT* obj, const Anatomy& anatomy);
    Diffusion* saleheenDevFactory(OBJECT* obj, const Anatomy& anatomy);
    void checkForObsoleteKeywords(OBJECT* obj);
 }
 
 
-Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy, const CoreGroup& threadInfo)
+Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
+                            const CoreGroup& threadInfo, int simLoopType)
 {
    OBJECT* obj = objectFind(name, "DIFFUSION");
 
@@ -37,7 +41,7 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy, const Co
    if (method.empty())
       assert(1==0);
    else if (method == "FGR")
-      return fgrDiffusionFactory(obj, anatomy, threadInfo);
+      return fgrDiffusionFactory(obj, anatomy, threadInfo, simLoopType);
    else if (method == "Saleheen98")
       return saleheen98DiffusionFactory(obj, anatomy);
    else if (method == "SaleheenDev")
@@ -51,12 +55,26 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy, const Co
 
 namespace
 {
-   Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy, const CoreGroup& threadInfo)
+   Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy,
+                                  const CoreGroup& threadInfo, int simLoopType)
    {
-      FGRDiffusionParms p;
+      FGRUtils::FGRDiffusionParms p;
       objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0", "l^3/capacitance");
+      string defaultVariant = "omp";
+      if (simLoopType == 1) // parallelDiffusionReaction
+         defaultVariant = "simd";
+      string variant;
+      objectGet(obj, "variant", variant, defaultVariant);
+      if (variant == "omp")
+         return new FGRDiffusionOMP(p, anatomy);
+      if (variant == "threads")
+         return new FGRDiffusionThreads(p, anatomy, threadInfo);
+      if (variant == "simd")
+         return new FGRDiffusion(p, anatomy, threadInfo);
 
-      return new FGRDiffusion(p, anatomy, threadInfo);
+      // unreachable.  Should have matched a clause above.
+      assert(false);
+      return 0; 
    }
 }
 

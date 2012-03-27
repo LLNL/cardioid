@@ -9,8 +9,6 @@ class Diffusion
    virtual ~Diffusion(){};
    virtual void
    calc(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf, int nLocal) = 0;
-   virtual void
-   calc_simd(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf, int nLocal) = 0;
 };
 
 /** Notes:

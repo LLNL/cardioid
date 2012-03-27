@@ -1,0 +1,30 @@
+#ifndef FGR_UTILS_HH
+#define FGR_UTILS_HH
+
+namespace FGRUtils
+{
+   enum NodeLocation
+   { ZZZ, MZZ, ZMZ, PZZ, ZPZ, ZZM, ZZP, MMZ, PMZ, PPZ,
+     MPZ, MZM, ZMM, PZM, ZPM, MZP, ZMP, PZP, ZPP
+   };
+
+   struct FGRDiffusionParms
+   {
+      double diffusionScale_;
+   };
+   
+   struct DiffWeight
+   {
+      double A[19];
+   };
+   
+   void setGradientWeights(double* grad, int* tissue,
+                           NodeLocation n3, NodeLocation n2, NodeLocation n1,
+                           NodeLocation n4, NodeLocation n5, NodeLocation n0);
+   
+   void f2(unsigned iFace, int tissue[19], double gradPhi[3][19]);
+   
+   inline int isTissue(int cellType){return cellType > 0;}
+};
+
+#endif

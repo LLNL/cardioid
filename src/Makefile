@@ -36,6 +36,9 @@ HEARTSRC= cardioid.cc \
 	 FibreConductivity.cc JHUConductivity.cc\
 	 DiffusionUtils.cc Saleheen98Diffusion.cc SaleheenDev.cc \
 	 FGRDiffusion.cc \
+	 FGRDiffusionOMP.cc \
+	 FGRDiffusionThreads.cc \
+	 FGRUtils.cc \
 	 Reaction.cc \
 	 ReactionFHN.cc \
 	 TT04_CellML_Reaction.cc \

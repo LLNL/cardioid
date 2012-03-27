@@ -1,5 +1,5 @@
-#ifndef FGRDIFFUSION_HH
-#define FGRDIFFUSION_HH
+#ifndef FGRDIFFUSION_THREADS_HH
+#define FGRDIFFUSION_THREADS_HH
 
 #include "Diffusion.hh"
 #include "LocalGrid.hh"
@@ -14,10 +14,10 @@ class CoreGroup;
 class L2_Barrier_t;
 class L2_BarrierHandle_t;
 
-class FGRDiffusion : public Diffusion
+class FGRDiffusionThreads : public Diffusion
 {
  public:
-   FGRDiffusion(
+   FGRDiffusionThreads(
       const FGRUtils::FGRDiffusionParms& parms,
       const Anatomy& anatomy,
       const CoreGroup& threadInfo);
@@ -25,8 +25,6 @@ class FGRDiffusion : public Diffusion
    void calc(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf, int nLocal);
 
  private:
-   void FGRDiff_simd(const uint32_t start,const int32_t chunk_size, Array3d<double>* VmTmp, double* out);
-   void FGRDiff_simd_thread(const uint32_t start,const int32_t chunk_size, Array3d<double>* VmTmp, double* out);
 
    void buildTupleArray(const Anatomy& anatomy);
    void buildBlockIndex(const Anatomy& anatomy);
@@ -47,13 +45,11 @@ class FGRDiffusion : public Diffusion
    L2_Barrier_t*                   fgrBarrier_;
    std::vector<L2_BarrierHandle_t> barrierHandle_;
    std::vector<int>                threadOffset_;
-   std::vector<int>                threadOffsetSimd_;
    std::vector<unsigned>           blockIndex_; // for local and remote cells
    std::vector<Tuple>              localTuple_; // only for local cells
    Array3d<FGRUtils::DiffWeight>   weight_;
    Array3d<double>                 VmBlock_;
-   Array3d<double>                 diffCoefT2_;
-   Array3d<double>                 tmp_dVm;
+
    
    
 };

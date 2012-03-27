@@ -130,7 +130,7 @@ void simulationLoop(Simulate& sim)
    {
       int nLocal = sim.anatomy_.nLocal();
     
-#ifdef TIMING
+#if defined(SPI) && defined(TIMING)
       profileFastStart(imbalanceTimer);
       voltageExchange.barrier();
       profileFastStop(imbalanceTimer);
@@ -147,7 +147,6 @@ void simulationLoop(Simulate& sim)
       // DIFFUSION
       profileFastStart(diffusionTimer);
       sim.diffusion_->calc(sim.VmArray_, dVmDiffusion, voltageExchange.get_recv_buf_(), nLocal);
-      //sim.diffusion_->calc_simd(sim.VmArray_, dVmDiffusion, voltageExchange.get_recv_buf_(), nLocal);
       profileFastStop(diffusionTimer);
 
       // code to limit or set iStimArray goes here.
@@ -249,7 +248,7 @@ void diffusionLoop(Simulate& sim,
     
       if (tid == 0)
       {
-#ifdef TIMING
+#if defined(SPI) && defined(TIMING)
          profileFastStart(diffusionImbalanceTimer);
          loopData.voltageExchange.barrier();
          profileFastStop(diffusionImbalanceTimer);
@@ -275,7 +274,7 @@ void diffusionLoop(Simulate& sim,
       profileFastStart(diffusionTimer);
       //sim.diffusion_->calc(sim.VmArray_, loopData.dVmDiffusion,
       //                     loopData.voltageExchange.get_recv_buf_(), nLocal);
-      sim.diffusion_->calc_simd(sim.VmArray_, loopData.dVmDiffusion,
+      sim.diffusion_->calc(sim.VmArray_, loopData.dVmDiffusion,
                            loopData.voltageExchange.get_recv_buf_(), nLocal);
       profileFastStop(diffusionTimer);
       
