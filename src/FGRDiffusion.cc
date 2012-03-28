@@ -20,7 +20,7 @@ using namespace FGRUtils;
 FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
                            const Anatomy& anatomy,
                            const CoreGroup& threadInfo)
-: localGrid_(DiffusionUtils::findBoundingBox(anatomy)),
+: localGrid_(DiffusionUtils::findBoundingBox_simd(anatomy)),
   threadInfo_(threadInfo),
   diffusionScale_(parms.diffusionScale_)
 {

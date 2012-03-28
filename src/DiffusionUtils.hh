@@ -7,6 +7,7 @@ class Anatomy;
 namespace DiffusionUtils
 {
    LocalGrid findBoundingBox(const Anatomy& anatomy);
+   LocalGrid findBoundingBox_simd(const Anatomy& anatomy);
 }
 
 #endif
