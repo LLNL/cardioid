@@ -65,12 +65,11 @@ namespace PerformanceTimers
    TimerHandle haloTimerExecute;
    TimerHandle haloTimerComplete;
 #ifdef TIMING
-   TimerHandle DiffCalcVUpdateTimer;
-   TimerHandle DiffCalcBarrierTimer;
-   TimerHandle DiffCalcCellLoopTimer;
-   TimerHandle DiffCalcCellLoopVmTmpTimer;
-   TimerHandle DiffCalcCellLoopSIMDThreadTimer;
-   TimerHandle DiffCalcCellLoopdVmLoopTimer;
+   TimerHandle FGR_Array2MatrixTimer;
+   TimerHandle FGR_BarrierTimer;
+   TimerHandle FGR_AlignCopyTimer;
+   TimerHandle FGR_StencilTimer;
+   TimerHandle FGR_Matrix2ArrayTimer;
    TimerHandle haloMove2BufTimer;
 #endif   
    
@@ -108,12 +107,11 @@ void  profileInit()
    haloTimerExecute = profileGetHandle("HaloExchangeExecute");
    haloTimerComplete = profileGetHandle("HaloExchangeComplete");
 #ifdef TIMING
-   DiffCalcVUpdateTimer = profileGetHandle("DiffCalcVoltageUpdate");
-   DiffCalcBarrierTimer = profileGetHandle("DiffCalcBarrier");
-   DiffCalcCellLoopTimer = profileGetHandle("DiffCalcCellLoop");
-   DiffCalcCellLoopVmTmpTimer = profileGetHandle("DiffCalcCellLoopVmTmp");
-   DiffCalcCellLoopSIMDThreadTimer = profileGetHandle("DiffCalcCellLoopSIMDThread");
-   DiffCalcCellLoopdVmLoopTimer = profileGetHandle("DiffCalcCellLoopdVmLoop");
+   FGR_Array2MatrixTimer = profileGetHandle("FGR_Array2Matrix");
+   FGR_BarrierTimer = profileGetHandle("FGR_Barrier");
+   FGR_AlignCopyTimer = profileGetHandle("FGR_AlignCopy");
+   FGR_StencilTimer = profileGetHandle("FGR_Stencil");
+   FGR_Matrix2ArrayTimer = profileGetHandle("FGR_Matrix2Array");
    haloMove2BufTimer = profileGetHandle("HaloExchMove2Buf");
 #endif   
    machineSpecficInit(); 

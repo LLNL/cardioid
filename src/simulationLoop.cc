@@ -275,8 +275,6 @@ void diffusionLoop(Simulate& sim,
       
       // DIFFUSION
       profileFastStart(diffusionTimer);
-      //sim.diffusion_->calc(sim.VmArray_, loopData.dVmDiffusion,
-      //                     loopData.voltageExchange.get_recv_buf_(), nLocal);
       sim.diffusion_->calc(sim.VmArray_, loopData.dVmDiffusion,
                            loopData.voltageExchange.get_recv_buf_(), nLocal);
       profileFastStop(diffusionTimer);

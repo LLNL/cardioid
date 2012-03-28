@@ -74,17 +74,21 @@ int main(int argc, char** argv)
      printBanner();
    parseCommandLineAndReadInputFile(argc, argv, MPI_COMM_WORLD);
    
+   timestampBarrier("Starting initializeSimulate", MPI_COMM_WORLD);
    Simulate sim;
    initializeSimulate("simulate", sim);
+   timestampBarrier("Finished initializeSimulate", MPI_COMM_WORLD);
 
    //ewd:  turn on mpiP
    MPI_Barrier(MPI_COMM_WORLD);
    MPI_Pcontrol(1);
 
+   timestampBarrier("Starting Simulation Loop", MPI_COMM_WORLD);
    profileStart("Loop");
    if ( !sim.parallelDiffusionReaction_) simulationLoop(sim);  
    else  simulationLoopParallelDiffusionReaction(sim);
    profileStop("Loop");
+   timestampBarrier("Finished Simulation Loop", MPI_COMM_WORLD);
    
    //ewd:  turn off mpiP
    MPI_Pcontrol(0);

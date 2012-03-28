@@ -11,6 +11,7 @@
 #include "getRemoteCells.hh"
 #include "Anatomy.hh"
 #include "Threading.hh"
+#include "mpiUtils.h"
 
 using namespace std;
 
@@ -37,6 +38,7 @@ void initializeSimulate(const string& name, Simulate& sim)
       sim.reactionGroup_  = sim.tinfo_.mkGroup(-1); 
    }
    
+   timestampBarrier("initializing anatomy", MPI_COMM_WORLD);
    string nameTmp;
    objectGet(obj, "anatomy", nameTmp, "anatomy");
    initializeAnatomy(sim.anatomy_, nameTmp, MPI_COMM_WORLD);
@@ -51,23 +53,28 @@ void initializeSimulate(const string& name, Simulate& sim)
       if (name[name.size()-1] != '#')
          name += "#";
    }
+   timestampBarrier("assigning cells to tasks", MPI_COMM_WORLD);
    objectGet(obj, "decomposition", nameTmp, "decomposition");
    assignCellsToTasks(sim, nameTmp, MPI_COMM_WORLD);
    
    getRemoteCells(sim, nameTmp, MPI_COMM_WORLD);
 
+   timestampBarrier("building diffusion object", MPI_COMM_WORLD);
    objectGet(obj, "diffusion", nameTmp, "diffusion");
    sim.diffusion_ = diffusionFactory(nameTmp, sim.anatomy_, *sim.diffusionGroup_,
                                      sim.parallelDiffusionReaction_);
    
+   timestampBarrier("building reaction object", MPI_COMM_WORLD);
    objectGet(obj, "reaction", nameTmp, "reaction");
    sim.reaction_ = reactionFactory(nameTmp, sim.anatomy_,sim.reactionGroup_);
 
+   timestampBarrier("building stimulus object", MPI_COMM_WORLD);
    vector<string> names;
    objectGet(obj, "stimulus", names);
    for (unsigned ii=0; ii<names.size(); ++ii)
       sim.stimulus_.push_back(stimulusFactory(names[ii], sim.anatomy_));
 
+   timestampBarrier("building sensor object", MPI_COMM_WORLD);
    names.clear();
    objectGet(obj, "sensor", names);
    for (unsigned ii=0; ii<names.size(); ++ii)

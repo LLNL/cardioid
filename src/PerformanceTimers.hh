@@ -29,12 +29,11 @@ namespace PerformanceTimers
    extern TimerHandle haloTimerExecute;
    extern TimerHandle haloTimerComplete;
 #ifdef TIMING
-   extern TimerHandle DiffCalcVUpdateTimer;
-   extern TimerHandle DiffCalcBarrierTimer;
-   extern TimerHandle DiffCalcCellLoopTimer;
-   extern TimerHandle DiffCalcCellLoopVmTmpTimer;
-   extern TimerHandle DiffCalcCellLoopSIMDThreadTimer;
-   extern TimerHandle DiffCalcCellLoopdVmLoopTimer;
+   extern TimerHandle FGR_Array2MatrixTimer;
+   extern TimerHandle FGR_BarrierTimer;
+   extern TimerHandle FGR_AlignCopyTimer;
+   extern TimerHandle FGR_StencilTimer;
+   extern TimerHandle FGR_Matrix2ArrayTimer;
    extern TimerHandle haloMove2BufTimer;
 #endif    
 };
