@@ -10,7 +10,7 @@ simulate SIMULATE
    dt = 10 us;
    time = 0;            // msec
    printRate = 100;      // in timesteps
-   snapshotRate = 200000; // in timesteps
+   snapshotRate = 100000; // in timesteps
    parallelDiffusionReaction = 1;
 }
 
