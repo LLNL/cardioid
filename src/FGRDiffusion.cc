@@ -434,7 +434,7 @@ void FGRDiffusion::reorder_Coeff()
 // simdiazed version
 // 'start' cannot be in the middle. 'start' must point to (n,0,0). 
 void
-FGRDiffusion::FGRDiff_simd_thread(const uint32_t ex,const int32_t bx, Array3d<double>* VmTmp, double* out)
+FGRDiffusion::FGRDiff_simd_thread(const uint32_t ex,const int32_t bx, Array3d<double>* VmTmp, double* out0)
 {
   int ii;
 
@@ -443,6 +443,8 @@ FGRDiffusion::FGRDiff_simd_thread(const uint32_t ex,const int32_t bx, Array3d<do
   const unsigned Nz2 = VmTmp->nz();
 
   double* VmM = VmTmp->cBlock();
+  double* out;
+  double* diffC = diffCoefT2_.cBlock();
 
   int xm1ym1z_ = ((-1) *Ny2 + (-1)) * Nz2;
   int xm1yz_ =   ((-1) *Ny2 + ( 0)) * Nz2;
@@ -452,6 +454,18 @@ FGRDiffusion::FGRDiff_simd_thread(const uint32_t ex,const int32_t bx, Array3d<do
   int xp1ym1z_ = ((+1) *Ny2 + (-1)) * Nz2;
   int xp1yz_ =   ((+1) *Ny2 + ( 0)) * Nz2;
   int xp1yp1z_ = ((+1) *Ny2 + (+1)) * Nz2;
+
+  vector4double B0,Sum1,B2,C0,C1,C2,Sum0,Sum2,Sum;
+  vector4double my_x_y_z    ;
+  vector4double my_xp1_y_z  ;
+  vector4double my_x_yp1_z  ;
+  vector4double my_xm1_y_z  ;
+  vector4double my_x_ym1_z  ;
+  vector4double my_xp1_yp1_z;
+  vector4double my_xm1_yp1_z;
+  vector4double my_xm1_ym1_z;
+  vector4double my_xp1_ym1_z;
+  vector4double my_zero_vec = vec_splats(0.0);
 
   for(int xx=bx;xx<ex;xx++)
   {
@@ -469,34 +483,21 @@ FGRDiffusion::FGRDiff_simd_thread(const uint32_t ex,const int32_t bx, Array3d<do
     double* phi_xp1_y_z   = VmM + start-4 + xp1yz_;
     double* phi_xp1_yp1_z = VmM + start-4 + xp1yp1z_;
  
-    out += start;
+    out = out0 + start;
  
-    double *simd_diff_ = diffCoefT2_.cBlock() + (start-4)*19;  //z of start must be zero
+    double *simd_diff_ = diffC + (start-4)*19; 
  
-    assert((uint64_t)phi_xm1_ym1_z%(4*sizeof(double)) == 0);
-    assert((uint64_t)phi_xm1_y_z  %(4*sizeof(double)) == 0);
-    assert((uint64_t)phi_xm1_yp1_z%(4*sizeof(double)) == 0);
-    assert((uint64_t)phi_x_ym1_z  %(4*sizeof(double)) == 0);
-    assert((uint64_t)phi_x_y_z    %(4*sizeof(double)) == 0);
-    assert((uint64_t)phi_x_yp1_z  %(4*sizeof(double)) == 0);
-    assert((uint64_t)phi_xp1_ym1_z%(4*sizeof(double)) == 0);
-    assert((uint64_t)phi_xp1_y_z  %(4*sizeof(double)) == 0);
-    assert((uint64_t)phi_xp1_yp1_z%(4*sizeof(double)) == 0);
-    assert((uint64_t)out          %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xm1_ym1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xm1_y_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xm1_yp1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_x_ym1_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_x_y_z    %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_x_yp1_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xp1_ym1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xp1_y_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xp1_yp1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)out          %(4*sizeof(double)) == 0);
  
-    //initial
-    vector4double B0,Sum1,B2,C0,C1,C2,Sum0,Sum2,Sum;
- 
-    vector4double my_x_y_z    ;
-    vector4double my_xp1_y_z  ;
-    vector4double my_x_yp1_z  ;
-    vector4double my_xm1_y_z  ;
-    vector4double my_x_ym1_z  ;
-    vector4double my_xp1_yp1_z;
-    vector4double my_xm1_yp1_z;
-    vector4double my_xm1_ym1_z;
-    vector4double my_xp1_ym1_z;
-    vector4double my_zero_vec = vec_splats(0.0);
   
     #define load_my_vectors  \
         my_x_y_z      =vec_ld(0,      phi_x_y_z   );\
