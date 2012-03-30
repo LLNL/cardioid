@@ -77,18 +77,18 @@ void FGRDiffusionOMP::calc(const vector<double>& Vm, vector<double>& dVm, double
 {
    
 #ifdef TIMING
-   profileFastStart(FGR_Array2MatrixTimer);
+   profileStart(FGR_Array2MatrixTimer);
 #endif
    updateVoltageBlock(Vm, VmRemote, nLocal);
 #ifdef TIMING
-   profileFastStop(FGR_Array2MatrixTimer);
+   profileStop(FGR_Array2MatrixTimer);
 #endif
 
    int nCells = dVm.size();
 #pragma omp parallel
    {// parallel section to contain timer start/stop
    #ifdef TIMING
-      profileFastStart(FGR_StencilTimer);
+      profileStart(FGR_StencilTimer);
    #endif
       # pragma omp for nowait
       for (int iCell=0; iCell<nCells; ++iCell)
@@ -104,7 +104,7 @@ void FGRDiffusionOMP::calc(const vector<double>& Vm, vector<double>& dVm, double
          dVm[iCell] = tmp*diffusionScale_;
       }
    #ifdef TIMING
-      profileFastStop(FGR_StencilTimer);
+      profileStop(FGR_StencilTimer);
    #endif
    } // parallel section
 }

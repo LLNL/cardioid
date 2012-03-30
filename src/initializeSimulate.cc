@@ -12,6 +12,7 @@
 #include "Anatomy.hh"
 #include "Threading.hh"
 #include "mpiUtils.h"
+#include "PerformanceTimers.hh"
 
 using namespace std;
 
@@ -29,6 +30,12 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "snapshotRate", sim.snapshotRate_, "100");
    objectGet(obj, "checkpointRate", sim.checkpointRate_, "-1");
    objectGet(obj, "parallelDiffusionReaction", sim.parallelDiffusionReaction_, "0");
+   unsigned profileAllCounters_;
+   objectGet(obj, "profileAllCounters", profileAllCounters_, "0");
+   if (profileAllCounters_ == 1)
+      profileSetVerbosity(true);
+   else 
+      profileSetVerbosity(false);
    unsigned nDiffusionCores;
    objectGet(obj, "nDiffusionCores", nDiffusionCores, "1");
    // Need the diffusionGroup to be initialized for loopIO in simulationLoop.cc

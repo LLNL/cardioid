@@ -48,13 +48,13 @@ class HaloExchange
    void move2Buf(std::vector<T>& data)
    {
 #ifdef TIMING
-      profileFastStart(PerformanceTimers::haloMove2BufTimer);
+      profileStart(PerformanceTimers::haloMove2BufTimer);
 #endif 
       // fill send buffer
      assert(sendMap_.size() == commTable_->sendSize()); 
      for (unsigned ii=0; ii<sendMap_.size(); ++ii) { send_buf_[ii]=data[sendMap_[ii]]; }
 #ifdef TIMING
-     profileFastStop(PerformanceTimers::haloMove2BufTimer);
+     profileStop(PerformanceTimers::haloMove2BufTimer);
 #endif
    };
 

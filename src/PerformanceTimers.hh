@@ -11,7 +11,7 @@ namespace PerformanceTimers
    extern TimerHandle loopIOTimer;
    extern TimerHandle sensorTimer;
    extern TimerHandle haloTimer;
-   extern TimerHandle diffusionTimer;
+   extern TimerHandle diffusionCalcTimer;
    extern TimerHandle stimulusTimer;
    extern TimerHandle reactionTimer;
    extern TimerHandle nonGateTimer;
@@ -28,6 +28,11 @@ namespace PerformanceTimers
    extern TimerHandle parallelDiffReacTimer;
    extern TimerHandle haloTimerExecute;
    extern TimerHandle haloTimerComplete;
+   extern TimerHandle diffusionL2BarrierHalo1Timer;
+   extern TimerHandle diffusionL2BarrierHalo2Timer;
+   extern TimerHandle diffusiondVmRCopyTimer;
+   extern TimerHandle reactionL2ArriveTimer;
+   extern TimerHandle reactionL2ResetTimer;
 #ifdef TIMING
    extern TimerHandle FGR_Array2MatrixTimer;
    extern TimerHandle FGR_BarrierTimer;
@@ -37,11 +42,6 @@ namespace PerformanceTimers
    extern TimerHandle haloMove2BufTimer;
 #endif    
 };
-void profileFastStart(const TimerHandle& handle);
-void profileFastStop(const TimerHandle& handle);
-void profileFastStart(const std::string& timerName);
-void profileFastStop(const std::string& timerName);
-
 void profileStart(const TimerHandle& handle);
 void profileStop(const TimerHandle& handle);
 void profileStart(const std::string& timerName);
@@ -49,6 +49,7 @@ void profileStop(const std::string& timerName);
 
 TimerHandle profileGetHandle(std::string timerName);
 
+void profileSetVerbosity(const bool verbosity);
 void profileSetRefTimer(const std::string& timerName);
 void profileSetPrintOrder(const std::string& timerName);
 void profileDumpTimes(std::ostream&);

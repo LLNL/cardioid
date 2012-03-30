@@ -47,7 +47,7 @@ namespace PerformanceTimers
    TimerHandle loopIOTimer;
    TimerHandle sensorTimer;
    TimerHandle haloTimer;
-   TimerHandle diffusionTimer;
+   TimerHandle diffusionCalcTimer;
    TimerHandle stimulusTimer;
    TimerHandle reactionTimer;
    TimerHandle integratorTimer;
@@ -64,6 +64,11 @@ namespace PerformanceTimers
    TimerHandle parallelDiffReacTimer;
    TimerHandle haloTimerExecute;
    TimerHandle haloTimerComplete;
+   TimerHandle diffusionL2BarrierHalo1Timer;
+   TimerHandle diffusionL2BarrierHalo2Timer;
+   TimerHandle diffusiondVmRCopyTimer;
+   TimerHandle reactionL2ArriveTimer;
+   TimerHandle reactionL2ResetTimer;
 #ifdef TIMING
    TimerHandle FGR_Array2MatrixTimer;
    TimerHandle FGR_BarrierTimer;
@@ -78,17 +83,18 @@ namespace PerformanceTimers
    HandleMap handleMap_;
    vector<string> printOrder_;
    string refTimer_;
-
+   bool allCounters_;
 }
 
 using namespace PerformanceTimers;
 
 void  profileInit()
 {
+   allCounters_ = true;
    loopIOTimer = profileGetHandle("LoopIO");
    sensorTimer = profileGetHandle("Sensors");
    haloTimer = profileGetHandle("Halo Exchange");
-   diffusionTimer= profileGetHandle("Diffusion");
+   diffusionCalcTimer= profileGetHandle("DiffusionCalc");
    stimulusTimer = profileGetHandle("Stimulus");
    reactionTimer= profileGetHandle("Reaction");
    nonGateTimer= profileGetHandle("Reaction_nonGate");
@@ -106,6 +112,11 @@ void  profileInit()
    parallelDiffReacTimer = profileGetHandle("parallelDiffReac");
    haloTimerExecute = profileGetHandle("HaloExchangeExecute");
    haloTimerComplete = profileGetHandle("HaloExchangeComplete");
+   diffusionL2BarrierHalo1Timer = profileGetHandle("DiffL2BarrHalo1");
+   diffusionL2BarrierHalo2Timer = profileGetHandle("DiffL2BarrHalo2");
+   diffusiondVmRCopyTimer = profileGetHandle("DiffdVmReactionCopy");
+   reactionL2ArriveTimer = profileGetHandle("reactionL2Arrive");
+   reactionL2ResetTimer = profileGetHandle("reactionL2Reset");
 #ifdef TIMING
    FGR_Array2MatrixTimer = profileGetHandle("FGR_Array2Matrix");
    FGR_BarrierTimer = profileGetHandle("FGR_Barrier");
@@ -116,40 +127,19 @@ void  profileInit()
 #endif   
    machineSpecficInit(); 
 }
-void profileFastStart(const TimerHandle& handle)
-{
-   int tid=omp_get_thread_num() ;
-   int id=handle+tid; 
-   timers_[id].start[CYCLES] = getTime();
-}
-void profileFastStop(const TimerHandle& handle)
-{
-   int tid=omp_get_thread_num() ;
-   int id=handle+tid; 
-   timers_[id].total[NCALLS] += 1;
-   uint64_t delta = getTime() - timers_[id].start[CYCLES];
-   timers_[id].total[CYCLES] += delta;
-}
-void profileFastStart(const std::string& timerName)
-{
-   profileFastStart(profileGetHandle(timerName));
-}
-
-void profileFastStop(const std::string& timerName)
-{
-   profileFastStop(profileGetHandle(timerName));
-}
-       
 void profileStart(const TimerHandle& handle)
 {
    int tid=omp_get_thread_num() ;
    int id=handle+tid; 
    timers_[id].start[CYCLES] = getTime();
-   for (int i=2; i<nCounters_;i++) 
+   if (allCounters_)
    {
-      uint64_t counter;
-      readCounter(counterHandle[tid], i-2, &counter);   
-      timers_[id].start[i] = counter; 
+      for (int i=2; i<nCounters_;i++) 
+      {
+         uint64_t counter;
+         readCounter(counterHandle[tid], i-2, &counter);   
+         timers_[id].start[i] = counter; 
+      }
    }
 }
 
@@ -160,12 +150,15 @@ void profileStop(const TimerHandle& handle)
    timers_[id].total[NCALLS] += 1;
    uint64_t delta = getTime() - timers_[id].start[CYCLES];
    timers_[id].total[CYCLES] += delta;
-   for (int i=2; i<nCounters_;i++) 
+   if (allCounters_)
    {
-      uint64_t counter;
-      readCounter(counterHandle[tid], i-2, &counter);
-      uint64_t delta  = counter - timers_[id].start[i];
-      timers_[id].total[i] += delta;
+      for (int i=2; i<nCounters_;i++) 
+      {
+         uint64_t counter;
+         readCounter(counterHandle[tid], i-2, &counter);
+         uint64_t delta  = counter - timers_[id].start[i];
+         timers_[id].total[i] += delta;
+      }
    }
 }
 
@@ -206,6 +199,11 @@ TimerHandle profileGetHandle(string timerName)
       }
    }
    return handleFirst;
+}
+
+void profileSetVerbosity(const bool verbosity)
+{
+   allCounters_ = verbosity;
 }
 
 void profileSetRefTimer(const string& timerName)
@@ -378,7 +376,8 @@ void profileDumpStats(ostream& out)
    DoubleInt maxLoc[nTimers];
    double sigma[nTimers];
    // end of variable that should be in loop scope
-   for (int counter=0;counter<nCounters_;counter++)
+   int nPrintCounters_ = (allCounters_ ? nCounters_ : 2);
+   for (int counter=0;counter<nPrintCounters_;counter++)
    {
       
       for (unsigned ii=0; ii<nTimers; ++ii)
@@ -486,7 +485,7 @@ void profileDumpStats(ostream& out)
          }
       }
    }
-   if (myRank ==0 && nCounters_ > 2) 
+   if (myRank ==0 && nPrintCounters_ > 2) 
    {
       FILE *file=fopen("perfCount.data","w"); 
       int nMarks = nTimers/nThreads;

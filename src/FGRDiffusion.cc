@@ -128,17 +128,17 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *r
 {
    int tid = threadInfo_.threadID();
 #ifdef TIMING
-   profileFastStart(FGR_Array2MatrixTimer);
+   profileStart(FGR_Array2MatrixTimer);
 #endif
    if ( tid==0 ) updateVoltageBlock(Vm, recv_buf_, nLocal);
 #ifdef TIMING
-   profileFastStop(FGR_Array2MatrixTimer);
-   profileFastStart(FGR_BarrierTimer);
+   profileStop(FGR_Array2MatrixTimer);
+   profileStart(FGR_BarrierTimer);
 #endif
    L2_BarrierWithSync_Barrier(fgrBarrier_, &barrierHandle_[tid], threadInfo_.nThreads());
 #ifdef TIMING
-   profileFastStop(FGR_BarrierTimer);
-   profileFastStart(FGR_AlignCopyTimer);
+   profileStop(FGR_BarrierTimer);
+   profileStart(FGR_AlignCopyTimer);
 #endif
 
    Array3d<double> *VmTmp = &(VmBlock_);
@@ -158,11 +158,11 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *r
    }
 
 #ifdef TIMING
-   profileFastStop(FGR_AlignCopyTimer);
+   profileStop(FGR_AlignCopyTimer);
 #endif
    
 #ifdef TIMING
-   profileFastStart(FGR_StencilTimer);
+   profileStart(FGR_StencilTimer);
 #endif
    //uint32_t begin = VmTmp->tupleToIndex(threadOffsetSimd_[tid],1,0);
    //uint32_t end = VmTmp->tupleToIndex(threadOffsetSimd_[tid+1]-1,VmTmp->ny()-2,VmTmp->nz());
@@ -173,8 +173,8 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *r
       FGRDiff_simd_thread(threadOffsetSimd_[tid] ,threadOffsetSimd_[tid+1],VmTmp,tmp_dVm.cBlock());
 
 #ifdef TIMING
-   profileFastStop(FGR_StencilTimer);
-   profileFastStart(FGR_Matrix2ArrayTimer);
+   profileStop(FGR_StencilTimer);
+   profileStart(FGR_Matrix2ArrayTimer);
 #endif
    if(VmBlock_.nz()%4 != 0) delete VmTmp;
 
@@ -186,7 +186,7 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *r
       dVm[ii] *= diffusionScale_;
    }
 #ifdef TIMING
-   profileFastStop(FGR_Matrix2ArrayTimer);
+   profileStop(FGR_Matrix2ArrayTimer);
 #endif
 }
 

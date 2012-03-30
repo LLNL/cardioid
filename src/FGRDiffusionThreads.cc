@@ -104,19 +104,19 @@ void FGRDiffusionThreads::calc(const vector<double>& Vm, vector<double>& dVm, do
    int tid = threadInfo_.threadID();
    
 #ifdef TIMING
-   profileFastStart(FGR_Array2MatrixTimer);
+   profileStart(FGR_Array2MatrixTimer);
 #endif
    updateVoltageBlock(Vm, recv_buf, nLocal);
 #ifdef TIMING
-   profileFastStop(FGR_Array2MatrixTimer);
-   profileFastStart(FGR_BarrierTimer);
+   profileStop(FGR_Array2MatrixTimer);
+   profileStart(FGR_BarrierTimer);
 #endif
 
    L2_BarrierWithSync_Barrier(fgrBarrier_, &barrierHandle_[tid], threadInfo_.nThreads());
 
 #ifdef TIMING
-   profileFastStop(FGR_BarrierTimer);
-   profileFastStart(FGR_StencilTimer);
+   profileStop(FGR_BarrierTimer);
+   profileStart(FGR_StencilTimer);
 #endif
 
    int begin = threadOffset_[tid];
@@ -135,7 +135,7 @@ void FGRDiffusionThreads::calc(const vector<double>& Vm, vector<double>& dVm, do
       dVm[iCell] *= diffusionScale_;
    }
 #ifdef TIMING
-   profileFastStop(FGR_StencilTimer);
+   profileStop(FGR_StencilTimer);
 #endif
 }
 
