@@ -264,9 +264,6 @@ void diffusionLoop(Simulate& sim,
          loopData.voltageExchange.complete();
          profileStop(haloTimerComplete);
          profileStop(haloTimer);
-
-         for (unsigned ii=0; ii<nLocal; ++ii)
-            loopData.dVmDiffusion[ii] = 0;
       }
       
       // Need a barrier for the completion of the halo exchange.
