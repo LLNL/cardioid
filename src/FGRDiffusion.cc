@@ -437,9 +437,9 @@ void FGRDiffusion::reorder_Coeff()
 }
 
 // simdiazed version
-// 'start' cannot be in the middle. 'start' must point to (n,0,0). 
+// 'start' cannot be in the middle. 'start' must point to (n,m,0). 
 void
-FGRDiffusion::FGRDiff_simd_thread(const uint32_t ex,const int32_t bx, Array3d<double>* VmTmp, double* out0)
+FGRDiffusion::FGRDiff_simd_thread(const uint32_t bx,const int32_t ex, Array3d<double>* VmTmp, double* out0)
 {
   int ii;
 
@@ -478,19 +478,19 @@ FGRDiffusion::FGRDiff_simd_thread(const uint32_t ex,const int32_t bx, Array3d<do
     int end   = VmTmp->tupleToIndex(xx,Ny2-2,Nz2);
     int chunk_size = end - start;
 
-    double* phi_xm1_ym1_z = VmM + start-4 + xm1ym1z_;
-    double* phi_xm1_y_z   = VmM + start-4 + xm1yz_;
-    double* phi_xm1_yp1_z = VmM + start-4 + xm1yp1z_;
-    double* phi_x_ym1_z   = VmM + start-4 + xym1z_;
-    double* phi_x_y_z     = VmM + start-4 ;
-    double* phi_x_yp1_z   = VmM + start-4 + xyp1z_;
-    double* phi_xp1_ym1_z = VmM + start-4 + xp1ym1z_;
-    double* phi_xp1_y_z   = VmM + start-4 + xp1yz_;
-    double* phi_xp1_yp1_z = VmM + start-4 + xp1yp1z_;
+    double* phi_xm1_ym1_z = VmM + start + xm1ym1z_;
+    double* phi_xm1_y_z   = VmM + start + xm1yz_;
+    double* phi_xm1_yp1_z = VmM + start + xm1yp1z_;
+    double* phi_x_ym1_z   = VmM + start + xym1z_;
+    double* phi_x_y_z     = VmM + start ;
+    double* phi_x_yp1_z   = VmM + start + xyp1z_;
+    double* phi_xp1_ym1_z = VmM + start + xp1ym1z_;
+    double* phi_xp1_y_z   = VmM + start + xp1yz_;
+    double* phi_xp1_yp1_z = VmM + start + xp1yp1z_;
  
     out = out0 + start;
  
-    double *simd_diff_ = diffC + (start-4)*19; 
+    double *simd_diff_ = diffC + start*19; 
  
 //    assert((uint64_t)phi_xm1_ym1_z%(4*sizeof(double)) == 0);
 //    assert((uint64_t)phi_xm1_y_z  %(4*sizeof(double)) == 0);
@@ -551,25 +551,13 @@ FGRDiffusion::FGRDiff_simd_thread(const uint32_t ex,const int32_t bx, Array3d<do
             phi_xp1_ym1_z +=4; \
             phi_x_y_z     +=4;
  
-    //offset -4
-    load_my_vectors;
- 
-    //prepare chunk zm
-    calc_zm(B2);  //contribution from z-1
-    
-    //offset 0
-    simd_diff_ += 19*4;
-    shift_pointers;
     load_my_vectors;
  
     calc_zp(B0);
     calc_zz(Sum1);
-    calc_zm(C2);
+    calc_zm(B2);
  
-    Sum2 = vec_sldw(B2,C2,3);
-    B2 = C2;
- 
-    //cannot commit yet
+    Sum2 = vec_sldw(my_zero_vec,B2,3);
  
     for (ii=0;ii<chunk_size;ii+=4)
     {
