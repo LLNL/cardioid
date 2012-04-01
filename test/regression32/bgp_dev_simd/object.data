@@ -1,0 +1,80 @@
+simulate SIMULATE 
+{
+   anatomy = block;
+   decomposition = grid;
+   diffusion = fgr;
+   reaction = tt06;
+   stimulus = boxStimulus;
+   loop = 0;            // in timesteps
+   maxLoop = 3000;     // in timesteps
+   dt = 0.01;       // msec
+   time = 0;            // msec
+   printRate = 50;      // in timesteps
+   snapshotRate = 3000; // in timesteps
+   parallelDiffusionReaction = 1;
+}
+
+block ANATOMY 
+{
+   method = brick;
+   cellType = 102;
+   dx = 0.10;   // in mm
+   dy = 0.10;   // in mm
+   dz = 0.10;   // in mm
+   xSize = 3.5; 
+   ySize = 7;
+   zSize = 7;
+   conductivity = conductivity;
+}
+
+koradi DECOMPOSITION 
+{
+   method = koradi;
+   verbose = 1;
+   alpha = 0.25;
+   maxVoronoiSteps = 30;
+   maxSteps = 500;
+   tolerance = 0.01;
+   outputRate = 1000;
+   nbrDeltaR = 2;
+}
+
+grid DECOMPOSITION 
+{
+    method = grid;
+    nx = 2;
+    ny = 4;
+    nz = 4;
+}
+
+fgr DIFFUSION
+{
+   method = FGR;
+   diffusionScale = 714.2857143;      // mm^3/mF
+}
+
+conductivity CONDUCTIVITY
+{
+    method = fibre;
+    sigmaLi = 0.0001334177;   // units S/mm
+    sigmaTi = 0.0000176062;  // units S/mm
+}
+
+tt06 REACTION
+{
+    method = TT06Dev;
+    mod = 0;
+    integrator = rushLarsen;
+}
+
+boxStimulus STIMULUS
+{
+   method = box;
+   xMax = 16;
+   yMax = 16;
+   zMax = 16;
+   vStim = -35.71429;
+   tStart = 0;
+   duration = 2;
+   period = 1000;
+}
