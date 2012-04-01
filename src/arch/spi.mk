@@ -17,13 +17,18 @@ LD=$(CXX)
 DFLAGS = -DWITH_PIO -DWITH_MPI -DBGQ \
 	 -DADD_ -DUSE_CSTDIO_LFS -DMPICH_IGNORE_CXX_SEEK
 
-INCLUDE =  -DSPI
+DEF =  -DSPI
 OPTFLAGS = -g -O3
-CFLAGS_BASE =   -qsmp=omp $(INCLUDE) $(DFLAGS) $(BGSYS_INC) $(SPI_INC)
-CXXFLAGS_BASE = -qsmp=omp $(INCLUDE) $(DFLAGS)
+CFLAGS_BASE =   -qsmp=omp $(DEF) $(DFLAGS) $(BGSYS_INC) $(SPI_INC)
+CXXFLAGS_BASE = -qsmp=omp $(DEF) $(DFLAGS)
 LDFLAGS_BASE = $(BGSYS_LIBS)
 
-HAVE_GSL = 0
+HAVE_GSL = 1
+ifeq ($(HAVE_GSL),1) 
+   CFLAGS_BASE  += -DHAVE_GSL -I/bgusr/ckim/project/include
+   CXXFLAGS_BASE  += -DHAVE_GSL -I/bgusr/ckim/project/include
+   LDFLAGS_BASE += -L/bgusr/ckim/project/lib/gsl-1.15-bgq -lgsl -lgslcblas
+endif
 
 CFLAGS_OPT =   $(CFLAGS_BASE) -g -O3  
 CFLAGS_DEBUG = $(CFLAGS_BASE) -g -O0
