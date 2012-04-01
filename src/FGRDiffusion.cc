@@ -174,6 +174,11 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *r
 
 #ifdef TIMING
    profileStop(FGR_StencilTimer);
+   profileStart(FGR_Barrier2Timer);
+#endif
+   L2_BarrierWithSync_Barrier(fgrBarrier_, &barrierHandle_[tid], threadInfo_.nThreads());
+#ifdef TIMING
+   profileStop(FGR_Barrier2Timer);
    profileStart(FGR_Matrix2ArrayTimer);
 #endif
    if(VmBlock_.nz()%4 != 0) delete VmTmp;

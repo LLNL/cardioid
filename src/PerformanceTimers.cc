@@ -72,6 +72,7 @@ namespace PerformanceTimers
 #ifdef TIMING
    TimerHandle FGR_Array2MatrixTimer;
    TimerHandle FGR_BarrierTimer;
+   TimerHandle FGR_Barrier2Timer;
    TimerHandle FGR_AlignCopyTimer;
    TimerHandle FGR_StencilTimer;
    TimerHandle FGR_Matrix2ArrayTimer;
@@ -120,6 +121,7 @@ void  profileInit()
 #ifdef TIMING
    FGR_Array2MatrixTimer = profileGetHandle("FGR_Array2Matrix");
    FGR_BarrierTimer = profileGetHandle("FGR_Barrier");
+   FGR_Barrier2Timer = profileGetHandle("FGR_Barrier2");
    FGR_AlignCopyTimer = profileGetHandle("FGR_AlignCopy");
    FGR_StencilTimer = profileGetHandle("FGR_Stencil");
    FGR_Matrix2ArrayTimer = profileGetHandle("FGR_Matrix2Array");

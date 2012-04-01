@@ -36,6 +36,7 @@ namespace PerformanceTimers
 #ifdef TIMING
    extern TimerHandle FGR_Array2MatrixTimer;
    extern TimerHandle FGR_BarrierTimer;
+   extern TimerHandle FGR_Barrier2Timer;
    extern TimerHandle FGR_AlignCopyTimer;
    extern TimerHandle FGR_StencilTimer;
    extern TimerHandle FGR_Matrix2ArrayTimer;
