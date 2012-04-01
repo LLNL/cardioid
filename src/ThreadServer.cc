@@ -148,6 +148,8 @@ ThreadTeam ThreadServer::getThreadTeam(const vector<unsigned>& coreID)
    // special case: empty list.  Add all remaining cores to team.
    if (coreID.size() == 0)
    {
+      // can't do dev with 1 thread per node.
+      assert(availableThreads_.size() > 0); 
       for (unsigned ii=0; ii<availableThreads_.size(); ++ii)
          team.addMember(availableThreads_[ii]);
       availableThreads_.clear();
