@@ -130,7 +130,7 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *r
 #ifdef TIMING
    profileStart(FGR_Array2MatrixTimer);
 #endif
-   updateVoltageBlock(Vm, recv_buf_, nLocal);
+   if ( tid==0 ) updateVoltageBlock(Vm, recv_buf_, nLocal);
 #ifdef TIMING
    profileStop(FGR_Array2MatrixTimer);
    profileStart(FGR_BarrierTimer);
