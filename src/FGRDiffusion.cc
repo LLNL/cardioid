@@ -51,6 +51,19 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
    }
    assert(threadOffset_[threadInfo_.nThreads()] == anatomy.nLocal());
 
+   //simd thread offsets
+   chunkSize = (nx-2) / threadInfo.nThreads();
+   leftOver = (nx-2) % threadInfo.nThreads();
+   threadOffsetSimd_.resize(threadInfo.nThreads()+1);
+   threadOffsetSimd_[0]=1;
+   for (int ii=0; ii<threadInfo.nThreads(); ++ii)
+   {
+      threadOffsetSimd_[ii+1] = threadOffsetSimd_[ii] + chunkSize;
+      if (ii < leftOver)
+         ++threadOffsetSimd_[ii+1];
+   }
+   assert(nx-1 == threadOffsetSimd_[threadInfo.nThreads()] );
+
    barrierHandle_.resize(threadInfo.nThreads());
    fgrBarrier_ = L2_BarrierWithSync_InitShared();
    #pragma omp parallel
@@ -98,26 +111,9 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
    precomputeCoefficients(anatomy);
    reorder_Coeff();
 
+   assert(nz%4 == 0);
    tmp_dVm.resize(nx,ny,nz + (nz%4==0 ? 0:4-(nz%4)));
 
-   //simd thread offsets
-   threadOffsetSimd_.resize(threadInfo.nThreads()+1);
-   int tid=0;
-   for (int ii=0; ii<threadInfo.nThreads(); ++ii) threadOffsetSimd_[ii+1]=0;
-   for (int ii=1; ii<(nx-1); ++ii)  //1 ... nx-2
-   {
-      threadOffsetSimd_[tid+1]++;
-      tid++; tid=tid % threadInfo.nThreads();
-   }
-   //printf("thread:1 ");
-   threadOffsetSimd_[0]=1;
-   for (int ii=0; ii<threadInfo.nThreads(); ++ii)
-   {
-      //printf("%d ",threadOffsetSimd_[ii+1]);
-      threadOffsetSimd_[ii+1] += threadOffsetSimd_[ii];
-   }
-   //printf("\n");
-   assert(nx-1 == threadOffsetSimd_[threadInfo.nThreads()] );
 }
 
 
