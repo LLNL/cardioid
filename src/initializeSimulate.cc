@@ -1,4 +1,7 @@
 #include "initializeSimulate.hh"
+
+#include <iostream>
+
 #include "object_cc.hh"
 #include "Simulate.hh"
 
@@ -10,11 +13,30 @@
 #include "sensorFactory.hh"
 #include "getRemoteCells.hh"
 #include "Anatomy.hh"
-#include "Threading.hh"
 #include "mpiUtils.h"
 #include "PerformanceTimers.hh"
 
 using namespace std;
+
+
+namespace
+{
+   /** Makes up a core list with one thread per core, except on BGQ
+    *  where we have four threads per core. */
+   void buildCoreList(unsigned& nCores, vector<unsigned>& cores)
+   {
+      int threadsPerCore = 1;
+      #ifdef BGQ
+      threadsPerCore = 4;
+      #endif
+      assert(cores.size() == 0);
+      int nThreads = nCores*threadsPerCore;
+      cores.resize(nThreads);
+      for (unsigned ii=0; ii<nThreads; ++ii)
+         cores[ii] = ii/threadsPerCore;
+   }
+}
+
 
 void initializeSimulate(const string& name, Simulate& sim)
 {
@@ -37,13 +59,25 @@ void initializeSimulate(const string& name, Simulate& sim)
    else 
       profileSetVerbosity(false);
    unsigned nDiffusionCores;
+   vector<unsigned> diffusionCores;
    objectGet(obj, "nDiffusionCores", nDiffusionCores, "1");
-   // Need the diffusionGroup to be initialized for loopIO in simulationLoop.cc
-   sim.diffusionGroup_ = sim.tinfo_.mkGroup(nDiffusionCores); 
-   if (sim.parallelDiffusionReaction_ == 1)    
+   objectGet(obj, "diffusionThreads", diffusionCores);
+
+   if (sim.parallelDiffusionReaction_ == 1)
    {
-      sim.reactionGroup_  = sim.tinfo_.mkGroup(-1); 
+      // diffusionThreads overrides nDiffusionCores, but when no thread
+      // list is specified, we use 1 core.
+      if (diffusionCores.size() == 0)
+         buildCoreList(nDiffusionCores, diffusionCores);
+      ThreadServer& threadServer = ThreadServer::getInstance();
+      sim.diffusionThreads_ = threadServer.getThreadTeam(diffusionCores);
+      if (getRank(0) == 0)
+         cout << "Diffusion Threads: " << sim.diffusionThreads_ << endl;
+      sim.reactionThreads_ = threadServer.getThreadTeam(vector<unsigned>());
+      if (getRank(0) == 0)
+         cout << "Reaction Threads: " << sim.reactionThreads_ << endl;
    }
+   
    
    timestampBarrier("initializing anatomy", MPI_COMM_WORLD);
    string nameTmp;
@@ -68,12 +102,12 @@ void initializeSimulate(const string& name, Simulate& sim)
 
    timestampBarrier("building diffusion object", MPI_COMM_WORLD);
    objectGet(obj, "diffusion", nameTmp, "diffusion");
-   sim.diffusion_ = diffusionFactory(nameTmp, sim.anatomy_, *sim.diffusionGroup_,
+   sim.diffusion_ = diffusionFactory(nameTmp, sim.anatomy_, sim.diffusionThreads_,
                                      sim.parallelDiffusionReaction_);
    
    timestampBarrier("building reaction object", MPI_COMM_WORLD);
    objectGet(obj, "reaction", nameTmp, "reaction");
-   sim.reaction_ = reactionFactory(nameTmp, sim.anatomy_,sim.reactionGroup_);
+   sim.reaction_ = reactionFactory(nameTmp, sim.anatomy_, sim.reactionThreads_);
 
    timestampBarrier("building stimulus object", MPI_COMM_WORLD);
    vector<string> names;

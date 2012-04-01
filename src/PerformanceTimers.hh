@@ -33,6 +33,13 @@ namespace PerformanceTimers
    extern TimerHandle diffusiondVmRCopyTimer;
    extern TimerHandle reactionL2ArriveTimer;
    extern TimerHandle reactionL2ResetTimer;
+   extern TimerHandle diffusionBarrier2;
+   extern TimerHandle diffusionBarrier3;
+   extern TimerHandle diffusionBarrier4;
+   extern TimerHandle diffusionBarrier5;
+   extern TimerHandle diffusionBarrier6;
+   extern TimerHandle diffusionBarrier7;
+   extern TimerHandle diffusionBarrier8;
 #ifdef TIMING
    extern TimerHandle FGR_Array2MatrixTimer;
    extern TimerHandle FGR_BarrierTimer;

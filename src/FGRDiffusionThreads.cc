@@ -3,10 +3,10 @@
 #include "DiffusionUtils.hh"
 #include "Anatomy.hh"
 #include "Vector.hh"
-#include "Threading.hh"
 #include "fastBarrier.hh"
 #include <algorithm>
 #include <cstdio>
+#include "ThreadServer.hh"
 #ifdef TIMING
 #include "PerformanceTimers.hh"
 using namespace PerformanceTimers;
@@ -18,7 +18,7 @@ using namespace FGRUtils;
 
 FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
                                          const Anatomy& anatomy,
-                                         const CoreGroup& threadInfo)
+                                         const ThreadTeam& threadInfo)
 : localGrid_(DiffusionUtils::findBoundingBox(anatomy)),
   threadInfo_(threadInfo),
   diffusionScale_(parms.diffusionScale_)
@@ -54,7 +54,7 @@ FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
    fgrBarrier_ = L2_BarrierWithSync_InitShared();
    #pragma omp parallel
    {
-      int tid = threadInfo.threadID();
+      int tid = threadInfo.teamRank();
       if (tid >= 0)
          L2_BarrierWithSync_InitInThread(fgrBarrier_, &barrierHandle_[tid]);
    }         
@@ -101,7 +101,7 @@ FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
 
 void FGRDiffusionThreads::calc(const vector<double>& Vm, vector<double>& dVm, double *recv_buf, int nLocal)
 {
-   int tid = threadInfo_.threadID();
+   int tid = threadInfo_.teamRank();
    
 #ifdef TIMING
    profileStart(FGR_Array2MatrixTimer);

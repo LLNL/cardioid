@@ -69,6 +69,13 @@ namespace PerformanceTimers
    TimerHandle diffusiondVmRCopyTimer;
    TimerHandle reactionL2ArriveTimer;
    TimerHandle reactionL2ResetTimer;
+   TimerHandle diffusionBarrier2;
+   TimerHandle diffusionBarrier3;
+   TimerHandle diffusionBarrier4;
+   TimerHandle diffusionBarrier5;
+   TimerHandle diffusionBarrier6;
+   TimerHandle diffusionBarrier7;
+   TimerHandle diffusionBarrier8;
 #ifdef TIMING
    TimerHandle FGR_Array2MatrixTimer;
    TimerHandle FGR_BarrierTimer;
@@ -108,6 +115,13 @@ void  profileInit()
    diffusionWaitTimer = profileGetHandle("DiffusionWait");
    diffusionStallTimer = profileGetHandle("DiffusionStall");
    diffusionImbalanceTimer = profileGetHandle("DiffusionImbalance");
+   diffusionBarrier2 = profileGetHandle("DiffusionBarrier2");
+   diffusionBarrier3 = profileGetHandle("DiffusionBarrier3");
+   diffusionBarrier4 = profileGetHandle("DiffusionBarrier4");
+   diffusionBarrier5 = profileGetHandle("DiffusionBarrier5");
+   diffusionBarrier6 = profileGetHandle("DiffusionBarrier6");
+   diffusionBarrier7 = profileGetHandle("DiffusionBarrier7");
+   diffusionBarrier8 = profileGetHandle("DiffusionBarrier8");
    imbalanceTimer = profileGetHandle("Imbalance");
    dummyTimer = profileGetHandle("Dummy");
    parallelDiffReacTimer = profileGetHandle("parallelDiffReac");

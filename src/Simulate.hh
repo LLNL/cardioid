@@ -8,8 +8,7 @@
 
 #include "Long64.hh"
 #include "Anatomy.hh"
-#include "Threading.hh"
-
+#include "ThreadServer.hh"
 class Diffusion;
 class Reaction;
 class Stimulus;
@@ -37,9 +36,9 @@ class Simulate
    std::set<Long64> snapshotCellList_;
    int checkpointRate_;
    int parallelDiffusionReaction_;
-   CoreGroup* diffusionGroup_; 
-   CoreGroup* reactionGroup_; 
-   Threading tinfo_; 
+
+   ThreadTeam diffusionThreads_;
+   ThreadTeam reactionThreads_;
    
    double dt_;
    double time_;

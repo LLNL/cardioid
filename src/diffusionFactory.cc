@@ -13,7 +13,7 @@
 #include "NullDiffusion.hh"
 
 class Anatomy;
-
+class ThreadTeam;
 
 
 using namespace std;
@@ -22,7 +22,7 @@ using namespace std;
 namespace
 {
    Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy,
-                                  const CoreGroup& threadInfo, int simLoopType);
+                                  const ThreadTeam& threadInfo, int simLoopType);
    Diffusion* saleheen98DiffusionFactory(OBJECT* obj, const Anatomy& anatomy);
    Diffusion* saleheenDevFactory(OBJECT* obj, const Anatomy& anatomy);
    void checkForObsoleteKeywords(OBJECT* obj);
@@ -30,7 +30,7 @@ namespace
 
 
 Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
-                            const CoreGroup& threadInfo, int simLoopType)
+                            const ThreadTeam& threadInfo, int simLoopType)
 {
    OBJECT* obj = objectFind(name, "DIFFUSION");
 
@@ -56,7 +56,7 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
 namespace
 {
    Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy,
-                                  const CoreGroup& threadInfo, int simLoopType)
+                                  const ThreadTeam& threadInfo, int simLoopType)
    {
       FGRUtils::FGRDiffusionParms p;
       objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0", "l^3/capacitance");

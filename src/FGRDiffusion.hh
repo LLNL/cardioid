@@ -10,7 +10,7 @@
 class Anatomy;
 class Vector;
 class SymmetricTensor;
-class CoreGroup;
+class ThreadTeam;
 class L2_Barrier_t;
 class L2_BarrierHandle_t;
 
@@ -20,7 +20,7 @@ class FGRDiffusion : public Diffusion
    FGRDiffusion(
       const FGRUtils::FGRDiffusionParms& parms,
       const Anatomy& anatomy,
-      const CoreGroup& threadInfo);
+      const ThreadTeam& threadInfo);
    
    void calc(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf, int nLocal);
 
@@ -43,7 +43,7 @@ class FGRDiffusion : public Diffusion
    int                             faceNbrOffset_[6];
    LocalGrid                       localGrid_;
    double                          diffusionScale_;
-   const CoreGroup&                threadInfo_;
+   const ThreadTeam&               threadInfo_;
    L2_Barrier_t*                   fgrBarrier_;
    std::vector<L2_BarrierHandle_t> barrierHandle_;
    std::vector<int>                threadOffset_;

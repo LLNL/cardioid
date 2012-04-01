@@ -4,6 +4,7 @@
 #include "TT06Func.hh"
 #include "pade.hh"
 #include "PerformanceTimers.hh"
+#include "ThreadServer.hh"
 #include <cstdlib>
 
 using namespace std;
@@ -12,7 +13,7 @@ using namespace PerformanceTimers;
 
 static FILE *tfile[64]; 
 
-TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int mod, CoreGroup* group)
+TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int mod, const ThreadTeam& group)
 : nCells_(anatomy.nLocal()),
   group_(group)
 {
@@ -95,12 +96,18 @@ int partition(int index, int nItems, int nGroups , int& offset)
 }
 int TT06Dev_Reaction::nonGateWorkPartition(int& offset)
 {
-    int coreID,hwThreadID,threadID,nCores,nHwThreads,nThreads;
-    groupInfo(group_,coreID,hwThreadID,threadID,nCores,nHwThreads,nThreads); 
-    offset=0; 
-    int nCellsCore= partition(coreID,nCells_,nCores,offset); 
-    int nCells  = partition(hwThreadID,nCellsCore,nHwThreads,offset); 
-    return nCells; 
+//     int coreID,hwThreadID,threadID,nCores,nHwThreads,nThreads;
+//     group_.groupInfo(coreID,hwThreadID,threadID,nCores,nHwThreads,nThreads); 
+   offset=0; 
+   
+   const ThreadRankInfo& rankInfo = group_.rankInfo();
+   int nCores = group_.nSquads();
+   int coreID = rankInfo.coreRank_;
+   int hwThreadID = rankInfo.squadRank_;
+   int nHwThreads = rankInfo.squadSize_;
+   int nCellsCore= partition(coreID, nCells_, nCores, offset);
+   int nCells = partition(hwThreadID, nCellsCore, nHwThreads, offset); 
+   return nCells; 
 }
 
 void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<double>& iStim, vector<double>& dVm)

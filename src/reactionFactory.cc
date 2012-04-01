@@ -11,7 +11,7 @@
 #include "ReactionFHN.hh"
 #include "NullReaction.hh"
 #include "ConstantReaction.hh"
-#include "Threading.hh"
+#include "ThreadServer.hh"
 
 #include <iostream>
 using namespace std;
@@ -20,14 +20,15 @@ namespace
 {
    Reaction* scanTT04_CellML(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanTT06_CellML(OBJECT* obj, const Anatomy& anatomy);
-   Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy, CoreGroup* group);
+   Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy, const ThreadTeam& group);
    Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanFHN(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanConstant(OBJECT* obj, const Anatomy& anatomy);
 }
 
 
-Reaction* reactionFactory(const string& name, const Anatomy& anatomy, CoreGroup* group)
+Reaction* reactionFactory(const string& name, const Anatomy& anatomy,
+                          const ThreadTeam& group)
 {
    OBJECT* obj = objectFind(name, "REACTION");
    string method; objectGet(obj, "method", method, "undefined");
@@ -37,7 +38,7 @@ Reaction* reactionFactory(const string& name, const Anatomy& anatomy, CoreGroup*
    else if (method == "TT06_CellML" || method == "tenTusscher06_CellML")
       return scanTT06_CellML(obj, anatomy);
    else if (method == "TT06Dev" )
-      return scanTT06Dev(obj, anatomy,group);
+      return scanTT06Dev(obj, anatomy, group);
    else if (method == "TT06_RRG" )
       return scanTT06_RRG(obj, anatomy);
    else if (method == "FHN" || method == "FitzhughNagumo")
@@ -84,7 +85,7 @@ namespace
 
 namespace
 {
-   Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy, CoreGroup* group)
+   Reaction* scanTT06Dev(OBJECT* obj, const Anatomy& anatomy, const ThreadTeam& group)
    {
       double tolerance=0.0 ; 
       int mod=0; 

@@ -4,11 +4,11 @@
 #include <string>
 class Diffusion;
 class Anatomy;
-class CoreGroup;
+class ThreadTeam;
 
 Diffusion* diffusionFactory(const std::string& name,
                             const Anatomy& anatomy,
-                            const CoreGroup& threadInfo,
+                            const ThreadTeam& threadInfo,
                             int simLoopType);
 
 #endif
