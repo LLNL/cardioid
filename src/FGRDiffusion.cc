@@ -181,9 +181,11 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *r
 
    int begin = threadOffset_[tid];
    int end   = threadOffset_[tid+1];
+   double* tmp_dVm_ptr = tmp_dVm.cBlock();
    for (int ii=begin; ii<end; ++ii)
    {
-      dVm[ii] = tmp_dVm(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
+      //dVm[ii] = tmp_dVm(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
+      dVm[ii] = tmp_dVm_ptr[blockIndex_[ii]];
       dVm[ii] *= diffusionScale_;
    }
 #ifdef TIMING
