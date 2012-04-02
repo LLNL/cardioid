@@ -8,6 +8,7 @@
 
 #include "Long64.hh"
 #include "Anatomy.hh"
+#include "VoronoiCoarsening.hh"
 #include "ThreadServer.hh"
 class Diffusion;
 class Reaction;
@@ -58,6 +59,7 @@ class Simulate
    Reaction* reaction_; 
    std::vector<Stimulus*> stimulus_;
    std::vector<Sensor*> sensor_;
+   VoronoiCoarsening* coarsedata_;
 };
 
 #endif

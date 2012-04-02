@@ -73,6 +73,7 @@ namespace
          return new FGRDiffusion(p, anatomy, threadInfo);
 
       // unreachable.  Should have matched a clause above.
+      std::cerr<<"ERROR --- invalid 'variant' parameter: "<<variant<<std::endl;
       assert(false);
       return 0; 
    }

@@ -5,7 +5,7 @@
 #include <fstream>
 using namespace std;
 
-bool readSnapshotCellList(string filename, Simulate& sim)
+bool readSnapshotCellList(string filename, Simulate& sim, OBJECT* obj)
 {
    int nTasks, myRank;
    MPI_Comm_size(MPI_COMM_WORLD, &nTasks);
@@ -30,20 +30,20 @@ bool readSnapshotCellList(string filename, Simulate& sim)
    }
 
    // read gids from file
-   vector<Long64> cellVec_;
+   vector<Long64> cellVec;
    int nSubset;
    if (myRank == 0)
    {
       while (!input.eof()) {
          Long64 igid;
          input >> igid;
-         cellVec_.push_back(igid);
+         cellVec.push_back(igid);
       }
-      nSubset = cellVec_.size();
+      nSubset = cellVec.size();
    }   
    MPI_Bcast(&nSubset, 1, MPI_INT, 0, MPI_COMM_WORLD);
-   cellVec_.resize(nSubset);
-   MPI_Bcast(&cellVec_[0], nSubset, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
+   cellVec.resize(nSubset);
+   MPI_Bcast(&cellVec[0], nSubset, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
 
    // now every task knows the full list of cells, want to populate sim.snapshotCellList
    // with the cells local to each task.  Copy local cell gids into an STL::Set for faster
@@ -59,10 +59,23 @@ bool readSnapshotCellList(string filename, Simulate& sim)
 
    for (unsigned jj=0; jj<nSubset; ++jj)
    {
-      Long64 gid = cellVec_[jj];
+      Long64 gid = cellVec[jj];
       set<Long64>::iterator it = cellSet_.find(gid);
       if (it != cellSet_.end())
          sim.snapshotCellList_.insert(gid);
+   }
+   
+   string snapshotCellAveraging;
+   objectGet(obj, "snapshotCellAveragingType", snapshotCellAveraging, "");
+
+   if (snapshotCellAveraging == "voronoi")
+   {
+      sim.coarsedata_=new VoronoiCoarsening(sim.anatomy_,cellVec,MPI_COMM_WORLD);
+   }else if( snapshotCellAveraging == ""){
+      sim.coarsedata_=0;
+   }else{
+      cerr<<"ERROR: Undefined cell averaging model"<<endl;
+      assert( false );
    }
    
    return true;

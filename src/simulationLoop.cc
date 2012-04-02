@@ -53,10 +53,11 @@ void simulationProlog(Simulate& sim)
    objectGet(obj, "snapshotCellList", snapshotCLFile, "");
    if (snapshotCLFile != "")
    {
-      if (readSnapshotCellList(snapshotCLFile, sim))
+      if (readSnapshotCellList(snapshotCLFile, sim,obj))
          sim.snapshotUseCellList_ = true;      
+   }else{
+      sim.coarsedata_=0;
    }
-
 }
 
 
@@ -97,7 +98,12 @@ void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVm
          string fullname = name.str();
          if (myRank == 0) DirTestCreate(fullname.c_str());
          fullname += "/anatomy";
-         writeCells(sim, fullname.c_str());
+         if( sim.coarsedata_==0 )
+            writeCells(sim, fullname.c_str());
+         else{
+            sim.coarsedata_->computeColorAverages(sim.VmArray_);
+            sim.coarsedata_->writeAverages(fullname,sim.time_, sim.loop_);
+         }
       }
          
    }
