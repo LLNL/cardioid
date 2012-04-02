@@ -4,9 +4,11 @@
 #ifdef Diff_Weight_Type_Single
 #define WeightType float
 #define WTSZ 4
+const double weightSumTolerance = 1e-7;
 #else
 #define WeightType double
 #define WTSZ 8
+const double weightSumTolerance = 1e-14;
 #endif
 
 namespace FGRUtils

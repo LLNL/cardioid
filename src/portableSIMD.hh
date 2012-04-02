@@ -15,6 +15,17 @@ struct vector4double
  double v[4]; 
 }; 
 
+inline vector4double vec_ld(uint32_t shift, float* addr)
+{
+  vector4double tmp;
+  shift /= sizeof(float);
+  tmp.v[0] = *(addr + shift);
+  tmp.v[1] = *(addr + shift + 1);
+  tmp.v[2] = *(addr + shift + 2);
+  tmp.v[3] = *(addr + shift + 3);
+  return tmp;
+}
+
 inline vector4double vec_ld(uint32_t shift, double* addr)
 {
   vector4double tmp;

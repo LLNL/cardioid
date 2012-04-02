@@ -221,12 +221,7 @@ void FGRDiffusionThreads::precomputeCoefficients(const Anatomy& anatomy)
       double sum = 0;
       for (unsigned ii=0; ii<19; ++ii)
          sum += weight_(ib).A[ii];
-      #ifdef Diff_Weight_Type_Single
-      assert(abs(sum) < 1e-7);
-      #else
-      assert(abs(sum) < 1e-14);
-      #endif
-      
+      assert(abs(sum) < weightSumTolerance);
    }
 //   printAllWeights(tissueBlk);
 }
