@@ -193,7 +193,7 @@ void FGRDiffusionOMP::precomputeCoefficients(const Anatomy& anatomy)
       double sum = 0;
       for (unsigned ii=0; ii<19; ++ii)
          sum += weight_(ib).A[ii];
-      assert(abs(sum) < 1e-14);
+      assert(abs(sum) < weightSumTolerance);
       
    }
 //   printAllWeights(tissueBlk);
