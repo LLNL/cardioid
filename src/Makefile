@@ -53,7 +53,8 @@ HEARTSRC= cardioid.cc \
 	 TT06_RRG.cc \
 	 TestStimulus.cc PointStimulus.cc BoxStimulus.cc \
 	 PeriodicPulse.cc \
-	 PointListSensor.cc ActivationTimeSensor.cc readSnapshotCellList.cc
+	 PointListSensor.cc ActivationTimeSensor.cc readSnapshotCellList.cc \
+	 VoronoiCoarsening.cc
 
 SPISRC=	 spi_impl.c
 SIMDSRC=  clooper.c
