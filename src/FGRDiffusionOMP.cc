@@ -97,7 +97,7 @@ void FGRDiffusionOMP::calc(const vector<double>& Vm, vector<double>& dVm, double
          int ib = blockIndex_[iCell];
          
          double* phi = & (VmBlock_(ib));
-         const double* A = weight_(ib).A;
+         const WeightType *A = weight_(ib).A;
          for (unsigned ii=0; ii<19; ++ii)
             tmp += A[ii] * ( *(phi+offset_[ii]));
          

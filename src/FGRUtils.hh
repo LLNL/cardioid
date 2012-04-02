@@ -1,6 +1,14 @@
 #ifndef FGR_UTILS_HH
 #define FGR_UTILS_HH
 
+#ifdef Diff_Weight_Type_Single
+#define WeightType float
+#define WTSZ 4
+#else
+#define WeightType double
+#define WTSZ 8
+#endif
+
 namespace FGRUtils
 {
    enum NodeLocation
@@ -15,7 +23,7 @@ namespace FGRUtils
    
    struct DiffWeight
    {
-      double A[19];
+      WeightType A[19];
    };
    
    void setGradientWeights(double* grad, int* tissue,

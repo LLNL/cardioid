@@ -128,7 +128,7 @@ void FGRDiffusionThreads::calc(const vector<double>& Vm, vector<double>& dVm, do
       int ib = blockIndex_[iCell];
       
       double* phi = & (VmBlock_(ib));
-      const double* A = weight_(ib).A;
+      const WeightType *A = weight_(ib).A;
       for (unsigned ii=0; ii<19; ++ii)
          dVm[iCell] += A[ii] * ( *(phi+offset_[ii]));
       
@@ -221,7 +221,11 @@ void FGRDiffusionThreads::precomputeCoefficients(const Anatomy& anatomy)
       double sum = 0;
       for (unsigned ii=0; ii<19; ++ii)
          sum += weight_(ib).A[ii];
+      #ifdef Diff_Weight_Type_Single
+      assert(abs(sum) < 1e-7);
+      #else
       assert(abs(sum) < 1e-14);
+      #endif
       
    }
 //   printAllWeights(tissueBlk);

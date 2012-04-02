@@ -7,6 +7,17 @@
 #include "ibmIntrinsics.hh"
 #include "FGRUtils.hh"
 
+#ifdef Diff_Weight_Type_Single
+#define WeightType float
+#define WTSZ 4
+#else
+#define WeightType double
+#define WTSZ 8
+#endif
+
+
+
+
 class Anatomy;
 class Vector;
 class SymmetricTensor;
@@ -52,10 +63,8 @@ class FGRDiffusion : public Diffusion
    std::vector<Tuple>              localTuple_; // only for local cells
    Array3d<FGRUtils::DiffWeight>   weight_;
    Array3d<double>                 VmBlock_;
-   Array3d<double>                 diffCoefT2_;
+   Array3d<WeightType>                 diffCoefT2_;
    Array3d<double>                 tmp_dVm;
-   
-   
 };
 
 #endif

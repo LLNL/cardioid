@@ -275,7 +275,11 @@ void FGRDiffusion::precomputeCoefficients(const Anatomy& anatomy)
       double sum = 0;
       for (unsigned ii=0; ii<19; ++ii)
          sum += weight_(ib).A[ii];
+      #ifdef Diff_Weight_Type_Single
+      assert(abs(sum) < 1e-7);
+      #else
       assert(abs(sum) < 1e-14);
+      #endif
       
    }
 //   printAllWeights(tissueBlk);
@@ -447,7 +451,7 @@ FGRDiffusion::FGRDiff_simd_thread(const uint32_t bx,const int32_t ex, Array3d<do
 
   double* VmM = VmTmp->cBlock();
   double* out;
-  double* diffC = diffCoefT2_.cBlock();
+  WeightType *diffC = diffCoefT2_.cBlock();
 
   int xm1ym1z_ = ((-1) *Ny2 + (-1)) * Nz2;
   int xm1yz_ =   ((-1) *Ny2 + ( 0)) * Nz2;
@@ -488,7 +492,7 @@ FGRDiffusion::FGRDiff_simd_thread(const uint32_t bx,const int32_t ex, Array3d<do
  
     out = out0 + start;
  
-    double *simd_diff_ = diffC + start*19; 
+    WeightType *simd_diff_ = diffC + start*19; 
  
 //    assert((uint64_t)phi_xm1_ym1_z%(4*sizeof(double)) == 0);
 //    assert((uint64_t)phi_xm1_y_z  %(4*sizeof(double)) == 0);
@@ -514,29 +518,29 @@ FGRDiffusion::FGRDiff_simd_thread(const uint32_t bx,const int32_t ex, Array3d<do
         my_xp1_ym1_z  =vec_ld(0,    phi_xp1_ym1_z );
  
     #define calc_zp(x) \
-        x =  vec_madd(vec_ld(4*4*8,simd_diff_)  , my_xp1_y_z, \
-             vec_madd(vec_ld(4*3*8,simd_diff_)  , my_x_yp1_z, \
-             vec_madd(vec_ld(4*2*8,simd_diff_)  , my_xm1_y_z, \
-             vec_madd(vec_ld(4*1*8,simd_diff_)  , my_x_ym1_z, \
-             vec_mul( vec_ld(4*0*8,simd_diff_)  , my_x_y_z)))));
+        x =  vec_madd(vec_ld(4*4*WTSZ,simd_diff_)  , my_xp1_y_z, \
+             vec_madd(vec_ld(4*3*WTSZ,simd_diff_)  , my_x_yp1_z, \
+             vec_madd(vec_ld(4*2*WTSZ,simd_diff_)  , my_xm1_y_z, \
+             vec_madd(vec_ld(4*1*WTSZ,simd_diff_)  , my_x_ym1_z, \
+             vec_mul( vec_ld(4*0*WTSZ,simd_diff_)  , my_x_y_z)))));
  
     #define calc_zz(x) \
-        x = vec_madd( vec_ld(4*13*8,simd_diff_)  , my_xp1_y_z, \
-            vec_madd( vec_ld(4*12*8,simd_diff_)  , my_x_yp1_z, \
-            vec_madd( vec_ld(4*11*8,simd_diff_)  , my_xm1_y_z, \
-            vec_madd( vec_ld(4*10*8,simd_diff_)  , my_x_ym1_z, \
-            vec_madd( vec_ld(4*9*8,simd_diff_)  , my_xp1_yp1_z, \
-            vec_madd( vec_ld(4*8*8,simd_diff_)  , my_xm1_yp1_z, \
-            vec_madd( vec_ld(4*7*8,simd_diff_)  , my_xm1_ym1_z, \
-            vec_madd( vec_ld(4*6*8,simd_diff_)  , my_xp1_ym1_z, \
-            vec_mul ( vec_ld(4*5*8,simd_diff_)  , my_x_y_z)))))))));
+        x = vec_madd( vec_ld(4*13*WTSZ,simd_diff_)  , my_xp1_y_z, \
+            vec_madd( vec_ld(4*12*WTSZ,simd_diff_)  , my_x_yp1_z, \
+            vec_madd( vec_ld(4*11*WTSZ,simd_diff_)  , my_xm1_y_z, \
+            vec_madd( vec_ld(4*10*WTSZ,simd_diff_)  , my_x_ym1_z, \
+            vec_madd( vec_ld(4*9*WTSZ,simd_diff_)  , my_xp1_yp1_z, \
+            vec_madd( vec_ld(4*8*WTSZ,simd_diff_)  , my_xm1_yp1_z, \
+            vec_madd( vec_ld(4*7*WTSZ,simd_diff_)  , my_xm1_ym1_z, \
+            vec_madd( vec_ld(4*6*WTSZ,simd_diff_)  , my_xp1_ym1_z, \
+            vec_mul ( vec_ld(4*5*WTSZ,simd_diff_)  , my_x_y_z)))))))));
  
     #define calc_zm(x) \
-        x = vec_madd( vec_ld(4*18*8,simd_diff_)  , my_xp1_y_z, \
-            vec_madd( vec_ld(4*17*8,simd_diff_)  , my_x_yp1_z, \
-            vec_madd( vec_ld(4*16*8,simd_diff_)  , my_xm1_y_z, \
-            vec_madd( vec_ld(4*15*8,simd_diff_)  , my_x_ym1_z, \
-            vec_mul ( vec_ld(4*14*8,simd_diff_)  , my_x_y_z)))));
+        x = vec_madd( vec_ld(4*18*WTSZ,simd_diff_)  , my_xp1_y_z, \
+            vec_madd( vec_ld(4*17*WTSZ,simd_diff_)  , my_x_yp1_z, \
+            vec_madd( vec_ld(4*16*WTSZ,simd_diff_)  , my_xm1_y_z, \
+            vec_madd( vec_ld(4*15*WTSZ,simd_diff_)  , my_x_ym1_z, \
+            vec_mul ( vec_ld(4*14*WTSZ,simd_diff_)  , my_x_y_z)))));
  
     #define shift_pointers \
             phi_xp1_y_z   +=4; \
@@ -638,7 +642,7 @@ FGRDiffusion::FGRDiff_simd(const uint32_t start,const int32_t chunk_size, Array3
   vector4double my_xp1_ym1_z  =vec_ld(0,    phi_xp1_ym1_z );
   vector4double my_zero_vec = vec_splats(0.0);
  
-  double *simd_diff_ = diffCoefT2_.cBlock() + start*19;
+  WeightType *simd_diff_ = diffCoefT2_.cBlock() + start*19;
 
   B0 =  vec_madd(vec_ld(4*4*8,simd_diff_)  , my_xp1_y_z,
         vec_madd(vec_ld(3*4*8,simd_diff_)  , my_x_yp1_z,
