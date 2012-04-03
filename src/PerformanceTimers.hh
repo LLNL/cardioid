@@ -41,7 +41,8 @@ namespace PerformanceTimers
    extern TimerHandle diffusionBarrier7;
    extern TimerHandle diffusionBarrier8;
 #ifdef TIMING
-   extern TimerHandle FGR_Array2MatrixTimer;
+   extern TimerHandle FGR_ArrayLocal2MatrixTimer;
+   extern TimerHandle FGR_ArrayRemote2MatrixTimer;
    extern TimerHandle FGR_BarrierTimer;
    extern TimerHandle FGR_Barrier2Timer;
    extern TimerHandle FGR_AlignCopyTimer;

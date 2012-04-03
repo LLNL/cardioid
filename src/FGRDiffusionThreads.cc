@@ -19,7 +19,8 @@ using namespace FGRUtils;
 FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
                                          const Anatomy& anatomy,
                                          const ThreadTeam& threadInfo)
-: localGrid_(DiffusionUtils::findBoundingBox(anatomy)),
+: nLocal_(anatomy.nLocal()),
+  localGrid_(DiffusionUtils::findBoundingBox(anatomy)),
   threadInfo_(threadInfo),
   diffusionScale_(parms.diffusionScale_)
 {
@@ -38,26 +39,11 @@ FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
    }
    // This has been a test
 
-   int chunkSize = anatomy.nLocal() / threadInfo.nThreads();
-   int leftOver  = anatomy.nLocal() % threadInfo.nThreads();
-   threadOffset_.resize(threadInfo.nThreads()+1);
-   threadOffset_[0] = 0;
-   for (int ii=0; ii<threadInfo.nThreads(); ++ii)
-   {
-      threadOffset_[ii+1] = threadOffset_[ii] + chunkSize;
-      if (ii < leftOver)
-         ++threadOffset_[ii+1];
-   }
-   assert(threadOffset_[threadInfo_.nThreads()] == anatomy.nLocal());
+   mkOffsets(threadOffset_,     anatomy.nLocal(),  threadInfo_);
+   mkOffsets(localCopyOffset_,  anatomy.nLocal(),  threadInfo_);
+   mkOffsets(remoteCopyOffset_, anatomy.nRemote(), threadInfo_);
+   
 
-   barrierHandle_.resize(threadInfo.nThreads());
-   fgrBarrier_ = L2_BarrierWithSync_InitShared();
-   #pragma omp parallel
-   {
-      int tid = threadInfo.teamRank();
-      if (tid >= 0)
-         L2_BarrierWithSync_InitInThread(fgrBarrier_, &barrierHandle_[tid]);
-   }         
    
    weight_.resize(nx, ny, nz);
    VmBlock_.resize(nx, ny, nz);
@@ -97,28 +83,53 @@ FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
 }
 
 
-
-
-void FGRDiffusionThreads::calc(const vector<double>& Vm, vector<double>& dVm, double *recv_buf, int nLocal)
+void FGRDiffusionThreads::updateLocalVoltage(const double* VmLocal)
 {
+   #ifdef TIMING
+   profileStart(FGR_ArrayLocal2MatrixTimer);
+   #endif
    int tid = threadInfo_.teamRank();
-   
-#ifdef TIMING
-   profileStart(FGR_Array2MatrixTimer);
-#endif
-   updateVoltageBlock(Vm, recv_buf, nLocal);
-#ifdef TIMING
-   profileStop(FGR_Array2MatrixTimer);
-   profileStart(FGR_BarrierTimer);
-#endif
+   unsigned begin = localCopyOffset_[tid];
+   unsigned end   = localCopyOffset_[tid+1];
+   for (unsigned ii=begin; ii<end; ++ii)
+   {
+      int index = blockIndex_[ii];
+      VmBlock_(index) = VmLocal[ii];
+   }
+   #ifdef TIMING
+   profileStop(FGR_ArrayLocal2MatrixTimer);
+   #endif
+}
 
-   L2_BarrierWithSync_Barrier(fgrBarrier_, &barrierHandle_[tid], threadInfo_.nThreads());
+void FGRDiffusionThreads::updateRemoteVoltage(const double* VmRemote)
+{
+   #ifdef TIMING
+   profileStart(FGR_ArrayRemote2MatrixTimer);
+   #endif
+   int tid = threadInfo_.teamRank();
+   unsigned begin = remoteCopyOffset_[tid];
+   unsigned end   = remoteCopyOffset_[tid+1];
+   unsigned* bb = &blockIndex_[nLocal_];
+   for (unsigned ii=begin; ii<end; ++ii)
+   {
+      int index = bb[ii];
+      VmBlock_(index) = VmRemote[ii];
+   }
+   #ifdef TIMING
+   profileStop(FGR_ArrayRemote2MatrixTimer);
+   #endif
+}
 
+
+
+
+void FGRDiffusionThreads::calc(vector<double>& dVm)
+{
 #ifdef TIMING
-   profileStop(FGR_BarrierTimer);
    profileStart(FGR_StencilTimer);
 #endif
 
+   int tid = threadInfo_.teamRank();
    int begin = threadOffset_[tid];
    int end   = threadOffset_[tid+1];
    
@@ -225,26 +236,6 @@ void FGRDiffusionThreads::precomputeCoefficients(const Anatomy& anatomy)
    }
 //   printAllWeights(tissueBlk);
 }
-
-
-void FGRDiffusionThreads::updateVoltageBlock(const vector<double>& Vm,
-                                             double* VmRemote, int nLocal)
-{
-   for (unsigned ii=0; ii<nLocal; ++ii)
-   {
-      int index = blockIndex_[ii];
-      VmBlock_(index) = Vm[ii];
-   }
-   assert(nLocal <= Vm.size());
-   int nRemote = Vm.size() - nLocal;
-   unsigned* bb = &blockIndex_[nLocal];
-   for (unsigned ii=0; ii<nRemote; ++ii)
-   {
-      int index = bb[ii];
-      VmBlock_(index) = VmRemote[ii];
-   }
-}
-
 
 void FGRDiffusionThreads::mkTissueArray(
    const Array3d<int>& tissueBlk, int ib, int* tissue)

@@ -77,7 +77,8 @@ namespace PerformanceTimers
    TimerHandle diffusionBarrier7;
    TimerHandle diffusionBarrier8;
 #ifdef TIMING
-   TimerHandle FGR_Array2MatrixTimer;
+   TimerHandle FGR_ArrayLocal2MatrixTimer;
+   TimerHandle FGR_ArrayRemote2MatrixTimer;
    TimerHandle FGR_BarrierTimer;
    TimerHandle FGR_Barrier2Timer;
    TimerHandle FGR_AlignCopyTimer;
@@ -133,7 +134,8 @@ void  profileInit()
    reactionL2ArriveTimer = profileGetHandle("reactionL2Arrive");
    reactionL2ResetTimer = profileGetHandle("reactionL2Reset");
 #ifdef TIMING
-   FGR_Array2MatrixTimer = profileGetHandle("FGR_Array2Matrix");
+   FGR_ArrayLocal2MatrixTimer = profileGetHandle("FGR_ALocal2Matrix");
+   FGR_ArrayRemote2MatrixTimer = profileGetHandle("FGR_ARemote2Matrix");
    FGR_BarrierTimer = profileGetHandle("FGR_Barrier");
    FGR_Barrier2Timer = profileGetHandle("FGR_Barrier2");
    FGR_AlignCopyTimer = profileGetHandle("FGR_AlignCopy");

@@ -148,7 +148,9 @@ void simulationLoop(Simulate& sim)
 
       // DIFFUSION
       profileStart(diffusionCalcTimer);
-      sim.diffusion_->calc(sim.VmArray_, dVmDiffusion, voltageExchange.get_recv_buf_(), nLocal);
+      sim.diffusion_->updateLocalVoltage(&(sim.VmArray_[0]));
+      sim.diffusion_->updateRemoteVoltage(voltageExchange.get_recv_buf_());
+      sim.diffusion_->calc(dVmDiffusion);
       profileStop(diffusionCalcTimer);
 
       // code to limit or set iStimArray goes here.
@@ -285,8 +287,12 @@ void diffusionLoop(Simulate& sim,
 
       // DIFFUSION
       profileStart(diffusionCalcTimer);
-      sim.diffusion_->calc(sim.VmArray_, loopData.dVmDiffusion,
-                           loopData.voltageExchange.get_recv_buf_(), nLocal);
+      sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
+      sim.diffusion_->updateRemoteVoltage(loopData.voltageExchange.get_recv_buf_());
+      // temporary barrier
+      L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
+                                 sim.diffusionThreads_.nThreads());
+      sim.diffusion_->calc(loopData.dVmDiffusion);
       profileStop(diffusionCalcTimer);
       
 //       profileStart(diffusionBarrier4);

@@ -17,19 +17,22 @@ class FGRDiffusionOMP : public Diffusion
       const FGRUtils::FGRDiffusionParms& parms,
       const Anatomy& anatomy);
    
-   void calc(const std::vector<double>& Vm, std::vector<double>& dVm, double* VmRemote, int nLocal);
+   void updateLocalVoltage(const double* VmLocal);
+   void updateRemoteVoltage(const double* VmRemote);
+   void calc(std::vector<double>& dVm);
 
  private:
    void buildTupleArray(const Anatomy& anatomy);
    void buildBlockIndex(const Anatomy& anatomy);
    void precomputeCoefficients(const Anatomy& anatomy);
 
-   void updateVoltageBlock(const std::vector<double>& Vm, double* VmRemote, int nLocal);
    void mkTissueArray(const Array3d<int>& tissueBlk, int ib, int* tissue);
    Vector f1(int ib, int iFace, const Vector& h,
              const Array3d<SymmetricTensor>& sigmaBlk);
    void printAllWeights(const Array3d<int>& tissue);
 
+   int                             nLocal_;
+   int                             nRemote_;
    int                             offset_[19];
    int                             faceNbrOffset_[6];
    LocalGrid                       localGrid_;

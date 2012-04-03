@@ -15,7 +15,9 @@ using namespace FGRUtils;
 
 FGRDiffusionOMP::FGRDiffusionOMP(const FGRDiffusionParms& parms,
                                  const Anatomy& anatomy)
-: localGrid_(DiffusionUtils::findBoundingBox(anatomy)),
+: nLocal_(anatomy.nLocal()),
+  nRemote_(anatomy.nRemote()),
+  localGrid_(DiffusionUtils::findBoundingBox(anatomy)),
   diffusionScale_(parms.diffusionScale_)
 {
 
@@ -71,19 +73,48 @@ FGRDiffusionOMP::FGRDiffusionOMP(const FGRDiffusionParms& parms,
 }
 
 
-
-
-void FGRDiffusionOMP::calc(const vector<double>& Vm, vector<double>& dVm, double* VmRemote, int nLocal)
+void FGRDiffusionOMP::updateLocalVoltage(const double* VmLocal)
 {
-   
-#ifdef TIMING
-   profileStart(FGR_Array2MatrixTimer);
-#endif
-   updateVoltageBlock(Vm, VmRemote, nLocal);
-#ifdef TIMING
-   profileStop(FGR_Array2MatrixTimer);
-#endif
+#pragma omp parallel
+   {
+   #ifdef TIMING
+      profileStart(FGR_ArrayLocal2MatrixTimer);
+   #endif
+      #pragma omp for
+      for (int ii=0; ii<nLocal_; ++ii)
+      {
+         int index = blockIndex_[ii];
+         VmBlock_(index) = VmLocal[ii];
+      }
+   #ifdef TIMING
+      profileStop(FGR_ArrayLocal2MatrixTimer);
+   #endif
+   }
+}
 
+void FGRDiffusionOMP::updateRemoteVoltage(const double* VmRemote)
+{
+#pragma omp parallel
+   {
+   #ifdef TIMING
+      profileStart(FGR_ArrayRemote2MatrixTimer);
+   #endif
+      unsigned* bb = &blockIndex_[nLocal_];
+      #pragma omp for
+      for (int ii=0; ii<nRemote_; ++ii)
+      {
+         int index = bb[ii];
+         VmBlock_(index) = VmRemote[ii];
+      }
+   #ifdef TIMING
+      profileStop(FGR_ArrayRemote2MatrixTimer);
+   #endif
+   }
+}
+
+
+void FGRDiffusionOMP::calc(vector<double>& dVm)
+{
    int nCells = dVm.size();
 #pragma omp parallel
    {// parallel section to contain timer start/stop
@@ -199,24 +230,6 @@ void FGRDiffusionOMP::precomputeCoefficients(const Anatomy& anatomy)
 //   printAllWeights(tissueBlk);
 }
 
-
-void FGRDiffusionOMP::updateVoltageBlock(const vector<double>& Vm,
-                                         double* VmRemote, int nLocal)
-{
-   for (unsigned ii=0; ii<nLocal; ++ii)
-   {
-      int index = blockIndex_[ii];
-      VmBlock_(index) = Vm[ii];
-   }
-   assert(nLocal <= Vm.size());
-   int nRemote = Vm.size() - nLocal;
-   unsigned* bb = &blockIndex_[nLocal];
-   for (unsigned ii=0; ii<nRemote; ++ii)
-   {
-      int index = bb[ii];
-      VmBlock_(index) = VmRemote[ii];
-   }
-}
 
 void FGRDiffusionOMP::mkTissueArray(
    const Array3d<int>& tissueBlk, int ib, int* tissue)

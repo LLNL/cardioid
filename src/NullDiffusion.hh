@@ -8,8 +8,9 @@ class NullDiffusion : public Diffusion
  public:
    NullDiffusion(){};
    
-   void calc(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf, int nLocal){};
-   void calc_simd(const std::vector<double>& Vm, std::vector<double>& dVm, double *recv_buf, int nLocal){};
+   void updateLocalVoltage(const double* VmLocal){};
+   void updateRemoteVoltage(const double* VmRemote){};
+   void calc(std::vector<double>& dVm){};
 };
 
 

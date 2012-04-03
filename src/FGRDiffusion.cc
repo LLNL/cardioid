@@ -13,7 +13,6 @@
 using namespace PerformanceTimers;
 #endif
 
-//#define check_same
 using namespace std;
 using namespace FGRUtils;
 
@@ -21,7 +20,8 @@ using namespace FGRUtils;
 FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
                            const Anatomy& anatomy,
                            const ThreadTeam& threadInfo)
-: localGrid_(DiffusionUtils::findBoundingBox_simd(anatomy)),
+: nLocal_(anatomy.nLocal()),
+  localGrid_(DiffusionUtils::findBoundingBox_simd(anatomy)),
   threadInfo_(threadInfo),
   diffusionScale_(parms.diffusionScale_)
 {
@@ -40,21 +40,13 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
    }
    // This has been a test
 
-   int chunkSize = anatomy.nLocal() / threadInfo.nThreads();
-   int leftOver  = anatomy.nLocal() % threadInfo.nThreads();
-   threadOffset_.resize(threadInfo.nThreads()+1);
-   threadOffset_[0] = 0;
-   for (int ii=0; ii<threadInfo.nThreads(); ++ii)
-   {
-      threadOffset_[ii+1] = threadOffset_[ii] + chunkSize;
-      if (ii < leftOver)
-         ++threadOffset_[ii+1];
-   }
-   assert(threadOffset_[threadInfo_.nThreads()] == anatomy.nLocal());
+   mkOffsets(threadOffset_,     anatomy.nLocal(),  threadInfo_);
+   mkOffsets(localCopyOffset_,  anatomy.nLocal(),  threadInfo_);
+   mkOffsets(remoteCopyOffset_, anatomy.nRemote(), threadInfo_);
 
    //simd thread offsets
-   chunkSize = (nx-2) / threadInfo.nThreads();
-   leftOver = (nx-2) % threadInfo.nThreads();
+   int chunkSize = (nx-2) / threadInfo.nThreads();
+   int leftOver = (nx-2) % threadInfo.nThreads();
    threadOffsetSimd_.resize(threadInfo.nThreads()+1);
    threadOffsetSimd_[0]=1;
    for (int ii=0; ii<threadInfo.nThreads(); ++ii)
@@ -113,28 +105,52 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
    reorder_Coeff();
 
    assert(nz%4 == 0);
-   tmp_dVm.resize(nx,ny,nz + (nz%4==0 ? 0:4-(nz%4)));
+   dVmBlock_.resize(nx,ny,nz + (nz%4==0 ? 0:4-(nz%4)));
 
 }
 
+void FGRDiffusion::updateLocalVoltage(const double* VmLocal)
+{
+   #ifdef TIMING
+   profileStart(FGR_ArrayLocal2MatrixTimer);
+   #endif
+   int tid = threadInfo_.teamRank();
+   unsigned begin = localCopyOffset_[tid];
+   unsigned end   = localCopyOffset_[tid+1];
+   for (unsigned ii=begin; ii<end; ++ii)
+   {
+      int index = blockIndex_[ii];
+      VmBlock_(index) = VmLocal[ii];
+   }
+   #ifdef TIMING
+   profileStop(FGR_ArrayLocal2MatrixTimer);
+   #endif
+}
 
-
+void FGRDiffusion::updateRemoteVoltage(const double* VmRemote)
+{
+   #ifdef TIMING
+   profileStart(FGR_ArrayRemote2MatrixTimer);
+   #endif
+   int tid = threadInfo_.teamRank();
+   unsigned begin = remoteCopyOffset_[tid];
+   unsigned end   = remoteCopyOffset_[tid+1];
+   unsigned* bb = &blockIndex_[nLocal_];
+   for (unsigned ii=begin; ii<end; ++ii)
+   {
+      int index = bb[ii];
+      VmBlock_(index) = VmRemote[ii];
+   }
+   #ifdef TIMING
+   profileStop(FGR_ArrayRemote2MatrixTimer);
+   #endif
+}
 
 /** threaded simd version */
-void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *recv_buf_, int nLocal)
+void FGRDiffusion::calc(vector<double>& dVm)
 {
    int tid = threadInfo_.teamRank();
 #ifdef TIMING
-   profileStart(FGR_Array2MatrixTimer);
-#endif
-   if ( tid==0 ) updateVoltageBlock(Vm, recv_buf_, nLocal);
-#ifdef TIMING
-   profileStop(FGR_Array2MatrixTimer);
-   profileStart(FGR_BarrierTimer);
-#endif
-   L2_BarrierWithSync_Barrier(fgrBarrier_, &barrierHandle_[tid], threadInfo_.nThreads());
-#ifdef TIMING
-   profileStop(FGR_BarrierTimer);
    profileStart(FGR_AlignCopyTimer);
 #endif
 
@@ -143,6 +159,7 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *r
    //make sure z is multiple of 4
    if(VmBlock_.nz()%4 != 0)
    {
+      assert(false); // this shouldn't ever happen.
      int nz_4 = VmBlock_.nz() + 4-VmBlock_.nz()%4;
      VmTmp = new Array3d<double>;
      VmTmp->resize(VmBlock_.nx(),VmBlock_.ny(),nz_4);
@@ -165,9 +182,9 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *r
    //uint32_t end = VmTmp->tupleToIndex(threadOffsetSimd_[tid+1]-1,VmTmp->ny()-2,VmTmp->nz());
    //   printf("simd version:%d-%d\n",begin,end);
    //if (threadOffsetSimd_[tid] < threadOffsetSimd_[tid+1] )
-   //   FGRDiff_simd_thread(begin,end-begin,VmTmp,tmp_dVm.cBlock());
+   //   FGRDiff_simd_thread(begin,end-begin,VmTmp,dVmBlock_.cBlock());
    if (threadOffsetSimd_[tid] < threadOffsetSimd_[tid+1] )
-      FGRDiff_simd_thread(threadOffsetSimd_[tid] ,threadOffsetSimd_[tid+1],VmTmp,tmp_dVm.cBlock());
+      FGRDiff_simd_thread(threadOffsetSimd_[tid] ,threadOffsetSimd_[tid+1],VmTmp,dVmBlock_.cBlock());
 
 #ifdef TIMING
    profileStop(FGR_StencilTimer);
@@ -182,11 +199,11 @@ void FGRDiffusion::calc(const vector<double>& Vm, vector<double>& dVm, double *r
 
    int begin = threadOffset_[tid];
    int end   = threadOffset_[tid+1];
-   double* tmp_dVm_ptr = tmp_dVm.cBlock();
+   double* dVmBlock_ptr = dVmBlock_.cBlock();
    for (int ii=begin; ii<end; ++ii)
    {
-      //dVm[ii] = tmp_dVm(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
-      dVm[ii] = tmp_dVm_ptr[blockIndex_[ii]];
+      //dVm[ii] = dVmBlock_(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
+      dVm[ii] = dVmBlock_ptr[blockIndex_[ii]];
       dVm[ii] *= diffusionScale_;
    }
 #ifdef TIMING
@@ -280,29 +297,6 @@ void FGRDiffusion::precomputeCoefficients(const Anatomy& anatomy)
    }
 //   printAllWeights(tissueBlk);
 }
-
-
-void FGRDiffusion::updateVoltageBlock(const vector<double>& Vm, double *recv_buf, int nLocal)
-{
-   for (unsigned ii=0; ii<nLocal; ++ii)
-   {
-      int index = blockIndex_[ii];
-      VmBlock_(index) = Vm[ii];
-   #ifdef check_same
-      VmBlock_(index) = rand();
-   #endif
-   }
-   assert(nLocal <= Vm.size());
-   for (unsigned ii=nLocal; ii<Vm.size(); ++ii)
-   {
-      int index = blockIndex_[ii];
-      VmBlock_(index) = recv_buf[ii-nLocal];
-   #ifdef check_same
-      VmBlock_(index) = rand();
-   #endif
-   }
-}
-
 
 void FGRDiffusion::mkTissueArray(
    const Array3d<int>& tissueBlk, int ib, int* tissue)
