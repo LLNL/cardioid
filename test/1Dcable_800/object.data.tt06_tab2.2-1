@@ -2,7 +2,7 @@ simulate SIMULATE
 {
    anatomy = pioAnatomy;
    decomposition = grid;
-   diffusion = Saleheen98Fast;
+   diffusion = FGR;
    reaction = TT06_CellML;
    stimulus = pointStimulus;
    sensor = pointSensor;
@@ -49,10 +49,9 @@ grid DECOMPOSITION
     visgrid = 0;
 }
 
-Saleheen98Fast DIFFUSION
+FGR DIFFUSION
 {
-   method = Saleheen98;
-   variant = precompute;
+   method = FGR;
    diffusionScale = 250.0;      // mm^3/mF
 }
 

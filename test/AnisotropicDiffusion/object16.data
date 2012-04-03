@@ -33,9 +33,7 @@ grid1 DECOMPOSITION
 
 diff1 DIFFUSION
 {
-   //method = Saleheen98;
    method = FGR;
-   variant = precompute;
    diffusionScale = 1. mm^3/mF;
 }
 

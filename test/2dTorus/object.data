@@ -2,7 +2,7 @@ simulate SIMULATE
 {
    anatomy = pioAnatomy;
    decomposition = koradi;
-   diffusion = Saleheen98;
+   diffusion = FGR;
    reaction = tt06;
    loop = 0;
    maxLoop = 50000;
@@ -33,10 +33,9 @@ koradi DECOMPOSITION
    tolerance = 0.001;
 }
 
-Saleheen98 DIFFUSION
+FGR DIFFUSION
 {
-   method = Saleheen98;
-   variant = precompute;
+   method = FGR;
    diffusionScale = 714.2857143; 
 }
 

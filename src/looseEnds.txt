@@ -13,10 +13,6 @@ conductivity models don't have to worry about the conversion.
 4.  The grid spacing (in mm) appears to be read from input.  Shouldn't
 this travel with the anatomy data?
 
-5.  I don't quite understand why I have to explicity cast calls to
-Array3D::cArray() to const.  See for example
-Saleheen98PrecomputeDiffusion::precomputeCoefficients.  I know that the
-return value isn't used in determining the overload resolution....
 
 6.  There is output in FibreConductivity.cc that isn't screened for rank
 

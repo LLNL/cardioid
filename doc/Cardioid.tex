@@ -448,9 +448,9 @@ A specified tensor for all cells.  All components are given in Siemens/mm.
 \subsection{DIFFUSION}
 
 \begin{keywords}
-  \kw{method}{Choose from ``FGR'', ``Saleheen98'', or ``SaleheenDev''}
-  {No Default. Note that the FGR method is strongly preferred and the
-    Saleheen methods are deprecated.  }
+  \kw{method}{Choose from ``FGR'', or ``null''.  Saleheen methods are no
+  longer supported.}
+  {Default: FGR}
   \kw{diffusionScale}{An overall scaling factor applied to $dV/dt$
     computed by the diffusion solver.  Presently, it is used to account
     for the membrane capacitance and surface to volume ratio.  The value
