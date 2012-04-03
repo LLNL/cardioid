@@ -34,7 +34,7 @@ HEARTSRC= cardioid.cc \
 	 diffusionFactory.cc reactionFactory.cc \
 	 stimulusFactory.cc sensorFactory.cc \
 	 FibreConductivity.cc JHUConductivity.cc\
-	 DiffusionUtils.cc Saleheen98Diffusion.cc SaleheenDev.cc \
+	 DiffusionUtils.cc \
 	 FGRDiffusion.cc \
 	 FGRDiffusionOMP.cc \
 	 FGRDiffusionThreads.cc \

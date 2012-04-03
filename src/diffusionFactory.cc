@@ -5,8 +5,6 @@
 #include "Diffusion.hh"
 #include "object_cc.hh"
 
-#include "Saleheen98Diffusion.hh"
-#include "SaleheenDev.hh"
 #include "FGRDiffusion.hh"
 #include "FGRDiffusionOMP.hh"
 #include "FGRDiffusionThreads.hh"
@@ -23,8 +21,6 @@ namespace
 {
    Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy,
                                   const ThreadTeam& threadInfo, int simLoopType);
-   Diffusion* saleheen98DiffusionFactory(OBJECT* obj, const Anatomy& anatomy);
-   Diffusion* saleheenDevFactory(OBJECT* obj, const Anatomy& anatomy);
    void checkForObsoleteKeywords(OBJECT* obj);
 }
 
@@ -36,16 +32,12 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
 
    checkForObsoleteKeywords(obj);
 
-   string method; objectGet(obj, "method", method, "");
+   string method; objectGet(obj, "method", method, "FGR");
 
    if (method.empty())
       assert(1==0);
    else if (method == "FGR")
       return fgrDiffusionFactory(obj, anatomy, threadInfo, simLoopType);
-   else if (method == "Saleheen98")
-      return saleheen98DiffusionFactory(obj, anatomy);
-   else if (method == "SaleheenDev")
-      return saleheenDevFactory(obj, anatomy);
    else if (method == "null")
       return new NullDiffusion();
    
@@ -79,42 +71,6 @@ namespace
    }
 }
 
-
-namespace
-{
-   Diffusion* saleheen98DiffusionFactory(OBJECT* obj, const Anatomy& anatomy)
-   {
-      Saleheen98DiffusionParms p;
-      objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0", "l^3/capacitance");
-
-      string variant;
-      objectGet(obj, "variant", variant, "precompute");
-
-      if (variant == "precompute")
-         return new Saleheen98PrecomputeDiffusion(p, anatomy);
-
-      assert(1==0); // reachable only due to bad input.
-      return 0;
-   }
-}
-
-namespace
-{
-   Diffusion* saleheenDevFactory(OBJECT* obj, const Anatomy& anatomy)
-   {
-      SaleheenDevParms p;
-      objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0", "l^3/capacitance");
-
-      string variant;
-      objectGet(obj, "variant", variant, "precompute");
-
-      if (variant == "precompute")
-         return new SaleheenDev(p, anatomy);
-
-      assert(1==0); // reachable only due to bad input.
-      return 0;
-   }
-}
 
 namespace
 {
