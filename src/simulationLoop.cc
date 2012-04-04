@@ -87,6 +87,10 @@ void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVm
       if (firstCall) printf("    Loop     Time         Vm(t)        dVm_r(t-h)      dVm_d(t-h)\n");
       printf("%8d %8.3f %15.8f %15.8f %15.8f\n",loop,sim.time_,sim.VmArray_[0],dVmR[0],dVmD[0]); 
    }
+
+   if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
+      writeCheckpoint(sim, MPI_COMM_WORLD);
+
    if (!firstCall) 
    { 
       if (loop % sim.snapshotRate_ == 0)
@@ -178,10 +182,7 @@ void simulationLoop(Simulate& sim)
       sim.time_ += sim.dt_;
       ++sim.loop_;
       stopTimer(integratorTimer);
-      if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
-         writeCheckpoint(sim, MPI_COMM_WORLD);
       loopIO(sim,dVmReaction,dVmDiffusion);
-
    }
 }
 
@@ -352,8 +353,6 @@ void diffusionLoop(Simulate& sim,
 
       if (tid == 0)
       {
-         if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
-            writeCheckpoint(sim, MPI_COMM_WORLD);
          loopIO(sim, loopData.dVmReactionCpy, loopData.dVmDiffusion);
       }
    }
