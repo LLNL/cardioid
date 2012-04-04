@@ -54,7 +54,7 @@ namespace PerformanceTimers
  * the main loop.  These can be compiled away by defining NTIMING.  For
  * timers outside the main loop consider calling profileStart and
  * profileStop instead */
-#ifdef NTIMING
+#ifndef NTIMING
 #define startTimer(handle)    \
    do                         \
    {                          \
