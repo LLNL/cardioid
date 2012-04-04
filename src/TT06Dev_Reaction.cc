@@ -118,16 +118,16 @@ void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<do
 void TT06Dev_Reaction::updateNonGate(double dt, const vector<double>& Vm, vector<double>& dVR)
 {
    int offset; 
-   profileStart(nonGateTimer);
+   startTimer(nonGateTimer);
    int nCells = nonGateWorkPartition(offset); 
    TT06Func::updateNonGate(dt, nCells,&Vm[offset], &(s_[offset]), offset, gates_, &dVR[offset]);
-   profileStop(nonGateTimer);
+   stopTimer(nonGateTimer);
 }
 void TT06Dev_Reaction::updateGate(double dt, const vector<double>& Vm)
 {
    int offset=0; 
    int nCells=nCells_; 
-   profileStart(gateTimer);
+   startTimer(gateTimer);
 #if (1) 
    nCells = nonGateWorkPartition(offset); 
    TT06Func::updateGate(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
@@ -138,7 +138,7 @@ void TT06Dev_Reaction::updateGate(double dt, const vector<double>& Vm)
    if (id ==2) TT06Func::updateGate2(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
    if (id ==3) TT06Func::updateGate3(dt, nCells,&Vm[offset], &(s_[offset]),offset,gates_);
 #endif
-   profileStop(gateTimer);
+   stopTimer(gateTimer);
 }
 
 

@@ -76,7 +76,6 @@ namespace PerformanceTimers
    TimerHandle diffusionBarrier6;
    TimerHandle diffusionBarrier7;
    TimerHandle diffusionBarrier8;
-#ifdef TIMING
    TimerHandle FGR_ArrayLocal2MatrixTimer;
    TimerHandle FGR_ArrayRemote2MatrixTimer;
    TimerHandle FGR_BarrierTimer;
@@ -85,7 +84,6 @@ namespace PerformanceTimers
    TimerHandle FGR_StencilTimer;
    TimerHandle FGR_Matrix2ArrayTimer;
    TimerHandle haloMove2BufTimer;
-#endif   
    
    vector<TimerStruct> timers_;
    typedef map<string, TimerHandle> HandleMap;
@@ -133,7 +131,6 @@ void  profileInit()
    diffusiondVmRCopyTimer = profileGetHandle("DiffdVmReactionCopy");
    reactionL2ArriveTimer = profileGetHandle("reactionL2Arrive");
    reactionL2ResetTimer = profileGetHandle("reactionL2Reset");
-#ifdef TIMING
    FGR_ArrayLocal2MatrixTimer = profileGetHandle("FGR_ALocal2Matrix");
    FGR_ArrayRemote2MatrixTimer = profileGetHandle("FGR_ARemote2Matrix");
    FGR_BarrierTimer = profileGetHandle("FGR_Barrier");
@@ -142,7 +139,6 @@ void  profileInit()
    FGR_StencilTimer = profileGetHandle("FGR_Stencil");
    FGR_Matrix2ArrayTimer = profileGetHandle("FGR_Matrix2Array");
    haloMove2BufTimer = profileGetHandle("HaloExchMove2Buf");
-#endif   
    machineSpecficInit(); 
 }
 void profileStart(const TimerHandle& handle)

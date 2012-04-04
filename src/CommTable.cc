@@ -8,10 +8,6 @@ using namespace std;
 
 using std::vector;
 
-#ifdef TIMING
-extern "C"{ long long timebase();}
-#endif
-
 /** Given the send-side routing information, the constructor figures out
  *  the corresponding recv side information, nRecv, sourceTask, and
  *  recvOffset.
@@ -60,24 +56,13 @@ CommTable::CommTable(
       MPI_Irecv(recvBuf+3*ii, 3, MPI_INT, MPI_ANY_SOURCE, tag, _comm, recvReq+ii);
    }
 
-#ifdef TIMING
-   //long long t1, t2;
-   //vector<long long> sendTimes(_sendTask.size());
-#endif   
    for (unsigned ii=0; ii<_sendTask.size(); ++ii)
    {
       sendBuf[3*ii] = myId;
       sendBuf[3*ii+1] = _sendOffset[ii+1] - _sendOffset[ii];
       sendBuf[3*ii+2] = ii;
       int dest = _sendTask[ii];
-#ifdef TIMING
-      //t1 = timebase();
-#endif      
       MPI_Isend(sendBuf+3*ii, 3, MPI_INT, dest, tag, _comm, sendReq+ii);
-#ifdef TIMING
-      //t2 = timebase();
-      //sendTimes[ii] = (t2-t1);
-#endif      
    }
    MPI_Waitall(_sendTask.size(), sendReq, MPI_STATUSES_IGNORE);
    MPI_Waitall(_recvTask.size(), recvReq, MPI_STATUSES_IGNORE);
@@ -86,11 +71,6 @@ CommTable::CommTable(
    MPI_Barrier(_comm);
 
  
-#ifdef TIMING
-   //for (unsigned ii=0; ii<_sendTask.size(); ++ii)
-   //   std::cout << "CommTable.timing1, myRank = " << myId_ << ", Isend to task " << _sendTask[ii] << " of size " << _sendOffset[ii+1]-_sendOffset[ii] << " :  " << sendTimes[ii] << " cycles" << std::endl;
-#endif
-   
    // set recvTask and recvOffset arrays.
    _recvOffset[0] = 0;
    for (unsigned ii=0; ii<_recvTask.size(); ++ii)

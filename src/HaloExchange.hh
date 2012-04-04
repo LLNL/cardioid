@@ -5,9 +5,7 @@
 #include <cassert>
 #include "CommTable.hh"
 #include <iostream>
-#ifdef TIMING
 #include "PerformanceTimers.hh"
-#endif
 using namespace std;
 
 #ifdef SPI
@@ -47,15 +45,11 @@ class HaloExchange
 
    void move2Buf(std::vector<T>& data)
    {
-#ifdef TIMING
-      profileStart(PerformanceTimers::haloMove2BufTimer);
-#endif 
+      startTimer(PerformanceTimers::haloMove2BufTimer);
       // fill send buffer
      assert(sendMap_.size() == commTable_->sendSize()); 
      for (unsigned ii=0; ii<sendMap_.size(); ++ii) { send_buf_[ii]=data[sendMap_[ii]]; }
-#ifdef TIMING
-     profileStop(PerformanceTimers::haloMove2BufTimer);
-#endif
+     stopTimer(PerformanceTimers::haloMove2BufTimer);
    };
 
    void set_recv_buf(int bw) { for (unsigned ii=0; ii<commTable_->recvSize();++ii) {recv_buf_[ii+bw*commTable_->recvSize()]=-1;} }

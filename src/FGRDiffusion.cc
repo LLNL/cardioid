@@ -8,10 +8,8 @@
 #include <cstdio>
 #include "ibmIntrinsics.hh"
 #include "ThreadServer.hh"
-#ifdef TIMING
 #include "PerformanceTimers.hh"
 using namespace PerformanceTimers;
-#endif
 
 using namespace std;
 using namespace FGRUtils;
@@ -111,9 +109,7 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
 
 void FGRDiffusion::updateLocalVoltage(const double* VmLocal)
 {
-   #ifdef TIMING
-   profileStart(FGR_ArrayLocal2MatrixTimer);
-   #endif
+   startTimer(FGR_ArrayLocal2MatrixTimer);
    int tid = threadInfo_.teamRank();
    unsigned begin = localCopyOffset_[tid];
    unsigned end   = localCopyOffset_[tid+1];
@@ -122,16 +118,12 @@ void FGRDiffusion::updateLocalVoltage(const double* VmLocal)
       int index = blockIndex_[ii];
       VmBlock_(index) = VmLocal[ii];
    }
-   #ifdef TIMING
-   profileStop(FGR_ArrayLocal2MatrixTimer);
-   #endif
+   stopTimer(FGR_ArrayLocal2MatrixTimer);
 }
 
 void FGRDiffusion::updateRemoteVoltage(const double* VmRemote)
 {
-   #ifdef TIMING
-   profileStart(FGR_ArrayRemote2MatrixTimer);
-   #endif
+   startTimer(FGR_ArrayRemote2MatrixTimer);
    int tid = threadInfo_.teamRank();
    unsigned begin = remoteCopyOffset_[tid];
    unsigned end   = remoteCopyOffset_[tid+1];
@@ -141,18 +133,14 @@ void FGRDiffusion::updateRemoteVoltage(const double* VmRemote)
       int index = bb[ii];
       VmBlock_(index) = VmRemote[ii];
    }
-   #ifdef TIMING
-   profileStop(FGR_ArrayRemote2MatrixTimer);
-   #endif
+   stopTimer(FGR_ArrayRemote2MatrixTimer);
 }
 
 /** threaded simd version */
 void FGRDiffusion::calc(vector<double>& dVm)
 {
    int tid = threadInfo_.teamRank();
-#ifdef TIMING
-   profileStart(FGR_AlignCopyTimer);
-#endif
+   startTimer(FGR_AlignCopyTimer);
 
    Array3d<double> *VmTmp = &(VmBlock_);
 
@@ -170,14 +158,10 @@ void FGRDiffusion::calc(vector<double>& dVm)
        (*VmTmp)(ii,jj,kk) = VmBlock_(ii,jj,kk);
      }
    }
-
-#ifdef TIMING
-   profileStop(FGR_AlignCopyTimer);
-#endif
+   stopTimer(FGR_AlignCopyTimer);
    
-#ifdef TIMING
-   profileStart(FGR_StencilTimer);
-#endif
+   startTimer(FGR_StencilTimer);
+
    //uint32_t begin = VmTmp->tupleToIndex(threadOffsetSimd_[tid],1,0);
    //uint32_t end = VmTmp->tupleToIndex(threadOffsetSimd_[tid+1]-1,VmTmp->ny()-2,VmTmp->nz());
    //   printf("simd version:%d-%d\n",begin,end);
@@ -186,15 +170,14 @@ void FGRDiffusion::calc(vector<double>& dVm)
    if (threadOffsetSimd_[tid] < threadOffsetSimd_[tid+1] )
       FGRDiff_simd_thread(threadOffsetSimd_[tid] ,threadOffsetSimd_[tid+1],VmTmp,dVmBlock_.cBlock());
 
-#ifdef TIMING
-   profileStop(FGR_StencilTimer);
-   profileStart(FGR_Barrier2Timer);
-#endif
+   stopTimer(FGR_StencilTimer);
+
+   startTimer(FGR_Barrier2Timer);
    L2_BarrierWithSync_Barrier(fgrBarrier_, &barrierHandle_[tid], threadInfo_.nThreads());
-#ifdef TIMING
-   profileStop(FGR_Barrier2Timer);
-   profileStart(FGR_Matrix2ArrayTimer);
-#endif
+   stopTimer(FGR_Barrier2Timer);
+
+   startTimer(FGR_Matrix2ArrayTimer);
+
    if(VmBlock_.nz()%4 != 0) delete VmTmp;
 
    int begin = threadOffset_[tid];
@@ -206,9 +189,7 @@ void FGRDiffusion::calc(vector<double>& dVm)
       dVm[ii] = dVmBlock_ptr[blockIndex_[ii]];
       dVm[ii] *= diffusionScale_;
    }
-#ifdef TIMING
-   profileStop(FGR_Matrix2ArrayTimer);
-#endif
+   stopTimer(FGR_Matrix2ArrayTimer);
 }
 
 /** We're building the localTuple array only for local cells.  We can't

@@ -5,11 +5,9 @@
 #include "Vector.hh"
 #include <algorithm>
 #include <cstdio>
-#ifdef TIMING
 #include "PerformanceTimers.hh"
-using namespace PerformanceTimers;
-#endif
 
+using namespace PerformanceTimers;
 using namespace std;
 using namespace FGRUtils;
 
@@ -77,18 +75,14 @@ void FGRDiffusionOMP::updateLocalVoltage(const double* VmLocal)
 {
 #pragma omp parallel
    {
-   #ifdef TIMING
-      profileStart(FGR_ArrayLocal2MatrixTimer);
-   #endif
+      startTimer(FGR_ArrayLocal2MatrixTimer);
       #pragma omp for
       for (int ii=0; ii<nLocal_; ++ii)
       {
          int index = blockIndex_[ii];
          VmBlock_(index) = VmLocal[ii];
       }
-   #ifdef TIMING
-      profileStop(FGR_ArrayLocal2MatrixTimer);
-   #endif
+      stopTimer(FGR_ArrayLocal2MatrixTimer);
    }
 }
 
@@ -96,9 +90,7 @@ void FGRDiffusionOMP::updateRemoteVoltage(const double* VmRemote)
 {
 #pragma omp parallel
    {
-   #ifdef TIMING
-      profileStart(FGR_ArrayRemote2MatrixTimer);
-   #endif
+      startTimer(FGR_ArrayRemote2MatrixTimer);
       unsigned* bb = &blockIndex_[nLocal_];
       #pragma omp for
       for (int ii=0; ii<nRemote_; ++ii)
@@ -106,9 +98,7 @@ void FGRDiffusionOMP::updateRemoteVoltage(const double* VmRemote)
          int index = bb[ii];
          VmBlock_(index) = VmRemote[ii];
       }
-   #ifdef TIMING
-      profileStop(FGR_ArrayRemote2MatrixTimer);
-   #endif
+      stopTimer(FGR_ArrayRemote2MatrixTimer);
    }
 }
 
@@ -118,9 +108,7 @@ void FGRDiffusionOMP::calc(vector<double>& dVm)
    int nCells = dVm.size();
 #pragma omp parallel
    {// parallel section to contain timer start/stop
-   #ifdef TIMING
-      profileStart(FGR_StencilTimer);
-   #endif
+      startTimer(FGR_StencilTimer);
       # pragma omp for nowait
       for (int iCell=0; iCell<nCells; ++iCell)
       {
@@ -134,9 +122,7 @@ void FGRDiffusionOMP::calc(vector<double>& dVm)
          
          dVm[iCell] = tmp*diffusionScale_;
       }
-   #ifdef TIMING
-      profileStop(FGR_StencilTimer);
-   #endif
+      stopTimer(FGR_StencilTimer);
    } // parallel section
 }
 

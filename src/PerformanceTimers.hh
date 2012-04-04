@@ -40,7 +40,6 @@ namespace PerformanceTimers
    extern TimerHandle diffusionBarrier6;
    extern TimerHandle diffusionBarrier7;
    extern TimerHandle diffusionBarrier8;
-#ifdef TIMING
    extern TimerHandle FGR_ArrayLocal2MatrixTimer;
    extern TimerHandle FGR_ArrayRemote2MatrixTimer;
    extern TimerHandle FGR_BarrierTimer;
@@ -49,12 +48,39 @@ namespace PerformanceTimers
    extern TimerHandle FGR_StencilTimer;
    extern TimerHandle FGR_Matrix2ArrayTimer;
    extern TimerHandle haloMove2BufTimer;
-#endif    
 };
+
+/** Use the startTimer and stopTimer macros for timers that are inside
+ * the main loop.  These can be compiled away by defining NTIMING.  For
+ * timers outside the main loop consider calling profileStart and
+ * profileStop instead */
+#ifdef NTIMING
+#define startTimer(handle)    \
+   do                         \
+   {                          \
+      profileStart(handle)    \
+   } while(0)
+#define stopTimer(handle)     \
+   do                         \
+   {                          \
+      profileStop(handle)     \
+   } while(0)
+#else
+#define startTimer(handle)
+#define stopTimer(handle)
+#endif
+
+/** Use these function calls only for timers that should *never* be
+ *  turned off.  Typically this means they are outside the main
+ *  simulation loop.  If the timer is inside the main loop use
+ *  startTimer and stopTimer instead */
 void profileStart(const TimerHandle& handle);
 void profileStop(const TimerHandle& handle);
 void profileStart(const std::string& timerName);
 void profileStop(const std::string& timerName);
+
+
+
 
 TimerHandle profileGetHandle(std::string timerName);
 

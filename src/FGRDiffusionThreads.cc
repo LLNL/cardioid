@@ -7,11 +7,9 @@
 #include <algorithm>
 #include <cstdio>
 #include "ThreadServer.hh"
-#ifdef TIMING
 #include "PerformanceTimers.hh"
-using namespace PerformanceTimers;
-#endif
 
+using namespace PerformanceTimers;
 using namespace std;
 using namespace FGRUtils;
 
@@ -85,9 +83,7 @@ FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
 
 void FGRDiffusionThreads::updateLocalVoltage(const double* VmLocal)
 {
-   #ifdef TIMING
-   profileStart(FGR_ArrayLocal2MatrixTimer);
-   #endif
+   startTimer(FGR_ArrayLocal2MatrixTimer);
    int tid = threadInfo_.teamRank();
    unsigned begin = localCopyOffset_[tid];
    unsigned end   = localCopyOffset_[tid+1];
@@ -96,16 +92,12 @@ void FGRDiffusionThreads::updateLocalVoltage(const double* VmLocal)
       int index = blockIndex_[ii];
       VmBlock_(index) = VmLocal[ii];
    }
-   #ifdef TIMING
-   profileStop(FGR_ArrayLocal2MatrixTimer);
-   #endif
+   stopTimer(FGR_ArrayLocal2MatrixTimer);
 }
 
 void FGRDiffusionThreads::updateRemoteVoltage(const double* VmRemote)
 {
-   #ifdef TIMING
-   profileStart(FGR_ArrayRemote2MatrixTimer);
-   #endif
+   startTimer(FGR_ArrayRemote2MatrixTimer);
    int tid = threadInfo_.teamRank();
    unsigned begin = remoteCopyOffset_[tid];
    unsigned end   = remoteCopyOffset_[tid+1];
@@ -115,9 +107,7 @@ void FGRDiffusionThreads::updateRemoteVoltage(const double* VmRemote)
       int index = bb[ii];
       VmBlock_(index) = VmRemote[ii];
    }
-   #ifdef TIMING
-   profileStop(FGR_ArrayRemote2MatrixTimer);
-   #endif
+   stopTimer(FGR_ArrayRemote2MatrixTimer);
 }
 
 
@@ -125,9 +115,7 @@ void FGRDiffusionThreads::updateRemoteVoltage(const double* VmRemote)
 
 void FGRDiffusionThreads::calc(vector<double>& dVm)
 {
-#ifdef TIMING
-   profileStart(FGR_StencilTimer);
-#endif
+   startTimer(FGR_StencilTimer);
 
    int tid = threadInfo_.teamRank();
    int begin = threadOffset_[tid];
@@ -145,9 +133,7 @@ void FGRDiffusionThreads::calc(vector<double>& dVm)
       
       dVm[iCell] *= diffusionScale_;
    }
-#ifdef TIMING
-   profileStop(FGR_StencilTimer);
-#endif
+   stopTimer(FGR_StencilTimer);
 }
 
 /** We're building the localTuple array only for local cells.  We can't

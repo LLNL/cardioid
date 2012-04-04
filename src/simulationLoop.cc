@@ -70,15 +70,14 @@ void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVm
    int loop = sim.loop_; 
 
    // SENSORS
-   profileStart(sensorTimer);
+   startTimer(sensorTimer);
    for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
    {
        if (loop % sim.sensor_[ii]->evalRate() == 0) sim.sensor_[ii]->eval(sim.time_, loop, sim.VmArray_, dVmR, dVmD);
    }
-   profileStop(sensorTimer);
+   stopTimer(sensorTimer);
 
-   profileStart(loopIOTimer);
-      
+   startTimer(loopIOTimer);
    for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
    {
       if (loop % sim.sensor_[ii]->printRate() == 0) sim.sensor_[ii]->print(sim.time_, loop, sim.VmArray_, dVmR, dVmD);
@@ -108,7 +107,7 @@ void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVm
          
    }
    firstCall=0; 
-   profileStop(loopIOTimer);
+   stopTimer(loopIOTimer);
 }
 
 
@@ -135,38 +134,38 @@ void simulationLoop(Simulate& sim)
    {
       int nLocal = sim.anatomy_.nLocal();
     
-#if defined(SPI) && defined(TIMING)
-      profileStart(imbalanceTimer);
+#if defined(SPI)
+      startTimer(imbalanceTimer);
       voltageExchange.barrier();
-      profileStop(imbalanceTimer);
+      stopTimer(imbalanceTimer);
 #endif
       
-      profileStart(haloTimer);
+      startTimer(haloTimer);
       voltageExchange.execute(sim.VmArray_, nLocal);
       voltageExchange.complete();
-      profileStop(haloTimer);
+      stopTimer(haloTimer);
 
       // DIFFUSION
-      profileStart(diffusionCalcTimer);
+      startTimer(diffusionCalcTimer);
       sim.diffusion_->updateLocalVoltage(&(sim.VmArray_[0]));
       sim.diffusion_->updateRemoteVoltage(voltageExchange.get_recv_buf_());
       sim.diffusion_->calc(dVmDiffusion);
-      profileStop(diffusionCalcTimer);
+      stopTimer(diffusionCalcTimer);
 
       // code to limit or set iStimArray goes here.
-      profileStart(stimulusTimer);
+      startTimer(stimulusTimer);
       // add stimulus to dVmDiffusion
       for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii) sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
       for (unsigned ii=0; ii<nLocal; ++ii) iStim[ii] = -(dVmDiffusion[ii]);
-      profileStop(stimulusTimer);
+      stopTimer(stimulusTimer);
 
       
       // REACTION
-      profileStart(reactionTimer);
+      startTimer(reactionTimer);
       sim.reaction_->calc(sim.dt_, sim.VmArray_, iStim, dVmReaction);
-      profileStop(reactionTimer);
+      stopTimer(reactionTimer);
 
-      profileStart(integratorTimer);
+      startTimer(integratorTimer);
 #ifdef BGQ
       // BG/Q C++ compiler can't SIMDize, use C compiler
       integrateLoop(nLocal,sim.dt_,(double*)&dVmReaction[0],(double*)&dVmDiffusion[0],(double*)&sim.VmArray_[0]);
@@ -179,7 +178,7 @@ void simulationLoop(Simulate& sim)
 #endif
       sim.time_ += sim.dt_;
       ++sim.loop_;
-      profileStop(integratorTimer);
+      stopTimer(integratorTimer);
       if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0) writeCheckpoint(sim, MPI_COMM_WORLD);
       loopIO(sim,dVmReaction,dVmDiffusion);
 
@@ -245,103 +244,103 @@ void diffusionLoop(Simulate& sim,
                    L2_BarrierHandle_t& reactionHandle,
                    L2_BarrierHandle_t& diffusionHandle)
 {
+   profileStart(diffusionLoopTimer);
    int tid = sim.diffusionThreads_.teamRank();
    L2_BarrierHandle_t haloBarrierHandle;
    L2_BarrierWithSync_InitInThread(loopData.haloBarrier, &haloBarrierHandle);
    
    while ( sim.loop_ < sim.maxLoop_ )
    {
-      profileStart(diffusionLoopTimer);
       int nLocal = sim.anatomy_.nLocal();
     
       if (tid == 0)
       {
-#if defined(SPI) && defined(TIMING)
-         profileStart(diffusionImbalanceTimer);
+#if defined(SPI)
+         startTimer(diffusionImbalanceTimer);
          loopData.voltageExchange.barrier();
-         profileStop(diffusionImbalanceTimer);
+         stopTimer(diffusionImbalanceTimer);
 #endif         
-         profileStart(haloTimer);
-         profileStart(haloTimerExecute);
+         startTimer(haloTimer);
+         startTimer(haloTimerExecute);
          loopData.voltageExchange.execute(sim.VmArray_, nLocal);
-         profileStop(haloTimerExecute);
-         profileStart(haloTimerComplete);
+         stopTimer(haloTimerExecute);
+         startTimer(haloTimerComplete);
          loopData.voltageExchange.complete();
-         profileStop(haloTimerComplete);
-         profileStop(haloTimer);
+         stopTimer(haloTimerComplete);
+         stopTimer(haloTimer);
       }
       
-//       profileStart(diffusionBarrier2);
+//       startTimer(diffusionBarrier2);
 //       loopData.voltageExchange.barrier();
-//       profileStop(diffusionBarrier2);
+//       stopTimer(diffusionBarrier2);
 
          // Need a barrier for the completion of the halo exchange.
-      profileStart(diffusionL2BarrierHalo1Timer);
+      startTimer(diffusionL2BarrierHalo1Timer);
       L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
                                  sim.diffusionThreads_.nThreads());
-      profileStop(diffusionL2BarrierHalo1Timer);
+      stopTimer(diffusionL2BarrierHalo1Timer);
       
-//       profileStart(diffusionBarrier3);
+//       startTimer(diffusionBarrier3);
 //       loopData.voltageExchange.barrier();
-//       profileStop(diffusionBarrier3);
+//       stopTimer(diffusionBarrier3);
 
       // DIFFUSION
-      profileStart(diffusionCalcTimer);
+      startTimer(diffusionCalcTimer);
       sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
       sim.diffusion_->updateRemoteVoltage(loopData.voltageExchange.get_recv_buf_());
       // temporary barrier
       L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
                                  sim.diffusionThreads_.nThreads());
       sim.diffusion_->calc(loopData.dVmDiffusion);
-      profileStop(diffusionCalcTimer);
+      stopTimer(diffusionCalcTimer);
       
-//       profileStart(diffusionBarrier4);
+//       startTimer(diffusionBarrier4);
 //       loopData.voltageExchange.barrier();
-//       profileStop(diffusionBarrier4);
+//       stopTimer(diffusionBarrier4);
 
-      profileStart(diffusionL2BarrierHalo2Timer);
+      startTimer(diffusionL2BarrierHalo2Timer);
       L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
                                  sim.diffusionThreads_.nThreads());
-      profileStop(diffusionL2BarrierHalo2Timer);
+      stopTimer(diffusionL2BarrierHalo2Timer);
 
-//       profileStart(diffusionBarrier5);
+//       startTimer(diffusionBarrier5);
 //       loopData.voltageExchange.barrier();
-//       profileStop(diffusionBarrier5);
+//       stopTimer(diffusionBarrier5);
 
       
       if (tid == 0)
       {
-         profileStart(stimulusTimer);
+         startTimer(stimulusTimer);
          // add stimulus to dVmDiffusion
          for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
             sim.stimulus_[ii]->stim(sim.time_, loopData.dVmDiffusion);
-         profileStop(stimulusTimer);
+         stopTimer(stimulusTimer);
       }
 
-//       profileStart(diffusionBarrier6);
+//       startTimer(diffusionBarrier6);
 //       loopData.voltageExchange.barrier();
-//       profileStop(diffusionBarrier6);
+//       stopTimer(diffusionBarrier6);
 
-      profileStart(diffusionWaitTimer); 
+      startTimer(diffusionWaitTimer); 
       L2_BarrierWithSync_WaitAndReset(loopData.reactionBarrier,
                                       &reactionHandle,
                                       sim.reactionThreads_.nThreads());
-      profileStop(diffusionWaitTimer); 
-//       profileStart(diffusionBarrier7);
+      stopTimer(diffusionWaitTimer); 
+//       startTimer(diffusionBarrier7);
 //       loopData.voltageExchange.barrier();
-//       profileStop(diffusionBarrier7);
-      profileStart(diffusionStallTimer); 
+//       stopTimer(diffusionBarrier7);
+      startTimer(diffusionStallTimer); 
 
 
-      profileStart(dummyTimer);
-      profileStop(dummyTimer);
+      startTimer(dummyTimer);
+      stopTimer(dummyTimer);
       
       if (tid == 0)
       {
-         profileStart(diffusiondVmRCopyTimer);
+         startTimer(diffusiondVmRCopyTimer);
          loopData.dVmReactionCpy = loopData.dVmReaction; 
-         profileStop(diffusiondVmRCopyTimer);
-         profileStart(integratorTimer);
+         stopTimer(diffusiondVmRCopyTimer);
+         startTimer(integratorTimer);
 #ifdef BGQ
          // BG/Q C++ compiler can't SIMDize, use C compiler
          integrateLoop(nLocal,sim.dt_,(double*)&loopData.dVmReaction[0],(double*)&loopData.dVmDiffusion[0],(double*)&sim.VmArray_[0]);
@@ -354,7 +353,7 @@ void diffusionLoop(Simulate& sim,
 #endif         
          sim.time_ += sim.dt_;
          ++sim.loop_;
-         profileStop(integratorTimer);
+         stopTimer(integratorTimer);
       }
       
       L2_BarrierWithSync_Arrive(loopData.diffusionBarrier, &diffusionHandle,
@@ -364,49 +363,49 @@ void diffusionLoop(Simulate& sim,
       L2_BarrierWithSync_WaitAndReset(loopData.diffusionBarrier,
                                       &diffusionHandle,
                                       sim.diffusionThreads_.nThreads());
-      profileStop(diffusionStallTimer); 
+      stopTimer(diffusionStallTimer); 
 
-//       profileStart(diffusionBarrier8);
+//       startTimer(diffusionBarrier8);
 //       loopData.voltageExchange.barrier();
-//       profileStop(diffusionBarrier8);
+//       stopTimer(diffusionBarrier8);
       if (tid == 0)
       {
          if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
             writeCheckpoint(sim, MPI_COMM_WORLD);
          loopIO(sim, loopData.dVmReactionCpy, loopData.dVmDiffusion);
       }
-      profileStop(diffusionLoopTimer);
    }
+   profileStop(diffusionLoopTimer);
 }
 
 void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle)
 {
+   profileStart(reactionLoopTimer);
    vector<double>& dVmReaction = loopData.dVmReaction;
    L2_BarrierHandle_t reactionWaitOnNonGateHandle;
    L2_BarrierWithSync_InitInThread(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle);
    while ( sim.loop_<sim.maxLoop_ )
    {
-      profileStart(reactionLoopTimer);
       int nLocal = sim.anatomy_.nLocal();
       
-      profileStart(reactionTimer);
+      startTimer(reactionTimer);
       sim.reaction_->updateNonGate(sim.dt_, sim.VmArray_, dVmReaction);
       L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle, sim.reactionThreads_.nThreads());
       sim.reaction_->updateGate(sim.dt_, sim.VmArray_);
-      profileStop(reactionTimer);
-      profileStart(reactionL2ArriveTimer);
+      stopTimer(reactionTimer);
+      startTimer(reactionL2ArriveTimer);
       L2_BarrierWithSync_Arrive(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
-      profileStop(reactionL2ArriveTimer);
-      profileStart(reactionL2ResetTimer);
+      stopTimer(reactionL2ArriveTimer);
+      startTimer(reactionL2ResetTimer);
       L2_BarrierWithSync_Reset(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
-      profileStop(reactionL2ResetTimer);
-      profileStart(dummyTimer);
-      profileStop(dummyTimer);
-      profileStart(reactionWaitTimer);
+      stopTimer(reactionL2ResetTimer);
+      startTimer(dummyTimer);
+      stopTimer(dummyTimer);
+      startTimer(reactionWaitTimer);
       L2_BarrierWithSync_WaitAndReset(loopData.diffusionBarrier, &diffusionHandle, sim.diffusionThreads_.nThreads());
-      profileStop(reactionWaitTimer);
-      profileStop(reactionLoopTimer);
+      stopTimer(reactionWaitTimer);
    }
+   profileStop(reactionLoopTimer);
 }
 
 void nullReactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle)
