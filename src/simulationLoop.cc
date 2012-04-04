@@ -214,7 +214,7 @@ struct SimLoopData
       dVmDiffusion.resize(nLocal, 0.0);
       dVmReactionCpy.resize(nLocal, 0.0);
       dVmReaction.resize(nLocal, 0.0); 
-      mkOffsets(integratorOffset, sim.anatomy_.nLocal(), sim.diffusionThreads_);
+      mkOffsets(integratorOffset, sim.anatomy_.nLocal(), sim.reactionThreads_);
    }
 
    ~SimLoopData()
@@ -256,6 +256,7 @@ void diffusionLoop(Simulate& sim,
    {
       int nLocal = sim.anatomy_.nLocal();
       
+      // Halo Exchange
       if (tid == 0)
       {
 #if defined(SPI)
@@ -282,77 +283,56 @@ void diffusionLoop(Simulate& sim,
                                  sim.diffusionThreads_.nThreads());
       stopTimer(diffusionL2BarrierHalo1Timer);
       
-      // DIFFUSION
       startTimer(diffusionCalcTimer);
+      // copy, copy
       sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
       sim.diffusion_->updateRemoteVoltage(loopData.voltageExchange.get_recv_buf_());
       // temporary barrier
       L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
                                  sim.diffusionThreads_.nThreads());
+      //stencil
       sim.diffusion_->calc(loopData.dVmDiffusion);
       stopTimer(diffusionCalcTimer);
       
+      //barrier
       startTimer(diffusionL2BarrierHalo2Timer);
       L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
                                  sim.diffusionThreads_.nThreads());
       stopTimer(diffusionL2BarrierHalo2Timer);
 
+      // stimulus
       if (tid == 0)
       {
          startTimer(stimulusTimer);
-         // add stimulus to dVmDiffusion
          for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
             sim.stimulus_[ii]->stim(sim.time_, loopData.dVmDiffusion);
          stopTimer(stimulusTimer);
       }
 
+      // announce that diffusion derivatives are ready.
+      L2_BarrierWithSync_Arrive(loopData.diffusionBarrier, &diffusionHandle,
+                                sim.diffusionThreads_.nThreads());
+      L2_BarrierWithSync_Reset(loopData.diffusionBarrier,
+                               &diffusionHandle,
+                               sim.diffusionThreads_.nThreads());
+
+      
+      // wait for reaction (integration) to finish
       startTimer(diffusionWaitTimer); 
-      // wait for reaction to finish
       L2_BarrierWithSync_WaitAndReset(loopData.reactionBarrier,
                                       &reactionHandle,
                                       sim.reactionThreads_.nThreads());
       stopTimer(diffusionWaitTimer); 
 
-      // temporary barrier
-      L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
-                                 sim.diffusionThreads_.nThreads());
-
       startTimer(dummyTimer);
       stopTimer(dummyTimer);
 
-      startTimer(diffusionStallTimer); 
-      
       if (tid == 0)
       {
          startTimer(diffusiondVmRCopyTimer);
          loopData.dVmReactionCpy = loopData.dVmReaction; 
          stopTimer(diffusiondVmRCopyTimer);
-      }
-      
-      startTimer(integratorTimer);
-      // BG/Q C++ compiler can't SIMDize, use C compiler
-      integrateLoop(loopData.integratorOffset[tid],
-                    loopData.integratorOffset[tid+1], sim.dt_,
-                    &loopData.dVmReaction[0], &loopData.dVmDiffusion[0], &sim.VmArray_[0]);
 
-      if (tid == 0)
-      {
-         sim.time_ += sim.dt_;
-         ++sim.loop_;
-      }
-      stopTimer(integratorTimer);
-      
-      L2_BarrierWithSync_Arrive(loopData.diffusionBarrier, &diffusionHandle,
-                                sim.diffusionThreads_.nThreads());
-      // wait and reset to make this a barrier.  Can't let any thread
-      // past here until loop_ has been incremented.
-      L2_BarrierWithSync_WaitAndReset(loopData.diffusionBarrier,
-                                      &diffusionHandle,
-                                      sim.diffusionThreads_.nThreads());
-      stopTimer(diffusionStallTimer); 
-
-      if (tid == 0)
-      {
          loopIO(sim, loopData.dVmReactionCpy, loopData.dVmDiffusion);
       }
    }
@@ -362,6 +342,7 @@ void diffusionLoop(Simulate& sim,
 void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle)
 {
    profileStart(reactionLoopTimer);
+   int tid = sim.reactionThreads_.teamRank();
    vector<double>& dVmReaction = loopData.dVmReaction;
    L2_BarrierHandle_t reactionWaitOnNonGateHandle;
    L2_BarrierWithSync_InitInThread(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle);
@@ -373,18 +354,37 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       sim.reaction_->updateNonGate(sim.dt_, sim.VmArray_, dVmReaction);
       L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle, sim.reactionThreads_.nThreads());
       sim.reaction_->updateGate(sim.dt_, sim.VmArray_);
+      L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle, sim.reactionThreads_.nThreads());
       stopTimer(reactionTimer);
-      startTimer(reactionL2ArriveTimer);
-      L2_BarrierWithSync_Arrive(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
-      stopTimer(reactionL2ArriveTimer);
-      startTimer(reactionL2ResetTimer);
-      L2_BarrierWithSync_Reset(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
-      stopTimer(reactionL2ResetTimer);
+
+
       startTimer(dummyTimer);
       stopTimer(dummyTimer);
+
       startTimer(reactionWaitTimer);
       L2_BarrierWithSync_WaitAndReset(loopData.diffusionBarrier, &diffusionHandle, sim.diffusionThreads_.nThreads());
       stopTimer(reactionWaitTimer);
+
+      startTimer(integratorTimer);
+      integrateLoop(loopData.integratorOffset[tid],
+                    loopData.integratorOffset[tid+1], sim.dt_,
+                    &loopData.dVmReaction[0], &loopData.dVmDiffusion[0], &sim.VmArray_[0]);
+      
+      if (tid == 0)
+      {
+         sim.time_ += sim.dt_;
+         ++sim.loop_;
+      }
+
+      stopTimer(integratorTimer);
+
+      startTimer(reactionL2ArriveTimer);
+      L2_BarrierWithSync_Arrive(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
+      stopTimer(reactionL2ArriveTimer);
+
+      startTimer(reactionL2ResetTimer);
+      L2_BarrierWithSync_Reset(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
+      stopTimer(reactionL2ResetTimer);
    }
    profileStop(reactionLoopTimer);
 }
