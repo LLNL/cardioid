@@ -580,6 +580,7 @@ group of cells.
 
 \begin{keywords}
   \kw{method}{Choose from ``box'', ``point'', or ``test''}{No default.}
+  \kw{pulse}{Choose from ``periodic'', or ``random''}{``periodic''}
   \kw{t0}{Specifies a time before which the simulus is zero.  Regardless
     of all other parameter values, at all
     $t<t0$ the stimulus current is zero.}{-1000~msec}
@@ -594,12 +595,10 @@ Many of the stimulus methods apply a periodic square wave pulse train
 (See Figure~\ref{fig:pulseTrain}) to selected cells.  They share a
 common set of keywords to specify the pulse train.  These keywords are:
 \begin{keywords}
-  \kw{duration}{The length of time the stimulus is on (in msec).}{Varies
-    with method.}  
-  \kw{period}{The period of the pulse train (in msec).}{Varies with method.}  
+  \kw{duration}{The length of time the stimulus is on (in msec).}{1~msec}  
+  \kw{period}{The period of the pulse train (in msec).}{1000~msec}  
   \kw{tStart}{The delay from the start of each period to start the
-    simulus (in msec).  This parameter sets the phase of the wave.}
-  {Varies with method.}
+    simulus (in msec).  This parameter sets the phase of the wave.}{0.}
   \kw{vStim}{The amplitude of the stimulus (in mV/msec).  This value is
     negative by convention to specify depolarization.  A negative vStim
     corresponds to a positive $dV/dt$.}{Varies with method.}
@@ -610,6 +609,18 @@ common set of keywords to specify the pulse train.  These keywords are:
   \caption{Periodic pulse train.}
   \label{fig:pulseTrain}
 \end{figure}
+
+\subsubsection{Random Period Pulses}
+\label{sssec:randomPeriodPulse}
+This option shares most of the options with the periodic pulse train.
+The only difference is that it uses a 'min' and 'max' period instead of a single and constant period.
+The keywords are:
+\begin{keywords}
+  \kw{min\_period}{The minimum length period of the pulse train (in msec).}{1000~msec} 
+  \kw{max\_period}{The maximum length period of the pulse train (in msec).}{1000~msec} 
+\end{keywords}
+Every time a period ends, a new period length will be randomly picked 
+in a uniform probability distribution between 'min\_period' and 'max\_period'.
 
 \issue{Jeremy has indicated that it is more natural to specify the
   stimulus current in units of current/volume rather than the stimulus
@@ -637,7 +648,7 @@ Applies the stimulus to all cells inside a specified box.  \issue{The
 \begin{keywords}
   \kw{duration}{See Section~\ref{sssec:pulseTrains}.}{1~msec}
   \kw{period}{See Section~\ref{sssec:pulseTrains}.}{1000~msec}
-  \kw{tStart}{See Section~\ref{sssec:pulseTrains}.}{1~msec}
+  \kw{tStart}{See Section~\ref{sssec:pulseTrains}.}{0~msec}
   \kw{vStim}{See Section~\ref{sssec:pulseTrains}.}{-52~mV/msec}
   \kw{xMin}{Minimum grid index in the $x$-direction to stimulate.}{-1}
   \kw{xMax}{Maximum grid index in the $x$-direction to stimulate.}{Size of global grid in $x$-direction.}
