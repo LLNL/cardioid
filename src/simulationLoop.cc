@@ -22,10 +22,9 @@
 #include "fastBarrier.hh"
 #include "object_cc.hh"
 #include "readSnapshotCellList.hh"
+#include "clooper.h"
+#include "ThreadUtils.hh"
 
-#ifdef BGQ
-extern "C" void integrateLoop(const int size, const double dt, double* dVmR, double* dVmD, double* Vm);
-#endif
 
 using namespace std;
 using namespace PerformanceTimers;
@@ -152,11 +151,12 @@ void simulationLoop(Simulate& sim)
       sim.diffusion_->calc(dVmDiffusion);
       stopTimer(diffusionCalcTimer);
 
-      // code to limit or set iStimArray goes here.
       startTimer(stimulusTimer);
       // add stimulus to dVmDiffusion
-      for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii) sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
-      for (unsigned ii=0; ii<nLocal; ++ii) iStim[ii] = -(dVmDiffusion[ii]);
+      for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
+         sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
+      for (unsigned ii=0; ii<nLocal; ++ii)
+         iStim[ii] = -(dVmDiffusion[ii]);
       stopTimer(stimulusTimer);
 
       
@@ -166,20 +166,20 @@ void simulationLoop(Simulate& sim)
       stopTimer(reactionTimer);
 
       startTimer(integratorTimer);
-#ifdef BGQ
-      // BG/Q C++ compiler can't SIMDize, use C compiler
-      integrateLoop(nLocal,sim.dt_,(double*)&dVmReaction[0],(double*)&dVmDiffusion[0],(double*)&sim.VmArray_[0]);
-#else      
-      for (unsigned ii=0; ii<nLocal; ++ii)
+      // no special BGQ integrator is this loop.  Mare bang for buck
+      // from OMP threading.
+      #pragma omp parallel for
+      for (int ii=0; ii<nLocal; ++ii)
       {
          double dVm = dVmReaction[ii] + dVmDiffusion[ii];
          sim.VmArray_[ii] += sim.dt_*dVm;
       }
-#endif
+
       sim.time_ += sim.dt_;
       ++sim.loop_;
       stopTimer(integratorTimer);
-      if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0) writeCheckpoint(sim, MPI_COMM_WORLD);
+      if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
+         writeCheckpoint(sim, MPI_COMM_WORLD);
       loopIO(sim,dVmReaction,dVmDiffusion);
 
    }
@@ -213,6 +213,7 @@ struct SimLoopData
       dVmDiffusion.resize(nLocal, 0.0);
       dVmReactionCpy.resize(nLocal, 0.0);
       dVmReaction.resize(nLocal, 0.0); 
+      mkOffsets(integratorOffset, sim.anatomy_.nLocal(), sim.diffusionThreads_);
    }
 
    ~SimLoopData()
@@ -230,6 +231,7 @@ struct SimLoopData
    
    vector<double> dVmReaction; 
    vector<double> dVmDiffusion;
+   vector<int> integratorOffset;
    vector<double> dVmReactionCpy;
    #ifdef SPI   
    spi_HaloExchange<double> voltageExchange;
@@ -248,11 +250,11 @@ void diffusionLoop(Simulate& sim,
    int tid = sim.diffusionThreads_.teamRank();
    L2_BarrierHandle_t haloBarrierHandle;
    L2_BarrierWithSync_InitInThread(loopData.haloBarrier, &haloBarrierHandle);
-   
+
    while ( sim.loop_ < sim.maxLoop_ )
    {
       int nLocal = sim.anatomy_.nLocal();
-    
+      
       if (tid == 0)
       {
 #if defined(SPI)
@@ -261,29 +263,24 @@ void diffusionLoop(Simulate& sim,
          stopTimer(diffusionImbalanceTimer);
 #endif         
          startTimer(haloTimer);
+
          startTimer(haloTimerExecute);
          loopData.voltageExchange.execute(sim.VmArray_, nLocal);
          stopTimer(haloTimerExecute);
+
          startTimer(haloTimerComplete);
          loopData.voltageExchange.complete();
          stopTimer(haloTimerComplete);
+
          stopTimer(haloTimer);
       }
       
-//       startTimer(diffusionBarrier2);
-//       loopData.voltageExchange.barrier();
-//       stopTimer(diffusionBarrier2);
-
-         // Need a barrier for the completion of the halo exchange.
+      // Need a barrier for the completion of the halo exchange.
       startTimer(diffusionL2BarrierHalo1Timer);
       L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
                                  sim.diffusionThreads_.nThreads());
       stopTimer(diffusionL2BarrierHalo1Timer);
       
-//       startTimer(diffusionBarrier3);
-//       loopData.voltageExchange.barrier();
-//       stopTimer(diffusionBarrier3);
-
       // DIFFUSION
       startTimer(diffusionCalcTimer);
       sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
@@ -294,20 +291,11 @@ void diffusionLoop(Simulate& sim,
       sim.diffusion_->calc(loopData.dVmDiffusion);
       stopTimer(diffusionCalcTimer);
       
-//       startTimer(diffusionBarrier4);
-//       loopData.voltageExchange.barrier();
-//       stopTimer(diffusionBarrier4);
-
       startTimer(diffusionL2BarrierHalo2Timer);
       L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
                                  sim.diffusionThreads_.nThreads());
       stopTimer(diffusionL2BarrierHalo2Timer);
 
-//       startTimer(diffusionBarrier5);
-//       loopData.voltageExchange.barrier();
-//       stopTimer(diffusionBarrier5);
-
-      
       if (tid == 0)
       {
          startTimer(stimulusTimer);
@@ -317,44 +305,41 @@ void diffusionLoop(Simulate& sim,
          stopTimer(stimulusTimer);
       }
 
-//       startTimer(diffusionBarrier6);
-//       loopData.voltageExchange.barrier();
-//       stopTimer(diffusionBarrier6);
-
       startTimer(diffusionWaitTimer); 
+      // wait for reaction to finish
       L2_BarrierWithSync_WaitAndReset(loopData.reactionBarrier,
                                       &reactionHandle,
                                       sim.reactionThreads_.nThreads());
       stopTimer(diffusionWaitTimer); 
-//       startTimer(diffusionBarrier7);
-//       loopData.voltageExchange.barrier();
-//       stopTimer(diffusionBarrier7);
-      startTimer(diffusionStallTimer); 
 
+      // temporary barrier
+      L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
+                                 sim.diffusionThreads_.nThreads());
 
       startTimer(dummyTimer);
       stopTimer(dummyTimer);
+
+      startTimer(diffusionStallTimer); 
       
       if (tid == 0)
       {
          startTimer(diffusiondVmRCopyTimer);
          loopData.dVmReactionCpy = loopData.dVmReaction; 
          stopTimer(diffusiondVmRCopyTimer);
-         startTimer(integratorTimer);
-#ifdef BGQ
-         // BG/Q C++ compiler can't SIMDize, use C compiler
-         integrateLoop(nLocal,sim.dt_,(double*)&loopData.dVmReaction[0],(double*)&loopData.dVmDiffusion[0],(double*)&sim.VmArray_[0]);
-#else
-         for (unsigned ii=0; ii<nLocal; ++ii)
-         {
-            double dVm = loopData.dVmReaction[ii] + loopData.dVmDiffusion[ii];
-            sim.VmArray_[ii] += sim.dt_*dVm;
-         }
-#endif         
+      }
+      
+      startTimer(integratorTimer);
+      // BG/Q C++ compiler can't SIMDize, use C compiler
+      integrateLoop(loopData.integratorOffset[tid],
+                    loopData.integratorOffset[tid+1], sim.dt_,
+                    &loopData.dVmReaction[0], &loopData.dVmDiffusion[0], &sim.VmArray_[0]);
+
+      if (tid == 0)
+      {
          sim.time_ += sim.dt_;
          ++sim.loop_;
-         stopTimer(integratorTimer);
       }
+      stopTimer(integratorTimer);
       
       L2_BarrierWithSync_Arrive(loopData.diffusionBarrier, &diffusionHandle,
                                 sim.diffusionThreads_.nThreads());
@@ -365,9 +350,6 @@ void diffusionLoop(Simulate& sim,
                                       sim.diffusionThreads_.nThreads());
       stopTimer(diffusionStallTimer); 
 
-//       startTimer(diffusionBarrier8);
-//       loopData.voltageExchange.barrier();
-//       stopTimer(diffusionBarrier8);
       if (tid == 0)
       {
          if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)

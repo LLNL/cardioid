@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstdio>
 #include "ThreadServer.hh"
+#include "ThreadUtils.hh"
 #include "PerformanceTimers.hh"
 
 using namespace PerformanceTimers;

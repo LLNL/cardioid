@@ -2,7 +2,6 @@
 #define FGR_UTILS_HH
 
 #include <vector>
-class ThreadTeam;
 
 
 #ifdef Diff_Weight_Type_Single
@@ -32,8 +31,6 @@ namespace FGRUtils
       WeightType A[19];
    };
    
-
-   void mkOffsets(std::vector<int>& offset, int nItems, const ThreadTeam& threadInfo);
 
    void setGradientWeights(double* grad, int* tissue,
                            NodeLocation n3, NodeLocation n2, NodeLocation n1,

@@ -8,13 +8,11 @@
 #include <omp.h>
 #include <mpi.h>
 
-// ewd:  These functions are loops that the BG/Q C++ compiler can't SIMDize.
-// ewd:  Currently, these are only called when -DBGQ is set, so feel free
-// ewd:  to put machine-specific code in here.
-
-void integrateLoop(const int size, const double dt, double* dVmR, double* dVmD, double* Vm)
+// dfr: called for all builds.  Must be portable.
+void integrateLoop(const int begin, const int end, const double dt,
+                   double* dVmR, double* dVmD, double* Vm)
 {
-   for (unsigned ii=0; ii<size; ++ii)
+   for (unsigned ii=begin; ii<end; ++ii)
    {
       double dVm = dVmR[ii] + dVmD[ii];
       Vm[ii] += dt*dVm;

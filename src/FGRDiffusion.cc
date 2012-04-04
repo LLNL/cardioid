@@ -8,6 +8,7 @@
 #include <cstdio>
 #include "ibmIntrinsics.hh"
 #include "ThreadServer.hh"
+#include "ThreadUtils.hh"
 #include "PerformanceTimers.hh"
 using namespace PerformanceTimers;
 
