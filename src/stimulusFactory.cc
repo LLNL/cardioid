@@ -8,14 +8,16 @@
 #include "PointStimulus.hh"
 #include "TestStimulus.hh"
 #include "BoxStimulus.hh"
+#include "PeriodicPulse.hh"
+#include "RandomPulse.hh"
 
 using namespace std;
 
 namespace
 {
-   Stimulus* scanPointStimulus(OBJECT* obj, const StimulusBaseParms& p, const Anatomy& anatomy);
-   Stimulus* scanTestStimulus(OBJECT* obj, const StimulusBaseParms& p);
-   Stimulus* scanBoxStimulus(OBJECT* obj, const StimulusBaseParms& p, const Anatomy& anatomy);
+   Stimulus* scanPointStimulus(OBJECT* obj, const StimulusBaseParms& p, const Anatomy& anatomy, Pulse* pulse);
+   Stimulus* scanTestStimulus(OBJECT* obj, const StimulusBaseParms& p, Pulse* pulse);
+   Stimulus* scanBoxStimulus(OBJECT* obj, const StimulusBaseParms& p, const Anatomy& anatomy, Pulse* pulse);
 }
 
 
@@ -28,14 +30,37 @@ Stimulus* stimulusFactory(const std::string& name, const Anatomy& anatomy)
    objectGet(obj, "t0", p.t0, "-1000", "t");
    objectGet(obj, "tf", p.tf, "1e30",  "t");
    
+   string pulse_type;
+   double duration;
+   double vStim;
+   double tStart;
+   Pulse* pulse;
+   objectGet(obj, "pulse",    pulse_type, "periodic");
+   objectGet(obj, "duration", duration, "1",    "t");
+   objectGet(obj, "tStart",   tStart,   "0",    "t");
+   objectGet(obj, "vStim",    vStim,    "-52",  "voltage/t");
+   if (pulse_type == "periodic")
+   {
+      double period;
+      objectGet(obj, "period",   period,   "1000", "t");
+      pulse=new PeriodicPulse(period, duration, -vStim, tStart);
+   }
+   else if (pulse_type == "random")
+   {
+      double minperiod, maxperiod;
+      objectGet(obj, "min_period",   minperiod,   "1000", "t");
+      objectGet(obj, "max_period",   maxperiod,   "1000", "t");
+      pulse=new RandomPulse(minperiod, maxperiod, duration, -vStim, tStart);
+   }
+   
    if (method == "undefined")
       assert(false);
    else if (method == "point")
-      return scanPointStimulus(obj, p, anatomy);
+      return scanPointStimulus(obj, p, anatomy, pulse);
    else if (method == "test")
-      return scanTestStimulus(obj, p);
+      return scanTestStimulus(obj, p, pulse);
    else if (method == "box")
-      return scanBoxStimulus(obj, p, anatomy);
+      return scanBoxStimulus(obj, p, anatomy, pulse);
 
    assert(false); // reachable only due to bad input
    return 0;
@@ -44,38 +69,30 @@ Stimulus* stimulusFactory(const std::string& name, const Anatomy& anatomy)
 
 namespace
 {
-   Stimulus* scanPointStimulus(OBJECT* obj, const StimulusBaseParms& bp, const Anatomy& anatomy)
+   Stimulus* scanPointStimulus(OBJECT* obj, const StimulusBaseParms& bp, const Anatomy& anatomy, Pulse* pulse)
    {
       PointStimulusParms p;
       p.baseParms = bp;
       objectGet(obj, "cell",     p.cell,     "0");
-      objectGet(obj, "duration", p.duration, "1",    "t");
-      objectGet(obj, "period",   p.period,   "1000", "t");
-      objectGet(obj, "tStart",   p.tStart,   "0",    "t");
-      objectGet(obj, "vStim",    p.vStim,    "-52",  "voltage/t");
-      return new PointStimulus(p, anatomy);
+      return new PointStimulus(p, anatomy, pulse);
    }
 }
 
 namespace
 {
-   Stimulus* scanTestStimulus(OBJECT* obj, const StimulusBaseParms& bp)
+   Stimulus* scanTestStimulus(OBJECT* obj, const StimulusBaseParms& bp, Pulse* pulse)
    {
       TestStimulusParms p;
       p.baseParms = bp;
       objectGet(obj, "cell",     p.cell,     "0");
       objectGet(obj, "rank",     p.rank,     "0");
-      objectGet(obj, "duration", p.duration, "1",    "t");
-      objectGet(obj, "period",   p.period,   "1000", "t");
-      objectGet(obj, "tStart",   p.tStart,   "1",    "t");
-      objectGet(obj, "vStim",    p.vStim,    "-52",  "voltage/t");
-      return new TestStimulus(p);
+      return new TestStimulus(p, pulse);
    }
 }
 
 namespace
 {
-   Stimulus* scanBoxStimulus(OBJECT* obj, const StimulusBaseParms& bp, const Anatomy& anatomy)
+   Stimulus* scanBoxStimulus(OBJECT* obj, const StimulusBaseParms& bp, const Anatomy& anatomy, Pulse* pulse)
    {
       stringstream buf;
       buf << anatomy.nx(); string nxString = buf.str(); buf.str(string());
@@ -84,10 +101,6 @@ namespace
 
       BoxStimulusParms p;
       p.baseParms = bp;
-      objectGet(obj, "duration", p.duration, "1",    "t");
-      objectGet(obj, "period",   p.period,   "1000", "t");
-      objectGet(obj, "tStart",   p.tStart,   "1",    "t");
-      objectGet(obj, "vStim",    p.vStim,    "-52",  "voltage/t");
       objectGet(obj, "xMin",     p.xMin,     "-1");
       objectGet(obj, "yMin",     p.yMin,     "-1");
       objectGet(obj, "zMin",     p.zMin,     "-1");
@@ -95,6 +108,6 @@ namespace
       objectGet(obj, "yMax",     p.yMax,     nyString);
       objectGet(obj, "zMax",     p.zMax,     nzString);
       
-      return new BoxStimulus(p, anatomy);
+      return new BoxStimulus(p, anatomy, pulse);
    }
 }

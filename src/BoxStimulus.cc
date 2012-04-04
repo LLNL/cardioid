@@ -4,9 +4,9 @@
 
 using namespace std;
 
-BoxStimulus::BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy)
+BoxStimulus::BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy, Pulse* pulse)
 : Stimulus(p.baseParms),
-  pulse_(p.period, p.duration, -p.vStim, p.tStart)
+  pulse_(pulse)
 {
    // Loop through local points and store the indices of any that are in
    // the stimulated region.
@@ -23,7 +23,7 @@ BoxStimulus::BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy)
 void BoxStimulus::subClassStim(double time,
                                vector<double>& dVmDiffusion)
 {
-   double value = pulse_.eval(time);
+   double value = pulse_->eval(time);
    if (value != 0)
       for (unsigned ii=0; ii<stimList_.size(); ++ii)
          dVmDiffusion[stimList_[ii]] += value;

@@ -3,24 +3,21 @@
 
 #include "Stimulus.hh"
 #include "Long64.hh"
-#include "PeriodicPulse.hh"
+#include "Pulse.hh"
 
 class Anatomy;
 
 struct PointStimulusParms
 {
    Long64 cell;
-   double vStim;
-   double tStart;
-   double period;
-   double duration;
    StimulusBaseParms baseParms;   
 };
 
 class PointStimulus : public Stimulus
 {
  public:
-   PointStimulus(const PointStimulusParms& p, const Anatomy& anatomy);
+   PointStimulus(const PointStimulusParms& p, const Anatomy& anatomy, 
+                 Pulse* pulse);
    void subClassStim(double time,
                      std::vector<double>& dVmDiffusion);
    
@@ -28,7 +25,7 @@ class PointStimulus : public Stimulus
    Long64 targetCell_;
    bool cellLocal_;
    int localInd_;
-   PeriodicPulse pulse_;
+   Pulse* pulse_;
 };
 
 #endif

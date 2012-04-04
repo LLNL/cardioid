@@ -3,9 +3,11 @@
 
 using namespace std;
 
-PointStimulus::PointStimulus(const PointStimulusParms& p, const Anatomy& anatomy)
+PointStimulus::PointStimulus(const PointStimulusParms& p,
+                             const Anatomy& anatomy,
+                             Pulse* pulse)
 : Stimulus(p.baseParms),
-  pulse_(p.period, p.duration, -p.vStim, p.tStart)
+  pulse_(pulse)
 {
 
   // loop through grid points on this task, check against target cell
@@ -26,6 +28,6 @@ void PointStimulus::subClassStim(double time,
 {
    if (cellLocal_)
    {
-      dVmDiffusion[localInd_] += pulse_.eval(time);
+      dVmDiffusion[localInd_] += pulse_->eval(time);
    }
 }

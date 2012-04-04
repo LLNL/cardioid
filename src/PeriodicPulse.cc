@@ -19,7 +19,7 @@ PeriodicPulse::PeriodicPulse(double period, double duration,
    assert(phase_+duration_ <= period_);
 }
 
-double PeriodicPulse::eval(double time) const 
+double PeriodicPulse::eval(double time) 
 {
    double t = time - floor(time/period_)*period_;
    if (t >= phase_ && t < phase_+duration_)

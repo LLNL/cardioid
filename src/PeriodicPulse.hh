@@ -1,6 +1,8 @@
 #ifndef PERIODIC_PULSE_HH
 #define PERIODIC_PULSE_HH
 
+#include "Pulse.hh"
+
 /** Periodic square pulse useful for creating external stimulus
  * functions.
  *
@@ -8,13 +10,14 @@
  *  when t >= phase && t < phase_duration eval returns amplitude.
  *  returns zero otherwise.
 */
-class PeriodicPulse
+class PeriodicPulse:
+   public Pulse
 {
  public:
    PeriodicPulse(double period, double duration,
                  double amplitude, double phase);
 
-   double eval(double time) const;
+   double eval(double time);
 
  private:
    double period_;

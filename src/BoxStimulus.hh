@@ -2,16 +2,13 @@
 #define BOX_STIMULUS_HH
 
 #include "Stimulus.hh"
-#include "PeriodicPulse.hh"
+#include "Pulse.hh"
 
 class Anatomy;
 
 struct BoxStimulusParms
 {
-   double vStim;
-   double tStart;
    double period;
-   double duration;
    double xMin;
    double yMin;
    double zMin;
@@ -24,12 +21,13 @@ struct BoxStimulusParms
 class BoxStimulus : public Stimulus
 {
  public:
-   BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy);
+   BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy,
+               Pulse* pulse);
    void subClassStim(double time,
                      std::vector<double>& dVmDiffusion);
    
  private:
-   PeriodicPulse pulse_;
+   Pulse* pulse_;
    std::vector<int> stimList_;
 };
 
