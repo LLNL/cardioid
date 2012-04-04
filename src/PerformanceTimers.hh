@@ -58,12 +58,12 @@ namespace PerformanceTimers
 #define startTimer(handle)    \
    do                         \
    {                          \
-      profileStart(handle)    \
+      profileStart(handle);   \
    } while(0)
 #define stopTimer(handle)     \
    do                         \
    {                          \
-      profileStop(handle)     \
+      profileStop(handle);    \
    } while(0)
 #else
 #define startTimer(handle)
