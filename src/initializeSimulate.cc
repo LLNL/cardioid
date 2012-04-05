@@ -56,7 +56,7 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "profileAllCounters", profileAllCounters_, "0");
    if (profileAllCounters_ == 1)
       profileSetVerbosity(true);
-   else 
+   else
       profileSetVerbosity(false);
    unsigned nDiffusionCores;
    vector<unsigned> diffusionCores;

@@ -25,6 +25,10 @@ class GDLoadBalancer {
   vector<int> myRankList_;       // (testing) list of processes owned by myRank_
   vector<vector<int> > togive_;  // list of all data exchanges needed for balance
   vector<int> histloc_;          // copy of nloc_ used for histogramming
+  vector<int> pevol_;            // bounding box volume of each processor's cells
+  vector<vector<double> > pecom_;
+  vector<vector<int> > pemin_;
+  vector<vector<int> > pemax_;
   MPI_Comm comm_;
   int nTasks_, myRank_;
     
@@ -33,6 +37,8 @@ class GDLoadBalancer {
   GDLoadBalancer(MPI_Comm comm, int npex, int npey, int npez);
   ~GDLoadBalancer();
   void initialDistribution(vector<AnatomyCell>& cells, int nx, int ny, int nz);
+  void compactLoop(vector<AnatomyCell>& cells);
+  void computeProcBoxes(vector<AnatomyCell>& cells);
   void balanceLoop(vector<AnatomyCell>& cells);
   void balanceLoop(vector<AnatomyCell>& cells, int bblock, int bthresh, int maxiter);
   bool diffuseDest(vector<AnatomyCell>& cells);

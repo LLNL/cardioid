@@ -6,6 +6,8 @@ LD=$(CXX)
 
 DFLAGS = -DWITH_PIO -DWITH_MPI -DBGP \
 	-DADD_ -DUSE_CSTDIO_LFS -DMPICH_IGNORE_CXX_SEEK
+#DFLAGS = -DWITH_PIO -DWITH_MPI -DBGP \
+#	-DADD_ -DUSE_CSTDIO_LFS -DMPICH_IGNORE_CXX_SEEK -DDiff_Weight_Type_Single
 
 INCLUDE =  -I/bgsys/drivers/ppcfloor/arch/include \
 	-I/usr/local/tools/gsl/include/

@@ -6,13 +6,13 @@
 #include <string>
 #include <cassert>
 #include <fstream>
+#include <cmath>
 #include <vector>
 #include <map>
 #include <mpi.h>
 #include "mpiUtils.h"
 #include "GridPoint.hh"
 #include "AnatomyCell.hh"
-#include "IndexToVector.hh"
 using namespace std;
 
 
@@ -88,13 +88,11 @@ void GDLoadBalancer::initialDistribution(vector<AnatomyCell>& cells, int nx, int
    //    if (nTasks >= nz)     destRank = gid.z   (one plane per task for myRank < nz)
    //    else if (nTasks < nz) destRank = gid.z*nTasks/nz  (multiple planes per task)
 
-   /*
    //ewd DEBUG:  compute radii and centers after initial distribution
-   vector<double> radius(npegrid_,0.0);
-   vector<double> center(3*npegrid_,0.0);
-   vector<int> gptcnt(npegrid_,0);
+   //vector<double> radius(npegrid_,0.0);
+   //vector<double> center(3*npegrid_,0.0);
+   //vector<int> gptcnt(npegrid_,0);
    //ewd DEBUG
-   */
    
    int nlocal = cells.size();
    nx_ = nx;
@@ -275,69 +273,72 @@ void GDLoadBalancer::initialDistribution(vector<AnatomyCell>& cells, int nx, int
       }
    }
 
-
-   /*
-   //ewd DEBUG:  compute center, radius of initial distribution
-   IndexToVector indexToVector(nx_, ny_, nz_);
-   for (int kp = 0; kp < npez_; kp++)
-   {
-      if (kp >= pezind[klocmin] && kp <= pezind[klocmax])  // this task owns data for this slab
-      {
-         for (unsigned ii=0; ii<cells.size(); ++ii)
-         {
-            int gid = cells[ii].gid_;
-            GridPoint gpt(gid,nx_,ny_,nz_);
-            int tmpkp = pezind[gpt.z];
-            if (tmpkp == kp)
-            {
-               int jp = peyind[gpt.y];
-               int ip = pexind[jp*nx_+gpt.x];
-               int peid = ip + jp*npex_ + kp*npex_*npey_;
-               center[3*peid+0] += gpt.x;
-               center[3*peid+1] += gpt.y;
-               center[3*peid+2] += gpt.z;
-               gptcnt[peid]++;
-
-            }
-         }
-      }
-   }
-   for (int i=0; i<npegrid_; i++)
-      if (gptcnt[i] > 0) {
-         center[3*i+0] /= (double)gptcnt[i];
-         center[3*i+1] /= (double)gptcnt[i];
-         center[3*i+2] /= (double)gptcnt[i];
-      }
-   
-   for (int kp = 0; kp < npez_; kp++)
-   {
-      if (kp >= pezind[klocmin] && kp <= pezind[klocmax])  // this task owns data for this slab
-      {
-         for (unsigned ii=0; ii<cells.size(); ++ii)
-         {
-            int gid = cells[ii].gid_;
-            GridPoint gpt(gid,nx_,ny_,nz_);
-            int tmpkp = pezind[gpt.z];
-            if (tmpkp == kp)
-            {
-               int jp = peyind[gpt.y];
-               int ip = pexind[jp*nx_+gpt.x];
-               int peid = ip + jp*npex_ + kp*npex_*npey_;
-               double rSq = (gpt.x-center[3*peid+0])*(gpt.x-center[3*peid+0]) + (gpt.y-center[3*peid+1])*(gpt.y-center[3*peid+1]) + (gpt.z-center[3*peid+2])*(gpt.z-center[3*peid+2]);
-               radius[peid] = max(radius[peid], rSq);
-            }
-         }
-      }
-   }
-   for (int i=0; i<npegrid_; i++)
-      if (radius[i] > 0.0)
-         radius[i] = sqrt(radius[i]);
-
-   for (int i=0; i<npegrid_; i++)
-      if (radius[i] > 0.0)
-         cout << "GDLB.INITIAL, myRank = " << myRank_ << ", peid " << i << ", radius = " << radius[i] << endl;
    //ewd DEBUG
+   //ewd DEBUG:  compute center, radius of initial distribution
+   //ewd DEBUG
+   /*
+     for (int kp = 0; kp < npez_; kp++)
+     {
+     if (kp >= pezind[klocmin] && kp <= pezind[klocmax])  // this task owns data for this slab
+     {
+     for (unsigned ii=0; ii<cells.size(); ++ii)
+     {
+     int gid = cells[ii].gid_;
+     GridPoint gpt(gid,nx_,ny_,nz_);
+     int tmpkp = pezind[gpt.z];
+     if (tmpkp == kp)
+     {
+     int jp = peyind[gpt.y];
+     int ip = pexind[jp*nx_+gpt.x];
+     int peid = ip + jp*npex_ + kp*npex_*npey_;
+     center[3*peid+0] += gpt.x;
+     center[3*peid+1] += gpt.y;
+     center[3*peid+2] += gpt.z;
+     gptcnt[peid]++;
+
+     }
+     }
+     }
+     }
+     for (int i=0; i<npegrid_; i++)
+     if (gptcnt[i] > 0) {
+     center[3*i+0] /= (double)gptcnt[i];
+     center[3*i+1] /= (double)gptcnt[i];
+     center[3*i+2] /= (double)gptcnt[i];
+     }
+   
+     for (int kp = 0; kp < npez_; kp++)
+     {
+     if (kp >= pezind[klocmin] && kp <= pezind[klocmax])  // this task owns data for this slab
+     {
+     for (unsigned ii=0; ii<cells.size(); ++ii)
+     {
+     int gid = cells[ii].gid_;
+     GridPoint gpt(gid,nx_,ny_,nz_);
+     int tmpkp = pezind[gpt.z];
+     if (tmpkp == kp)
+     {
+     int jp = peyind[gpt.y];
+     int ip = pexind[jp*nx_+gpt.x];
+     int peid = ip + jp*npex_ + kp*npex_*npey_;
+     double rSq = (gpt.x-center[3*peid+0])*(gpt.x-center[3*peid+0]) + (gpt.y-center[3*peid+1])*(gpt.y-center[3*peid+1]) + (gpt.z-center[3*peid+2])*(gpt.z-center[3*peid+2]);
+     radius[peid] = max(radius[peid], rSq);
+     }
+     }
+     }
+     }
+     double maxradius = 0.0;
+     for (int i=0; i<npegrid_; i++)
+     if (radius[i] > 0.0)
+     radius[i] = sqrt(radius[i]);
+
+     for (int i=0; i<npegrid_; i++)
+     if (radius[i] > 0.0)
+     cout << "GDLB.INITIAL, myRank = " << myRank_ << ", peid " << i << ", radius = " << radius[i] << ", center = ( " << center[3*i+0] << " " << center[3*i+1] << " " << center[3*i+2] << " )" << endl;
    */
+   //ewd DEBUG
+   //ewd DEBUG
+   //ewd DEBUG
 
    
    
@@ -348,6 +349,185 @@ void GDLoadBalancer::initialDistribution(vector<AnatomyCell>& cells, int nx, int
       cout << "Load histogram after initial distribution:" << endl;
    loadHistogram(cells);
 
+}
+////////////////////////////////////////////////////////////////////////////////
+void GDLoadBalancer::compactLoop(vector<AnatomyCell>& cells)
+{
+   bool balance = false;
+   const int bprint = 10;
+   const int maxiter = 3000;
+   double volthresh = 2.0;
+
+   int bcnt = 0;
+   while (!balance && bcnt < maxiter)
+   {
+      computeProcBoxes(cells);
+
+      vector<int>::iterator maxvol = max_element(pevol_.begin(),pevol_.end());
+      int maxpe = maxvol - pevol_.begin();
+
+      double pevolavg = 0.;
+      for (unsigned ii=0; ii<npegrid_; ++ii)
+         pevolavg += pevol_[ii];
+      pevolavg /= npegrid_;
+
+      double maxratio = *maxvol / pevolavg;
+      if (maxratio <= volthresh) balance = true;
+      
+      if (myRank_ == 0 && bcnt%bprint == 0)
+         cout << "Compact loop iter " << bcnt << ":  avg. volume = " << pevolavg << ", max volume = " << *maxvol << ", on pe = " << maxpe << ", vol_ratio = " << maxratio << endl;
+
+      int ip = maxpe;
+
+      // choose dimension that needs reduction
+      int maxdim = 0;
+      if ( (pemax_[1][ip]-pemin_[1][ip]) > (pemax_[maxdim][ip]-pemin_[maxdim][ip]) ) maxdim = 1; 
+      if ( (pemax_[2][ip]-pemin_[2][ip]) > (pemax_[maxdim][ip]-pemin_[maxdim][ip]) ) maxdim = 2; 
+
+      int thisn;
+      int maxind;
+      if (penbr_[ip][2*maxdim] < 0)  // box edge on left, move cells to right
+      {
+         thisn = 2*maxdim + 1;         // nbr to the right of proc ip
+         maxind = pemax_[maxdim][ip];  // cells to move are on the right edge of proc ip's domain
+      }
+      else if (penbr_[ip][2*maxdim+1] < 0)  // box edge on right, move cells to left
+      {
+         thisn = 2*maxdim;             // nbr to the left of proc ip                            
+         maxind = pemin_[maxdim][ip];  // cells to move are on the left edge of proc ip's domain
+      }
+      else {
+         // move it to the neighbor whose com is closest to the cells in question
+         int nbrl = penbr_[ip][2*maxdim];
+         int nbrr = penbr_[ip][2*maxdim+1];
+         if ((pecom_[maxdim][nbrr]-pemax_[maxdim][ip]) > (pemin_[maxdim][ip]-pecom_[maxdim][nbrl]))
+         {
+            thisn = 2*maxdim;             // nbr to the left of proc ip                            
+            maxind = pemin_[maxdim][ip];  // cells to move are on the left edge of proc ip's domain
+         }
+         else if ((pecom_[maxdim][nbrr]-pemax_[maxdim][ip]) < (pemin_[maxdim][ip]-pecom_[maxdim][nbrl]))
+         {
+            thisn = 2*maxdim + 1;         // nbr to the right of proc ip
+            maxind = pemax_[maxdim][ip];  // cells to move are on the right edge of proc ip's domain
+         }
+         else {
+            if ((pemax_[maxdim][ip]-pecom_[maxdim][ip]) > (pecom_[maxdim][ip]-pemin_[maxdim][ip]))
+            {
+               thisn = 2*maxdim + 1;         // nbr to the right of proc ip
+               maxind = pemax_[maxdim][ip];  // cells to move are on the right edge of proc ip's domain
+            }
+            else
+            {
+               thisn = 2*maxdim;             // nbr to the left of proc ip                            
+               maxind = pemin_[maxdim][ip];  // cells to move are on the left edge of proc ip's domain
+            }
+         }
+      }
+      int nbr = penbr_[ip][thisn];
+
+      //ewd DEBUG
+      if (myRank_ == 0)
+         cout << "Sending cells from pe " << maxpe << " (penbr = " << penbr_[maxpe][2*maxdim] << " " << penbr_[maxpe][2*maxdim+1] << ") to pe " << nbr << " (penbr = " << penbr_[nbr][2*maxdim] << " " << penbr_[nbr][2*maxdim+1] << endl;
+      
+      // give all cells with this coordinate to nbr
+      for (unsigned ii=0; ii<cells.size(); ++ii)
+      {
+         if (cells[ii].dest_ == maxpe)
+         {
+            GridPoint gpt(cells[ii].gid_,nx_,ny_,nz_); 
+            if ( (maxdim == 0 && gpt.x == maxind) ||
+                 (maxdim == 1 && gpt.y == maxind) ||
+                 (maxdim == 2 && gpt.z == maxind) )
+            {
+               cells[ii].dest_ = nbr;
+            }
+         }
+      }
+      //ewd: need to track how many are transferred, update volumes of both
+      //ewd: maxpe and nbr, recalculate center of mass for both pes, and
+      //ewd: recalculate max volume info
+      //
+      //ewd: do it brute force for now
+
+      // carry out communication to match computed distribution
+      redistributeCells(cells);
+      
+      bcnt++;
+   }
+}
+////////////////////////////////////////////////////////////////////////////////
+void GDLoadBalancer::computeProcBoxes(vector<AnatomyCell>& cells)
+{
+   //ewd DEBUG
+   // to enable testing, we need to calculate which pes we own data for
+   // (in production runs, this will just be myRank)
+   vector<int> ownsDataLoc(npegrid_,0);
+   for (unsigned ii=0; ii<cells.size(); ++ii)
+      ownsDataLoc[cells[ii].dest_] = myRank_;  // who owns which processor's data
+   vector<int> ownsData(npegrid_);
+   MPI_Allreduce(&ownsDataLoc[0], &ownsData[0], npegrid_, MPI_INT, MPI_SUM, comm_);
+   //ewd DEBUG
+
+   // calculate volume, center of mass of each domain
+   vector<int> pecnt_loc(npegrid_,0);
+   vector<int> pevol_buf(npegrid_,0);
+   vector<vector<double> > pecomloc_;
+   vector<vector<int> > peminloc_;
+   vector<vector<int> > pemaxloc_;
+   pecomloc_.resize(3);
+   peminloc_.resize(3);
+   pemaxloc_.resize(3);
+   pecom_.resize(3);
+   pemin_.resize(3);
+   pemax_.resize(3);
+   for (unsigned ii=0; ii<3; ++ii)
+   {
+      pecomloc_[ii].assign(npegrid_,0.);
+      peminloc_[ii].assign(npegrid_,100000000);
+      pemaxloc_[ii].assign(npegrid_,-100000000);
+      pecom_[ii].assign(npegrid_,0.);
+      pemin_[ii].assign(npegrid_,0);
+      pemax_[ii].assign(npegrid_,0);
+   }
+   
+   for (unsigned ii=0; ii<cells.size(); ++ii)
+   {
+      int peid = cells[ii].dest_;
+      GridPoint gpt(cells[ii].gid_,nx_,ny_,nz_);
+      pecomloc_[0][peid] += (double)gpt.x;
+      pecomloc_[1][peid] += (double)gpt.y;
+      pecomloc_[2][peid] += (double)gpt.z;
+      pecnt_loc[peid]++;
+      if (gpt.x > pemaxloc_[0][peid]) pemaxloc_[0][peid] = gpt.x;
+      if (gpt.y > pemaxloc_[1][peid]) pemaxloc_[1][peid] = gpt.y;
+      if (gpt.z > pemaxloc_[2][peid]) pemaxloc_[2][peid] = gpt.z;
+      if (gpt.x < peminloc_[0][peid]) peminloc_[0][peid] = gpt.x;
+      if (gpt.y < peminloc_[1][peid]) peminloc_[1][peid] = gpt.y;
+      if (gpt.z < peminloc_[2][peid]) peminloc_[2][peid] = gpt.z;
+   }
+
+   //ewd DEBUG
+   for (unsigned ii=0; ii<npegrid_; ++ii)
+      if (pecnt_loc[ii] > 0)
+         assert(ownsData[ii] == myRank_);
+   //ewd DEBUG
+   
+   for (unsigned ii=0; ii<npegrid_; ++ii)
+      if (pecnt_loc[ii] > 0)
+         pevol_buf[ii] = (pemaxloc_[0][ii]-peminloc_[0][ii])*(pemaxloc_[1][ii]-peminloc_[1][ii])*(pemaxloc_[2][ii]-peminloc_[2][ii]);
+   
+   // collect information from all tasks
+   pevol_.assign(npegrid_,0);
+   MPI_Allreduce(&pevol_buf[0], &pevol_[0], npegrid_, MPI_INT, MPI_SUM, comm_);
+   MPI_Allreduce(&pecomloc_[0][0], &pecom_[0][0], npegrid_, MPI_DOUBLE, MPI_SUM, comm_);
+   MPI_Allreduce(&pecomloc_[1][0], &pecom_[1][0], npegrid_, MPI_DOUBLE, MPI_SUM, comm_);
+   MPI_Allreduce(&pecomloc_[2][0], &pecom_[2][0], npegrid_, MPI_DOUBLE, MPI_SUM, comm_);
+   MPI_Allreduce(&pemaxloc_[0][0], &pemax_[0][0], npegrid_, MPI_INT, MPI_MAX, comm_);
+   MPI_Allreduce(&pemaxloc_[1][0], &pemax_[1][0], npegrid_, MPI_INT, MPI_MAX, comm_);
+   MPI_Allreduce(&pemaxloc_[2][0], &pemax_[2][0], npegrid_, MPI_INT, MPI_MAX, comm_);
+   MPI_Allreduce(&peminloc_[0][0], &pemin_[0][0], npegrid_, MPI_INT, MPI_MIN, comm_);
+   MPI_Allreduce(&peminloc_[1][0], &pemin_[1][0], npegrid_, MPI_INT, MPI_MIN, comm_);
+   MPI_Allreduce(&peminloc_[2][0], &pemin_[2][0], npegrid_, MPI_INT, MPI_MIN, comm_);
 }
 ////////////////////////////////////////////////////////////////////////////////
 void GDLoadBalancer::balanceLoop(vector<AnatomyCell>& cells)
@@ -641,6 +821,7 @@ bool GDLoadBalancer::diffuseDest(vector<AnatomyCell>& cells)
                {
                   int thisgid = locgid_[tid];
                   int ipn = penbr_[ip][n];
+                  assert(ipn > -1);
                   int ii = locind_[tid];
                   cells[ii].dest_ = ipn;
                   keep[tid] = 0;
@@ -696,9 +877,9 @@ void GDLoadBalancer::redistributeCells(vector<AnatomyCell>& cells)
 
       // compress process grid onto nTasks
       computeReducedProcGrid(nTasks_);
-      if (myRank_ == 0)
-         cout << "GDLoadBalancer::redistributeCells:  reduced grid = " <<
-             tnx_ << " x " << tny_ << " x " << tnz_ << " used for testing." << endl;
+      //if (myRank_ == 0)
+      //   cout << "GDLoadBalancer::redistributeCells:  reduced grid = " <<
+      //       tnx_ << " x " << tny_ << " x " << tnz_ << " used for testing." << endl;
 
       // for testing, certain assumptions have to be fulfilled
       assert(npex_%2==0 && npey_%2==0 && npez_%2==0);
