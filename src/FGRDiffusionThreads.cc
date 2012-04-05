@@ -17,10 +17,12 @@ using namespace FGRUtils;
 
 FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
                                          const Anatomy& anatomy,
-                                         const ThreadTeam& threadInfo)
+                                         const ThreadTeam& threadInfo,
+                                         const ThreadTeam& reactionThreadInfo)
 : nLocal_(anatomy.nLocal()),
   localGrid_(DiffusionUtils::findBoundingBox(anatomy)),
   threadInfo_(threadInfo),
+  reactionThreadInfo_(reactionThreadInfo),
   diffusionScale_(parms.diffusionScale_)
 {
 
@@ -39,7 +41,7 @@ FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
    // This has been a test
 
    mkOffsets(threadOffset_,     anatomy.nLocal(),  threadInfo_);
-   mkOffsets(localCopyOffset_,  anatomy.nLocal(),  threadInfo_);
+   mkOffsets(localCopyOffset_,  anatomy.nLocal(),  reactionThreadInfo_);
    mkOffsets(remoteCopyOffset_, anatomy.nRemote(), threadInfo_);
    
 
@@ -85,7 +87,7 @@ FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
 void FGRDiffusionThreads::updateLocalVoltage(const double* VmLocal)
 {
    startTimer(FGR_ArrayLocal2MatrixTimer);
-   int tid = threadInfo_.teamRank();
+   int tid = reactionThreadInfo_.teamRank();
    unsigned begin = localCopyOffset_[tid];
    unsigned end   = localCopyOffset_[tid+1];
    for (unsigned ii=begin; ii<end; ++ii)

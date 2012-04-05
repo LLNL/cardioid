@@ -19,7 +19,8 @@ class FGRDiffusion : public Diffusion
    FGRDiffusion(
       const FGRUtils::FGRDiffusionParms& parms,
       const Anatomy& anatomy,
-      const ThreadTeam& threadInfo);
+      const ThreadTeam& threadInfo,
+      const ThreadTeam& reactionThreadInfo);
    
    void updateLocalVoltage(const double* VmLocal);
    void updateRemoteVoltage(const double* VmRemote);
@@ -45,6 +46,7 @@ class FGRDiffusion : public Diffusion
    LocalGrid                       localGrid_;
    double                          diffusionScale_;
    const ThreadTeam&               threadInfo_;
+   const ThreadTeam&               reactionThreadInfo_;
    L2_Barrier_t*                   fgrBarrier_;
    std::vector<L2_BarrierHandle_t> barrierHandle_;
    std::vector<int>                localCopyOffset_;

@@ -103,6 +103,7 @@ void initializeSimulate(const string& name, Simulate& sim)
    timestampBarrier("building diffusion object", MPI_COMM_WORLD);
    objectGet(obj, "diffusion", nameTmp, "diffusion");
    sim.diffusion_ = diffusionFactory(nameTmp, sim.anatomy_, sim.diffusionThreads_,
+                                     sim.reactionThreads_,
                                      sim.parallelDiffusionReaction_);
    
    timestampBarrier("building reaction object", MPI_COMM_WORLD);

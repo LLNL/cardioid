@@ -284,8 +284,7 @@ void diffusionLoop(Simulate& sim,
       stopTimer(diffusionL2BarrierHalo1Timer);
       
       startTimer(diffusionCalcTimer);
-      // copy, copy
-      sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
+      // copy remote
       sim.diffusion_->updateRemoteVoltage(loopData.voltageExchange.get_recv_buf_());
       // temporary barrier
       L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
@@ -346,6 +345,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
    vector<double>& dVmReaction = loopData.dVmReaction;
    L2_BarrierHandle_t reactionWaitOnNonGateHandle;
    L2_BarrierWithSync_InitInThread(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle);
+
    while ( sim.loop_<sim.maxLoop_ )
    {
       int nLocal = sim.anatomy_.nLocal();
@@ -377,6 +377,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       }
 
       stopTimer(integratorTimer);
+      sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
 
       startTimer(reactionL2ArriveTimer);
       L2_BarrierWithSync_Arrive(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
@@ -422,6 +423,8 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
       L2_BarrierWithSync_InitInThread(loopData.reactionBarrier, &reactionHandle);
       L2_BarrierWithSync_InitInThread(loopData.diffusionBarrier, &diffusionHandle);
       
+      // setup matrix voltages for first timestep.
+      sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
       #pragma omp barrier
       profileStart(parallelDiffReacTimer);
       if ( sim.diffusionThreads_.teamRank() >= 0) 

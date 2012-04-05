@@ -20,7 +20,8 @@ class FGRDiffusionThreads : public Diffusion
    FGRDiffusionThreads(
       const FGRUtils::FGRDiffusionParms& parms,
       const Anatomy& anatomy,
-      const ThreadTeam& threadInfo);
+      const ThreadTeam& threadInfo,
+      const ThreadTeam& reactionThreadInfo);
    
    void updateLocalVoltage(const double* VmLocal);
    void updateRemoteVoltage(const double* VmRemote);
@@ -44,6 +45,7 @@ class FGRDiffusionThreads : public Diffusion
    LocalGrid                       localGrid_;
    double                          diffusionScale_;
    const ThreadTeam&               threadInfo_;
+   const ThreadTeam&               reactionThreadInfo_;
    std::vector<int>                threadOffset_;
    std::vector<int>                localCopyOffset_;
    std::vector<int>                remoteCopyOffset_;

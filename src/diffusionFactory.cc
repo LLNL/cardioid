@@ -20,13 +20,17 @@ using namespace std;
 namespace
 {
    Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy,
-                                  const ThreadTeam& threadInfo, int simLoopType);
+                                  const ThreadTeam& threadInfo,
+                                  const ThreadTeam& reactionThreadInfo,
+                                  int simLoopType);
    void checkForObsoleteKeywords(OBJECT* obj);
 }
 
 
 Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
-                            const ThreadTeam& threadInfo, int simLoopType)
+                            const ThreadTeam& threadInfo,
+                            const ThreadTeam& reactionThreadInfo,
+                            int simLoopType)
 {
    OBJECT* obj = objectFind(name, "DIFFUSION");
 
@@ -37,7 +41,7 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
    if (method.empty())
       assert(1==0);
    else if (method == "FGR")
-      return fgrDiffusionFactory(obj, anatomy, threadInfo, simLoopType);
+      return fgrDiffusionFactory(obj, anatomy, threadInfo, reactionThreadInfo, simLoopType);
    else if (method == "null")
       return new NullDiffusion();
    
@@ -48,7 +52,9 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
 namespace
 {
    Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy,
-                                  const ThreadTeam& threadInfo, int simLoopType)
+                                  const ThreadTeam& threadInfo,
+                                  const ThreadTeam& reactionThreadInfo,
+                                  int simLoopType)
    {
       FGRUtils::FGRDiffusionParms p;
       objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0", "l^3/capacitance");
@@ -60,9 +66,9 @@ namespace
       if (variant == "omp")
          return new FGRDiffusionOMP(p, anatomy);
       if (variant == "threads")
-         return new FGRDiffusionThreads(p, anatomy, threadInfo);
+         return new FGRDiffusionThreads(p, anatomy, threadInfo, reactionThreadInfo);
       if (variant == "simd")
-         return new FGRDiffusion(p, anatomy, threadInfo);
+         return new FGRDiffusion(p, anatomy, threadInfo, reactionThreadInfo);
 
       // unreachable.  Should have matched a clause above.
       std::cerr<<"ERROR --- invalid 'variant' parameter: "<<variant<<std::endl;
