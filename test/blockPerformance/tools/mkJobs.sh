@@ -5,14 +5,13 @@
 
 mpiExe=../../../..//bin/cardioid-bgq
 spiExe=${mpiExe}-spi
-spiTimeExe=${mpiExe}-spi-time
 #pool=pdebug
 #maxTime=1:30
 #bank=dev
 
 
 
-for halo in spitime
+for halo in spi
 do
 for jobSize in 1k 2k 4k 8k 16k 24k
 do
@@ -36,9 +35,6 @@ do
       ;;
       spi)
       exe=$spiExe
-      ;;
-      spitime)
-      exe=$spiTimeExe
       ;;
   esac
 
