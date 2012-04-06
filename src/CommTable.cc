@@ -125,6 +125,8 @@ CommTable::CommTable(
    }
    #endif
 
+    MPI_Barrier(MPI_COMM_WORLD);
+
    _offsets = new int*[4];  //need to pass these offsets to spi_implementation
    _offsets[0]=&(_sendOffset[0]);
    _offsets[1]=&(_putOffset[0]);
