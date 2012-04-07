@@ -3,5 +3,5 @@ clean:
 	*/pade.data \
 	*/func_tt06* \
 	*/runMe.sh.* \
-	*core* \
-	slurm*
+	*/*core* \
+	*/slurm*

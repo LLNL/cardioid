@@ -6,6 +6,7 @@
 #include "PerformanceTimers.hh"
 #include "ThreadServer.hh"
 #include <cstdlib>
+#include <algorithm>
 
 using namespace std;
 using namespace TT06Func;
@@ -13,7 +14,34 @@ using namespace PerformanceTimers;
 
 static FILE *tfile[64]; 
 
-TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int mod, const ThreadTeam& group)
+class SortBySwitch
+{
+ public:
+   SortBySwitch(const vector<int>& typeMap)
+   : map_(typeMap){};
+   bool operator()(const AnatomyCell& a, const AnatomyCell& b)
+   {
+      const int aSwitch = map_[a.cellType_];
+      const int bSwitch = map_[b.cellType_];
+      assert(aSwitch >= 0 && bSwitch >= 0);
+      if (aSwitch < bSwitch)
+         return true;
+      if (aSwitch == bSwitch)
+      {
+         if (a.cellType_ < b.cellType_)
+            return true;
+         if (a.cellType_ == b.cellType_)
+            return (a.gid_ < b.gid_);
+      }
+      return false;
+   }
+      
+ private:
+   vector<int> map_;
+};
+
+
+TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy,double tolerance,int mod, const ThreadTeam& group)
 : nCells_(anatomy.nLocal()),
   group_(group)
 {
@@ -33,6 +61,16 @@ TT06Dev_Reaction::TT06Dev_Reaction(const Anatomy& anatomy,double tolerance,int m
       for (int i=0;fit[i]!=NULL;i++) padeCalc(fit[i],maxTerms,maxTerms,maxCost); 
       TT06Func::writeFit(fit); 
    }
+
+   vector<AnatomyCell>& cells = anatomy.cellArray();
+   vector<int> tissueType2Switch(256, -1);
+   tissueType2Switch[100] = 0;
+   tissueType2Switch[101] = 0;
+   tissueType2Switch[102] = 1;
+   SortBySwitch sortFunc(tissueType2Switch);
+   sort(cells.begin(), cells.end(), sortFunc);
+
+
    dtForFit_=0.0; 
    ttType_.resize(256, -1); 
    ttType_[30] = 0;

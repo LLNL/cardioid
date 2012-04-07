@@ -96,10 +96,15 @@ void initializeSimulate(const string& name, Simulate& sim)
          name += "#";
    }
    timestampBarrier("assigning cells to tasks", MPI_COMM_WORLD);
-   objectGet(obj, "decomposition", nameTmp, "decomposition");
-   assignCellsToTasks(sim, nameTmp, MPI_COMM_WORLD);
+   string decompositionName;
+   objectGet(obj, "decomposition", decompositionName, "decomposition");
+   assignCellsToTasks(sim, decompositionName, MPI_COMM_WORLD);
    
-   getRemoteCells(sim, nameTmp, MPI_COMM_WORLD);
+   timestampBarrier("building reaction object", MPI_COMM_WORLD);
+   objectGet(obj, "reaction", nameTmp, "reaction");
+   sim.reaction_ = reactionFactory(nameTmp, sim.anatomy_, sim.reactionThreads_);
+
+   getRemoteCells(sim, decompositionName, MPI_COMM_WORLD);
 
    timestampBarrier("building diffusion object", MPI_COMM_WORLD);
    objectGet(obj, "diffusion", nameTmp, "diffusion");
@@ -107,10 +112,6 @@ void initializeSimulate(const string& name, Simulate& sim)
                                      sim.reactionThreads_,
                                      sim.parallelDiffusionReaction_);
    
-   timestampBarrier("building reaction object", MPI_COMM_WORLD);
-   objectGet(obj, "reaction", nameTmp, "reaction");
-   sim.reaction_ = reactionFactory(nameTmp, sim.anatomy_, sim.reactionThreads_);
-
    timestampBarrier("building stimulus object", MPI_COMM_WORLD);
    vector<string> names;
    objectGet(obj, "stimulus", names);
