@@ -40,19 +40,6 @@ using namespace std;
 //     its nearest domain.
 
 
-class AnatomyCellDestSort
-{
- public:
-   bool operator()(const AnatomyCell& a, const AnatomyCell& b)
-   {
-      return a.dest_ < b.dest_;
-   }
-};
-
-
-
-
-
 
 Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
 :verbose_(parms.verbose),

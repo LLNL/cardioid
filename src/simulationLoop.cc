@@ -21,7 +21,6 @@
 #include "PerformanceTimers.hh"
 #include "fastBarrier.hh"
 #include "object_cc.hh"
-#include "readSnapshotCellList.hh"
 #include "clooper.h"
 #include "ThreadUtils.hh"
 
@@ -43,20 +42,6 @@ void simulationProlog(Simulate& sim)
    for (unsigned ii=0; ii<sim.stateFilename_.size(); ++ii)
       readCheckpoint(sim.stateFilename_[ii], sim, MPI_COMM_WORLD);
 
-   // let user specify a filename containing the list of cell gids they want in the snapshots
-   // (need to do this after data is distributed, so we can store just the local subset of points
-   // on each task)
-   string snapshotCLFile;
-   sim.snapshotUseCellList_ = false;
-   OBJECT* obj = objectFind("simulate", "SIMULATE");
-   objectGet(obj, "snapshotCellList", snapshotCLFile, "");
-   if (snapshotCLFile != "")
-   {
-      if (readSnapshotCellList(snapshotCLFile, sim,obj))
-         sim.snapshotUseCellList_ = true;      
-   }else{
-      sim.coarsedata_=0;
-   }
 }
 
 

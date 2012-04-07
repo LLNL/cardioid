@@ -15,6 +15,7 @@
 #include "Anatomy.hh"
 #include "mpiUtils.h"
 #include "PerformanceTimers.hh"
+#include "readSnapshotCellList.hh"
 
 using namespace std;
 
@@ -122,4 +123,12 @@ void initializeSimulate(const string& name, Simulate& sim)
    for (unsigned ii=0; ii<names.size(); ++ii)
       sim.sensor_.push_back(sensorFactory(names[ii], sim.anatomy_));
 
+   // let user specify a filename containing the list of cell gids they want in the snapshots
+   // (need to do this after data is distributed, so we can store just the local subset of points
+   // on each task)
+   sim.coarsedata_=0;
+   string snapshotCLFile;
+   objectGet(obj, "snapshotCellList", snapshotCLFile, "");
+   if (snapshotCLFile != "")
+      readSnapshotCellList(snapshotCLFile, sim,obj);
 }

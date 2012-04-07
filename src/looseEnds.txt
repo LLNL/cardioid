@@ -131,3 +131,5 @@ function.  Mostly these were removed in r403 to get the code to compile.
 really prefer not to have a raw pointer sitting around.  First I'll need
 to get the fast barrier stuff better designed.
 
+42.  The snapshotCellList_ and coarsedata_ members *must* be removed
+     from the Simulate class.

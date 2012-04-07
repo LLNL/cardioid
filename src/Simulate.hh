@@ -33,7 +33,6 @@ class Simulate
    int maxLoop_;
    int printRate_;
    int snapshotRate_;
-   bool snapshotUseCellList_;
    std::set<Long64> snapshotCellList_;
    int checkpointRate_;
    int parallelDiffusionReaction_;
