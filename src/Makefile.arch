@@ -7,7 +7,7 @@ ifeq ($(HOSTNAME),bgqfen)
   ARCHGUESS = q32
 endif
 ifeq ($(HOSTNAME),rzuseqlac)  
-  ARCHGUESS = bgq
+  ARCHGUESS = bgq-spi
 endif
 ifeq ($(HOSTNAME),seqlac)  
   ARCHGUESS = bgq-spi

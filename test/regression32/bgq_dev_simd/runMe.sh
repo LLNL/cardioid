@@ -7,7 +7,7 @@
 
 cd ${PSUB_SUBDIR:-.}
 
-exe=../../../bin/cardioid-bgq
+exe=../../../bin/cardioid-bgq-spi
 
 export OMP_NUM_THREADS=64
 export MUSPI_NUMBATIDS=203
