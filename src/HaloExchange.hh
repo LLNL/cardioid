@@ -10,21 +10,6 @@ using namespace std;
 
 #ifdef SPI
 #include "spi_impl.h"
-extern "C"{
-uint32_t mapping_table(spi_hdl_t* spi_hdl);
-uint32_t mapping_table_new(spi_hdl_t* spi_hdl);
-void spi_dump_mapping(spi_hdl_t* spi_hdl);
-void setup_bat(spi_hdl_t* spi_hdl,void* recv_buf,uint32_t recv_buf_size);
-uint32_t setup_inj_fifo(spi_hdl_t* spi_hdl);
-uint32_t setup_descriptors(int** offsets, int* dest, int* putIdx, int put_size , void* send_buf, uint32_t send_buf_size, spi_hdl_t* spi_hdl, int width);
-void execute_spi(spi_hdl_t* spi_hdl, uint32_t put_size);
-void execute_spi_2(spi_hdl_t* spi_hdl, uint32_t put_size);
-void execute_spi_alter(spi_hdl_t* spi_hdl, uint32_t put_size,int bw);
-void complete_spi(spi_hdl_t* spi_hdl, uint32_t recv_size);
-void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size, int* recv_offset, int bw, int width);
-void free_spi(spi_hdl_t* spi_hdl);
-void global_sync(spi_hdl_t* spi_hdl);
-}
 #endif
 
 template <class T>
@@ -47,25 +32,25 @@ class HaloExchange
    {
       startTimer(PerformanceTimers::haloMove2BufTimer);
       // fill send buffer
-     assert(sendMap_.size() == commTable_->sendSize()); 
-     for (unsigned ii=0; ii<sendMap_.size(); ++ii) { send_buf_[ii]=data[sendMap_[ii]]; }
-     stopTimer(PerformanceTimers::haloMove2BufTimer);
+      assert(sendMap_.size() == commTable_->sendSize()); 
+      for (unsigned ii=0; ii<sendMap_.size(); ++ii) { send_buf_[ii]=data[sendMap_[ii]]; }
+      stopTimer(PerformanceTimers::haloMove2BufTimer);
    };
 
-   void set_recv_buf(int bw) { for (unsigned ii=0; ii<commTable_->recvSize();++ii) {recv_buf_[ii+bw*commTable_->recvSize()]=-1;} }
+//   void set_recv_buf(int bw) { for (unsigned ii=0; ii<commTable_->recvSize();++ii) {recv_buf_[ii+bw*commTable_->recvSize()]=-1;} }
 
    void dump_recv_buf()
    {
-     cout << " recv is : ";
-     for (unsigned ii=0; ii<(commTable_->recvSize()) * 2;++ii) {cout << recv_buf_[ii] << " ";}
-     cout << endl;
+      cout << " recv is : ";
+      for (unsigned ii=0; ii<(commTable_->recvSize()) * 2;++ii) {cout << recv_buf_[ii] << " ";}
+      cout << endl;
    }
      
    void dump_send_buf()
    {
-     cout << " send is : ";
-     for (unsigned ii=0; ii<commTable_->sendSize();++ii) {cout << send_buf_[ii] << " ";}
-     cout << endl;
+      cout << " send is : ";
+      for (unsigned ii=0; ii<commTable_->sendSize();++ii) {cout << send_buf_[ii] << " ";}
+      cout << endl;
    }
 
    //virtual void execute(std::vector<T>& data, unsigned nLocal);
@@ -112,7 +97,8 @@ class spi_HaloExchange : public HaloExchange<T>
     barrier();
 
   };
-  ~spi_HaloExchange()
+
+   ~spi_HaloExchange()
    {
      free_spi(&spi_hdl);
      delete [] recv_buf_;
@@ -120,23 +106,24 @@ class spi_HaloExchange : public HaloExchange<T>
 
    T* get_recv_buf_() { return &(recv_buf_[bw*commTable_->recvSize()]); };
 
-   void execute(vector<T>& Data,int nLocal) {
-     move2Buf(Data);
+   void execute(vector<T>& data, int nLocal)
+   {
+     move2Buf(data);
      bw=1-bw;
      execute_spi_alter(&spi_hdl,commTable_->_putTask.size(),bw);
    };
 
-   void execute()
-   {
-     bw=1-bw;
-     execute_spi_alter(&spi_hdl,commTable_->_putTask.size(),bw);
-   };
+//    void execute()
+//    {
+//      bw=1-bw;
+//      execute_spi_alter(&spi_hdl,commTable_->_putTask.size(),bw);
+//    };
    void complete() {complete_spi_alter(&spi_hdl, commTable_->_recvTask.size(), commTable_->_offsets[3], bw, width_ );};
 
-   void execute3() {execute_spi(&spi_hdl,commTable_->_putTask.size());};
-   void execute2() {execute_spi_2(&spi_hdl,commTable_->_putTask.size());};
-   void complete2() {complete_spi(&spi_hdl, commTable_->_recvTask.size());};
-   void dump_mapping_table() { spi_dump_mapping( &spi_hdl); };
+//    void execute3() {execute_spi(&spi_hdl,commTable_->_putTask.size());};
+//    void execute2() {execute_spi_2(&spi_hdl,commTable_->_putTask.size());};
+//    void complete2() {complete_spi(&spi_hdl, commTable_->_recvTask.size());};
+//    void dump_mapping_table() { spi_dump_mapping( &spi_hdl); };
    void barrier() {global_sync(&spi_hdl);};
 
 };
@@ -156,12 +143,12 @@ class mpi_HaloExchange : public HaloExchange<T>
    {};
 
    T* get_recv_buf_() { return this->recv_buf_; }
-   void execute(vector<T>& Data,int nLocal)
+   void execute(vector<T>& data, int nLocal)
    {
-      move2Buf(Data);
+      move2Buf(data);
 
-      Data.resize(nLocal + commTable_->recvSize());
-      recv_buf_ = (&Data[nLocal]);
+      data.resize(nLocal + commTable_->recvSize());
+      recv_buf_ = (&data[nLocal]);
       char* sendBuf = (char*)send_buf_;
       char* recvBuf = (char*)recv_buf_;
 

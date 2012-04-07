@@ -1,3 +1,4 @@
+#include "spi_impl.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -20,7 +21,6 @@
 #include <hwi/include/bqc/dcr_support.h>
 #include <hwi/include/bqc/nd_500_dcr.h>
 #include "node_personality.h"
-#include "spi_impl.h"
 
 /* pt2pt constants */
 #define PT2PT_MISC1                                     \
@@ -425,7 +425,7 @@ void execute_spi_alter(spi_hdl_t* spi_hdl, uint32_t put_size,int bw)
 #endif
 
 }
-void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size, uint32_t* recv_offset, int bw, int width)
+void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_offset, int bw, int width)
 {
   volatile uint64_t* recv_cnt = spi_hdl -> recv_cnt;
   //checking if fifo is done.
