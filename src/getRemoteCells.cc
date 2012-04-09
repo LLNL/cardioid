@@ -59,7 +59,7 @@ void getRemoteCells(Simulate& sim, const string& name, MPI_Comm comm)
    sim.sendMap_ = router.sendMap();
    sim.commTable_ = new CommTable(router.commTable());
 
-   mpi_HaloExchange<AnatomyCell> cellExchange(sim.sendMap_, (sim.commTable_));
+   HaloExchange<AnatomyCell> cellExchange(sim.sendMap_, (sim.commTable_));
 
    anatomy.nLocal() = anatomy.size();
    cellExchange.execute(anatomy.cellArray(), anatomy.nLocal());

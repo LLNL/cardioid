@@ -30,7 +30,7 @@ extern "C" {
    void spi_dump_mapping(spi_hdl_t* spi_hdl);
    void setup_bat(spi_hdl_t* spi_hdl,void* recv_buf,uint32_t recv_buf_size);
    uint32_t setup_inj_fifo(spi_hdl_t* spi_hdl);
-   uint32_t setup_descriptors(int** offsets, int* dest, int* putIdx, int put_size , void* send_buf, uint32_t send_buf_size, spi_hdl_t* spi_hdl, int width);
+   uint32_t setup_descriptors(int** offsets, const int* dest, const int* putIdx, int put_size , void* send_buf, uint32_t send_buf_size, spi_hdl_t* spi_hdl, int width);
    void execute_spi(spi_hdl_t* spi_hdl, uint32_t put_size);
    void execute_spi_2(spi_hdl_t* spi_hdl, uint32_t put_size);
    void execute_spi_alter(spi_hdl_t* spi_hdl, uint32_t put_size,int bw);

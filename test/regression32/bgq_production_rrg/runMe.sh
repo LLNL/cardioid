@@ -4,6 +4,7 @@
 #PSUB -tM 0:30
 #PSUB -pool pdebug
 #PSUB -b science
+#SBATCH -N 32
 
 cd ${PSUB_SUBDIR:-.}
 

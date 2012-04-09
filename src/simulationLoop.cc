@@ -106,11 +106,7 @@ void simulationLoop(Simulate& sim)
    vector<double> dVmReaction(sim.anatomy_.nLocal(), 0.0);
    vector<double> iStim(sim.anatomy_.nLocal(), 0.0);
    simulationProlog(sim);
-#ifdef SPI   
-   spi_HaloExchange<double> voltageExchange(sim.sendMap_, (sim.commTable_));
-#else
-   mpi_HaloExchange<double> voltageExchange(sim.sendMap_, (sim.commTable_));
-#endif
+   HaloExchange<double> voltageExchange(sim.sendMap_, (sim.commTable_));
 
 #if defined(SPI) && defined(TRACESPI)
    int myRank;
@@ -122,21 +118,20 @@ void simulationLoop(Simulate& sim)
    {
       int nLocal = sim.anatomy_.nLocal();
     
-#if defined(SPI)
       startTimer(imbalanceTimer);
       voltageExchange.barrier();
       stopTimer(imbalanceTimer);
-#endif
       
       startTimer(haloTimer);
-      voltageExchange.execute(sim.VmArray_, nLocal);
-      voltageExchange.complete();
+      voltageExchange.fillSendBuffer(sim.VmArray_);
+      voltageExchange.startComm();
+      voltageExchange.wait();
       stopTimer(haloTimer);
 
       // DIFFUSION
       startTimer(diffusionCalcTimer);
       sim.diffusion_->updateLocalVoltage(&(sim.VmArray_[0]));
-      sim.diffusion_->updateRemoteVoltage(voltageExchange.get_recv_buf_());
+      sim.diffusion_->updateRemoteVoltage(voltageExchange.getRecvBuf());
       sim.diffusion_->calc(dVmDiffusion);
       stopTimer(diffusionCalcTimer);
 
@@ -219,12 +214,7 @@ struct SimLoopData
    vector<double> dVmDiffusion;
    vector<int> integratorOffset;
    vector<double> dVmReactionCpy;
-   #ifdef SPI   
-   spi_HaloExchange<double> voltageExchange;
-   #else
-   mpi_HaloExchange<double> voltageExchange;
-   #endif
-  
+   HaloExchange<double> voltageExchange;
 };
 
 void diffusionLoop(Simulate& sim,
@@ -244,19 +234,19 @@ void diffusionLoop(Simulate& sim,
       // Halo Exchange
       if (tid == 0)
       {
-#if defined(SPI)
          startTimer(diffusionImbalanceTimer);
          loopData.voltageExchange.barrier();
          stopTimer(diffusionImbalanceTimer);
-#endif         
+
          startTimer(haloTimer);
 
          startTimer(haloTimerExecute);
-         loopData.voltageExchange.execute(sim.VmArray_, nLocal);
+         loopData.voltageExchange.fillSendBuffer(sim.VmArray_);
+         loopData.voltageExchange.startComm();
          stopTimer(haloTimerExecute);
 
          startTimer(haloTimerComplete);
-         loopData.voltageExchange.complete();
+         loopData.voltageExchange.wait();
          stopTimer(haloTimerComplete);
 
          stopTimer(haloTimer);
@@ -270,7 +260,7 @@ void diffusionLoop(Simulate& sim,
       
       startTimer(diffusionCalcTimer);
       // copy remote
-      sim.diffusion_->updateRemoteVoltage(loopData.voltageExchange.get_recv_buf_());
+      sim.diffusion_->updateRemoteVoltage(loopData.voltageExchange.getRecvBuf());
       // temporary barrier
       L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
                                  sim.diffusionThreads_.nThreads());

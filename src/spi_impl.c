@@ -276,7 +276,7 @@ uint32_t setup_inj_fifo(spi_hdl_t* spi_hdl)
   _bgq_msync();
 }
 
-uint32_t setup_descriptors(int** offsets, int* dest, int* putIdx, int put_size , void* send_buf, uint32_t send_buf_size, spi_hdl_t* spi_hdl, int width)
+uint32_t setup_descriptors(int** offsets, const int* dest, const int* putIdx, int put_size , void* send_buf, uint32_t send_buf_size, spi_hdl_t* spi_hdl, int width)
 {
 
   MUHWI_Descriptor_t* mu_desc;  

@@ -104,6 +104,7 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "reaction", nameTmp, "reaction");
    sim.reaction_ = reactionFactory(nameTmp, sim.anatomy_, sim.reactionThreads_);
 
+   timestampBarrier("getRemoteCells", MPI_COMM_WORLD);
    getRemoteCells(sim, decompositionName, MPI_COMM_WORLD);
 
    timestampBarrier("building diffusion object", MPI_COMM_WORLD);
