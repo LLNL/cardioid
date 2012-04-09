@@ -4,6 +4,7 @@
 #include "Tuple.hh"
 
 #include <algorithm>
+#include <iostream>
 
 using namespace std;
 
@@ -15,7 +16,7 @@ using namespace std;
  *  stencil.  Therefore, the safe bet is to iterate the local cells and
  *  add the stencil size in each direction.
  */
-LocalGrid DiffusionUtils::findBoundingBox(const Anatomy& anatomy)
+LocalGrid DiffusionUtils::findBoundingBox(const Anatomy& anatomy, bool verbose)
 {
    assert(anatomy.nLocal() > 0);
    Tuple globalTuple = anatomy.globalTuple(0);
@@ -46,10 +47,13 @@ LocalGrid DiffusionUtils::findBoundingBox(const Anatomy& anatomy)
    yMin -= stencilSize;
    zMin -= stencilSize;
 
+   if (verbose)
+      cout << "DiffusionBoundingBox " << nx << " " << ny << " " << nz <<endl;
+
    return LocalGrid(nx, ny, nz, xMin, yMin, zMin);
 };
 
-LocalGrid DiffusionUtils::findBoundingBox_simd(const Anatomy& anatomy)
+LocalGrid DiffusionUtils::findBoundingBox_simd(const Anatomy& anatomy, bool verbose)
 {
    assert(anatomy.nLocal() > 0);
    Tuple globalTuple = anatomy.globalTuple(0);
@@ -82,5 +86,8 @@ LocalGrid DiffusionUtils::findBoundingBox_simd(const Anatomy& anatomy)
 
    nz += (nz%4==0) ? 0 : 4 - (nz%4);
    
+   if (verbose)
+      cout << "DiffusionSimdBoundingBox " << nx << " " << ny << " " << nz <<endl;
+
    return LocalGrid(nx, ny, nz, xMin, yMin, zMin);
 }

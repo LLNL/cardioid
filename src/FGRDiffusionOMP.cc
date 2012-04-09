@@ -15,7 +15,7 @@ FGRDiffusionOMP::FGRDiffusionOMP(const FGRDiffusionParms& parms,
                                  const Anatomy& anatomy)
 : nLocal_(anatomy.nLocal()),
   nRemote_(anatomy.nRemote()),
-  localGrid_(DiffusionUtils::findBoundingBox(anatomy)),
+  localGrid_(DiffusionUtils::findBoundingBox(anatomy, parms.printBBox_)),
   diffusionScale_(parms.diffusionScale_)
 {
 

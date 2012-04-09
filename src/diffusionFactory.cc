@@ -58,6 +58,7 @@ namespace
    {
       FGRUtils::FGRDiffusionParms p;
       objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0", "l^3/capacitance");
+      objectGet(obj, "printBBox",      p.printBBox_, "0");
       string defaultVariant = "omp";
       if (simLoopType == 1) // parallelDiffusionReaction
          defaultVariant = "simd";

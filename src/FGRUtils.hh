@@ -23,6 +23,7 @@ namespace FGRUtils
 
    struct FGRDiffusionParms
    {
+      bool   printBBox_;
       double diffusionScale_;
    };
    

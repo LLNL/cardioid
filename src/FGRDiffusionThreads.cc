@@ -20,7 +20,7 @@ FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
                                          const ThreadTeam& threadInfo,
                                          const ThreadTeam& reactionThreadInfo)
 : nLocal_(anatomy.nLocal()),
-  localGrid_(DiffusionUtils::findBoundingBox(anatomy)),
+  localGrid_(DiffusionUtils::findBoundingBox(anatomy, parms.printBBox_)),
   threadInfo_(threadInfo),
   reactionThreadInfo_(reactionThreadInfo),
   diffusionScale_(parms.diffusionScale_)

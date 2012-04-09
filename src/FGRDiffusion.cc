@@ -21,7 +21,7 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
                            const ThreadTeam& threadInfo,
                            const ThreadTeam& reactionThreadInfo)
 : nLocal_(anatomy.nLocal()),
-  localGrid_(DiffusionUtils::findBoundingBox_simd(anatomy)),
+  localGrid_(DiffusionUtils::findBoundingBox_simd(anatomy, parms.printBBox_)),
   threadInfo_(threadInfo),
   reactionThreadInfo_(reactionThreadInfo),
   diffusionScale_(parms.diffusionScale_)
