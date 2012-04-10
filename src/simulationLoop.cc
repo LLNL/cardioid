@@ -1,6 +1,8 @@
 #include "simulationLoop.hh"
 
 #include <vector>
+#include <utility>
+#include <algorithm>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -27,6 +29,40 @@
 
 using namespace std;
 using namespace PerformanceTimers;
+
+namespace
+{
+   void mkSendBufInfo(vector<unsigned>& sendBufOffset,
+                      vector<pair<unsigned, unsigned> >& sendBufIndirect,
+                      const HaloExchange<double>& halo,
+                      const vector<int>& integratorOffset,
+                      const ThreadTeam& threadInfo)
+   {
+      int nThreads = threadInfo.nThreads();
+      sendBufOffset.resize(nThreads+1, 0);
+      const vector<int>& sendMap = halo.getSendMap();
+      sendBufIndirect.reserve(sendMap.size());
+      
+      for (unsigned ii=0; ii<sendMap.size(); ++ii)
+         sendBufIndirect.push_back(make_pair(sendMap[ii], ii));
+      sort(sendBufIndirect.begin(), sendBufIndirect.end());
+      
+      for (unsigned ii=0; ii<nThreads; ++ii)
+      {
+         unsigned target = integratorOffset[ii+1];
+         for (unsigned jj=sendBufOffset[ii]; jj<sendBufIndirect.size(); ++jj)
+         {
+            if (sendBufIndirect[jj].first >= target)
+            {
+               sendBufOffset[ii+1] = jj;
+               break;
+            }
+         }
+         if (sendBufOffset[ii+1] == 0) // didn't find an end point
+            sendBufOffset[ii+1] = sendBufIndirect.size();
+      }
+   }
+}
 
 
 void simulationProlog(Simulate& sim)
@@ -195,6 +231,8 @@ struct SimLoopData
       dVmReactionCpy.resize(nLocal, 0.0);
       dVmReaction.resize(nLocal, 0.0); 
       mkOffsets(integratorOffset, sim.anatomy_.nLocal(), sim.reactionThreads_);
+      mkSendBufInfo(sendBufOffset, sendBufIndirect, voltageExchange,
+                    integratorOffset, sim.reactionThreads_);
    }
 
    ~SimLoopData()
@@ -214,6 +252,8 @@ struct SimLoopData
    vector<double> dVmDiffusion;
    vector<int> integratorOffset;
    vector<double> dVmReactionCpy;
+   vector<pair<unsigned, unsigned> > sendBufIndirect;
+   vector<unsigned> sendBufOffset;
    HaloExchange<double> voltageExchange;
 };
 
@@ -241,7 +281,6 @@ void diffusionLoop(Simulate& sim,
          startTimer(haloTimer);
 
          startTimer(haloTimerExecute);
-         loopData.voltageExchange.fillSendBuffer(sim.VmArray_);
          loopData.voltageExchange.startComm();
          stopTimer(haloTimerExecute);
 
@@ -354,6 +393,20 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       stopTimer(integratorTimer);
       sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
 
+      startTimer(haloMove2BufTimer);
+      {
+         unsigned begin = loopData.sendBufOffset[tid];
+         unsigned end   = loopData.sendBufOffset[tid+1];
+         double* sendBuf = loopData.voltageExchange.getSendBuf();
+         for (unsigned ii=begin; ii<end; ++ii)
+         {
+            unsigned vIndex = loopData.sendBufIndirect[ii].first;
+            unsigned sIndex = loopData.sendBufIndirect[ii].second;
+            sendBuf[sIndex] = sim.VmArray_[vIndex];
+         }
+      }
+      stopTimer(haloMove2BufTimer);
+      
       startTimer(reactionL2ArriveTimer);
       L2_BarrierWithSync_Arrive(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
       stopTimer(reactionL2ArriveTimer);
@@ -364,18 +417,6 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
    }
    profileStop(reactionLoopTimer);
 }
-
-void nullReactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle)
-{
-   while ( sim.loop_<=sim.maxLoop_ )
-   {
-      L2_BarrierWithSync_Arrive(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
-      L2_BarrierWithSync_Reset(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
-      L2_BarrierWithSync_WaitAndReset(loopData.diffusionBarrier, &diffusionHandle, sim.diffusionThreads_.nThreads());
-   }
-}
-
-
 
 void simulationLoopParallelDiffusionReaction(Simulate& sim)
 {
@@ -400,6 +441,7 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
       
       // setup matrix voltages for first timestep.
       sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
+      loopData.voltageExchange.fillSendBuffer(sim.VmArray_);
       #pragma omp barrier
       profileStart(parallelDiffReacTimer);
       if ( sim.diffusionThreads_.teamRank() >= 0) 
