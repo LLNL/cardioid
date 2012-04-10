@@ -74,7 +74,7 @@
  *                                              WaitAndReset(b, h, n);     be called in any
  *                                                                         orders
  *   // barrier 
- *   Barrier(b, h, t)     Barrier(b, h, t)     Barrier(b, h, t)            barrier executed
+ *   Barrier(b, h, t)     Barrier(b, h, t)      Barrier(b, h, t)           barrier executed
  *                                                                         by all t threads
  *   // next round ...
  *   Arrive(b, h, n);     Arrive(b, h, n);                                 but all threads
@@ -94,7 +94,7 @@
  * All Producers and Consumers must execute the barrier at the same time
  */
 
-struct  L2_Barrier_t{
+struct  L2_Barrier_t {
   // new cache line
   volatile __attribute__((aligned(L1D_CACHE_LINE_SIZE)))
   uint64_t start;  /*!< Thread count at start of current round. */
@@ -218,6 +218,34 @@ __INLINE__ void L2_BarrierWithSync_WaitAndReset(
 }
 
 
+__INLINE__ void L2_BarrierWithSync_SleepAndReset(
+  L2_Barrier_t *b,       /* global barrier */
+  L2_BarrierHandle_t *h, /* barrier handle private to this thread */
+  int eventNum)          /* number of arrival events */
+{
+  // compute target from local start
+  uint64_t target = h->localStart + eventNum;
+  // advance local start
+  h->localStart = target;
+  // wait until barrier's start is advanced
+  if (b->start < target) {
+    // must wait
+    while (1) {
+      // load start and reserve
+      uint64_t remoteVal = __ldarx((volatile long *) &b->start);
+      if (remoteVal >= target) {
+        // just witnessed the value to be fine
+        break;
+        // wait with sleep (may be awoken spuriously)
+        ppc_waitrsv();
+      }
+    }
+  }
+  // prevent speculation
+  __isync();
+}
+
+
 /*
  * L2_BarrierWithSyncReset: 
  *
@@ -254,6 +282,16 @@ __INLINE__ void L2_BarrierWithSync_Barrier(
 {
   L2_BarrierWithSync_Arrive(b, h, eventNum);
   L2_BarrierWithSync_WaitAndReset(b, h, eventNum);
+}
+
+
+__INLINE__ void L2_BarrierWithSync_SleepBarrier(
+  L2_Barrier_t *b,       /* global barrier */
+  L2_BarrierHandle_t *h, /* barrier handle private to this thread */
+  int eventNum)          /* number of arrival events */
+{
+  L2_BarrierWithSync_Arrive(b, h, eventNum);
+  L2_BarrierWithSync_SleepAndReset(b, h, eventNum);
 }
 
 /** Call this before the parallel region.  Replaces call to Init.
