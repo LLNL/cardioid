@@ -340,7 +340,7 @@ void diffusionLoop(Simulate& sim,
       startTimer(dummyTimer);
       stopTimer(dummyTimer);
 
-      if (tid == 0 && loop % sim.printRate_ == 0)
+      if (tid == 0 && sim.loop_ % sim.printRate_ == 0)
       {
          startTimer(diffusiondVmRCopyTimer);
          loopData.dVmReactionCpy = loopData.dVmReaction; 
