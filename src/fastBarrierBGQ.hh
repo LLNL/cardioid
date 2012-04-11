@@ -99,9 +99,10 @@ struct  L2_Barrier_t {
   volatile __attribute__((aligned(L1D_CACHE_LINE_SIZE)))
   uint64_t start;  /*!< Thread count at start of current round. */
   // new cache line
+  char pad1[L1D_CACHE_LINE_SIZE - 8];
   volatile __attribute__((aligned(L1D_CACHE_LINE_SIZE)))
   uint64_t count;  /*!< Current thread count. */
-  char pad[L1D_CACHE_LINE_SIZE - 8];
+  char pad2[L1D_CACHE_LINE_SIZE - 8];
 };
 
 
@@ -202,7 +203,8 @@ __INLINE__ void L2_BarrierWithSync_Arrive(
  * handle, and the number of arrival event expected at the barrier.
  */
 
-__INLINE__ void L2_BarrierWithSync_WaitAndReset(
+__INLINE__ void L2_BarrierWithSync_SpinAndReset(
+//__INLINE__ void L2_BarrierWithSync_WaitAndReset(
   L2_Barrier_t *b,       /* global barrier */
   L2_BarrierHandle_t *h, /* barrier handle private to this thread */
   int eventNum)          /* number of arrival events */
@@ -218,7 +220,8 @@ __INLINE__ void L2_BarrierWithSync_WaitAndReset(
 }
 
 
-__INLINE__ void L2_BarrierWithSync_SleepAndReset(
+//__INLINE__ void L2_BarrierWithSync_SleepAndReset(
+__INLINE__ void L2_BarrierWithSync_WaitAndReset(
   L2_Barrier_t *b,       /* global barrier */
   L2_BarrierHandle_t *h, /* barrier handle private to this thread */
   int eventNum)          /* number of arrival events */
@@ -275,7 +278,8 @@ __INLINE__ void L2_BarrierWithSync_Reset(
  * imput param are the global shared barrier, private barrier 
  * handle, and the number of arrival event expected at the barrier.
  */
-__INLINE__ void L2_BarrierWithSync_Barrier(
+__INLINE__ void L2_BarrierWithSync_SpinBarrier(
+//__INLINE__ void L2_BarrierWithSync_Barrier(
   L2_Barrier_t *b,       /* global barrier */
   L2_BarrierHandle_t *h, /* barrier handle private to this thread */
   int eventNum)          /* number of arrival events */
@@ -285,13 +289,14 @@ __INLINE__ void L2_BarrierWithSync_Barrier(
 }
 
 
-__INLINE__ void L2_BarrierWithSync_SleepBarrier(
+//__INLINE__ void L2_BarrierWithSync_SleepBarrier(
+__INLINE__ void L2_BarrierWithSync_Barrier(
   L2_Barrier_t *b,       /* global barrier */
   L2_BarrierHandle_t *h, /* barrier handle private to this thread */
   int eventNum)          /* number of arrival events */
 {
   L2_BarrierWithSync_Arrive(b, h, eventNum);
-  L2_BarrierWithSync_SleepAndReset(b, h, eventNum);
+  L2_BarrierWithSync_WaitAndReset(b, h, eventNum);
 }
 
 /** Call this before the parallel region.  Replaces call to Init.
