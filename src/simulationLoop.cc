@@ -106,7 +106,7 @@ void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVm
    if ( (loop % sim.printRate_ == 0) && myRank == 0)
    {
       if (firstCall) printf("    Loop     Time         Vm(t)        dVm_r(t-h)      dVm_d(t-h)\n");
-      printf("%8d %8.3f %15.8f %15.8f %15.8f\n",loop,sim.time_,sim.VmArray_[0],dVmR[0],dVmD[0]); 
+      printf("%8d %8.3f %21.15f %21.15f %21.15f\n",loop,sim.time_,sim.VmArray_[0],dVmR[0],dVmD[0]); 
    }
 
    if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)

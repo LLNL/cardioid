@@ -4,6 +4,13 @@
 #include <math.h>
 #define SQ(x) ((x)*(x))
 
+double mTauR(double Vm, void *) 
+{ 
+   double t1  = 1.0/(1.0+(exp(((- 60.0 - Vm)/5.0))));
+   double t2  =  0.10000/(1.0+(exp(((Vm+35.0)/5.0))))+0.100000/(1.0+(exp(((Vm - 50.0)/200.0))));
+   double tauR =  1.0/(t1*t2);
+   return tauR;
+}
 double hTauRecip(double Vm, double *dtauRecip, double *ddtauRecip)
 {
    double t1,t2; 
@@ -140,19 +147,36 @@ double TauRecipMod(double V, TauRecipParms *parms, double *dR, double *ddR)
 int main()
 {
    double tauR,dtauR,ddtauR;
+   double a[] = { 1.0, 1.0, 1.0/2.0, 1.0/6.0, 1.0/24.0, 1.0/120.0, 1.0/720.0, 1.0/5040.0}; 
    TauRecipParms *jParms =makeTauRecipParms(-48.85,-17.6,jTauRecip); 
    TauRecipParms *hParms =makeTauRecipParms(-64.20,-23.3,hTauRecip); 
    double Vm = -48.85; 
-   tauR = jTauRecip( Vm,  &dtauR,&ddtauR); printf("%e %e ",Vm,ddtauR); 
-   tauR = TauRecipMod(Vm,jParms,&dtauR,&ddtauR);  printf("%e\n",ddtauR); 
+   //tauR = jTauRecip( Vm,  &dtauR,&ddtauR); printf("%e %e ",Vm,ddtauR); 
+   //tauR = TauRecipMod(Vm,jParms,&dtauR,&ddtauR);  printf("%e\n",ddtauR); 
    Vm = -17.6; 
-   tauR = jTauRecip( Vm,  &dtauR,&ddtauR); printf("%e %e ",Vm,ddtauR); 
-   tauR = TauRecipMod(Vm,jParms,&dtauR,&ddtauR);  printf("%e\n",ddtauR); 
-   for (double Vm=-120.0;Vm< 0;Vm+=0.02) 
+   //tauR = jTauRecip( Vm,  &dtauR,&ddtauR); printf("%e %e ",Vm,ddtauR); 
+   //tauR = TauRecipMod(Vm,jParms,&dtauR,&ddtauR);  printf("%e\n",ddtauR); 
+   for (double Vm=-91;Vm< 50;Vm+=0.1) 
    {
-   double tauRE = hTauRecip( Vm,  &dtauR,&ddtauR);
-   double tauRM = TauRecipMod(Vm,hParms,&dtauR,&ddtauR); 
-   printf("%16.12f %20.12e %20.12e %20.12e\n",Vm,1/tauRE,1/tauRM,ddtauR); 
+   //double tauRE = hTauRecip( Vm,  &dtauR,&ddtauR);
+   //double tauRM = TauRecipMod(Vm,hParms,&dtauR,&ddtauR); 
+   //printf("%16.12f %20.12e %20.12e %20.12e\n",Vm,1/tauRE,1/tauRM,ddtauR); 
+   double tauR = mTauR(Vm,NULL); 
+   double dt = 1.; 
+   double dtTauR = dt*tauR; 
+   double dtTauREff = 1-exp(-dtTauR); 
+   double x = dtTauR/4; 
+   double f =0.0; 
+   for (int i==7;i>=0;i--} f = a[i]+s*x; 
+   //double  f =   1+x*( 1 + x*(1.0/2 + x*(1.0/6 + x*(1.0/24+x*(1.0/120+x*0.0/720))))); 
+   f *= f; 
+   f *= f; 
+   f =   1 - 1 / f ;
+   //double f = (1-x/3) / (1+x*2/3.0+x*x/6.0); 
+     //f = 1 -f ; 
+   double err = dtTau
+   
+   printf("%16.12f %20.12e %20.12e %20.12e %e\n",Vm,dtTauR,dtTauREff,f,dtTauREff/f-1.0); 
    }
 }
 */

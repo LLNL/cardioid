@@ -89,6 +89,16 @@ void objectGet(OBJECT* obj, const string& name, vector<string>& value)
    ddcFree(tmp);
 }
 
+void objectGet(OBJECT* obj, const string& name, vector<int>& value)
+{
+   value.clear();
+   int* tmp;
+   unsigned n = object_getv(obj, name.c_str(), (void**) &tmp, INT, IGNORE_IF_NOT_FOUND);
+   value.reserve(n);
+   for (unsigned ii=0; ii<n; ++ii)
+      value.push_back(tmp[ii]);
+   ddcFree(tmp);
+}
 void objectGet(OBJECT* obj, const string& name, vector<unsigned>& value)
 {
    value.clear();

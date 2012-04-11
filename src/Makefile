@@ -16,39 +16,39 @@ SVNVERSION := $(shell svnversion ./ )
 BINDIR = ../bin
 
 HEARTSRC= cardioid.cc \
-	 ThreadServer.cc \
-	 ThreadUtils.cc \
-	 Vector.cc SymmetricTensor.cc ConstantModel.cc ConstantReaction.cc \
-	 PerformanceTimers.cc unionOfStrings.cc getUserInfo.cc \
-         GDLoadBalancer.cc CommTable.cc \
-	 BucketOfBits.cc \
-	 stateLoader.cc \
-	 readPioFile.cc \
-	 AnatomyReader.cc object_cc.cc \
-	 Koradi.cc GridRouter.cc Grid3DStencil.cc writeCells.cc \
-	 checkpointIO.cc \
-	 DomainInfo.cc \
-	 initializeSimulate.cc \
-	 initializeAnatomy.cc setConductivity.cc assignCellsToTasks.cc \
-	 getRemoteCells.cc \
-	 simulationLoop.cc \
-	 diffusionFactory.cc reactionFactory.cc \
-	 stimulusFactory.cc sensorFactory.cc \
-	 FibreConductivity.cc JHUConductivity.cc\
-	 DiffusionUtils.cc \
-	 FGRDiffusion.cc \
-	 FGRDiffusionOMP.cc \
-	 FGRDiffusionThreads.cc \
-	 FGRUtils.cc \
-	 Reaction.cc \
-	 ReactionFHN.cc \
-	 TT04_CellML_Reaction.cc \
-	 TT06_CellML_Reaction.cc  \
-	 TT06Dev_Reaction.cc \
-	 TT06_RRG_Reaction.cc \
-	 TT06Tau.cc \
-	 TT06Func.cc \
-         pade.cc \
+	ThreadServer.cc \
+	ThreadUtils.cc \
+	Vector.cc SymmetricTensor.cc ConstantModel.cc ConstantReaction.cc \
+	PerformanceTimers.cc unionOfStrings.cc getUserInfo.cc \
+        GDLoadBalancer.cc CommTable.cc \
+	BucketOfBits.cc \
+	stateLoader.cc \
+	readPioFile.cc \
+	AnatomyReader.cc object_cc.cc \
+	Koradi.cc GridRouter.cc Grid3DStencil.cc writeCells.cc \
+	checkpointIO.cc \
+	DomainInfo.cc \
+	initializeSimulate.cc \
+	initializeAnatomy.cc setConductivity.cc assignCellsToTasks.cc \
+	getRemoteCells.cc \
+	simulationLoop.cc \
+	diffusionFactory.cc reactionFactory.cc \
+	stimulusFactory.cc sensorFactory.cc \
+	FibreConductivity.cc JHUConductivity.cc\
+	DiffusionUtils.cc \
+	FGRDiffusion.cc \
+	FGRDiffusionOMP.cc \
+	FGRDiffusionThreads.cc \
+	FGRUtils.cc \
+	Reaction.cc \
+	ReactionFHN.cc \
+	TT04_CellML_Reaction.cc \
+	TT06_CellML_Reaction.cc  \
+	TT06Dev_Reaction.cc \
+	TT06_RRG_Reaction.cc \
+	TT06Tau.cc \
+	TT06Func.cc \
+	pade.cc \
 	 TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc \
 	 TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc \
 	 TT06_RRG.cc \
@@ -58,7 +58,7 @@ HEARTSRC= cardioid.cc \
 	 VoronoiCoarsening.cc
 
 SPISRC=	 spi_impl.c
-SIMDSRC=  clooper.c
+SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c
 
 DDCMD_FILES = \
 	codata.h \

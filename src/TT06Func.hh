@@ -1,11 +1,16 @@
 #ifndef TT06FUNC_HH
 #define TT06FUNC_HH
+#include <map>
+#include <string>
+#include <vector>
 #include "pade.hh" 
+#include "TT06Func.hh" 
 #define SQ(x) ((x)*(x))
 #define CUBE(x) ((x)*(x)*(x))
 
+using namespace std; 
 /*
-* RATES[0] is d/dt V in component membrane (millivolt).
+ * RATES[0] is d/dt V in component membrane (millivolt).
  * RATES[4] is d/dt Xr1 in component rapid_time_dependent_potassium_current_Xr1_gate (dimensionless).
  * RATES[5] is d/dt Xr2 in component rapid_time_dependent_potassium_current_Xr2_gate (dimensionless).
  * RATES[6] is d/dt Xs in component slow_time_dependent_potassium_current_Xs_gate (dimensionless).
@@ -28,32 +33,28 @@
 // int mapCell2Dev[]                  {1,2,3,10,17,18,14,7,8,9,4,5,6,16,11,12,13,15};
 namespace TT06Func
 {
-//enum TT06STATE { Ca_i, dVK_i, Na_i, Ca_ss, Ca_SR, R_prime, fCass_gate, m_gate, h_gate, j_gate, Xr1_gate, Xr2_gate, Xs_gate, r_gate, d_gate, f_gate, f2_gate,  jL_gate, s_gate, nStateVar} ; 
-enum TT06STATE { Ca_i, dVK_i, Na_i, Ca_ss, Ca_SR, R_prime, fCass_gate, nStateVar} ; 
-enum TT06GATES { m_gateN, h_gateN, j_gateN, Xr1_gateN, Xr2_gateN, Xs_gateN, r_gateN, d_gateN, f_gateN, f2_gateN,  jL_gateN, s_gateN, nGatesVar} ; 
 
-struct TT06DevState
-{
-   int cellType; 
-   double P_NaK,g_Ks,g_to,g_NaL; 
-   double state[nStateVar];
-};
+enum TT06STATE { Ca_i, K_i, Na_i, Ca_ss, Ca_SR, R_prime, fCass, m_gate, h_gate, j_gate, Xr1_gate, Xr2_gate, Xs_gate, r_gate, d_gate, f_gate, f2_gate,  jL_gate, s_gate, nStateVar} ; 
+enum STATETYPE { nonGateVar, GateVar }; 
 
+#define gateFitOffset 7
+#define nGateVar 12 
 #define gateOffset 7
-void initState(TT06DevState *cell,double *gate, int cellType);
-void initGate(double **gates, int ii, double *gateI);
+#define dVK_i   K_i 
+
+struct STATE { int index, type; double value;}; 
+
+struct CellTypeParmsFull { string name; vector<int> anatomyIndices; int s_switch; double P_NaK, g_Ks, g_to, g_NaL, Vm; map<string,STATE> state;}  ;
+struct CellTypeParms     { int cellType, s_switch; double P_NaK, g_Ks, g_to, g_NaL, minK_i,maxK_i,midK_i,minNa_i,maxNa_i,midNa_i;}  ;
+struct TT06DevState { double state[nStateVar]; };
+
 void initCnst();
-void updateNonGate(double dt, int n, const double *Vm, TT06DevState *cell, int offset, double **gates, double *dVdt);
-void updateGate(double dt, int n, const double *Vm, TT06DevState *cell, int offset, double **gates);
-void updateGate0(double dt, int n, const double *Vm, TT06DevState *cell, int offset, double **gates);
-void updateGate1(double dt, int n, const double *Vm, TT06DevState *cell, int offset, double **gates);
-void updateGate2(double dt, int n, const double *Vm, TT06DevState *cell, int offset, double **gates);
-void updateGate3(double dt, int n, const double *Vm, TT06DevState *cell, int offset, double **gates);
-void updateGateOLD(double dt, int n, const double *Vm, TT06DevState *cell);
+void updateNonGate(double dt, CellTypeParms *cellTypeParms, int n, int *cellType, const double *Vm, int offset, double **state, double *dVdt);
+void updateGate(double dt, int n, int *cellType, const double *Vm, int offset, double **state);
 double get_c9();
 PADE **makeFit(double tol, double V0, double V1, double deltaV, int mod);
 void writeFit(PADE **fit); 
-double defaultVoltage(int cellType);
+map<string,CellTypeParmsFull> getStandardCellTypes();
 };
 
 #endif

@@ -87,11 +87,46 @@ namespace
 {
    Reaction* scanTT06Dev(OBJECT* obj, Anatomy& anatomy, const ThreadTeam& group)
    {
+#include "TT06Func.hh"
+      map<string,TT06Func::CellTypeParmsFull>cellTypeParms=TT06Func::getStandardCellTypes(); 
       double tolerance=0.0 ; 
+      vector<string> cellTypeNames; 
       int mod=0; 
       objectGet(obj, "tolerance", tolerance, "0.0") ;
       objectGet(obj, "mod", mod, "0") ;
-      Reaction *reaction = new TT06Dev_Reaction(anatomy, tolerance, mod, group);
+      objectGet(obj, "cellTypes", cellTypeNames) ;
+      assert(cellTypeNames.size() >0); 
+      for(int ii=0;ii<cellTypeNames.size();ii++) 
+      {
+        string name = cellTypeNames[ii]; 
+        map<string,TT06Func::CellTypeParmsFull>::iterator it;
+        it=cellTypeParms.find(name);
+        if (it == cellTypeParms.end()) cellTypeParms[name] = cellTypeParms["endoCellML"]; 
+   	OBJECT* cellobj = objectFind(name, "CELLTYPE");
+	
+        string clone; 
+        objectGet(cellobj, "clone", clone, "") ;
+        if (clone != "")
+        {
+	  assert(name != clone); 
+          it=cellTypeParms.find(clone);
+          assert(it != cellTypeParms.end()); 
+	  cellTypeParms[name]=cellTypeParms[clone]; 
+          cellTypeParms[name].name=name;
+        }
+	vector<int> iparm; 
+	vector<double> dparm; 
+        objectGet(cellobj,"anatomyIndices",iparm); 
+        if (iparm.size() > 0) cellTypeParms[name].anatomyIndices = iparm; 
+        objectGet(cellobj,"s_switch",iparm); 
+        if (iparm.size() == 1) cellTypeParms[name].s_switch = iparm[0]; 
+        objectGet(cellobj,"P_NaK",dparm); 
+        if (dparm.size() == 1) cellTypeParms[name].P_NaK = dparm[0]; 
+        printf("%s P_NaK=%f s_switch=%d\n",name.c_str(),cellTypeParms[name].P_NaK,cellTypeParms[name].s_switch); 
+        
+      }
+      
+      Reaction *reaction = new TT06Dev_Reaction(anatomy, cellTypeParms, cellTypeNames, tolerance, mod, group);
       return  reaction; 
    }
 }

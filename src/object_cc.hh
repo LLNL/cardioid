@@ -21,6 +21,7 @@ void objectGet(OBJECT* obj, const std::string& name, double& value, const std::s
 
 
 void objectGet(OBJECT* obj, const std::string& name, std::vector<std::string>& value);
+void objectGet(OBJECT* obj, const std::string& name, std::vector<int>&    value);
 void objectGet(OBJECT* obj, const std::string& name, std::vector<unsigned>&    value);
 void objectGet(OBJECT* obj, const std::string& name, std::vector<Long64>&      value);
 void objectGet(OBJECT* obj, const std::string& name, std::vector<double >&     value);
