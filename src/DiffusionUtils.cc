@@ -2,7 +2,7 @@
 #include "Anatomy.hh"
 #include "LocalGrid.hh"
 #include "Tuple.hh"
-
+#include <mpi.h>
 #include <algorithm>
 #include <iostream>
 
@@ -47,8 +47,10 @@ LocalGrid DiffusionUtils::findBoundingBox(const Anatomy& anatomy, bool verbose)
    yMin -= stencilSize;
    zMin -= stencilSize;
 
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
    if (verbose)
-      cout << "DiffusionBoundingBox " << nx << " " << ny << " " << nz <<endl;
+      cout << "DiffusionBoundingBox " << myRank << " " << nx << " " << ny << " " << nz << " " << nx*ny*nz << endl;
 
    return LocalGrid(nx, ny, nz, xMin, yMin, zMin);
 };
@@ -86,8 +88,10 @@ LocalGrid DiffusionUtils::findBoundingBox_simd(const Anatomy& anatomy, bool verb
 
    nz += (nz%4==0) ? 0 : 4 - (nz%4);
    
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
    if (verbose)
-      cout << "DiffusionSimdBoundingBox " << nx << " " << ny << " " << nz <<endl;
+      cout << "DiffusionSimdBoundingBox " << myRank << " " << nx << " " << ny << " " << nz << " " << nx*ny*nz << endl;
 
    return LocalGrid(nx, ny, nz, xMin, yMin, zMin);
 }

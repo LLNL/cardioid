@@ -6,7 +6,7 @@ void initExp()
    exp_a[0]=1.0; 
    for (int i=1;i<32;i++) exp_a[i] = exp_a[i-1]/i;
 }
-void update_mGate_v1(double dt, int *nC, const double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_mGate_v1(double dt, int *nC, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 
 typedef vector4double vdt;
@@ -340,7 +340,7 @@ int nCells = nC[1];
 
 
 //void update_hGate_v1(double dt, int nCells, const double *VM, double *g, double *mhu_a, double *tauR_a)
-void update_hGate_v1(double dt, int *nC, const double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_hGate_v1(double dt, int *nC, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 
   typedef vector4double vdt;
@@ -655,7 +655,7 @@ int nCells=nC[1];
 
 
 
-void update_jGate_v1(double dt, int *nC, const double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_jGate_v1(double dt, int *nC, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 
   typedef vector4double vdt;
@@ -988,7 +988,7 @@ int nCells=nC[1];
 }
 
 
-void update_Xr1Gate_v1(double dt, int *nC, const double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_Xr1Gate_v1(double dt, int *nC, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 
   typedef vector4double vdt;
@@ -1235,7 +1235,7 @@ int nCells=nC[1];
 }
 
 
-void update_Xr2Gate_v1(double dt, int *nC,  const double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_Xr2Gate_v1(double dt, int *nC,  double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 
   typedef vector4double vdt;
@@ -1375,7 +1375,7 @@ double   tauRdt_a0  = tauR_a[0]*dt,
 }
 
 
-void update_XsGate_v1(double dt, int *nC,  const double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_XsGate_v1(double dt, int *nC,  double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 
 
@@ -1576,7 +1576,7 @@ tauRdt[ii] = sum3[ii]/sum4[ii];
 
 
 //void update_hGate_v1(double dt, int nCells, const double *VM, double *g, double *mhu_a, double *tauR_a)
-void update_rGate_v1(double dt, int *nC, const double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_rGate_v1(double dt, int *nC, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 
   typedef vector4double vdt;
@@ -1824,7 +1824,7 @@ int nCells=nC[1];
 
 
 
-void update_dGate_v1(double dt, int *nC,  const double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_dGate_v1(double dt, int *nC,  double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 
   typedef vector4double vdt;
@@ -2049,7 +2049,7 @@ int nCells=nC[1];
 
 
 //void update_hGate_v1(double dt, int nCells, const double *VM, double *g, double *mhu_a, double *tauR_a)
-void update_fGate_v1(double dt, int *nC, const double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_fGate_v1(double dt, int *nC, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 
   typedef vector4double vdt;
@@ -2366,7 +2366,7 @@ int nCells=nC[1];
 
 
 
-void update_f2Gate_v1(double dt, int *nC, const double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_f2Gate_v1(double dt, int *nC, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 
   typedef vector4double vdt;
@@ -2612,7 +2612,7 @@ int nCells=nC[1];
   
 }
 
-void update_jLGate_v1(double dt, int *nC,  const double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_jLGate_v1(double dt, int *nC,  double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 
   typedef vector4double vdt;
@@ -2755,7 +2755,7 @@ double   tauRdt_a0  = tauR_a[0]*dt;
 
 
 
-void update_s0Gate_v1(double dt, int *nC,  const double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_s0Gate_v1(double dt, int *nC,  double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 
   typedef vector4double vdt;
@@ -2962,7 +2962,7 @@ int nCells=nC[1];
 
 
 //void update_hGate_v1(double dt, int nCells, const double *VM, double *g, double *mhu_a, double *tauR_a)
-void update_s1Gate_v1(double dt, int *nC, const double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_s1Gate_v1(double dt, int *nC, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 
   typedef vector4double vdt;
@@ -3315,7 +3315,7 @@ int nCells=nC[1];
  }
 }
 
-void update_sGate_v1(double dt, int *nC, const double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_sGate_v1(double dt, int *nC, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
     int large = 1 << 30; 
     int n1 = nC[0]; 
