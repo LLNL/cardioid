@@ -38,7 +38,7 @@ ThreadHardwareInfo::ThreadHardwareInfo()
    ompID_ = omp_get_thread_num();
    procID_ = ompID_; 
    coreID_ = ompID_%ncpu;
-   hwThreadID_ = 0; 
+   hwThreadID_ = ompID_/ncpu; 
 
    // The rest of this function is overrides for the generic info on the
    // specific hardware where better information is available.
