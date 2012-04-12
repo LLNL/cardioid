@@ -26,7 +26,7 @@ class CoreMatcher
    bool operator()(const ThreadHardwareInfo& a, const int& b)
    {return a.coreID_ < b;}
    bool operator()(const int& b, const ThreadHardwareInfo& a)
-   {return a.coreID_ < b;}
+   {return b < a.coreID_;}
 };
 
 /** Initializes the hardware info for the calling thread.  This function
@@ -95,13 +95,19 @@ void ThreadTeam::buildRankInfo()
 ostream& operator<<(ostream& out, const ThreadTeam& tt)
 {
    out << "nSquads=" << tt.nSquads() << " nThreads=" << tt.nThreads() << endl;
-   out << "     Core hwThread   omp_id\n"
-       << "---------------------------" << endl;
+   out << "     Core hwThread   omp_id teamRank coreRank squadRank\n"
+       << "--------------------------------------------------------" << endl;
    for (unsigned ii=0; ii<tt.nThreads(); ++ii)
+   {
+      unsigned ompID = tt.hwInfo(ii).ompID_;
       out << setw(9) << tt.hwInfo(ii).coreID_
           << setw(9) << tt.hwInfo(ii).hwThreadID_
           << setw(9) << tt.hwInfo(ii).ompID_
+          << setw(9) << tt.rankInfo(ompID).teamRank_
+          << setw(9) << tt.rankInfo(ompID).coreRank_
+          << setw(9) << tt.rankInfo(ompID).squadRank_
           << endl;
+   }
    return out;
 }
 
