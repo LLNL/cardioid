@@ -95,35 +95,41 @@ namespace
       objectGet(obj, "tolerance", tolerance, "0.0") ;
       objectGet(obj, "mod", mod, "0") ;
       objectGet(obj, "cellTypes", cellTypeNames) ;
-      assert(cellTypeNames.size() >0); 
-      for(int ii=0;ii<cellTypeNames.size();ii++) 
+      if (cellTypeNames.size() == 0)
       {
-        string name = cellTypeNames[ii]; 
-        map<string,TT06Func::CellTypeParmsFull>::iterator it;
-        it=cellTypeParms.find(name);
-        if (it == cellTypeParms.end()) cellTypeParms[name] = cellTypeParms["endoCellML"]; 
-   	OBJECT* cellobj = objectFind(name, "CELLTYPE");
-	
-        string clone; 
-        objectGet(cellobj, "clone", clone, "") ;
-        if (clone != "")
-        {
-	  assert(name != clone); 
-          it=cellTypeParms.find(clone);
-          assert(it != cellTypeParms.end()); 
-	  cellTypeParms[name]=cellTypeParms[clone]; 
-          cellTypeParms[name].name=name;
-        }
-	vector<int> iparm; 
-	vector<double> dparm; 
-        objectGet(cellobj,"anatomyIndices",iparm); 
-        if (iparm.size() > 0) cellTypeParms[name].anatomyIndices = iparm; 
-        objectGet(cellobj,"s_switch",iparm); 
-        if (iparm.size() == 1) cellTypeParms[name].s_switch = iparm[0]; 
-        objectGet(cellobj,"P_NaK",dparm); 
-        if (dparm.size() == 1) cellTypeParms[name].P_NaK = dparm[0]; 
-        printf("%s P_NaK=%f s_switch=%d\n",name.c_str(),cellTypeParms[name].P_NaK,cellTypeParms[name].s_switch); 
+         cellTypeNames.push_back("endoCellML");
+         cellTypeNames.push_back("midCellML");
+         cellTypeNames.push_back("epiCellML");
+      }
+      for (int ii=0;ii<cellTypeNames.size();ii++) 
+      {
+         string name = cellTypeNames[ii]; 
+         if (cellTypeParms.count(name) == 0)
+            cellTypeParms[name] = cellTypeParms["endoCellML"]; 
+
+         OBJECT* cellobj = object_find2(name.c_str(), "CELLTYPE", IGNORE_IF_NOT_FOUND);
+         if (! cellobj)
+            continue;
         
+         string clone; 
+         objectGet(cellobj, "clone", clone, "") ;
+         if (clone != "")
+         {
+            assert(name != clone); 
+            assert(cellTypeParms.count(clone) != 0); 
+            cellTypeParms[name]=cellTypeParms[clone]; 
+            cellTypeParms[name].name=name;
+         }
+         vector<int> iparm; 
+         vector<double> dparm; 
+         objectGet(cellobj,"anatomyIndices",iparm); 
+         if (iparm.size() > 0) cellTypeParms[name].anatomyIndices = iparm; 
+         objectGet(cellobj,"s_switch",iparm); 
+         if (iparm.size() == 1) cellTypeParms[name].s_switch = iparm[0]; 
+         objectGet(cellobj,"P_NaK",dparm); 
+         if (dparm.size() == 1) cellTypeParms[name].P_NaK = dparm[0]; 
+         printf("%s P_NaK=%f s_switch=%d\n",name.c_str(),cellTypeParms[name].P_NaK,cellTypeParms[name].s_switch); 
+         
       }
       
       Reaction *reaction = new TT06Dev_Reaction(anatomy, cellTypeParms, cellTypeNames, tolerance, mod, group);
