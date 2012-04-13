@@ -48,6 +48,7 @@ FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
    
    weight_.resize(nx, ny, nz);
    VmBlock_.resize(nx, ny, nz);
+   dVmBlock_.resize(nx, ny, nz);
 
    buildTupleArray(anatomy);
    buildBlockIndex(anatomy);
@@ -126,15 +127,19 @@ void FGRDiffusionThreads::calc(vector<double>& dVm)
    
    for (int iCell=begin; iCell<end; ++iCell)
    {
-      dVm[iCell] = 0.0;
       int ib = blockIndex_[iCell];
       
       double* phi = & (VmBlock_(ib));
       const WeightType *A = weight_(ib).A;
+      dVmBlock_(ib) = 0;
       for (unsigned ii=0; ii<19; ++ii)
-         dVm[iCell] += A[ii] * ( *(phi+offset_[ii]));
-      
-      dVm[iCell] *= diffusionScale_;
+         dVmBlock_(ib) += A[ii] * ( *(phi+offset_[ii]));
+
+      // calculate in array layout
+//      dVm[iCell] = 0.0;
+//       for (unsigned ii=0; ii<19; ++ii)
+//          dVm[iCell] += A[ii] * ( *(phi+offset_[ii]));
+//       dVm[iCell] *= diffusionScale_;
    }
    stopTimer(FGR_StencilTimer);
 }

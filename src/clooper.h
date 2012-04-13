@@ -8,9 +8,18 @@ extern "C" {
 /** dVmR and dVmD really should be passed in as const double* since they
  * aren't modified.  However, I think this might interfere with
  * simdization */
-void integrateLoop(const int begin, const int end, const double dt,
-                   double* dVmR, double* dVmD, double* Vm);
+/* void integrateLoop(const int begin, const int end, const double dt, */
+/*                    double* dVmR, double* dVmD, double* Vm); */
 
+void integrateLoop(const int begin, const int end,
+                   const double dt,
+                   double* dVmR,
+                   double* stim,
+                   unsigned* blockOffset,
+                   double* dVmBlock,
+                   double* VmBlock,
+                   double* Vm,
+                   double diffusionScale);
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -26,6 +26,10 @@ class FGRDiffusionThreads : public Diffusion
    void updateLocalVoltage(const double* VmLocal);
    void updateRemoteVoltage(const double* VmRemote);
    void calc(std::vector<double>& dVm);
+   unsigned* blockIndex(){return &blockIndex_[0];}
+   double* VmBlock(){return VmBlock_.cBlock();}
+   double* dVmBlock(){return dVmBlock_.cBlock();}
+   double diffusionScale(){return diffusionScale_;}
 
  private:
 
@@ -53,9 +57,7 @@ class FGRDiffusionThreads : public Diffusion
    std::vector<Tuple>              localTuple_; // only for local cells
    Array3d<FGRUtils::DiffWeight>   weight_;
    Array3d<double>                 VmBlock_;
-
-   
-   
+   Array3d<double>                 dVmBlock_;
 };
 
 #endif

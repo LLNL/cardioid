@@ -25,6 +25,10 @@ class FGRDiffusion : public Diffusion
    void updateLocalVoltage(const double* VmLocal);
    void updateRemoteVoltage(const double* VmRemote);
    void calc(std::vector<double>& dVm);
+   unsigned* blockIndex(){return &blockIndex_[0];}
+   double* VmBlock() {return VmBlock_.cBlock();}
+   double* dVmBlock(){return dVmBlock_.cBlock();}
+   double diffusionScale(){return diffusionScale_;}
 
  private:
    void FGRDiff_simd(const uint32_t start,const int32_t chunk_size, Array3d<double>* VmTmp, double* out);

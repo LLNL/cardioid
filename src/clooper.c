@@ -9,13 +9,23 @@
 #include <mpi.h>
 
 // dfr: called for all builds.  Must be portable.
-void integrateLoop(const int begin, const int end, const double dt,
-                   double* dVmR, double* dVmD, double* Vm)
+void integrateLoop(const int begin, const int end,
+                   const double dt,
+                   double* dVmR,
+                   double* stim,
+                   unsigned* blockOffset,
+                   double* dVmBlock,
+                   double* VmBlock,
+                   double* Vm,
+                   double diffusionScale)
 {
    for (unsigned ii=begin; ii<end; ++ii)
    {
-      double dVm = dVmR[ii] + dVmD[ii];
+      int ib = blockOffset[ii];
+
+      double dVm = dVmR[ii] + stim[ii] + diffusionScale * dVmBlock[ib];
       Vm[ii] += dt*dVm;
+      VmBlock[ib] = Vm[ii];
    }
    return;
 }

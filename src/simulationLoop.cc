@@ -275,7 +275,7 @@ void diffusionLoop(Simulate& sim,
       if (tid == 0)
       {
          startTimer(diffusionImbalanceTimer);
-         loopData.voltageExchange.barrier();
+//         loopData.voltageExchange.barrier();
          stopTimer(diffusionImbalanceTimer);
 
          startTimer(haloTimer);
@@ -283,6 +283,13 @@ void diffusionLoop(Simulate& sim,
          startTimer(haloTimerExecute);
          loopData.voltageExchange.startComm();
          stopTimer(haloTimerExecute);
+
+      // stimulus
+         startTimer(stimulusTimer);
+         loopData.dVmDiffusion.assign(loopData.dVmDiffusion.size(), 0);
+         for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
+            sim.stimulus_[ii]->stim(sim.time_, loopData.dVmDiffusion);
+         stopTimer(stimulusTimer);
 
          startTimer(haloTimerComplete);
          loopData.voltageExchange.wait();
@@ -313,14 +320,6 @@ void diffusionLoop(Simulate& sim,
                                  sim.diffusionThreads_.nThreads());
       stopTimer(diffusionL2BarrierHalo2Timer);
 
-      // stimulus
-      if (tid == 0)
-      {
-         startTimer(stimulusTimer);
-         for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
-            sim.stimulus_[ii]->stim(sim.time_, loopData.dVmDiffusion);
-         stopTimer(stimulusTimer);
-      }
 
       // announce that diffusion derivatives are ready.
       L2_BarrierWithSync_Arrive(loopData.diffusionBarrier, &diffusionHandle,
@@ -375,23 +374,50 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       startTimer(dummyTimer);
       stopTimer(dummyTimer);
 
-      startTimer(reactionWaitTimer);
-      L2_BarrierWithSync_WaitAndReset(loopData.diffusionBarrier, &diffusionHandle, sim.diffusionThreads_.nThreads());
-      stopTimer(reactionWaitTimer);
-
-      startTimer(integratorTimer);
-      integrateLoop(loopData.integratorOffset[tid],
-                    loopData.integratorOffset[tid+1], sim.dt_,
-                    &loopData.dVmReaction[0], &loopData.dVmDiffusion[0], &sim.VmArray_[0]);
-      
       if (tid == 0)
       {
          sim.time_ += sim.dt_;
          ++sim.loop_;
       }
 
+      startTimer(reactionWaitTimer);
+      L2_BarrierWithSync_WaitAndReset(loopData.diffusionBarrier, &diffusionHandle, sim.diffusionThreads_.nThreads());
+      stopTimer(reactionWaitTimer);
+
+
+//       copy the diffusion derivative from matrix to array form.
+//       This is a dinosaur track.  The code that actually does this
+//       work is now inside the integrator.      
+//       startTimer(FGR_Matrix2ArrayTimer);
+//       unsigned begin = loopData.integratorOffset[tid];
+//       unsigned end   = loopData.integratorOffset[tid+1];
+//       unsigned* blockIndex = sim.diffusion_->blockIndex();
+//       double* dVdMatrix = sim.diffusion_->dVmBlock();
+//       double diffusionScale = sim.diffusion_->diffusionScale();
+//       for (unsigned ii=begin; ii<end; ++ii)
+//       {
+//          int index = blockIndex[ii];
+//          loopData.dVmDiffusion[ii] += diffusionScale*dVdMatrix[index];
+//       }
+//       stopTimer(FGR_Matrix2ArrayTimer);
+
+
+      
+      startTimer(integratorTimer);
+      integrateLoop(loopData.integratorOffset[tid],
+                    loopData.integratorOffset[tid+1],
+                    sim.dt_,
+                    &loopData.dVmReaction[0],
+                    &loopData.dVmDiffusion[0],
+                    sim.diffusion_->blockIndex(),
+                    sim.diffusion_->dVmBlock(),
+                    sim.diffusion_->VmBlock(),
+                    &sim.VmArray_[0],
+                    sim.diffusion_->diffusionScale());
+      
+
       stopTimer(integratorTimer);
-      sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
+//       sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
 
       startTimer(haloMove2BufTimer);
       {

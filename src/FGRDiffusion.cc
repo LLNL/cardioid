@@ -181,17 +181,17 @@ void FGRDiffusion::calc(vector<double>& dVm)
 
    startTimer(FGR_Matrix2ArrayTimer);
 
-   if(VmBlock_.nz()%4 != 0) delete VmTmp;
+//    if(VmBlock_.nz()%4 != 0) delete VmTmp;
 
-   int begin = threadOffset_[tid];
-   int end   = threadOffset_[tid+1];
-   double* dVmBlock_ptr = dVmBlock_.cBlock();
-   for (int ii=begin; ii<end; ++ii)
-   {
-      //dVm[ii] = dVmBlock_(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
-      dVm[ii] = dVmBlock_ptr[blockIndex_[ii]];
-      dVm[ii] *= diffusionScale_;
-   }
+//     int begin = threadOffset_[tid];
+//     int end   = threadOffset_[tid+1];
+//     double* dVmBlock_ptr = dVmBlock_.cBlock();
+//     for (int ii=begin; ii<end; ++ii)
+//     {
+//       //dVm[ii] = dVmBlock_(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
+//       dVm[ii] = dVmBlock_ptr[blockIndex_[ii]];
+//       dVm[ii] *= diffusionScale_;
+//     }
    stopTimer(FGR_Matrix2ArrayTimer);
 }
 
