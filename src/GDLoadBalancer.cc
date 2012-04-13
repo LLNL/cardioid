@@ -36,8 +36,6 @@ GDLoadBalancer::GDLoadBalancer(MPI_Comm comm, int npex, int npey, int npez):
    // initialize arrays
    npegrid_ = npex_*npey_*npez_;
    togive_.resize(npegrid_,vector<int>(nnbr_,0));
-   //locgid_.resize(npegrid_,vector<int>(0));
-   //locind_.resize(npegrid_,vector<int>(0));
    penbr_.resize(npegrid_,vector<int>(nnbr_,-1));
 
    // store process numbers of all neighbors
@@ -45,7 +43,7 @@ GDLoadBalancer::GDLoadBalancer(MPI_Comm comm, int npex, int npey, int npez):
    {
       // x,y,z coords of process ip
       GridPoint ipt(ip,npex_,npey_,npez_);
-    
+
       // face to face exchanges
       int nbr;
       if (ipt.x > 0) {
@@ -72,6 +70,47 @@ GDLoadBalancer::GDLoadBalancer(MPI_Comm comm, int npex, int npey, int npez):
          nbr = ipt.x + ipt.y*npex_ + (ipt.z+1)*npex_*npey_;
          penbr_[ip][5] = nbr;
       }
+
+      /*
+      // face to face exchanges, allow for periodic connectivity
+      int nbr;
+      if (ipt.x > 0) 
+         nbr = (ipt.x-1) + ipt.y*npex_ + ipt.z*npex_*npey_;
+      else
+         nbr = npex_-1 + ipt.y*npex_ + ipt.z*npex_*npey_;         
+      penbr_[ip][0] = nbr;
+
+      if (ipt.x < npex_-1) 
+         nbr = (ipt.x+1) + ipt.y*npex_ + ipt.z*npex_*npey_;
+      else
+         nbr = 0 + ipt.y*npex_ + ipt.z*npex_*npey_;         
+      penbr_[ip][1] = nbr;
+
+      if (ipt.y > 0) 
+         nbr = ipt.x + (ipt.y-1)*npex_ + ipt.z*npex_*npey_;
+      else
+         nbr = ipt.x + (npey_-1)*npex_ + ipt.z*npex_*npey_;
+      penbr_[ip][2] = nbr;
+
+      if (ipt.y < npey_-1) 
+         nbr = ipt.x + (ipt.y+1)*npex_ + ipt.z*npex_*npey_;
+      else
+         nbr = ipt.x + ipt.z*npex_*npey_;         
+      penbr_[ip][3] = nbr;
+
+      if (ipt.z > 0) 
+         nbr = ipt.x + ipt.y*npex_ + (ipt.z-1)*npex_*npey_;
+      else
+         nbr = ipt.x + ipt.y*npex_ + (npez_-1)*npex_*npey_;
+      penbr_[ip][4] = nbr;
+
+      if (ipt.z < npez_-1) 
+         nbr = ipt.x + ipt.y*npex_ + (ipt.z+1)*npex_*npey_;
+      else
+         nbr = ipt.x + ipt.y*npex_;
+      penbr_[ip][5] = nbr;
+
+      */
    }
 
 }
@@ -87,18 +126,14 @@ void GDLoadBalancer::initialDistribution(vector<AnatomyCell>& cells, int nx, int
    // in x-y planes of grid points as follows:
    //    if (nTasks >= nz)     destRank = gid.z   (one plane per task for myRank < nz)
    //    else if (nTasks < nz) destRank = gid.z*nTasks/nz  (multiple planes per task)
-
-   //ewd DEBUG:  compute radii and centers after initial distribution
-   //vector<double> radius(npegrid_,0.0);
-   //vector<double> center(3*npegrid_,0.0);
-   //vector<int> gptcnt(npegrid_,0);
-   //ewd DEBUG
    
    int nlocal = cells.size();
    nx_ = nx;
    ny_ = ny;
    nz_ = nz;
-  
+
+   const int gapthresh_ = 5;   // number of empty cells that defines a gap
+   
    // count total number of non-zero grid points
    MPI_Allreduce(&nlocal, &ntissue_, 1, MPI_INT, MPI_SUM, comm_);
 
@@ -169,7 +204,6 @@ void GDLoadBalancer::initialDistribution(vector<AnatomyCell>& cells, int nx, int
       kpkmax[npez_-1] = nz_;
    
    // loop over process grid planes owned by this process, compute distribution in x and y
-   //for (int kploc = pezind[klocmin]; kploc <= pezind[klocmax]; kploc++)
    for (int kp = 0; kp < npez_; kp++)
    {
       vector<int> xdist_loc(npey_*nx_,0);
@@ -195,7 +229,6 @@ void GDLoadBalancer::initialDistribution(vector<AnatomyCell>& cells, int nx, int
                peyind[jj] = jset;
                rowsum += kprowsum[jj];
                jsum += kprowsum[jj];
-               //if (rowsum > kprowavg*(jset+1)) {
                if (rowsum >= kprowavg*(jset+1)) {
                   kpjsum[jset] = jsum;
                   jsum = 0;
@@ -233,19 +266,97 @@ void GDLoadBalancer::initialDistribution(vector<AnatomyCell>& cells, int nx, int
       {
          for (int jp = 0; jp < npey_; jp++)
          {
-            double xavg = (double)kpjsum[jp]/(double)npex_;
-            int iset = 0;
+            // for non-uniform geometries, e.g. hearts, previous versions of the load balancer assigned
+            // cells which were highly separated in space, creating very large bounding boxes.  
+            //
+            // to avoid this, pre-calculate where all the gaps are in a given stripe and
+            // assign pe boundaries to them
+            //   a) pre-count number of gaps
+            //   b) adjust average cells/pe to account for smaller domains caused by forced domain creation
+            //      at gap boundaries
+            //   c) if gap boundary falls at natural domain boundary, last processor won't get
+            //      any work --> adjust xavg when this occurs
+            
+            int ngap = 0;
+            int gapcnt = 0;
+            int isumgap = 0;
+            for (int ii=0; ii<nx_; ii++) 
+            {
+               isumgap += xdistsum[jp*nx_+ii];
+               if (isumgap > 0 && xdistsum[jp*nx_+ii] == 0)
+                  gapcnt++;
+               else
+                  gapcnt = 0;
+
+               if (gapcnt > gapthresh_) {
+                  ngap++;
+                  gapcnt = 0;
+                  isumgap = 0;
+               }
+            }
+
+            // use larger average values to compensate for smaller domains created by forced
+            // processor transitions at gaps
+            double xavg = (double)kpjsum[jp]/(double)(npex_-ngap);
+            int ipset = 0;
             int isum = 0;
+            int igap = 0;
             int blksum = 0;
+            isumgap = 0;
+            gapcnt = 0;
+            int gapsfound = 0;
             for (int ii=0; ii<nx_; ii++)
             {
-               pexind[jp*nx_+ii] = iset;
+               // don't let ipset exceed process grid dimension
+               if (ipset >= npex_)
+                  ipset = npex_-1;
+               
+               pexind[jp*nx_+ii] = ipset;
                blksum += xdistsum[jp*nx_+ii];
                isum += xdistsum[jp*nx_+ii];
-               //if (blksum > xavg*(iset+1)) {
-               if (blksum >= xavg*(iset+1)) {
+
+               // avoid creating domains with multiple disconnected regions
+               if (isum > 0 && xdistsum[jp*nx_+ii] == 0)
+                  igap++;
+               else
+                  igap = 0;
+
+               // force a processor increment at every gap
+               if (igap > gapthresh_) {
                   isum = 0;
-                  iset++;
+                  ipset++;
+                  igap = 0;
+               }
+
+               // keep running tally of gaps computed exactly as above
+               isumgap += xdistsum[jp*nx_+ii];
+               if (isumgap > 0 && xdistsum[jp*nx_+ii] == 0)
+                  gapcnt++;
+               else
+                  gapcnt = 0;
+
+               if (gapcnt > gapthresh_) {
+                  gapsfound++;
+                  gapcnt = 0;
+                  isumgap = 0;
+
+                  // gap falls right at natural processor boundary:  our current average will give the last
+                  // processor no work, adjust xavg to distribute remaining work appropriately
+                  if (blksum >= xavg*(ipset+1)) {
+
+                     isum = 0;
+                     ipset++;
+                     int ipleft = npex_ - ipset;
+
+                     //ewd DEBUG
+                     //cout << "GDLB.INIT, jp = " << jp << ", kp = " << kp << ", ii = " << ii << ", xavg adjusted from " << xavg << " to " << xavg*(double)ipleft/(double)(ipleft+1.) << ", ipleft = " << ipleft << endl;
+                     if (ipleft > 0)
+                        xavg *= (double)ipleft/(double)(ipleft+1.);
+                  }
+               }
+               else if (blksum >= xavg*(ipset+1)) {
+                  isum = 0;
+                  ipset++;
                }
             }
          }
@@ -272,75 +383,6 @@ void GDLoadBalancer::initialDistribution(vector<AnatomyCell>& cells, int nx, int
          }
       }
    }
-
-   //ewd DEBUG
-   //ewd DEBUG:  compute center, radius of initial distribution
-   //ewd DEBUG
-   /*
-     for (int kp = 0; kp < npez_; kp++)
-     {
-     if (kp >= pezind[klocmin] && kp <= pezind[klocmax])  // this task owns data for this slab
-     {
-     for (unsigned ii=0; ii<cells.size(); ++ii)
-     {
-     int gid = cells[ii].gid_;
-     GridPoint gpt(gid,nx_,ny_,nz_);
-     int tmpkp = pezind[gpt.z];
-     if (tmpkp == kp)
-     {
-     int jp = peyind[gpt.y];
-     int ip = pexind[jp*nx_+gpt.x];
-     int peid = ip + jp*npex_ + kp*npex_*npey_;
-     center[3*peid+0] += gpt.x;
-     center[3*peid+1] += gpt.y;
-     center[3*peid+2] += gpt.z;
-     gptcnt[peid]++;
-
-     }
-     }
-     }
-     }
-     for (int i=0; i<npegrid_; i++)
-     if (gptcnt[i] > 0) {
-     center[3*i+0] /= (double)gptcnt[i];
-     center[3*i+1] /= (double)gptcnt[i];
-     center[3*i+2] /= (double)gptcnt[i];
-     }
-   
-     for (int kp = 0; kp < npez_; kp++)
-     {
-     if (kp >= pezind[klocmin] && kp <= pezind[klocmax])  // this task owns data for this slab
-     {
-     for (unsigned ii=0; ii<cells.size(); ++ii)
-     {
-     int gid = cells[ii].gid_;
-     GridPoint gpt(gid,nx_,ny_,nz_);
-     int tmpkp = pezind[gpt.z];
-     if (tmpkp == kp)
-     {
-     int jp = peyind[gpt.y];
-     int ip = pexind[jp*nx_+gpt.x];
-     int peid = ip + jp*npex_ + kp*npex_*npey_;
-     double rSq = (gpt.x-center[3*peid+0])*(gpt.x-center[3*peid+0]) + (gpt.y-center[3*peid+1])*(gpt.y-center[3*peid+1]) + (gpt.z-center[3*peid+2])*(gpt.z-center[3*peid+2]);
-     radius[peid] = max(radius[peid], rSq);
-     }
-     }
-     }
-     }
-     double maxradius = 0.0;
-     for (int i=0; i<npegrid_; i++)
-     if (radius[i] > 0.0)
-     radius[i] = sqrt(radius[i]);
-
-     for (int i=0; i<npegrid_; i++)
-     if (radius[i] > 0.0)
-     cout << "GDLB.INITIAL, myRank = " << myRank_ << ", peid " << i << ", radius = " << radius[i] << ", center = ( " << center[3*i+0] << " " << center[3*i+1] << " " << center[3*i+2] << " )" << endl;
-   */
-   //ewd DEBUG
-   //ewd DEBUG
-   //ewd DEBUG
-
-   
    
    // carry out communication to match computed distribution
    redistributeCells(cells);
@@ -357,7 +399,8 @@ void GDLoadBalancer::compactLoop(vector<AnatomyCell>& cells)
    const int bprint = 10;
    const int maxiter = 3000;
    double volthresh = 2.0;
-
+   const int ngap_ = 5;
+   
    int bcnt = 0;
    while (!balance && bcnt < maxiter)
    {
@@ -380,54 +423,144 @@ void GDLoadBalancer::compactLoop(vector<AnatomyCell>& cells)
       int ip = maxpe;
 
       // choose dimension that needs reduction
-      int maxdim = 0;
-      if ( (pemax_[1][ip]-pemin_[1][ip]) > (pemax_[maxdim][ip]-pemin_[maxdim][ip]) ) maxdim = 1; 
-      if ( (pemax_[2][ip]-pemin_[2][ip]) > (pemax_[maxdim][ip]-pemin_[maxdim][ip]) ) maxdim = 2; 
+      vector<int> npts_(3);
+      npts_[0] = nx_; npts_[1] = ny_; npts_[2] = nz_;
+      vector<double> boxlen_(3);
+      boxlen_[0] = pbcDist(pemax_[0][ip],pemin_[0][ip],npts_[0]);
+      boxlen_[1] = pbcDist(pemax_[1][ip],pemin_[1][ip],npts_[1]);
+      boxlen_[2] = pbcDist(pemax_[2][ip],pemin_[2][ip],npts_[2]);
+      vector<int> maxdim_(3,-1);
+
+      if (boxlen_[0] > boxlen_[1] && boxlen_[0] > boxlen_[2])
+      {
+         maxdim_[0] = 0;
+         if (boxlen_[1] > boxlen_[2]) { maxdim_[1] = 1; maxdim_[2] = 2; }
+         else { maxdim_[1] = 2; maxdim_[2] = 1; }
+      }
+      else if (boxlen_[1] > boxlen_[0] && boxlen_[1] > boxlen_[2])
+      {
+         maxdim_[0] = 1;
+         if (boxlen_[0] > boxlen_[2]) { maxdim_[1] = 0; maxdim_[2] = 2; }
+         else { maxdim_[1] = 2; maxdim_[2] = 0; }
+      }
+      else
+      {
+         maxdim_[0] = 2;
+         if (boxlen_[0] > boxlen_[1]) { maxdim_[1] = 0; maxdim_[2] = 1; }
+         else { maxdim_[1] = 1; maxdim_[2] = 0; }
+      }
 
       int thisn;
       int maxind;
-      if (penbr_[ip][2*maxdim] < 0)  // box edge on left, move cells to right
+
+      bool dimflag = true;
+      int b = 0;
+      while (dimflag && b < 3)
       {
-         thisn = 2*maxdim + 1;         // nbr to the right of proc ip
-         maxind = pemax_[maxdim][ip];  // cells to move are on the right edge of proc ip's domain
+         // move it to the neighbor whose center of mass is closest to the cells in question
+         int nbrl = penbr_[ip][2*maxdim_[b]];
+         int nbrr = penbr_[ip][2*maxdim_[b]+1];
+
+         double comdistl = pbcDist(pecom_[maxdim_[b]][ip],pemin_[maxdim_[b]][ip],npts_[maxdim_[b]]);
+         double comdistr = pbcDist(pecom_[maxdim_[b]][ip],pemax_[maxdim_[b]][ip],npts_[maxdim_[b]]);
+         double edgegapl = pbcDist(pemin_[maxdim_[b]][ip],pemax_[maxdim_[b]][nbrl],npts_[maxdim_[b]]);
+         double edgegapr = pbcDist(pemax_[maxdim_[b]][ip],pemin_[maxdim_[b]][nbrr],npts_[maxdim_[b]]);
+         if (pevol_[nbrl] == 0.0)
+            edgegapl = 0.0;
+         if (pevol_[nbrr] == 0.0)
+            edgegapr = 0.0;
+
+         if (comdistr >= comdistl && edgegapr <= ngap_)
+         {
+            thisn = 2*maxdim_[b] + 1;         // nbr to the right of proc ip
+            maxind = pemax_[maxdim_[b]][ip];  // cells to move are on the right edge of proc ip's domain
+            dimflag = false;
+
+         }
+         else if (comdistl >= comdistr && edgegapl <= ngap_)
+         {
+            thisn = 2*maxdim_[b];             // nbr to the left of proc ip                            
+            maxind = pemin_[maxdim_[b]][ip];  // cells to move are on the left edge of proc ip's domain
+            dimflag = false;
+         }
+         else if (edgegapr <= ngap_)
+         {
+            thisn = 2*maxdim_[b] + 1;         // nbr to the right of proc ip
+            maxind = pemax_[maxdim_[b]][ip];  // cells to move are on the right edge of proc ip's domain
+            dimflag = false;
+         }
+         else if (edgegapl <= ngap_)
+         {
+            thisn = 2*maxdim_[b];             // nbr to the left of proc ip                            
+            maxind = pemin_[maxdim_[b]][ip];  // cells to move are on the left edge of proc ip's domain
+            dimflag = false;
+         }
+         if (dimflag)
+            b++;
       }
-      else if (penbr_[ip][2*maxdim+1] < 0)  // box edge on right, move cells to left
+
+      if (dimflag) {
+         if (myRank_ == 0) {
+            cout << "Could not find a way to distribute cells from proc " << ip << "!" << endl;
+            for (int b=0; b<3; b++) {
+               cout << "b = " << b << endl;
+               int nbrl = penbr_[ip][2*maxdim_[b]];
+               int nbrr = penbr_[ip][2*maxdim_[b]+1];
+               double comdistl = pbcDist(pecom_[maxdim_[b]][ip],pemin_[maxdim_[b]][ip],npts_[maxdim_[b]]);
+               double comdistr = pbcDist(pecom_[maxdim_[b]][ip],pemax_[maxdim_[b]][ip],npts_[maxdim_[b]]);
+               double edgegapl = pbcDist(pemin_[maxdim_[b]][ip],pemax_[maxdim_[b]][nbrl],npts_[maxdim_[b]]);
+               double edgegapr = pbcDist(pemax_[maxdim_[b]][ip],pemin_[maxdim_[b]][nbrr],npts_[maxdim_[b]]);
+               if (pevol_[nbrl] == 0.0)
+                  edgegapl = 0.0;
+               if (pevol_[nbrr] == 0.0)
+                  edgegapr = 0.0;
+               cout << "pevol_ = " << pevol_[ip] << ", com = " << pecom_[0][ip] << " " << pecom_[1][ip] << " " << pecom_[2][ip] << endl;
+               cout << "pemin_ = " << pemin_[0][ip] << " " << pemin_[1][ip] << " " << pemin_[2][ip] << endl;
+               cout << "pemax_ = " << pemax_[0][ip] << " " << pemax_[1][ip] << " " << pemax_[2][ip] << endl;
+               cout << "comdistl = " << comdistl << ", comdistr = " << comdistr << endl;
+               cout << "edgegapl = " << edgegapl << ", edgegapr = " << edgegapr << endl;
+               cout << "nbrr = " << nbrr << ", vol(nbrr) = " << pevol_[nbrr] << ", nbrl = " << nbrl << ", vol(nbrl) = " << pevol_[nbrl] << endl;
+               cout << "pemin_[nbrl] = " << pemin_[0][nbrl] << " " << pemin_[1][nbrl] << " " << pemin_[2][nbrl] << endl;
+               cout << "pemax_[nbrl] = " << pemax_[0][nbrl] << " " << pemax_[1][nbrl] << " " << pemax_[2][nbrl] << endl;
+               cout << "pemin_[nbrr] = " << pemin_[0][nbrr] << " " << pemin_[1][nbrr] << " " << pemin_[2][nbrr] << endl;
+               cout << "pemax_[nbrr] = " << pemax_[0][nbrr] << " " << pemax_[1][nbrr] << " " << pemax_[2][nbrr] << endl;
+            }
+         }
+         exit(1);
+      }
+         
+      
+      /*
+      if (pbcDist(pecom_[maxdim][nbrr],pemax_[maxdim][ip],npts_[maxdim]) > pbcDist(pemin_[maxdim][ip],pecom_[maxdim][nbrl],npts_[maxdim]))
       {
          thisn = 2*maxdim;             // nbr to the left of proc ip                            
          maxind = pemin_[maxdim][ip];  // cells to move are on the left edge of proc ip's domain
       }
+      else if (pbcDist(pecom_[maxdim][nbrr],pemax_[maxdim][ip],npts_[maxdim]) < pbcDist(pemin_[maxdim][ip],pecom_[maxdim][nbrl],npts_[maxdim]))
+      {
+         thisn = 2*maxdim + 1;         // nbr to the right of proc ip
+         maxind = pemax_[maxdim][ip];  // cells to move are on the right edge of proc ip's domain
+      }
       else {
-         // move it to the neighbor whose com is closest to the cells in question
-         int nbrl = penbr_[ip][2*maxdim];
-         int nbrr = penbr_[ip][2*maxdim+1];
-         if ((pecom_[maxdim][nbrr]-pemax_[maxdim][ip]) > (pemin_[maxdim][ip]-pecom_[maxdim][nbrl]))
-         {
-            thisn = 2*maxdim;             // nbr to the left of proc ip                            
-            maxind = pemin_[maxdim][ip];  // cells to move are on the left edge of proc ip's domain
-         }
-         else if ((pecom_[maxdim][nbrr]-pemax_[maxdim][ip]) < (pemin_[maxdim][ip]-pecom_[maxdim][nbrl]))
+         if (pbcDist(pemax_[maxdim][ip],pecom_[maxdim][ip],npts_[maxdim]) > pbcDist(pemin_[maxdim][ip],pecom_[maxdim][ip],npts_[maxdim]))
          {
             thisn = 2*maxdim + 1;         // nbr to the right of proc ip
             maxind = pemax_[maxdim][ip];  // cells to move are on the right edge of proc ip's domain
          }
-         else {
-            if ((pemax_[maxdim][ip]-pecom_[maxdim][ip]) > (pecom_[maxdim][ip]-pemin_[maxdim][ip]))
-            {
-               thisn = 2*maxdim + 1;         // nbr to the right of proc ip
-               maxind = pemax_[maxdim][ip];  // cells to move are on the right edge of proc ip's domain
-            }
-            else
-            {
-               thisn = 2*maxdim;             // nbr to the left of proc ip                            
-               maxind = pemin_[maxdim][ip];  // cells to move are on the left edge of proc ip's domain
-            }
+         else
+         {
+            thisn = 2*maxdim;             // nbr to the left of proc ip                            
+            maxind = pemin_[maxdim][ip];  // cells to move are on the left edge of proc ip's domain
          }
       }
+      */
+      
       int nbr = penbr_[ip][thisn];
 
       //ewd DEBUG
       if (myRank_ == 0)
-         cout << "Sending cells from pe " << maxpe << " (penbr = " << penbr_[maxpe][2*maxdim] << " " << penbr_[maxpe][2*maxdim+1] << ") to pe " << nbr << " (penbr = " << penbr_[nbr][2*maxdim] << " " << penbr_[nbr][2*maxdim+1] << endl;
+         //cout << "Sending cells from pe " << maxpe << " (penbr = " << penbr_[maxpe][2*maxdim] << " " << penbr_[maxpe][2*maxdim+1] << ") to pe " << nbr << " (penbr = " << penbr_[nbr][2*maxdim] << " " << penbr_[nbr][2*maxdim+1] << endl;
+         cout << "Sending cells from pe " << maxpe << " (" << pemin_[0][maxpe] << ":" << pemax_[0][maxpe] << ", " << pemin_[1][maxpe] << ":" << pemax_[1][maxpe] << ", " << pemin_[2][maxpe] << ":" << pemax_[2][maxpe] << "), com = " << pecom_[0][maxpe] << " " << pecom_[1][maxpe] << " " << pecom_[2][maxpe]<< " to pe " << nbr << endl;
       
       // give all cells with this coordinate to nbr
       for (unsigned ii=0; ii<cells.size(); ++ii)
@@ -435,9 +568,9 @@ void GDLoadBalancer::compactLoop(vector<AnatomyCell>& cells)
          if (cells[ii].dest_ == maxpe)
          {
             GridPoint gpt(cells[ii].gid_,nx_,ny_,nz_); 
-            if ( (maxdim == 0 && gpt.x == maxind) ||
-                 (maxdim == 1 && gpt.y == maxind) ||
-                 (maxdim == 2 && gpt.z == maxind) )
+            if ( (maxdim_[b] == 0 && gpt.x == maxind) ||
+                 (maxdim_[b] == 1 && gpt.y == maxind) ||
+                 (maxdim_[b] == 2 && gpt.z == maxind) )
             {
                cells[ii].dest_ = nbr;
             }
@@ -454,6 +587,7 @@ void GDLoadBalancer::compactLoop(vector<AnatomyCell>& cells)
       
       bcnt++;
    }
+
 }
 ////////////////////////////////////////////////////////////////////////////////
 void GDLoadBalancer::computeProcBoxes(vector<AnatomyCell>& cells)
@@ -513,8 +647,21 @@ void GDLoadBalancer::computeProcBoxes(vector<AnatomyCell>& cells)
    //ewd DEBUG
    
    for (unsigned ii=0; ii<npegrid_; ++ii)
+   {
       if (pecnt_loc[ii] > 0)
-         pevol_buf[ii] = (pemaxloc_[0][ii]-peminloc_[0][ii])*(pemaxloc_[1][ii]-peminloc_[1][ii])*(pemaxloc_[2][ii]-peminloc_[2][ii]);
+      {
+         pecomloc_[0][ii] /= pecnt_loc[ii];
+         pecomloc_[1][ii] /= pecnt_loc[ii];
+         pecomloc_[2][ii] /= pecnt_loc[ii];
+         //int minx = pbcDist(pemaxloc_[0][ii],peminloc_[0][ii],nx_);
+         //int miny = pbcDist(pemaxloc_[1][ii],peminloc_[1][ii],ny_);
+         //int minz = pbcDist(pemaxloc_[2][ii],peminloc_[2][ii],nz_);
+         int minx = pemaxloc_[0][ii] - peminloc_[0][ii];
+         int miny = pemaxloc_[1][ii] - peminloc_[1][ii];
+         int minz = pemaxloc_[2][ii] - peminloc_[2][ii];
+         pevol_buf[ii] = minx*miny*minz;
+      }
+   }
    
    // collect information from all tasks
    pevol_.assign(npegrid_,0);
@@ -530,6 +677,14 @@ void GDLoadBalancer::computeProcBoxes(vector<AnatomyCell>& cells)
    MPI_Allreduce(&peminloc_[2][0], &pemin_[2][0], npegrid_, MPI_INT, MPI_MIN, comm_);
 }
 ////////////////////////////////////////////////////////////////////////////////
+double GDLoadBalancer::pbcDist(double x1,double x2,int nx)
+{
+   double dist = abs(x1-x2);
+   if (dist > 0.5*nx)
+      dist = nx - dist;
+   return dist;
+}
+////////////////////////////////////////////////////////////////////////////////
 void GDLoadBalancer::balanceLoop(vector<AnatomyCell>& cells)
 {
    // call balanceLoop w. default values
@@ -543,7 +698,8 @@ void GDLoadBalancer::balanceLoop(vector<AnatomyCell>& cells, int bblock, int bth
 {
    bool balance = false;
    const int bprint = 100;
-  
+   const int gapthresh_ = 5;   // number of empty cells that defines a gap
+   
    // need to sync up information on each process' load on all tasks
    vector<int> nloc_buf_(npegrid_,0);
    vector<int> nloc_(npegrid_,0);
@@ -556,6 +712,19 @@ void GDLoadBalancer::balanceLoop(vector<AnatomyCell>& cells, int bblock, int bth
    }
    MPI_Allreduce(&nloc_buf_[0], &nloc_[0], npegrid_, MPI_INT, MPI_SUM, comm_);
 
+   //ewd:  prevent exchanges between neighbors separated by more than gapthresh cells
+   restrictMoves(cells,gapthresh_);
+
+   // print out maximum bounding box volume
+   vector<int>::iterator maxvol = max_element(pevol_.begin(),pevol_.end());
+   int maxpe = maxvol - pevol_.begin();
+
+   if (myRank_ == 0)
+      cout << "GDLoadBalancer::balanceLoop start:  max bounding box volume = " << *maxvol << ", on pe " << maxpe << " (" << pemin_[0][maxpe] << ":" << pemax_[0][maxpe] << ", " << pemin_[1][maxpe] << ":" << pemax_[1][maxpe] << ", " << pemin_[2][maxpe] << ":" << pemax_[2][maxpe] << ")" << endl;
+
+
+
+   
    nloctot_ = 0;
    for (unsigned ii=0; ii<npegrid_; ++ii)
       nloctot_ += nloc_[ii];
@@ -681,7 +850,7 @@ void GDLoadBalancer::balanceLoop(vector<AnatomyCell>& cells, int bblock, int bth
       }
 
    }
-
+   
    // to enable testing, we need to calculate which pes we own data for
    // (in production runs, this will just be myRank)
    vector<int> ownsDataLoc(npegrid_,0);
@@ -692,6 +861,10 @@ void GDLoadBalancer::balanceLoop(vector<AnatomyCell>& cells, int bblock, int bth
 
    // test that no processor's data is shared
    haveData_.resize(npegrid_,0);
+
+   // each task owns its own data by definition
+   haveData_[myRank_] = 1;
+   
    for (unsigned ii=0; ii<cells.size(); ++ii)
       haveData_[cells[ii].dest_] = 1;  
    vector<int> testOwnership(npegrid_);
@@ -709,12 +882,16 @@ void GDLoadBalancer::balanceLoop(vector<AnatomyCell>& cells, int bblock, int bth
    for (unsigned ip=0; ip<npegrid_; ++ip)
       if (haveData_[ip] == 1)
          myRankList_.push_back(ip);
-  
+
    // use togive_ array to redistribute data
    bool allDataSent = false;
    int ccnt = 0;
    while (!allDataSent && ccnt < 1000)
    {
+      //ewd DEBUG
+      //if (myRank_ == 0)
+      //   cout << "Calling diffuseDest ccnt = " << ccnt << endl;
+
       allDataSent = diffuseDest(cells);
       ccnt++;
    }
@@ -723,6 +900,10 @@ void GDLoadBalancer::balanceLoop(vector<AnatomyCell>& cells, int bblock, int bth
       cout << "Load histogram after " << ccnt << " comm iterations:" << endl;
    loadHistogram(cells);
   
+   computeProcBoxes(cells);
+   if (myRank_ == 0)
+      cout << "GDLoadBalancer::balanceLoop stop:  max bounding box volume = " << *maxvol << ", on pe " << maxpe << " (" << pemin_[0][maxpe] << ":" << pemax_[0][maxpe] << ", " << pemin_[1][maxpe] << ":" << pemax_[1][maxpe] << ", " << pemin_[2][maxpe] << ":" << pemax_[2][maxpe] << ")" << endl;
+
    if (myRank_ == 0)
       if (!balance)
          cout << "balanceLoop did not achieve balance after " << maxiter << " iterations." << endl;
@@ -736,6 +917,10 @@ bool GDLoadBalancer::diffuseDest(vector<AnatomyCell>& cells)
    for (int ir=0; ir<myRankList_.size(); ir++)
    {
       int ip = myRankList_[ir];
+      //ewd DEBUG
+      //if (myRank_ == 0)
+      //   cout << "DIFFDEST, myRank = " << myRank_ << ", ir = " << ir << ", size = " << myRankList_.size() << ", ip = " << ip << endl;
+
       vector<int> locgid_;
       vector<int> locind_;
       for (unsigned ii=0; ii<cells.size(); ++ii)
@@ -762,9 +947,6 @@ bool GDLoadBalancer::diffuseDest(vector<AnatomyCell>& cells)
       {
          int gid = locgid_[i];
          GridPoint gpt(gid,nx_,ny_,nz_);
-         //xgid[i] = gpt.x + gpt.y*nx_ + gpt.z*nx_*ny_;
-         //ygid[i] = gpt.y + gpt.z*ny_ + gpt.x*ny_*nz_;
-         //zgid[i] = gpt.z + gpt.x*nz_ + gpt.y*nz_*nx_;
          xgid[i] = gpt.z + gpt.y*nz_ + gpt.x*nz_*ny_;
          ygid[i] = gpt.x + gpt.z*nx_ + gpt.y*nx_*nz_;
          zgid[i] = gpt.y + gpt.x*ny_ + gpt.z*ny_*nx_;
@@ -863,10 +1045,17 @@ void GDLoadBalancer::redistributeCells(vector<AnatomyCell>& cells)
       for (unsigned ii=0; ii<cells.size(); ++ii)
          dest[ii] = cells[ii].dest_;
 
-      int nMax = 2*nx_*ny_*nz_/nTasks_;      // 2 is a fudge factor for safety
+      // compute largest possible local size
+      int maxLocbuf = nLocal;
+      int nMax;
+      MPI_Allreduce(&maxLocbuf, &nMax, 1, MPI_INT, MPI_MAX, comm_);
+      nMax *= 4;  //fudge factor
+      //int nMax = 10*nx_*ny_*nz_/nTasks_;      // 10 is a fudge factor for safety
       cells.resize(nMax);
       assignArray((unsigned char*)&(cells[0]), &nLocal, cells.capacity(),
                   sizeof(AnatomyCell), &(dest[0]), 0, comm_);
+      if (nLocal > nMax)
+         cout << "GDLB::redistributeCells assertion failure on myRank = " << myRank_ << ", nLocal = " << nLocal << ", nMax = " << nMax << endl;
       assert(nLocal <= nMax);
       cells.resize(nLocal);
    }
@@ -908,6 +1097,32 @@ void GDLoadBalancer::redistributeCells(vector<AnatomyCell>& cells)
    }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+void GDLoadBalancer::restrictMoves(vector<AnatomyCell>& cells, int ngap)
+{
+   computeProcBoxes(cells);
+
+   for (int ip=0; ip<npegrid_; ip++)
+   {
+      for (int idim = 0; idim < 3; idim++)
+      {
+         int nbrl = penbr_[ip][2*idim];
+         int nbrr = penbr_[ip][2*idim+1];
+         int edgegapl = pemin_[idim][ip] - pemax_[idim][nbrl];
+         int edgegapr = pemin_[idim][nbrr] - pemax_[idim][ip];
+         if (nbrl > -1 && edgegapl > ngap && edgegapl < 10000000)
+         {
+            penbr_[ip][2*idim] = -2;
+            penbr_[nbrl][thatn_[2*idim]] = -2;
+         }
+            if (nbrr > -1 && edgegapr > ngap && edgegapr < 10000000)
+            {
+               penbr_[ip][2*idim+1] = -2;
+               penbr_[nbrr][thatn_[2*idim+1]] = -2;
+            }
+      }
+   }
+}
 ////////////////////////////////////////////////////////////////////////////////
 void GDLoadBalancer::loadHistogram(vector<AnatomyCell>& cells)
 {

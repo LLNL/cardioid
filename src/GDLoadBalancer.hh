@@ -39,10 +39,12 @@ class GDLoadBalancer {
   void initialDistribution(vector<AnatomyCell>& cells, int nx, int ny, int nz);
   void compactLoop(vector<AnatomyCell>& cells);
   void computeProcBoxes(vector<AnatomyCell>& cells);
+  double pbcDist(double x1,double x2,int nx);
   void balanceLoop(vector<AnatomyCell>& cells);
   void balanceLoop(vector<AnatomyCell>& cells, int bblock, int bthresh, int maxiter);
   bool diffuseDest(vector<AnatomyCell>& cells);
   void redistributeCells(vector<AnatomyCell>& cells);
+  void restrictMoves(vector<AnatomyCell>& cells, int ngap);
   void loadHistogram(vector<int>& nloc);
   void loadHistogram(vector<AnatomyCell>& cells);
   void computeHistogram();

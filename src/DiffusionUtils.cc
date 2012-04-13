@@ -18,80 +18,100 @@ using namespace std;
  */
 LocalGrid DiffusionUtils::findBoundingBox(const Anatomy& anatomy, bool verbose)
 {
-   assert(anatomy.nLocal() > 0);
-   Tuple globalTuple = anatomy.globalTuple(0);
-   int xMin = globalTuple.x();
-   int yMin = globalTuple.y();
-   int zMin = globalTuple.z();
-   int xMax = globalTuple.x();
-   int yMax = globalTuple.y();
-   int zMax = globalTuple.z();
-   
-   for (unsigned ii=1; ii<anatomy.nLocal(); ++ii)
-   {
-      Tuple globalTuple = anatomy.globalTuple(ii);
-      xMin = min(xMin, globalTuple.x());
-      yMin = min(yMin, globalTuple.y());
-      zMin = min(zMin, globalTuple.z());
-      xMax = max(xMax, globalTuple.x());
-      yMax = max(yMax, globalTuple.y());
-      zMax = max(zMax, globalTuple.z());
-   }
-   
-   int stencilSize = 1;
-   
-   int nx = 2*stencilSize + xMax - xMin + 1;
-   int ny = 2*stencilSize + yMax - yMin + 1;
-   int nz = 2*stencilSize + zMax - zMin + 1;
-   xMin -= stencilSize;
-   yMin -= stencilSize;
-   zMin -= stencilSize;
-
+   // needed for verbose output
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-   if (verbose)
-      cout << "DiffusionBoundingBox " << myRank << " " << nx << " " << ny << " " << nz << " " << nx*ny*nz << endl;
+   
+   //assert(anatomy.nLocal() > 0);
+   if (anatomy.nLocal() > 0)
+   {
+      Tuple globalTuple = anatomy.globalTuple(0);
+      int xMin = globalTuple.x();
+      int yMin = globalTuple.y();
+      int zMin = globalTuple.z();
+      int xMax = globalTuple.x();
+      int yMax = globalTuple.y();
+      int zMax = globalTuple.z();
+   
+      for (unsigned ii=1; ii<anatomy.nLocal(); ++ii)
+      {
+         Tuple globalTuple = anatomy.globalTuple(ii);
+         xMin = min(xMin, globalTuple.x());
+         yMin = min(yMin, globalTuple.y());
+         zMin = min(zMin, globalTuple.z());
+         xMax = max(xMax, globalTuple.x());
+         yMax = max(yMax, globalTuple.y());
+         zMax = max(zMax, globalTuple.z());
+      }
+      
+      int stencilSize = 1;
+   
+      int nx = 2*stencilSize + xMax - xMin + 1;
+      int ny = 2*stencilSize + yMax - yMin + 1;
+      int nz = 2*stencilSize + zMax - zMin + 1;
+      xMin -= stencilSize;
+      yMin -= stencilSize;
+      zMin -= stencilSize;
 
-   return LocalGrid(nx, ny, nz, xMin, yMin, zMin);
+      if (verbose)
+      {
+         cout << "DiffusionBoundingBox " << myRank << " " << nx << " " << ny << " " << nz << " " << nx*ny*nz << endl;
+      }
+      return LocalGrid(nx, ny, nz, xMin, yMin, zMin);
+   }
+   else
+   {
+      return LocalGrid(0,0,0,0,0,0);
+   }
 };
 
 LocalGrid DiffusionUtils::findBoundingBox_simd(const Anatomy& anatomy, bool verbose)
 {
-   assert(anatomy.nLocal() > 0);
-   Tuple globalTuple = anatomy.globalTuple(0);
-   int xMin = globalTuple.x();
-   int yMin = globalTuple.y();
-   int zMin = globalTuple.z();
-   int xMax = globalTuple.x();
-   int yMax = globalTuple.y();
-   int zMax = globalTuple.z();
-   
-   for (unsigned ii=1; ii<anatomy.nLocal(); ++ii)
-   {
-      Tuple globalTuple = anatomy.globalTuple(ii);
-      xMin = min(xMin, globalTuple.x());
-      yMin = min(yMin, globalTuple.y());
-      zMin = min(zMin, globalTuple.z());
-      xMax = max(xMax, globalTuple.x());
-      yMax = max(yMax, globalTuple.y());
-      zMax = max(zMax, globalTuple.z());
-   }
-   
-   int stencilSize = 1;
-   
-   int nx = 2*stencilSize + xMax - xMin + 1;
-   int ny = 2*stencilSize + yMax - yMin + 1;
-   int nz = 2*stencilSize + zMax - zMin + 1;
-   xMin -= stencilSize;
-   yMin -= stencilSize;
-   zMin -= stencilSize;
-
-   nz += (nz%4==0) ? 0 : 4 - (nz%4);
-   
+   // needed for verbose output
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-   if (verbose)
-      cout << "DiffusionSimdBoundingBox " << myRank << " " << nx << " " << ny << " " << nz << " " << nx*ny*nz << endl;
 
-   return LocalGrid(nx, ny, nz, xMin, yMin, zMin);
+   //assert(anatomy.nLocal() > 0);
+   if (anatomy.nLocal() > 0)
+   {
+      Tuple globalTuple = anatomy.globalTuple(0);
+      int xMin = globalTuple.x();
+      int yMin = globalTuple.y();
+      int zMin = globalTuple.z();
+      int xMax = globalTuple.x();
+      int yMax = globalTuple.y();
+      int zMax = globalTuple.z();
+   
+      for (unsigned ii=1; ii<anatomy.nLocal(); ++ii)
+      {
+         Tuple globalTuple = anatomy.globalTuple(ii);
+         xMin = min(xMin, globalTuple.x());
+         yMin = min(yMin, globalTuple.y());
+         zMin = min(zMin, globalTuple.z());
+         xMax = max(xMax, globalTuple.x());
+         yMax = max(yMax, globalTuple.y());
+         zMax = max(zMax, globalTuple.z());
+      }
+   
+      int stencilSize = 1;
+   
+      int nx = 2*stencilSize + xMax - xMin + 1;
+      int ny = 2*stencilSize + yMax - yMin + 1;
+      int nz = 2*stencilSize + zMax - zMin + 1;
+      xMin -= stencilSize;
+      yMin -= stencilSize;
+      zMin -= stencilSize;
+
+      nz += (nz%4==0) ? 0 : 4 - (nz%4);
+   
+      if (verbose)
+      {
+         cout << "DiffusionSimdBoundingBox " << myRank << " " << nx << " " << ny << " " << nz << " " << nx*ny*nz << endl;
+      }
+      return LocalGrid(nx, ny, nz, xMin, yMin, zMin);
+   }
+   else
+   {
+      return LocalGrid(0,0,0,0,0,0);
+   }
 }

@@ -150,13 +150,8 @@ namespace
       int threshold;
       objectGet(obj, "ninner", ninner, "10");
       objectGet(obj, "threshold", threshold, "4");
-      int nmax = 100000;
-
-      int compact;
-      objectGet(obj, "compact", compact, "0");
-      profileStart("gd_balance");
-      if (compact == 1) 
-         loadbal.compactLoop(cells);
+      int nmax;
+      objectGet(obj, "niter", nmax, "5000");
 
       // set up visualization of initial distribution
       int visgrid;
@@ -171,7 +166,7 @@ namespace
         fullname += "/anatomy";
         writeCells(sim.anatomy_.cellArray(), sim.nx_, sim.ny_, sim.nz_, fullname.c_str());
       }
-      
+
       // diffusive load balance loop
       loadbal.balanceLoop(cells,ninner,threshold,nmax);
       profileStop("gd_balance");

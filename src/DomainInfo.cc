@@ -14,9 +14,9 @@ DomainInfo::DomainInfo(const vector<Long64>& gid, int nx, int ny, int nz)
 
    for (unsigned ii=0; ii<gid.size(); ++ii)
       center_ += indexToVector(gid[ii]);
-      
-   center_ /= double(gid.size());
 
+   if (gid.size() > 0)
+      center_ /= double(gid.size());
    
    for (unsigned ii=0; ii<gid.size(); ++ii)
    {

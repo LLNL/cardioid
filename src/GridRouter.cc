@@ -43,6 +43,11 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
       {
          if (ii == myRank)
             continue;
+
+         //ewd:  we may have cases w. full heart where a task or two has no data
+         if (dInfo[ii].radius() == 0.0)
+            continue;
+         
          double rij = 0.0;
          for (int jj=0; jj<3; ++jj)
          {
@@ -167,9 +172,6 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
       MPI_Waitall(nNbrs, recvReq, MPI_STATUSES_IGNORE);
    }
 
-   //ewd DEBUG
-   //int cnt = 0;
-
    sendRank_.clear();
    sendMap_.clear();
    sendOffset_.clear();
@@ -187,13 +189,6 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
       {
          sendRank_.push_back(myNbrs[ii]);
          sendOffset_.push_back(sendMap_.size());
-
-         //ewd DEBUG
-         //cout << "DEBUG:GridRouter myRank = " << myRank << ", nbr " << cnt << " is MPI task " << myNbrs[ii] << endl;
-         //cnt++;
-         //ewd DEBUG
-
-
       }
      
    }
