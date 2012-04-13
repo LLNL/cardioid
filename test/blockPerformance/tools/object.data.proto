@@ -9,9 +9,10 @@ simulate SIMULATE
    maxLoop = 100000;    // in timesteps
    dt = 10 us;
    time = 0;            // msec
-   printRate = 100;      // in timesteps
+   printRate = 250;      // in timesteps
    snapshotRate = 100000; // in timesteps
    parallelDiffusionReaction = 1;
+   nDiffusionCores = 2;
 }
 
 niederer ANATOMY 
@@ -21,9 +22,9 @@ niederer ANATOMY
    dx = 0.10;   // in mm
    dy = 0.10;   // in mm
    dz = 0.10;   // in mm
-   xSize = XX_XSIZE_XX; 
-   ySize = XX_YSIZE_XX;
-   zSize = XX_ZSIZE_XX;
+   nx = XX_XSIZE_XX; 
+   ny = XX_YSIZE_XX;
+   nz = XX_ZSIZE_XX;
    conductivity = conductivity;
 }
 

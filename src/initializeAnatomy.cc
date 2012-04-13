@@ -105,18 +105,33 @@ namespace
       MPI_Comm_size(comm, &nTasks);
       MPI_Comm_rank(comm, &myRank);
 
-      double xSize, ySize, zSize;
+      bool sizeSpecified = (object_testforkeyword(obj, "xSize") ||
+                            object_testforkeyword(obj, "ySize") ||
+                            object_testforkeyword(obj, "zSize") );
+      bool numberSpecified = (object_testforkeyword(obj, "nx") ||
+                              object_testforkeyword(obj, "ny") ||
+                              object_testforkeyword(obj, "nz") );
       int cellType;
+      double xSize, ySize, zSize;
+      objectGet(obj, "cellType", cellType, "102");
       objectGet(obj, "xSize", xSize, "3", "l");
       objectGet(obj, "ySize", ySize, "7", "l");
       objectGet(obj, "zSize", zSize, "20","l");
-      objectGet(obj, "cellType", cellType, "102");
-
+      
       int nx = int(xSize/anatomy.dx());
       int ny = int(ySize/anatomy.dy());
       int nz = int(zSize/anatomy.dz());
+      
+      if (numberSpecified)
+      {
+         assert(!sizeSpecified);
+         objectGet(obj, "nx", nx, "16");
+         objectGet(obj, "ny", ny, "16");
+         objectGet(obj, "nz", nz, "14");
+      }
+      
       anatomy.setGridSize(nx, ny, nz);
-
+      
       Long64 maxGid = Long64(nx)*Long64(ny)*Long64(nz);
       unsigned cellsPerTask = maxGid/nTasks;
       if (maxGid%nTasks != 0)
