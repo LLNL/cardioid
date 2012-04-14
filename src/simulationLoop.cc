@@ -374,12 +374,6 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       startTimer(dummyTimer);
       stopTimer(dummyTimer);
 
-      if (tid == 0)
-      {
-         sim.time_ += sim.dt_;
-         ++sim.loop_;
-      }
-
       startTimer(reactionWaitTimer);
       L2_BarrierWithSync_WaitAndReset(loopData.diffusionBarrier, &diffusionHandle, sim.diffusionThreads_.nThreads());
       stopTimer(reactionWaitTimer);
@@ -415,6 +409,11 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
                     &sim.VmArray_[0],
                     sim.diffusion_->diffusionScale());
       
+      if (tid == 0)
+      {
+         sim.time_ += sim.dt_;
+         ++sim.loop_;
+      }
 
       stopTimer(integratorTimer);
 //       sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
@@ -438,7 +437,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       stopTimer(reactionL2ArriveTimer);
 
       startTimer(reactionL2ResetTimer);
-      L2_BarrierWithSync_Reset(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
+      L2_BarrierWithSync_WaitAndReset(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
       stopTimer(reactionL2ResetTimer);
    }
    profileStop(reactionLoopTimer);
