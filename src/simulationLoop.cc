@@ -105,8 +105,15 @@ void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVm
       
    if ( (loop % sim.printRate_ == 0) && myRank == 0)
    {
-      if (firstCall) printf("    Loop     Time         Vm(t)        dVm_r(t-h)      dVm_d(t-h)\n");
-      printf("%8d %8.3f %21.15f %21.15f %21.15f\n",loop,sim.time_,sim.VmArray_[0],dVmR[0],dVmD[0]); 
+      static FILE *file; 
+      if (firstCall) 
+      {
+      file=fopen("data","a"); 
+       printf("#   Loop     Time         Vm(t)        dVm_r(t-h)      dVm_d(t-h)\n");
+       fprintf(file,"#   Loop     Time         Vm(t)        dVm_r(t-h)      dVm_d(t-h)\n");
+      }
+      printf("%8d %8.3f %21.15f %21.15f %21.15f\n",loop,sim.time_,sim.VmArray_[0],dVmR[0],dVmD[0]);  fflush(stdout); 
+      fprintf(file,"%8d %8.3f %21.15f %21.15f %21.15f\n",loop,sim.time_,sim.VmArray_[0],dVmR[0],dVmD[0]); fflush(file); 
    }
 
    if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
@@ -150,6 +157,7 @@ void simulationLoop(Simulate& sim)
    cout << "Rank[" << myRank << "]: numOfNeighborToSend=" << sim.commTable_->_sendTask.size() << " numOfNeighborToRecv=" << sim.commTable_->_recvTask.size() << " numOfBytesToSend=" << sim.commTable_->_sendOffset[sim.commTable_->_sendTask.size()]*sizeof(double) << " numOfBytesToRecv=" << sim.commTable_->_recvOffset[sim.commTable_->_recvTask.size()]*sizeof(double) << endl;
 #endif
 
+   loopIO(sim,dVmReaction,dVmDiffusion);
    while ( sim.loop_<sim.maxLoop_ )
    {
       int nLocal = sim.anatomy_.nLocal();
@@ -266,7 +274,8 @@ void diffusionLoop(Simulate& sim,
    int tid = sim.diffusionThreads_.teamRank();
    L2_BarrierHandle_t haloBarrierHandle;
    L2_BarrierWithSync_InitInThread(loopData.haloBarrier, &haloBarrierHandle);
-
+      if (tid == 0)
+         loopIO(sim, loopData.dVmReactionCpy, loopData.dVmDiffusion);
    while ( sim.loop_ < sim.maxLoop_ )
    {
       int nLocal = sim.anatomy_.nLocal();
@@ -339,6 +348,8 @@ void diffusionLoop(Simulate& sim,
       startTimer(dummyTimer);
       stopTimer(dummyTimer);
 
+      
+      //#pragma omp barrier
       if (tid == 0 && sim.loop_ % sim.printRate_ == 0)
       {
          startTimer(diffusiondVmRCopyTimer);
@@ -439,6 +450,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       startTimer(reactionL2ResetTimer);
       L2_BarrierWithSync_WaitAndReset(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
       stopTimer(reactionL2ResetTimer);
+      //#pragma omp barrier
    }
    profileStop(reactionLoopTimer);
 }

@@ -143,7 +143,7 @@ double TauRecipMod(double V, TauRecipParms *parms, double *dR, double *ddR)
    if (V < parms->x0 || V > parms->x1)  return  parms->func(V,dR,ddR); 
    return hermitePoly(V-parms->x0,parms->c,dR,ddR); 
 }
-/*
+#if 0 
 int main()
 {
    double tauR,dtauR,ddtauR;
@@ -156,7 +156,7 @@ int main()
    Vm = -17.6; 
    //tauR = jTauRecip( Vm,  &dtauR,&ddtauR); printf("%e %e ",Vm,ddtauR); 
    //tauR = TauRecipMod(Vm,jParms,&dtauR,&ddtauR);  printf("%e\n",ddtauR); 
-   for (double Vm=-91;Vm< 50;Vm+=0.1) 
+   for (double Vm=-91;Vm< 50;Vm+=1) 
    {
    //double tauRE = hTauRecip( Vm,  &dtauR,&ddtauR);
    //double tauRM = TauRecipMod(Vm,hParms,&dtauR,&ddtauR); 
@@ -167,16 +167,17 @@ int main()
    double dtTauREff = 1-exp(-dtTauR); 
    double x = dtTauR/4; 
    double f =0.0; 
-   for (int i==7;i>=0;i--} f = a[i]+s*x; 
+   double s=0; 
+   for (int i=7;i>=0;i--) f = a[i]+s*x; 
    //double  f =   1+x*( 1 + x*(1.0/2 + x*(1.0/6 + x*(1.0/24+x*(1.0/120+x*0.0/720))))); 
    f *= f; 
    f *= f; 
    f =   1 - 1 / f ;
    //double f = (1-x/3) / (1+x*2/3.0+x*x/6.0); 
      //f = 1 -f ; 
-   double err = dtTau
+   double err = dtTauR;
    
-   printf("%16.12f %20.12e %20.12e %20.12e %e\n",Vm,dtTauR,dtTauREff,f,dtTauREff/f-1.0); 
+   printf("%16.12f %20.12e %20.12e %20.12e %e\n",Vm,tauR,dtTauREff,f,dtTauREff/f-1.0); 
    }
 }
-*/
+#endif

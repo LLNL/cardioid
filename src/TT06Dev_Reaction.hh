@@ -12,7 +12,7 @@ class TT06Dev_Reaction : public Reaction
 {
  public:
    
-   TT06Dev_Reaction(Anatomy& anatomy,  map<string,TT06Func::CellTypeParmsFull>cellTypeParms, vector<string>cellTypeNames, double tolerance, int mod, const ThreadTeam& group);
+   TT06Dev_Reaction(Anatomy& anatomy,  map<string,TT06Func::CellTypeParmsFull>cellTypeParms, vector<string>cellTypeNames, double tolerance, int mod, int  fastReaction, const ThreadTeam& group);
    std::string methodName() const {return "TT06_Dev";}
    // copy constructor and assignment operator intentionally
    // left unimplemented.
@@ -36,16 +36,15 @@ class TT06Dev_Reaction : public Reaction
    vector<unsigned> nCellsOfType_; 
 
    int nonGateWorkPartition(int& offset);
-   int idPEStart_; 
-   int nPEs_; 
-   int nC_[2]; 
    double dtForFit_; 
    double tolerance_; 
    int mod_; 
+   int fastReaction_; 
    PADE **fit_;
    double *mhu_[nGateVar];
    double *tauR_[nGateVar];
    const ThreadTeam& group_;
+   vector<WORK> gateWork_; 
    
    std::vector<int>              ttType_; // maps cellType to ttType
    int nCellBuffer_; 

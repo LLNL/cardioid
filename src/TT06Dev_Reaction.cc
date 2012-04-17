@@ -14,6 +14,7 @@
 using namespace std;
 using namespace PerformanceTimers;
 
+int workBundle(int index, int nItems, int nGroups , int mod, int& offset);
 static FILE *tfile[64]; 
 
 class SortByRank
@@ -43,7 +44,7 @@ class SortByRank
 };
 
 
-TT06Dev_Reaction::TT06Dev_Reaction( Anatomy& anatomy,  map<string,CellTypeParmsFull> cellTypeParmsMap, vector<string> cellTypeNames, double tolerance, int mod, const ThreadTeam& group)
+TT06Dev_Reaction::TT06Dev_Reaction( Anatomy& anatomy,  map<string,CellTypeParmsFull> cellTypeParmsMap, vector<string> cellTypeNames, double tolerance, int mod, int fastReaction, const ThreadTeam& group)
 : nCells_(anatomy.nLocal()),
   group_(group)
 {
@@ -121,6 +122,10 @@ TT06Dev_Reaction::TT06Dev_Reaction( Anatomy& anatomy,  map<string,CellTypeParmsF
    }
    
    {
+      fastReaction_=fastReaction; 
+      if ( (fabs(tolerance/1e-4 - 1.0) < 1e-12) && mod == 1 && (fastReaction_ != 0) ) fastReaction_ = 1; 
+      if (fastReaction_ == -1) fastReaction_=0; 
+      initExp(); 
       double V0 = -100.0; 
       double V1 =  50.0; 
       double deltaV = 0.1; 
@@ -129,13 +134,39 @@ TT06Dev_Reaction::TT06Dev_Reaction( Anatomy& anatomy,  map<string,CellTypeParmsF
       PADE **fit_=TT06Func::makeFit(tolerance,V0,V1,deltaV,mod); 
       for (int i=0;fit_[i]!=NULL;i++) padeCalc(fit_[i],maxTerms,maxTerms,maxCost); 
       TT06Func::writeFit(fit_); 
-      PADE **gatefit=fit_+gateFitOffset; 
-      for (int i=0;i<nGateVar;i++) 
-      {
-        mhu_[i]  = gatefit[2*i]->coef;
-        tauR_[i] = gatefit[2*i+1]->coef;
-      }
+      PADE **gatefit_=fit_+gateFitOffset; 
+      int size=0; 
+      int i=0; 
    }
+   int nThreads = group_.nThreads();
+   int nSquads = group_.nSquads();
+   int squadSize =1; 
+   if (nSquads >0) squadSize= nThreads/nSquads;
+   int nEq = 12/squadSize;
+   gateWork_.resize(nThreads); 
+   
+   //printf ("nThreads=%d nSquads=%d squadSize=%d\n",nThreads,nSquads,squadSize); 
+   //for (int id=0;id<omp_get_max_threads();id++) 
+   for (int id=0;id<nThreads;id++) 
+   {
+   	const ThreadRankInfo& rankInfo = group_.rankInfo(id);
+        //int teamRank = rankInfo.teamRank_; 
+         int teamRank = id; 
+        if (teamRank == -1) continue; 
+//        int squadID   =rankInfo.coreRank_; 
+//      int squadRank =rankInfo.squadRank_; 
+        int offset; 
+       int squadID    = id/squadSize; 
+       int squadRank  = id%squadSize ;
+        int nCell = workBundle(squadID, nCells_, nSquads , 4, offset);
+        gateWork_[teamRank].offsetCell =  offset; 
+        gateWork_[teamRank].nCell =   nCell; 
+        gateWork_[teamRank].offsetEq = nEq*squadRank; 
+        gateWork_[teamRank].nEq     =  nEq; 
+        //printf("%d %d : %d %d %d %d\n",id,squadRank,nCell,offset,gateWork_[id].nEq,gateWork_[id].offsetEq); 
+   }
+   
+   printf("fastReaction=%d\n",fastReaction_); 
 
    dtForFit_=0.0; 
 }
@@ -154,6 +185,32 @@ void TT06Dev_Reaction::writeStateDev(int loop)
       printf("%d %24.14le\n",i,state); 
    }
 }
+int workBundle(int index, int nItems, int nGroups , int mod, int& offset)
+{
+   assert(0<=index && index < nGroups); 
+   int nItems0 = (nItems+mod-1)/mod ;
+   int n = nItems0/nGroups;
+   int remainder = nItems0-n*nGroups;
+   int m = nGroups - remainder;
+   offset =0;
+   if ( index <  m )
+   {
+      offset += n*index;
+   }
+   else
+   {
+      offset += n*m + (n+1)*(index-m);
+      n++;
+   }
+   n      *= mod;
+   offset *= mod;
+   //if ( index == nGroups -1) n = mod*((nItems-offset)/mod);
+   if ( index == nGroups -1) n = ((nItems-offset));
+
+   return n;
+
+}
+
 int partition(int index, int nItems, int nGroups , int& offset)
 {
    int n = nItems/nGroups; 
@@ -172,8 +229,6 @@ int partition(int index, int nItems, int nGroups , int& offset)
 }
 int TT06Dev_Reaction::nonGateWorkPartition(int& offset)
 {
-//     int coreID,hwThreadID,threadID,nCores,nHwThreads,nThreads;
-//     group_.groupInfo(coreID,hwThreadID,threadID,nCores,nHwThreads,nThreads); 
    offset=0; 
    
    const ThreadRankInfo& rankInfo = group_.rankInfo();
@@ -188,25 +243,60 @@ int TT06Dev_Reaction::nonGateWorkPartition(int& offset)
 
 void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<double>& iStim, vector<double>& dVm)
 {
-   TT06Func::updateNonGate(dt, &(cellTypeParms_[0]), nCells_, &(cellTypeVector_[0]),&Vm[0],  0, &state_[0], &dVm[0]);
-   TT06Func::updateGate(dt, nCells_, &(cellTypeVector_[0]),&Vm[0], 0, &state_[gateOffset]);
+   WORK work ={ 0,nCells_,0,12}; 
+   TT06Func::updateNonGate(dt, &(cellTypeParms_[0]), nCells_, &(cellTypeVector_[0]),const_cast<double *>(&Vm[0]),  0, &state_[0], &dVm[0]);
+   if (fastReaction_ == 1) TT06Func::updateGateFast(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],work);
+   else TT06Func::updateGate(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],work);
+/*
+   char filename[64]; 
+   sprintf(filename,"Nstate0_%1d",fastReaction_); 
+   static FILE *file=NULL; 
+   if (file == NULL)  file = fopen(filename,"w");
+   //for (int i=0;i<nCells_;i++)
+   int i=3333;
+   {
+      fprintf(file,"%5d",i); 
+      for(int j=0;j<nStateVar;j++)
+      {
+          fprintf(file," %24.14f",state_[j][i]); 
+      }
+      fprintf(file,"\n"); 
+   }
+*/
 }
 void TT06Dev_Reaction::updateNonGate(double dt, const vector<double>& Vm, vector<double>& dVR)
 {
    int offset; 
    startTimer(nonGateTimer);
    int nCells = nonGateWorkPartition(offset); 
-   TT06Func::updateNonGate(dt, &(cellTypeParms_[0]), nCells, &(cellTypeVector_[offset]), &Vm[offset],  offset, &state_[0], &dVR[offset]);
+   TT06Func::updateNonGate(dt, &cellTypeParms_[0], nCells, &cellTypeVector_[offset], const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
    stopTimer(nonGateTimer);
 }
 void TT06Dev_Reaction::updateGate(double dt, const vector<double>& Vm)
 {
-   int offset=0; 
-   int nCells=nCells_; 
    startTimer(gateTimer);
-   nCells = nonGateWorkPartition(offset); 
-   TT06Func::updateGate(dt, nCells, &(cellTypeVector_[offset]), &Vm[offset], offset,&state_[gateOffset]);
+
+   const ThreadRankInfo& rankInfo = group_.rankInfo();
+   int teamRank = rankInfo.teamRank_;
+   if (fastReaction_ == 1) TT06Func::updateGateFast(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],gateWork_[teamRank]);
+   else TT06Func::updateGate(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],gateWork_[teamRank]);
    stopTimer(gateTimer);
+/*
+   char filename[64]; 
+   sprintf(filename,"Nstate1_%1d",fastReaction_); 
+   static FILE *file=NULL; 
+   if (file == NULL)  file = fopen(filename,"w");
+   //for (int i=0;i<nCells_;i++)
+   int i=3333;
+   {
+      fprintf(file,"%5d",i); 
+      for(int j=0;j<nStateVar;j++)
+      {
+          fprintf(file," %24.14f",state_[j][i]); 
+      }
+      fprintf(file,"\n"); 
+   }
+*/
 }
 
 

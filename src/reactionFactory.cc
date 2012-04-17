@@ -90,10 +90,12 @@ namespace
 #include "TT06Func.hh"
       map<string,TT06Func::CellTypeParmsFull>cellTypeParms=TT06Func::getStandardCellTypes(); 
       double tolerance=0.0 ; 
+      int fastReaction =-1; 
       vector<string> cellTypeNames; 
       int mod=0; 
       objectGet(obj, "tolerance", tolerance, "0.0") ;
       objectGet(obj, "mod", mod, "0") ;
+      objectGet(obj, "fastReaction", fastReaction, "-1") ;
       objectGet(obj, "cellTypes", cellTypeNames) ;
       if (cellTypeNames.size() == 0)
       {
@@ -132,7 +134,7 @@ namespace
          
       }
       
-      Reaction *reaction = new TT06Dev_Reaction(anatomy, cellTypeParms, cellTypeNames, tolerance, mod, group);
+      Reaction *reaction = new TT06Dev_Reaction(anatomy, cellTypeParms, cellTypeNames, tolerance, mod, fastReaction, group);
       return  reaction; 
    }
 }

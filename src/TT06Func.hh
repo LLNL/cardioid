@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include "pade.hh" 
-#include "TT06Func.hh" 
+#include "TT06Func.h" 
 #define SQ(x) ((x)*(x))
 #define CUBE(x) ((x)*(x)*(x))
 
@@ -46,11 +46,13 @@ struct STATE { int index, type; double value;};
 
 struct CellTypeParmsFull { string name; vector<int> anatomyIndices; int s_switch; double P_NaK, g_Ks, g_to, g_NaL, Vm; map<string,STATE> state;}  ;
 struct CellTypeParms     { int cellType, s_switch; double P_NaK, g_Ks, g_to, g_NaL, minK_i,maxK_i,midK_i,minNa_i,maxNa_i,midNa_i;}  ;
+struct WORK { int offsetCell, nCell, offsetEq, nEq;}; 
 struct TT06DevState { double state[nStateVar]; };
 
 void initCnst();
-void updateNonGate(double dt, CellTypeParms *cellTypeParms, int n, int *cellType, const double *Vm, int offset, double **state, double *dVdt);
-void updateGate(double dt, int n, int *cellType, const double *Vm, int offset, double **state);
+void updateNonGate(double dt, CellTypeParms *cellTypeParms, int n, int *cellType, double *Vm, int offset, double **state, double *dVdt);
+void updateGate(double dt, int n, int *cellType, double *Vm, int offset, double **state, WORK& work);
+void updateGateFast(double dt, int n, int *cellType, double *Vm, int offset, double **state, WORK& work);
 double get_c9();
 PADE **makeFit(double tol, double V0, double V1, double deltaV, int mod);
 void writeFit(PADE **fit); 

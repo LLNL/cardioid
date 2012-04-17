@@ -35,6 +35,7 @@ ThreadHardwareInfo::ThreadHardwareInfo()
 {
    // generic, non-harware specific
    int ncpu = omp_get_num_procs(); 
+   //ncpu = 16; 
    ompID_ = omp_get_thread_num();
    procID_ = ompID_; 
    coreID_ = ompID_%ncpu;
