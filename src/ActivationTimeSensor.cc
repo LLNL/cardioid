@@ -46,7 +46,8 @@ void ActivationTimeSensor::print(double time, int loop,
    fullname += "/" + filename_;
 
    Long64 nGlobal;
-   MPI_Allreduce(&nLocal_, &nGlobal, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+   Long64 nLocal=nLocal_;
+   MPI_Allreduce(&nLocal, &nGlobal, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
    
    PFILE* file = Popen(fullname.c_str(), "w", MPI_COMM_WORLD);
 
