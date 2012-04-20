@@ -1,5 +1,4 @@
 #include <math.h>
-#include <stdio.h>
 void update_mGateNew(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 int gateIndex=0;

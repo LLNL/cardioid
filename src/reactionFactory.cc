@@ -91,11 +91,26 @@ namespace
       map<string,TT06Func::CellTypeParmsFull>cellTypeParms=TT06Func::getStandardCellTypes(); 
       double tolerance=0.0 ; 
       int fastReaction =-1; 
+      int fastGate =-1; 
+      int fastNonGate =-1; 
       vector<string> cellTypeNames; 
       int mod=0; 
       objectGet(obj, "tolerance", tolerance, "0.0") ;
       objectGet(obj, "mod", mod, "0") ;
       objectGet(obj, "fastReaction", fastReaction, "-1") ;
+      objectGet(obj, "fastGate", fastGate, "-1") ;
+      objectGet(obj, "fastNonGate", fastNonGate, "-1") ;
+      if (fastReaction == -1) 
+      {
+           
+           if (fastGate     > -1 || fastNonGate > -1 )  
+           {
+                 if (fastGate    ==  -1 )  fastGate   =0; 
+                 if (fastNonGate ==  -1 )  fastNonGate=0; 
+                 fastReaction = fastGate+256*fastNonGate; 
+           } 
+      }
+      if (fastReaction == 1)  fastReaction = 257; 
       objectGet(obj, "cellTypes", cellTypeNames) ;
       if (cellTypeNames.size() == 0)
       {
@@ -130,7 +145,6 @@ namespace
          if (iparm.size() == 1) cellTypeParms[name].s_switch = iparm[0]; 
          objectGet(cellobj,"P_NaK",dparm); 
          if (dparm.size() == 1) cellTypeParms[name].P_NaK = dparm[0]; 
-         printf("%s P_NaK=%f s_switch=%d\n",name.c_str(),cellTypeParms[name].P_NaK,cellTypeParms[name].s_switch); 
          
       }
       

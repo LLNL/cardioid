@@ -7,6 +7,7 @@
 
 // BGQ has the real SIMD functions.  Don't use replacements
 #ifdef BGQ
+#define get 
 #undef USE_PORTABLE_SIMD
 #endif
 
@@ -36,9 +37,11 @@ typedef struct vector4double_
  double v[4]; 
 } vector4double; 
 
+#define get .v
+
 #define vec_ld(shift,addr)  vload((shift),(void*)(addr),sizeof((addr))) 
 
-vector4double vload(uint32_t shift, void* addr, int size)
+static inline vector4double vload(uint32_t shift, void* addr, int size)
 {
   vector4double tmp;
   shift /= size;
@@ -72,7 +75,7 @@ vector4double vec_ld(uint32_t shift, double* addr)
   return tmp;
 }
 */
-vector4double vec_lds(uint32_t shift, double* addr)
+static inline vector4double vec_lds(uint32_t shift, double* addr)
 {
   vector4double tmp;
   shift /= sizeof(double);
@@ -83,7 +86,7 @@ vector4double vec_lds(uint32_t shift, double* addr)
   return tmp;
 }
 
-vector4double vec_splats(double src)
+static inline vector4double vec_splats(double src)
 {
   vector4double tmp;
   tmp.v[0] = src;
@@ -92,8 +95,26 @@ vector4double vec_splats(double src)
   tmp.v[3] = src;
   return tmp;
 }
+static inline vector4double vec_splat(vector4double src, int index)
+{
+  vector4double tmp;
+  tmp.v[0] = src.v[index];
+  tmp.v[1] = src.v[index];
+  tmp.v[2] = src.v[index];
+  tmp.v[3] = src.v[index];
+  return tmp;
+}
 
-vector4double vec_re(vector4double op)
+static inline vector4double vec_neg(vector4double op)
+{
+  vector4double target;
+  target.v[0]= -op.v[0];
+  target.v[1]= -op.v[1];
+  target.v[2]= -op.v[2];
+  target.v[3]= -op.v[3];
+  return target; 
+}
+static inline vector4double vec_re(vector4double op)
 {
   double eps = 1/4096; 
   vector4double target;
@@ -103,7 +124,7 @@ vector4double vec_re(vector4double op)
   target.v[3]= (1.0-eps)/(op.v[3]);
   return target; 
 }
-vector4double vec_swdiv_nochk(vector4double op1, vector4double op2)
+static inline vector4double vec_swdiv_nochk(vector4double op1, vector4double op2)
 {
   vector4double target;
   target.v[0]= op1.v[0]/op2.v[0];
@@ -113,7 +134,7 @@ vector4double vec_swdiv_nochk(vector4double op1, vector4double op2)
   return target;
 }
 
-vector4double vec_madd(vector4double op1, vector4double op2, vector4double op3)
+static inline vector4double vec_madd(vector4double op1, vector4double op2, vector4double op3)
 {
   vector4double target;
   target.v[0]= op1.v[0]*op2.v[0] + op3.v[0];
@@ -122,7 +143,16 @@ vector4double vec_madd(vector4double op1, vector4double op2, vector4double op3)
   target.v[3]= op1.v[3]*op2.v[3] + op3.v[3];
   return target;
 }
-vector4double vec_nmsub(vector4double op1, vector4double op2, vector4double op3)
+static inline vector4double vec_msub(vector4double op1, vector4double op2, vector4double op3)
+{
+  vector4double target;
+  target.v[0]= op1.v[0]*op2.v[0] - op3.v[0];
+  target.v[1]= op1.v[1]*op2.v[1] - op3.v[1];
+  target.v[2]= op1.v[2]*op2.v[2] - op3.v[2];
+  target.v[3]= op1.v[3]*op2.v[3] - op3.v[3];
+  return target;
+}
+static inline vector4double vec_nmsub(vector4double op1, vector4double op2, vector4double op3)
 {
   vector4double target;
   target.v[0]= -op1.v[0]*op2.v[0] + op3.v[0];
@@ -132,7 +162,7 @@ vector4double vec_nmsub(vector4double op1, vector4double op2, vector4double op3)
   return target;
 }
 
-inline vector4double vec_mul(vector4double op1, vector4double op2)
+static inline vector4double vec_mul(vector4double op1, vector4double op2)
 {
   vector4double target;
   target.v[0]= op1.v[0]*op2.v[0];
@@ -142,7 +172,7 @@ inline vector4double vec_mul(vector4double op1, vector4double op2)
   return target;
 }
 
-inline vector4double vec_add(vector4double op1, vector4double op2)
+static inline vector4double vec_add(vector4double op1, vector4double op2)
 {
   vector4double target;
   target.v[0]= op1.v[0]+op2.v[0];
@@ -152,7 +182,7 @@ inline vector4double vec_add(vector4double op1, vector4double op2)
   return target;
 }
 
-vector4double vec_sub(vector4double op1, vector4double op2)
+static inline vector4double vec_sub(vector4double op1, vector4double op2)
 {
   vector4double target;
   target.v[0]= op1.v[0]-op2.v[0];
@@ -162,7 +192,7 @@ vector4double vec_sub(vector4double op1, vector4double op2)
   return target;
 }
 
-inline vector4double vec_sldw(vector4double op1, vector4double op2, uint32_t shift)
+static inline vector4double vec_sldw(vector4double op1, vector4double op2, uint32_t shift)
 {
   vector4double target;
   target.v[0]= op1.v[shift];
@@ -172,7 +202,7 @@ inline vector4double vec_sldw(vector4double op1, vector4double op2, uint32_t shi
   return target;
 }
 
-void vec_st(vector4double op1, uint32_t offset, double* addr)
+static inline void vec_st(vector4double op1, uint32_t offset, double* addr)
 {
   offset /= sizeof(double);
   *(addr + offset)     = op1.v[0];

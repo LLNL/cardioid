@@ -3,6 +3,7 @@
 #include "Anatomy.hh"
 #include "TT06Func.hh"
 #include "TT06Gates.h"
+#include "TT06NonGates.h"
 #include "pade.hh"
 #include "PerformanceTimers.hh"
 #include "ThreadServer.hh"
@@ -110,7 +111,7 @@ TT06Dev_Reaction::TT06Dev_Reaction( Anatomy& anatomy,  map<string,CellTypeParmsF
    for (unsigned jj=0; jj<nStateVar; ++jj) state_[jj]= stateBuffer_+jj*nCellBuffer_; 
 
    vector<int> nCellsOfType(nCellTypes_,0); 
-   double c9=TT06Func::get_c9(); 
+   double c9=get_c9(); 
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
       assert(anatomy.cellType(ii) >= 0 && anatomy.cellType(ii) < 256);
@@ -122,9 +123,15 @@ TT06Dev_Reaction::TT06Dev_Reaction( Anatomy& anatomy,  map<string,CellTypeParmsF
    }
    
    {
-      fastReaction_=fastReaction; 
-      if ( (fabs(tolerance/1e-4 - 1.0) < 1e-12) && mod == 1 && (fastReaction_ != 0) ) fastReaction_ = 1; 
-      if (fastReaction_ == -1) fastReaction_=0; 
+      fastReaction_ = 0; 
+      if (fastReaction >= 0) ;
+      {
+         if ( (fabs(tolerance/1e-4 - 1.0) < 1e-12) && mod == 1 )fastReaction_ = fastReaction; 
+      }
+      update_gate_=TT06Func::updateGate;
+      update_nonGate_=update_nonGate;
+      if ((fastReaction_&0x00ff)   > 0) update_gate_   =TT06Func::updateGateFast;
+      if ((fastReaction_&0xff00)   > 0) update_nonGate_=update_nonGate_v1;
       initExp(); 
       double V0 = -100.0; 
       double V1 =  50.0; 
@@ -163,10 +170,8 @@ TT06Dev_Reaction::TT06Dev_Reaction( Anatomy& anatomy,  map<string,CellTypeParmsF
         gateWork_[teamRank].nCell =   nCell; 
         gateWork_[teamRank].offsetEq = nEq*squadRank; 
         gateWork_[teamRank].nEq     =  nEq; 
-        //printf("%d %d : %d %d %d %d\n",id,squadRank,nCell,offset,gateWork_[id].nEq,gateWork_[id].offsetEq); 
    }
    
-   printf("fastReaction=%d\n",fastReaction_); 
 
    dtForFit_=0.0; 
 }
@@ -208,7 +213,6 @@ int workBundle(int index, int nItems, int nGroups , int mod, int& offset)
    if ( index == nGroups -1) n = ((nItems-offset));
 
    return n;
-
 }
 
 int partition(int index, int nItems, int nGroups , int& offset)
@@ -244,59 +248,24 @@ int TT06Dev_Reaction::nonGateWorkPartition(int& offset)
 void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<double>& iStim, vector<double>& dVm)
 {
    WORK work ={ 0,nCells_,0,12}; 
-   TT06Func::updateNonGate(dt, &(cellTypeParms_[0]), nCells_, &(cellTypeVector_[0]),const_cast<double *>(&Vm[0]),  0, &state_[0], &dVm[0]);
-   if (fastReaction_ == 1) TT06Func::updateGateFast(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],work);
-   else TT06Func::updateGate(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],work);
-/*
-   char filename[64]; 
-   sprintf(filename,"Nstate0_%1d",fastReaction_); 
-   static FILE *file=NULL; 
-   if (file == NULL)  file = fopen(filename,"w");
-   //for (int i=0;i<nCells_;i++)
-   int i=3333;
-   {
-      fprintf(file,"%5d",i); 
-      for(int j=0;j<nStateVar;j++)
-      {
-          fprintf(file," %24.14f",state_[j][i]); 
-      }
-      fprintf(file,"\n"); 
-   }
-*/
+   update_nonGate_(dt, &(cellTypeParms_[0]), nCells_, &(cellTypeVector_[0]),const_cast<double *>(&Vm[0]),  0, &state_[0], &dVm[0]);
+   update_gate_(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],work);
 }
 void TT06Dev_Reaction::updateNonGate(double dt, const vector<double>& Vm, vector<double>& dVR)
 {
    int offset; 
    startTimer(nonGateTimer);
    int nCells = nonGateWorkPartition(offset); 
-   TT06Func::updateNonGate(dt, &cellTypeParms_[0], nCells, &cellTypeVector_[offset], const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
+   update_nonGate_(dt, &cellTypeParms_[0], nCells, &cellTypeVector_[offset], const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
    stopTimer(nonGateTimer);
 }
 void TT06Dev_Reaction::updateGate(double dt, const vector<double>& Vm)
 {
    startTimer(gateTimer);
-
    const ThreadRankInfo& rankInfo = group_.rankInfo();
    int teamRank = rankInfo.teamRank_;
-   if (fastReaction_ == 1) TT06Func::updateGateFast(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],gateWork_[teamRank]);
-   else TT06Func::updateGate(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],gateWork_[teamRank]);
+   update_gate_(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],gateWork_[teamRank]);
    stopTimer(gateTimer);
-/*
-   char filename[64]; 
-   sprintf(filename,"Nstate1_%1d",fastReaction_); 
-   static FILE *file=NULL; 
-   if (file == NULL)  file = fopen(filename,"w");
-   //for (int i=0;i<nCells_;i++)
-   int i=3333;
-   {
-      fprintf(file,"%5d",i); 
-      for(int j=0;j<nStateVar;j++)
-      {
-          fprintf(file," %24.14f",state_[j][i]); 
-      }
-      fprintf(file,"\n"); 
-   }
-*/
 }
 
 

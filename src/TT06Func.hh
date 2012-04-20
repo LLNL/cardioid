@@ -34,26 +34,16 @@ using namespace std;
 namespace TT06Func
 {
 
-enum TT06STATE { Ca_i, K_i, Na_i, Ca_ss, Ca_SR, R_prime, fCass, m_gate, h_gate, j_gate, Xr1_gate, Xr2_gate, Xs_gate, r_gate, d_gate, f_gate, f2_gate,  jL_gate, s_gate, nStateVar} ; 
-enum STATETYPE { nonGateVar, GateVar }; 
-
-#define gateFitOffset 7
-#define nGateVar 12 
-#define gateOffset 7
-#define dVK_i   K_i 
 
 struct STATE { int index, type; double value;}; 
 
 struct CellTypeParmsFull { string name; vector<int> anatomyIndices; int s_switch; double P_NaK, g_Ks, g_to, g_NaL, Vm; map<string,STATE> state;}  ;
-struct CellTypeParms     { int cellType, s_switch; double P_NaK, g_Ks, g_to, g_NaL, minK_i,maxK_i,midK_i,minNa_i,maxNa_i,midNa_i;}  ;
 struct WORK { int offsetCell, nCell, offsetEq, nEq;}; 
-struct TT06DevState { double state[nStateVar]; };
 
 void initCnst();
-void updateNonGate(double dt, CellTypeParms *cellTypeParms, int n, int *cellType, double *Vm, int offset, double **state, double *dVdt);
+//void updateNonGate(double dt, CellTypeParms *cellTypeParms, int n, int *cellType, double *Vm, int offset, double **state, double *dVdt);
 void updateGate(double dt, int n, int *cellType, double *Vm, int offset, double **state, WORK& work);
 void updateGateFast(double dt, int n, int *cellType, double *Vm, int offset, double **state, WORK& work);
-double get_c9();
 PADE **makeFit(double tol, double V0, double V1, double deltaV, int mod);
 void writeFit(PADE **fit); 
 map<string,CellTypeParmsFull> getStandardCellTypes();

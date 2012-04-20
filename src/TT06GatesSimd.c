@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include "portableSIMD.h" 
 
+/*
 #ifdef BGQ 
 #define get
 #else
 #define get .v
 #endif
+*/
 //#define TTROUND(nc,n) (((nc)-3)*(n)/(n))
 //#define TTROUND(nc,n) ((n)*(((nc)-3)/(n)))
 
@@ -72,7 +74,7 @@ int exp_l=16;
    tauRdt_a[6]  = tauR_a[6]*dt, 
    tauRdt_a[7]  = tauR_a[7]*dt,
    tauRdt_a[8]  = tauR_a[8]*dt;
- tauRdt_a[9]  = tauR_a[9]*dt,
+   tauRdt_a[9]  = tauR_a[9]*dt,
    tauRdt_a[10] = tauR_a[10]*dt,
    tauRdt_a[11] = tauR_a[11]*dt,
    tauRdt_a[12] = tauR_a[12]*dt,

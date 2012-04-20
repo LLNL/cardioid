@@ -30,11 +30,13 @@ class TT06Dev_Reaction : public Reaction
 
 
    unsigned nCellTypes_;
-   vector<TT06Func::CellTypeParms> cellTypeParms_; 
+   vector<CellTypeParms> cellTypeParms_; 
    vector<double> initialVm_; 
    unsigned nCells_;
    vector<unsigned> nCellsOfType_; 
 
+    void (*update_gate_)   (double dt,                                      int nCells, int *cellType, double *Vm, int offset, double **state, WORK& work);
+    void (*update_nonGate_)(double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellType, double *Vm, int offset, double **state, double *dVdt);
    int nonGateWorkPartition(int& offset);
    double dtForFit_; 
    double tolerance_; 

@@ -58,7 +58,7 @@ HEARTSRC= cardioid.cc \
 	 VoronoiCoarsening.cc
 
 SPISRC=	 spi_impl.c
-SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c
+SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c
 
 DDCMD_FILES = \
 	codata.h \

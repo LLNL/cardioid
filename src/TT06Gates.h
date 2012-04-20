@@ -1,5 +1,5 @@
-#ifndef UPDATEGATE_HH
-#define UPDATEGATE_HH
+#ifndef UPDATEGATE_H
+#define UPDATEGATE_H
 #ifdef __cplusplus
 extern "C" {
 #endif

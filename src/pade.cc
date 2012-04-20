@@ -160,6 +160,7 @@ static void  minimizeCost(PADE *pade,int maxCost, int lMax, int mMax)
    double amin[lMax+mMax]; 
    double errMaxMin = -1.0; 
    double errRMSMin=0.0 ; 
+   
    for (int kk=minCost;kk<=maxCost;kk++) 
    {
         for (int l=lMin;l<=lMax;l+=1)
