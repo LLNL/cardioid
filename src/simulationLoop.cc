@@ -270,7 +270,9 @@ void diffusionLoop(Simulate& sim,
                    L2_BarrierHandle_t& reactionHandle,
                    L2_BarrierHandle_t& diffusionHandle)
 {
+#ifndef NTIMING
    profileStart(diffusionLoopTimer);
+#endif
    int tid = sim.diffusionThreads_.teamRank();
    L2_BarrierHandle_t haloBarrierHandle;
    L2_BarrierWithSync_InitInThread(loopData.haloBarrier, &haloBarrierHandle);
@@ -359,12 +361,16 @@ void diffusionLoop(Simulate& sim,
          loopIO(sim, loopData.dVmReactionCpy, loopData.dVmDiffusion);
       }
    }
+#ifndef NTIMING
    profileStop(diffusionLoopTimer);
+#endif
 }
 
 void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle)
 {
+#ifndef NTIMING
    profileStart(reactionLoopTimer);
+#endif
    int tid = sim.reactionThreads_.teamRank();
    vector<double>& dVmReaction = loopData.dVmReaction;
    L2_BarrierHandle_t reactionWaitOnNonGateHandle;
@@ -452,7 +458,9 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       stopTimer(reactionL2ResetTimer);
       //#pragma omp barrier
    }
+#ifndef NTIMING
    profileStop(reactionLoopTimer);
+#endif
 }
 
 void simulationLoopParallelDiffusionReaction(Simulate& sim)
@@ -480,7 +488,9 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
       sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
       loopData.voltageExchange.fillSendBuffer(sim.VmArray_);
       #pragma omp barrier
+#ifndef NTIMING
       profileStart(parallelDiffReacTimer);
+#endif
       if ( sim.diffusionThreads_.teamRank() >= 0) 
       {
          diffusionLoop(sim, loopData, reactionHandle, diffusionHandle);
@@ -489,6 +499,8 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
       {
           reactionLoop(sim, loopData, reactionHandle, diffusionHandle);
       } 
+#ifndef NTIMING
       profileStop(parallelDiffReacTimer);
+#endif
    }
 }

@@ -437,7 +437,7 @@ double getTick()
    return seconds_per_cycle; 
 }
 void profileInitBGQ(void) {
-
+#ifndef NTIMING
    #pragma omp parallel
    {
       int tid = omp_get_thread_num() ;
@@ -450,6 +450,9 @@ void profileInitBGQ(void) {
 
       set_labels();
   }
+#else
+   set_labels();
+#endif
 }
 int getNCores() { return 16;} 
 void  (*readCounter)(unsigned int, int,  uint64_t*)=(void (*)(unsigned, int, uint64_t*))Bgpm_ReadEvent;
