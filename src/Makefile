@@ -154,7 +154,7 @@ flops:
 	$(BINDIR)/cardioid-$(ARCH)-hpm \
 	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH)-hpm \
 	CFLAGS="$(CFLAGS_OPT) -DNTIMING -DHPM" CXXFLAGS="$(CXXFLAGS_OPT) -DNTIMING -DHPM" \
-	LDFLAGS="$(LDFLAGS_OPT) -L/usr/local/tools/mpitrace/lib -lmpihpm_smp"  EXENAME=cardioid-$(ARCH)-hpm 
+	LDFLAGS="-L/usr/local/tools/mpitrace/lib -lmpihpm_smp $(LDFLAGS_OPT)"  EXENAME=cardioid-$(ARCH)-hpm 
 oss:
 	@$(MAKE) --no-print-directory COMMON_TARGETS \
 	$(BINDIR)/cardioid-$(ARCH)-oss \
