@@ -21,10 +21,6 @@
 #include "heap.h"
 #include "object_cc.hh"
 #include "Version.hh"
-#ifdef BGQ
-void HPM_Start(char *); 
-void HPM_Stop(char *); 
-#endif 
 
 #ifdef HPM
 #include <bgpm/include/bgpm.h>

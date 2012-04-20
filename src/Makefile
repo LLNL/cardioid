@@ -149,12 +149,19 @@ mpip:
 	BUILD_SUFFIX=$(ARCH)-mpip OBJDIR=objs-$(ARCH)-mpip \
 	CFLAGS="$(CFLAGS_MPIP)" CXXFLAGS="$(CXXFLAGS_MPIP)" \
 	LDFLAGS="$(LDFLAGS_MPIP)"  EXENAME=cardioid-$(ARCH)-mpip
-time:
+flops:
 	@$(MAKE) --no-print-directory COMMON_TARGETS \
-	$(BINDIR)/cardioid-$(ARCH)-time \
-	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH)-time \
-	CFLAGS="$(CFLAGS_OPT) -DTIMING" CXXFLAGS="$(CXXFLAGS_OPT) -DTIMING" \
-	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=cardioid-$(ARCH)-time \
+	$(BINDIR)/cardioid-$(ARCH)-hpm \
+	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH)-hpm \
+	CFLAGS="$(CFLAGS_OPT) -DNTIMING -DHPM" CXXFLAGS="$(CXXFLAGS_OPT) -DNTIMING -DHPM" \
+	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=cardioid-$(ARCH)-hpm 
+oss:
+	@$(MAKE) --no-print-directory COMMON_TARGETS \
+	$(BINDIR)/cardioid-$(ARCH)-oss \
+	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH) \
+	CFLAGS="$(CFLAGS_OPT)" CXXFLAGS="$(CXXFLAGS_OPT)" \
+	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=cardioid-$(ARCH)-oss \
+   LD="/usr/global/tools/openspeedshop/oss-dev/bgq/oss202/bgq/bin/osslink -c pcsamp $(CXX)"
 
 $(OBJDIR)/%.o: %.cc
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
