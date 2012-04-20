@@ -861,10 +861,6 @@ void GDLoadBalancer::balanceLoop(vector<AnatomyCell>& cells, int bblock, int bth
 
    // test that no processor's data is shared
    haveData_.resize(npegrid_,0);
-
-   // each task owns its own data by definition
-   haveData_[myRank_] = 1;
-   
    for (unsigned ii=0; ii<cells.size(); ++ii)
       haveData_[cells[ii].dest_] = 1;  
    vector<int> testOwnership(npegrid_);
@@ -883,14 +879,20 @@ void GDLoadBalancer::balanceLoop(vector<AnatomyCell>& cells, int bblock, int bth
       if (haveData_[ip] == 1)
          myRankList_.push_back(ip);
 
+
+   // for non-testing case, each task owns its own data (even if it doesn't currently
+   // have any)
+   if (myRankList_.size() < 1)
+      myRankList_.push_back(myRank_);
+   
    // use togive_ array to redistribute data
    bool allDataSent = false;
    int ccnt = 0;
    while (!allDataSent && ccnt < 1000)
    {
       //ewd DEBUG
-      //if (myRank_ == 0)
-      //   cout << "Calling diffuseDest ccnt = " << ccnt << endl;
+      if (myRank_ == 0)
+         cout << "Calling diffuseDest ccnt = " << ccnt << endl;
 
       allDataSent = diffuseDest(cells);
       ccnt++;

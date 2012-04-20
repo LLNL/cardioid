@@ -22,6 +22,12 @@
 #include "object_cc.hh"
 #include "Version.hh"
 
+#ifdef HPM
+#include <bgpm/include/bgpm.h>
+extern "C" void HPM_Start(char *);
+extern "C" void HPM_Stop(char *);
+#endif
+
 using namespace std;
 
 namespace
@@ -83,12 +89,18 @@ int main(int argc, char** argv)
    MPI_Barrier(MPI_COMM_WORLD);
    MPI_Pcontrol(1);
 
+#ifdef HPM
+   HPM_Start("Loop"); 
+#endif 
    timestampBarrier("Starting Simulation Loop", MPI_COMM_WORLD);
    profileStart("Loop");
    if ( !sim.parallelDiffusionReaction_) simulationLoop(sim);  
    else  simulationLoopParallelDiffusionReaction(sim);
    profileStop("Loop");
    timestampBarrier("Finished Simulation Loop", MPI_COMM_WORLD);
+#ifdef HPM
+   HPM_Stop("Loop"); 
+#endif 
    
    //ewd:  turn off mpiP
    MPI_Pcontrol(0);
