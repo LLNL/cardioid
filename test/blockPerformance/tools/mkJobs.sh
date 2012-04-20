@@ -1,40 +1,43 @@
 #!/bin/bash
 
-# To Do
-
-
 mpiExe=../../../..//bin/cardioid-bgq
 spiExe=${mpiExe}-spi
-#pool=pdebug
-#maxTime=1:30
-#bank=dev
+ossExe=${mpiExe}-spi-oss
+hpmExe=${mpiExe}-spi-hpm
 
 
-
-for halo in spi
+for jobType in spi oss hpm
 do
 for jobSize in 1k 2k 4k 8k 16k 24k
 do
-for cellsPerNode in 150 224 300
+for cellsPerNode in 224
 do
-for balancer in koradi grid
+for balancer in grid
 do
 
-  dirname=run/${halo}_${cellsPerNode}_${balancer}_$jobSize
+  dirname=run/${jobType}_${cellsPerNode}_${balancer}_$jobSize
   if [ -d $dirname ] 
   then
       continue
   fi
+  ossdir=`pwd`/$dirname/rawoss_data
 
   echo making $dirname
   mkdir -p $dirname
+  mkdir -p $ossdir
 
-  case $halo in
+  case $jobType in
       mpi)
       exe=$mpiExe
       ;;
       spi)
       exe=$spiExe
+      ;;
+      hpm)
+      exe=$hpmExe
+      ;;
+      oss)
+      exe=$ossExe
       ;;
   esac
 
@@ -65,26 +68,32 @@ do
       1k)
       nNodes=1024
       xGrid=8;   yGrid=8;   zGrid=16
+      nNodeName=$jobSize
       ;;
       2k)
       nNodes=2048
       xGrid=16;   yGrid=8;  zGrid=16
+      nNodeName=$jobSize
       ;;
       4k)
       nNodes=4096
       xGrid=16;  yGrid=16;  zGrid=16
+      nNodeName=$jobSize
       ;;
       8k)
       nNodes=8192
       xGrid=16;  yGrid=16;  zGrid=32
+      nNodeName=$jobSize
       ;;
       16k)
       nNodes=16384
       xGrid=32;  yGrid=16;  zGrid=32
+      nNodeName=$jobSize
       ;;
       24k)
       nNodes=24576
       xGrid=32;  yGrid=24;  zGrid=32
+      nNodeName=$jobSize
       ;;
       *)
       echo ERROR: undefined jobSize
@@ -111,6 +120,7 @@ do
   cat tools/sbatchMe.sh.proto \
       | sed s%XX_NNODES_XX%$nNodes% \
       | sed s%XX_NTASKS_XX%$nTasks% \
+      | sed s%XX_OSSDIR_XX%$ossdir% \
       | sed s%XX_EXE_XX%$exe% \
       > $dirname/sbatchMe.sh
 

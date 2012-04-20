@@ -69,7 +69,14 @@ tt06dev REACTION
     method = TT06Dev;
     tolerance = 0.0001;
     mod = 1;
+    fastGate =1; 
+    fastNonGate =1; 
+    cellTypes = endo mid epi;
 }
+
+endo CELLTYPE { clone=endoCellML; }
+mid CELLTYPE { clone=midCellML; }
+epi CELLTYPE { clone=epiCellML; }
 
 boxStimulus STIMULUS
 {

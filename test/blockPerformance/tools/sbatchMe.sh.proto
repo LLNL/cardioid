@@ -14,5 +14,9 @@ export OMP_NUM_THREADS=64
 export MUSPI_NUMBATIDS=203
 export MUSPI_NUMINJFIFOS=3
 export MUSPI_NUMRECFIFOS=3
+export PATH=$PATH:/usr/global/tools/openspeedshop/oss-dev/bgq/oss202/bgq/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/global/tools/openspeedshop/oss-dev/bgq/oss202/bgq/lib64:/usr/global/tools/openspeedshop/oss-dev
+/bgq/oss202/lib64
+export OPENSS_RAWDATA_DIR=XX_OSSDIR_XX
 
 srun --ntasks=XX_NTASKS_XX XX_EXE_XX
