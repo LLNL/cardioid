@@ -172,6 +172,32 @@ void profileStop(const std::string& timerName)
    profileStop(profileGetHandle(timerName));
 }
 
+void profileStart_HW(const TimerHandle& handle)
+{
+   allCounters_=1; 
+   profileStart(handle);
+   allCounters_=0; 
+}
+
+void profileStop_HW(const TimerHandle& handle)
+{
+   allCounters_=1; 
+   profileStop(handle);
+   allCounters_=0; 
+}
+void profileStart_HW(const std::string& timerName)
+{
+   allCounters_=1; 
+   profileStart(profileGetHandle(timerName));
+   allCounters_=0; 
+}
+void profileStop_HW(const std::string& timerName)
+{
+   allCounters_=1; 
+   profileStop(profileGetHandle(timerName));
+   allCounters_=0; 
+}
+
 TimerHandle profileGetHandle(string timerName)
 {
    TimerHandle handle;
@@ -377,6 +403,7 @@ void profileDumpStats(ostream& out)
    double sigma[nTimers];
    // end of variable that should be in loop scope
    int nPrintCounters_ = (allCounters_ ? nCounters_ : 2);
+   nPrintCounters_=nCounters_; 
    for (int counter=0;counter<nPrintCounters_;counter++)
    {
       
