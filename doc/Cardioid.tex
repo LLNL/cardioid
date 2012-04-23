@@ -511,7 +511,7 @@ Used to write values of interest to a file.
 
 \begin{keywords}
   \kw{evalRate}{Rate in time steps at which the sensor eval function is called.}{1}
-  \kw{method}{Choose from ``pointList'' and ``activationTime''.}{No
+  \kw{method}{Choose from ``pointList'', ``activationTime'' and ``voronoiCoarsening''.}{No
     default}
   \kw{printRate}{Rate in time steps at which the sensor print
     function is called.}{1}
@@ -534,7 +534,15 @@ ignored for this sensor.
   
 \end{keywords}
 
+\subsubsection{voronoiCoarsening Sensor}
+Prints $V_m$ at points specified by grid indexes. 
+The values are obtained by averaging over the Voronoi cell associated to each point.
 
+\begin{keywords}
+  \kw{cellList}{Name of file with list of global grid indexes of cells to print values}{No
+    Default}
+  \kw{filename}{Base name for output file.}{``coarsened\_anatomy''}
+\end{keywords}
 
 \subsection{SIMULATE}
 
