@@ -128,7 +128,6 @@ void initializeSimulate(const string& name, Simulate& sim)
    // let user specify a filename containing the list of cell gids they want in the snapshots
    // (need to do this after data is distributed, so we can store just the local subset of points
    // on each task)
-   sim.coarsedata_=0;
    string snapshotCLFile;
    objectGet(obj, "snapshotCellList", snapshotCLFile, "");
    if (snapshotCLFile != "")

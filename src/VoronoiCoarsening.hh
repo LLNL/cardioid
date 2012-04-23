@@ -6,6 +6,7 @@
 #include "Anatomy.hh"
 #include "IndexToVector.hh"
 #include "Long64.hh"
+#include "Sensor.hh"
 
 #include <mpi.h>
 
@@ -96,10 +97,11 @@ class LocalSums
 };
 
 
-class VoronoiCoarsening
+class VoronoiCoarsening : public Sensor
 {
  private:
    MPI_Comm comm_;
+   std::string filename_;
 
    const Anatomy& anatomy_;
 
@@ -126,16 +128,25 @@ class VoronoiCoarsening
 
    LocalSums valcolors_;
 
- public:
-   VoronoiCoarsening(const Anatomy& anatomy,
-                     const std::vector<Long64>& gid,
-                     MPI_Comm comm);
-   int bruteForceColoring();
    void computeRemoteTasks();
+   int bruteForceColoring();
    void computeColorAverages(const std::vector<double>& val);
    void writeAverages(const std::string& filename,
                       const double current_time,
                       const int current_loop)const;
+
+ public:
+   VoronoiCoarsening(const SensorParms& sp,
+                     std::string filename,
+                     const Anatomy& anatomy,
+                     const std::vector<Long64>& gid,
+                     MPI_Comm comm);
+   void eval(double time, int loop,
+             const std::vector<double>& Vm, const std::vector<double>&,
+             const std::vector<double>&);
+   void print(double time, int loop,
+              const std::vector<double>& Vm, const std::vector<double>&,
+              const std::vector<double>&);
 };
 
 #endif

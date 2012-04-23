@@ -128,12 +128,7 @@ void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVm
          string fullname = name.str();
          if (myRank == 0) DirTestCreate(fullname.c_str());
          fullname += "/anatomy";
-         if( sim.coarsedata_==0 )
-            writeCells(sim, fullname.c_str());
-         else{
-            sim.coarsedata_->computeColorAverages(sim.VmArray_);
-            sim.coarsedata_->writeAverages(fullname,sim.time_, sim.loop_);
-         }
+         writeCells(sim, fullname.c_str());
       }
          
    }

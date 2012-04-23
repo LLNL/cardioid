@@ -58,7 +58,6 @@ class Simulate
    Reaction* reaction_; 
    std::vector<Stimulus*> stimulus_;
    std::vector<Sensor*> sensor_;
-   VoronoiCoarsening* coarsedata_;
 };
 
 #endif

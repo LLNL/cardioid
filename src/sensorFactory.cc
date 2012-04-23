@@ -5,6 +5,7 @@
 #include "Sensor.hh"
 #include "PointListSensor.hh"
 #include "ActivationTimeSensor.hh"
+#include "VoronoiCoarsening.hh"
 
 using namespace std;
 
@@ -12,6 +13,7 @@ namespace
 {
    Sensor* scanPointListSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy);
    Sensor* scanActivationTimeSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy);
+   Sensor* scanVoronoiCoarseningSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy);
 }
 
 
@@ -31,6 +33,8 @@ Sensor* sensorFactory(const std::string& name, const Anatomy& anatomy)
      return scanPointListSensor(obj, sp, anatomy);
   else if (method == "activationTime")
      return scanActivationTimeSensor(obj, sp, anatomy);
+  else if (method == "voronoiCoarsening")
+     return scanVoronoiCoarseningSensor(obj, sp, anatomy);
 
   assert(false); // reachable only due to bad input
   return 0;
@@ -59,5 +63,56 @@ namespace
       ActivationTimeSensorParms p;
       objectGet(obj, "filename",  p.filename,  "activationTime");
       return new ActivationTimeSensor(sp, p, anatomy);
+   }
+}
+
+namespace
+{
+   Sensor* scanVoronoiCoarseningSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy)
+   {
+      int myRank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+
+      string cellListFilename;
+      objectGet(obj, "cellList", cellListFilename, "");
+
+      // try to open file
+      int openfail;
+      ifstream input;
+      if (myRank == 0)
+      {
+         input.open(cellListFilename.c_str(),ifstream::in);
+         openfail = 0;
+         if (!input.is_open())
+            openfail = 1;
+      }
+      MPI_Bcast(&openfail, 1, MPI_INT, 0, MPI_COMM_WORLD);
+      if (openfail == 1)
+      {
+         if (myRank == 0)
+            cout << "Could not open cell list file " << cellListFilename << endl;
+         return false;
+      }
+
+      vector<Long64> cellVec;
+      int nSubset;
+      if (myRank == 0)
+      {
+         while (!input.eof()) {
+            Long64 igid;
+            input >> igid;
+            cellVec.push_back(igid);
+         }
+         nSubset = cellVec.size();
+      }   
+      MPI_Bcast(&nSubset, 1, MPI_INT, 0, MPI_COMM_WORLD);
+      cellVec.resize(nSubset);
+      MPI_Bcast(&cellVec[0], nSubset, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
+
+      std::string filename;
+      objectGet(obj, "filename",  filename,  "coarsened_anatomy");
+
+      // read gids from file
+      return new VoronoiCoarsening(sp, filename, anatomy, cellVec, MPI_COMM_WORLD);
    }
 }

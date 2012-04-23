@@ -1,12 +1,20 @@
 #include <iostream>
+#include <sstream>
+#include <iomanip>
+using namespace std;
 
 #include "VoronoiCoarsening.hh"
 #include "pio.h"
+#include "ioUtils.h"
 
-VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
-                                     const std::vector<Long64>& gid,
+VoronoiCoarsening::VoronoiCoarsening(const SensorParms& sp,
+                                     string filename,
+                                     const Anatomy& anatomy,
+                                     const vector<Long64>& gid,
                                      MPI_Comm comm)
-   :anatomy_(anatomy),
+   :Sensor(sp),
+    filename_(filename),
+    anatomy_(anatomy),
     cells_(anatomy.cellArray()),
     comm_(comm),
     indexToVector_(anatomy.nx(), anatomy.ny(), anatomy.nz())
@@ -14,7 +22,7 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
    assert( gid.size()>0 );
    
    // initialize centers_ with vectors corresponding to gids passed in
-   for(std::vector<Long64>::const_iterator igid =gid.begin();
+   for(vector<Long64>::const_iterator igid =gid.begin();
                                            igid!=gid.end();
                                            ++igid)
    {
@@ -57,7 +65,7 @@ int VoronoiCoarsening::bruteForceColoring()
          }
       }
       if (color < 0 ){
-         std::cerr << "Fail to assign color to cell "<<icell<<std::endl;
+         cerr << "Fail to assign color to cell "<<icell<<endl;
          return -1;
       }else{
          colors_[icell]=color;
@@ -70,7 +78,7 @@ int VoronoiCoarsening::bruteForceColoring()
 
 void VoronoiCoarsening::computeRemoteTasks()
 {
-   for(std::map<int,int>::iterator itr=ncolors_.begin();itr!=ncolors_.end();++itr)
+   for(map<int,int>::iterator itr=ncolors_.begin();itr!=ncolors_.end();++itr)
       assert( local_colors_.find(itr->first)!=local_colors_.end() );
 
    int nTasks, myRank;
@@ -83,7 +91,7 @@ void VoronoiCoarsening::computeRemoteTasks()
    MPI_Allreduce(&nlocalcolors, &max_nlocalcolors, 1, MPI_INT, MPI_MAX, comm_);
    
    // copy local_colors_ into vector
-   std::vector<int> local_colors(local_colors_.size());
+   vector<int> local_colors(local_colors_.size());
    copy(local_colors_.begin(),local_colors_.end(),local_colors.begin());
    local_colors.resize(max_nlocalcolors,-1);
    
@@ -91,7 +99,7 @@ void VoronoiCoarsening::computeRemoteTasks()
    // (simplest algorithm... may not scale...)
    {
       remote_tasks_.clear();
-      std::vector<int> remote_colors(max_nlocalcolors*nTasks,-1);
+      vector<int> remote_colors(max_nlocalcolors*nTasks,-1);
       MPI_Allgather(&local_colors[0],  max_nlocalcolors, MPI_INT, 
                     &remote_colors[0], max_nlocalcolors, MPI_INT, comm_);
 
@@ -118,8 +126,8 @@ void VoronoiCoarsening::computeRemoteTasks()
    }
 
    // pack colors and their count into vector
-   std::vector<int> nlocal_colors;
-   for(std::map<int,int>::iterator itr=ncolors_.begin();itr!=ncolors_.end();++itr)
+   vector<int> nlocal_colors;
+   for(map<int,int>::iterator itr=ncolors_.begin();itr!=ncolors_.end();++itr)
    {
       nlocal_colors.push_back((int)itr->first);
       nlocal_colors.push_back((int)itr->second);
@@ -127,9 +135,9 @@ void VoronoiCoarsening::computeRemoteTasks()
    nlocal_colors.resize(2*max_nlocalcolors,-1);
 
    int it=0;
-   std::vector< std::vector<int> > nremote_colors_for_task;
+   vector< vector<int> > nremote_colors_for_task;
    nremote_colors_for_task.resize(remote_tasks_.size());
-   for(std::set<int>::const_iterator  itp =remote_tasks_.begin();
+   for(set<int>::const_iterator  itp =remote_tasks_.begin();
                                       itp!=remote_tasks_.end();
                                       ++itp)
    {
@@ -155,11 +163,11 @@ void VoronoiCoarsening::computeRemoteTasks()
    // remove -1 at end of nremote_colors_for_task
    for(int ii=0;ii<nremote_colors_for_task.size();ii++)
    {
-      std::vector<int>& nremote_colors=nremote_colors_for_task[ii];
+      vector<int>& nremote_colors=nremote_colors_for_task[ii];
       assert( nremote_colors.size()%2==0 );
       while( !nremote_colors.empty() )
       {
-         std::vector<int>::iterator ir=nremote_colors.end();
+         vector<int>::iterator ir=nremote_colors.end();
          ir--;
          if( (*ir)==-1 ){
             nremote_colors.pop_back();
@@ -171,18 +179,18 @@ void VoronoiCoarsening::computeRemoteTasks()
       it++;
    }
    
-   //for(std::set<int>::const_iterator  itp =remote_tasks_.begin();
+   //for(set<int>::const_iterator  itp =remote_tasks_.begin();
    //                                   itp!=remote_tasks_.end();
    //                                   ++itp)
-   //   std::cout<<"PE "<<myRank<<" exchange data with task "<<*itp<<std::endl;
+   //   cout<<"PE "<<myRank<<" exchange data with task "<<*itp<<endl;
    
    // just remove local colors that are centered somewhere else
    int tid=0;
-   for(std::set<int>::const_iterator  itp =remote_tasks_.begin();
+   for(set<int>::const_iterator  itp =remote_tasks_.begin();
                                       itp!=remote_tasks_.end();
                                       ++itp)
    {
-      std::vector<int>& nremote_colors=nremote_colors_for_task[tid];
+      vector<int>& nremote_colors=nremote_colors_for_task[tid];
       int count=0;
       // reduce local_colors_ so that each color is on one task only
       // (the one where the corresponding color is the most present)
@@ -190,7 +198,7 @@ void VoronoiCoarsening::computeRemoteTasks()
       {
          const int color=nremote_colors[2*i];
          const int nc   =nremote_colors[2*i+1];
-         std::set<int>::const_iterator iti=local_colors_.find(color);
+         set<int>::const_iterator iti=local_colors_.find(color);
          if( iti!=local_colors_.end() )
          {
             bool should_recv_data=true;
@@ -215,11 +223,11 @@ void VoronoiCoarsening::computeRemoteTasks()
    ncolors_to_recv_.clear();
    
    tid=0;
-   for(std::set<int>::const_iterator  itp =remote_tasks_.begin();
+   for(set<int>::const_iterator  itp =remote_tasks_.begin();
                                       itp!=remote_tasks_.end();
                                       ++itp)
    {
-      std::vector<int>& nremote_colors=nremote_colors_for_task[tid];
+      vector<int>& nremote_colors=nremote_colors_for_task[tid];
       int count=0;
       // reduce local_colors_ so that each color is on one task only
       // (the one where the corresponding color is the most present)
@@ -227,7 +235,7 @@ void VoronoiCoarsening::computeRemoteTasks()
       {
          const int color=nremote_colors[2*i];
          const int nc   =nremote_colors[2*i+1];
-         std::set<int>::const_iterator iti=local_colors_.find(color);
+         set<int>::const_iterator iti=local_colors_.find(color);
          if( iti!=local_colors_.end() )
          {
             bool should_recv_data=true;
@@ -243,7 +251,7 @@ void VoronoiCoarsening::computeRemoteTasks()
             count++;
          }
       }
-      //if(count==0)std::cout<<"PE "<<myRank<<" has no data to exchange with PE "<<*itp<<std::endl;
+      //if(count==0)cout<<"PE "<<myRank<<" has no data to exchange with PE "<<*itp<<endl;
       
       // remove unnecessay communications
       if( ncolors_to_recv_.find(*itp)==ncolors_to_recv_.end() )src_tasks_.erase(*itp);
@@ -252,21 +260,21 @@ void VoronoiCoarsening::computeRemoteTasks()
       tid++;
    }
 #if 0
-   for(std::set<int>::const_iterator  itp =src_tasks_.begin();
+   for(set<int>::const_iterator  itp =src_tasks_.begin();
                                       itp!=src_tasks_.end();
                                       ++itp)
-      std::cout<<"PE "<<myRank<<" should receive data from task "<<*itp<<std::endl;
+      cout<<"PE "<<myRank<<" should receive data from task "<<*itp<<endl;
    
-   for(std::set<int>::const_iterator  itp =dst_tasks_.begin();
+   for(set<int>::const_iterator  itp =dst_tasks_.begin();
                                       itp!=dst_tasks_.end();
                                       ++itp)
-     std::cout<<"PE "<<myRank<<" should send data to task "<<*itp<<std::endl;
+     cout<<"PE "<<myRank<<" should send data to task "<<*itp<<endl;
 #endif
 MPI_Barrier(comm_);
  
 }
 
-void VoronoiCoarsening::computeColorAverages(const std::vector<double>& val)
+void VoronoiCoarsening::computeColorAverages(const vector<double>& val)
 {
    // calculate local sums
    valcolors_.clear();
@@ -282,7 +290,7 @@ void VoronoiCoarsening::computeColorAverages(const std::vector<double>& val)
    
    // set up buffer to recv remote data
    int ndata2recv=0;
-   for(std::map<int,int>::const_iterator p = ncolors_to_recv_.begin();
+   for(map<int,int>::const_iterator p = ncolors_to_recv_.begin();
                                          p!= ncolors_to_recv_.end();
                                          ++p)
       ndata2recv+=p->second;
@@ -299,7 +307,7 @@ void VoronoiCoarsening::computeColorAverages(const std::vector<double>& val)
    int tag=823;
    int it=0;
    int offset=0;
-   for(std::set<int>::iterator  itp =src_tasks_.begin();
+   for(set<int>::iterator  itp =src_tasks_.begin();
                                 itp!=src_tasks_.end();
                                 ++itp)
    {
@@ -310,7 +318,7 @@ void VoronoiCoarsening::computeColorAverages(const std::vector<double>& val)
    }
    
    it=0;
-   for(std::set<int>::iterator  itp =dst_tasks_.begin();
+   for(set<int>::iterator  itp =dst_tasks_.begin();
                                 itp!=dst_tasks_.end();
                                 ++itp)
    {
@@ -328,7 +336,7 @@ void VoronoiCoarsening::computeColorAverages(const std::vector<double>& val)
    
    // accumulate data in valcolors_
    offset=0;
-   for(std::set<int>::iterator  itp =src_tasks_.begin();
+   for(set<int>::iterator  itp =src_tasks_.begin();
                                 itp!=src_tasks_.end();
                                 ++itp)
    {
@@ -349,7 +357,7 @@ void VoronoiCoarsening::computeColorAverages(const std::vector<double>& val)
 }
 
 
-void VoronoiCoarsening::writeAverages(const std::string& filename,
+void VoronoiCoarsening::writeAverages(const string& filename,
                                       const double current_time,
                                       const int current_loop)const
 {
@@ -391,7 +399,7 @@ void VoronoiCoarsening::writeAverages(const std::string& filename,
    const int halfNy = anatomy_.ny()/2;
    const int halfNz = anatomy_.nz()/2;
    
-   for(std::set<int>::const_iterator it = local_colors_.begin();
+   for(set<int>::const_iterator it = local_colors_.begin();
                                      it!= local_colors_.end();
                                      ++it)
    {
@@ -407,9 +415,9 @@ void VoronoiCoarsening::writeAverages(const std::string& filename,
                        valcolors_.averageValue(color));
       
       if (myRank == 0 && l>=lrec ){
-         std::cerr<<"ERROR: printed record truncated in file "<<filename<<std::endl;
-         std::cerr<<"This could be caused by out of range values"<<std::endl;
-         std::cerr<<"record="<<line<<std::endl;
+         cerr<<"ERROR: printed record truncated in file "<<filename<<endl;
+         cerr<<"This could be caused by out of range values"<<endl;
+         cerr<<"record="<<line<<endl;
          break;
       }
       for (; l < lrec - 1; l++) line[l] = (char)' ';
@@ -419,4 +427,30 @@ void VoronoiCoarsening::writeAverages(const std::string& filename,
    }
    
    Pclose(file);
+}
+
+void VoronoiCoarsening::eval(double time, int loop,
+                             const vector<double>& Vm,
+                             const vector<double>&,
+                             const vector<double>&)
+{
+   computeColorAverages(Vm);
+}
+
+void VoronoiCoarsening::print(double time, int loop,
+                              const vector<double>& Vm,
+                              const vector<double>&,
+                              const vector<double>&)
+{
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+
+   stringstream name;
+   name << "snapshot."<<setfill('0')<<setw(12)<<loop;
+   string fullname = name.str();
+   if (myRank == 0)
+      DirTestCreate(fullname.c_str());
+   fullname += "/" + filename_;
+
+   writeAverages(fullname,time, loop);   
 }

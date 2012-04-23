@@ -67,14 +67,9 @@ bool readSnapshotCellList(string filename, Simulate& sim, OBJECT* obj)
    
    string snapshotCellAveraging;
    objectGet(obj, "snapshotCellAveragingType", snapshotCellAveraging, "");
-
    if (snapshotCellAveraging == "voronoi")
    {
-      sim.coarsedata_=new VoronoiCoarsening(sim.anatomy_,cellVec,MPI_COMM_WORLD);
-   }else if( snapshotCellAveraging == ""){
-      sim.coarsedata_=0;
-   }else{
-      cerr<<"ERROR: Undefined cell averaging model"<<endl;
+      cerr<<"ERROR: obsolete option 'snapshotCellAveragingType'. Use sensor instead."<<endl;
       assert( false );
    }
    
