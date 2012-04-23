@@ -168,6 +168,7 @@ namespace
       }
 
       // diffusive load balance loop
+      profileStart("gd_balance");
       loadbal.balanceLoop(cells,ninner,threshold,nmax);
       profileStop("gd_balance");
 
