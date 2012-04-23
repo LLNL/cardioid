@@ -22,6 +22,7 @@ LDFLAGS_BASE = -lc -lnss_files -lnss_dns -lresolv -L/bgsys/drivers/ppcfloor/bgpm
 INCLUDE = -I/usr/gapps/emhm/include -I$(SPI_PATH)/include
 OPTFLAGS = -g -O3
 CFLAGS_BASE =   -qsmp=omp -qhot=novector -qsimd=auto $(INCLUDE) $(DFLAGS) $(BGSYS_INC) $(SPI_INC)
+CFLAGS_BASE =   -qsmp=omp $(INCLUDE) $(DFLAGS) $(BGSYS_INC) $(SPI_INC)
 CXXFLAGS_BASE = -qsmp=omp $(INCLUDE) $(DFLAGS) $(BGSYS_INC) $(SPI_INC)
 
 HAVE_GSL = 1
@@ -32,11 +33,11 @@ ifeq ($(HAVE_GSL),1)
 endif
 
 CFLAGS_OPT =   $(CFLAGS_BASE) -g -O3  
-CFLAGS_DEBUG = $(CFLAGS_BASE) -g -O0
+CFLAGS_DEBUG = $(CFLAGS_BASE) -g -O0 -fnoinline
 CFLAGS_PROF =  $(CFLAGS_BASE) -g -pg -O3 -DPROFILE
 
-CXXFLAGS_OPT =   $(CXXFLAGS_BASE) -g -O3  
-CXXFLAGS_DEBUG = $(CXXFLAGS_BASE) -g -O0
+CXXFLAGS_OPT =   $(CXXFLAGS_BASE) -g  -O3
+CXXFLAGS_DEBUG = $(CXXFLAGS_BASE) -g -O0 -fnoinline
 CXXFLAGS_PROF =  $(CXXFLAGS_BASE) -g -pg -O3 -DPROFILE
 
 
