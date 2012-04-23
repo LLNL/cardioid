@@ -90,16 +90,16 @@ int main(int argc, char** argv)
    MPI_Pcontrol(1);
 
 #ifdef HPM
-   HPM_Start("Loop"); 
+  HPM_Start("Loop"); 
 #endif 
    timestampBarrier("Starting Simulation Loop", MPI_COMM_WORLD);
-   profileStart("Loop");
+   profileStart_HW("Loop");
    if ( !sim.parallelDiffusionReaction_) simulationLoop(sim);  
    else  simulationLoopParallelDiffusionReaction(sim);
-   profileStop("Loop");
+   profileStop_HW("Loop");
    timestampBarrier("Finished Simulation Loop", MPI_COMM_WORLD);
 #ifdef HPM
-   HPM_Stop("Loop"); 
+  HPM_Stop("Loop"); 
 #endif 
    
    //ewd:  turn off mpiP
@@ -115,7 +115,12 @@ int main(int argc, char** argv)
    profileSetPrintOrder("parallelDiffReac");
    profileSetPrintOrder("DiffusionLoop");
    profileSetPrintOrder("ReactionLoop");
-   profileSetPrintOrder("");
+   profileSetPrintOrder("Reaction");
+   profileSetPrintOrder("Reaction_nonGate");
+   profileSetPrintOrder("GateNonGateBarrier");
+   profileSetPrintOrder("Reaction_Gate");
+
+   //profileSetPrintOrder("");
    if (mype == 0)
    {
       profileDumpTimes(cout);

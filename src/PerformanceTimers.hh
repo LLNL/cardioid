@@ -15,6 +15,7 @@ namespace PerformanceTimers
    extern TimerHandle stimulusTimer;
    extern TimerHandle reactionTimer;
    extern TimerHandle nonGateTimer;
+   extern TimerHandle GateNonGateTimer;
    extern TimerHandle gateTimer;
    extern TimerHandle diffusionLoopTimer;
    extern TimerHandle integratorTimer;
@@ -72,6 +73,10 @@ void profileStop(const TimerHandle& handle);
 void profileStart(const std::string& timerName);
 void profileStop(const std::string& timerName);
 
+void profileStart_HW(const TimerHandle& handle);
+void profileStop_HW(const TimerHandle& handle);
+void profileStart_HW(const std::string& timerName);
+void profileStop_HW(const std::string& timerName);
 
 
 

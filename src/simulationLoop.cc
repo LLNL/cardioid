@@ -382,7 +382,9 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       
       startTimer(reactionTimer);
       sim.reaction_->updateNonGate(sim.dt_, sim.VmArray_, dVmReaction);
+      startTimer(GateNonGateTimer); 
       L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle, sim.reactionThreads_.nThreads());
+      stopTimer(GateNonGateTimer); 
       sim.reaction_->updateGate(sim.dt_, sim.VmArray_);
       L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle, sim.reactionThreads_.nThreads());
       stopTimer(reactionTimer);
