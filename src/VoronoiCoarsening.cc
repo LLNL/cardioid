@@ -353,6 +353,7 @@ void VoronoiCoarsening::computeColorAverages(const vector<double>& val)
       offset+=ncolors_to_recv_[*itp];
    }
    
+   delete[] localpackeddata;
    if( ndata2recv>0 )delete[] remotepackeddata;
 }
 
