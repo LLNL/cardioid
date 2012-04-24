@@ -117,6 +117,7 @@ endif
 
 #BUILD_SUFFIX := $(ARCH)
 OBJDIR := objs-$(ARCH)
+OBJDIR_PRECOMPILED := objs_precompiled-$(ARCH)
 EXENAME = cardioid
 
 #DFLAGS += -DDiff_Weight_Type_Single
@@ -170,6 +171,7 @@ $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 $(BINDIR)/$(EXENAME): $(HEARTOBJS) Version.cc
+	@if [ -d $(OBJDIR_PRECOMPILED) ]; then  cp $(OBJDIR_PRECOMPILED)/*  $(OBJDIR); fi
 	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(LDFLAGS) \
 	-DSVNVERSION="$(SVNVERSION)" \
 	-DCXXFLAGS="$(CXXFLAGS)" \
