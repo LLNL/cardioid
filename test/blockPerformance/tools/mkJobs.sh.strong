@@ -6,9 +6,9 @@ ossExe=${mpiExe}-spi-oss
 hpmExe=${mpiExe}-spi-hpm
 
 
-for jobType in spi hpm
+for jobType in spi oss hpm
 do
-for jobSize in 1k 2k 4k 8k 16k 24k 48k
+for jobSize in 1k 2k 4k 8k 16k 24k
 do
 for cellsPerNode in 224
 do
@@ -67,36 +67,43 @@ do
   case $jobSize in
       1k)
       nNodes=1024
+      xDataGrid=32;  yDataGrid=24;  zDataGrid=32
       xGrid=8;   yGrid=8;   zGrid=16
       nNodeName=$jobSize
       ;;
       2k)
       nNodes=2048
+      xDataGrid=32;  yDataGrid=24;  zDataGrid=32
       xGrid=16;   yGrid=8;  zGrid=16
       nNodeName=$jobSize
       ;;
       4k)
       nNodes=4096
+      xDataGrid=32;  yDataGrid=24;  zDataGrid=32
       xGrid=16;  yGrid=16;  zGrid=16
       nNodeName=$jobSize
       ;;
       8k)
       nNodes=8192
+      xDataGrid=32;  yDataGrid=24;  zDataGrid=32
       xGrid=16;  yGrid=16;  zGrid=32
       nNodeName=$jobSize
       ;;
       16k)
       nNodes=16384
+      xDataGrid=32;  yDataGrid=24;  zDataGrid=32
       xGrid=32;  yGrid=16;  zGrid=32
       nNodeName=$jobSize
       ;;
       24k)
       nNodes=24576
+      xDataGrid=32;  yDataGrid=24;  zDataGrid=32
       xGrid=32;  yGrid=24;  zGrid=32
       nNodeName=$jobSize
       ;;
       48k)
       nNodes=49152
+      xDataGrid=32;  yDataGrid=24;  zDataGrid=32
       xGrid=32;  yGrid=48;  zGrid=32
       nNodeName=$jobSize
       ;;
@@ -104,9 +111,9 @@ do
       echo ERROR: undefined jobSize
       exit -1
   esac
-  xSize=`echo $xbaseSize \* $xGrid | bc`
-  ySize=`echo $ybaseSize \* $yGrid | bc`
-  zSize=`echo $zbaseSize \* $zGrid | bc`
+  xSize=`echo $xbaseSize \* $xDataGrid | bc`
+  ySize=`echo $ybaseSize \* $yDataGrid | bc`
+  zSize=`echo $zbaseSize \* $zDataGrid | bc`
 
 
 #  maxLoop=`echo $tMax/$dt | bc`
