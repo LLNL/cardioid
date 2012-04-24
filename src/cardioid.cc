@@ -115,6 +115,12 @@ int main(int argc, char** argv)
    profileSetPrintOrder("parallelDiffReac");
    profileSetPrintOrder("DiffusionLoop");
    profileSetPrintOrder("ReactionLoop");
+   profileSetPrintOrder("Dummy");
+   profileSetPrintOrder("HaloExchMove2Buf");
+   profileSetPrintOrder("Integrator");
+   profileSetPrintOrder("ReactionWait");
+   profileSetPrintOrder("reactionL2Arrive");
+   profileSetPrintOrder("reactionL2Rest");
    profileSetPrintOrder("Reaction");
    profileSetPrintOrder("Reaction_nonGate");
    profileSetPrintOrder("GateNonGateBarrier");
