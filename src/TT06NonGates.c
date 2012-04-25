@@ -1,4 +1,6 @@
 #include <math.h>
+#include <stdio.h>
+#include <omp.h> 
 #include "TT06Func.h" 
 #include "TT06NonGates.h" 
 #define sigm(x)   ((x)/(1.0+(x)) )
@@ -254,7 +256,50 @@ void initNonGateCnst()
    set_SP(cnst); 
 
 }
+void sampleLog(struct LogParms *logParms, int nCells, int offset, int *cellTypeVector, double *VM, double **state)
+{
 
+  if (logParms->loop % 1000 > 0) return; 
+  if (logParms->file == NULL) 
+  {   
+      char filename[64]; 
+      int ompID = omp_get_thread_num(); 
+      sprintf(filename,"sampleLog%2.2d.data",ompID); 
+      logParms->file = fopen(filename,"w"); 
+      logParms->loop = 0; 
+  }
+  int ii=offset; 
+  double Vm = VM[ii]; 
+  double _Na_i = state[Na_i][ii]; 
+  double _Ca_i = state[Ca_i][ii]; 
+  double _dVK_i = state[dVK_i][ii]; 
+  double _K_i  = cnst.c9*(_dVK_i-Vm);
+  double mCa=_Ca_i; 
+  double mNa=_Na_i; 
+  double mK =_K_i; 
+  double MCa=_Ca_i; 
+  double MNa=_Na_i; 
+  double MK =_K_i; 
+  
+  for (ii=1i+offset;ii<nCells+offset;ii++) 
+  {
+       Vm = VM[ii]; 
+       _Na_i = state[Na_i][ii]; 
+       _Ca_i = state[Ca_i][ii]; 
+       _dVK_i = state[dVK_i][ii]; 
+       _K_i  = cnst.c9*(_dVK_i-Vm);
+       if (mCa < _Ca_i) mCa=_Ca_i; 
+       if (mNa < _Na_i) mNa=_Na_i; 
+       if (mK < _K_i) mK=_K_i; 
+       if (MCa > _Ca_i) MCa=_Ca_i; 
+       if (MNa > _Na_i) MNa=_Na_i; 
+       if (MK >  _K_i ) MK =_K_i; 
+  }
+  fprintf(logParms->file,"%d %e %e %e ",logParms->loop,mCa,mK,mNa); 
+  fprintf(logParms->file,"%e %e %e\n",MCa,MK,MNa); 
+  fflush(logParms->file); 
+  logParms->loop++; 
+}
 double get_c9() { return cnst.c9; }
 double fv0(double Vm, void *p) 
 { 

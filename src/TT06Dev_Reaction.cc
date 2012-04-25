@@ -256,6 +256,8 @@ void TT06Dev_Reaction::updateNonGate(double dt, const vector<double>& Vm, vector
    int offset; 
    startTimer(nonGateTimer);
    int nCells = nonGateWorkPartition(offset); 
+   //int ompID = omp_get_thread_num(); 
+   //sampleLog(&logParms_[ompID], nCells, offset,&cellTypeVector_[0], const_cast<double *>(&Vm[0]),  &state_[0]);
    update_nonGate_(dt, &cellTypeParms_[0], nCells, &cellTypeVector_[offset], const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
    stopTimer(nonGateTimer);
 }

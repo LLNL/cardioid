@@ -2,6 +2,7 @@
 #define TT06DEV_REACTION_HH
 #include "Reaction.hh"
 #include "TT06Func.hh"
+#include "TT06NonGates.h"
 using namespace std;
 using namespace TT06Func ;
 
@@ -47,6 +48,7 @@ class TT06Dev_Reaction : public Reaction
    double *tauR_[nGateVar];
    const ThreadTeam& group_;
    vector<WORK> gateWork_; 
+   LogParms logParms_[64]; 
    
    std::vector<int>              ttType_; // maps cellType to ttType
    int nCellBuffer_; 
