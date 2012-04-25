@@ -1,7 +1,17 @@
-#CXX=/bgsys/drivers/ppcfloor/comm/xl/bin/mpixlcxx_r
-#CC=/bgsys/drivers/ppcfloor/comm/xl/bin/mpixlc_r
-CXX=/bgsys/drivers/DRV2012_0229_1625/ppc64-rhel60/comm/xl/bin/mpixlcxx_r
-CC=/bgsys/drivers/DRV2012_0229_1625/ppc64-rhel60/comm/xl/bin/mpixlc_r
+BGQ_SDK_PATH = /bgsys/drivers/ppcfloor
+#BGQ_SDK_PATH=/bgsys/drivers/DRV2012_0229_1625/ppc64-rhel60
+#### SPI ####
+BGSYS_INC := -I$(BGQ_SDK_PATH)/comm/sys/include                 \
+        -I$(BGQ_SDK_PATH) -I$(BGQ_SDK_PATH)/spi/include                 \
+        -I$(BGQ_SDK_PATH)/spi/include/kernel/cnk                        \
+        -I$(BGQ_SDK_PATH)/spi/include/mu/default/
+
+SPI_INC := -I$(SPI_PATH)/libutil/include
+BGSYS_LIBS := -L$(BGQ_SDK_PATH)/lib -lrt -L$(BGQ_SDK_PATH)/spi/lib -lSPI -lSPI_cnk -L$(BGQ_SDK_PATH)/bgpm/lib -lbgpm
+############
+
+CXX=$(BGQ_SDK_PATH)/comm/xl/bin/mpixlcxx_r
+CC=$(BGQ_SDK_PATH)/comm/xl/bin/mpixlc_r
 LD=$(CXX)
 
 DFLAGS = -DWITH_PIO -DWITH_MPI -DBGQ \
