@@ -120,7 +120,7 @@ OBJDIR := objs-$(ARCH)
 OBJDIR_PRECOMPILED := objs_precompiled-$(ARCH)
 EXENAME = cardioid
 
-#DFLAGS += -DDiff_Weight_Type_Single
+DFLAGS += -DDiff_Weight_Type_Single
 
 DEFAULT: opt
 
