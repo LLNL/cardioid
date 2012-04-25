@@ -43,7 +43,11 @@
      blame T. Oppelstrup for any problems.
 */
 
+#ifdef BGQ
 #define integrateLoop_vector integrateLoop
+#else
+#define integrateLoop_normal integrateLoop
+#endif
 /* Other options for the "integrateLoop" macro...
 //#define integrateLoop_normal integrateLoop
 //#define integrateLoop_compare integrateLoop
@@ -70,6 +74,7 @@ void integrateLoop_normal(const int begin, const int end,
    return;
 }
 
+#ifdef BGQ
 void integrateLoop_vector(const int begin, const int end,
                    const double dt,
                    double* dVmR,
@@ -170,8 +175,9 @@ void integrateLoop_vector(const int begin, const int end,
   }
 
 }
+#endif
 
-
+#ifdef BGQ
 void integrateLoop_compare(const int begin, const int end,
                    const double dt,
                    double* dVmR,
@@ -225,7 +231,7 @@ void integrateLoop_compare(const int begin, const int end,
   free(VmBlock2_base);
   free(Vm2_base);
 }
-
+#endif
 
 /* This routine was in the old clooper.c, and seems like an attempt to
    pipeline/iunroll the code. It was not used before, and is not used
