@@ -106,7 +106,6 @@ int main(int argc, char** argv)
    MPI_Pcontrol(0);
 
    profileStop("Total");
-#ifndef NTIMING
    profileSetRefTimer("00:Loop");
 
    profileSetPrintOrder("Total");
@@ -136,7 +135,6 @@ int main(int argc, char** argv)
    stringstream dirname;
    dirname << "snapshot."<<setfill('0')<<setw(12)<<sim.loop_;
    profileDumpAll(dirname.str());
-#endif
    MPI_Finalize();
    
    return 0;

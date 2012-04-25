@@ -520,13 +520,15 @@ void profileDumpStats(ostream& out)
       int nMarks = nTimers/nThreads;
       int paraIndex = -1; 
       for (unsigned ii=0; ii<nTimers; ++ii) { if ( outputOrder[ii] == "00:parallelDiffReac" ) {paraIndex = ii; break; }}
-      if (paraIndex != -1) 
-      {
-         double flopCount=0.0; 
-         for (unsigned ii=paraIndex; ii<nTimers; ii+=nMarks) flopCount += perfCount[ii][7]; 
-         double flops = flopCount / (perfCount[paraIndex][CYCLES]*tick);
-         printf("Flop Rate = %e GFLOP\n", flops*1e-9); 
-      }
+      // This code doesn't work.  Commenting it out to avoid seeing a
+      // completely bogus flog number.  - dfr
+//       if (paraIndex != -1) 
+//       {
+//          double flopCount=0.0; 
+//          for (unsigned ii=paraIndex; ii<nTimers; ii+=nMarks) flopCount += perfCount[ii][7]; 
+//          double flops = flopCount / (perfCount[paraIndex][CYCLES]*tick);
+//          printf("Flop Rate = %e GFLOP\n", flops*1e-9); 
+//       }
       for (unsigned ii=0; ii<nTimers; ++ii)
       {
          int ompID=strtol((outputOrder[ii].substr(0,2)).c_str(),NULL,10);

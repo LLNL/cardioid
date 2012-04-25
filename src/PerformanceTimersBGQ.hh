@@ -436,8 +436,11 @@ double getTick()
    double seconds_per_cycle = 0.625e-9; /* 1600 MHz default */
    return seconds_per_cycle; 
 }
-void profileInitBGQ(void) {
-#ifndef NTIMING
+void profileInitBGQ(void)
+{
+#ifdef HPM
+   nCounters_ = 2;
+#else
    #pragma omp parallel
    {
       int tid = omp_get_thread_num() ;
@@ -445,13 +448,11 @@ void profileInitBGQ(void) {
       counterHandle[tid] = Bgpm_CreateEventSet();
       Bgpm_AddEventList(counterHandle[tid], counterSet, sizeof(counterSet)/sizeof(unsigned) );
       Bgpm_Apply(counterHandle[tid]);
-
+      
       Bgpm_Start(counterHandle[tid]);
-
+      
       set_labels();
-  }
-#else
-   set_labels();
+   }
 #endif
 }
 int getNCores() { return 16;} 
