@@ -233,15 +233,13 @@ __INLINE__ void L2_BarrierWithSync_WaitAndReset(
   // wait until barrier's start is advanced
   if (b->start < target) {
     // must wait
-    while (1) {
-      // load start and reserve
-      uint64_t remoteVal = __ldarx((volatile long *) &b->start);
-      if (remoteVal >= target) {
-        // just witnessed the value to be fine
-        break;
-        // wait with sleep (may be awoken spuriously)
-        ppc_waitrsv();
-      }
+    while (1)
+    {
+       // load start and reserve
+       uint64_t remoteVal = __ldarx((volatile long *) &b->start);
+       if (remoteVal >= target)
+	  break; // just witnessed the value to be fine
+       ppc_waitrsv(); // wait with sleep (may be awoken spuriously)
     }
   }
   // prevent speculation
