@@ -122,7 +122,7 @@ void DataVoronoiCoarsening::print(double time, int loop,
                               const vector<double>&)
 {
    int myRank;
-   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+   MPI_Comm_rank(comm_, &myRank);
 
    stringstream name;
    name << "snapshot."<<setfill('0')<<setw(12)<<loop;

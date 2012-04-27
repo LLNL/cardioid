@@ -151,7 +151,10 @@ class VoronoiCoarsening
                      MPI_Comm comm);
    void computeRemoteTasks();
    void exchangeAndSum(LocalSums& valcolors);
-   virtual int bruteForceColoring();
+   int bruteForceColoring();
+   void colorDisplacements(std::vector<double>& dx,
+                           std::vector<double>& dy,
+                           std::vector<double>& dz);
    void accumulateValues(const std::vector<double>& val, LocalSums& valcolors);
    
    const Vector& center(const int color)const
@@ -162,6 +165,11 @@ class VoronoiCoarsening
    const std::set<int>& getOwnedColors()const
    {
       return owned_colors_;
+   }
+   
+   int getColor(const int ic)
+   {
+      return colors_[ic];
    }
 };
 

@@ -85,6 +85,20 @@ int VoronoiCoarsening::bruteForceColoring()
    return 0;
 }
 
+void VoronoiCoarsening::colorDisplacements(std::vector<double>& dx,
+                                           std::vector<double>& dy,
+                                           std::vector<double>& dz)
+{
+   for (int icell=0; icell<colors_.size(); ++icell)
+   {
+      Vector r = indexToVector_(cells_[icell].gid_);
+      Vector rij = r - centers_[colors_[icell]];
+      dx[icell]=rij.x()*anatomy_.dx();
+      dy[icell]=rij.y()*anatomy_.dy();
+      dz[icell]=rij.z()*anatomy_.dz();
+   }
+}
+
 void VoronoiCoarsening::setupComm(const map< int, int* >& nremote_colors_from_task, 
                                   const int size_nremote_colors_from_task)
 {
