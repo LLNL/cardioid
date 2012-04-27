@@ -9,6 +9,7 @@
 #include "PointListSensor.hh"
 #include "ActivationTimeSensor.hh"
 #include "DataVoronoiCoarsening.hh"
+#include "GradientVoronoiCoarsening.hh"
 
 using namespace std;
 
@@ -36,7 +37,9 @@ Sensor* sensorFactory(const std::string& name, const Anatomy& anatomy)
      return scanPointListSensor(obj, sp, anatomy);
   else if (method == "activationTime")
      return scanActivationTimeSensor(obj, sp, anatomy);
-  else if (method == "voronoiCoarsening")
+  else if (method == "voronoiCoarsening" 
+        || method == "dataVoronoiCoarsening" 
+        || method == "gradientVoronoiCoarsening" )
      return scanVoronoiCoarseningSensor(obj, sp, anatomy);
 
   assert(false); // reachable only due to bad input
@@ -117,10 +120,15 @@ namespace
       cellVec.resize(nSubset);
       MPI_Bcast(&cellVec[0], nSubset, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
 
-      std::string filename;
+      string filename;
       objectGet(obj, "filename",  filename,  "coarsened_anatomy");
 
-      // read gids from file
-      return new DataVoronoiCoarsening(sp, filename, anatomy, cellVec, MPI_COMM_WORLD);
+      string method;
+      objectGet(obj, "method", method, "undefined");
+      if ( method == "voronoiCoarsening" ||
+           method == "dataVoronoiCoarsening" )
+         return new DataVoronoiCoarsening(sp, filename, anatomy, cellVec, MPI_COMM_WORLD);
+      else if( method == "gradientVoronoiCoarsening" )
+         return new GradientVoronoiCoarsening(sp, filename, anatomy, cellVec, MPI_COMM_WORLD);
    }
 }

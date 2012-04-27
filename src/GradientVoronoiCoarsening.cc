@@ -106,7 +106,7 @@ void GradientVoronoiCoarsening::computeLSsystem(const vector<double>& val)
       if( norm2>minnorm2) // skip point at distance 0 
       {
          const int color=coarsening_.getColor(ic);
-         const double norm2i=1./max(norm2,minnorm2); // weighting
+         const double norm2i=1./norm2; // weighting
          //const double norm2i=1.; 
          valMat00_.add1value(color,dx_[ic]*dx_[ic]*norm2i);
          valMat01_.add1value(color,dx_[ic]*dy_[ic]*norm2i);
@@ -143,8 +143,8 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
 
    PFILE* file = Popen(filename.c_str(), "w", comm_);
 
-   char fmt[] = "%5d %5d %5d %5d %18.12f %18.12f %18.12f %18.12f";
-   int lrec = 100;
+   char fmt[] = "%5d %5d %5d %5d %18.12f %18.12f %18.12f";
+   int lrec = 82;
    int nfields = 7; 
 
    Long64 nSnapSub = -1;
@@ -163,7 +163,7 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
       Pprintf(file, "  nrecords = %llu;\n", nSnapSub);
       Pprintf(file, "  nfields = %d;\n", nfields);
       Pprintf(file, "  field_names = rx ry rz nvals GradVmx GradVmy GradVmz;\n");
-      Pprintf(file, "  field_types = u u u u f f f f;\n" );
+      Pprintf(file, "  field_types = u u u u f f f;\n" );
       Pprintf(file, "  nfiles = %u;\n", nfiles);
       Pprintf(file, "  time = %f; loop = %u;\n", current_time, current_loop);
       Pprintf(file, "  h = %4u  0    0\n", anatomy_.nx());
@@ -177,6 +177,7 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
    const int halfNy = anatomy_.ny()/2;
    const int halfNz = anatomy_.nz()/2;
    
+   int ncolors=0;
    for(set<int>::const_iterator it = owned_colors.begin();
                                 it!= owned_colors.end();
                               ++it)
@@ -188,7 +189,7 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
       int iz = int(v.z()) - halfNz;
       
       double g[3]={0.,0.,0.};             
-#if 1    
+
       double a[6]={valMat00_.value(color),
                    valMat01_.value(color),
                    valMat02_.value(color),
@@ -200,12 +201,13 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
                    valRHS2_.value(color)};
                    
       solve3x3(a,b,g);
-#endif      
+
       int l = snprintf(line, lrec, fmt,
                        ix, iy, iz,
                        valcolors_.nValues(color),
-                       valcolors_.value(color),
+                       //valcolors_.value(color),
                        g[0],g[1],g[2]);
+      ncolors+=valcolors_.nValues(color);
       
       if (myRank == 0 && l>=lrec ){
          cerr<<"ERROR: printed record truncated in file "<<filename<<endl;
@@ -218,6 +220,12 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
       assert (l==lrec);
       Pwrite(line, lrec, 1, file);
    }
+   
+#if 1
+   int ntotal;
+   MPI_Reduce(&ncolors, &ntotal, 1, MPI_INT, MPI_SUM, 0, comm_);
+   if (myRank == 0)assert( ntotal==anatomy_.nGlobal() );
+#endif
    
    Pclose(file);
 }

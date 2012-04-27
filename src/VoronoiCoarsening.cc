@@ -42,13 +42,19 @@ int VoronoiCoarsening::bruteForceColoring()
    ncolors_.clear();
    local_colors_.clear();
    
+   const int ncenters=centers_.size();
+   
    // color one cell at a time
    for (int icell=0; icell<colors_.size(); ++icell)
    {
       double r2Min = 1e30;
       int color = -1;
       Vector r = indexToVector_(cells_[icell].gid_);
-      for (int icenter=0; icenter<centers_.size(); ++icenter)
+      
+      // loop over all centers
+      // TBD (optimization): 
+      // we should be able to restrict that loop to a smaller subset of centers
+      for (int icenter=0; icenter<ncenters; ++icenter)
       {
          Vector rij = r - centers_[icenter];
          double r2 = dot(rij, rij);
@@ -59,7 +65,7 @@ int VoronoiCoarsening::bruteForceColoring()
          }
       }
       if (color < 0 ){
-         cerr << "Fail to assign color to cell "<<icell<<endl;
+         cerr << "Failed to assign color to cell "<<icell<<endl;
          return -1;
       }else{
          colors_[icell]=color;
@@ -67,7 +73,7 @@ int VoronoiCoarsening::bruteForceColoring()
          local_colors_.insert(color);
       }
    }
-#if 1
+#if 0
    int nlocal=0;
    for(map<int,int>::const_iterator itr =ncolors_.begin();
                                     itr!=ncolors_.end();
@@ -78,7 +84,7 @@ int VoronoiCoarsening::bruteForceColoring()
    MPI_Allreduce(&nlocal, &ntotal, 1, MPI_INT, MPI_SUM, comm_);
    if( ntotal!=anatomy_.nGlobal() )
    {
-      cout<<"ERROR in VoronoiCoarsening::bruteForceColoring(): ntotal colors="<<ntotal<<", anatomy_.nGlobal()="<<anatomy_.nGlobal()<<endl;
+      cerr<<"ERROR in VoronoiCoarsening::bruteForceColoring(): ntotal colors="<<ntotal<<", anatomy_.nGlobal()="<<anatomy_.nGlobal()<<endl;
    }
    assert( ntotal==anatomy_.nGlobal() );
 #endif
@@ -295,23 +301,6 @@ void VoronoiCoarsening::computeRemoteTasks()
 
    setupComm(nremote_colors_from_task, max_nlocalcolors);
 
-#if 0
-   for(set<int>::const_iterator  itp =src_tasks_.begin();
-                                 itp!=src_tasks_.end();
-                               ++itp)
-      cout<<"PE "<<myRank<<" should receive data from task "<<*itp<<endl;
-   
-   MPI_Barrier(comm_);
-   sleep(1);
-
-   for(set<int>::const_iterator  itp =dst_tasks_.begin();
-                                 itp!=dst_tasks_.end();
-                               ++itp)
-     cout<<"PE "<<myRank<<" should send data to task "<<*itp<<endl;
-   MPI_Barrier(comm_);
-   sleep(1);
-#endif
- 
    for(set<int>::const_iterator  itp =remote_tasks_.begin();
                                  itp!=remote_tasks_.end();
                                ++itp)
@@ -387,7 +376,7 @@ void VoronoiCoarsening::exchangeAndSum(LocalSums& valcolors)
       {
          int ii=offset+i;
          int color=remotepackeddata[ii].color;
-         if( owned_colors_.find(color)!=owned_colors_.end() )
+         if( local_colors_.find(color)!=local_colors_.end() )
          {
             valcolors.addnvalues(color,remotepackeddata[ii].value,
                                        remotepackeddata[ii].n);
