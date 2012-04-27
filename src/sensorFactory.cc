@@ -1,11 +1,14 @@
 #include "sensorFactory.hh"
 #include <iostream>
 #include <cassert>
+#include <string>
+#include <sstream>
+
 #include "object_cc.hh"
 #include "Sensor.hh"
 #include "PointListSensor.hh"
 #include "ActivationTimeSensor.hh"
-#include "VoronoiCoarsening.hh"
+#include "DataVoronoiCoarsening.hh"
 
 using namespace std;
 
@@ -99,8 +102,13 @@ namespace
       if (myRank == 0)
       {
          while (!input.eof()) {
+            string query;
+            if ( !getline ( input, query ) ) {
+                break;
+            }
+            stringstream ss ( query );
             Long64 igid;
-            input >> igid;
+            ss >> igid;
             cellVec.push_back(igid);
          }
          nSubset = cellVec.size();
@@ -113,6 +121,6 @@ namespace
       objectGet(obj, "filename",  filename,  "coarsened_anatomy");
 
       // read gids from file
-      return new VoronoiCoarsening(sp, filename, anatomy, cellVec, MPI_COMM_WORLD);
+      return new DataVoronoiCoarsening(sp, filename, anatomy, cellVec, MPI_COMM_WORLD);
    }
 }

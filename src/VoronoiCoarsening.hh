@@ -2,11 +2,9 @@
 #define VORONOICOARSENING_HH
 
 #include "Vector.hh"
-#include "AnatomyCell.hh"
 #include "Anatomy.hh"
 #include "IndexToVector.hh"
 #include "Long64.hh"
-#include "Sensor.hh"
 
 #include <mpi.h>
 
@@ -52,10 +50,10 @@ class LocalSums
    void packData(PackedData* packeddata, const int ndata)
    {
       int i=0;
-      std::map<int,double>::iterator itv=sum_.begin();
-      for(std::map<int,int>::iterator itn = nval_.begin();
-                                      itn != nval_.end();
-                                      ++itn)
+      std::map<int,double>::const_iterator itv=sum_.begin();
+      for(std::map<int,int>::const_iterator itn  = nval_.begin();
+                                            itn != nval_.end();
+                                          ++itn)
       {
          assert( itn->first==itv->first );
          
@@ -89,19 +87,44 @@ class LocalSums
       return is->second/(double)(in->second);
    }
    
+   double value(const int color)const
+   {
+      std::map<int,double>::const_iterator is=sum_.find(color);
+      assert( is!=sum_.end() );
+      if( is->second!=is->second )
+         std::cerr<<"ERROR!!! is->second="<<is->second<<std::endl;
+      
+      return is->second;
+   }
+   
    int nValues(const int color)const
    {
       std::map<int,int>::const_iterator in=nval_.find(color);
+      assert( in!=nval_.end() );
+      assert( in->second>0 );
       return in->second;
    }
 };
 
 
-class VoronoiCoarsening : public Sensor
+class VoronoiCoarsening
 {
  private:
+   std::map<int,int> ncolors_to_send_; // remote pe -> number of colors
+   std::map<int,int> ncolors_to_recv_; // remote pe -> number of colors
+
+   std::set<int> remote_tasks_;
+   std::set<int> dst_tasks_;
+   std::set<int> src_tasks_;
+
+   std::set<int> local_colors_;
+
+   void computeColorAverages(const std::vector<double>& val);
+   void computeColorCenterValues(const std::vector<double>& val);
+
+   std::map<int,int> ncolors_; // color -> number of local cells of that color
+   
    MPI_Comm comm_;
-   std::string filename_;
 
    const Anatomy& anatomy_;
 
@@ -111,42 +134,35 @@ class VoronoiCoarsening : public Sensor
    // local only
    const std::vector<AnatomyCell>& cells_; // local cells
    std::vector<int> colors_; // colors of local cells
-   
-   std::map<int,int> ncolors_; // color -> number of local cells of that color
-   
-   std::map<int,int> ncolors_to_send_; // remote pe -> number of colors
-   std::map<int,int> ncolors_to_recv_; // remote pe -> number of colors
 
    // set of colors local task is responsible for
-   std::set<int> local_colors_;
+   std::set<int> owned_colors_;
    
-   std::set<int> remote_tasks_;
-   std::set<int> dst_tasks_;
-   std::set<int> src_tasks_;
-
    IndexToVector indexToVector_;
 
-   LocalSums valcolors_;
-
-   void computeRemoteTasks();
-   int bruteForceColoring();
-   void computeColorAverages(const std::vector<double>& val);
-   void writeAverages(const std::string& filename,
-                      const double current_time,
-                      const int current_loop)const;
+   void setupComm(const std::map< int, int* >& nremote_colors_for_task, 
+                const int size_nremote_colors_for_task);
+   void setOwnedColors(const std::map< int, int* >& nremote_colors_for_task, 
+                       const int size_nremote_colors_for_task);
 
  public:
-   VoronoiCoarsening(const SensorParms& sp,
-                     std::string filename,
-                     const Anatomy& anatomy,
+   VoronoiCoarsening(const Anatomy& anatomy,
                      const std::vector<Long64>& gid,
                      MPI_Comm comm);
-   void eval(double time, int loop,
-             const std::vector<double>& Vm, const std::vector<double>&,
-             const std::vector<double>&);
-   void print(double time, int loop,
-              const std::vector<double>& Vm, const std::vector<double>&,
-              const std::vector<double>&);
+   void computeRemoteTasks();
+   void exchangeAndSum(LocalSums& valcolors);
+   virtual int bruteForceColoring();
+   void accumulateValues(const std::vector<double>& val, LocalSums& valcolors);
+   
+   const Vector& center(const int color)const
+   {
+      return centers_[color];
+   }
+   
+   const std::set<int>& getOwnedColors()const
+   {
+      return owned_colors_;
+   }
 };
 
 #endif
