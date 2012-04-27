@@ -74,7 +74,7 @@ int main(int argc, char** argv)
    
    profileInit();
    profileStart("Total");
-   heap_start(100);
+   heap_start(500);
 
    if (mype == 0)
      printBanner();
