@@ -22,6 +22,20 @@
 #include "checkpointIO.hh"
 #include "PerformanceTimers.hh"
 #include "fastBarrier.hh"
+
+/*
+  This follwing header, fastBarrier_nosyn, contains barrier code
+  stolen from fastBarrierBGQ.hh, but with memory synchronization
+  turned off. It is acceptable to use that when a barrier executes
+  entirely within one core. It is necessary that a squad runs within
+  one core.
+  
+  fastBarrier_nosync also sets the PER_SQUAD_BARRIER macro. By not
+  including it, the original code with a barrier accross all reaction
+  threads is used.
+*/
+#include "fastBarrier_nosync.hh"
+
 #include "object_cc.hh"
 #include "clooper.h"
 #include "ThreadUtils.hh"
@@ -229,6 +243,16 @@ struct SimLoopData
       reactionBarrier = L2_BarrierWithSync_InitShared();
       diffusionBarrier= L2_BarrierWithSync_InitShared();
       reactionWaitOnNonGateBarrier= L2_BarrierWithSync_InitShared();
+
+#ifdef PER_SQUAD_BARRIER
+      {
+	const int nsq = sim.reactionThreads_.nSquads();
+	core_barrier = (L2_Barrier_t **) malloc(sizeof(L2_Barrier_t *) * nsq);
+	for(int i = 0; i<nsq; i++)
+	  core_barrier[i] = L2_BarrierWithSync_InitShared();
+      }
+#endif
+
       int nLocal = sim.anatomy_.nLocal();
       dVmDiffusion.resize(nLocal, 0.0);
       dVmReactionCpy.resize(nLocal, 0.0);
@@ -250,7 +274,11 @@ struct SimLoopData
    L2_Barrier_t* reactionBarrier;
    L2_Barrier_t* diffusionBarrier;
    L2_Barrier_t* reactionWaitOnNonGateBarrier;
-   
+
+#ifdef PER_SQUAD_BARRIER   
+   L2_Barrier_t **core_barrier;
+#endif
+
    vector<double> dVmReaction; 
    vector<double> dVmDiffusion;
    vector<int> integratorOffset;
@@ -365,6 +393,14 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
    L2_BarrierHandle_t reactionWaitOnNonGateHandle;
    L2_BarrierWithSync_InitInThread(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle);
 
+#ifdef PER_SQUAD_BARRIER
+   const int sqsz = sim.reactionThreads_.squadSize();
+   const int b_id = sim.reactionThreads_.rankInfo().coreRank_;
+   L2_BarrierHandle_t core_barrier_h;
+   L2_Barrier_t *cb_ptr = loopData.core_barrier[b_id];
+   L2_BarrierWithSync_InitInThread(cb_ptr, &core_barrier_h);
+#endif
+
    while ( sim.loop_<sim.maxLoop_ )
    {
       int nLocal = sim.anatomy_.nLocal();
@@ -372,7 +408,21 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       startTimer(reactionTimer);
       sim.reaction_->updateNonGate(sim.dt_, sim.VmArray_, dVmReaction);
       startTimer(GateNonGateTimer); 
-      L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle, sim.reactionThreads_.nThreads());
+
+#ifdef PER_SQUAD_BARRIER
+      {
+	L2_Barrier_nosync_Arrive(      cb_ptr,
+				       &core_barrier_h,
+				       sqsz);
+	L2_Barrier_nosync_WaitAndReset(cb_ptr,
+				       &core_barrier_h,
+				       sqsz);
+      }
+#else
+      L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier,
+				 &reactionWaitOnNonGateHandle,
+				 sim.reactionThreads_.nThreads());
+#endif
       stopTimer(GateNonGateTimer); 
       sim.reaction_->updateGate(sim.dt_, sim.VmArray_);
       stopTimer(reactionTimer);
