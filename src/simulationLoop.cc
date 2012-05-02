@@ -24,7 +24,7 @@
 #include "fastBarrier.hh"
 
 /*
-  This follwing header, fastBarrier_nosyn, contains barrier code
+  This follwing header, fastBarrier_nosync.hh, contains barrier code
   stolen from fastBarrierBGQ.hh, but with memory synchronization
   turned off. It is acceptable to use that when a barrier executes
   entirely within one core. It is necessary that a squad runs within
@@ -246,10 +246,38 @@ struct SimLoopData
 
 #ifdef PER_SQUAD_BARRIER
       {
-	const int nsq = sim.reactionThreads_.nSquads();
+	const int
+	  nsq  = sim.reactionThreads_.nSquads(),
+	  sqsz = sim.reactionThreads_.nThreads()/nsq /*sim.reactionThreads_.squadSize()*/;
 	core_barrier = (L2_Barrier_t **) malloc(sizeof(L2_Barrier_t *) * nsq);
 	for(int i = 0; i<nsq; i++)
 	  core_barrier[i] = L2_BarrierWithSync_InitShared();
+	integratorOffset_psb.resize(sim.reactionThreads_.nThreads() + 1);
+	
+	/*
+	  This is an ugly import of the workBundle() function from
+	   TT06Dev_Reaction.cc
+	*/
+	int workBundle(int index, int nItems, int nGroups , int mod, int& offset);
+	integratorOffset_psb[0] = 0;
+	for(int i = 0; i<nsq; i++) {
+	  const int vlen = 4;
+	  int ic,nc,nc_div,nc_mod;
+	  nc = workBundle(i,sim.anatomy_.nLocal(),nsq,vlen,ic);
+	  nc_div = nc / sqsz;
+	  nc_mod = nc % sqsz;
+
+	  if(integratorOffset_psb[i*sqsz] != ic) {
+	    printf("%s:%d: Offset error, nsq=%d i=%d sqsz=%d nc=%d iOff[]=%d ic=%d\n",
+		   __FILE__,__LINE__,nsq,i,sqsz,nc,integratorOffset_psb[i*sqsz],ic);
+	    exit(1);
+	  }
+
+	  for(int j = 0; j<sqsz; j++)
+	    integratorOffset_psb[i*sqsz + j + 1] = 
+	      integratorOffset_psb[i*sqsz + j] + nc_div + (j < nc_mod);
+	}
+	  
       }
 #endif
 
@@ -276,7 +304,8 @@ struct SimLoopData
    L2_Barrier_t* reactionWaitOnNonGateBarrier;
 
 #ifdef PER_SQUAD_BARRIER   
-   L2_Barrier_t **core_barrier;
+    L2_Barrier_t **core_barrier;
+    vector<int> integratorOffset_psb;
 #endif
 
    vector<double> dVmReaction; 
@@ -401,7 +430,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
    L2_BarrierWithSync_InitInThread(cb_ptr, &core_barrier_h);
 #endif
 
-   while ( sim.loop_<sim.maxLoop_ )
+   while ( sim.loop_ < sim.maxLoop_ )
    {
       int nLocal = sim.anatomy_.nLocal();
       
@@ -428,6 +457,31 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       stopTimer(reactionTimer);
 
 
+      /*
+	The following barrier makes sure the integrator
+	does not write to data still beaing read by some
+	threads still in updateGate(). With the modified
+	loop order in integratorOffset_psb[], only per
+	squad (per core) barriers are needed. With the
+	original loop order in integratorOffset[], a full
+	barrier over the reaction cores is necessary.
+      */
+#ifdef PER_SQUAD_BARRIER
+      {
+	L2_Barrier_nosync_Arrive(      cb_ptr,
+				       &core_barrier_h,
+				       sqsz);
+	L2_Barrier_nosync_WaitAndReset(cb_ptr,
+				       &core_barrier_h,
+				       sqsz);
+      }
+#else
+      L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier,
+				 &reactionWaitOnNonGateHandle,
+				 sim.reactionThreads_.nThreads());
+#endif
+
+
       startTimer(dummyTimer);
       stopTimer(dummyTimer);
 
@@ -452,19 +506,31 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 //       }
 //       stopTimer(FGR_Matrix2ArrayTimer);
 
-
       
       startTimer(integratorTimer);
+#ifdef PER_SQUAD_BARRIER
+      integrateLoop(loopData.integratorOffset_psb[tid],
+		    loopData.integratorOffset_psb[tid+1],
+		    sim.dt_,
+		    &loopData.dVmReaction[0],
+		    &loopData.dVmDiffusion[0],
+		    sim.diffusion_->blockIndex(),
+		    sim.diffusion_->dVmBlock(),
+		    sim.diffusion_->VmBlock(),
+		    &sim.VmArray_[0],
+		    sim.diffusion_->diffusionScale());
+#else
       integrateLoop(loopData.integratorOffset[tid],
-                    loopData.integratorOffset[tid+1],
-                    sim.dt_,
-                    &loopData.dVmReaction[0],
-                    &loopData.dVmDiffusion[0],
-                    sim.diffusion_->blockIndex(),
-                    sim.diffusion_->dVmBlock(),
-                    sim.diffusion_->VmBlock(),
-                    &sim.VmArray_[0],
-                    sim.diffusion_->diffusionScale());
+		    loopData.integratorOffset[tid+1],
+		    sim.dt_,
+		    &loopData.dVmReaction[0],
+		    &loopData.dVmDiffusion[0],
+		    sim.diffusion_->blockIndex(),
+		    sim.diffusion_->dVmBlock(),
+		    sim.diffusion_->VmBlock(),
+		    &sim.VmArray_[0],
+		    sim.diffusion_->diffusionScale());
+#endif
       
       if (tid == 0)
       {

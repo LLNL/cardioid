@@ -29,7 +29,12 @@ class Simulate
 {
  public:
 
-   int loop_;
+  /*
+    loop_ should be volatile, since it is both read
+    and modified in a threaded section:
+      reactionLoop(), and diffusionLoop().
+  */
+   volatile int loop_;
    int maxLoop_;
    int printRate_;
    int snapshotRate_;
