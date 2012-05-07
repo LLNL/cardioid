@@ -9,6 +9,8 @@
 #include <sstream>
 #include <cmath>
 #include <omp.h>
+#include <cstring>
+#include <stdint.h>
 #include "pio.h"
 #include "mpiUtils.h"
 #include "ioUtils.h"
