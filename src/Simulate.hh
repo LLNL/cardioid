@@ -8,7 +8,6 @@
 
 #include "Long64.hh"
 #include "Anatomy.hh"
-#include "VoronoiCoarsening.hh"
 #include "ThreadServer.hh"
 class Diffusion;
 class Reaction;

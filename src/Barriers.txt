@@ -1,0 +1,14 @@
+Issues with fast barriers:
+
+1.  We really should do something with the calling sequence to make
+these calls less cumbersome.
+
+2.  What is the real cost of __lwsync?
+
+3.  We need to get the initialization of offsets in the reaction code
+into the right shape.  In particular the assumption that all squads are
+the same size is wrong.
+
+4.  How can we have an interface to the barriers that doesn't require
+#ifdefs in the simulationLoop.
+
