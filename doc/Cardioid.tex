@@ -556,6 +556,12 @@ protocols.
   \kw{anatomy}{The name of the ANATOMY object for this simulation}{anatomy}
   \kw{checkpointRate}{The rate (in time steps) at which
     checkpoint/restart files are created}{-1 (no checkpointing)}
+  \kw{checkRanges}{Enables run-tim checking for membrane voltages that
+    are outside of a defined range.  The range is currently hardcoded to
+    -110~mV to 60~mV.  A warning will be printed for each cell that has
+    voltage outside that range.  Range checking is on by default for
+    both the serial and parallel simulation loops.  Set to zero to
+    disable the checks.}{1}
   \kw{decomposition}{The name of the DECOMPOSITION object for this
     simulation.}
   {decomposition}

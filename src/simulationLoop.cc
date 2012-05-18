@@ -203,8 +203,10 @@ void simulationLoop(Simulate& sim)
       stopTimer(reactionTimer);
 
       startTimer(integratorTimer);
-      // no special BGQ integrator is this loop.  Mare bang for buck
+      // no special BGQ integrator is this loop.  More bang for buck
       // from OMP threading.
+      if (sim.checkRanges_)
+         sim.checkRanges(dVmReaction, dVmDiffusion);
       #pragma omp parallel for
       for (int ii=0; ii<nLocal; ++ii)
       {
@@ -418,7 +420,6 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 {
    profileStart(reactionLoopTimer);
    int tid = sim.reactionThreads_.teamRank();
-   vector<double>& dVmReaction = loopData.dVmReaction;
    L2_BarrierHandle_t reactionWaitOnNonGateHandle;
    L2_BarrierWithSync_InitInThread(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle);
 
@@ -435,7 +436,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       int nLocal = sim.anatomy_.nLocal();
       
       startTimer(reactionTimer);
-      sim.reaction_->updateNonGate(sim.dt_, sim.VmArray_, dVmReaction);
+      sim.reaction_->updateNonGate(sim.dt_, sim.VmArray_, loopData.dVmReaction);
       startTimer(GateNonGateTimer); 
 
 #ifdef PER_SQUAD_BARRIER
@@ -534,6 +535,9 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       
       if (tid == 0)
       {
+         if (sim.checkRanges_)
+            sim.checkRanges(loopData.dVmReaction, loopData.dVmDiffusion);
+         
          sim.time_ += sim.dt_;
          ++sim.loop_;
       }

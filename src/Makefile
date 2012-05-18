@@ -29,6 +29,7 @@ HEARTSRC= cardioid.cc \
 	checkpointIO.cc \
 	DomainInfo.cc \
 	initializeSimulate.cc \
+	Simulate.cc \
 	initializeAnatomy.cc setConductivity.cc assignCellsToTasks.cc \
 	getRemoteCells.cc \
 	simulationLoop.cc \

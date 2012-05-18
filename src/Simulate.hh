@@ -28,12 +28,12 @@ class Simulate
 {
  public:
 
-  /*
-    loop_ should be volatile, since it is both read
-    and modified in a threaded section:
-      reactionLoop(), and diffusionLoop().
-  */
-   volatile int loop_;
+   void checkRanges(const std::vector<double>& dVmReaction,
+                    const std::vector<double>& dVmDiffusion);
+
+   
+   bool checkRanges_;
+   volatile int loop_; // volatile (read + modified in threaded section)
    int maxLoop_;
    int printRate_;
    int snapshotRate_;
@@ -62,6 +62,10 @@ class Simulate
    Reaction* reaction_; 
    std::vector<Stimulus*> stimulus_;
    std::vector<Sensor*> sensor_;
+
+ private:
+   void outOfRange(unsigned index, double dVmr, double dVmd);
+
 };
 
 #endif

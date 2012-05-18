@@ -45,16 +45,8 @@ void initializeSimulate(const string& name, Simulate& sim)
 
    OBJECT* obj = objectFind(name, "SIMULATE");
 
-   {
-     /*
-       Since sim.loop_ is volatile, objectGet(...)
-       does not accept it as an argument of type int &;
-       hence the workaround with a temporary variable.
-     */
-     int loopInit;
-     objectGet(obj, "loop", loopInit, "0");
-     sim.loop_ = loopInit;
-   }
+   objectGet(obj, "checkRanges", sim.checkRanges_, "1");
+   objectGet(obj, "loop", (int&)sim.loop_, "0"); // cast away volatile
    objectGet(obj, "maxLoop", sim.maxLoop_, "1000");
    objectGet(obj, "dt", sim.dt_, "0.01", "t");
    objectGet(obj, "time", sim.time_, "0", "t");
