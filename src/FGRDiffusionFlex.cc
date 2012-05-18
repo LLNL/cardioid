@@ -48,18 +48,6 @@ FGRDiffusionFlex::FGRDiffusionFlex(const FGRDiffusionParms& parms,
    mkOffsets(localCopyOffset_,  anatomy.nLocal(),  reactionThreadInfo_);
    mkOffsets(remoteCopyOffset_, anatomy.nRemote(), threadInfo_);
 
-   //simd thread offsets
-   int chunkSize = (nx-2) / threadInfo.nThreads();
-   int leftOver = (nx-2) % threadInfo.nThreads();
-   threadOffsetSimd_.resize(threadInfo.nThreads()+1);
-   threadOffsetSimd_[0]=1;
-   for (int ii=0; ii<threadInfo.nThreads(); ++ii)
-   {
-      threadOffsetSimd_[ii+1] = threadOffsetSimd_[ii] + chunkSize;
-      if (ii < leftOver)
-         ++threadOffsetSimd_[ii+1];
-   }
-   assert(nx-1 == threadOffsetSimd_[threadInfo.nThreads()] );
 
    barrierHandle_.resize(threadInfo.nThreads());
    fgrBarrier_ = L2_BarrierWithSync_InitShared();
@@ -110,7 +98,20 @@ FGRDiffusionFlex::FGRDiffusionFlex(const FGRDiffusionParms& parms,
    precomputeCoefficients(anatomy);
    reorder_Coeff();
 
-   buildIndicies(anatomy);
+   buildOffset(anatomy);
+
+   //simd thread offsets
+   int chunkSize = nCalc_ / threadInfo.nThreads();
+   int leftOver = nCalc_ % threadInfo.nThreads();
+   threadOffsetSimd_.resize(threadInfo.nThreads()+1);
+   threadOffsetSimd_[0]=0;
+   for (int ii=0; ii<threadInfo.nThreads(); ++ii)
+   {
+      threadOffsetSimd_[ii+1] = threadOffsetSimd_[ii] + chunkSize;
+      if (ii < leftOver)
+         ++threadOffsetSimd_[ii+1];
+   }
+   assert(nCalc_ == threadOffsetSimd_[threadInfo.nThreads()] );
 
    dVmBlock_.resize(nx,ny,nz);
 
@@ -490,7 +491,7 @@ FGRDiffusionFlex::FGRDiff_simd_thread(const uint32_t b_quad,const int32_t e_quad
  
     Sum2 = vec_sldw(my_zero_vec,B2,3);
  
-  for(int qIdx=b_quad;xx<e_quad;qIdx++)
+  for(int qIdx=b_quad;qIdx<e_quad;qIdx++)
   {
     simd_diff_ += 19*4;
     load_my_vectors;
@@ -685,7 +686,7 @@ void FGRDiffusionFlex::buildOffset(const Anatomy& anatomy)
 ////////////////////////////////////////////////////////////////////////////////
 // test functions
 ////////////////////////////////////////////////////////////////////////////////
-void FLEXDiffusion::test_calc(int slice)
+void FGRDiffusionFlex::test_calc(int slice)
 {
    Array3d<double> tmp_Vm;
    tmp_Vm.resize(nx,ny,nz,0.0);
