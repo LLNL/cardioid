@@ -221,7 +221,7 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
       Pwrite(line, lrec, 1, file);
    }
    
-#if 1
+#if 0
    int ntotal;
    MPI_Reduce(&ncolors, &ntotal, 1, MPI_INT, MPI_SUM, 0, comm_);
    if (myRank == 0)assert( ntotal==anatomy_.nGlobal() );

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <mpi.h>
 #include "Diffusion.hh"
+#include <stdio.h>
 
 using std::isnan;
 using std::vector;

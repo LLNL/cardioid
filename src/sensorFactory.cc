@@ -109,10 +109,9 @@ namespace
             if ( !getline ( input, query ) ) {
                 break;
             }
-            stringstream ss ( query );
+            istringstream ss ( query );
             Long64 igid;
-            ss >> igid;
-            cellVec.push_back(igid);
+            while( ss >> igid )cellVec.push_back(igid);
          }
          nSubset = cellVec.size();
       }   
