@@ -130,6 +130,7 @@ class VoronoiCoarsening
 
    // shared globally
    std::vector<Vector> centers_;
+   std::vector<short> multiplicities_;
 
    // local only
    const std::vector<AnatomyCell>& cells_; // local cells
@@ -160,6 +161,11 @@ class VoronoiCoarsening
    const Vector& center(const int color)const
    {
       return centers_[color];
+   }
+   
+   short multiplicity(const int color)const
+   {
+      return multiplicities_[color];
    }
    
    const std::set<int>& getOwnedColors()const

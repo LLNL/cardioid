@@ -218,7 +218,9 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
       for (; l < lrec - 1; l++) line[l] = (char)' ';
       line[l++] = (char)'\n';
       assert (l==lrec);
-      Pwrite(line, lrec, 1, file);
+      const short m=coarsening_.multiplicity(color);
+      for(short ii=0;ii<m;ii++)
+         Pwrite(line, lrec, 1, file);
    }
    
 #if 0

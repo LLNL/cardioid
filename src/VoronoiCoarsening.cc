@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <map>
 using namespace std;
 
 #include "VoronoiCoarsening.hh"
@@ -20,16 +21,37 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
    assert( gid.size()>0 );
    
    // initialize centers_ with vectors corresponding to gids passed in
+   std::map<Long64,short> multiplicities;
    for(vector<Long64>::const_iterator igid  = gid.begin();
                                       igid != gid.end();
                                     ++igid)
    {
-      centers_.push_back(indexToVector_(*igid));
+      std::map<Long64,short>::iterator is=multiplicities.find(*igid);
+      
+      if( is==multiplicities.end() )
+      {
+         Long64 color=*igid;
+         centers_.push_back(indexToVector_(color));
+         multiplicities.insert(make_pair(color, 1));
+      }else{
+         is->second++;
+      }
       //if( myRank==0)cout<<"gid="<<*igid<<endl;
    }
+   
+   multiplicities_.reserve( multiplicities.size() );
+   for(std::map<Long64,short>::const_iterator is =multiplicities.begin();
+                                              is!=multiplicities.end();
+                                              is++)
+   {
+      multiplicities_.push_back(is->second);
+   }
+
    if( myRank==0)cout<<"VoronoiCoarsening: number of colors = "<<centers_.size()<<endl;
 
    colors_.resize(anatomy.nLocal()); // color only local cells
+   
+   assert( centers_.size()==multiplicities_.size() );
 }
 
 // set values of color_ according to index of closest centers
