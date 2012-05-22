@@ -3,12 +3,13 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "pade.hh" 
 #include "TT06Func.h" 
+
+struct PADE;
+
 #define SQ(x) ((x)*(x))
 #define CUBE(x) ((x)*(x)*(x))
 
-using namespace std; 
 /*
  * RATES[0] is d/dt V in component membrane (millivolt).
  * RATES[4] is d/dt Xr1 in component rapid_time_dependent_potassium_current_Xr1_gate (dimensionless).
@@ -35,10 +36,24 @@ namespace TT06Func
 {
 
 
-struct STATE { int index, type; double value;}; 
+struct STATE {
+   int index, type;
+   double value;
+}; 
 
-struct CellTypeParmsFull { string name; vector<int> anatomyIndices; int s_switch; double P_NaK, g_Ks, g_to, g_NaL, Vm; map<string,STATE> state;}  ;
-struct WORK { int offsetCell, nCell, offsetEq, nEq;}; 
+struct CellTypeParmsFull
+{
+   std::string name;
+   std::vector<int> anatomyIndices;
+   int s_switch;
+   double P_NaK, g_Ks, g_to, g_NaL, Vm;
+   std::map<std::string,STATE> state;
+};
+
+struct WORK
+{
+   int offsetCell, nCell, offsetEq, nEq;
+}; 
 
 void initCnst();
 //void updateNonGate(double dt, CellTypeParms *cellTypeParms, int n, int *cellType, double *Vm, int offset, double **state, double *dVdt);
@@ -46,7 +61,7 @@ void updateGate(double dt, int n, int *cellType, double *Vm, int offset, double 
 void updateGateFast(double dt, int n, int *cellType, double *Vm, int offset, double **state, WORK& work);
 PADE **makeFit(double tol, double V0, double V1, double deltaV, int mod);
 void writeFit(PADE **fit); 
-map<string,CellTypeParmsFull> getStandardCellTypes();
+std::map<std::string,CellTypeParmsFull> getStandardCellTypes();
 };
 
 #endif

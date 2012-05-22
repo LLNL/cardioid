@@ -1,7 +1,7 @@
 #ifndef FIT_H
 #define FIT_H
 #include <stdio.h>
-typedef struct 
+struct PADE
 {  
    char *name; 
    double (*func)(double x, void *parms); 
@@ -15,7 +15,7 @@ typedef struct
    int l; 
    int m; 
    double *coef;
-} PADE; 
+}; 
 PADE   *padeApprox (const char *name, double (*func)(double x, void *parms), void *parms, int size_parms,double tol, double deltaX, double x0, double x1);
 void padeCalc(PADE *pade,int lMax, int  mMax, int maxCost);
 void padeErrorInfo(PADE pade,int index);

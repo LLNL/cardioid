@@ -14,6 +14,7 @@
 
 using namespace std;
 using namespace PerformanceTimers;
+using namespace TT06Func;
 
 int workBundle(int index, int nItems, int nGroups , int mod, int& offset);
 static FILE *tfile[64]; 
@@ -45,7 +46,13 @@ class SortByRank
 };
 
 
-TT06Dev_Reaction::TT06Dev_Reaction( Anatomy& anatomy,  map<string,CellTypeParmsFull> cellTypeParmsMap, vector<string> cellTypeNames, double tolerance, int mod, int fastReaction, const ThreadTeam& group)
+// Can't pass parms by const reference since the parms contain a map and
+// we access the map with the subscript operator.  This is a non-const
+// operation.  Maybe we can re-write this code to avoid the subscript
+// operator. 
+TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy,
+                                   TT06Dev_ReactionParms& parms,
+                                   const ThreadTeam& group)
 : nCells_(anatomy.nLocal()),
   group_(group)
 {
@@ -55,7 +62,7 @@ TT06Dev_Reaction::TT06Dev_Reaction( Anatomy& anatomy,  map<string,CellTypeParmsF
       initialized = true;
       TT06Func::initCnst();
    }
-   nCellTypes_ = cellTypeNames.size(); 
+   nCellTypes_ = parms.cellTypeNames.size(); 
    nCellsOfType_.resize(nCellTypes_,0); 
    vector<AnatomyCell>& cells = anatomy.cellArray();
 
@@ -69,9 +76,9 @@ TT06Dev_Reaction::TT06Dev_Reaction( Anatomy& anatomy,  map<string,CellTypeParmsF
    {
       int cellType = i; 
       int cellRank = i; 
-      string name = cellTypeNames[i];   
+      string name = parms.cellTypeNames[i];   
       
-      vector<int> indices=cellTypeParmsMap[name].anatomyIndices; 
+      vector<int> indices=parms.cellTypeParms[name].anatomyIndices; 
       for (int j=0;j<indices.size();j++)
       {
           int k=indices[j];
@@ -82,14 +89,14 @@ TT06Dev_Reaction::TT06Dev_Reaction( Anatomy& anatomy,  map<string,CellTypeParmsF
       }
 
       cellTypeParms_[cellType].cellType = cellType;  
-      cellTypeParms_[cellType].s_switch = cellTypeParmsMap[name].s_switch;  
-      cellTypeParms_[cellType].P_NaK    = cellTypeParmsMap[name].P_NaK;  
-      cellTypeParms_[cellType].g_Ks     = cellTypeParmsMap[name].g_Ks ;  
-      cellTypeParms_[cellType].g_to     = cellTypeParmsMap[name].g_to ;  
-      cellTypeParms_[cellType].g_NaL    = cellTypeParmsMap[name].g_NaL;  
-      initialVm_[cellType] = cellTypeParmsMap[name].Vm; 
+      cellTypeParms_[cellType].s_switch = parms.cellTypeParms[name].s_switch;  
+      cellTypeParms_[cellType].P_NaK    = parms.cellTypeParms[name].P_NaK;  
+      cellTypeParms_[cellType].g_Ks     = parms.cellTypeParms[name].g_Ks ;  
+      cellTypeParms_[cellType].g_to     = parms.cellTypeParms[name].g_to ;  
+      cellTypeParms_[cellType].g_NaL    = parms.cellTypeParms[name].g_NaL;  
+      initialVm_[cellType] = parms.cellTypeParms[name].Vm; 
       int stateCnt=0; 
-      map<string,STATE>stateMap = cellTypeParmsMap[name].state; 
+      map<string,STATE>stateMap = parms.cellTypeParms[name].state; 
       for (map<string,STATE>::iterator it=stateMap.begin();it!=stateMap.end();it++)
       {
         STATE stateDefault = it->second; 
@@ -124,9 +131,9 @@ TT06Dev_Reaction::TT06Dev_Reaction( Anatomy& anatomy,  map<string,CellTypeParmsF
    
    {
       fastReaction_ = 0; 
-      if (fastReaction >= 0) ;
+      if (parms.fastReaction >= 0) ;
       {
-         if ( (fabs(tolerance/1e-4 - 1.0) < 1e-12) && mod == 1 )fastReaction_ = fastReaction; 
+         if ( (fabs(parms.tolerance/1e-4 - 1.0) < 1e-12) && parms.mod == 1 )fastReaction_ = parms.fastReaction; 
       }
       update_gate_=TT06Func::updateGate;
       update_nonGate_=update_nonGate;
@@ -138,7 +145,7 @@ TT06Dev_Reaction::TT06Dev_Reaction( Anatomy& anatomy,  map<string,CellTypeParmsF
       double deltaV = 0.1; 
       int maxCost=128; 
       int maxTerms=64; 
-      PADE **fit_=TT06Func::makeFit(tolerance,V0,V1,deltaV,mod); 
+      PADE **fit_=TT06Func::makeFit(parms.tolerance,V0,V1,deltaV,parms.mod); 
       for (int i=0;fit_[i]!=NULL;i++) padeCalc(fit_[i],maxTerms,maxTerms,maxCost); 
       TT06Func::writeFit(fit_); 
       PADE **gatefit_=fit_+gateFitOffset; 

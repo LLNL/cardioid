@@ -10,6 +10,8 @@
 #include "TT06NonGates.h"
 #include "ThreadServer.hh"
 
+using namespace std;
+
 #define sigm(x)   ((x)/(1.0+(x)) )
 
 namespace TT06Func

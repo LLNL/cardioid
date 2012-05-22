@@ -8,6 +8,7 @@
 #include "TT06_CellML_Reaction.hh" // TT06 implementation from CellML (Nov 2011)
 #include "TT06Dev_Reaction.hh"
 #include "TT06_RRG_Reaction.hh"    // TT06 with modifications from Rice et al.
+#include "TT06Func.hh"
 #include "ReactionFHN.hh"
 #include "NullReaction.hh"
 #include "ConstantReaction.hh"
@@ -87,42 +88,37 @@ namespace
 {
    Reaction* scanTT06Dev(OBJECT* obj, Anatomy& anatomy, const ThreadTeam& group)
    {
-#include "TT06Func.hh"
-      map<string,TT06Func::CellTypeParmsFull>cellTypeParms=TT06Func::getStandardCellTypes(); 
-      double tolerance=0.0 ; 
-      int fastReaction =-1; 
+      TT06Dev_ReactionParms parms;
+      parms.cellTypeParms=TT06Func::getStandardCellTypes(); 
       int fastGate =-1; 
       int fastNonGate =-1; 
-      vector<string> cellTypeNames; 
-      int mod=0; 
-      objectGet(obj, "tolerance", tolerance, "0.0") ;
-      objectGet(obj, "mod", mod, "0") ;
-      objectGet(obj, "fastReaction", fastReaction, "-1") ;
-      objectGet(obj, "fastGate", fastGate, "-1") ;
-      objectGet(obj, "fastNonGate", fastNonGate, "-1") ;
-      if (fastReaction == -1) 
+      objectGet(obj, "tolerance",    parms.tolerance, "0.0") ;
+      objectGet(obj, "mod",          parms.mod, "0") ;
+      objectGet(obj, "fastReaction", parms.fastReaction, "-1") ;
+      objectGet(obj, "fastGate",     fastGate, "-1") ;
+      objectGet(obj, "fastNonGate",  fastNonGate, "-1") ;
+      if (parms.fastReaction == -1) 
       {
-           
-           if (fastGate     > -1 || fastNonGate > -1 )  
-           {
-                 if (fastGate    ==  -1 )  fastGate   =0; 
-                 if (fastNonGate ==  -1 )  fastNonGate=0; 
-                 fastReaction = fastGate+256*fastNonGate; 
-           } 
+         if (fastGate     > -1 || fastNonGate > -1 )  
+         {
+            if (fastGate    ==  -1 )  fastGate   =0; 
+            if (fastNonGate ==  -1 )  fastNonGate=0; 
+            parms.fastReaction = fastGate+256*fastNonGate; 
+         } 
       }
-      if (fastReaction == 1)  fastReaction = 257; 
-      objectGet(obj, "cellTypes", cellTypeNames) ;
-      if (cellTypeNames.size() == 0)
+      if (parms.fastReaction == 1)  parms.fastReaction = 257; 
+      objectGet(obj, "cellTypes", parms.cellTypeNames) ;
+      if (parms.cellTypeNames.size() == 0)
       {
-         cellTypeNames.push_back("endoCellML");
-         cellTypeNames.push_back("midCellML");
-         cellTypeNames.push_back("epiCellML");
+         parms.cellTypeNames.push_back("endoCellML");
+         parms.cellTypeNames.push_back("midCellML");
+         parms.cellTypeNames.push_back("epiCellML");
       }
-      for (int ii=0;ii<cellTypeNames.size();ii++) 
+      for (int ii=0;ii<parms.cellTypeNames.size();ii++) 
       {
-         string name = cellTypeNames[ii]; 
-         if (cellTypeParms.count(name) == 0)
-            cellTypeParms[name] = cellTypeParms["endoCellML"]; 
+         string name = parms.cellTypeNames[ii]; 
+         if (parms.cellTypeParms.count(name) == 0)
+            parms.cellTypeParms[name] = parms.cellTypeParms["endoCellML"]; 
 
          OBJECT* cellobj = object_find2(name.c_str(), "CELLTYPE", IGNORE_IF_NOT_FOUND);
          if (! cellobj)
@@ -133,22 +129,22 @@ namespace
          if (clone != "")
          {
             assert(name != clone); 
-            assert(cellTypeParms.count(clone) != 0); 
-            cellTypeParms[name]=cellTypeParms[clone]; 
-            cellTypeParms[name].name=name;
+            assert(parms.cellTypeParms.count(clone) != 0); 
+            parms.cellTypeParms[name]=parms.cellTypeParms[clone]; 
+            parms.cellTypeParms[name].name=name;
          }
          vector<int> iparm; 
          vector<double> dparm; 
          objectGet(cellobj,"anatomyIndices",iparm); 
-         if (iparm.size() > 0) cellTypeParms[name].anatomyIndices = iparm; 
+         if (iparm.size() > 0) parms.cellTypeParms[name].anatomyIndices = iparm; 
          objectGet(cellobj,"s_switch",iparm); 
-         if (iparm.size() == 1) cellTypeParms[name].s_switch = iparm[0]; 
+         if (iparm.size() == 1) parms.cellTypeParms[name].s_switch = iparm[0]; 
          objectGet(cellobj,"P_NaK",dparm); 
-         if (dparm.size() == 1) cellTypeParms[name].P_NaK = dparm[0]; 
+         if (dparm.size() == 1) parms.cellTypeParms[name].P_NaK = dparm[0]; 
          
       }
       
-      Reaction *reaction = new TT06Dev_Reaction(anatomy, cellTypeParms, cellTypeNames, tolerance, mod, fastReaction, group);
+      Reaction *reaction = new TT06Dev_Reaction(anatomy, parms, group);
       return  reaction; 
    }
 }
