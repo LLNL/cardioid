@@ -245,7 +245,7 @@ TT06_CellML_Reaction::HandleMap& TT06_CellML_Reaction::getHandleMap()
       handleMap["r_gate"]      = VarInfo(r_gate,     true,  "1");
       handleMap["Ca_SR"]       = VarInfo(Ca_SR,      true,  "mM");
       handleMap["R_prime"]     = VarInfo(R_prime,    true,  "1");
-      assert(handleMap.size() == nVars-1);
+      assert(handleMap.size() == nVars);
    }
    return handleMap;
 }
