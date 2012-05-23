@@ -184,7 +184,7 @@ TT06_RRG::HandleMap& TT06_RRG::getHandleMap()
       handleMap["Ca_SR"]      = VarInfo(Ca_SR,      true,  "mM");
       handleMap["R_prime"]    = VarInfo(R_prime,    true,  "1");
       handleMap["jL_gate"]    = VarInfo(jL_gate,    true,  "mM");
-      assert(handleMap.size() == nVars-1);
+      assert(handleMap.size() == nVars);
    }
    return handleMap;
 }

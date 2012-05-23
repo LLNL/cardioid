@@ -13,7 +13,7 @@ void Reaction::getCheckpointInfo(vector<string>& fieldNames,
    assert(false);
 }
 
-/** getVarHandle must return 0 for any name that is not defined in
+/** getVarHandle must return -1 for any name that is not defined in
  *  the concrete reaction class. */
 int Reaction::getVarHandle(const string& varName) const
 {
@@ -21,7 +21,7 @@ int Reaction::getVarHandle(const string& varName) const
    return 0;
 }
 
-/** getVarHandle must return 0 for any name that is not defined in
+/** getVarHandle must return -1 for any name that is not defined in
  *  the concrete reaction class. */
 vector<int> Reaction::getVarHandle(const vector<string>& varName) const
 {

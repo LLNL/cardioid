@@ -215,7 +215,7 @@ void readCheckpoint(const string& filename, Simulate& sim, MPI_Comm comm)
    for (unsigned ii=0; ii<data->nFields(); ++ii)
    {
       int handle = sim.reaction_->getVarHandle(data->fieldName(ii));
-      if (handle != 0) // hendle==0 -> undefined name
+      if (handle >= 0 ) // handle < 0 -> undefined name
       {
          fieldMap[ii] = handle;
          string from = data->units(ii);

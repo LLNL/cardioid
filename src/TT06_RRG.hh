@@ -8,10 +8,10 @@
 class TT06_RRG
 {
  public:
-   // There is a map of strings to VarHandle in getVarHandle that must
+   // There is a map of strings to VarHandle in getHandleMap that must
    // be maintained in parallel with this enum.  The value undefinedName
-   // must be first and nVars must be last in this enum.
-   enum VarHandle{undefinedName,
+   // must be -1 and nVars must be last in this enum.
+   enum VarHandle{undefinedName = -1,
                   // These are the cell-wise parameters:
                   s_switch, g_Ks, g_to, P_NaK, g_NaL,
                   // These are the state variables:

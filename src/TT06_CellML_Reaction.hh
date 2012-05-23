@@ -12,10 +12,10 @@ class TT06_CellML_Reaction : public Reaction
  public:
    enum IntegratorType {forwardEuler, rushLarsen};
    
-   // There is a map of strings to VarHandle in getVarHandle that must
+   // There is a map of strings to VarHandle in getHandleMap that must
    // be maintained in parallel with this enum.  The value undefinedName
-   // must be first and nVars must be last in this enum.
-   enum VarHandle{undefinedName,
+   // must be -1 and nVars must be last in this enum.
+   enum VarHandle{undefinedName = -1,
                   // These are the state variables:
                   Vm, K_i, Na_i, Ca_i, Xr1_gate, Xr2_gate, Xs_gate, m_gate,
                   h_gate, j_gate, Ca_ss, d_gate, f_gate, f2_gate, fCass_gate,
