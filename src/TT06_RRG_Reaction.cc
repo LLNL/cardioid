@@ -61,11 +61,6 @@ int TT06_RRG_Reaction::getVarHandle(const string& varName) const
    return TT06_RRG::getVarHandle(varName);
 }
 
-vector<int> TT06_RRG_Reaction::getVarHandle(const vector<string>& varName) const
-{
-   return TT06_RRG::getVarHandle(varName);
-}
-
 void TT06_RRG_Reaction::setValue(int iCell, int varHandle, double value)
 {
    cells_[iCell].setValue(varHandle, value);

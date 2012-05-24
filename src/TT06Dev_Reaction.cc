@@ -185,18 +185,18 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy,
 TT06Dev_Reaction::~TT06Dev_Reaction()
 {
 }
-void TT06Dev_Reaction::writeStateDev(int loop)
-{
-   int  map[] = { dVK_i , Na_i , Ca_i , Xr1_gate , Xr2_gate , Xs_gate , m_gate , h_gate , j_gate , Ca_ss , d_gate , f_gate , f2_gate , fCass , s_gate , r_gate , Ca_SR , R_prime , jL_gate};
-   int  isGate[] = {    0  ,     0, 0 , 1 , 1 , 1 , 1 , 1 , 1 , 0 , 1 , 1 , 1 , 0 , 1 , 1 , 0 , 0 , 1};
-   for (int i=0;i<nStateVar;i++) 
-   {
-      int k = map[i]; 
-      double state; 
-      state = state_[k][0];
-      printf("%d %24.14le\n",i,state); 
-   }
-}
+// void TT06Dev_Reaction::writeStateDev(int loop)
+// {
+//    int  map[] = { dVK_i , Na_i , Ca_i , Xr1_gate , Xr2_gate , Xs_gate , m_gate , h_gate , j_gate , Ca_ss , d_gate , f_gate , f2_gate , fCass , s_gate , r_gate , Ca_SR , R_prime , jL_gate};
+//    int  isGate[] = {    0  ,     0, 0 , 1 , 1 , 1 , 1 , 1 , 1 , 0 , 1 , 1 , 1 , 0 , 1 , 1 , 0 , 0 , 1};
+//    for (int i=0;i<nStateVar;i++) 
+//    {
+//       int k = map[i]; 
+//       double state; 
+//       state = state_[k][0];
+//       printf("%d %24.14le\n",i,state); 
+//    }
+// }
 int workBundle(int index, int nItems, int nGroups , int mod, int& offset)
 {
    assert(0<=index && index < nGroups); 
@@ -283,3 +283,99 @@ void TT06Dev_Reaction::initializeMembraneVoltage(std::vector<double>& Vm)
    assert(Vm.size() >= cellTypeVector_.size());
    for (unsigned ii=0; ii<cellTypeVector_.size(); ++ii) Vm[ii] = initialVm_[cellTypeVector_[ii]];
 }
+
+void TT06Dev_Reaction::getCheckpointInfo(vector<string>& name,
+                                         vector<string>& unit) const
+{
+   const HandleMap& handleMap = getHandleMap();
+   for (HandleMap::const_iterator
+           iter=handleMap.begin(); iter!=handleMap.end(); ++iter)
+   {
+      if (iter->second.checkpoint_)
+      {
+         name.push_back(iter->first);
+         unit.push_back(iter->second.unit_);
+      }
+   }
+}
+
+/** This function maps the string representation of a variable name to
+ *  the handle representation.  Returns the value -1 for
+ *  unrecognized varName. */
+int TT06Dev_Reaction::getVarHandle(const string& varName) const
+{
+   return getHandleMap()[varName].handle_;
+}
+
+void TT06Dev_Reaction::setValue(int iCell, int varHandle, double value)
+{
+   assert(varHandle >= 0);
+   
+   if (varHandle < nStateVar)
+      state_[varHandle][iCell] = value;
+
+   // no support for variables other than state variables at present.
+   assert(varHandle < nStateVar);
+   
+}
+
+double TT06Dev_Reaction::getValue(int iCell, int handle) const
+{
+   assert(handle >= 0);
+   
+   if (handle < nStateVar)
+      return state_[handle][iCell];
+
+   // no support for variables other than state variables at present.
+   assert(handle < nStateVar);
+   
+   return 0.;
+}
+
+void TT06Dev_Reaction::getValue(int iCell,
+                                const vector<int>& handle,
+                                vector<double>& value) const
+{
+   for (unsigned ii=0; ii<handle.size(); ++ii)
+      value[ii] = getValue(iCell, handle[ii]);
+}
+
+
+const string TT06Dev_Reaction::getUnit(const string& varName) const
+{
+   return getHandleMap()[varName].unit_;
+}
+
+
+/** Remember that down in the cell models the units don't necessarily
+ *  correspond to the internal units of Cardioid.  The units in this map
+ *  are the units the cell model expects the variables to have. */
+HandleMap& TT06Dev_Reaction::getHandleMap() const
+{
+   static HandleMap handleMap;
+   if (handleMap.size() == 0)
+   {
+      handleMap["dVK_i"]      = CheckpointVarInfo(dVK_i,      true,  "mV");
+      handleMap["Na_i"]       = CheckpointVarInfo(Na_i,       true,  "mM");
+      handleMap["Ca_i"]       = CheckpointVarInfo(Ca_i,       true,  "mM");
+      handleMap["Xr1_gate"]   = CheckpointVarInfo(Xr1_gate,   true,  "1");
+      handleMap["Xr2_gate"]   = CheckpointVarInfo(Xr2_gate,   true,  "1");
+      handleMap["Xs_gate"]    = CheckpointVarInfo(Xs_gate,    true,  "1");
+      handleMap["m_gate"]     = CheckpointVarInfo(m_gate,     true,  "1");
+      handleMap["h_gate"]     = CheckpointVarInfo(h_gate,     true,  "1");
+      handleMap["j_gate"]     = CheckpointVarInfo(j_gate,     true,  "1");
+      handleMap["Ca_ss"]      = CheckpointVarInfo(Ca_ss,      true,  "mM");
+      handleMap["d_gate"]     = CheckpointVarInfo(d_gate,     true,  "1");
+      handleMap["f_gate"]     = CheckpointVarInfo(f_gate,     true,  "1");
+      handleMap["f2_gate"]    = CheckpointVarInfo(f2_gate,    true,  "1");
+      handleMap["fCass_gate"] = CheckpointVarInfo(fCass,      true,  "1");
+      handleMap["s_gate"]     = CheckpointVarInfo(s_gate,     true,  "1");
+      handleMap["r_gate"]     = CheckpointVarInfo(r_gate,     true,  "1");
+      handleMap["Ca_SR"]      = CheckpointVarInfo(Ca_SR,      true,  "mM");
+      handleMap["R_prime"]    = CheckpointVarInfo(R_prime,    true,  "1");
+      handleMap["jL_gate"]    = CheckpointVarInfo(jL_gate,    true,  "mM");
+      assert(handleMap.size() == nStateVar);
+   }
+   return handleMap;
+}
+

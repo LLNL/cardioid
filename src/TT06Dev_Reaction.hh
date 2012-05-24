@@ -6,6 +6,7 @@
 #include "Reaction.hh"
 #include "TT06Func.hh"
 #include "TT06NonGates.h"
+#include "CheckpointVarInfo.hh"
 
 class ThreadTeam;
 class Anatomy;
@@ -37,10 +38,24 @@ class TT06Dev_Reaction : public Reaction
    void updateGate   (double dt, const std::vector<double>&Vm) ;
    void calc(double dt, const std::vector<double>& Vm, const std::vector<double>& iStim, std::vector<double>& dVm);
    void initializeMembraneVoltage(std::vector<double>& Vm);
-   void writeStateDev(int loop); 
+   void writeStateDev(int loop);
+
+   /** Support for checkpoint/restart */
+   void getCheckpointInfo(std::vector<std::string>& fieldNames,
+                                  std::vector<std::string>& fieldUnits) const;
+   int getVarHandle(const std::string& varName) const;
+   void setValue(int iCell, int varHandle, double value);
+   double getValue(int iCell, int varHandle) const;
+   void getValue(int iCell,
+                 const std::vector<int>& handle,
+                 std::vector<double>& value) const;
+   const std::string getUnit(const std::string& varName) const;
+
+   
 
  private:
 
+   HandleMap& getHandleMap() const;
 
    unsigned nCellTypes_;
    std::vector<CellTypeParms> cellTypeParms_; 

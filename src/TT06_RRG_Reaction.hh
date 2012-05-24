@@ -23,7 +23,6 @@ class TT06_RRG_Reaction : public Reaction
    void getCheckpointInfo(std::vector<std::string>& fieldNames,
                           std::vector<std::string>& fieldUnits) const;
    int getVarHandle(const std::string& varName) const;
-   std::vector<int> getVarHandle(const std::vector<std::string>& varName) const;
    void setValue(int iCell, int varHandle, double value);
    double getValue(int iCell, int varHandle) const;
    void getValue(int iCell,

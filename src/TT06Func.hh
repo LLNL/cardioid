@@ -36,7 +36,12 @@ namespace TT06Func
 {
 
 
-struct STATE {
+struct STATE
+{
+   STATE(){};
+   STATE(int type, int index, double value)
+   : type(type), index(index), value(value){};
+
    int index, type;
    double value;
 }; 

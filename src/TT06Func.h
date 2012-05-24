@@ -7,9 +7,11 @@
 #define nGateVar 12 
 #define gateOffset 7
 #define dVK_i   K_i 
-enum TT06STATE { Ca_i, K_i, Na_i, Ca_ss, Ca_SR, R_prime, fCass, m_gate, \
-                 h_gate, j_gate, Xr1_gate, Xr2_gate, Xs_gate, r_gate, d_gate,\
-                 f_gate, f2_gate,  jL_gate, s_gate, nStateVar} ; 
+enum TT06_DEV_STATE_INDEX
+{ Ca_i, K_i, Na_i, Ca_ss, Ca_SR, R_prime, fCass, m_gate,                \
+  h_gate, j_gate, Xr1_gate, Xr2_gate, Xs_gate, r_gate, d_gate,          \
+  f_gate, f2_gate,  jL_gate, s_gate, nStateVar} ; 
+
 enum STATETYPE { nonGateVar, GateVar }; 
 
 struct CellTypeParms

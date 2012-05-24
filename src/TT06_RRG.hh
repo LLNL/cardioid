@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include "CheckpointVarInfo.hh"
 
 class TT06_RRG
 {
@@ -21,22 +22,6 @@ class TT06_RRG
                   // end marker
                   nVars};
       
-   class VarInfo
-   {
-    public:
-      VarInfo()
-      : handle_(undefinedName), checkpoint_(false), unit_("1")
-      {};
-      VarInfo(int handle, bool checkpoint, std::string unit)
-      : handle_(handle), checkpoint_(checkpoint), unit_(unit)
-      {};
-      
-      int         handle_;
-      bool        checkpoint_;
-      std::string unit_; // output unit
-   };
-
-   typedef std::map<std::string, VarInfo> HandleMap; 
 
    TT06_RRG(int cellType);
    double calc(double dt, double Vm, double iStim);
@@ -45,7 +30,6 @@ class TT06_RRG
                                  std::vector<std::string>& fieldUnits);
 
    static int getVarHandle(const std::string& varName);
-   static std::vector<int> getVarHandle(const std::vector<std::string>& varName);
    void setValue(int varHandle, double value);
 
    double getValue(int handle) const;

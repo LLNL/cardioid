@@ -28,7 +28,7 @@ class Reaction
    virtual void getCheckpointInfo(std::vector<std::string>& fieldNames,
                                   std::vector<std::string>& fieldUnits) const;
    virtual int getVarHandle(const std::string& varName) const;
-   virtual std::vector<int> getVarHandle(const std::vector<std::string>& varName) const;
+   std::vector<int> getVarHandle(const std::vector<std::string>& varName) const;
    virtual void setValue(int iCell, int varHandle, double value);
    virtual double getValue(int iCell, int varHandle) const;
    virtual void getValue(int iCell,

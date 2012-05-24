@@ -124,17 +124,6 @@ int TT06_CellML_Reaction::getVarHandle(const string& varName) const
    return getHandleMap()[varName].handle_;
 }
 
-/** This function maps the string representation of a variable name to
- *  the handle representation.  Returns the value undefinedName for
- *  unrecognized varName. */
-vector<int> TT06_CellML_Reaction::getVarHandle(const vector<string>& varName) const
-{
-   vector<int> handle;
-   for (unsigned ii=0; ii<varName.size(); ++ii)
-      handle.push_back(getHandleMap()[varName[ii]].handle_);
-
-   return handle;
-}
       
 void TT06_CellML_Reaction::setValue(int iCell, int varHandle, double value)
 {
@@ -208,7 +197,7 @@ void TT06_CellML_Reaction::getValue(int iCell,
                                     vector<double>& value) const
 {
    for (unsigned ii=0; ii<handle.size(); ++ii)
-      value[ii] = getValue(iCell, (VarHandle)handle[ii]);
+      value[ii] = getValue(iCell, handle[ii]);
 }
 
 
@@ -221,30 +210,30 @@ const string TT06_CellML_Reaction::getUnit(const string& varName) const
 /** Remember that down in the cell models the units don't necessarily
  *  correspond to the internal units of Cardioid.  The units in this map
  *  are the units the cell model expects the variables to have. */
-TT06_CellML_Reaction::HandleMap& TT06_CellML_Reaction::getHandleMap()
+HandleMap& TT06_CellML_Reaction::getHandleMap() const
 {
    static HandleMap handleMap;
    if (handleMap.size() == 0)
    {
-      handleMap["Vm"]          = VarInfo(Vm,         false, "mV");
-      handleMap["K_i"]         = VarInfo(K_i,        true,  "mM");
-      handleMap["Na_i"]        = VarInfo(Na_i,       true,  "mM");
-      handleMap["Ca_i"]        = VarInfo(Ca_i,       true,  "mM");
-      handleMap["Xr1_gate"]    = VarInfo(Xr1_gate,   true,  "1");
-      handleMap["Xr2_gate"]    = VarInfo(Xr2_gate,   true,  "1");
-      handleMap["Xs_gate"]     = VarInfo(Xs_gate,    true,  "1");
-      handleMap["m_gate"]      = VarInfo(m_gate,     true,  "1");
-      handleMap["h_gate"]      = VarInfo(h_gate,     true,  "1");
-      handleMap["j_gate"]      = VarInfo(j_gate,     true,  "1");
-      handleMap["Ca_ss"]       = VarInfo(Ca_ss,      true,  "mM");
-      handleMap["d_gate"]      = VarInfo(d_gate,     true,  "1");
-      handleMap["f_gate"]      = VarInfo(f_gate,     true,  "1");
-      handleMap["f2_gate"]     = VarInfo(f2_gate,    true,  "1");
-      handleMap["fCass_gate"]  = VarInfo(fCass_gate, true,  "1");
-      handleMap["s_gate"]      = VarInfo(s_gate,     true,  "1");
-      handleMap["r_gate"]      = VarInfo(r_gate,     true,  "1");
-      handleMap["Ca_SR"]       = VarInfo(Ca_SR,      true,  "mM");
-      handleMap["R_prime"]     = VarInfo(R_prime,    true,  "1");
+      handleMap["Vm"]          = CheckpointVarInfo(Vm,         false, "mV");
+      handleMap["K_i"]         = CheckpointVarInfo(K_i,        true,  "mM");
+      handleMap["Na_i"]        = CheckpointVarInfo(Na_i,       true,  "mM");
+      handleMap["Ca_i"]        = CheckpointVarInfo(Ca_i,       true,  "mM");
+      handleMap["Xr1_gate"]    = CheckpointVarInfo(Xr1_gate,   true,  "1");
+      handleMap["Xr2_gate"]    = CheckpointVarInfo(Xr2_gate,   true,  "1");
+      handleMap["Xs_gate"]     = CheckpointVarInfo(Xs_gate,    true,  "1");
+      handleMap["m_gate"]      = CheckpointVarInfo(m_gate,     true,  "1");
+      handleMap["h_gate"]      = CheckpointVarInfo(h_gate,     true,  "1");
+      handleMap["j_gate"]      = CheckpointVarInfo(j_gate,     true,  "1");
+      handleMap["Ca_ss"]       = CheckpointVarInfo(Ca_ss,      true,  "mM");
+      handleMap["d_gate"]      = CheckpointVarInfo(d_gate,     true,  "1");
+      handleMap["f_gate"]      = CheckpointVarInfo(f_gate,     true,  "1");
+      handleMap["f2_gate"]     = CheckpointVarInfo(f2_gate,    true,  "1");
+      handleMap["fCass_gate"]  = CheckpointVarInfo(fCass_gate, true,  "1");
+      handleMap["s_gate"]      = CheckpointVarInfo(s_gate,     true,  "1");
+      handleMap["r_gate"]      = CheckpointVarInfo(r_gate,     true,  "1");
+      handleMap["Ca_SR"]       = CheckpointVarInfo(Ca_SR,      true,  "mM");
+      handleMap["R_prime"]     = CheckpointVarInfo(R_prime,    true,  "1");
       assert(handleMap.size() == nVars);
    }
    return handleMap;

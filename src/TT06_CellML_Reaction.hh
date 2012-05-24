@@ -3,6 +3,8 @@
 
 #include "Reaction.hh"
 #include <map>
+#include "CheckpointVarInfo.hh"
+
 class Anatomy;
 class TT06_CellML;
 class TT06_CellMLState;
@@ -22,24 +24,7 @@ class TT06_CellML_Reaction : public Reaction
                   s_gate, r_gate, Ca_SR, R_prime,
                   // end marker
                   nVars};
-      
-   class VarInfo
-   {
-    public:
-      VarInfo()
-      : handle_(undefinedName), checkpoint_(false), unit_("1")
-      {};
-      VarInfo(int handle, bool checkpoint, std::string unit)
-      : handle_(handle), checkpoint_(checkpoint), unit_(unit)
-      {};
-      
-      int         handle_;
-      bool        checkpoint_;
-      std::string unit_; // output unit
-   };
-
-   typedef std::map<std::string, VarInfo> HandleMap; 
-
+   
    TT06_CellML_Reaction(const Anatomy& anatomy, IntegratorType integrator);
    ~TT06_CellML_Reaction();
    std::string methodName() const {return "TT06_CellML";}
@@ -54,7 +39,6 @@ class TT06_CellML_Reaction : public Reaction
    void getCheckpointInfo(std::vector<std::string>& fieldNames,
                           std::vector<std::string>& fieldUnits) const;
    int getVarHandle(const std::string& varName) const;
-   std::vector<int> getVarHandle(const std::vector<std::string>& varName) const;
    void setValue(int iCell, int varHandle, double value);
    double getValue(int iCell, int varHandle) const;
    void getValue(int iCell,
@@ -64,7 +48,7 @@ class TT06_CellML_Reaction : public Reaction
 
  private:
 
-   static HandleMap& getHandleMap();
+   HandleMap& getHandleMap() const;
    void forwardEulerIntegrator(double dt, const std::vector<double>& Vm,
       const std::vector<double>& iStim, std::vector<double>& dVm);
    void rushLarsenIntegrator(double dt, const std::vector<double>& Vm,

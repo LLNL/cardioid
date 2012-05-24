@@ -25,8 +25,11 @@ int Reaction::getVarHandle(const string& varName) const
  *  the concrete reaction class. */
 vector<int> Reaction::getVarHandle(const vector<string>& varName) const
 {
-   assert(false);
-   return vector<int>();
+   vector<int> handle;
+   for (unsigned ii=0; ii<varName.size(); ++ii)
+      handle.push_back(getVarHandle(varName[ii]));
+
+   return handle;
 }
 
 void Reaction::setValue(int iCell, int varHandle, double value)
