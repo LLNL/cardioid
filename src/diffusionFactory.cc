@@ -8,6 +8,7 @@
 #include "FGRDiffusion.hh"
 #include "FGRDiffusionOMP.hh"
 #include "FGRDiffusionThreads.hh"
+#include "FGRDiffusionFlex.hh"
 #include "NullDiffusion.hh"
 
 class Anatomy;
@@ -70,6 +71,9 @@ namespace
          return new FGRDiffusionThreads(p, anatomy, threadInfo, reactionThreadInfo);
       if (variant == "simd")
          return new FGRDiffusion(p, anatomy, threadInfo, reactionThreadInfo);
+      if (variant == "flex" )
+         return new FGRDiffusionFlex(p, anatomy, threadInfo, reactionThreadInfo);
+
 
       // unreachable.  Should have matched a clause above.
       std::cerr<<"ERROR --- invalid 'variant' parameter: "<<variant<<std::endl;
