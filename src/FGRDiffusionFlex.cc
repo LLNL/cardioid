@@ -48,7 +48,6 @@ FGRDiffusionFlex::FGRDiffusionFlex(const FGRDiffusionParms& parms,
    mkOffsets(localCopyOffset_,  anatomy.nLocal(),  reactionThreadInfo_);
    mkOffsets(remoteCopyOffset_, anatomy.nRemote(), threadInfo_);
 
-
    barrierHandle_.resize(threadInfo.nThreads());
    fgrBarrier_ = L2_BarrierWithSync_InitShared();
    #pragma omp parallel
@@ -60,6 +59,10 @@ FGRDiffusionFlex::FGRDiffusionFlex(const FGRDiffusionParms& parms,
    
    std::cout << "nx,ny,nz=" << nx <<" "<< ny <<" "<< nz << std::endl;
 
+   //note that
+   //VmBlock does not have to be 3d array any more.
+   //but Array3d is still used for easiness of debugging.
+   
    weight_.resize(nx, ny, nz);
    VmBlock_.resize(nx, ny, nz);
 
@@ -99,6 +102,8 @@ FGRDiffusionFlex::FGRDiffusionFlex(const FGRDiffusionParms& parms,
    reorder_Coeff();
 
    buildOffset(anatomy);
+
+   cout << "nQuad,nCalc=" << nCalc_ << "," << nQuad_ << endl;
 
    //simd thread offsets
    int chunkSize = nCalc_ / threadInfo.nThreads();
@@ -198,12 +203,14 @@ void FGRDiffusionFlex::buildTupleArray(const Anatomy& anatomy)
    {
       Tuple globalTuple = anatomy.globalTuple(ii);
       localTuple_[ii] = localGrid_.localTuple(globalTuple);
-      assert(localTuple_[ii].x() > 0);
-      assert(localTuple_[ii].y() > 0);
-      assert(localTuple_[ii].z() > 0);
-      assert(localTuple_[ii].x() < localGrid_.nx()-1);
-      assert(localTuple_[ii].y() < localGrid_.ny()-1);
-      assert(localTuple_[ii].z() < localGrid_.nz()-1);
+      assert(localTuple_[ii].x() > -1);
+      assert(localTuple_[ii].y() > -1);
+      assert(localTuple_[ii].z() > -1);
+      assert(localTuple_[ii].x() < localGrid_.nx());
+      assert(localTuple_[ii].y() < localGrid_.ny());
+      assert(localTuple_[ii].z() < localGrid_.nz());
+
+//      cout << "localTuple " << ii << ":" << localTuple_[ii].x() << " " << localTuple_[ii].y() << " " << localTuple_[ii].z() << endl;
    }
 }
 
@@ -361,8 +368,7 @@ void FGRDiffusionFlex::reorder_Coeff()
   diffCoefT2_.resize(Nx2,Ny2,Nz2*19,0.0);
   srand(21321);
 
-  const int n_cell = localTuple_.size() ;
-  for(int ii=0;ii<n_cell;ii++)
+  for(int ii=0;ii<nLocal_;ii++)
   {
     int xx = localTuple_[ii].x();
     int yy = localTuple_[ii].y();
@@ -423,7 +429,7 @@ FGRDiffusionFlex::FGRDiff_simd_thread(const uint32_t b_quad,const int32_t e_quad
 
   double* out = out0 + b_quad*4;
   WeightType *simd_diff_ = &(diffCoefT3_[0]) + b_quad*19*4;
-  uint16_t* vOffset = &(dOffset_[0]) + b_quad*4;
+  uint16_t* vOffset = &(dOffset_[0]) + b_quad*9;
 
 //    assert((uint64_t)phi_xm1_ym1_z%(4*sizeof(double)) == 0);
 //    assert((uint64_t)phi_xm1_y_z  %(4*sizeof(double)) == 0);
@@ -472,17 +478,6 @@ FGRDiffusionFlex::FGRDiff_simd_thread(const uint32_t b_quad,const int32_t e_quad
            vec_madd( vec_ld(4*15*WTSZ,simd_diff_)  , my_x_ym1_z, \
            vec_mul ( vec_ld(4*14*WTSZ,simd_diff_)  , my_x_y_z)))));
  
-   #define shift_pointers \
-           phi_xp1_y_z   +=4; \
-           phi_x_yp1_z   +=4; \
-           phi_xm1_y_z   +=4; \
-           phi_x_ym1_z   +=4; \
-           phi_xp1_yp1_z +=4; \
-           phi_xm1_yp1_z +=4; \
-           phi_xm1_ym1_z +=4; \
-           phi_xp1_ym1_z +=4; \
-           phi_x_y_z     +=4;
- 
     load_my_vectors;
  
     calc_zp(B0);
@@ -530,7 +525,7 @@ void FGRDiffusionFlex::buildOffset(const Anatomy& anatomy)
    for(int ii=0;ii<anatomy.nLocal();ii++)
    {
      Tuple localTuple = localTuple_[ii];
-     if(anatomy.cellType(ii) < 3) //if cell  
+//     if(anatomy.cellType(ii) < 3) //if cell  
      {
        int x = localTuple.x();
        int y = localTuple.y();
@@ -547,7 +542,7 @@ void FGRDiffusionFlex::buildOffset(const Anatomy& anatomy)
    for(int ii=anatomy.nLocal();ii<anatomy.size();ii++)
    {
      Tuple localTuple = localTuple_[ii];
-     if(anatomy.cellType(ii) < 3) //if cell  
+//     if(anatomy.cellType(ii) < 3) //if cell  
      {
        int x = localTuple.x();
        int y = localTuple.y();
@@ -653,7 +648,7 @@ void FGRDiffusionFlex::buildOffset(const Anatomy& anatomy)
   for(int ii=0;ii<anatomy.size();ii++)
   {
     Tuple localTuple = localTuple_[ii];
-    if(anatomy.cellType(ii) < 3) //if cell  
+//    if(anatomy.cellType(ii) < 3) //if cell  
     {
       int x = localTuple.x();
       int y = localTuple.y();
@@ -668,7 +663,7 @@ void FGRDiffusionFlex::buildOffset(const Anatomy& anatomy)
   for(int ii=0;ii<anatomy.nLocal();ii++)
   {
     Tuple localTuple = localTuple_[ii];
-    if(anatomy.cellType(ii) < 3) //if cell  
+//    if(anatomy.cellType(ii) < 3) //if cell  
     {
       int x = localTuple.x();
       int y = localTuple.y();
@@ -682,7 +677,6 @@ void FGRDiffusionFlex::buildOffset(const Anatomy& anatomy)
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // test functions
 ////////////////////////////////////////////////////////////////////////////////
@@ -691,21 +685,20 @@ void FGRDiffusionFlex::test_calc(int slice)
    Array3d<double> tmp_Vm;
    tmp_Vm.resize(nx,ny,nz,0.0);
 
+   //moving into Array3d
    for(int ii=0;ii<nTotal_;ii++)
    {
      tmp_Vm(blockIndex_[ii]) = VmBlock_(inIndex_[ii]);
    }
    
-  //inIndex test
-  dump_array3d(tmp_Vm,slice);
+   //inIndex test
+   dump_array3d(tmp_Vm,slice);
 
   for (unsigned ii=0; ii<nLocal_; ++ii)
   {
      int x=localTuple_[ii].x();
      int y=localTuple_[ii].y();
      int z=localTuple_[ii].z();
-
-//     if( z==slice) cout << x << " " << y << " " << z << " " ; 
 
      int idx = blockIndex_[ii];
      double sum=0;
@@ -802,7 +795,7 @@ void FGRDiffusionFlex::dump_anatomy(const Anatomy& anatomy, int slice)
   for(int ii=0;ii<anatomy.size();ii++)
   {
     Tuple localTuple = localTuple_[ii];
-    if(anatomy.cellType(ii) < 3) //if cell  
+//    if(anatomy.cellType(ii) < 3) //if cell  
     {
       int x = localTuple.x();
       int y = localTuple.y();
@@ -819,7 +812,7 @@ void FGRDiffusionFlex::dump_anatomy(const Anatomy& anatomy, int slice)
   //random assign weight
   for(int ii=0;ii<anatomy.nLocal();ii++)
   {
-    if(anatomy.cellType(ii) < 3) //if cell  
+//    if(anatomy.cellType(ii) < 3) //if cell  
     {
       for(int jj=0;jj<19;jj++)
       {
