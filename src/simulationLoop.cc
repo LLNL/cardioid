@@ -135,7 +135,7 @@ void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVm
 
    if (!firstCall) 
    { 
-      if (loop % sim.snapshotRate_ == 0)
+      if (loop > 0 && loop % sim.snapshotRate_ == 0)
       {
          stringstream name;
          name << "snapshot."<<setfill('0')<<setw(12)<<loop;
