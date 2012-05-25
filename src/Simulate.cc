@@ -38,8 +38,8 @@ void Simulate::outOfRange(unsigned index, double dVmr, double dVmd)
       dVmd += diffusion_->VmBlock()[bi] * diffusion_->diffusionScale();
    }
    
-   printf("WARNING: Voltage out of range: rank %d, index %d\n"
+   printf("WARNING: Voltage out of range: rank %d, index %d gid %llu\n"
           "         loop = %d, V = %e, dVmd = %e, dVmr = %e\n",
-          myRank, index, loop_, Vm, dVmd, dVmr);
+          myRank, index, anatomy_.gid(index), loop_, Vm, dVmd, dVmr);
    fflush(stdout);
 }
