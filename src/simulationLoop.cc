@@ -130,7 +130,7 @@ void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVm
       fprintf(file,"%8d %8.3f %21.15f %21.15f %21.15f\n",loop,sim.time_,sim.VmArray_[0],dVmR[0],dVmD[0]); fflush(file); 
    }
 
-   if (sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
+   if (sim.loop_ > 0 && sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
       writeCheckpoint(sim, MPI_COMM_WORLD);
 
    if (!firstCall) 

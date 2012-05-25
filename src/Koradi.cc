@@ -94,6 +94,7 @@ Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
       if (imbalance < tolerance_)
          break;
    }
+   /*ewd DEBUG:  comment this out to save on I/O
    stringstream name;
    name << "balance.final";
    string fullname = name.str();
@@ -102,6 +103,7 @@ Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
    fullname += "/anatomy";
    writeCells(cells_, anatomy.nx(), anatomy.ny(), anatomy.nz(),
               fullname.c_str());
+   */
 }
 
 void Koradi::balanceStep()
