@@ -1,5 +1,5 @@
-#ifndef FGRDIFFUSION_HH
-#define FGRDIFFUSION_HH
+#ifndef FGRDIFFUSIONFLEX_HH
+#define FGRDIFFUSIONFLEX_HH
 
 #include "Diffusion.hh"
 #include "LocalGrid.hh"
@@ -25,7 +25,8 @@ class FGRDiffusionFlex : public Diffusion
    void updateLocalVoltage(const double* VmLocal);
    void updateRemoteVoltage(const double* VmRemote);
    void calc(std::vector<double>& dVm);
-   unsigned* blockIndex(){return &blockIndex_[0];}
+   unsigned* blockIndex(){return &inIndex_[0];}
+   unsigned* blockIndexB(){return &outIndex_[0];}
    double* VmBlock() {return VmBlock_.cBlock();}
    double* dVmBlock(){return dVmBlock_.cBlock();}
    double diffusionScale(){return diffusionScale_;}
