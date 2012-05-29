@@ -13,13 +13,11 @@ using std::vector;
 void Simulate::checkRanges(const vector<double>& dVmReaction,
                            const vector<double>& dVmDiffusion)
 {
-   const double vMax = 60;
-   const double vMin = -110;
    unsigned nLocal = anatomy_.nLocal();
    for (unsigned ii=0; ii<nLocal; ++ii)
    {
-      if (VmArray_[ii] > vMax || VmArray_[ii] < vMin || isnan(VmArray_[ii]) )
-         outOfRange(ii, dVmReaction[ii], dVmDiffusion[ii]);
+      if ( vdata_.outOfRange(ii) )
+         outOfRange(ii, (*vdata_.dVmReaction_)[ii], (*vdata_.dVmDiffusion_)[ii]);
    }
 }
 
@@ -27,7 +25,7 @@ void Simulate::outOfRange(unsigned index, double dVmr, double dVmd)
 {
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank); 
-   double Vm = VmArray_[index];
+   double Vm = (*vdata_.VmArray_)[index];
 
    /** This is awful.  Some diffusion classes don't store the results in
     *  array form, but keep them in an internal matrix.  We have to go

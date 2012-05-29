@@ -5,6 +5,7 @@
 #include <string>
 #include <set>
 #include <vector>
+#include <cmath>
 
 #include "Long64.hh"
 #include "Anatomy.hh"
@@ -14,6 +15,47 @@ class Reaction;
 class Stimulus;
 class Sensor;
 class CommTable;
+using std::isnan;
+
+// storage class for persistent data such as potentials that may 
+// need to be analyzed or printed out by sensors
+class PotentialData
+{
+ public:
+ 
+   PotentialData()
+   {
+      VmArray_     =NULL;
+      dVmDiffusion_=NULL;
+      dVmReaction_ =NULL;
+   };
+   
+   ~PotentialData()
+   {
+      if( VmArray_     !=NULL )delete VmArray_;
+      if( dVmDiffusion_!=NULL )delete dVmDiffusion_;
+      if( dVmReaction_ !=NULL )delete dVmReaction_;
+   };
+   
+   void setup(const Anatomy& anatomy)
+   {
+      VmArray_     =new std::vector<double>(anatomy.size(), 0.);
+      dVmDiffusion_=new std::vector<double>(anatomy.nLocal(), 0.);
+      dVmReaction_ =new std::vector<double>(anatomy.nLocal(), 0.);
+   }
+   
+   bool outOfRange(const unsigned ii)const
+   {
+      const double vMax =   60.;
+      const double vMin = -110.;
+      return ( (*VmArray_)[ii] > vMax || (*VmArray_)[ii] < vMin || isnan((*VmArray_)[ii]) );
+   }
+   
+   // use pointers to vector so that they can be swapped
+   std::vector<double>* VmArray_; // local and remote
+   std::vector<double>* dVmDiffusion_;
+   std::vector<double>* dVmReaction_;
+};
 
 // Kitchen sink class for heart simulation.  This is probably a great
 // example of how *not* to do design, but we need to get something
@@ -55,7 +97,8 @@ class Simulate
    std::vector<int> sendMap_;
    CommTable* commTable_;
    
-   std::vector<double> VmArray_; // local and remote
+   //std::vector<double> VmArray_; // local and remote
+   PotentialData vdata_;
 
    Anatomy anatomy_;
    Diffusion* diffusion_;

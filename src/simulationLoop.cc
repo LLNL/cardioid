@@ -82,11 +82,14 @@ namespace
 void simulationProlog(Simulate& sim)
 {
    // initialize membrane voltage with default value from the reaction model. 
-   sim.VmArray_.resize(sim.anatomy_.size());
-   sim.reaction_->initializeMembraneVoltage(sim.VmArray_);
+   sim.vdata_.setup(sim.anatomy_);
+   //sim.VmArray_.resize(sim.anatomy_.size());
+   
+   std::vector<double>& VmArray(*sim.vdata_.VmArray_);
+   sim.reaction_->initializeMembraneVoltage(VmArray);
   
    for (unsigned ii=sim.anatomy_.nLocal(); ii<sim.anatomy_.size(); ++ii)
-      sim.VmArray_[ii] = 0;
+      VmArray[ii] = 0;
 
    // Load state file, assign corresponding values to membrane voltage and cell model
    for (unsigned ii=0; ii<sim.stateFilename_.size(); ++ii)
@@ -103,18 +106,20 @@ void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVm
    static int firstCall=1; 
    int loop = sim.loop_; 
 
+   std::vector<double>& VmArray(*sim.vdata_.VmArray_);
+
    // SENSORS
    startTimer(sensorTimer);
    for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
    {
-       if (loop % sim.sensor_[ii]->evalRate() == 0) sim.sensor_[ii]->eval(sim.time_, loop, sim.VmArray_, dVmR, dVmD);
+       if (loop % sim.sensor_[ii]->evalRate() == 0) sim.sensor_[ii]->eval(sim.time_, loop, VmArray, dVmR, dVmD);
    }
    stopTimer(sensorTimer);
 
    startTimer(loopIOTimer);
    for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
    {
-      if (loop % sim.sensor_[ii]->printRate() == 0) sim.sensor_[ii]->print(sim.time_, loop, sim.VmArray_, dVmR, dVmD);
+      if (loop % sim.sensor_[ii]->printRate() == 0) sim.sensor_[ii]->print(sim.time_, loop, VmArray, dVmR, dVmD);
    }
       
    if ( (loop % sim.printRate_ == 0) && myRank == 0)
@@ -126,8 +131,8 @@ void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVm
        printf("#   Loop     Time         Vm(t)        dVm_r(t-h)      dVm_d(t-h)\n");
        fprintf(file,"#   Loop     Time         Vm(t)        dVm_r(t-h)      dVm_d(t-h)\n");
       }
-      printf("%8d %8.3f %21.15f %21.15f %21.15f\n",loop,sim.time_,sim.VmArray_[0],dVmR[0],dVmD[0]);  fflush(stdout); 
-      fprintf(file,"%8d %8.3f %21.15f %21.15f %21.15f\n",loop,sim.time_,sim.VmArray_[0],dVmR[0],dVmD[0]); fflush(file); 
+      printf("%8d %8.3f %21.15f %21.15f %21.15f\n",loop,sim.time_,VmArray[0],dVmR[0],dVmD[0]);  fflush(stdout); 
+      fprintf(file,"%8d %8.3f %21.15f %21.15f %21.15f\n",loop,sim.time_,VmArray[0],dVmR[0],dVmD[0]); fflush(file); 
    }
 
    if (sim.loop_ > 0 && sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
@@ -153,12 +158,14 @@ void loopIO(const Simulate& sim, const vector<double>& dVmR, vector<double>& dVm
 
 void simulationLoop(Simulate& sim)
 {
-
-   vector<double> dVmDiffusion(sim.anatomy_.nLocal(), 0.0);
-   vector<double> dVmReaction(sim.anatomy_.nLocal(), 0.0);
    vector<double> iStim(sim.anatomy_.nLocal(), 0.0);
    simulationProlog(sim);
    HaloExchange<double> voltageExchange(sim.sendMap_, (sim.commTable_));
+
+   PotentialData& vdata=sim.vdata_;
+   std::vector<double>& vmarray(*vdata.VmArray_);
+   std::vector<double>& dVmDiffusion(*vdata.dVmDiffusion_);
+   std::vector<double>& dVmReaction(*vdata.dVmReaction_);
 
 #if defined(SPI) && defined(TRACESPI)
    int myRank;
@@ -166,7 +173,7 @@ void simulationLoop(Simulate& sim)
    cout << "Rank[" << myRank << "]: numOfNeighborToSend=" << sim.commTable_->_sendTask.size() << " numOfNeighborToRecv=" << sim.commTable_->_recvTask.size() << " numOfBytesToSend=" << sim.commTable_->_sendOffset[sim.commTable_->_sendTask.size()]*sizeof(double) << " numOfBytesToRecv=" << sim.commTable_->_recvOffset[sim.commTable_->_recvTask.size()]*sizeof(double) << endl;
 #endif
 
-   loopIO(sim,dVmReaction,dVmDiffusion);
+   loopIO(sim,*vdata.dVmReaction_,*vdata.dVmDiffusion_);
    while ( sim.loop_<sim.maxLoop_ )
    {
       int nLocal = sim.anatomy_.nLocal();
@@ -176,14 +183,14 @@ void simulationLoop(Simulate& sim)
       stopTimer(imbalanceTimer);
       
       startTimer(haloTimer);
-      voltageExchange.fillSendBuffer(sim.VmArray_);
+      voltageExchange.fillSendBuffer(vmarray);
       voltageExchange.startComm();
       voltageExchange.wait();
       stopTimer(haloTimer);
 
       // DIFFUSION
       startTimer(diffusionCalcTimer);
-      sim.diffusion_->updateLocalVoltage(&(sim.VmArray_[0]));
+      sim.diffusion_->updateLocalVoltage(&(vmarray[0]));
       sim.diffusion_->updateRemoteVoltage(voltageExchange.getRecvBuf());
       sim.diffusion_->calc(dVmDiffusion);
       stopTimer(diffusionCalcTimer);
@@ -199,7 +206,7 @@ void simulationLoop(Simulate& sim)
       
       // REACTION
       startTimer(reactionTimer);
-      sim.reaction_->calc(sim.dt_, sim.VmArray_, iStim, dVmReaction);
+      sim.reaction_->calc(sim.dt_, vmarray, iStim, dVmReaction);
       stopTimer(reactionTimer);
 
       startTimer(integratorTimer);
@@ -211,7 +218,7 @@ void simulationLoop(Simulate& sim)
       for (int ii=0; ii<nLocal; ++ii)
       {
          double dVm = dVmReaction[ii] + dVmDiffusion[ii];
-         sim.VmArray_[ii] += sim.dt_*dVm;
+         vmarray[ii] += sim.dt_*dVm;
       }
 
       sim.time_ += sim.dt_;
@@ -422,6 +429,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
    int tid = sim.reactionThreads_.teamRank();
    L2_BarrierHandle_t reactionWaitOnNonGateHandle;
    L2_BarrierWithSync_InitInThread(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle);
+   std::vector<double>& VmArray(*sim.vdata_.VmArray_);
 
 #ifdef PER_SQUAD_BARRIER
    const int sqsz = sim.reactionThreads_.squadSize();
@@ -436,7 +444,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       int nLocal = sim.anatomy_.nLocal();
       
       startTimer(reactionTimer);
-      sim.reaction_->updateNonGate(sim.dt_, sim.VmArray_, loopData.dVmReaction);
+      sim.reaction_->updateNonGate(sim.dt_, VmArray, loopData.dVmReaction);
       startTimer(GateNonGateTimer); 
 
 #ifdef PER_SQUAD_BARRIER
@@ -454,7 +462,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 				 sim.reactionThreads_.nThreads());
 #endif
       stopTimer(GateNonGateTimer); 
-      sim.reaction_->updateGate(sim.dt_, sim.VmArray_);
+      sim.reaction_->updateGate(sim.dt_, VmArray);
       stopTimer(reactionTimer);
 
 
@@ -518,7 +526,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 		    sim.diffusion_->blockIndex(),
 		    sim.diffusion_->dVmBlock(),
 		    sim.diffusion_->VmBlock(),
-		    &sim.VmArray_[0],
+		    &VmArray[0],
 		    sim.diffusion_->diffusionScale());
 #else
       integrateLoop(loopData.integratorOffset[tid],
@@ -529,7 +537,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 		    sim.diffusion_->blockIndex(),
 		    sim.diffusion_->dVmBlock(),
 		    sim.diffusion_->VmBlock(),
-		    &sim.VmArray_[0],
+		    &VmArray[0],
 		    sim.diffusion_->diffusionScale());
 #endif
       
@@ -554,7 +562,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
          {
             unsigned vIndex = loopData.sendBufIndirect[ii].first;
             unsigned sIndex = loopData.sendBufIndirect[ii].second;
-            sendBuf[sIndex] = sim.VmArray_[vIndex];
+            sendBuf[sIndex] = VmArray[vIndex];
          }
       }
       stopTimer(haloMove2BufTimer);
@@ -582,6 +590,7 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
    cout << "Rank[" << myRank << "]: numOfNeighborToSend=" << sim.commTable_->_sendTask.size() << " numOfNeighborToRecv=" << sim.commTable_->_recvTask.size() << " numOfBytesToSend=" << sim.commTable_->_sendOffset[sim.commTable_->_sendTask.size()]*sizeof(double) << " numOfBytesToRecv=" << sim.commTable_->_recvOffset[sim.commTable_->_recvTask.size()]*sizeof(double) << endl;
 #endif
+   std::vector<double>& VmArray(*sim.vdata_.VmArray_);
 
    #pragma omp parallel
    {
@@ -593,8 +602,8 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
       L2_BarrierWithSync_InitInThread(loopData.diffusionBarrier, &diffusionHandle);
       
       // setup matrix voltages for first timestep.
-      sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
-      loopData.voltageExchange.fillSendBuffer(sim.VmArray_);
+      sim.diffusion_->updateLocalVoltage(&VmArray[0]);
+      loopData.voltageExchange.fillSendBuffer(VmArray);
       #pragma omp barrier
       profileStart(parallelDiffReacTimer);
       if ( sim.diffusionThreads_.teamRank() >= 0) 

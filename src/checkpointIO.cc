@@ -184,9 +184,10 @@ void writeCheckpoint(const Simulate& sim, MPI_Comm comm)
    
    char buf[lRec+1];
    vector<double> value(handle.size(), 0.0);
+   const std::vector<double>& vmarray=(*sim.vdata_.VmArray_);
    for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
    {
-      int bufPos = sprintf(buf, gidVmFormat, anatomy.gid(ii), sim.VmArray_[ii]);
+      int bufPos = sprintf(buf, gidVmFormat, anatomy.gid(ii), vmarray[ii]);
       sim.reaction_->getValue(ii, handle, value);
       for (unsigned jj=0; jj<value.size(); ++jj)
          bufPos += sprintf(buf+bufPos, itemFormat, value[jj]);
@@ -252,9 +253,10 @@ void readCheckpoint(const string& filename, Simulate& sim, MPI_Comm comm)
    }
 
    // Load membrane voltage from checkpoint file into VmArray.
+   std::vector<double>& vmarray=(*sim.vdata_.VmArray_);
    unsigned vmIndex = data->getIndex("Vm");
    if (vmIndex != data->nFields())
       for (unsigned ii=0; ii<data->nRecords(); ++ii)
-         data->getRecord(ii).getValue(vmIndex, sim.VmArray_[ii]);
+         data->getRecord(ii).getValue(vmIndex, vmarray[ii]);
    delete data;
 }

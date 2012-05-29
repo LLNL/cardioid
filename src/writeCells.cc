@@ -22,6 +22,7 @@ void writeCells(const Simulate& sim,
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
    const Anatomy& anatomy = sim.anatomy_;
+   const std::vector<double>& vmarray=(*sim.vdata_.VmArray_);
    
    vector<AnatomyCell> cells = anatomy.cellArray();
    cells.resize(anatomy.nLocal());
@@ -84,7 +85,7 @@ void writeCells(const Simulate& sim,
       
       int l = snprintf(line, lrec, fmt,
                        ix, iy, iz, cells[ii].cellType_, cells[ii].dest_,
-                       sim.VmArray_[cells[ii].sortind_]);
+                       vmarray[cells[ii].sortind_]);
       
       for (; l < lrec - 1; l++) line[l] = (char)' ';
       line[l++] = (char)'\n';
