@@ -44,6 +44,13 @@ class PotentialData
       dVmReaction_ =new std::vector<double>(anatomy.nLocal(), 0.);
    }
    
+   std::vector<double>* swapdVmReaction(std::vector<double>* const dVmReaction)
+   {
+      std::vector<double>* tmp=dVmReaction_;
+      dVmReaction_=dVmReaction;
+      return tmp;
+   }
+   
    bool outOfRange(const unsigned ii)const
    {
       const double vMax =   60.;
