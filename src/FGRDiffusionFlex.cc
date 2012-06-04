@@ -21,7 +21,7 @@ FGRDiffusionFlex::FGRDiffusionFlex(const FGRDiffusionParms& parms,
                            const Anatomy& anatomy,
                            const ThreadTeam& threadInfo,
                            const ThreadTeam& reactionThreadInfo)
-: nLocal_(anatomy.nLocal()),
+: nLocal_(anatomy.nLocal()), nTotal_(anatomy.size()),
   localGrid_(DiffusionUtils::findBoundingBox_simd(anatomy, parms.printBBox_)),
   threadInfo_(threadInfo),
   reactionThreadInfo_(reactionThreadInfo),
@@ -59,12 +59,13 @@ FGRDiffusionFlex::FGRDiffusionFlex(const FGRDiffusionParms& parms,
    
    std::cout << "nx,ny,nz=" << nx <<" "<< ny <<" "<< nz << std::endl;
 
-   //note that
-   //VmBlock does not have to be 3d array any more.
-   //but Array3d is still used for easiness of debugging.
-   
+   //Dual struecture co-exist.
+   //Array3d for book-keeping  : blockIndex, localTuple 
+   //normal Vector for calculation : inIndex, outIndex
+
    weight_.resize(nx, ny, nz);
    VmBlock_.resize(nx, ny, nz);
+   dVmBlock_.resize(nx,ny,nz);
 
    buildTupleArray(anatomy);
    buildBlockIndex(anatomy);
@@ -97,11 +98,61 @@ FGRDiffusionFlex::FGRDiffusionFlex(const FGRDiffusionParms& parms,
    faceNbrOffset_[4] = offset_[ZZM];
    faceNbrOffset_[5] = offset_[ZZP];
 
+
 //   offsetsTest();
    precomputeCoefficients(anatomy);
-   reorder_Coeff();
 
+   //this is test
+   boundary_test(anatomy);
+
+   reorder_Coeff();
    buildOffset(anatomy);
+
+   cout << "buildOffset done. " << endl;
+
+   //this is test
+   {
+     Array3d<double> tmp_Vm;
+     tmp_Vm.resize(nx,ny,nz,0.0);
+     srand(1234);
+     
+     //moving into Array3d
+     for(int ii=0;ii<nTotal_;ii++)
+     {
+       tmp_Vm(blockIndex_[ii]) = VmBlock_(inIndex_[ii]) = rand();
+     }
+
+     basic_diffusion(weight_,tmp_Vm,dVmBlock_);
+
+     double* out = new double[nCalc_*4];
+
+     
+     stencil(0,1,out);
+     stencil(1,nCalc_,out);
+
+     //comparison
+     for(int ii=0;ii<nLocal_;ii++)
+     {
+       double a = dVmBlock_(blockIndex_[ii]);
+       double b = out[outIndex_[ii]];
+       double big = a>b ? a:b;
+       double small = a>b ? b:a;
+       double difference = big-small;
+       if ( big !=0 )  difference /= fabs(big);
+       if ( difference > 0.001)
+       {
+          std::cout << "no match :" << ii << std::endl;
+          Tuple localTuple = localTuple_[ii];
+          int x = localTuple.x();
+          int y = localTuple.y();
+          int z = localTuple.z();
+          std::cout << "x,y,z=" << x << " " << y  << " " << z << std::endl;
+          assert(false);
+       }
+     }
+
+     delete [] out;
+   }
 
    cout << "nQuad,nCalc=" << nCalc_ << "," << nQuad_ << endl;
 
@@ -117,8 +168,6 @@ FGRDiffusionFlex::FGRDiffusionFlex(const FGRDiffusionParms& parms,
          ++threadOffsetSimd_[ii+1];
    }
    assert(nCalc_ == threadOffsetSimd_[threadInfo.nThreads()] );
-
-   dVmBlock_.resize(nx,ny,nz);
 
 }
 
@@ -168,7 +217,8 @@ void FGRDiffusionFlex::calc(vector<double>& dVm)
    //if (threadOffsetSimd_[tid] < threadOffsetSimd_[tid+1] )
    //   FGRDiff_simd_thread(begin,end-begin,VmTmp,dVmBlock_.cBlock());
    if (threadOffsetSimd_[tid] < threadOffsetSimd_[tid+1] )
-      FGRDiff_simd_thread(threadOffsetSimd_[tid] ,threadOffsetSimd_[tid+1],dVmBlock_.cBlock());
+      stencil(threadOffsetSimd_[tid] ,threadOffsetSimd_[tid+1],dVmBlock_.cBlock());
+//      FGRDiff_simd_thread(threadOffsetSimd_[tid] ,threadOffsetSimd_[tid+1],dVmBlock_.cBlock());
 
    stopTimer(FGR_StencilTimer);
 
@@ -506,6 +556,109 @@ FGRDiffusionFlex::FGRDiff_simd_thread(const uint32_t b_quad,const int32_t e_quad
   }
 }
 
+// simdiazed version
+void
+FGRDiffusionFlex::stencil(const uint32_t b_quad,const int32_t e_quad, double* out0)
+{
+  int ii;
+  double* VmM = VmBlock_.cBlock();
+
+  vector4double B0,Sum1,B2,C0,C1,C2,Sum0,Sum2,Sum;
+  vector4double my_x_y_z    ;
+  vector4double my_xp1_y_z  ;
+  vector4double my_x_yp1_z  ;
+  vector4double my_xm1_y_z  ;
+  vector4double my_x_ym1_z  ;
+  vector4double my_xp1_yp1_z;
+  vector4double my_xm1_yp1_z;
+  vector4double my_xm1_ym1_z;
+  vector4double my_xp1_ym1_z;
+  vector4double my_zero_vec = vec_splats(0.0);
+
+  double* out = out0 + b_quad*4;
+  WeightType *simd_diff_ = &(diffCoefT3_[0]) + b_quad*19*4;
+  uint16_t* vOffset = &(dOffset_[0]) + b_quad*9;
+
+//    assert((uint64_t)phi_xm1_ym1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xm1_y_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xm1_yp1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_x_ym1_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_x_y_z    %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_x_yp1_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xp1_ym1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xp1_y_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xp1_yp1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)out          %(4*sizeof(double)) == 0);
+ 
+  #define load_my_vectors  \
+      my_x_y_z      =vec_ld(*(vOffset++), VmM);\
+      my_x_ym1_z    =vec_ld(*(vOffset++), VmM);\
+      my_x_yp1_z    =vec_ld(*(vOffset++), VmM);\
+      my_xm1_y_z    =vec_ld(*(vOffset++), VmM);\
+      my_xm1_ym1_z  =vec_ld(*(vOffset++), VmM);\
+      my_xm1_yp1_z  =vec_ld(*(vOffset++), VmM);\
+      my_xp1_y_z    =vec_ld(*(vOffset++), VmM);\
+      my_xp1_ym1_z  =vec_ld(*(vOffset++), VmM);\
+      my_xp1_yp1_z  =vec_ld(*(vOffset++), VmM);
+ 
+   #define calc_zp(x) \
+       x =  vec_madd(vec_ld(4*4*WTSZ,simd_diff_)  , my_xp1_y_z, \
+            vec_madd(vec_ld(4*3*WTSZ,simd_diff_)  , my_x_yp1_z, \
+            vec_madd(vec_ld(4*2*WTSZ,simd_diff_)  , my_xm1_y_z, \
+            vec_madd(vec_ld(4*1*WTSZ,simd_diff_)  , my_x_ym1_z, \
+            vec_mul( vec_ld(4*0*WTSZ,simd_diff_)  , my_x_y_z)))));
+ 
+   #define calc_zz(x) \
+       x = vec_madd( vec_ld(4*13*WTSZ,simd_diff_)  , my_xp1_y_z, \
+           vec_madd( vec_ld(4*12*WTSZ,simd_diff_)  , my_x_yp1_z, \
+           vec_madd( vec_ld(4*11*WTSZ,simd_diff_)  , my_xm1_y_z, \
+           vec_madd( vec_ld(4*10*WTSZ,simd_diff_)  , my_x_ym1_z, \
+           vec_madd( vec_ld(4*9*WTSZ,simd_diff_)  , my_xp1_yp1_z, \
+           vec_madd( vec_ld(4*8*WTSZ,simd_diff_)  , my_xm1_yp1_z, \
+           vec_madd( vec_ld(4*7*WTSZ,simd_diff_)  , my_xm1_ym1_z, \
+           vec_madd( vec_ld(4*6*WTSZ,simd_diff_)  , my_xp1_ym1_z, \
+           vec_mul ( vec_ld(4*5*WTSZ,simd_diff_)  , my_x_y_z)))))))));
+ 
+   #define calc_zm(x) \
+       x = vec_madd( vec_ld(4*18*WTSZ,simd_diff_)  , my_xp1_y_z, \
+           vec_madd( vec_ld(4*17*WTSZ,simd_diff_)  , my_x_yp1_z, \
+           vec_madd( vec_ld(4*16*WTSZ,simd_diff_)  , my_xm1_y_z, \
+           vec_madd( vec_ld(4*15*WTSZ,simd_diff_)  , my_x_ym1_z, \
+           vec_mul ( vec_ld(4*14*WTSZ,simd_diff_)  , my_x_y_z)))));
+ 
+    load_my_vectors;
+    calc_zm(B2);
+
+    simd_diff_ += 19*4;
+    load_my_vectors;
+    calc_zp(B0);
+    calc_zz(Sum1);
+    calc_zm(C2);
+ 
+    Sum2 = vec_sldw(B2,C2,3);
+    B2 = C2;
+ 
+  for(int qIdx=b_quad;qIdx<e_quad;qIdx++)
+  {
+    simd_diff_ += 19*4;
+    load_my_vectors;
+ 
+    calc_zp(C0);
+    Sum0 = vec_sldw(B0,C0,1);
+    B0=C0;
+ 
+    Sum = vec_add(vec_add(Sum2,Sum1),Sum0);
+    vec_st(Sum,0,out);  //commit
+    out+=4;
+ 
+    calc_zz(Sum1);
+    calc_zm(C2);
+    Sum2 = vec_sldw(B2,C2,3);
+    B2 = C2;
+  }
+}
+
+
 void FGRDiffusionFlex::buildOffset(const Anatomy& anatomy)
 {
    /////////////////////////////////////////////////////////////////////////////
@@ -568,17 +721,33 @@ void FGRDiffusionFlex::buildOffset(const Anatomy& anatomy)
    nQuad_=bIdx;
    nCalc_=cIdx;
 
-   cout << "nQuad:" << nQuad_ << endl;
-   cout << "nCalc:" << nCalc_ << endl;
+//   cout << "nQuad:" << nQuad_ << endl;
+//   cout << "nCalc:" << nCalc_ << endl;
 
 
-   dOffset_.resize(nCalc_*9);
-   diffCoefT3_.resize((nCalc_+1)*4*19);
+   dOffset_.resize((nCalc_+1)*9);
+   diffCoefT3_.resize((nCalc_+2)*4*19);
 
    //generate stream
    //go through quad marked as cell
    int dIdx=0;
    int eIdx=0;
+
+   dOffset_[dIdx++]=U16_MAX;
+   dOffset_[dIdx++]=U16_MAX;
+   dOffset_[dIdx++]=U16_MAX;
+   dOffset_[dIdx++]=U16_MAX;
+   dOffset_[dIdx++]=U16_MAX;
+   dOffset_[dIdx++]=U16_MAX;
+   dOffset_[dIdx++]=U16_MAX;
+   dOffset_[dIdx++]=U16_MAX;
+   dOffset_[dIdx++]=U16_MAX;
+
+   for(int ll=0;ll<4*19;ll++)
+   {
+     diffCoefT3_[eIdx++] = 0;
+   }
+
    for(int ii=0;ii<nx-2;ii++)
    for(int jj=0;jj<ny-2;jj++)
    for(int kk=0;kk<qnz;kk++)
@@ -615,15 +784,15 @@ void FGRDiffusionFlex::buildOffset(const Anatomy& anatomy)
    for(int ll=0;ll<4*19;ll++) { diffCoefT3_[eIdx++] = 0.0; }
 
    assert(dIdx%9 == 0);
-   assert(dIdx/9 == nCalc_);
+   assert(dIdx/9 == (nCalc_+1));
 
    for(int ll=1;ll<9;ll++)
    {
      int mode=0;
      int last;
-     for(int ii=0;ii<nCalc_;ii++)
+     for(int ii=0;ii<=nCalc_;ii++)
      {
-       int jj=nCalc_-ii-1;
+       int jj=nCalc_-ii;
        //find first not -1
        if(mode==0)
        {
@@ -680,92 +849,32 @@ void FGRDiffusionFlex::buildOffset(const Anatomy& anatomy)
 ////////////////////////////////////////////////////////////////////////////////
 // test functions
 ////////////////////////////////////////////////////////////////////////////////
-void FGRDiffusionFlex::test_calc(int slice)
+void FGRDiffusionFlex::calc_history(int slice)
 {
-   Array3d<double> tmp_Vm;
-   tmp_Vm.resize(nx,ny,nz,0.0);
-
-   //moving into Array3d
-   for(int ii=0;ii<nTotal_;ii++)
-   {
-     tmp_Vm(blockIndex_[ii]) = VmBlock_(inIndex_[ii]);
-   }
-   
-   //inIndex test
-   dump_array3d(tmp_Vm,slice);
-
-  for (unsigned ii=0; ii<nLocal_; ++ii)
-  {
-     int x=localTuple_[ii].x();
-     int y=localTuple_[ii].y();
-     int z=localTuple_[ii].z();
-
-     int idx = blockIndex_[ii];
-     double sum=0;
-     for(int kk=0;kk<19;kk++)
-     {
-       sum += tmp_Vm(idx + offset_[kk]) * weight_(x,y,z).A[kk];
-//       if ( z==slice) cout << tmp_Vm(idx + offset_[kk]) << " " << weight_(x,y,z).A[kk] <<" ";
-
-     }
-//     if( z==slice) cout << endl;
-     dVmBlock_(x,y,z) = sum;
-
-  }
-
-  //dV block dump
-  dump_array3d(dVmBlock_,slice);
-
-
-  double* out = new double[nCalc_*4];
-  FGRDiff_simd_thread(0,nCalc_,out);
-
-  std::cout << std::endl;
-  for(int ii=0;ii<nCalc_;ii++)
-  {
-    std::cout << VmBlock_(dOffset_[9*ii+0]/8);
-    std::cout << VmBlock_(dOffset_[9*ii+0]/8+1);
-    std::cout << VmBlock_(dOffset_[9*ii+0]/8+2);
-    std::cout << VmBlock_(dOffset_[9*ii+0]/8+3);
-    std::cout << " " ;
-    std::cout << VmBlock_(dOffset_[9*ii+1]/8);
-    std::cout << VmBlock_(dOffset_[9*ii+1]/8+1);
-    std::cout << VmBlock_(dOffset_[9*ii+1]/8+2);
-    std::cout << VmBlock_(dOffset_[9*ii+1]/8+3);
-    std::cout << " " ;
-    std::cout << diffCoefT3_[ii*4*19  + 4*5 + 0];
-    std::cout << diffCoefT3_[ii*4*19  + 4*5 + 1];
-    std::cout << diffCoefT3_[ii*4*19  + 4*5 + 2];
-    std::cout << diffCoefT3_[ii*4*19  + 4*5 + 3];
-    std::cout << " " ;
-    std::cout << out[ii*4+0];
-    std::cout << out[ii*4+1];
-    std::cout << out[ii*4+2];
-    std::cout << out[ii*4+3];
     std::cout << std::endl;
-  }
-
-//  for(int ii=0;ii<dVmBlock_.size();ii++) dVmBlock_(ii)=0;
-  for(int ii=0;ii<nLocal_;ii++)
-  {
-    if (fabs( dVmBlock_(blockIndex_[ii]) - out[outIndex_[ii]]) > 0.001)
+    for(int ii=0;ii<nCalc_;ii++)
     {
-       cout << "no match :" << ii << endl;
-       Tuple localTuple = localTuple_[ii];
-       int x = localTuple.x();
-       int y = localTuple.y();
-       int z = localTuple.z();
-       cout << "x,y,z=" << x << " " << y  << " " << z << endl;
+      std::cout << VmBlock_(dOffset_[9*ii+0]/8);
+      std::cout << VmBlock_(dOffset_[9*ii+0]/8+1);
+      std::cout << VmBlock_(dOffset_[9*ii+0]/8+2);
+      std::cout << VmBlock_(dOffset_[9*ii+0]/8+3);
+      std::cout << " " ;
+      std::cout << VmBlock_(dOffset_[9*ii+1]/8);
+      std::cout << VmBlock_(dOffset_[9*ii+1]/8+1);
+      std::cout << VmBlock_(dOffset_[9*ii+1]/8+2);
+      std::cout << VmBlock_(dOffset_[9*ii+1]/8+3);
+      std::cout << " " ;
+      std::cout << diffCoefT3_[ii*4*19  + 4*5 + 0];
+      std::cout << diffCoefT3_[ii*4*19  + 4*5 + 1];
+      std::cout << diffCoefT3_[ii*4*19  + 4*5 + 2];
+      std::cout << diffCoefT3_[ii*4*19  + 4*5 + 3];
+      std::cout << " " ;
+//      std::cout << out[ii*4+0];
+//      std::cout << out[ii*4+1];
+//      std::cout << out[ii*4+2];
+//      std::cout << out[ii*4+3];
+      std::cout << std::endl;
     }
-
-
-    dVmBlock_(blockIndex_[ii]) = out[outIndex_[ii]];
-  }
-
-  dump_array3d(dVmBlock_,slice);
-
-  delete [] out;
-
 
 }
 
@@ -855,3 +964,56 @@ void FGRDiffusionFlex::dump_array3d(Array3d<double>& Box,int slice)
 }
 
 
+void FGRDiffusionFlex::boundary_test(const Anatomy& anatomy)
+{
+  Array3d<int>                    anatomy_3d;
+  srand(3245);
+
+  anatomy_3d.resize(nx,ny,nz,0);
+  //anatomy creation
+  for(int ii=0;ii<anatomy.size();ii++)
+  {
+    anatomy_3d(blockIndex_[ii])=1;
+  }
+
+  //check if weight is zero for non-cell
+  cout << "WeightSumTolerance=" << weightSumTolerance << endl;
+  for(int ii=0;ii<nLocal_;ii++)
+  {
+    for(int jj=0;jj<19;jj++)
+    {
+      if(anatomy_3d(blockIndex_[ii]+offset_[jj]) == 0)
+      {
+        if(weight_(blockIndex_[ii]).A[jj] > weightSumTolerance)
+        {
+           cout << "Warning:imposing zero weight at " << ii << "," << jj <<  ". it was " << weight_(blockIndex_[ii]).A[jj] << endl;
+           weight_(blockIndex_[ii]).A[jj]=0.0;
+        }
+      }
+      else
+      {
+//           weight_(blockIndex_[ii]).A[jj]=0;
+//           if(jj==1)  weight_(blockIndex_[ii]).A[1]=0.001;
+           ;
+           
+      }
+    }
+  }
+}
+
+void FGRDiffusionFlex::basic_diffusion(Array3d<FGRUtils::DiffWeight>& coef, Array3d<double> &inV, Array3d<double> &outV)
+{
+  for (unsigned ii=0; ii<nLocal_; ++ii)
+  {
+    int idx = blockIndex_[ii];
+    double sum=0;
+    for(int kk=0;kk<19;kk++)
+    {
+      sum += inV(idx + offset_[kk]) * coef(idx).A[kk];
+//      if ( ii==2) cout << kk << ":" << inV(idx + offset_[kk]) << " " << weight_(idx).A[kk] <<":";
+    }
+//     if(ii==2) cout << sum << endl;
+    outV(idx) = sum;
+  }
+  cout << endl;
+}

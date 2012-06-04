@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include <inttypes.h>
 /** dVmR and dVmD really should be passed in as const double* since they
  * aren't modified.  However, I think this might interfere with
  * simdization */
@@ -16,10 +17,12 @@ void integrateLoop(const int begin, const int end,
                    double* dVmR,
                    double* stim,
                    unsigned* blockOffset,
+                   unsigned* blockOffsetB,
                    double* dVmBlock,
                    double* VmBlock,
                    double* Vm,
                    double diffusionScale);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

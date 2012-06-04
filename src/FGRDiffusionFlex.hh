@@ -36,23 +36,27 @@ class FGRDiffusionFlex : public Diffusion
    void dump_quad_anatomy( const Anatomy& anatomy,int slice);
    void dump_array3d(Array3d<double>& Box,int slice);
    void VmBlockSet();
-   void test_calc(int slice);
 
  private:
    void FGRDiff_simd_thread(const uint32_t b_quad,const int32_t e_quad, double* out);
+   void stencil(const uint32_t b_quad,const int32_t e_quad, double* out);
 
    void buildTupleArray(const Anatomy& anatomy);
    void buildBlockIndex(const Anatomy& anatomy);
    void precomputeCoefficients(const Anatomy& anatomy);
    void reorder_Coeff();
    void buildOffset(const Anatomy& anatomy);
+   void boundary_test(const Anatomy& anatomy);
+   void basic_diffusion(Array3d<FGRUtils::DiffWeight>& coef, Array3d<double> &in, Array3d<double> &out);
 
    void mkTissueArray(const Array3d<int>& tissueBlk, int ib, int* tissue);
    Vector f1(int ib, int iFace, const Vector& h,
              const Array3d<SymmetricTensor>& sigmaBlk);
    void printAllWeights(const Array3d<int>& tissue);
+   void calc_history(int slice);
 
    int                             nLocal_;
+   int                             nTotal_;
    int                             offset_[19];
    int                             faceNbrOffset_[6];
    LocalGrid                       localGrid_;
@@ -75,7 +79,6 @@ class FGRDiffusionFlex : public Diffusion
    int                             nx;
    int                             ny;
    int                             nz;
-   int                             nTotal_;
    int                             nCalc_;
    int                             nQuad_;
    Array3d<int>                    QuadBlock_;
