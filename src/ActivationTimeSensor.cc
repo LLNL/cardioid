@@ -1,17 +1,19 @@
 #include "ActivationTimeSensor.hh"
 
-#include <sstream>
-#include <iomanip>
-
 #include "Anatomy.hh"
 #include "pio.h"
 #include "ioUtils.h"
+#include "Simulate.hh"
+
+#include <sstream>
+#include <iomanip>
 
 using namespace std;
 
 ActivationTimeSensor::ActivationTimeSensor(const SensorParms& sp,
                                            const ActivationTimeSensorParms& p,
-                                           const Anatomy& anatomy)
+                                           const Anatomy& anatomy,
+                                           const PotentialData& vdata)
 : Sensor(sp),
   nLocal_(anatomy.nLocal()),
   nx_(anatomy.nx()),
@@ -20,6 +22,7 @@ ActivationTimeSensor::ActivationTimeSensor(const SensorParms& sp,
   dx_(anatomy.dx()),
   dy_(anatomy.dy()),
   dz_(anatomy.dz()),
+  vdata_(vdata),
   filename_(p.filename)
 {
    activationTime_.resize(nLocal_, 0.0);
@@ -31,9 +34,7 @@ ActivationTimeSensor::ActivationTimeSensor(const SensorParms& sp,
 }
 
 
-void ActivationTimeSensor::print(double time, int loop,
-                                 const vector<double>& Vm, const vector<double>&,
-                                 const vector<double>&)
+void ActivationTimeSensor::print(double time, int loop)
 {
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -98,14 +99,12 @@ void ActivationTimeSensor::print(double time, int loop,
    Pclose(file);
 }
 
-void ActivationTimeSensor::eval(double time, int loop,
-                                const vector<double>& Vm, const vector<double>&,
-                                const vector<double>&)
+void ActivationTimeSensor::eval(double time, int loop)
 {
    for (unsigned ii=0; ii<nLocal_; ++ii)
    {
       if (activated_[ii]) continue;
-      if (Vm[ii] > 0)
+      if ( (*vdata_.VmArray_)[ii] > 0 )
       {
          activated_[ii] = true;
          activationTime_[ii] = time;

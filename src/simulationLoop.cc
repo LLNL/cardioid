@@ -114,16 +114,11 @@ void loopIO(const Simulate& sim)
    startTimer(sensorTimer);
    for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
    {
-       if (loop % sim.sensor_[ii]->evalRate() == 0) sim.sensor_[ii]->eval(sim.time_, loop, VmArray, dVmR, dVmD);
+       sim.sensor_[ii]->run(sim.time_, loop);
    }
    stopTimer(sensorTimer);
-
-   startTimer(loopIOTimer);
-   for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
-   {
-      if (loop % sim.sensor_[ii]->printRate() == 0) sim.sensor_[ii]->print(sim.time_, loop, VmArray, dVmR, dVmD);
-   }
       
+   startTimer(loopIOTimer);
    if ( (loop % sim.printRate_ == 0) && myRank == 0)
    {
       static FILE *file; 

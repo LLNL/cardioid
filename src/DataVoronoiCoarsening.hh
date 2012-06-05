@@ -4,6 +4,9 @@
 #include "VoronoiCoarsening.hh"
 #include "Sensor.hh"
 
+class PotentialData;
+class Anatomy;
+
 class DataVoronoiCoarsening : public Sensor
 {
  private:
@@ -11,6 +14,7 @@ class DataVoronoiCoarsening : public Sensor
  
    std::string filename_;
    const Anatomy& anatomy_;
+   const PotentialData& vdata_;
 
    MPI_Comm comm_;
 
@@ -26,13 +30,10 @@ class DataVoronoiCoarsening : public Sensor
                      std::string filename,
                      const Anatomy& anatomy,
                      const std::vector<Long64>& gid,
+                     const PotentialData& vdata,
                      MPI_Comm comm);
-   void eval(double time, int loop,
-             const std::vector<double>& Vm, const std::vector<double>&,
-             const std::vector<double>&);
-   void print(double time, int loop,
-              const std::vector<double>& Vm, const std::vector<double>&,
-              const std::vector<double>&);
+   void eval(double time, int loop);
+   void print(double time, int loop);
 };
 
 #endif

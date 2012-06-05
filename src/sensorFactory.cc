@@ -10,18 +10,22 @@
 #include "ActivationTimeSensor.hh"
 #include "DataVoronoiCoarsening.hh"
 #include "GradientVoronoiCoarsening.hh"
+#include "Simulate.hh"
 
 using namespace std;
 
 namespace
 {
-   Sensor* scanPointListSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy);
-   Sensor* scanActivationTimeSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy);
-   Sensor* scanVoronoiCoarseningSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy);
+   Sensor* scanPointListSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
+                               const PotentialData&);
+   Sensor* scanActivationTimeSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
+                                    const PotentialData&);
+   Sensor* scanVoronoiCoarseningSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
+                                       const PotentialData&);
 }
 
 
-Sensor* sensorFactory(const std::string& name, const Anatomy& anatomy)
+Sensor* sensorFactory(const std::string& name, const Simulate& sim)
 {
   OBJECT* obj = objectFind(name, "SENSOR");
   string method;
@@ -34,13 +38,13 @@ Sensor* sensorFactory(const std::string& name, const Anatomy& anatomy)
   if (method == "undefined")
     assert(false);
   else if (method == "pointList")
-     return scanPointListSensor(obj, sp, anatomy);
+     return scanPointListSensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "activationTime")
-     return scanActivationTimeSensor(obj, sp, anatomy);
+     return scanActivationTimeSensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "voronoiCoarsening" 
         || method == "dataVoronoiCoarsening" 
         || method == "gradientVoronoiCoarsening" )
-     return scanVoronoiCoarseningSensor(obj, sp, anatomy);
+     return scanVoronoiCoarseningSensor(obj, sp, sim.anatomy_,sim.vdata_);
 
   assert(false); // reachable only due to bad input
   return 0;
@@ -49,7 +53,8 @@ Sensor* sensorFactory(const std::string& name, const Anatomy& anatomy)
 
 namespace
 {
-   Sensor* scanPointListSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy)
+   Sensor* scanPointListSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
+                               const PotentialData& vdata)
    {
       PointListSensorParms p;
       objectGet(obj, "pointList",   p.pointList);
@@ -58,23 +63,25 @@ namespace
       objectGet(obj, "printDerivs", p.printDerivs, "0");
       objectGet(obj, "filename",    p.filename,    "cell");
       objectGet(obj, "dirname",     p.dirname,     "sensorData");
-      return new PointListSensor(sp, p, anatomy);
+      return new PointListSensor(sp, p, anatomy, vdata);
    }
 }
 
 namespace
 {
-   Sensor* scanActivationTimeSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy)
+   Sensor* scanActivationTimeSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
+                                    const PotentialData& vdata)
    {
       ActivationTimeSensorParms p;
       objectGet(obj, "filename",  p.filename,  "activationTime");
-      return new ActivationTimeSensor(sp, p, anatomy);
+      return new ActivationTimeSensor(sp, p, anatomy, vdata);
    }
 }
 
 namespace
 {
-   Sensor* scanVoronoiCoarseningSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy)
+   Sensor* scanVoronoiCoarseningSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
+                                       const PotentialData& vdata)
    {
       int myRank;
       MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -126,8 +133,8 @@ namespace
       objectGet(obj, "method", method, "undefined");
       if ( method == "voronoiCoarsening" ||
            method == "dataVoronoiCoarsening" )
-         return new DataVoronoiCoarsening(sp, filename, anatomy, cellVec, MPI_COMM_WORLD);
+         return new DataVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD);
       else if( method == "gradientVoronoiCoarsening" )
-         return new GradientVoronoiCoarsening(sp, filename, anatomy, cellVec, MPI_COMM_WORLD);
+         return new GradientVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD);
    }
 }

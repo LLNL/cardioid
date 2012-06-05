@@ -1,6 +1,8 @@
 #include "PointListSensor.hh"
 #include "Anatomy.hh"
 #include "ioUtils.h"
+#include "Simulate.hh"
+
 #include <mpi.h>
 #include <cmath>
 #include <cassert>
@@ -10,11 +12,14 @@
 
 using namespace std;
 
-PointListSensor::PointListSensor(const SensorParms& sp, const PointListSensorParms& p, const Anatomy& anatomy)
+PointListSensor::PointListSensor(const SensorParms& sp, const PointListSensorParms& p, 
+                                 const Anatomy& anatomy,
+                                 const PotentialData& vdata)
 : Sensor(sp),
   startTime_(p.startTime),
   endTime_(p.endTime),
-  printDerivs_(p.printDerivs)
+  printDerivs_(p.printDerivs),
+  vdata_(vdata)
 {
   int myRank;
   MPI_Comm comm = MPI_COMM_WORLD;
@@ -30,7 +35,6 @@ PointListSensor::PointListSensor(const SensorParms& sp, const PointListSensorPar
   for (unsigned ii=0; ii<plistsize; ++ii)
   {
     const Long64& gid = p.pointList[ii];
-    //for (unsigned jj=0; jj<anatomy.size(); ++jj)
     for (unsigned jj=0; jj<anatomy.nLocal(); ++jj)
     {
       if (anatomy.gid(jj) == gid)
@@ -92,37 +96,37 @@ PointListSensor::~PointListSensor()
   }
 }
 
-void PointListSensor::print(double time, int /*loop*/,
-                            const vector<double>& Vm, const vector<double>& dVm_r,
-                            const vector<double>& dVm_d)
+void PointListSensor::print(double time, int /*loop*/)
 {
    if (printDerivs_)
-      printDerivs(time, Vm, dVm_r, dVm_d);
+      printDerivs(time);
    else
-      print(time, Vm);
+      print(time);
 }
 
 
-void PointListSensor::print(double time, const vector<double>& Vm)
+void PointListSensor::print(double time)
 {
   if (time >= startTime_ && (endTime_ <= 0.0 || time <= endTime_))
   {
     for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
     {
       int ind = sensorind_[ii];
-      (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << Vm[ind] << endl;
+      (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << (*vdata_.VmArray_)[ind] << endl;
     }
   }
 }
 
-void PointListSensor::printDerivs(double time, const vector<double>& Vm, const vector<double>& dVm_r, const vector<double>& dVm_d)
+void PointListSensor::printDerivs(double time)
 {
   if (time >= startTime_ && (endTime_ <= 0.0 || time <= endTime_))
   {
     for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
     {
       int ind = sensorind_[ii];
-      (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << Vm[ind] << "   " << dVm_r[ind] << "   " << dVm_d[ind] << endl;
+      (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << (*vdata_.VmArray_)[ind] 
+                                                          << "   " << (*vdata_.dVmReaction_)[ind] 
+                                                          << "   " << (*vdata_.dVmDiffusion_)[ind] << endl;
     }
   }
 }

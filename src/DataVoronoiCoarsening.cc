@@ -1,6 +1,7 @@
 #include "DataVoronoiCoarsening.hh"
 #include "pio.h"
 #include "ioUtils.h"
+#include "Simulate.hh"
 
 #include <iostream>
 #include <sstream>
@@ -13,11 +14,13 @@ DataVoronoiCoarsening::DataVoronoiCoarsening(const SensorParms& sp,
                                      string filename,
                                      const Anatomy& anatomy,
                                      const vector<Long64>& gid,
+                                     const PotentialData& vdata,
                                      MPI_Comm comm)
    :Sensor(sp),
     coarsening_(anatomy,gid,comm),
     filename_(filename),
     anatomy_(anatomy),
+    vdata_(vdata),
     comm_(comm)
 {
    // color local cells
@@ -110,18 +113,12 @@ void DataVoronoiCoarsening::writeAverages(const string& filename,
    Pclose(file);
 }
 
-void DataVoronoiCoarsening::eval(double time, int loop,
-                             const vector<double>& Vm,
-                             const vector<double>&,
-                             const vector<double>&)
+void DataVoronoiCoarsening::eval(double time, int loop)
 {
-   computeColorAverages(Vm);
+   computeColorAverages(*vdata_.VmArray_);
 }
 
-void DataVoronoiCoarsening::print(double time, int loop,
-                              const vector<double>& Vm,
-                              const vector<double>&,
-                              const vector<double>&)
+void DataVoronoiCoarsening::print(double time, int loop)
 {
    int myRank;
    MPI_Comm_rank(comm_, &myRank);

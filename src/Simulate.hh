@@ -104,7 +104,6 @@ class Simulate
    std::vector<int> sendMap_;
    CommTable* commTable_;
    
-   //std::vector<double> VmArray_; // local and remote
    PotentialData vdata_;
 
    Anatomy anatomy_;
@@ -112,6 +111,8 @@ class Simulate
    Reaction* reaction_; 
    std::vector<Stimulus*> stimulus_;
    std::vector<Sensor*> sensor_;
+   
+   void initSensors(const std::vector<std::string>& names);
 
  private:
    void outOfRange(unsigned index, double dVmr, double dVmd);

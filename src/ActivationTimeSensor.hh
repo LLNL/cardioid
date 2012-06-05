@@ -8,6 +8,7 @@
 #include "Tuple.hh"
 
 class Anatomy;
+class PotentialData;
 
 struct ActivationTimeSensorParms
 {
@@ -19,15 +20,12 @@ class ActivationTimeSensor : public Sensor
  public:
    ActivationTimeSensor(const SensorParms& sp,
                         const ActivationTimeSensorParms& p,
-                        const Anatomy& anatomy);
+                        const Anatomy& anatomy,
+                        const PotentialData& vdata);
    ~ActivationTimeSensor(){}
 
-   void print(double time, int loop,
-              const std::vector<double>& Vm, const std::vector<double>& dVm_r,
-              const std::vector<double>& dVm_d);
-   void eval(double time, int loop,
-             const std::vector<double>& Vm, const std::vector<double>& dVm_r,
-             const std::vector<double>& dVm_d);
+   void print(double time, int loop);
+   void eval(double time, int loop);
    
 
  private:
@@ -48,6 +46,8 @@ class ActivationTimeSensor : public Sensor
    std::vector<bool>   activated_;
    std::vector<double> activationTime_;
    std::vector<Tuple>  cells_;
+
+   const PotentialData& vdata_;
 };
 
 #endif

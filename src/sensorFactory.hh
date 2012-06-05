@@ -3,8 +3,8 @@
 
 #include <string>
 class Sensor;
-class Anatomy;
+class Simulate;
 
-Sensor* sensorFactory(const std::string& name, const Anatomy& anatomy);
+Sensor* sensorFactory(const std::string& name, const Simulate& sim);
 
 #endif

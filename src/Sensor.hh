@@ -18,18 +18,21 @@ class Sensor
    {}
    virtual ~Sensor() {};
 
-   virtual void print(double time, int loop,
-                      const std::vector<double>& Vm, const std::vector<double>& dVm_r,
-                      const std::vector<double>& dVm_d) = 0;
-   virtual void eval(double time, int loop,
-                     const std::vector<double>& Vm, const std::vector<double>& dVm_r,
-                     const std::vector<double>& dVm_d) = 0;
+   virtual void run(double time, int loop)
+   {
+      if (loop % evalRate_  == 0) eval( time, loop);
+      if (loop % printRate_ == 0) print(time, loop);
+   }
+
    int printRate(){return printRate_;}
    int evalRate(){return evalRate_;}
 
  private:
    int evalRate_;
    int printRate_;
+
+   virtual void print(double time, int loop) = 0;
+   virtual void eval(double time, int loop) = 0;
 };
 
 #endif

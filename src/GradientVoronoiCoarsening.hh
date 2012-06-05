@@ -4,6 +4,8 @@
 #include "VoronoiCoarsening.hh"
 #include "Sensor.hh"
 
+class Anatomy;
+class PotentialData;
 
 class GradientVoronoiCoarsening : public Sensor
 {
@@ -12,6 +14,7 @@ class GradientVoronoiCoarsening : public Sensor
  
    std::string filename_;
    const Anatomy& anatomy_;
+   const PotentialData& vdata_;
 
    MPI_Comm comm_;
 
@@ -35,18 +38,16 @@ class GradientVoronoiCoarsening : public Sensor
                                   const int current_loop)const;
    void computeLSsystem(const std::vector<double>& val);
    void computeColorCenterValues(const std::vector<double>& val);
+
  public:
    GradientVoronoiCoarsening(const SensorParms& sp,
                      std::string filename,
                      const Anatomy& anatomy,
                      const std::vector<Long64>& gid,
+                     const PotentialData& vdata_,
                      MPI_Comm comm);
-   void eval(double time, int loop,
-             const std::vector<double>& Vm, const std::vector<double>&,
-             const std::vector<double>&);
-   void print(double time, int loop,
-              const std::vector<double>& Vm, const std::vector<double>&,
-              const std::vector<double>&);
+   void eval(double time, int loop);
+   void print(double time, int loop);
 };
 
 #endif

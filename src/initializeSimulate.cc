@@ -124,7 +124,7 @@ void initializeSimulate(const string& name, Simulate& sim)
    names.clear();
    objectGet(obj, "sensor", names);
    for (unsigned ii=0; ii<names.size(); ++ii)
-      sim.sensor_.push_back(sensorFactory(names[ii], sim.anatomy_));
+      sim.sensor_.push_back(sensorFactory(names[ii], sim));
 
    // let user specify a filename containing the list of cell gids they want in the snapshots
    // (need to do this after data is distributed, so we can store just the local subset of points
