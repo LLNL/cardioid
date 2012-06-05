@@ -11,6 +11,7 @@
 #include "TT06Func.hh"
 #include "ReactionFHN.hh"
 #include "NullReaction.hh"
+#include "TestReaction.hh"
 #include "ConstantReaction.hh"
 #include "ThreadServer.hh"
 
@@ -24,6 +25,7 @@ namespace
    Reaction* scanTT06Dev(OBJECT* obj, Anatomy& anatomy, const ThreadTeam& group);
    Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanFHN(OBJECT* obj, const Anatomy& anatomy);
+   Reaction* scanTest(OBJECT* obj);
    Reaction* scanConstant(OBJECT* obj, const Anatomy& anatomy);
 }
 
@@ -46,6 +48,8 @@ Reaction* reactionFactory(const string& name, Anatomy& anatomy,
       return scanFHN(obj, anatomy);
    else if (method == "null")
       return new NullReaction();
+   else if (method == "test")
+      return scanTest(obj);
    else if (method == "constant")
       return scanConstant(obj, anatomy);
    
@@ -165,6 +169,17 @@ namespace
       // None of the FHN model parameters are currently wired to the
       // input deck.
       return new ReactionFHN(anatomy);
+   }
+}
+
+namespace
+{
+   Reaction* scanTest(OBJECT* obj)
+   {
+      TestReactionParms parms;
+      objectGet(obj, "V0",    parms.initialVoltage, "-85",  "voltage");
+      objectGet(obj, "delta", parms.delta,          "1e-3", "voltage");
+      return new TestReaction(parms);
    }
 }
 

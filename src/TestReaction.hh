@@ -1,0 +1,52 @@
+#ifndef TEST_REACTION_HH
+#define TEST_REACTION_HH
+
+#include "Reaction.hh"
+
+struct TestReactionParms
+{
+   double initialVoltage;
+   double delta;
+};
+
+/** Note that this class does not have many of the features we might
+ *  want in a fully featured Test class.  Those would include (for
+ *  example):
+ *
+ *  - ability to set the random seed
+ *  - construction of random numbers such that the initial voltages are
+ *    the same regardless of the number of tasks on which the problem is
+ *    run.
+ *
+ *  We know how to do such things, I just haven't taken the time in this
+ *  case.
+ */
+class TestReaction : public Reaction
+{
+ public:
+   
+   TestReaction(const TestReactionParms& parms)
+   : V0_(parms.initialVoltage),
+     delta_(parms.delta)
+   {};
+
+   std::string methodName() const {return "test";}
+
+   void calc(double dt,
+             const std::vector<double>& Vm,
+             const std::vector<double>& iStim,
+             std::vector<double>& dVm){};
+   void initializeMembraneVoltage(std::vector<double>& Vm)
+   {
+      for (unsigned ii=0; ii< Vm.size(); ++ii)
+         Vm[ii] = V0_ + delta_ * (2*drand48() - 1.0);
+   };
+
+ private:
+
+   double V0_;
+   double delta_;
+
+};
+
+#endif
