@@ -42,6 +42,18 @@ class TestReaction : public Reaction
          Vm[ii] = V0_ + delta_ * (2*drand48() - 1.0);
    };
 
+   /** Functions needed for checkpoint/restart */
+   void getCheckpointInfo(std::vector<std::string>& fieldNames,
+                          std::vector<std::string>& fieldUnits) const{};
+   int getVarHandle(const std::string& varName) const {return -1;};
+   void setValue(int iCell, int varHandle, double value){};
+   double getValue(int iCell, int varHandle) const{};
+   void getValue(int iCell,
+                 const std::vector<int>& handle,
+                 std::vector<double>& value) const{};
+   const std::string getUnit(const std::string& varName) const{};
+
+
  private:
 
    double V0_;
