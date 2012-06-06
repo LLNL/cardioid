@@ -8,6 +8,7 @@
 #include "Sensor.hh"
 #include "PointListSensor.hh"
 #include "ActivationTimeSensor.hh"
+#include "MinMaxSensor.hh"
 #include "DataVoronoiCoarsening.hh"
 #include "GradientVoronoiCoarsening.hh"
 #include "Simulate.hh"
@@ -17,6 +18,8 @@ using namespace std;
 namespace
 {
    Sensor* scanPointListSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
+                               const PotentialData&);
+   Sensor* scanMinMaxSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                                const PotentialData&);
    Sensor* scanActivationTimeSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                                     const PotentialData&);
@@ -39,6 +42,8 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
     assert(false);
   else if (method == "pointList")
      return scanPointListSensor(obj, sp, sim.anatomy_,sim.vdata_);
+  else if (method == "minmax" || method == "MinMax")
+     return scanMinMaxSensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "activationTime")
      return scanActivationTimeSensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "voronoiCoarsening" 
@@ -64,6 +69,20 @@ namespace
       objectGet(obj, "filename",    p.filename,    "cell");
       objectGet(obj, "dirname",     p.dirname,     "sensorData");
       return new PointListSensor(sp, p, anatomy, vdata);
+   }
+}
+
+namespace
+{
+   Sensor* scanMinMaxSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
+                               const PotentialData& vdata)
+   {
+      MinMaxSensorParms p;
+      objectGet(obj, "startTime",   p.startTime,   "0.0",  "t");
+      objectGet(obj, "endTime",     p.endTime,     "-1.0", "t");
+      objectGet(obj, "filename",    p.filename,    "minmax");
+      objectGet(obj, "dirname",     p.dirname,     "sensorData");
+      return new MinMaxSensor(sp, p, anatomy, vdata);
    }
 }
 

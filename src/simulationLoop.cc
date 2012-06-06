@@ -34,7 +34,7 @@
   including it, the original code with a barrier accross all reaction
   threads is used.
 */
-#include "fastBarrier_nosync.hh"
+//#include "fastBarrier_nosync.hh"
 
 #include "object_cc.hh"
 #include "clooper.h"
