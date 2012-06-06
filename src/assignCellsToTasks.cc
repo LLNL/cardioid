@@ -16,13 +16,15 @@
 #include "mpiUtils.h"
 #include "GridPoint.hh"
 #include "PerformanceTimers.hh"
+#include "AnatomyCell.hh"
 
 using namespace std;
 
 namespace
 {
-   void koradiBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
-   void gridBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+    void koradiBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+    void gridBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+    void computeVolHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
 }
 
 
@@ -69,14 +71,14 @@ namespace
       profileStart("Koradi");
       Koradi balancer(sim.anatomy_, kp);
       profileStop("Koradi");
+
+      vector<AnatomyCell>& cells = sim.anatomy_.cellArray();
+      computeVolHistogram(sim,cells,nCenters,comm);
+
       if (kp.nCentersPerTask > 1)
          exit(0);
    }
 }
-
-
-
-
 
 namespace
 {
@@ -142,16 +144,11 @@ namespace
 
       // compute initial data decomposition
       profileStart("gd_assign_init");
-      loadbal.initialDistribution(cells, sim.nx_, sim.ny_, sim.nz_);
+      //loadbal.initialDistribution(cells, sim.nx_, sim.ny_, sim.nz_);
+      loadbal.initialDistByVol(cells, sim.nx_, sim.ny_, sim.nz_);
       profileStop("gd_assign_init");
 
-      // redistribute data until load balance is achieved
-      int ninner;
-      int threshold;
-      objectGet(obj, "ninner", ninner, "10");
-      objectGet(obj, "threshold", threshold, "4");
-      int nmax;
-      objectGet(obj, "niter", nmax, "5000");
+      computeVolHistogram(sim,cells,npegrid,comm);
 
       // set up visualization of initial distribution
       int visgrid;
@@ -167,10 +164,27 @@ namespace
         writeCells(sim.anatomy_.cellArray(), sim.nx_, sim.ny_, sim.nz_, fullname.c_str());
       }
 
+#if 0      
+      
+      // redistribute data until load balance is achieved
+      int ninner;
+      int threshold;
+      objectGet(obj, "ninner", ninner, "10");
+      objectGet(obj, "threshold", threshold, "4");
+      int nmax;
+      objectGet(obj, "niter", nmax, "5000");
+
+      loadbal.gridVolMinLoop(cells);
+
+      //int ntmp = 10;
+      //loadbal.balanceLoop(cells,ninner,threshold,ntmp);
+      //loadbal.compactLoop(cells);
+      //loadbal.compactLoop(cells);
+
       // diffusive load balance loop
-      profileStart("gd_balance");
-      loadbal.balanceLoop(cells,ninner,threshold,nmax);
-      profileStop("gd_balance");
+      //profileStart("gd_balance");
+      //loadbal.balanceLoop(cells,ninner,threshold,nmax);
+      //profileStop("gd_balance");
 
       if (visgrid == 1)
       {
@@ -182,6 +196,7 @@ namespace
         fullname += "/anatomy";
         writeCells(sim.anatomy_.cellArray(), sim.nx_, sim.ny_, sim.nz_, fullname.c_str());
       }
+#endif
       
       bool testingOnly = (npegrid != nTasks);
       if (testingOnly)
@@ -194,3 +209,92 @@ namespace
    }
 }
 
+namespace
+{
+    void computeVolHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm)
+    {
+       // compute bounding box volumes from cells array
+       vector<int> peminx(nProcs,99999999);
+       vector<int> peminy(nProcs,99999999);
+       vector<int> peminz(nProcs,99999999);
+       vector<int> pemaxx(nProcs,-99999999);
+       vector<int> pemaxy(nProcs,-99999999);
+       vector<int> pemaxz(nProcs,-99999999);
+       vector<int> nloc(nProcs,0);
+       for (unsigned ii=0; ii<cells.size(); ++ii)
+       {
+          int peid = cells[ii].dest_;
+          GridPoint gpt(cells[ii].gid_,sim.nx_,sim.ny_,sim.nz_);
+          if (gpt.x < peminx[peid]) peminx[peid] = gpt.x;
+          if (gpt.y < peminy[peid]) peminy[peid] = gpt.y;
+          if (gpt.z < peminz[peid]) peminz[peid] = gpt.z;
+          if (gpt.x > pemaxx[peid]) pemaxx[peid] = gpt.x;
+          if (gpt.y > pemaxy[peid]) pemaxy[peid] = gpt.y;
+          if (gpt.z > pemaxz[peid]) pemaxz[peid] = gpt.z;
+          nloc[peid]++;
+       }
+       vector<int> peminx_all(nProcs);
+       vector<int> peminy_all(nProcs);
+       vector<int> peminz_all(nProcs);
+       vector<int> pemaxx_all(nProcs);
+       vector<int> pemaxy_all(nProcs);
+       vector<int> pemaxz_all(nProcs);
+       vector<int> nall(nProcs);
+       MPI_Allreduce(&peminx[0], &peminx_all[0], nProcs, MPI_INT, MPI_MIN, comm);
+       MPI_Allreduce(&peminy[0], &peminy_all[0], nProcs, MPI_INT, MPI_MIN, comm);
+       MPI_Allreduce(&peminz[0], &peminz_all[0], nProcs, MPI_INT, MPI_MIN, comm);
+       MPI_Allreduce(&pemaxx[0], &pemaxx_all[0], nProcs, MPI_INT, MPI_MAX, comm);
+       MPI_Allreduce(&pemaxy[0], &pemaxy_all[0], nProcs, MPI_INT, MPI_MAX, comm);
+       MPI_Allreduce(&pemaxz[0], &pemaxz_all[0], nProcs, MPI_INT, MPI_MAX, comm);
+       MPI_Allreduce(&nloc[0], &nall[0], nProcs, MPI_INT, MPI_SUM, comm);
+
+      int myRank;
+      MPI_Comm_rank(comm, &myRank);
+      if (myRank == 0)
+      {
+         const int nhistmax = 100; // number of bins
+         vector<int> phist(nhistmax,0);
+         int maxvol = 0;
+         int minvol = sim.nx_*sim.ny_*sim.nz_;
+         int maxvolip;
+      
+         vector<int> pevol_all(nProcs);
+         for (int ip=0; ip<nProcs; ip++)
+         {
+            int tvol = 0;
+            if (nall[ip] > 0)
+               tvol = (pemaxx_all[ip]-peminx_all[ip]+1)*(pemaxy_all[ip]-peminy_all[ip]+1)*(pemaxz_all[ip]-peminz_all[ip]+1);
+            if (tvol > maxvol)
+            {
+               maxvol = tvol;
+               maxvolip = ip;
+            }
+            if (tvol < minvol) minvol = tvol;
+            pevol_all[ip] = tvol;
+         }
+      
+         int nhist = maxvol - minvol + 1;
+         if (nhist > nhistmax) nhist = nhistmax;
+         int delta = (maxvol-minvol + 1)/nhist;
+         if ((maxvol-minvol+1)%nhist !=0) delta++;
+         for (int ip=0; ip<nProcs; ip++)
+         {
+            int pvol = pevol_all[ip];
+            int bin = (pvol-minvol)/delta;
+            phist[bin]++;
+         }
+         cout << "load balance histogram (volume):  " << endl;
+         for (int i=0; i<nhist; i++)
+            cout << "  " << minvol+delta*i << " - " << minvol+delta*(i+1) << ":    " << phist[i] << endl;
+
+         int voltot = 0;
+         for (unsigned ip=0; ip<nProcs; ++ip)
+            voltot += pevol_all[ip];
+         double volavg = (double)voltot/(double)nProcs; 
+         cout << "total assigned volume = " << voltot << ", avg. volume = " << volavg << ", max volume = " << maxvol << " (pe " << maxvolip << ")" << endl << endl;
+      }
+    }
+
+
+
+}

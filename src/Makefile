@@ -58,7 +58,7 @@ HEARTSRC= cardioid.cc \
 	 PeriodicPulse.cc RandomPulse.cc \
 	 PointListSensor.cc ActivationTimeSensor.cc readSnapshotCellList.cc \
 	 VoronoiCoarsening.cc DataVoronoiCoarsening.cc GradientVoronoiCoarsening.cc \
-	MinMaxSensor.cc
+	MinMaxSensor.cc ProcBox.cc 
 
 SPISRC=	 spi_impl.c
 SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c
