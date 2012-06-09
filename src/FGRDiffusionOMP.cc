@@ -33,6 +33,7 @@ FGRDiffusionOMP::FGRDiffusionOMP(const FGRDiffusionParms& parms,
    }
    // This has been a test
 
+   A0_.resize(nx, ny, nz);
    weight_.resize(nx, ny, nz);
    VmBlock_.resize(nx, ny, nz);
 
@@ -112,12 +113,12 @@ void FGRDiffusionOMP::calc(vector<double>& dVm)
       # pragma omp for nowait
       for (int iCell=0; iCell<nCells; ++iCell)
       {
-         double tmp = 0.0;
          int ib = blockIndex_[iCell];
          
          double* phi = & (VmBlock_(ib));
          const WeightType *A = weight_(ib).A;
-         for (unsigned ii=0; ii<19; ++ii)
+         double tmp = A0_(ib) * (*(phi+offset_[0]));
+         for (unsigned ii=1; ii<19; ++ii)
             tmp += A[ii] * ( *(phi+offset_[ii]));
          
          dVm[iCell] = tmp*diffusionScale_;
@@ -207,11 +208,13 @@ void FGRDiffusionOMP::precomputeCoefficients(const Anatomy& anatomy)
             for (unsigned jj=0; jj<3; ++jj)
                weight_(ib).A[ii] += sigmaTimesS[jj] * gradPhi[jj][ii] * hInv[jj];
       }
-      double sum = 0;
-      for (unsigned ii=0; ii<19; ++ii)
+      double sum = weight_(ib).A[0];
+      for (unsigned ii=1; ii<19; ++ii)
+      {
          sum += weight_(ib).A[ii];
+         A0_(ib) -= weight_(ib).A[ii];
+      }
       assert(abs(sum) < weightSumTolerance);
-      
    }
 //   printAllWeights(tissueBlk);
 }

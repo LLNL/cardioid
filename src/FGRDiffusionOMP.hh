@@ -39,6 +39,7 @@ class FGRDiffusionOMP : public Diffusion
    double                          diffusionScale_;
    std::vector<unsigned>           blockIndex_; // for local and remote cells
    std::vector<Tuple>              localTuple_; // only for local cells
+   Array3d<double>                 A0_;
    Array3d<FGRUtils::DiffWeight>   weight_;
    Array3d<double>                 VmBlock_;
 };
