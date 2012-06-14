@@ -25,6 +25,8 @@ class ConstantReaction : public Reaction
              const std::vector<double>& iStim,
              std::vector<double>& dVm);
    void initializeMembraneVoltage(std::vector<double>& Vm);
+   double getValue(int iCell, int handle) const;
+   int getVarHandle(const string& varName) const;
 
  private:
    const Anatomy& anatomy_;

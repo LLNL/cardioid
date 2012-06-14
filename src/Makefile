@@ -57,7 +57,8 @@ HEARTSRC= cardioid.cc \
 	 TestStimulus.cc PointStimulus.cc BoxStimulus.cc \
 	 PeriodicPulse.cc RandomPulse.cc \
 	 PointListSensor.cc ActivationTimeSensor.cc readSnapshotCellList.cc \
-	 VoronoiCoarsening.cc DataVoronoiCoarsening.cc GradientVoronoiCoarsening.cc \
+	VoronoiCoarsening.cc DataVoronoiCoarsening.cc GradientVoronoiCoarsening.cc \
+	CaAverageSensor.cc \
 	MinMaxSensor.cc ProcBox.cc 
 
 SPISRC=	 spi_impl.c

@@ -20,12 +20,25 @@ class Sensor
 
    virtual void run(double time, int loop)
    {
-      if (loop % evalRate_  == 0) eval( time, loop);
-      if (loop % printRate_ == 0) print(time, loop);
+      if (loop % printRate_ == 0)
+      {
+         eval( time, loop);
+         print(time, loop);
+      }
    }
 
-   int printRate(){return printRate_;}
-   int evalRate(){return evalRate_;}
+   int printRate()const{return printRate_;}
+   int evalRate()const{return evalRate_;}
+   
+   bool checkPrintAtStep(const int loop)const
+   {
+      return (loop % printRate_ == 0);
+   }
+
+   bool checkEvalAtStep(const int loop)const
+   {
+      return (loop % evalRate_ == 0);
+   }
 
  private:
    int evalRate_;

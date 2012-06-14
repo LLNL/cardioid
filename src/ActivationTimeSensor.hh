@@ -27,6 +27,11 @@ class ActivationTimeSensor : public Sensor
    void print(double time, int loop);
    void eval(double time, int loop);
    
+   void run(double time, int loop)
+   {
+      if ( checkEvalAtStep(loop)  ) eval( time, loop);
+      if ( checkPrintAtStep(loop) ) print(time, loop);
+   }
 
  private:
 

@@ -116,3 +116,24 @@ void ConstantReaction::initializeMembraneVoltage(std::vector<double>& Vm)
 #endif
 }
 
+// simple linear function (just for testing sensor!)
+double ConstantReaction::getValue(int iCell, int handle) const
+{
+   assert( handle==-1 );
+   
+   const double alpha=cellModel_->getAlpha();
+   const double beta =cellModel_->getBeta();
+   const double gamma=cellModel_->getGamma();
+
+   Tuple globalTuple = anatomy_.globalTuple(iCell);
+   const double x=((double)globalTuple.x()+0.5)*anatomy_.dx();
+   const double y=((double)globalTuple.y()+0.5)*anatomy_.dy();
+   const double z=((double)globalTuple.z()+0.5)*anatomy_.dz();
+
+   return alpha*x+beta*y+gamma*z;
+}
+
+int ConstantReaction::getVarHandle(const string& varName) const
+{
+   return -1;
+}

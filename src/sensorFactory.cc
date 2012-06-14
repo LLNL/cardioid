@@ -11,6 +11,7 @@
 #include "MinMaxSensor.hh"
 #include "DataVoronoiCoarsening.hh"
 #include "GradientVoronoiCoarsening.hh"
+#include "CaAverageSensor.hh"
 #include "Simulate.hh"
 
 using namespace std;
@@ -25,8 +26,54 @@ namespace
                                     const PotentialData&);
    Sensor* scanVoronoiCoarseningSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                                        const PotentialData&);
+   Sensor* scanCaSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
+                        const Reaction&);
 }
 
+// Initialize cellVec with gids listed in file filename
+int readCelllist(const string filename, vector<Long64>& cellVec)
+{
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+
+   // try to open file
+   int openfail;
+   ifstream input;
+   if (myRank == 0)
+   {
+      input.open(filename.c_str(),ifstream::in);
+      openfail = 0;
+      if (!input.is_open())
+         openfail = 1;
+   }
+   MPI_Bcast(&openfail, 1, MPI_INT, 0, MPI_COMM_WORLD);
+   if (openfail == 1)
+   {
+      if (myRank == 0)
+         cout << "Could not open cell list file " << filename << endl;
+      return -1;
+   }
+
+   int nSubset;
+   if (myRank == 0)
+   {
+      while (!input.eof()) {
+         string query;
+         if ( !getline ( input, query ) ) {
+             break;
+         }
+         istringstream ss ( query );
+         Long64 igid;
+         while( ss >> igid )cellVec.push_back(igid);
+      }
+      nSubset = cellVec.size();
+   }   
+   MPI_Bcast(&nSubset, 1, MPI_INT, 0, MPI_COMM_WORLD);
+   cellVec.resize(nSubset);
+   MPI_Bcast(&cellVec[0], nSubset, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
+   
+   return 0;
+}
 
 Sensor* sensorFactory(const std::string& name, const Simulate& sim)
 {
@@ -46,6 +93,8 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
      return scanMinMaxSensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "activationTime")
      return scanActivationTimeSensor(obj, sp, sim.anatomy_,sim.vdata_);
+  else if (method == "averageCa")
+     return scanCaSensor(obj, sp, sim.anatomy_,*sim.reaction_);
   else if (method == "voronoiCoarsening" 
         || method == "dataVoronoiCoarsening" 
         || method == "gradientVoronoiCoarsening" )
@@ -102,48 +151,11 @@ namespace
    Sensor* scanVoronoiCoarseningSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                                        const PotentialData& vdata)
    {
-      int myRank;
-      MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-
       string cellListFilename;
       objectGet(obj, "cellList", cellListFilename, "");
 
-      // try to open file
-      int openfail;
-      ifstream input;
-      if (myRank == 0)
-      {
-         input.open(cellListFilename.c_str(),ifstream::in);
-         openfail = 0;
-         if (!input.is_open())
-            openfail = 1;
-      }
-      MPI_Bcast(&openfail, 1, MPI_INT, 0, MPI_COMM_WORLD);
-      if (openfail == 1)
-      {
-         if (myRank == 0)
-            cout << "Could not open cell list file " << cellListFilename << endl;
-         return false;
-      }
-
       vector<Long64> cellVec;
-      int nSubset;
-      if (myRank == 0)
-      {
-         while (!input.eof()) {
-            string query;
-            if ( !getline ( input, query ) ) {
-                break;
-            }
-            istringstream ss ( query );
-            Long64 igid;
-            while( ss >> igid )cellVec.push_back(igid);
-         }
-         nSubset = cellVec.size();
-      }   
-      MPI_Bcast(&nSubset, 1, MPI_INT, 0, MPI_COMM_WORLD);
-      cellVec.resize(nSubset);
-      MPI_Bcast(&cellVec[0], nSubset, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
+      readCelllist(cellListFilename, cellVec);
 
       string filename;
       objectGet(obj, "filename",  filename,  "coarsened_anatomy");
@@ -155,5 +167,26 @@ namespace
          return new DataVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD);
       else if( method == "gradientVoronoiCoarsening" )
          return new GradientVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD);
+   }
+}
+
+namespace
+{
+   Sensor* scanCaSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
+                        const Reaction& reaction)
+   {
+      int myRank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+
+      string cellListFilename;
+      objectGet(obj, "cellList", cellListFilename, "");
+
+      vector<Long64> cellVec;
+      readCelllist(cellListFilename, cellVec);
+
+      string filename;
+      objectGet(obj, "filename",  filename,  "coarsened_Ca");
+
+      return new CaAverageSensor(sp, filename, anatomy, cellVec, reaction, MPI_COMM_WORLD);
    }
 }
