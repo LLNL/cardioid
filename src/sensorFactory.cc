@@ -12,6 +12,8 @@
 #include "DataVoronoiCoarsening.hh"
 #include "GradientVoronoiCoarsening.hh"
 #include "CaAverageSensor.hh"
+#include "MaxDVSensor.hh"
+
 #include "Simulate.hh"
 
 using namespace std;
@@ -28,6 +30,8 @@ namespace
                                        const PotentialData&);
    Sensor* scanCaSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                         const Reaction&);
+   Sensor* scanMaxDvSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
+                           const PotentialData& vdata);
 }
 
 // Initialize cellVec with gids listed in file filename
@@ -95,13 +99,19 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
      return scanActivationTimeSensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "averageCa")
      return scanCaSensor(obj, sp, sim.anatomy_,*sim.reaction_);
+  else if (method == "maxDV")
+     return scanMaxDvSensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "voronoiCoarsening" 
         || method == "dataVoronoiCoarsening" 
         || method == "gradientVoronoiCoarsening" )
      return scanVoronoiCoarseningSensor(obj, sp, sim.anatomy_,sim.vdata_);
 
-  assert(false); // reachable only due to bad input
-  return 0;
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+   if(myRank==0)cout<<"Sensor: unknown method "<<method<<endl;
+
+   assert(false); // reachable only due to bad input
+   return 0;
 }
 
 
@@ -188,5 +198,17 @@ namespace
       objectGet(obj, "filename",  filename,  "coarsened_Ca");
 
       return new CaAverageSensor(sp, filename, anatomy, cellVec, reaction, MPI_COMM_WORLD);
+   }
+}
+
+namespace
+{
+   Sensor* scanMaxDvSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
+                           const PotentialData& vdata)
+   {
+      string filename;
+      objectGet(obj, "filename",  filename,  "cout");
+
+      return new MaxDVSensor(sp, anatomy, vdata, MPI_COMM_WORLD, filename);
    }
 }
