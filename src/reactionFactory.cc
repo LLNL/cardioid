@@ -42,6 +42,8 @@ Reaction* reactionFactory(const string& name, Anatomy& anatomy,
       return scanTT06_CellML(obj, anatomy);
    else if (method == "TT06Dev" )
       return scanTT06Dev(obj, anatomy, group);
+   else if (method == "TT06Opt" )
+      return scanTT06Dev(obj, anatomy, group);
    else if (method == "TT06_RRG" )
       return scanTT06_RRG(obj, anatomy);
    else if (method == "FHN" || method == "FitzhughNagumo")
