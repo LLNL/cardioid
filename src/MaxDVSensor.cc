@@ -55,32 +55,38 @@ void MaxDVSensor::print(double time, int loop)
    static bool first_time=true;
    
    if( first_time ){
-      if( myRank_==0 )(*os_) << "#   Loop     Time         dVm"<<endl;
+      if( myRank_==0 )(*os_) << "#   Loop     Time         min. dVm        max. dVm"<<endl;
       first_time=false;
    }
    
-   double maxdVdt=0.;
-   double absMaxdVdt=0.;
+   double maxdVdt=-10000.;
+   double mindVdt= 10000.;
    for (unsigned ii=0; ii<nlocal_; ++ii)
    {
       double dVdt=(*vdata_.dVmReaction_)[ii]+(*vdata_.dVmDiffusion_)[ii];
-      double absdVdt=fabs( dVdt );
-      if( absdVdt>absMaxdVdt )
+      if( dVdt>maxdVdt )
       {
-         absMaxdVdt=absdVdt;
          maxdVdt=dVdt;
+      }
+      if( dVdt<mindVdt )
+      {
+         mindVdt=dVdt;
       }
    }
    
    double maxMaxdVdt=0.;
-   MPI_Reduce(&maxdVdt, &maxMaxdVdt, 1, MPI_DOUBLE, MPI_SUM, 0, comm_);
+   MPI_Reduce(&maxdVdt, &maxMaxdVdt, 1, MPI_DOUBLE, MPI_MAX, 0, comm_);
+   double minMindVdt=0.;
+   MPI_Reduce(&mindVdt, &minMindVdt, 1, MPI_DOUBLE, MPI_MIN, 0, comm_);
 
    if( myRank_==0 ){
       (*os_) << setw (8) << loop ;
       (*os_) << setw (9) << setprecision(3);
       os_->setf(ios_base::fixed,ios_base::floatfield);
       (*os_) << time ;
-      (*os_) << setw (22)<< setprecision(15);
-      (*os_) << maxMaxdVdt << endl;
+      (*os_) << setw (22)<< setprecision(15)
+             << minMindVdt;
+      (*os_) << setw (22)<< setprecision(15)
+             << maxMaxdVdt << endl;
    }
 }
