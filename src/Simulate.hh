@@ -80,6 +80,7 @@ class Simulate
    void checkRanges(const std::vector<double>& dVmReaction,
                     const std::vector<double>& dVmDiffusion);
 
+   bool checkIO()const;
    
    bool checkRanges_;
    volatile int loop_; // volatile (read + modified in threaded section)

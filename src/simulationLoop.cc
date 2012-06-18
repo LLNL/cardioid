@@ -40,6 +40,7 @@
 #include "clooper.h"
 #include "ThreadUtils.hh"
 
+#define SWAP_REACTION_POINTERS  1
 
 using namespace std;
 using namespace PerformanceTimers;
@@ -331,7 +332,6 @@ void diffusionLoop(Simulate& sim,
    L2_BarrierWithSync_InitInThread(loopData.haloBarrier, &haloBarrierHandle);
 
    std::vector<double>& dVmDiffusion(*sim.vdata_.dVmDiffusion_);
-   std::vector<double>& dVmReaction(*sim.vdata_.dVmReaction_);
 
    if (tid == 0)
       loopIO(sim);
@@ -408,20 +408,18 @@ void diffusionLoop(Simulate& sim,
       stopTimer(dummyTimer);
 
       
-      //#pragma omp barrier
-      if (tid == 0 && sim.loop_ % sim.printRate_ == 0)
+      if (tid == 0 )
       {
-         startTimer(diffusiondVmRCopyTimer);
-#if 0
-         //jlf: code to swap pointers and avoid copy. 
-         //Not working... may need a barrier to sync with reaction loop?
-         loopData.dVmReaction = sim.vdata_.swapdVmReaction(loopData.dVmReaction);
-         dVmReaction=(*sim.vdata_.dVmReaction_); // update reference
+#ifndef SWAP_REACTION_POINTERS
+         if( sim.checkIO() )
+         {
+            startTimer(diffusiondVmRCopyTimer);
+            *sim.vdata_.dVmReaction_ = *loopData.dVmReaction; 
+            stopTimer(diffusiondVmRCopyTimer);
+         }
 #else
-         dVmReaction = *loopData.dVmReaction; 
+         //pointers have been swapped by reaction thread, so no copy needed
 #endif
-         stopTimer(diffusiondVmRCopyTimer);
-
          loopIO(sim);
       }
    }
@@ -523,21 +521,15 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 
       
       startTimer(integratorTimer);
+      
 #ifdef PER_SQUAD_BARRIER
-      integrateLoop(loopData.integratorOffset_psb[tid],
-		    loopData.integratorOffset_psb[tid+1],
-		    sim.dt_,
-		    &(*loopData.dVmReaction)[0],
-		    &dVmDiffusion[0],
-		    sim.diffusion_->blockIndex(),
-		    sim.diffusion_->blockIndexB(),
-		    sim.diffusion_->dVmBlock(),
-		    sim.diffusion_->VmBlock(),
-		    &VmArray[0],
-		    sim.diffusion_->diffusionScale());
+      const int begin=loopData.integratorOffset_psb[tid];
+      const int end  =loopData.integratorOffset_psb[tid+1]
 #else
-      integrateLoop(loopData.integratorOffset[tid],
-		    loopData.integratorOffset[tid+1],
+      const int begin=loopData.integratorOffset[tid];
+      const int end  =loopData.integratorOffset[tid+1];
+#endif
+      integrateLoop(begin,end,
 		    sim.dt_,
 		    &(*loopData.dVmReaction)[0],
 		    &dVmDiffusion[0],
@@ -547,7 +539,6 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 		    sim.diffusion_->VmBlock(),
 		    &VmArray[0],
 		    sim.diffusion_->diffusionScale());
-#endif
       
       if (tid == 0)
       {
@@ -556,6 +547,37 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
          
          sim.time_ += sim.dt_;
          ++sim.loop_;
+
+#ifdef SWAP_REACTION_POINTERS
+         //probably better to just do pointer swapping even if not needed
+         //instead of testing if needed
+         //if( sim.checkIO() )
+         {
+            startTimer(diffusiondVmRCopyTimer);
+         
+            //swap pointers to avoid copy tmp data into sim.vdata_ 
+            //allows to move on and not worry about overwriting data which
+            //may be used for IO
+            loopData.dVmReaction = sim.vdata_.swapdVmReaction(loopData.dVmReaction);
+            stopTimer(diffusiondVmRCopyTimer);
+         }
+#endif
+         if( sim.checkIO() )
+         {
+            // jlf: needed to have correct dVm in sensors.
+            // Already calculated in integrateLoop, so maybe we 
+            // should save it there and reuse it here...
+            startTimer(FGR_Matrix2ArrayTimer);
+            unsigned* blockIndex = sim.diffusion_->blockIndex();
+            double* dVdMatrix = sim.diffusion_->dVmBlock();
+            double diffusionScale = sim.diffusion_->diffusionScale();
+            for (unsigned ii=begin; ii<end; ++ii)
+            {
+               int index = blockIndex[ii];
+               dVmDiffusion[ii] += diffusionScale*dVdMatrix[index];
+            }
+            stopTimer(FGR_Matrix2ArrayTimer);
+         }
       }
 
       stopTimer(integratorTimer);

@@ -54,7 +54,7 @@ int readCelllist(const string filename, vector<Long64>& cellVec)
    if (openfail == 1)
    {
       if (myRank == 0)
-         cout << "Could not open cell list file " << filename << endl;
+         cerr << "Could not open cell list file " << filename << endl;
       return -1;
    }
 
@@ -108,7 +108,7 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
 
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-   if(myRank==0)cout<<"Sensor: unknown method "<<method<<endl;
+   if(myRank==0)cerr<<"Sensor ERROR: unknown method "<<method<<endl;
 
    assert(false); // reachable only due to bad input
    return 0;
