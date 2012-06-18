@@ -47,6 +47,7 @@ FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
 
    
    weight_.resize(nx, ny, nz);
+   A0_.resize(nx, ny, nz);
    VmBlock_.resize(nx, ny, nz);
    dVmBlock_.resize(nx, ny, nz);
 
