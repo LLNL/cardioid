@@ -139,14 +139,12 @@ namespace
             parms.cellTypeParms[name]=parms.cellTypeParms[clone]; 
             parms.cellTypeParms[name].name=name;
          }
-         vector<int> iparm; 
-         vector<double> dparm; 
-         objectGet(cellobj,"anatomyIndices",iparm); 
-         if (iparm.size() > 0) parms.cellTypeParms[name].anatomyIndices = iparm; 
-         objectGet(cellobj,"s_switch",iparm); 
-         if (iparm.size() == 1) parms.cellTypeParms[name].s_switch = iparm[0]; 
-         objectGet(cellobj,"P_NaK",dparm); 
-         if (dparm.size() == 1) parms.cellTypeParms[name].P_NaK = dparm[0]; 
+         if (object_testforkeyword(cellobj, "anatomyIndices") ) objectGet(cellobj,"anatomyIndices",parms.cellTypeParms[name].anatomyIndices); 
+         if (object_testforkeyword(cellobj, "s_switch")       ) objectGet(cellobj,"s_switch"      ,parms.cellTypeParms[name].s_switch,"0"); 
+         if (object_testforkeyword(cellobj, "P_NaK")          ) objectGet(cellobj,"P_NaK"         ,parms.cellTypeParms[name].P_NaK,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_NaL")          ) objectGet(cellobj,"g_NaL"         ,parms.cellTypeParms[name].g_NaL,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_Ks")           ) objectGet(cellobj,"P_g_Ks"        ,parms.cellTypeParms[name].g_Ks,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_to")           ) objectGet(cellobj,"P_g_to"        ,parms.cellTypeParms[name].g_to,"0.0"); 
          
       }
       
