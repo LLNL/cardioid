@@ -77,27 +77,44 @@ void writeFit(PADE **fit)
    if (getRank(0)==0) 
    {
       FILE *file=fopen("pade.data","w"); 
-      int index=0; 
-      while( *fit != NULL ) 
+      fprintf(file,"functions PADEFUNCTION { functions="); 
+      int cnt=0; 
+      while( fit[cnt] != NULL )  cnt++;
+      for (int index =0;index< cnt;index++)
+      {    char *name = fit[index]->name;  
+           fprintf(file," %s" ,  name); 
+      }
+      fprintf(file,";}\n"); 
+      for (int index =0;index< cnt;index++)
+      
       {
-         padeErrorInfo(**fit,index); 
-         padeWrite(file,**fit); 
-        fit++; 
-        index++;
+         padeErrorInfo(*fit[index],index); 
+         padeWrite(file,*fit[index]); 
       }
       fclose(file); 
    }
 }
+/*
+char **getFitName()
+{
+   return fitName ;
+}
+OVF *getFitFunc 
+{
+   return fitFunc; 
+}
+*/
+void makeMod(int mod)
+{
+   if (!mod) return ; 
+   fitFunc[10]      = hTauRMod;
+   fitName[10]  = "hTauRMod";
+   fitFunc[12]      = jTauRMod;
+   fitName[12]  = "jTauRMod";
+}
 PADE **makeFit(double tol, double V0, double V1, double deltaV,int mod) 
 {
-   if (mod)
-   {
-      
-        fitFunc[10]      = hTauRMod;
-        fitName[10]  = "hTauRMod";
-        fitFunc[12]      = jTauRMod;
-        fitName[12]  = "jTauRMod";
-   }
+   makeMod(mod); 
 
    int nPade=0;; 
    int i=0; 

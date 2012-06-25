@@ -159,6 +159,7 @@ void parseCommandLineAndReadInputFile(int argc, char** argv, MPI_Comm comm)
    // parse input file
    string objectFile("object.data");
    string restartFile("restart");
+   string padeFile("pade.data");
    if (argc > 1)
    {
       string argfile(argv[1]);
@@ -176,6 +177,8 @@ void parseCommandLineAndReadInputFile(int argc, char** argv, MPI_Comm comm)
       string inputFiles = objectFile;
       if (filetest(restartFile.c_str(), S_IFREG) == 0)
          inputFiles += " " + restartFile;
+      if (filetest(padeFile.c_str(), S_IFREG) == 0)
+         inputFiles += " " + padeFile;
 
       object_set("files", inputFiles.c_str());
 

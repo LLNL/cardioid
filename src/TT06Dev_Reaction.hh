@@ -7,6 +7,7 @@
 #include "TT06Func.hh"
 #include "TT06NonGates.h"
 #include "CheckpointVarInfo.hh"
+#include "pade.hh"
 
 class ThreadTeam;
 class Anatomy;
@@ -17,6 +18,7 @@ struct TT06Dev_ReactionParms
    std::vector<std::string> cellTypeNames;
    double tolerance;
    int mod;
+   PADE **pade; 
    int fastReaction;
 };
 

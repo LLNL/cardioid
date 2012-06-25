@@ -92,6 +92,25 @@ namespace
 
 namespace
 {
+/*
+   PADE **scanFit()
+   {
+      int i=0; 
+      char *name = fitName[i]; 
+      while( name != NULL) name = fitName[++i]; 
+      int cnt=i-1; 
+      vector<double> coef; 
+      for (i=0;i<cnt;i++)
+      {
+         char *name = fitName[++i]; 
+         OBJECT* obj = object_find(name, "PADE");
+         objectGet(obj,"tol", &pade[i].tol,"1.0"); 
+         objectGet(obj,"l"  , &pade[i].l,"0"); 
+         objectGet(obj,"m"  , &pade[i].m,"0"); 
+         objectGet(obj,"coef",coef); 
+      }
+   }
+*/
    Reaction* scanTT06Dev(OBJECT* obj, Anatomy& anatomy, const ThreadTeam& group)
    {
       TT06Dev_ReactionParms parms;
