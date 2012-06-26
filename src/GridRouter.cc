@@ -45,8 +45,10 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
             continue;
 
          //ewd:  we may have cases w. full heart where a task or two has no data
-         if (dInfo[ii].radius() == 0.0)
-            continue;
+         //ewd:  comment this out:  if task has only one point, radius = 0, but
+         //ewd:  neighbors will be calculated correctly.
+         //if (dInfo[ii].radius() == 0.0)
+         //   continue;
          
          double rij = 0.0;
          for (int jj=0; jj<3; ++jj)
