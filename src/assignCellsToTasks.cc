@@ -142,6 +142,14 @@ namespace
 
       GDLoadBalancer loadbal(comm, npex, npey, npez);
 
+      // allow user to define reduced process grid
+      int rnx,rny,rnz;
+      objectGet(obj, "rnx", rnx, "-1");
+      objectGet(obj, "rny", rny, "-1");
+      objectGet(obj, "rnz", rnz, "-1");
+      if ((rnx != npex && rnx > 0) && (rny != npey && rny > 0) && (rnz != npez && rnz > 0))
+         loadbal.setReducedProcGrid(rnx,rny,rnz);
+      
       // compute initial data decomposition
       profileStart("gd_assign_init");
       //loadbal.initialDistribution(cells, sim.nx_, sim.ny_, sim.nz_);

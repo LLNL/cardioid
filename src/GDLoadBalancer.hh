@@ -63,6 +63,7 @@ class GDLoadBalancer {
   void computeVolHistogram();
   void computeVolHistogram(vector<AnatomyCell>& cells);
   void computeReducedProcGrid(int nTasks);
+  void setReducedProcGrid(int rnx, int rny, int rnz);
   int ipow(int a, int b);
 };
 

@@ -119,6 +119,9 @@ GDLoadBalancer::GDLoadBalancer(MPI_Comm comm, int npex, int npey, int npez):
       */
    }
 
+   // reduced process grid dimensions
+   tnx_ = tny_ = tnz_ = -1;
+   
 }
 ////////////////////////////////////////////////////////////////////////////////
 GDLoadBalancer::~GDLoadBalancer()
@@ -2119,11 +2122,14 @@ void GDLoadBalancer::redistributeCells(vector<AnatomyCell>& cells)
       vector<unsigned> dest(nLocal);
 
       // compress process grid onto nTasks
-      computeReducedProcGrid(nTasks_);
-      //if (myRank_ == 0)
-      //   cout << "GDLoadBalancer::redistributeCells:  reduced grid = " <<
-      //       tnx_ << " x " << tny_ << " x " << tnz_ << " used for testing." << endl;
-
+      if (tnx_ < 0 || tny_ < 0 || tnz_ < 0)
+      {
+         computeReducedProcGrid(nTasks_);
+         if (myRank_ == 0)
+            cout << "GDLoadBalancer::redistributeCells:  reduced grid = " <<
+                tnx_ << " x " << tny_ << " x " << tnz_ << " used for testing." << endl;
+      }
+      
       // for testing, certain assumptions have to be fulfilled
       assert(npex_%2==0 && npey_%2==0 && npez_%2==0);
       assert(npex_%tnx_ == 0 && npey_%tny_ == 0 && npez_%tnz_ == 0);
@@ -2426,7 +2432,13 @@ void GDLoadBalancer::computeVolHistogram()
    cout << "total assigned volume = " << voltot_ << ", avg. volume = " << volavg_ << ", max volume = " << maxvol << endl << endl;
 
 }
-
+////////////////////////////////////////////////////////////////////////////////
+void GDLoadBalancer::setReducedProcGrid(int rnx, int rny, int rnz)
+{
+   tnx_ = rnx;
+   tny_ = rny;
+   tnz_ = rnz;
+}
 ////////////////////////////////////////////////////////////////////////////////
 void GDLoadBalancer::computeReducedProcGrid(int nTasks)
 {
