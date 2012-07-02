@@ -12,7 +12,6 @@
 
 using namespace std;
 
-#define sigm(x)   ((x)/(1.0+(x)) )
 
 namespace TT06Func
 {
@@ -46,23 +45,12 @@ double sTauR1(double Vm, void *parms) ;
 double hTauRMod(double Vm, void *parms) ;
 double jTauRMod(double Vm, void *parms) ;
 
-typedef double (*OVF)(double x, void *parms) ;
 
-const  char *fitName[] ={ "fv0", "fv1", "fv2", "fv3", "fv4", "fv5", "fv6", "mMhu", "mTauR", "hMhu", "hTauR", "jMhu", "jTauR", "Xr1Mhu", "Xr1TauR", "Xr2Mhu", "Xr2TauR", 
-                           "XsMhu", "XsTauR", "rMhu", "rTauR", "dMhu", "dTauR", "fMhu", "fTauR", "f2Mhu", "f2TauR", "jLMhu", "jLTauR", "sMhu0", "sTauR0", "sMhu1", "sTauR1" ,NULL}; 
-OVF fitFunc[] ={ fv0, fv1, fv2, fv3, fv4, fv5, fv6, mMhu, mTauR, hjMhu, hTauR, hjMhu, jTauR, Xr1Mhu, Xr1TauR, Xr2Mhu, Xr2TauR, 
-                           XsMhu, XsTauR, rMhu, rTauR, dMhu, dTauR, fMhu, fTauR, f2Mhu, f2TauR, jLMhu, jLTauR, sMhu0, sTauR0, sMhu1, sTauR1 ,NULL}; 
 
 static TauRecipParms *jParms;
 static TauRecipParms *hParms;
-#define NFIT 33 
-static PADE *fit[NFIT+1]; 
 }
 
-/*
-extern "C"{PADE* getFit();}
-PADE* getFit(){return TT06Func::fit;}
-*/
 
 namespace TT06Func
 {
@@ -72,61 +60,9 @@ void initCnst()
    hParms =makeTauRecipParms(-64.20,-23.3,hTauRecip); 
    initNonGateCnst(); 
 }
-void writeFit(PADE **fit)
-{
-   if (getRank(0)==0) 
-   {
-      FILE *file=fopen("pade.data","w"); 
-      fprintf(file,"functions PADEFUNCTION { functions="); 
-      int cnt=0; 
-      while( fit[cnt] != NULL )  cnt++;
-      for (int index =0;index< cnt;index++)
-      {    char *name = fit[index]->name;  
-           fprintf(file," %s" ,  name); 
-      }
-      fprintf(file,";}\n"); 
-      for (int index =0;index< cnt;index++)
-      
-      {
-         padeErrorInfo(*fit[index],index); 
-         padeWrite(file,*fit[index]); 
-      }
-      fclose(file); 
-   }
-}
-/*
-char **getFitName()
-{
-   return fitName ;
-}
-OVF *getFitFunc 
-{
-   return fitFunc; 
-}
-*/
-void makeMod(int mod)
-{
-   if (!mod) return ; 
-   fitFunc[10]      = hTauRMod;
-   fitName[10]  = "hTauRMod";
-   fitFunc[12]      = jTauRMod;
-   fitName[12]  = "jTauRMod";
-}
-PADE **makeFit(double tol, double V0, double V1, double deltaV,int mod) 
-{
-   makeMod(mod); 
-
-   int nPade=0;; 
-   int i=0; 
-   for ( i =0; i< 6;i++) fit[nPade++]=padeApprox(fitName[i],fitFunc[i],NULL,0,tol,deltaV,V0,V1); 
-   fit[nPade++]=padeApprox(fitName[i],fitFunc[i],NULL,0,tol,deltaV,0,130.0); 
-   for ( i=7; fitName[i] != NULL;i++) fit[nPade++]=padeApprox(fitName[i],fitFunc[i],NULL,0,tol,deltaV,V0,V1); 
-   assert(nPade==NFIT); 
-   fit[NFIT]=NULL; 
-   return fit; 
-}
 // Update Gates; 
-void updateGate(double dt, int nCellsTotal, int *cellTypeVector, double *VM, int offset, double **gate, WORK &work)
+
+void updateGate(double dt, int nCellsTotal, int *cellTypeVector, double *VM, int offset, double **gate, PADE *fit, WORK &work)
 {
    
   int offsetCell = work.offsetCell; 
@@ -134,13 +70,13 @@ void updateGate(double dt, int nCellsTotal, int *cellTypeVector, double *VM, int
   int offsetEq =  work.offsetEq; 
   int nEq =  work.nEq; 
 
-  PADE **gatefit = fit + gateFitOffset; 
+  PADE *gatefit = fit + gateFitOffset; 
   double *g; 
 
   void *mhuParms ; 
   void *tauRParms ; 
   double (*mhuFunc)(double V,void *parms); 
-  double (*tauRFunc)(double V,void *parms); 
+  double (*tauRFunc)(double V,void *parms);
   for (int eq=offsetEq;eq<offsetEq+nEq;eq++) 
   {
    switch (eq)
@@ -148,10 +84,10 @@ void updateGate(double dt, int nCellsTotal, int *cellTypeVector, double *VM, int
      case  0:
      {
         double *g = gate[eq]; 
-        mhuParms  = (gatefit[2*eq+0]->aparms); 
-        tauRParms = (gatefit[2*eq+1]->aparms); 
-        mhuFunc =gatefit[2*eq+0]->afunc; 
-        tauRFunc=gatefit[2*eq+1]->afunc; 
+        mhuParms  = (gatefit[2*eq+0].aparms); 
+        tauRParms = (gatefit[2*eq+1].aparms); 
+        mhuFunc =gatefit[2*eq+0].afunc; 
+        tauRFunc=gatefit[2*eq+1].afunc; 
 
         for (int ii=offsetCell;ii<offsetCell+nCell;ii++) 
         {
@@ -174,10 +110,10 @@ void updateGate(double dt, int nCellsTotal, int *cellTypeVector, double *VM, int
      case 10:
      {
         double *g = gate[eq]; 
-        mhuParms  = (gatefit[2*eq]->aparms); 
-        tauRParms = (gatefit[2*eq+1]->aparms); 
-        mhuFunc   = (gatefit[2*eq]->afunc); 
-        tauRFunc  = (gatefit[2*eq+1]->afunc); 
+        mhuParms  = (gatefit[2*eq].aparms); 
+        tauRParms = (gatefit[2*eq+1].aparms); 
+        mhuFunc   = (gatefit[2*eq].afunc); 
+        tauRFunc  = (gatefit[2*eq+1].afunc); 
         for (int ii=offsetCell;ii<offsetCell+nCell;ii++) 
         {
           double Vm = VM[ii]; 
@@ -190,10 +126,10 @@ void updateGate(double dt, int nCellsTotal, int *cellTypeVector, double *VM, int
      case 11:
      {
         double *g = gate[eq]; 
-        mhuParms  = (gatefit[2*eq+0]->aparms); 
-        tauRParms = (gatefit[2*eq+1]->aparms); 
-        mhuFunc   = (gatefit[2*eq+0]->afunc); 
-        tauRFunc  = (gatefit[2*eq+1]->afunc); 
+        mhuParms  = (gatefit[2*eq+0].aparms); 
+        tauRParms = (gatefit[2*eq+1].aparms); 
+        mhuFunc   = (gatefit[2*eq+0].afunc); 
+        tauRFunc  = (gatefit[2*eq+1].afunc); 
         int ii=offsetCell; 
         for (;ii<offsetCell+nCell;ii++) 
         {
@@ -203,10 +139,10 @@ void updateGate(double dt, int nCellsTotal, int *cellTypeVector, double *VM, int
           double tauR=tauRFunc(Vm,tauRParms); 
           g[ii] +=  dt*(mhu - g[ii])*tauR;     //sGate
         }
-        mhuParms  = (gatefit[2*eq+2]->aparms); 
-        tauRParms = (gatefit[2*eq+3]->aparms); 
-        mhuFunc   = (gatefit[2*eq+2]->afunc); 
-        tauRFunc  = (gatefit[2*eq+3]->afunc); 
+        mhuParms  = (gatefit[2*eq+2].aparms); 
+        tauRParms = (gatefit[2*eq+3].aparms); 
+        mhuFunc   = (gatefit[2*eq+2].afunc); 
+        tauRFunc  = (gatefit[2*eq+3].afunc); 
         for (;ii<offsetCell+nCell;ii++) 
         {
            double Vm = VM[ii]; 
@@ -229,21 +165,21 @@ UPDATEGATE updateGateFuncs1[]={ update_mGate_v1, update_hGate_v1, update_jGate_v
 UPDATEGATE updateGateFuncs2[]={ update_mGate, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, update_rGate_v1, update_dGate_v1, 
                           update_fGate_v1, update_f2Gate_v1, update_jLGate_v1, update_s0Gate_v1, update_s1Gate_v1} ;
 UPDATEGATE *updateGateFuncs= updateGateFuncs1; 
-void updateGateFast(double dt, int nCellsTotal, int *cellTypeVector, double *Vm, int offset, double **gate, WORK &work)
+void updateGateFast(double dt, int nCellsTotal, int *cellTypeVector, double *Vm, int offset, double **gate, PADE *fit,  WORK &work)
 {
     int offsetCell=work.offsetCell; 
     int nCell=work.nCell; 
     int offsetEq = work.offsetEq; 
     int nEq = work.nEq; 
 
-   PADE **gatefit = fit + gateFitOffset; 
+   PADE *gatefit = fit + gateFitOffset; 
 
    for (int eq=offsetEq;eq<offsetEq+nEq;eq++)
    {
        if (eq < 11) 
        {
-            double *mhu  = gatefit[2*eq+0]->coef; 
-            double *tauR = gatefit[2*eq+1]->coef; 
+            double *mhu  = gatefit[2*eq+0].coef; 
+            double *tauR = gatefit[2*eq+1].coef; 
             updateGateFuncs[eq](dt, nCell , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
        }
        else 
@@ -254,15 +190,15 @@ void updateGateFast(double dt, int nCellsTotal, int *cellTypeVector, double *Vm,
             
             if (nCell0 > 0)  
             {
-            double *mhu  = gatefit[2*eq+0]->coef; 
-            double *tauR = gatefit[2*eq+1]->coef; 
+            double *mhu  = gatefit[2*eq+0].coef; 
+            double *tauR = gatefit[2*eq+1].coef; 
             updateGateFuncs[11](dt, nCell0 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
             }
 
             if (nCell1 > 0) 
             {
-            double *mhu  = gatefit[2*eq+2]->coef; 
-            double *tauR = gatefit[2*eq+3]->coef; 
+            double *mhu  = gatefit[2*eq+2].coef; 
+            double *tauR = gatefit[2*eq+3].coef; 
             updateGateFuncs[12](dt, nCell1 , &Vm[offsetCell+nCell0], gate[eq]+offsetCell+nCell0, mhu, tauR);
             }
        }
@@ -529,19 +465,19 @@ map<string,CellTypeParmsFull>getStandardCellTypes()
     return cellTypes; 
 }
 }
-void fv05General(double Vm, double *fv)
+void fv05General(void *fitIn, double Vm, double *fv)
 {
-   using TT06Func::fit;
-   fv[0]=fit[0]->afunc(Vm, fit[0]->aparms); 
-   fv[1]=fit[1]->afunc(Vm, fit[1]->aparms); 
-   fv[2]=fit[2]->afunc(Vm, fit[2]->aparms); 
-   fv[3]=fit[3]->afunc(Vm, fit[3]->aparms); 
-   fv[4]=fit[4]->afunc(Vm, fit[4]->aparms); 
-   fv[5]=fit[5]->afunc(Vm, fit[5]->aparms); 
+   PADE *fit = (PADE *)fitIn;
+   fv[0]=fit[0].afunc(Vm, fit[0].aparms); 
+   fv[1]=fit[1].afunc(Vm, fit[1].aparms); 
+   fv[2]=fit[2].afunc(Vm, fit[2].aparms); 
+   fv[3]=fit[3].afunc(Vm, fit[3].aparms); 
+   fv[4]=fit[4].afunc(Vm, fit[4].aparms); 
+   fv[5]=fit[5].afunc(Vm, fit[5].aparms); 
 }
-double fv6General(double dv)
+double fv6General(void *fitIn, double dv)
 {
-   using TT06Func::fit;
-   double fv6=fit[6]->afunc(dv, fit[6]->aparms); 
+   PADE *fit = (PADE *)fitIn;
+   double fv6=fit[6].afunc(dv, fit[6].aparms); 
    return fv6; 
 }

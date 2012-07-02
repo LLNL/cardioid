@@ -10,8 +10,8 @@ struct nonGateCnst { double c2,  c3,  c4,  c5,  c6,  c7,  c8,  c9,
 #ifdef __cplusplus
 extern "C" {
 #endif
-void update_nonGate(double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt);
-void update_nonGate_v1(double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt);
+void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt);
+void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt);
 void sampleLog(struct LogParms *logParms, int nCells, int offset, int *cellTypeVector, double *VM, double **state);
 void set_SP(); 
 void initNonGateCnst(); 

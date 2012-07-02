@@ -75,7 +75,7 @@ double fvX_a[75]__attribute__((aligned(32))) = {
   1.89136344887477e-15, 4.55066993718199e-13, 1.18578052624143e-11, -5.22361846923760e-09, -3.79918615957248e-07, 3.41107297247441e-05, 6.31701538469039e-03, -7.81445921919197e-01, 2.55684105370893e+01};
 
 
-void update_nonGate_v1(double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt)
+void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt)
 {
 
   typedef vector4double vdt;

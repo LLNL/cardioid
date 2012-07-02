@@ -356,52 +356,7 @@ double fv6(double dV0, void *p)
 
 #define logSeries(x)    (log(1+(x)) )
 
-#define fv0_m 10
-#define fv1_m  6
-#define fv2_m  8
-#define fv3_m 11
-#define fv4_m  9
-#define fv5_m  8
-#define fv6_m  7
-#define fv5_l  5
-#define fv6_l 11
-
-void fv05Special(double v, double *fv)
-{
-  double fv0_a[]={-1.45499489004044e+00,-2.24272406249374e-03, 2.87019818110585e-05,-2.93525992825876e-07, 1.86878131970215e-09,-6.15332407381053e-12,-3.07155144145422e-14, 2.10687633250732e-15,-1.57414794358693e-17,-1.69089871040937e-19};
-  double fv1_a[]={ 1.57571330412697e-04, 2.41325169024597e-06, 1.46053164590980e-08, 6.04272220479134e-11, 2.60192856479526e-13, 6.02170007043617e-16};
-  double fv2_a[]={ 5.40504807620401e+02,-1.19531891610964e+01, 1.18653494080701e-01,-6.00926106818024e-04, 4.00772142804151e-07, 2.94210996176821e-08,-2.55280464729594e-10,-1.52370496566743e-12};
-  double fv3_a[]={ 1.03965405517718e+00, 4.60580107291175e-02, 7.91075918239993e-04, 4.30241562974461e-06,-4.97022959453108e-08,-6.96639048514165e-10, 2.49915783972090e-12, 7.81666161976579e-14, 1.36854440783922e-16,-3.65847291145083e-18,-1.74506487282187e-20};
-  double fv4_a[]={ 2.55684105370893e+01,-7.81445921919197e-01, 6.31701538469039e-03, 3.41107297247441e-05,-3.79918615957248e-07,-5.22361846923760e-09, 1.18578052624143e-11, 4.55066993718199e-13, 1.89136344887477e-15};
-  double fv5_a[]={ 2.19831706117241e-04, 2.16983094649991e-05, 9.83170991434406e-07, 2.61347101393462e-08, 4.31098192118690e-10, 4.32295749601499e-12, 2.40194725811093e-14, 5.64722239204646e-17, 
-                  1.00000000000000e+00,-6.61573242254081e-02, 2.00764738834124e-03,-2.65106715048650e-05, 2.24306976181154e-07};
-  double sum0 = 0; for (int j=fv0_m-1;j>=0    ;j--)sum0  =  fv0_a[j]+v*sum0;
-  double sum1 = 0; for (int j=fv1_m-1;j>=0    ;j--)sum1  =  fv1_a[j]+v*sum1;
-  double sum2 = 0; for (int j=fv2_m-1;j>=0    ;j--)sum2  =  fv2_a[j]+v*sum2;
-  double sum3 = 0; for (int j=fv3_m-1;j>=0    ;j--)sum3  =  fv3_a[j]+v*sum3;
-  double sum4 = 0; for (int j=fv4_m-1;j>=0    ;j--)sum4  =  fv4_a[j]+v*sum4;
-  double sum5 = 0; for (int j=fv5_m-1;j>=0    ;j--)sum5  =  fv5_a[j]+v*sum5;
-  double sum5d =0; for (int j=fv5_l+fv5_m-1;j>=fv5_m;j--)sum5d =  fv5_a[j] + v*sum5d; 
-
-  fv[0] = sum0; 
-  fv[1] = sum1; 
-  fv[2] = sum2; 
-  fv[3] = sum3; 
-  fv[4] = sum4; 
-  fv[5] = sum5/sum5d; 
-      
-}
-double fv6Special(double dv)
-{
-  double fv6_a[]={ 2.97942000558175e-01,-8.89837887994794e-03, 7.99339727741565e-03,-1.75996322715896e-04, 1.50747331544023e-06,-5.91201683806020e-09, 8.93564690058337e-12, 
-                  1.00000000000000e+00, 2.17226317175310e-01, 2.17628774116084e-02, 1.59235097855721e-03,-7.48970504345503e-05, 3.38737191083109e-06,-5.36894894634127e-08, 8.84744201829959e-10,-4.46027161749137e-12, 2.07853354660018e-14, 1.95808469577737e-16};
-  double sum6 = 0; for (int j=fv6_m-1;j>=0    ;j--)sum6  =  fv6_a[j]+dv*sum6;
-  double sum6d =0; for (int j=fv6_l+fv6_m-1;j>=fv6_m;j--)sum6d =  fv6_a[j] + dv*sum6d; 
-  return sum6/sum6d; 
-}
-
-
-void update_nonGate(double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt)
+void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt)
 {
   double *f2Gate = state[f2_gate]+offset; 
   double *fGate = state[f_gate]+offset; 
@@ -424,10 +379,10 @@ void update_nonGate(double dt, struct CellTypeParms *cellTypeParms, int nCells, 
   double *__dVK_i = state[dVK_i]+offset; 
   double *__R_prime = state[R_prime]+offset; 
 
-  void fv05General(double Vm, double *fv);
-  double fv6General(double dv);
-  void (*fv05Func)(double Vm, double *fv);
-  double (*fv6Func)(double dv);
+  void fv05General(void *fit,  double Vm, double *fv);
+  double fv6General(void *fit, double dv);
+  void (*fv05Func)(void *fit, double Vm, double *fv);
+  double (*fv6Func)(void *fit, double dv);
 
   fv05Func = fv05General; 
   fv6Func  = fv6General; 
@@ -452,7 +407,7 @@ void update_nonGate(double dt, struct CellTypeParms *cellTypeParms, int nCells, 
    }
 
    double Vm = VM[ii]; 
-  fv05Func(Vm,fv); 
+   fv05Func(fit, Vm,fv); 
    double _Na_i    = __Na_i[ii]; 
    double _Ca_i    = __Ca_i[ii]; 
    double _Ca_ss   = __Ca_ss[ii]; 
@@ -467,8 +422,6 @@ void update_nonGate(double dt, struct CellTypeParms *cellTypeParms, int nCells, 
    double dVR = 0.0; 
    double itmp0,itmp5,itmp6 ; 
    {
-     //double fv1=fit[1]->afunc(Vm, fit[1]->aparms); 
-     //double fv2=fit[2]->afunc(Vm, fit[2]->aparms); 
      double fv1 = fv[1]; 
      double fv2 = fv[2]; 
      double x1 = _Ca_i*cnst.c26; 
@@ -496,12 +449,9 @@ void update_nonGate(double dt, struct CellTypeParms *cellTypeParms, int nCells, 
      double dV1 = Vm -cnst.c3*log(_Na_i)-cnst.c4;
      double dV2 = dV0-cnst.c3*logSeries(cnst.c2*_Na_i/_K_i)+cnst.c5-cnst.c6; // Assumption:  cnst.c2*_Na_i/_K_i is small; 
 
-     //double fv0=fit[0]->afunc(Vm, fit[0]->aparms); 
-     //double fv5=fit[5]->afunc(Vm, fit[5]->aparms); 
-     //double fv6=fit[6]->afunc(dV0,fit[6]->aparms); 
      double fv0 = fv[0]; 
      double fv5 = fv[5]; 
-     double fv6 = fv6Func(dV0);
+     double fv6 = fv6Func(fit,dV0);
      double fd =  fv5  +  fv6; 
 
      double tmp0 =  (fd +  g_to*rGate[ii]*sGate[ii]+ cnst.c11*Xr1Gate[ii]*Xr2Gate[ii] );
@@ -518,8 +468,6 @@ void update_nonGate(double dt, struct CellTypeParms *cellTypeParms, int nCells, 
    }
 
    {
-     //double fv3=fit[3]->afunc(Vm, fit[3]->aparms); 
-     //double fv4=fit[4]->afunc(Vm, fit[4]->aparms); 
      double fv3 = fv[3]; 
      double fv4 = fv[4]; 
      double x4 = SQ(_Ca_SR*cnst.c30); 

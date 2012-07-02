@@ -192,30 +192,11 @@ void integrateLoop(const int begin, const int end,
 #ifdef BGQ
   if ( blockOffset == blockOffsetB )
   {
-         integrateLoop_vector(begin,
-                                     end,
-                                     dt,
-                                     dVmR,
-                                     stim,
-                                     blockOffset,
-                                     dVmBlock,
-                                     VmBlock,
-                                     Vm,
-                                     diffusionScale);
+    integrateLoop_vector(begin, end, dt, dVmR, stim, blockOffset, dVmBlock, VmBlock, Vm, diffusionScale);
   }
   else
 #endif
-         integrateLoop_normal(begin,
-                                     end,
-                                     dt,
-                                     dVmR,
-                                     stim,
-                                     blockOffset,
-                                     blockOffsetB,
-                                     dVmBlock,
-                                     VmBlock,
-                                     Vm,
-                                     diffusionScale);
+    integrateLoop_normal(begin, end, dt, dVmR, stim, blockOffset, blockOffsetB, dVmBlock, VmBlock, Vm, diffusionScale);
 
 }
 

@@ -1,9 +1,10 @@
 #ifndef FIT_H
 #define FIT_H
 #include <stdio.h>
+#include <string>
 struct PADE
 {  
-   char *name; 
+   std::string name; 
    double (*func)(double x, void *parms); 
    void *parms; 
    double (*afunc)(double x, void *aparms); 
@@ -16,10 +17,10 @@ struct PADE
    int m; 
    double *coef;
 }; 
-PADE   *padeApprox (const char *name, double (*func)(double x, void *parms), void *parms, int size_parms,double tol, double deltaX, double x0, double x1);
-void padeCalc(PADE *pade,int lMax, int  mMax, int maxCost);
+void padeApprox (PADE &pade, std::string name, double (*func)(double x, void *parms), void *parms, int size_parms,
+                   double deltaX, double x0, double x1,
+                   double tol, int lMax,int mMax,int maxCost,
+                   int l, int m, double *coef);
 void padeErrorInfo(PADE pade,int index);
 void padeWrite(FILE *file,PADE pade);
-double padeFunc(double x, PADE *parms) ;
-double polyFunc(double x, PADE *parms) ;
 #endif

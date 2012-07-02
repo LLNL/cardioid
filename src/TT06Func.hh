@@ -59,13 +59,44 @@ struct WORK
 {
    int offsetCell, nCell, offsetEq, nEq;
 }; 
+double Xr1Mhu(double Vm, void *parms) ;
+double Xr2Mhu(double Vm, void *parms) ;
+double XsMhu(double Vm, void *parms) ;
+double mMhu(double Vm, void *parms) ;
+double hjMhu(double Vm, void *parms) ;
+double rMhu(double Vm, void *parms) ;
+double dMhu(double Vm, void *parms) ;
+double fMhu(double Vm, void *parms) ;
+double f2Mhu(double Vm, void *parms) ;
+double jLMhu(double Vm, void *parms) ;
+double sMhu0(double Vm, void *parms) ;
+double sMhu1(double Vm, void *parms) ;
+
+double Xr1TauR(double Vm, void *parms) ;
+double Xr2TauR(double Vm, void *parms) ;
+double XsTauR(double Vm, void *parms) ;
+double mTauR(double Vm, void *parms) ;
+double hTauR(double Vm, void *parms) ;
+double jTauR(double Vm, void *parms) ;
+double rTauR(double Vm, void *parms) ;
+double dTauR(double Vm, void *parms) ;
+double fTauR(double Vm, void *parms) ;
+double f2TauR(double Vm, void *parms) ;
+double jLTauR(double Vm, void *parms) ;
+double sTauR0(double Vm, void *parms) ;
+double sTauR1(double Vm, void *parms) ;
+
+double hTauRMod(double Vm, void *parms) ;
+double jTauRMod(double Vm, void *parms) ;
+
+
+
+
 
 void initCnst();
-//void updateNonGate(double dt, CellTypeParms *cellTypeParms, int n, int *cellType, double *Vm, int offset, double **state, double *dVdt);
-void updateGate(double dt, int n, int *cellType, double *Vm, int offset, double **state, WORK& work);
-void updateGateFast(double dt, int n, int *cellType, double *Vm, int offset, double **state, WORK& work);
-PADE **makeFit(double tol, double V0, double V1, double deltaV, int mod);
-void writeFit(PADE **fit); 
+void updateGate(double dt, int n, int *cellType, double *Vm, int offset, double **state, PADE *fit, WORK& work);
+void updateGateFast(double dt, int n, int *cellType, double *Vm, int offset, double **state, PADE *fit, WORK& work);
+PADE **makeFit(char *fitNames[], double tol, double V0, double V1, double deltaV, int mod);
 std::map<std::string,CellTypeParmsFull> getStandardCellTypes();
 };
 

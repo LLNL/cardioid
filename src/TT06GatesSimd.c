@@ -935,7 +935,7 @@ int exp_l=16;
      break;
 
      default:
-    //println("BAD LEFTOVER: %d\n", leftover); fflush(stdout);
+    printf("BAD LEFTOVER: %d\n", leftover); fflush(stdout);
     assert(0);
    }
  }

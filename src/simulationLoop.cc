@@ -529,10 +529,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       const int begin=loopData.integratorOffset[tid];
       const int end  =loopData.integratorOffset[tid+1];
 #endif
-      integrateLoop(begin,end,
-		    sim.dt_,
-		    &(*loopData.dVmReaction)[0],
-		    &dVmDiffusion[0],
+      integrateLoop(begin,end, sim.dt_, &(*loopData.dVmReaction)[0], &dVmDiffusion[0],
 		    sim.diffusion_->blockIndex(),
 		    sim.diffusion_->blockIndexB(),
 		    sim.diffusion_->dVmBlock(),

@@ -2,11 +2,15 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <mpi.h>
 #include "object_cc.hh"
+#include "ioUtils.h"
+#include "mpiUtils.h"
 
 #include "TT04_CellML_Reaction.hh" // TT04 implementation from CellML (Nov 2011)
 #include "TT06_CellML_Reaction.hh" // TT06 implementation from CellML (Nov 2011)
 #include "TT06Dev_Reaction.hh"
+#include "pade.hh"
 #include "TT06_RRG_Reaction.hh"    // TT06 with modifications from Rice et al.
 #include "TT06Func.hh"
 #include "ReactionFHN.hh"
@@ -92,36 +96,63 @@ namespace
 
 namespace
 {
-/*
-   PADE **scanFit()
+   PADE *scanFit()
    {
-      int i=0; 
-      char *name = fitName[i]; 
-      while( name != NULL) name = fitName[++i]; 
-      int cnt=i-1; 
-      vector<double> coef; 
-      for (i=0;i<cnt;i++)
+      if (!object_exists("functions", "FIT") ) return NULL;
+      OBJECT* obj = object_find("functions", "FIT");
+      vector<string>fitName; 
+      objectGet(obj,"functions",fitName); 
+      PADE *fit =  new PADE  [fitName.size()] ;
+      for (int i=0;i<fitName.size();i++)
       {
-         char *name = fitName[++i]; 
-         OBJECT* obj = object_find(name, "PADE");
-         objectGet(obj,"tol", &pade[i].tol,"1.0"); 
-         objectGet(obj,"l"  , &pade[i].l,"0"); 
-         objectGet(obj,"m"  , &pade[i].m,"0"); 
-         objectGet(obj,"coef",coef); 
+         vector<double> coef; 
+         double tol,deltaV,V0,V1;
+         int l,m;
+         string name = fitName[i]; 
+         OBJECT* obj = object_find(name.c_str(), "FIT");
+         objectGet(obj,"tol", tol,"1.0"); 
+         objectGet(obj,"deltaX",deltaV,"1"); 
+         objectGet(obj,"x0"    ,    V0,"0"); 
+         objectGet(obj,"x1"    ,    V1,"0"); 
+         objectGet(obj,"l"     ,     l,"0"); 
+         objectGet(obj,"m"     ,     m,"0"); 
+         objectGet(obj,"coef"  ,coef); 
+         padeApprox(fit[i],name,fitFuncMap(name),NULL,0,deltaV,V0,V1,tol,0,0,0,l,m,&coef[0]); 
+      //   fit[i].aparms=fit+i; 
       }
+      return fit; 
    }
-*/
    Reaction* scanTT06Dev(OBJECT* obj, Anatomy& anatomy, const ThreadTeam& group)
    {
       TT06Dev_ReactionParms parms;
       parms.cellTypeParms=TT06Func::getStandardCellTypes(); 
       int fastGate =-1; 
       int fastNonGate =-1; 
+      TT06Func::initCnst(); 
+      string fitFit; 
       objectGet(obj, "tolerance",    parms.tolerance, "0.0") ;
       objectGet(obj, "mod",          parms.mod, "0") ;
       objectGet(obj, "fastReaction", parms.fastReaction, "-1") ;
       objectGet(obj, "fastGate",     fastGate, "-1") ;
       objectGet(obj, "fastNonGate",  fastNonGate, "-1") ;
+      parms.fit = NULL; 
+      parms.fitFile = "fit.data"; 
+      if (object_testforkeyword(obj,"fitFile") )
+      {
+        objectGet(obj, "fitFile",     parms.fitFile,"fit.data"); 
+        int fileFitExists=0; 
+        if (getRank(0) ==0) 
+        {
+          if (filetest(parms.fitFile.c_str(), S_IFREG) == 0) fileFitExists=1; 
+          if (fileFitExists) object_compilefile(parms.fitFile.c_str()); 
+        }
+        MPI_Bcast(&fileFitExists, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        if (fileFitExists) 
+        {
+           object_Bcast(0, MPI_COMM_WORLD);
+           parms.fit = scanFit();
+        }
+      }
       if (parms.fastReaction == -1) 
       {
          if (fastGate     > -1 || fastNonGate > -1 )  

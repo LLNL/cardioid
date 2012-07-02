@@ -15,13 +15,13 @@ class Reaction
                      const std::vector<double>& Vm,
                      const std::vector<double>& iStim,
                      std::vector<double>& dVm) = 0;
+   virtual void updateNonGate(double dt, const std::vector<double>&Vm, std::vector<double>&dVR) {};
+   virtual void updateGate   (double dt, const std::vector<double>&Vm) {};
+
    /** Populates the Vm array with some sensible default initial
     * membrane voltage.  Vm will be the parallel to the local cells in
     * the anatomy that was used to create the concrete reaction class. */
    virtual void initializeMembraneVoltage(std::vector<double>& Vm) = 0;
-
-   virtual void updateNonGate(double dt, const std::vector<double>&Vm, std::vector<double>&dVR) {};
-   virtual void updateGate   (double dt, const std::vector<double>&Vm) {};
 
 
    /** Functions needed for checkpoint/restart */

@@ -25,8 +25,8 @@ struct CellTypeParms
 extern "C" 
 {
 #endif 
-void fv05General(double Vm, double *fv);
-double fv6General(double dv);
+void fv05General(void *fit, double Vm, double *fv);
+double fv6General(void *fit, double dv);
 #ifdef __cplusplus
 }
 #endif

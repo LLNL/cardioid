@@ -9,6 +9,10 @@
 #include "CheckpointVarInfo.hh"
 #include "pade.hh"
 
+typedef double (*OVF)(double x, void *parms) ;
+
+OVF fitFuncMap(std::string name) ;
+
 class ThreadTeam;
 class Anatomy;
 
@@ -16,9 +20,10 @@ struct TT06Dev_ReactionParms
 {
    std::map<std::string, TT06Func::CellTypeParmsFull> cellTypeParms;
    std::vector<std::string> cellTypeNames;
+   std::string fitFile; 
    double tolerance;
    int mod;
-   PADE **pade; 
+   PADE *fit; 
    int fastReaction;
 };
 
@@ -65,14 +70,14 @@ class TT06Dev_Reaction : public Reaction
    unsigned nCells_;
    std::vector<unsigned> nCellsOfType_; 
 
-   void (*update_gate_)   (double dt,                                      int nCells, int *cellType, double *Vm, int offset, double **state, TT06Func::WORK& work);
-   void (*update_nonGate_)(double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellType, double *Vm, int offset, double **state, double *dVdt);
+   void (*update_gate_)   (double dt,                                      int nCells, int *cellType, double *Vm, int offset, double **state, PADE* xfit, TT06Func::WORK& work);
+   void (*update_nonGate_)(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellType, double *Vm, int offset, double **state, double *dVdt);
    int nonGateWorkPartition(int& offset);
-   double dtForFit_; 
+   
    double tolerance_; 
    int mod_; 
    int fastReaction_; 
-   PADE **fit_;
+   PADE *fit_;
    double *mhu_[nGateVar];
    double *tauR_[nGateVar];
    const ThreadTeam& group_;
