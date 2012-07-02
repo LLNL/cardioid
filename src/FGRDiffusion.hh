@@ -37,6 +37,7 @@ class FGRDiffusion : public Diffusion
    void buildTupleArray(const Anatomy& anatomy);
    void buildBlockIndex(const Anatomy& anatomy);
    void precomputeCoefficients(const Anatomy& anatomy);
+   void precomputeCoefficientsPositive(const Anatomy & anatomy);
    void reorder_Coeff();
 
    void mkTissueArray(const Array3d<int>& tissueBlk, int ib, int* tissue);
@@ -46,6 +47,7 @@ class FGRDiffusion : public Diffusion
 
    int                             nLocal_;
    int                             offset_[19];
+   int                             offsetMap_[27];
    int                             faceNbrOffset_[6];
    LocalGrid                       localGrid_;
    double                          diffusionScale_;
@@ -59,6 +61,7 @@ class FGRDiffusion : public Diffusion
    std::vector<int>                threadOffsetSimd_;
    std::vector<unsigned>           blockIndex_; // for local and remote cells
    std::vector<Tuple>              localTuple_; // only for local cells
+   Array3d<double>                 A0_;
    Array3d<FGRUtils::DiffWeight>   weight_;
    Array3d<double>                 VmBlock_;
    Array3d<WeightType>             diffCoefT2_;

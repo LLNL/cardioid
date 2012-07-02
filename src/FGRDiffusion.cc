@@ -68,6 +68,7 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
    }         
    
    weight_.resize(nx, ny, nz);
+   A0_.resize(nx, ny, nz, 0.0);
    VmBlock_.resize(nx, ny, nz);
 
    buildTupleArray(anatomy);
@@ -101,12 +102,48 @@ FGRDiffusion::FGRDiffusion(const FGRDiffusionParms& parms,
    faceNbrOffset_[4] = offset_[ZZM];
    faceNbrOffset_[5] = offset_[ZZP];
 
+   for(int ii=0;ii<27;ii++) offsetMap_[ii]=-100;
+   offsetMap_[1*9+1*3+1]=ZZZ;
+   offsetMap_[2*9+1*3+1]=PZZ;
+   offsetMap_[1*9+2*3+1]=ZPZ;
+   offsetMap_[0*9+1*3+1]=MZZ;
+   offsetMap_[1*9+0*3+1]=ZMZ;
+   offsetMap_[2*9+2*3+1]=PPZ;
+   offsetMap_[0*9+2*3+1]=MPZ;
+   offsetMap_[0*9+0*3+1]=MMZ;
+   offsetMap_[2*9+0*3+1]=PMZ;
+   offsetMap_[1*9+1*3+2]=ZZP;
+   offsetMap_[1*9+1*3+0]=ZZM;
+   offsetMap_[1*9+2*3+2]=ZPP;
+   offsetMap_[1*9+2*3+0]=ZPM;
+   offsetMap_[1*9+0*3+0]=ZMM;
+   offsetMap_[1*9+0*3+2]=ZMP;
+   offsetMap_[2*9+1*3+2]=PZP;
+   offsetMap_[0*9+1*3+2]=MZP;
+   offsetMap_[0*9+1*3+0]=MZM;
+   offsetMap_[2*9+1*3+0]=PZM;
+
 //   offsetsTest();
    precomputeCoefficients(anatomy);
    reorder_Coeff();
 
    assert(nz%4 == 0);
    dVmBlock_.resize(nx,ny,nz + (nz%4==0 ? 0:4-(nz%4)));
+
+//   srand(1234);
+//   double* VmM = VmBlock_.cBlock();
+//   for(int ii=0;ii<nx*ny*nz;ii++)
+//    { VmM[ii] = rand()/1000000.0;}
+//
+//   FGRDiff_simd_thread(1,nx-1,&(VmBlock_),dVmBlock_.cBlock());
+//
+//   for(int ii=1;ii<nx-1;ii++)
+//   for(int jj=1;jj<ny-1;jj++)
+//   for(int kk=1;kk<nz-1;kk++)
+//   {
+//     printf("(%d,%d,%d) : %f -> %f with %f\n",ii,jj,kk,VmBlock_(ii,jj,kk),dVmBlock_(ii,jj,kk), *((double*)&(diffCoefT2_(ii,jj,4*20*((int)(kk/4)) + 4* 5 + (kk%4)*2))) );
+//   }
+  
 
 }
 
@@ -226,6 +263,102 @@ void FGRDiffusion::buildBlockIndex(const Anatomy& anatomy)
    }
 }
 
+//void FGRDiffusion::precomputeCoefficientsPositive(const Anatomy& anatomy)
+//{
+//   unsigned nx = localGrid_.nx();
+//   unsigned ny = localGrid_.ny();
+//   unsigned nz = localGrid_.nz();
+//   unsigned nxGlobal = anatomy.nx();
+//   unsigned nyGlobal = anatomy.ny();
+//   unsigned nzGlobal = anatomy.nz();
+//   Vector hInv(1.0/anatomy.dx(), 1.0/anatomy.dy(), 1.0/anatomy.dz());
+//   Vector h(anatomy.dx(), anatomy.dy(), anatomy.dz());
+//   double gridCellVolume = h[0]*h[1]*h[2];
+//   
+//   SymmetricTensor sigmaZero = {0};
+//   Array3d<SymmetricTensor> sigmaBlk(nx, ny, nz, sigmaZero);
+//   Array3d<int> tissueBlk(nx, ny, nz, 0);
+//
+//   const vector<AnatomyCell>& cell = anatomy.cellArray();
+//   for (unsigned ii=0; ii<anatomy.size(); ++ii)
+//   {
+//      unsigned ib = blockIndex_[ii];
+//      sigmaBlk(ib) = anatomy.conductivity(ii);
+//      tissueBlk(ib) = isTissue(anatomy.cellType(ii));
+//   }
+//
+//   for (unsigned ii=0; ii<weight_.size(); ++ii)
+//      for (unsigned jj=0; jj<19; ++jj)
+//         weight_(ii).A[jj] = 0.0;
+//
+//   for (unsigned iCell=0; iCell<anatomy.nLocal(); ++iCell)
+//   {
+//      unsigned ib = blockIndex_[iCell];
+//      int have2D=0;
+//      //check if any quadrant is formed.
+//      for(int dir=0;dir<3;dir++) //z,x,y
+//      {
+//        //(110) (011) (101)
+//        for(int ii=-1;ii<2;ii+=2)
+//        for(int jj=-1;jj<2;jj+=2)
+//        {
+//          int have4=0;
+//          int coordi[3]={0,0,0};
+//          SymmetricTensor avgSigma ={0};
+//          for(int ll=0;ll<2;ll++)
+//          for(int mm=0;mm<2;ll++)
+//          {
+//            int i1=dir;
+//            int i2=(dir+1)%3;
+//            coordi[i1]=ll*ii;
+//            coordi[i2]=mm*jj;
+//
+//            offset = sigmaBlk.tupleToIndex(coordi[0]+1,coordi[1]+1,coordi[2]+1) - sigmaBlk.tupleToIndex(1,1,1);
+//            if (tissueBlk(ib + offset) == 0) break;
+//
+//            avgSigma = avgSigma + sigmaBlk(ib+offset);
+//            have4++; 
+//          }
+//          if ( have4 == 4 ) 
+//          {
+//            int coordi[3]={0,0,0};
+//            int signA[3]={0,0,0};
+//            for(int ll=0;ll<2;ll++)
+//            for(int mm=0;mm<2;ll++)
+//            {
+//              int i1=dir;
+//              int i2=(dir+1)%3;
+//              coordi[i1]=ll*ii;
+//              coordi[i2]=mm*jj;
+//
+//              signA[i1]=ii*(2*ll-1);
+//              signA[i2]=jj*(2*mm-1);
+// 
+//              Vector signV(signA[0],signA[1],signA[2]);
+//              Vector weightV = avgSigma * signV;
+//
+//              offset = 9*(coordi[0]+1)+3*(coordi[1]+1)+(coordi[2]+1);
+//              assert(offsetMap_[offset] != -100);
+//              weight_(ib).A[offsetMap_[offset]] += weightV.sum();
+//            }
+//            have2D++;
+//          }
+//        }         
+//      }
+//      if ( have2D == 0)
+//      {
+//         //check if 1D 
+//      }
+//      
+//      double sum = 0;
+//      for (unsigned ii=0; ii<19; ++ii)
+//         sum += weight_(ib).A[ii];
+//      assert(abs(sum) < weightSumTolerance);
+//   }
+////   printAllWeights(tissueBlk);
+//}
+
+
 void FGRDiffusion::precomputeCoefficients(const Anatomy& anatomy)
 {
    unsigned nx = localGrid_.nx();
@@ -274,9 +407,13 @@ void FGRDiffusion::precomputeCoefficients(const Anatomy& anatomy)
             for (unsigned jj=0; jj<3; ++jj)
                weight_(ib).A[ii] += sigmaTimesS[jj] * gradPhi[jj][ii] * hInv[jj];
       }
-      double sum = 0;
-      for (unsigned ii=0; ii<19; ++ii)
+
+      double sum = weight_(ib).A[0];
+      for (unsigned ii=1; ii<19; ++ii)
+      {
          sum += weight_(ib).A[ii];
+         A0_(ib) -= weight_(ib).A[ii];
+      }
       assert(abs(sum) < weightSumTolerance);
    }
 //   printAllWeights(tissueBlk);
@@ -369,7 +506,7 @@ void FGRDiffusion::reorder_Coeff()
   const uint32_t Ny2 = localGrid_.ny();
   const uint32_t Nz2 = localGrid_.nz() + ((localGrid_.nz()%4)==0 ? 0 : (4-localGrid_.nz()%4));
 
-  diffCoefT2_.resize(Nx2,Ny2,Nz2*19,0.0);
+  diffCoefT2_.resize(Nx2,Ny2,Nz2*20,0.0);
   srand(21321);
 
   const int n_cell = localTuple_.size() ;
@@ -387,30 +524,33 @@ void FGRDiffusion::reorder_Coeff()
     assert(zz > 0);
     assert(zz < Nz2-1);
 
-    diffCoefT2_(xx,yy,4*19*zp4 + 4* 0 + zp%4 ) =weight_(xx,yy,zz).A[ZZP];
-    diffCoefT2_(xx,yy,4*19*zp4 + 4* 1 + zp%4 ) =weight_(xx,yy,zz).A[ZMP];
-    diffCoefT2_(xx,yy,4*19*zp4 + 4* 2 + zp%4 ) =weight_(xx,yy,zz).A[MZP];
-    diffCoefT2_(xx,yy,4*19*zp4 + 4* 3 + zp%4 ) =weight_(xx,yy,zz).A[ZPP];
-    diffCoefT2_(xx,yy,4*19*zp4 + 4* 4 + zp%4 ) =weight_(xx,yy,zz).A[PZP];
+    diffCoefT2_(xx,yy,4*20*zp4 + 4* 0 + zp%4 ) =weight_(xx,yy,zz).A[ZZP];
+    diffCoefT2_(xx,yy,4*20*zp4 + 4* 1 + zp%4 ) =weight_(xx,yy,zz).A[ZMP];
+    diffCoefT2_(xx,yy,4*20*zp4 + 4* 2 + zp%4 ) =weight_(xx,yy,zz).A[MZP];
+    diffCoefT2_(xx,yy,4*20*zp4 + 4* 3 + zp%4 ) =weight_(xx,yy,zz).A[ZPP];
+    diffCoefT2_(xx,yy,4*20*zp4 + 4* 6 + zp%4 ) =weight_(xx,yy,zz).A[PZP];
                                  
-    diffCoefT2_(xx,yy,4*19*zz4 + 4* 5 + zz%4 ) =weight_(xx,yy,zz).A[ZZZ];
-    diffCoefT2_(xx,yy,4*19*zz4 + 4* 6 + zz%4 ) =weight_(xx,yy,zz).A[PMZ];
-    diffCoefT2_(xx,yy,4*19*zz4 + 4* 7 + zz%4 ) =weight_(xx,yy,zz).A[MMZ];
-    diffCoefT2_(xx,yy,4*19*zz4 + 4* 8 + zz%4 ) =weight_(xx,yy,zz).A[MPZ];
-    diffCoefT2_(xx,yy,4*19*zz4 + 4* 9 + zz%4 ) =weight_(xx,yy,zz).A[PPZ];
-    diffCoefT2_(xx,yy,4*19*zz4 + 4*10 + zz%4 ) =weight_(xx,yy,zz).A[ZMZ];
-    diffCoefT2_(xx,yy,4*19*zz4 + 4*11 + zz%4 ) =weight_(xx,yy,zz).A[MZZ];
-    diffCoefT2_(xx,yy,4*19*zz4 + 4*12 + zz%4 ) =weight_(xx,yy,zz).A[ZPZ];
-    diffCoefT2_(xx,yy,4*19*zz4 + 4*13 + zz%4 ) =weight_(xx,yy,zz).A[PZZ];
+    *((double*)&(diffCoefT2_(xx,yy,4*20*zz4 + 4* 4 + (zz%4)*2))) = A0_(xx,yy,zz);
+//    diffCoefT2_(xx,yy,4*20*zz4 + 4* 5 + zz%4 ) =weight_(xx,yy,zz).A[ZZZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4* 7 + zz%4 ) =weight_(xx,yy,zz).A[PMZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4* 8 + zz%4 ) =weight_(xx,yy,zz).A[MMZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4* 9 + zz%4 ) =weight_(xx,yy,zz).A[MPZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4*10 + zz%4 ) =weight_(xx,yy,zz).A[PPZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4*11 + zz%4 ) =weight_(xx,yy,zz).A[ZMZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4*12 + zz%4 ) =weight_(xx,yy,zz).A[MZZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4*13 + zz%4 ) =weight_(xx,yy,zz).A[ZPZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4*14 + zz%4 ) =weight_(xx,yy,zz).A[PZZ];
 
-    diffCoefT2_(xx,yy,4*19*zm4 + 4*14 + zm%4 ) =weight_(xx,yy,zz).A[ZZM];
-    diffCoefT2_(xx,yy,4*19*zm4 + 4*15 + zm%4 ) =weight_(xx,yy,zz).A[ZMM];
-    diffCoefT2_(xx,yy,4*19*zm4 + 4*16 + zm%4 ) =weight_(xx,yy,zz).A[MZM];
-    diffCoefT2_(xx,yy,4*19*zm4 + 4*17 + zm%4 ) =weight_(xx,yy,zz).A[ZPM];
-    diffCoefT2_(xx,yy,4*19*zm4 + 4*18 + zm%4 ) =weight_(xx,yy,zz).A[PZM];
+    diffCoefT2_(xx,yy,4*20*zm4 + 4*15 + zm%4 ) =weight_(xx,yy,zz).A[ZZM];
+    diffCoefT2_(xx,yy,4*20*zm4 + 4*16 + zm%4 ) =weight_(xx,yy,zz).A[ZMM];
+    diffCoefT2_(xx,yy,4*20*zm4 + 4*17 + zm%4 ) =weight_(xx,yy,zz).A[MZM];
+    diffCoefT2_(xx,yy,4*20*zm4 + 4*18 + zm%4 ) =weight_(xx,yy,zz).A[ZPM];
+    diffCoefT2_(xx,yy,4*20*zm4 + 4*19 + zm%4 ) =weight_(xx,yy,zz).A[PZM];
 
   }
 }
+
+
 
 // simdiazed version
 // 'start' cannot be in the middle. 'start' must point to (n,m,0). 
@@ -446,6 +586,7 @@ FGRDiffusion::FGRDiff_simd_thread(const uint32_t bx,const int32_t ex, Array3d<do
   vector4double my_xm1_yp1_z;
   vector4double my_xm1_ym1_z;
   vector4double my_xp1_ym1_z;
+  vector4double double_vec;
   vector4double my_zero_vec = vec_splats(0.0);
 
   for(int xx=bx;xx<ex;xx++)
@@ -466,7 +607,7 @@ FGRDiffusion::FGRDiff_simd_thread(const uint32_t bx,const int32_t ex, Array3d<do
  
     out = out0 + start;
  
-    WeightType *simd_diff_ = diffC + start*19; 
+    WeightType *simd_diff_ = diffC + start*20; 
  
 //    assert((uint64_t)phi_xm1_ym1_z%(4*sizeof(double)) == 0);
 //    assert((uint64_t)phi_xm1_y_z  %(4*sizeof(double)) == 0);
@@ -492,29 +633,32 @@ FGRDiffusion::FGRDiff_simd_thread(const uint32_t bx,const int32_t ex, Array3d<do
         my_xp1_ym1_z  =vec_ld(0,    phi_xp1_ym1_z );
  
     #define calc_zp(x) \
-        x =  vec_madd(vec_ld(4*4*WTSZ,simd_diff_)  , my_xp1_y_z, \
+        x =  vec_madd(vec_ld(4*6*WTSZ,simd_diff_)  , my_xp1_y_z, \
              vec_madd(vec_ld(4*3*WTSZ,simd_diff_)  , my_x_yp1_z, \
              vec_madd(vec_ld(4*2*WTSZ,simd_diff_)  , my_xm1_y_z, \
              vec_madd(vec_ld(4*1*WTSZ,simd_diff_)  , my_x_ym1_z, \
              vec_mul( vec_ld(4*0*WTSZ,simd_diff_)  , my_x_y_z)))));
  
     #define calc_zz(x) \
-        x = vec_madd( vec_ld(4*13*WTSZ,simd_diff_)  , my_xp1_y_z, \
-            vec_madd( vec_ld(4*12*WTSZ,simd_diff_)  , my_x_yp1_z, \
-            vec_madd( vec_ld(4*11*WTSZ,simd_diff_)  , my_xm1_y_z, \
-            vec_madd( vec_ld(4*10*WTSZ,simd_diff_)  , my_x_ym1_z, \
-            vec_madd( vec_ld(4*9*WTSZ,simd_diff_)  , my_xp1_yp1_z, \
-            vec_madd( vec_ld(4*8*WTSZ,simd_diff_)  , my_xm1_yp1_z, \
-            vec_madd( vec_ld(4*7*WTSZ,simd_diff_)  , my_xm1_ym1_z, \
-            vec_madd( vec_ld(4*6*WTSZ,simd_diff_)  , my_xp1_ym1_z, \
-            vec_mul ( vec_ld(4*5*WTSZ,simd_diff_)  , my_x_y_z)))))))));
+        double_vec = vec_ld(4*4*WTSZ,(double*)simd_diff_); \
+        x = vec_madd( vec_ld(4*14*WTSZ,simd_diff_)  , my_xp1_y_z, \
+            vec_madd( vec_ld(4*13*WTSZ,simd_diff_)  , my_x_yp1_z, \
+            vec_madd( vec_ld(4*12*WTSZ,simd_diff_)  , my_xm1_y_z, \
+            vec_madd( vec_ld(4*11*WTSZ,simd_diff_)  , my_x_ym1_z, \
+            vec_madd( vec_ld(4*10*WTSZ,simd_diff_)  , my_xp1_yp1_z, \
+            vec_madd( vec_ld(4*9*WTSZ,simd_diff_)  , my_xm1_yp1_z, \
+            vec_madd( vec_ld(4*8*WTSZ,simd_diff_)  , my_xm1_ym1_z, \
+            vec_madd( vec_ld(4*7*WTSZ,simd_diff_)  , my_xp1_ym1_z, \
+            vec_mul (double_vec  , my_x_y_z)))))))));
+//            vec_mul ( vec_ld(4*5*WTSZ,(double*)simd_diff_)  , my_x_y_z)))))))));
+            //vec_mul ( vec_ld(4*5*WTSZ,simd_diff_)  , my_x_y_z)))))))));
  
     #define calc_zm(x) \
-        x = vec_madd( vec_ld(4*18*WTSZ,simd_diff_)  , my_xp1_y_z, \
-            vec_madd( vec_ld(4*17*WTSZ,simd_diff_)  , my_x_yp1_z, \
-            vec_madd( vec_ld(4*16*WTSZ,simd_diff_)  , my_xm1_y_z, \
-            vec_madd( vec_ld(4*15*WTSZ,simd_diff_)  , my_x_ym1_z, \
-            vec_mul ( vec_ld(4*14*WTSZ,simd_diff_)  , my_x_y_z)))));
+        x = vec_madd( vec_ld(4*19*WTSZ,simd_diff_)  , my_xp1_y_z, \
+            vec_madd( vec_ld(4*18*WTSZ,simd_diff_)  , my_x_yp1_z, \
+            vec_madd( vec_ld(4*17*WTSZ,simd_diff_)  , my_xm1_y_z, \
+            vec_madd( vec_ld(4*16*WTSZ,simd_diff_)  , my_x_ym1_z, \
+            vec_mul ( vec_ld(4*15*WTSZ,simd_diff_)  , my_x_y_z)))));
  
     #define shift_pointers \
             phi_xp1_y_z   +=4; \
@@ -527,6 +671,7 @@ FGRDiffusion::FGRDiff_simd_thread(const uint32_t bx,const int32_t ex, Array3d<do
             phi_xp1_ym1_z +=4; \
             phi_x_y_z     +=4;
  
+    double* simd_diff2 = (double*)simd_diff_;
     load_my_vectors;
  
     calc_zp(B0);
@@ -535,9 +680,17 @@ FGRDiffusion::FGRDiff_simd_thread(const uint32_t bx,const int32_t ex, Array3d<do
  
     Sum2 = vec_sldw(my_zero_vec,B2,3);
  
+//    cout << "coeff:" << *(simd_diff2 + 2*5 + 1) <<  " " <<  *(simd_diff2 + 2*5 + 2) <<  " " << *(simd_diff2 + 2*5 + 3) <<  " " << endl;
+
+//    cout << "sum1:" << Sum1[0] << endl;
+
     for (ii=0;ii<chunk_size;ii+=4)
     {
-      simd_diff_ += 19*4;
+
+      simd_diff_ += 20*4;
+
+
+
       shift_pointers; //note that these pointers one step further
       load_my_vectors;
  
@@ -553,154 +706,12 @@ FGRDiffusion::FGRDiff_simd_thread(const uint32_t bx,const int32_t ex, Array3d<do
       calc_zm(C2);
       Sum2 = vec_sldw(B2,C2,3);
       B2 = C2;
+
+//      printf("Sum1:%f %f %f %f\n",Sum1[0],Sum1[1],Sum1[2],Sum1[3]);
+//      printf("double_vec:%f %f %f %f\n",double_vec[0],double_vec[1],double_vec[2],double_vec[3]);
+//      printf("double_vec2:%f %f %f %f\n",*((double*)(simd_diff_+4*5)),*((double*)(simd_diff_+4*5+2)),*((double*)(simd_diff_+4*5+4)),*((double*)(simd_diff_+4*5+6)));
     }
   }
 }
 
-// simdiazed version
-// 'start' cannot be in the middle. 'start' must point to (n,0,0). 
-void
-FGRDiffusion::FGRDiff_simd(const uint32_t start,const int32_t chunk_size, Array3d<double>* VmTmp, double* out)
-{
-  int ii;
-
-  const unsigned Nx2 = VmTmp->nx();
-  const unsigned Ny2 = VmTmp->ny();
-  const unsigned Nz2 = VmTmp->nz();
-
-  double* VmM = VmTmp->cBlock();
-
-  int xm1ym1z_ = ((-1) *Ny2 + (-1)) * Nz2;
-  int xm1yz_ =   ((-1) *Ny2 + ( 0)) * Nz2;
-  int xm1yp1z_ = ((-1) *Ny2 + (+1)) * Nz2;
-  int xym1z_ =   ((0 ) *Ny2 + (-1)) * Nz2;
-  int xyp1z_ =   ((0 ) *Ny2 + (+1)) * Nz2;
-  int xp1ym1z_ = ((+1) *Ny2 + (-1)) * Nz2;
-  int xp1yz_ =   ((+1) *Ny2 + ( 0)) * Nz2;
-  int xp1yp1z_ = ((+1) *Ny2 + (+1)) * Nz2;
-
-  double* phi_xm1_ym1_z = VmM + start + xm1ym1z_;
-  double* phi_xm1_y_z   = VmM + start + xm1yz_;
-  double* phi_xm1_yp1_z = VmM + start + xm1yp1z_;
-  double* phi_x_ym1_z   = VmM + start + xym1z_;
-  double* phi_x_y_z     = VmM + start ;
-  double* phi_x_yp1_z   = VmM + start + xyp1z_;
-  double* phi_xp1_ym1_z = VmM + start + xp1ym1z_;
-  double* phi_xp1_y_z   = VmM + start + xp1yz_;
-  double* phi_xp1_yp1_z = VmM + start + xp1yp1z_;
-
-  out += start;
-
-  assert((uint64_t)phi_xm1_ym1_z%(4*sizeof(double)) == 0);
-  assert((uint64_t)phi_xm1_y_z  %(4*sizeof(double)) == 0);
-  assert((uint64_t)phi_xm1_yp1_z%(4*sizeof(double)) == 0);
-  assert((uint64_t)phi_x_ym1_z  %(4*sizeof(double)) == 0);
-  assert((uint64_t)phi_x_y_z    %(4*sizeof(double)) == 0);
-  assert((uint64_t)phi_x_yp1_z  %(4*sizeof(double)) == 0);
-  assert((uint64_t)phi_xp1_ym1_z%(4*sizeof(double)) == 0);
-  assert((uint64_t)phi_xp1_y_z  %(4*sizeof(double)) == 0);
-  assert((uint64_t)phi_xp1_yp1_z%(4*sizeof(double)) == 0);
-  assert((uint64_t)out          %(4*sizeof(double)) == 0);
-
-  //initial
-  vector4double B0,B1,B2,C0,C1,C2,Sum0,Sum2,Sum;
-
-  vector4double my_x_y_z      =vec_ld(0,      phi_x_y_z   );
-  vector4double my_xp1_y_z    =vec_ld(0,      phi_xp1_y_z );
-  vector4double my_x_yp1_z    =vec_ld(0,      phi_x_yp1_z );
-  vector4double my_xm1_y_z    =vec_ld(0,      phi_xm1_y_z );
-  vector4double my_x_ym1_z    =vec_ld(0,      phi_x_ym1_z );
-  vector4double my_xp1_yp1_z  =vec_ld(0,    phi_xp1_yp1_z );
-  vector4double my_xm1_yp1_z  =vec_ld(0,    phi_xm1_yp1_z );
-  vector4double my_xm1_ym1_z  =vec_ld(0,    phi_xm1_ym1_z );
-  vector4double my_xp1_ym1_z  =vec_ld(0,    phi_xp1_ym1_z );
-  vector4double my_zero_vec = vec_splats(0.0);
- 
-  WeightType *simd_diff_ = diffCoefT2_.cBlock() + start*19;
-
-  B0 =  vec_madd(vec_ld(4*4*8,simd_diff_)  , my_xp1_y_z,
-        vec_madd(vec_ld(3*4*8,simd_diff_)  , my_x_yp1_z,
-        vec_madd(vec_ld(2*4*8,simd_diff_)  , my_xm1_y_z,
-        vec_madd(vec_ld(1*4*8,simd_diff_)  , my_x_ym1_z,
-        vec_mul( vec_ld(0*4*8,simd_diff_)  , my_x_y_z)))));
-
-  B1 = vec_madd( vec_ld(13*4*8,simd_diff_)  , my_xp1_y_z,
-       vec_madd( vec_ld(12*4*8,simd_diff_)  , my_x_yp1_z,
-       vec_madd( vec_ld(11*4*8,simd_diff_)  , my_xm1_y_z,
-       vec_madd( vec_ld(10*4*8,simd_diff_)  , my_x_ym1_z,
-       vec_madd( vec_ld( 9*4*8,simd_diff_)  , my_xp1_yp1_z,
-       vec_madd( vec_ld( 8*4*8,simd_diff_)  , my_xm1_yp1_z,
-       vec_madd( vec_ld( 7*4*8,simd_diff_)  , my_xm1_ym1_z,
-       vec_madd( vec_ld( 6*4*8,simd_diff_)  , my_xp1_ym1_z,
-       vec_mul ( vec_ld( 5*4*8,simd_diff_)  , my_x_y_z)))))))));
-
-  B2 = vec_madd( vec_ld(18*4*8,simd_diff_)  , my_xp1_y_z,
-       vec_madd( vec_ld(17*4*8,simd_diff_)  , my_x_yp1_z,
-       vec_madd( vec_ld(16*4*8,simd_diff_)  , my_xm1_y_z,
-       vec_madd( vec_ld(15*4*8,simd_diff_)  , my_x_ym1_z,
-       vec_mul ( vec_ld(14*4*8,simd_diff_)  , my_x_y_z)))));
-
-  Sum2 = vec_sldw(my_zero_vec,B2,3);
-
-  for(ii=0;ii<chunk_size;ii+=4)  //start must be that os x chunk.
-  {
-    simd_diff_ += 19*4;
-    phi_xp1_y_z   +=4;
-    phi_x_yp1_z   +=4;
-    phi_xm1_y_z   +=4;
-    phi_x_ym1_z   +=4;
-    phi_xp1_yp1_z +=4;
-    phi_xm1_yp1_z +=4;
-    phi_xm1_ym1_z +=4;
-    phi_xp1_ym1_z +=4;
-    phi_x_y_z     +=4;
-
-    my_x_y_z      =vec_ld(0,      phi_x_y_z   );
-    my_xp1_y_z    =vec_ld(0,      phi_xp1_y_z );
-    my_x_yp1_z    =vec_ld(0,      phi_x_yp1_z );
-    my_xm1_y_z    =vec_ld(0,      phi_xm1_y_z );
-    my_x_ym1_z    =vec_ld(0,      phi_x_ym1_z );
-    my_xp1_yp1_z  =vec_ld(0,    phi_xp1_yp1_z );
-    my_xm1_yp1_z  =vec_ld(0,    phi_xm1_yp1_z );
-    my_xm1_ym1_z  =vec_ld(0,    phi_xm1_ym1_z );
-    my_xp1_ym1_z  =vec_ld(0,    phi_xp1_ym1_z );
-
-
-  C0 =  vec_madd(vec_ld(4*4*8,simd_diff_)  , my_xp1_y_z,
-        vec_madd(vec_ld(3*4*8,simd_diff_)  , my_x_yp1_z,
-        vec_madd(vec_ld(2*4*8,simd_diff_)  , my_xm1_y_z,
-        vec_madd(vec_ld(1*4*8,simd_diff_)  , my_x_ym1_z,
-        vec_mul( vec_ld(0*4*8,simd_diff_)  , my_x_y_z)))));
-
-    Sum0 = vec_sldw(B0,C0,1);
-    B0 = C0;
-
-    // commit the previous
-    Sum = vec_add(vec_add(Sum0,B1),Sum2);
-
-    vec_st(Sum,0,out);
-
-  B1 = vec_madd( vec_ld(13*4*8,simd_diff_)  , my_xp1_y_z,
-       vec_madd( vec_ld(12*4*8,simd_diff_)  , my_x_yp1_z,
-       vec_madd( vec_ld(11*4*8,simd_diff_)  , my_xm1_y_z,
-       vec_madd( vec_ld(10*4*8,simd_diff_)  , my_x_ym1_z,
-       vec_madd( vec_ld( 9*4*8,simd_diff_)  , my_xp1_yp1_z,
-       vec_madd( vec_ld( 8*4*8,simd_diff_)  , my_xm1_yp1_z,
-       vec_madd( vec_ld( 7*4*8,simd_diff_)  , my_xm1_ym1_z,
-       vec_madd( vec_ld( 6*4*8,simd_diff_)  , my_xp1_ym1_z,
-       vec_mul ( vec_ld( 5*4*8,simd_diff_)  , my_x_y_z)))))))));
-
-  C2 = vec_madd( vec_ld(18*4*8,simd_diff_)  , my_xp1_y_z,
-       vec_madd( vec_ld(17*4*8,simd_diff_)  , my_x_yp1_z,
-       vec_madd( vec_ld(16*4*8,simd_diff_)  , my_xm1_y_z,
-       vec_madd( vec_ld(15*4*8,simd_diff_)  , my_x_ym1_z,
-       vec_mul ( vec_ld(14*4*8,simd_diff_)  , my_x_y_z)))));
-
-    Sum2 = vec_sldw(B2,C2,3);
-    B2 = C2;
-
-   out +=4;
-
-  }
-}
 
