@@ -3,6 +3,27 @@
 #include "portableSIMD.h" 
 
 /*
+ * Apparently the 12.1 version of mpixlc_r sometimes improperly implements the vec_lds intrinsic.
+ * On some loads, only the first of the 4 doubles of the vector register is actually loaded with the value.
+ * As a work-around, we use vec_splats instead.
+ * In principle, this is probably slower, since it will presumably first cause the value to be 
+ * loaded into a register, then splat'ed into another (or perhaps the same register).
+ * Besides involving at least a second instruction, it also creates a delay of several cycles.
+ * (Of course, if the compiler were smart, it would be able to convert vec_splats(*mem) into vec_lds(0,mem),
+ * but since we get different results, presumably it isn't.
+ *
+ * At some point, this bug will probably be fixed.  To test find out, just try not defining BAD_VEC_LDS.
+ */
+#define	BAD_VEC_LDS
+
+#ifdef	BAD_VEC_LDS
+// NOTE this will not work for n!=0
+#define VEC_LDS(n,addr) vec_splats(*(addr))
+#else
+#define VEC_LDS vec_lds
+#endif
+
+/*
 #ifdef BGQ 
 #define get
 #else
@@ -23,7 +44,7 @@ void initExp()
 }
 void update_mGate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
-
+  //update_mGate(dt, nCells, VM, g, mhu_a, tauR_a); return;
 typedef vector4double vdt;
 
 int gateIndex=0;
@@ -41,23 +62,23 @@ int exp_l=16;
  double  tauRdt_a[18];
 
 // the number of following v register will be smaller after Jim tune the code
-  vdt v_exp_a0  = vec_lds(0, &exp_a[0]); 
-  vdt v_exp_a1  = vec_lds(0, &exp_a[1]);
-  vdt v_exp_a2  = vec_lds(0, &exp_a[2]); 
-  vdt v_exp_a3  = vec_lds(0, &exp_a[3]);
-  vdt v_exp_a4  = vec_lds(0, &exp_a[4]); 
-  vdt v_exp_a5  = vec_lds(0, &exp_a[5]);
-  vdt v_exp_a6  = vec_lds(0, &exp_a[6]); 
-  vdt v_exp_a7  = vec_lds(0, &exp_a[7]);
-  vdt v_exp_a8  = vec_lds(0, &exp_a[8]); 
-  vdt v_exp_a9  = vec_lds(0, &exp_a[9]);
-  vdt v_exp_a10 = vec_lds(0, &exp_a[10]); 
-  vdt v_exp_a11 = vec_lds(0, &exp_a[11]);
-  vdt v_exp_a12 = vec_lds(0, &exp_a[12]); 
-  vdt v_exp_a13 = vec_lds(0, &exp_a[13]);
-  vdt v_exp_a14 = vec_lds(0, &exp_a[14]); 
-  vdt v_exp_a15 = vec_lds(0, &exp_a[15]);
-  vdt v_exp_a16 = vec_lds(0, &exp_a[16]);
+  vdt v_exp_a0  = VEC_LDS(0, &exp_a[0]); 
+  vdt v_exp_a1  = VEC_LDS(0, &exp_a[1]);
+  vdt v_exp_a2  = VEC_LDS(0, &exp_a[2]); 
+  vdt v_exp_a3  = VEC_LDS(0, &exp_a[3]);
+  vdt v_exp_a4  = VEC_LDS(0, &exp_a[4]); 
+  vdt v_exp_a5  = VEC_LDS(0, &exp_a[5]);
+  vdt v_exp_a6  = VEC_LDS(0, &exp_a[6]); 
+  vdt v_exp_a7  = VEC_LDS(0, &exp_a[7]);
+  vdt v_exp_a8  = VEC_LDS(0, &exp_a[8]); 
+  vdt v_exp_a9  = VEC_LDS(0, &exp_a[9]);
+  vdt v_exp_a10 = VEC_LDS(0, &exp_a[10]); 
+  vdt v_exp_a11 = VEC_LDS(0, &exp_a[11]);
+  vdt v_exp_a12 = VEC_LDS(0, &exp_a[12]); 
+  vdt v_exp_a13 = VEC_LDS(0, &exp_a[13]);
+  vdt v_exp_a14 = VEC_LDS(0, &exp_a[14]); 
+  vdt v_exp_a15 = VEC_LDS(0, &exp_a[15]);
+  vdt v_exp_a16 = VEC_LDS(0, &exp_a[16]);
 
 
   vdt v_ONE = vec_splats(1.0);
@@ -95,12 +116,12 @@ int exp_l=16;
  if (misalignment) { 
       vdt v_xa = vec_ld(0, &VM[ii]);  //BODYCOM0 
 //BODYCOM0 
-   vdt v_mhu_A1    = vec_lds(0, &mhu_a[3]);//BODYCOM0 
-   vdt v_mhu_A2    = vec_lds(0, &mhu_a[4]);//BODYCOM0 
-   vdt v_mhu_B1    = vec_lds(0, &mhu_a[13]);//BODYCOM0 
-   vdt v_mhu_B2    = vec_lds(0, &mhu_a[14]);//BODYCOM0 
-   vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[16]);//BODYCOM0 
-   vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[17]);//BODYCOM0 
+   vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[3]);//BODYCOM0 
+   vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[4]);//BODYCOM0 
+   vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[13]);//BODYCOM0 
+   vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[14]);//BODYCOM0 
+   vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[16]);//BODYCOM0 
+   vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[17]);//BODYCOM0 
 //BODYCOM0 
    vdt v_sum1a = vec_madd(v_xa, v_mhu_A2,    v_mhu_A1);//BODYCOM0 
    vdt v_sum2a = vec_madd(v_xa, v_mhu_B2,    v_mhu_B1);//BODYCOM0 
@@ -116,12 +137,12 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[14] + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
 //BODYCOM0 
-   v_mhu_A1    = vec_lds(0, &mhu_a[1]);//BODYCOM0 
-   v_mhu_A2    = vec_lds(0, &mhu_a[2]);//BODYCOM0 
-   v_mhu_B1    = vec_lds(0, &mhu_a[11]);//BODYCOM0 
-   v_mhu_B2    = vec_lds(0, &mhu_a[12]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[14]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[15]);//BODYCOM0 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);//BODYCOM0 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);//BODYCOM0 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);//BODYCOM0 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[14]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[15]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
@@ -139,11 +160,11 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[12] + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
 //BODYCOM0 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);//BODYCOM0 
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);//BODYCOM0 
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[12]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[13]);//BODYCOM0 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);//BODYCOM0 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);//BODYCOM0 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[12]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[13]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
@@ -158,10 +179,10 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[11] + VM[ii]*sum3[ii];//BODYCOM0 
    sum3[ii] = tauRdt_a[10] + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
-   v_mhu_B1    = vec_lds(0, &mhu_a[7]);//BODYCOM0 
-   v_mhu_B2    = vec_lds(0, &mhu_a[8]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[10]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[11]);//BODYCOM0 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[7]);//BODYCOM0 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[8]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[10]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[11]);//BODYCOM0 
 //BODYCOM0 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); //BODYCOM0 
@@ -175,10 +196,10 @@ int exp_l=16;
    sum3[ii] =  tauRdt_a[9] + VM[ii]*sum3[ii];//BODYCOM0 
    sum3[ii] =  tauRdt_a[8] + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
-   v_mhu_B1    = vec_lds(0, &mhu_a[5]);//BODYCOM0 
-   v_mhu_B2    = vec_lds(0, &mhu_a[6]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[8]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[9]);//BODYCOM0 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[5]);//BODYCOM0 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[6]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM0 
 //BODYCOM0 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); //BODYCOM0 
@@ -190,8 +211,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[7] + VM[ii]*sum3[ii];//BODYCOM0 
    sum3[ii] = tauRdt_a[6] + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[6]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[7]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM0 
 //BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
@@ -201,8 +222,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[5] + VM[ii]*sum3[ii];//BODYCOM0 
    sum3[ii] = tauRdt_a[4] + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[4]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[5]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM0 
 //BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
@@ -212,8 +233,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[3] + VM[ii]*sum3[ii];//BODYCOM0 
    sum3[ii] = tauRdt_a[2] + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[2]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[3]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM0 
 //BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
@@ -223,8 +244,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[1] + VM[ii]*sum3[ii];//BODYCOM0 
    sum3[ii] = tauRdt_a[0] + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[1]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM0 
 //BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
@@ -315,12 +336,12 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[16] + VM[ii]*sum3[ii];
 */
 
-   vdt v_mhu_A1    = vec_lds(0, &mhu_a[3]);
-   vdt v_mhu_A2    = vec_lds(0, &mhu_a[4]);
-   vdt v_mhu_B1    = vec_lds(0, &mhu_a[13]);
-   vdt v_mhu_B2    = vec_lds(0, &mhu_a[14]);
-   vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[16]);
-   vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[17]);
+   vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[3]);
+   vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[4]);
+   vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[13]);
+   vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[14]);
+   vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[16]);
+   vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[17]);
 
    vdt v_sum1a = vec_madd(v_xa, v_mhu_A2,    v_mhu_A1);
    vdt v_sum1b = vec_madd(v_xb, v_mhu_A2,    v_mhu_A1);
@@ -339,12 +360,12 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[14] + VM[ii]*sum3[ii];
 */
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[1]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[2]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[11]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[12]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[14]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[15]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[14]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[15]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -368,11 +389,11 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[12] + VM[ii]*sum3[ii];
 */
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[12]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[13]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[12]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[13]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -392,10 +413,10 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[11] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[10] + VM[ii]*sum3[ii];
 */
-   v_mhu_B1    = vec_lds(0, &mhu_a[7]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[8]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[10]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[11]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[7]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[8]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[10]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[11]);
 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); 
@@ -413,10 +434,10 @@ int exp_l=16;
    sum3[ii] =  tauRdt_a[9] + VM[ii]*sum3[ii];
    sum3[ii] =  tauRdt_a[8] + VM[ii]*sum3[ii];
 */
-   v_mhu_B1    = vec_lds(0, &mhu_a[5]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[6]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[8]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[9]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[6]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[8]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[9]);
 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); 
@@ -432,8 +453,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[7] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[6] + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[6]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[7]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[6]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[7]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -445,8 +466,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[5] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[4] + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[4]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[5]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[4]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[5]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -458,8 +479,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[3] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[2] + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[2]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[3]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[2]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[3]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -471,8 +492,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[1] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[0] + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[1]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[1]);
 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -559,12 +580,12 @@ int exp_l=16;
    //BODYSTART
    vdt v_xa = vec_ld(0, &VM[ii]);  
 
-   vdt v_mhu_A1    = vec_lds(0, &mhu_a[3]);
-   vdt v_mhu_A2    = vec_lds(0, &mhu_a[4]);
-   vdt v_mhu_B1    = vec_lds(0, &mhu_a[13]);
-   vdt v_mhu_B2    = vec_lds(0, &mhu_a[14]);
-   vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[16]);
-   vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[17]);
+   vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[3]);
+   vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[4]);
+   vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[13]);
+   vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[14]);
+   vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[16]);
+   vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[17]);
 
    vdt v_sum1a = vec_madd(v_xa, v_mhu_A2,    v_mhu_A1);
    vdt v_sum2a = vec_madd(v_xa, v_mhu_B2,    v_mhu_B1);
@@ -580,12 +601,12 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[14] + VM[ii]*sum3[ii];
 */
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[1]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[2]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[11]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[12]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[14]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[15]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[14]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[15]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -603,11 +624,11 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[12] + VM[ii]*sum3[ii];
 */
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[12]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[13]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[12]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[13]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -622,10 +643,10 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[11] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[10] + VM[ii]*sum3[ii];
 */
-   v_mhu_B1    = vec_lds(0, &mhu_a[7]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[8]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[10]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[11]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[7]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[8]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[10]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[11]);
 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); 
@@ -639,10 +660,10 @@ int exp_l=16;
    sum3[ii] =  tauRdt_a[9] + VM[ii]*sum3[ii];
    sum3[ii] =  tauRdt_a[8] + VM[ii]*sum3[ii];
 */
-   v_mhu_B1    = vec_lds(0, &mhu_a[5]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[6]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[8]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[9]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[6]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[8]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[9]);
 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); 
@@ -654,8 +675,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[7] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[6] + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[6]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[7]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[6]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[7]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -665,8 +686,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[5] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[4] + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[4]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[5]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[4]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[5]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -676,8 +697,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[3] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[2] + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[2]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[3]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[2]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[3]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -687,8 +708,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[1] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[0] + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[1]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[1]);
 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -742,12 +763,12 @@ int exp_l=16;
  if (leftover) { 
       vdt v_xa = vec_ld(0, &VM[ii]);  //BODYCOM1 
 //BODYCOM1 
-   vdt v_mhu_A1    = vec_lds(0, &mhu_a[3]);//BODYCOM1 
-   vdt v_mhu_A2    = vec_lds(0, &mhu_a[4]);//BODYCOM1 
-   vdt v_mhu_B1    = vec_lds(0, &mhu_a[13]);//BODYCOM1 
-   vdt v_mhu_B2    = vec_lds(0, &mhu_a[14]);//BODYCOM1 
-   vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[16]);//BODYCOM1 
-   vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[17]);//BODYCOM1 
+   vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[3]);//BODYCOM1 
+   vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[4]);//BODYCOM1 
+   vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[13]);//BODYCOM1 
+   vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[14]);//BODYCOM1 
+   vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[16]);//BODYCOM1 
+   vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[17]);//BODYCOM1 
 //BODYCOM1 
    vdt v_sum1a = vec_madd(v_xa, v_mhu_A2,    v_mhu_A1);//BODYCOM1 
    vdt v_sum2a = vec_madd(v_xa, v_mhu_B2,    v_mhu_B1);//BODYCOM1 
@@ -763,12 +784,12 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[14] + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
 //BODYCOM1 
-   v_mhu_A1    = vec_lds(0, &mhu_a[1]);//BODYCOM1 
-   v_mhu_A2    = vec_lds(0, &mhu_a[2]);//BODYCOM1 
-   v_mhu_B1    = vec_lds(0, &mhu_a[11]);//BODYCOM1 
-   v_mhu_B2    = vec_lds(0, &mhu_a[12]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[14]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[15]);//BODYCOM1 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);//BODYCOM1 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);//BODYCOM1 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);//BODYCOM1 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[14]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[15]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
@@ -786,11 +807,11 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[12] + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
 //BODYCOM1 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);//BODYCOM1 
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);//BODYCOM1 
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[12]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[13]);//BODYCOM1 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);//BODYCOM1 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);//BODYCOM1 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[12]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[13]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
@@ -805,10 +826,10 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[11] + VM[ii]*sum3[ii];//BODYCOM1 
    sum3[ii] = tauRdt_a[10] + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
-   v_mhu_B1    = vec_lds(0, &mhu_a[7]);//BODYCOM1 
-   v_mhu_B2    = vec_lds(0, &mhu_a[8]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[10]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[11]);//BODYCOM1 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[7]);//BODYCOM1 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[8]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[10]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[11]);//BODYCOM1 
 //BODYCOM1 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); //BODYCOM1 
@@ -822,10 +843,10 @@ int exp_l=16;
    sum3[ii] =  tauRdt_a[9] + VM[ii]*sum3[ii];//BODYCOM1 
    sum3[ii] =  tauRdt_a[8] + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
-   v_mhu_B1    = vec_lds(0, &mhu_a[5]);//BODYCOM1 
-   v_mhu_B2    = vec_lds(0, &mhu_a[6]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[8]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[9]);//BODYCOM1 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[5]);//BODYCOM1 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[6]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM1 
 //BODYCOM1 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); //BODYCOM1 
@@ -837,8 +858,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[7] + VM[ii]*sum3[ii];//BODYCOM1 
    sum3[ii] = tauRdt_a[6] + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[6]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[7]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM1 
 //BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
@@ -848,8 +869,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[5] + VM[ii]*sum3[ii];//BODYCOM1 
    sum3[ii] = tauRdt_a[4] + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[4]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[5]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM1 
 //BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
@@ -859,8 +880,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[3] + VM[ii]*sum3[ii];//BODYCOM1 
    sum3[ii] = tauRdt_a[2] + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[2]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[3]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM1 
 //BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
@@ -870,8 +891,8 @@ int exp_l=16;
    sum3[ii] = tauRdt_a[1] + VM[ii]*sum3[ii];//BODYCOM1 
    sum3[ii] = tauRdt_a[0] + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[1]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM1 
 //BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
@@ -935,7 +956,7 @@ int exp_l=16;
      break;
 
      default:
-    printf("BAD LEFTOVER: %d\n", leftover); fflush(stdout);
+    //println("BAD LEFTOVER: %d\n", leftover); fflush(stdout);
     assert(0);
    }
  }
@@ -946,10 +967,9 @@ int exp_l=16;
 
 
 
-//void update_hGate_v1(double dt, int nCells, const double *VM, double *g, double *mhu_a, double *tauR_a)
 void update_hGate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
-
+  //update_hGate(dt, nCells, VM, g, mhu_a, tauR_a); return;
   typedef vector4double vdt;
 
 int gateIndex=1;
@@ -985,29 +1005,29 @@ int tauR_m=11;
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM0 
 //BODYCOM0 
 // 1//BODYCOM0 
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[7]);//BODYCOM0 
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[8]);//BODYCOM0 
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[7]);//BODYCOM0 
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[8]);//BODYCOM0 
 //BODYCOM0 
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[14]);//BODYCOM0 
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[15]);//BODYCOM0 
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);//BODYCOM0 
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);//BODYCOM0 
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[14]);//BODYCOM0 
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[15]);//BODYCOM0 
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM0 
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);//BODYCOM0 
 //BODYCOM0 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[20]);//BODYCOM0 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[21]);//BODYCOM0 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[20]);//BODYCOM0 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[21]);//BODYCOM0 
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);//BODYCOM0 
    vdt v_sum2a =  vec_madd(v_xa, v_mhu_B2, v_mhu_B1);//BODYCOM0 
    vdt v_sum3a =  vec_madd(v_xa, v_tauRdt_C2, v_tauRdt_C1);//BODYCOM0 
    vdt v_sum4a =  vec_madd(v_xa, v_tauR_D2, v_tauR_D1);//BODYCOM0 
 // 2//BODYCOM0 
-   v_mhu_A1  = vec_lds(0, &mhu_a[5]);//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[6]);//BODYCOM0 
-   v_mhu_B1 = vec_lds(0, &mhu_a[12]);//BODYCOM0 
-   v_mhu_B2 = vec_lds(0, &mhu_a[13]);//BODYCOM0 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);//BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);//BODYCOM0 
-  v_tauR_D1   = vec_lds(0, &tauR_a[18]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[19]);//BODYCOM0 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[5]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[6]);//BODYCOM0 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[12]);//BODYCOM0 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[13]);//BODYCOM0 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM0 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[18]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[19]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
@@ -1019,14 +1039,14 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM0 
 // 3//BODYCOM0 
 //BODYCOM0 
-   v_mhu_A1  = vec_lds(0, &mhu_a[3]);//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[4]);//BODYCOM0 
-   v_mhu_B1 = vec_lds(0, &mhu_a[10]);//BODYCOM0 
-   v_mhu_B2 = vec_lds(0, &mhu_a[11]);//BODYCOM0 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);//BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);//BODYCOM0 
-  v_tauR_D1   = vec_lds(0, &tauR_a[16]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[17]);//BODYCOM0 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[3]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[4]);//BODYCOM0 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[10]);//BODYCOM0 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[11]);//BODYCOM0 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM0 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[16]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[17]);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
@@ -1037,13 +1057,13 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM0 
 // 4//BODYCOM0 
 //BODYCOM0 
-   v_mhu_A1  = vec_lds(0, &mhu_a[1]);//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[2]);//BODYCOM0 
-   v_mhu_B2  = vec_lds(0, &mhu_a[9]);//BODYCOM0 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);//BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);//BODYCOM0 
-  v_tauR_D1   = vec_lds(0, &tauR_a[14]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[15]);//BODYCOM0 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[1]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[2]);//BODYCOM0 
+   v_mhu_B2  = VEC_LDS(0, &mhu_a[9]);//BODYCOM0 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM0 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[14]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[15]);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
@@ -1054,11 +1074,11 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM0 
 // 5//BODYCOM0 
 //BODYCOM0 
-  v_mhu_A2  = vec_lds(0, &mhu_a[0]);//BODYCOM0 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);//BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);//BODYCOM0 
-  v_tauR_D1   = vec_lds(0, &tauR_a[12]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[13]);//BODYCOM0 
+  v_mhu_A2  = VEC_LDS(0, &mhu_a[0]);//BODYCOM0 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM0 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[13]);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    // v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
@@ -1069,8 +1089,8 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM0 
 // 6//BODYCOM0 
 //BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[11]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);//BODYCOM0 
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    // v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
@@ -1126,16 +1146,16 @@ int tauR_m=11;
    vdt v_xb   = vec_ld(0, &VM[ii+4]);  
 
 // 1
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[7]);
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[8]);
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[7]);
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[8]);
 
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[14]);
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[15]);
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[14]);
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[15]);
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);
 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[20]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[21]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[20]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[21]);
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);
    vdt v_sum1b =  vec_madd(v_xb, v_mhu_A2, v_mhu_A1);
 
@@ -1148,14 +1168,14 @@ int tauR_m=11;
    vdt v_sum4a =  vec_madd(v_xa, v_tauR_D2, v_tauR_D1);
    vdt v_sum4b =  vec_madd(v_xb, v_tauR_D2, v_tauR_D1);
 // 2
-   v_mhu_A1  = vec_lds(0, &mhu_a[5]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[6]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[12]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[13]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[18]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[19]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[6]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[12]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[13]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[18]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[19]);
 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -1175,14 +1195,14 @@ int tauR_m=11;
    v_sum4b =  vec_madd(v_xb, v_sum4b, v_tauR_D1);
 // 3
 
-   v_mhu_A1  = vec_lds(0, &mhu_a[3]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[4]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[10]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[11]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[16]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[17]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[10]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[11]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[16]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[17]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -1201,13 +1221,13 @@ int tauR_m=11;
    v_sum4b =  vec_madd(v_xb, v_sum4b, v_tauR_D1);
 // 4
 
-   v_mhu_A1  = vec_lds(0, &mhu_a[1]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[2]);
-   v_mhu_B2  = vec_lds(0, &mhu_a[9]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[14]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[15]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[1]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_B2  = VEC_LDS(0, &mhu_a[9]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[14]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[15]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -1226,11 +1246,11 @@ int tauR_m=11;
    v_sum4b =  vec_madd(v_xb, v_sum4b, v_tauR_D1);
 // 5
 
-  v_mhu_A2  = vec_lds(0, &mhu_a[0]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[12]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[13]);
+  v_mhu_A2  = VEC_LDS(0, &mhu_a[0]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[13]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    // v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -1249,8 +1269,8 @@ int tauR_m=11;
    v_sum4b =  vec_madd(v_xb, v_sum4b, v_tauR_D1);
 // 6
 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[11]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    // v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -1293,29 +1313,29 @@ int tauR_m=11;
    vdt v_xa   = vec_ld(0, &VM[ii]);  
 
 // 1
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[7]);
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[8]);
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[7]);
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[8]);
 
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[14]);
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[15]);
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[14]);
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[15]);
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);
 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[20]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[21]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[20]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[21]);
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);
    vdt v_sum2a =  vec_madd(v_xa, v_mhu_B2, v_mhu_B1);
    vdt v_sum3a =  vec_madd(v_xa, v_tauRdt_C2, v_tauRdt_C1);
    vdt v_sum4a =  vec_madd(v_xa, v_tauR_D2, v_tauR_D1);
 // 2
-   v_mhu_A1  = vec_lds(0, &mhu_a[5]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[6]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[12]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[13]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[18]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[19]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[6]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[12]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[13]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[18]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[19]);
 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -1327,14 +1347,14 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);
 // 3
 
-   v_mhu_A1  = vec_lds(0, &mhu_a[3]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[4]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[10]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[11]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[16]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[17]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[10]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[11]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[16]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[17]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -1345,13 +1365,13 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);
 // 4
 
-   v_mhu_A1  = vec_lds(0, &mhu_a[1]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[2]);
-   v_mhu_B2  = vec_lds(0, &mhu_a[9]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[14]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[15]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[1]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_B2  = VEC_LDS(0, &mhu_a[9]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[14]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[15]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -1362,11 +1382,11 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);
 // 5
 
-  v_mhu_A2  = vec_lds(0, &mhu_a[0]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[12]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[13]);
+  v_mhu_A2  = VEC_LDS(0, &mhu_a[0]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[13]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    // v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -1377,8 +1397,8 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);
 // 6
 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[11]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    // v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -1410,29 +1430,29 @@ int tauR_m=11;
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM1 
 //BODYCOM1 
 // 1//BODYCOM1 
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[7]);//BODYCOM1 
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[8]);//BODYCOM1 
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[7]);//BODYCOM1 
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[8]);//BODYCOM1 
 //BODYCOM1 
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[14]);//BODYCOM1 
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[15]);//BODYCOM1 
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);//BODYCOM1 
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);//BODYCOM1 
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[14]);//BODYCOM1 
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[15]);//BODYCOM1 
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM1 
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);//BODYCOM1 
 //BODYCOM1 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[20]);//BODYCOM1 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[21]);//BODYCOM1 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[20]);//BODYCOM1 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[21]);//BODYCOM1 
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);//BODYCOM1 
    vdt v_sum2a =  vec_madd(v_xa, v_mhu_B2, v_mhu_B1);//BODYCOM1 
    vdt v_sum3a =  vec_madd(v_xa, v_tauRdt_C2, v_tauRdt_C1);//BODYCOM1 
    vdt v_sum4a =  vec_madd(v_xa, v_tauR_D2, v_tauR_D1);//BODYCOM1 
 // 2//BODYCOM1 
-   v_mhu_A1  = vec_lds(0, &mhu_a[5]);//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[6]);//BODYCOM1 
-   v_mhu_B1 = vec_lds(0, &mhu_a[12]);//BODYCOM1 
-   v_mhu_B2 = vec_lds(0, &mhu_a[13]);//BODYCOM1 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);//BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);//BODYCOM1 
-  v_tauR_D1   = vec_lds(0, &tauR_a[18]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[19]);//BODYCOM1 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[5]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[6]);//BODYCOM1 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[12]);//BODYCOM1 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[13]);//BODYCOM1 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM1 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[18]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[19]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
@@ -1444,14 +1464,14 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM1 
 // 3//BODYCOM1 
 //BODYCOM1 
-   v_mhu_A1  = vec_lds(0, &mhu_a[3]);//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[4]);//BODYCOM1 
-   v_mhu_B1 = vec_lds(0, &mhu_a[10]);//BODYCOM1 
-   v_mhu_B2 = vec_lds(0, &mhu_a[11]);//BODYCOM1 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);//BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);//BODYCOM1 
-  v_tauR_D1   = vec_lds(0, &tauR_a[16]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[17]);//BODYCOM1 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[3]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[4]);//BODYCOM1 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[10]);//BODYCOM1 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[11]);//BODYCOM1 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM1 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[16]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[17]);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
@@ -1462,13 +1482,13 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM1 
 // 4//BODYCOM1 
 //BODYCOM1 
-   v_mhu_A1  = vec_lds(0, &mhu_a[1]);//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[2]);//BODYCOM1 
-   v_mhu_B2  = vec_lds(0, &mhu_a[9]);//BODYCOM1 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);//BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);//BODYCOM1 
-  v_tauR_D1   = vec_lds(0, &tauR_a[14]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[15]);//BODYCOM1 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[1]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[2]);//BODYCOM1 
+   v_mhu_B2  = VEC_LDS(0, &mhu_a[9]);//BODYCOM1 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM1 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[14]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[15]);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
@@ -1479,11 +1499,11 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM1 
 // 5//BODYCOM1 
 //BODYCOM1 
-  v_mhu_A2  = vec_lds(0, &mhu_a[0]);//BODYCOM1 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);//BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);//BODYCOM1 
-  v_tauR_D1   = vec_lds(0, &tauR_a[12]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[13]);//BODYCOM1 
+  v_mhu_A2  = VEC_LDS(0, &mhu_a[0]);//BODYCOM1 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM1 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[13]);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    // v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
@@ -1494,8 +1514,8 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM1 
 // 6//BODYCOM1 
 //BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[11]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);//BODYCOM1 
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    // v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
@@ -1550,7 +1570,7 @@ int tauR_m=11;
 
 void update_jGate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
-
+  //update_jGate(dt, nCells, VM, g, mhu_a, tauR_a); return;
   typedef vector4double vdt;
 
 int gateIndex=2;
@@ -1587,22 +1607,22 @@ int tauR_m=13;
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM0 
 //BODYCOM0 
 // 1//BODYCOM0 
-   vdt v_mhu_A1  = vec_lds(0, &mhu_a[7]);//BODYCOM0 
-   vdt v_mhu_A2  = vec_lds(0, &mhu_a[8]);//BODYCOM0 
-   vdt v_mhu_B1 = vec_lds(0, &mhu_a[14]);//BODYCOM0 
-   vdt v_mhu_B2 = vec_lds(0, &mhu_a[15]);//BODYCOM0 
-   vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[11]);//BODYCOM0 
-   vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[12]);//BODYCOM0 
+   vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[7]);//BODYCOM0 
+   vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[8]);//BODYCOM0 
+   vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[14]);//BODYCOM0 
+   vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[15]);//BODYCOM0 
+   vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[11]);//BODYCOM0 
+   vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[12]);//BODYCOM0 
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);//BODYCOM0 
    vdt v_sum2a =  vec_madd(v_xa, v_mhu_B2, v_mhu_B1);//BODYCOM0 
    vdt v_sum3a =  vec_madd(v_xa, v_tauRdt_C2, v_tauRdt_C1);//BODYCOM0 
 // 2//BODYCOM0 
-   v_mhu_A1  = vec_lds(0, &mhu_a[5]);//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[6]);//BODYCOM0 
-   v_mhu_B1 = vec_lds(0, &mhu_a[12]);//BODYCOM0 
-   v_mhu_B2 = vec_lds(0, &mhu_a[13]);//BODYCOM0 
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);//BODYCOM0 
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);//BODYCOM0 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[5]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[6]);//BODYCOM0 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[12]);//BODYCOM0 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[13]);//BODYCOM0 
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM0 
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
@@ -1610,12 +1630,12 @@ int tauR_m=13;
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
 // 3//BODYCOM0 
-   v_mhu_A1  = vec_lds(0, &mhu_a[3]);//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[4]);//BODYCOM0 
-   v_mhu_B1 = vec_lds(0, &mhu_a[10]);//BODYCOM0 
-   v_mhu_B2 = vec_lds(0, &mhu_a[11]);//BODYCOM0 
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);//BODYCOM0 
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);//BODYCOM0 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[3]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[4]);//BODYCOM0 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[10]);//BODYCOM0 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[11]);//BODYCOM0 
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM0 
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
@@ -1623,30 +1643,30 @@ int tauR_m=13;
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
 // 4//BODYCOM0 
-   v_mhu_A1  = vec_lds(0, &mhu_a[1]);//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[2]);//BODYCOM0 
-   v_mhu_B2  = vec_lds(0, &mhu_a[9]);//BODYCOM0 
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);//BODYCOM0 
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);//BODYCOM0 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[1]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[2]);//BODYCOM0 
+   v_mhu_B2  = VEC_LDS(0, &mhu_a[9]);//BODYCOM0 
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM0 
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
 // 5//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[0]);//BODYCOM0 
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);//BODYCOM0 
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[0]);//BODYCOM0 
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM0 
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
 // 6//BODYCOM0 
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);//BODYCOM0 
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);//BODYCOM0 
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM0 
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
 // 7//BODYCOM0 
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);//BODYCOM0 
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
 //BODYCOM0 
 // 1st//BODYCOM0 
@@ -1690,12 +1710,12 @@ int tauR_m=13;
    vdt v_xd   = vec_ld(0, &VM[ii+12]);  
 
 // 1
-   vdt v_mhu_A1  = vec_lds(0, &mhu_a[7]);
-   vdt v_mhu_A2  = vec_lds(0, &mhu_a[8]);
-   vdt v_mhu_B1 = vec_lds(0, &mhu_a[14]);
-   vdt v_mhu_B2 = vec_lds(0, &mhu_a[15]);
-   vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[11]);
-   vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[12]);
+   vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[7]);
+   vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[8]);
+   vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[14]);
+   vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[15]);
+   vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[11]);
+   vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[12]);
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);
    vdt v_sum1b =  vec_madd(v_xb, v_mhu_A2, v_mhu_A1);
    vdt v_sum1c =  vec_madd(v_xc, v_mhu_A2, v_mhu_A1);
@@ -1709,12 +1729,12 @@ int tauR_m=13;
    vdt v_sum3c =  vec_madd(v_xc, v_tauRdt_C2, v_tauRdt_C1);
    vdt v_sum3d =  vec_madd(v_xd, v_tauRdt_C2, v_tauRdt_C1);
 // 2
-   v_mhu_A1  = vec_lds(0, &mhu_a[5]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[6]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[12]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[13]);
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[6]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[12]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[13]);
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);
 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -1741,12 +1761,12 @@ int tauR_m=13;
    v_sum3d =  vec_madd(v_xd, v_sum3d, v_tauRdt_C2);
    v_sum3d =  vec_madd(v_xd, v_sum3d, v_tauRdt_C1);
 // 3
-   v_mhu_A1  = vec_lds(0, &mhu_a[3]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[4]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[10]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[11]);
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[10]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[11]);
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -1772,11 +1792,11 @@ int tauR_m=13;
    v_sum3d =  vec_madd(v_xd, v_sum3d, v_tauRdt_C2);
    v_sum3d =  vec_madd(v_xd, v_sum3d, v_tauRdt_C1);
 // 4
-   v_mhu_A1  = vec_lds(0, &mhu_a[1]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[2]);
-   v_mhu_B2  = vec_lds(0, &mhu_a[9]);
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[1]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_B2  = VEC_LDS(0, &mhu_a[9]);
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -1802,9 +1822,9 @@ int tauR_m=13;
    v_sum3d =  vec_madd(v_xd, v_sum3d, v_tauRdt_C2);
    v_sum3d =  vec_madd(v_xd, v_sum3d, v_tauRdt_C1);
 // 5
-   v_mhu_A2  = vec_lds(0, &mhu_a[0]);
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[0]);
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    // v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -1830,8 +1850,8 @@ int tauR_m=13;
    v_sum3d =  vec_madd(v_xd, v_sum3d, v_tauRdt_C2);
    v_sum3d =  vec_madd(v_xd, v_sum3d, v_tauRdt_C1);
 // 6
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    // v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -1857,7 +1877,7 @@ int tauR_m=13;
    v_sum3d =  vec_madd(v_xd, v_sum3d, v_tauRdt_C2);
    v_sum3d =  vec_madd(v_xd, v_sum3d, v_tauRdt_C1);
 // 7
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    // v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    // v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -1914,22 +1934,22 @@ int tauR_m=13;
    vdt v_xa   = vec_ld(0, &VM[ii]);  
 
 // 1
-   vdt v_mhu_A1  = vec_lds(0, &mhu_a[7]);
-   vdt v_mhu_A2  = vec_lds(0, &mhu_a[8]);
-   vdt v_mhu_B1 = vec_lds(0, &mhu_a[14]);
-   vdt v_mhu_B2 = vec_lds(0, &mhu_a[15]);
-   vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[11]);
-   vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[12]);
+   vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[7]);
+   vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[8]);
+   vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[14]);
+   vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[15]);
+   vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[11]);
+   vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[12]);
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);
    vdt v_sum2a =  vec_madd(v_xa, v_mhu_B2, v_mhu_B1);
    vdt v_sum3a =  vec_madd(v_xa, v_tauRdt_C2, v_tauRdt_C1);
 // 2
-   v_mhu_A1  = vec_lds(0, &mhu_a[5]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[6]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[12]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[13]);
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[6]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[12]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[13]);
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -1937,12 +1957,12 @@ int tauR_m=13;
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
 // 3
-   v_mhu_A1  = vec_lds(0, &mhu_a[3]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[4]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[10]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[11]);
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[10]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[11]);
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -1950,30 +1970,30 @@ int tauR_m=13;
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
 // 4
-   v_mhu_A1  = vec_lds(0, &mhu_a[1]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[2]);
-   v_mhu_B2  = vec_lds(0, &mhu_a[9]);
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[1]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_B2  = VEC_LDS(0, &mhu_a[9]);
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
 // 5
-   v_mhu_A2  = vec_lds(0, &mhu_a[0]);
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[0]);
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
 // 6
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
 // 7
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
 
 // 1st
@@ -1990,22 +2010,22 @@ int tauR_m=13;
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM1 
 //BODYCOM1 
 // 1//BODYCOM1 
-   vdt v_mhu_A1  = vec_lds(0, &mhu_a[7]);//BODYCOM1 
-   vdt v_mhu_A2  = vec_lds(0, &mhu_a[8]);//BODYCOM1 
-   vdt v_mhu_B1 = vec_lds(0, &mhu_a[14]);//BODYCOM1 
-   vdt v_mhu_B2 = vec_lds(0, &mhu_a[15]);//BODYCOM1 
-   vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[11]);//BODYCOM1 
-   vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[12]);//BODYCOM1 
+   vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[7]);//BODYCOM1 
+   vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[8]);//BODYCOM1 
+   vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[14]);//BODYCOM1 
+   vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[15]);//BODYCOM1 
+   vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[11]);//BODYCOM1 
+   vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[12]);//BODYCOM1 
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);//BODYCOM1 
    vdt v_sum2a =  vec_madd(v_xa, v_mhu_B2, v_mhu_B1);//BODYCOM1 
    vdt v_sum3a =  vec_madd(v_xa, v_tauRdt_C2, v_tauRdt_C1);//BODYCOM1 
 // 2//BODYCOM1 
-   v_mhu_A1  = vec_lds(0, &mhu_a[5]);//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[6]);//BODYCOM1 
-   v_mhu_B1 = vec_lds(0, &mhu_a[12]);//BODYCOM1 
-   v_mhu_B2 = vec_lds(0, &mhu_a[13]);//BODYCOM1 
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);//BODYCOM1 
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);//BODYCOM1 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[5]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[6]);//BODYCOM1 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[12]);//BODYCOM1 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[13]);//BODYCOM1 
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM1 
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
@@ -2013,12 +2033,12 @@ int tauR_m=13;
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
 // 3//BODYCOM1 
-   v_mhu_A1  = vec_lds(0, &mhu_a[3]);//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[4]);//BODYCOM1 
-   v_mhu_B1 = vec_lds(0, &mhu_a[10]);//BODYCOM1 
-   v_mhu_B2 = vec_lds(0, &mhu_a[11]);//BODYCOM1 
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);//BODYCOM1 
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);//BODYCOM1 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[3]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[4]);//BODYCOM1 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[10]);//BODYCOM1 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[11]);//BODYCOM1 
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM1 
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
@@ -2026,30 +2046,30 @@ int tauR_m=13;
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
 // 4//BODYCOM1 
-   v_mhu_A1  = vec_lds(0, &mhu_a[1]);//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[2]);//BODYCOM1 
-   v_mhu_B2  = vec_lds(0, &mhu_a[9]);//BODYCOM1 
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);//BODYCOM1 
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);//BODYCOM1 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[1]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[2]);//BODYCOM1 
+   v_mhu_B2  = VEC_LDS(0, &mhu_a[9]);//BODYCOM1 
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM1 
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
 // 5//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[0]);//BODYCOM1 
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);//BODYCOM1 
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[0]);//BODYCOM1 
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM1 
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
 // 6//BODYCOM1 
-   v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);//BODYCOM1 
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);//BODYCOM1 
+   v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM1 
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
 // 7//BODYCOM1 
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);//BODYCOM1 
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
 //BODYCOM1 
 // 1st//BODYCOM1 
@@ -2087,7 +2107,7 @@ int tauR_m=13;
 
 void update_Xr1Gate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
-
+  //update_Xr1Gate(dt, nCells, VM, g, mhu_a, tauR_a); return;
   typedef vector4double vdt;
 
 int gateIndex=3;
@@ -2116,9 +2136,9 @@ int tauR_m=13;
          tauRdt_a[11] = tauR_a[11]*dt,
          tauRdt_a[12] = tauR_a[12]*dt;
 
-  vdt v_mhu_a6 = vec_lds(0, &mhu_a[6]);
-  vdt v_mhu_a7 = vec_lds(0, &mhu_a[7]);
-  vdt v_sum4   = vec_lds(0, &tauR_a[13]);
+  vdt v_mhu_a6 = VEC_LDS(0, &mhu_a[6]);
+  vdt v_mhu_a7 = VEC_LDS(0, &mhu_a[7]);
+  vdt v_sum4   = VEC_LDS(0, &tauR_a[13]);
 
   vdt v_TWO = vec_splats(2.0);
 
@@ -2144,10 +2164,10 @@ int tauR_m=13;
 *///BODYCOM0 
    vdt v_mhu_A1;//BODYCOM0 
    vdt v_mhu_A2;//BODYCOM0 
-   vdt v_mhu_B1    = vec_lds(0, &mhu_a[11]);//BODYCOM0 
-   vdt v_mhu_B2    = vec_lds(0, &mhu_a[12]);//BODYCOM0 
-   vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[11]);//BODYCOM0 
-   vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[12]);//BODYCOM0 
+   vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);//BODYCOM0 
+   vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);//BODYCOM0 
+   vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[11]);//BODYCOM0 
+   vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[12]);//BODYCOM0 
 //BODYCOM0 
    vdt v_sum1a = vec_madd(v_xa, v_mhu_a7,    v_mhu_a6);//BODYCOM0 
    vdt v_sum2a = vec_madd(v_xa, v_mhu_B2,    v_mhu_B1);//BODYCOM0 
@@ -2162,12 +2182,12 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[10] + VM[ii]*sum3[ii];//BODYCOM0 
    sum3[ii] = tauRdt_a[9]  + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
-   v_mhu_A1    = vec_lds(0, &mhu_a[4]);//BODYCOM0 
-   v_mhu_A2    = vec_lds(0, &mhu_a[5]);//BODYCOM0 
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);//BODYCOM0 
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[9]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[10]);//BODYCOM0 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[4]);//BODYCOM0 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[5]);//BODYCOM0 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);//BODYCOM0 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[10]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
@@ -2184,11 +2204,11 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[8] + VM[ii]*sum3[ii];//BODYCOM0 
    sum3[ii] = tauRdt_a[7] + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
-   v_mhu_A1    = vec_lds(0, &mhu_a[2]);//BODYCOM0 
-   v_mhu_A2    = vec_lds(0, &mhu_a[3]);//BODYCOM0 
-   v_mhu_B1    = vec_lds(0, &mhu_a[8]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[7]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[8]);//BODYCOM0 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[2]);//BODYCOM0 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[3]);//BODYCOM0 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[8]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
@@ -2203,10 +2223,10 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[6] + VM[ii]*sum3[ii];//BODYCOM0 
    sum3[ii] = tauRdt_a[5] + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);//BODYCOM0 
-   v_mhu_A2    = vec_lds(0, &mhu_a[1]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[5]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[6]);//BODYCOM0 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);//BODYCOM0 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[1]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
@@ -2218,8 +2238,8 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[4] + VM[ii]*sum3[ii];//BODYCOM0 
    sum3[ii] = tauRdt_a[3] + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[3]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[4]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM0 
 //BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
@@ -2229,8 +2249,8 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[2] + VM[ii]*sum3[ii];//BODYCOM0 
    sum3[ii] = tauRdt_a[1] + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[1]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[2]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM0 
 //BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
@@ -2239,7 +2259,7 @@ int tauR_m=13;
 /*//BODYCOM0 
    sum3[ii]  =  tauRdt_a[0]  + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM0 
 //BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
 //BODYCOM0 
@@ -2307,10 +2327,10 @@ int tauR_m=13;
 */
    vdt v_mhu_A1;
    vdt v_mhu_A2;
-   vdt v_mhu_B1    = vec_lds(0, &mhu_a[11]);
-   vdt v_mhu_B2    = vec_lds(0, &mhu_a[12]);
-   vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[11]);
-   vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[12]);
+   vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);
+   vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);
+   vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[11]);
+   vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[12]);
 
    vdt v_sum1a = vec_madd(v_xa, v_mhu_a7,    v_mhu_a6);
    vdt v_sum1b = vec_madd(v_xb, v_mhu_a7,    v_mhu_a6);
@@ -2328,12 +2348,12 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[10] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[9]  + VM[ii]*sum3[ii];
 */
-   v_mhu_A1    = vec_lds(0, &mhu_a[4]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[5]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[9]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[10]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[9]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[10]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -2357,11 +2377,11 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[8] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[7] + VM[ii]*sum3[ii];
 */
-   v_mhu_A1    = vec_lds(0, &mhu_a[2]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[3]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[8]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[7]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[8]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[8]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[7]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[8]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -2382,10 +2402,10 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[6] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[5] + VM[ii]*sum3[ii];
 */
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[1]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[5]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[6]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[1]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[5]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[6]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -2402,8 +2422,8 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[4] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[3] + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[3]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[4]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[3]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[4]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -2416,8 +2436,8 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[2] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[1] + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[1]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[2]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[1]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[2]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -2429,7 +2449,7 @@ int tauR_m=13;
 /*
    sum3[ii]  =  tauRdt_a[0]  + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
 
@@ -2513,10 +2533,10 @@ int tauR_m=13;
 */
    vdt v_mhu_A1;
    vdt v_mhu_A2;
-   vdt v_mhu_B1    = vec_lds(0, &mhu_a[11]);
-   vdt v_mhu_B2    = vec_lds(0, &mhu_a[12]);
-   vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[11]);
-   vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[12]);
+   vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);
+   vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);
+   vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[11]);
+   vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[12]);
 
    vdt v_sum1a = vec_madd(v_xa, v_mhu_a7,    v_mhu_a6);
    vdt v_sum2a = vec_madd(v_xa, v_mhu_B2,    v_mhu_B1);
@@ -2531,12 +2551,12 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[10] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[9]  + VM[ii]*sum3[ii];
 */
-   v_mhu_A1    = vec_lds(0, &mhu_a[4]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[5]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[9]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[10]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[9]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[10]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -2553,11 +2573,11 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[8] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[7] + VM[ii]*sum3[ii];
 */
-   v_mhu_A1    = vec_lds(0, &mhu_a[2]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[3]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[8]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[7]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[8]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[8]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[7]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[8]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -2572,10 +2592,10 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[6] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[5] + VM[ii]*sum3[ii];
 */
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[1]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[5]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[6]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[1]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[5]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[6]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -2587,8 +2607,8 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[4] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[3] + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[3]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[4]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[3]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[4]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -2598,8 +2618,8 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[2] + VM[ii]*sum3[ii];
    sum3[ii] = tauRdt_a[1] + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[1]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[2]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[1]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[2]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -2608,7 +2628,7 @@ int tauR_m=13;
 /*
    sum3[ii]  =  tauRdt_a[0]  + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
 
@@ -2671,10 +2691,10 @@ int tauR_m=13;
 *///BODYCOM1 
    vdt v_mhu_A1;//BODYCOM1 
    vdt v_mhu_A2;//BODYCOM1 
-   vdt v_mhu_B1    = vec_lds(0, &mhu_a[11]);//BODYCOM1 
-   vdt v_mhu_B2    = vec_lds(0, &mhu_a[12]);//BODYCOM1 
-   vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[11]);//BODYCOM1 
-   vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[12]);//BODYCOM1 
+   vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);//BODYCOM1 
+   vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);//BODYCOM1 
+   vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[11]);//BODYCOM1 
+   vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[12]);//BODYCOM1 
 //BODYCOM1 
    vdt v_sum1a = vec_madd(v_xa, v_mhu_a7,    v_mhu_a6);//BODYCOM1 
    vdt v_sum2a = vec_madd(v_xa, v_mhu_B2,    v_mhu_B1);//BODYCOM1 
@@ -2689,12 +2709,12 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[10] + VM[ii]*sum3[ii];//BODYCOM1 
    sum3[ii] = tauRdt_a[9]  + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
-   v_mhu_A1    = vec_lds(0, &mhu_a[4]);//BODYCOM1 
-   v_mhu_A2    = vec_lds(0, &mhu_a[5]);//BODYCOM1 
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);//BODYCOM1 
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[9]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[10]);//BODYCOM1 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[4]);//BODYCOM1 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[5]);//BODYCOM1 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);//BODYCOM1 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[10]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
@@ -2711,11 +2731,11 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[8] + VM[ii]*sum3[ii];//BODYCOM1 
    sum3[ii] = tauRdt_a[7] + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
-   v_mhu_A1    = vec_lds(0, &mhu_a[2]);//BODYCOM1 
-   v_mhu_A2    = vec_lds(0, &mhu_a[3]);//BODYCOM1 
-   v_mhu_B1    = vec_lds(0, &mhu_a[8]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[7]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[8]);//BODYCOM1 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[2]);//BODYCOM1 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[3]);//BODYCOM1 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[8]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
@@ -2730,10 +2750,10 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[6] + VM[ii]*sum3[ii];//BODYCOM1 
    sum3[ii] = tauRdt_a[5] + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);//BODYCOM1 
-   v_mhu_A2    = vec_lds(0, &mhu_a[1]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[5]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[6]);//BODYCOM1 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);//BODYCOM1 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[1]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
@@ -2745,8 +2765,8 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[4] + VM[ii]*sum3[ii];//BODYCOM1 
    sum3[ii] = tauRdt_a[3] + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[3]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[4]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM1 
 //BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
@@ -2756,8 +2776,8 @@ int tauR_m=13;
    sum3[ii] = tauRdt_a[2] + VM[ii]*sum3[ii];//BODYCOM1 
    sum3[ii] = tauRdt_a[1] + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[1]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[2]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM1 
 //BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
@@ -2766,7 +2786,7 @@ int tauR_m=13;
 /*//BODYCOM1 
    sum3[ii]  =  tauRdt_a[0]  + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM1 
 //BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
 //BODYCOM1 
@@ -2823,7 +2843,7 @@ int tauR_m=13;
 
 void update_Xr2Gate_v1(double dt, int nCells,  double *VM, double *g, double *mhu_a, double *tauR_a)
 {
-
+  //update_Xr2Gate(dt, nCells,  VM, g, mhu_a, tauR_a); return;
   typedef vector4double vdt;
 
 int gateIndex=4;
@@ -2836,16 +2856,16 @@ int tauR_m=10;
 
 
 
-  vdt v_mhu_a0  = vec_lds(0, &mhu_a[0]);
-  vdt v_mhu_a1  = vec_lds(0, &mhu_a[1]);
-  vdt v_mhu_a2  = vec_lds(0, &mhu_a[2]);
-  vdt v_mhu_a3  = vec_lds(0, &mhu_a[3]);
-  vdt v_mhu_a4  = vec_lds(0, &mhu_a[4]);
-  vdt v_mhu_a5  = vec_lds(0, &mhu_a[5]);
-  vdt v_mhu_a6  = vec_lds(0, &mhu_a[6]);
-  vdt v_mhu_a7  = vec_lds(0, &mhu_a[7]);
-  vdt v_mhu_a8  = vec_lds(0, &mhu_a[8]);
-  vdt v_mhu_a9  = vec_lds(0, &mhu_a[9]);
+  vdt v_mhu_a0  = VEC_LDS(0, &mhu_a[0]);
+  vdt v_mhu_a1  = VEC_LDS(0, &mhu_a[1]);
+  vdt v_mhu_a2  = VEC_LDS(0, &mhu_a[2]);
+  vdt v_mhu_a3  = VEC_LDS(0, &mhu_a[3]);
+  vdt v_mhu_a4  = VEC_LDS(0, &mhu_a[4]);
+  vdt v_mhu_a5  = VEC_LDS(0, &mhu_a[5]);
+  vdt v_mhu_a6  = VEC_LDS(0, &mhu_a[6]);
+  vdt v_mhu_a7  = VEC_LDS(0, &mhu_a[7]);
+  vdt v_mhu_a8  = VEC_LDS(0, &mhu_a[8]);
+  vdt v_mhu_a9  = VEC_LDS(0, &mhu_a[9]);
 
 
 double   tauRdt_a0  = tauR_a[0]*dt,
@@ -3077,7 +3097,7 @@ double   tauRdt_a0  = tauR_a[0]*dt,
 
 void update_XsGate_v1(double dt, int nCells,  double *VM, double *g, double *mhu_a, double *tauR_a)
 {
-
+  //update_XsGate(dt, nCells,  VM, g, mhu_a, tauR_a); return;
 
   typedef vector4double vdt;
 
@@ -3127,14 +3147,14 @@ int tauR_m= 9;
    sum4[ii] =  tauR_a[14]; //BODYCOM0 
    sum4[ii] =  tauR_a[13]  + VM[ii]*sum4[ii]; //BODYCOM0 
 *///BODYCOM0 
-  vdt v_mhu_A1    = vec_lds(0, &mhu_a[3]);//BODYCOM0 
-  vdt v_mhu_A2    = vec_lds(0, &mhu_a[4]);//BODYCOM0 
-  vdt v_mhu_B1    = vec_lds(0, &mhu_a[8]);//BODYCOM0 
-  vdt v_mhu_B2    = vec_lds(0, &mhu_a[9]);//BODYCOM0 
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[7]);//BODYCOM0 
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[8]);//BODYCOM0 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[13]);//BODYCOM0 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[14]);//BODYCOM0 
+  vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[3]);//BODYCOM0 
+  vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[4]);//BODYCOM0 
+  vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[8]);//BODYCOM0 
+  vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[9]);//BODYCOM0 
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM0 
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM0 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[13]);//BODYCOM0 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[14]);//BODYCOM0 
 //BODYCOM0 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_A2, v_mhu_A1);//BODYCOM0 
   vdt v_sum2a = vec_madd(v_xa, v_mhu_B2, v_mhu_B1);//BODYCOM0 
@@ -3152,14 +3172,14 @@ int tauR_m= 9;
    sum4[ii] =  tauR_a[12]  + VM[ii]*sum4[ii]; //BODYCOM0 
    sum4[ii] =  tauR_a[11]  + VM[ii]*sum4[ii]; //BODYCOM0 
 *///BODYCOM0 
-  v_mhu_A1    = vec_lds(0, &mhu_a[1]);//BODYCOM0 
-  v_mhu_A2    = vec_lds(0, &mhu_a[2]);//BODYCOM0 
-  v_mhu_B1    = vec_lds(0, &mhu_a[6]);//BODYCOM0 
-  v_mhu_B2    = vec_lds(0, &mhu_a[7]);//BODYCOM0 
-  v_tauRdt_C1 = vec_lds(0, &tauRdt_a[5]);//BODYCOM0 
-  v_tauRdt_C2 = vec_lds(0, &tauRdt_a[6]);//BODYCOM0 
-  v_tauR_D1   = vec_lds(0, &tauR_a[11]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[12]);//BODYCOM0 
+  v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);//BODYCOM0 
+  v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);//BODYCOM0 
+  v_mhu_B1    = VEC_LDS(0, &mhu_a[6]);//BODYCOM0 
+  v_mhu_B2    = VEC_LDS(0, &mhu_a[7]);//BODYCOM0 
+  v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM0 
+  v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM0 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[11]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[12]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
@@ -3180,12 +3200,12 @@ int tauR_m= 9;
    sum4[ii] = tauR_a[9]   + VM[ii]*sum4[ii]; //BODYCOM0 
 *///BODYCOM0 
 //BODYCOM0 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);//BODYCOM0 
-   v_mhu_B1    = vec_lds(0, &mhu_a[5]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[3]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[4]);//BODYCOM0 
-   v_tauR_D1   = vec_lds(0, &tauR_a[9]);//BODYCOM0 
-   v_tauR_D2   = vec_lds(0, &tauR_a[10]);//BODYCOM0 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);//BODYCOM0 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[5]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM0 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[9]);//BODYCOM0 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[10]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); //BODYCOM0 
@@ -3200,8 +3220,8 @@ int tauR_m= 9;
    sum3[ii] = tauRdt_a[1]  + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
 //BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[1]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[2]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM0 
 //BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
@@ -3210,7 +3230,7 @@ int tauR_m= 9;
 /*//BODYCOM0 
    sum3[ii] = tauRdt_a[0]  + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM0 
  //BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
 //BODYCOM0 
@@ -3278,14 +3298,14 @@ tauRdt[ii] = sum3[ii]/sum4[ii]; //BODYCOM0
    sum4[ii] =  tauR_a[14]; 
    sum4[ii] =  tauR_a[13]  + VM[ii]*sum4[ii]; 
 */
-  vdt v_mhu_A1    = vec_lds(0, &mhu_a[3]);
-  vdt v_mhu_A2    = vec_lds(0, &mhu_a[4]);
-  vdt v_mhu_B1    = vec_lds(0, &mhu_a[8]);
-  vdt v_mhu_B2    = vec_lds(0, &mhu_a[9]);
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[7]);
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[8]);
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[13]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[14]);
+  vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[3]);
+  vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[4]);
+  vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[8]);
+  vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[9]);
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[7]);
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[8]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[13]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[14]);
 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_A2, v_mhu_A1);
   vdt v_sum1b = vec_madd(v_xb, v_mhu_A2, v_mhu_A1);
@@ -3307,14 +3327,14 @@ tauRdt[ii] = sum3[ii]/sum4[ii]; //BODYCOM0
    sum4[ii] =  tauR_a[12]  + VM[ii]*sum4[ii]; 
    sum4[ii] =  tauR_a[11]  + VM[ii]*sum4[ii]; 
 */
-  v_mhu_A1    = vec_lds(0, &mhu_a[1]);
-  v_mhu_A2    = vec_lds(0, &mhu_a[2]);
-  v_mhu_B1    = vec_lds(0, &mhu_a[6]);
-  v_mhu_B2    = vec_lds(0, &mhu_a[7]);
-  v_tauRdt_C1 = vec_lds(0, &tauRdt_a[5]);
-  v_tauRdt_C2 = vec_lds(0, &tauRdt_a[6]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[11]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[12]);
+  v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);
+  v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);
+  v_mhu_B1    = VEC_LDS(0, &mhu_a[6]);
+  v_mhu_B2    = VEC_LDS(0, &mhu_a[7]);
+  v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[5]);
+  v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[6]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[11]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[12]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -3345,12 +3365,12 @@ tauRdt[ii] = sum3[ii]/sum4[ii]; //BODYCOM0
    sum4[ii] = tauR_a[9]   + VM[ii]*sum4[ii]; 
 */
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[5]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[3]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[4]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[9]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[10]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[5]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[3]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[4]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[9]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[10]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); 
@@ -3373,8 +3393,8 @@ tauRdt[ii] = sum3[ii]/sum4[ii]; //BODYCOM0
    sum3[ii] = tauRdt_a[1]  + VM[ii]*sum3[ii];
 */
 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[1]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[2]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[1]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[2]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -3387,7 +3407,7 @@ tauRdt[ii] = sum3[ii]/sum4[ii]; //BODYCOM0
 /*
    sum3[ii] = tauRdt_a[0]  + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);
  
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
    v_sum3b = vec_madd(v_xb, v_sum3b, v_tauRdt_C1);
@@ -3440,14 +3460,14 @@ tauRdt[ii] = sum3[ii]/sum4[ii];
    sum4[ii] =  tauR_a[14]; 
    sum4[ii] =  tauR_a[13]  + VM[ii]*sum4[ii]; 
 */
-  vdt v_mhu_A1    = vec_lds(0, &mhu_a[3]);
-  vdt v_mhu_A2    = vec_lds(0, &mhu_a[4]);
-  vdt v_mhu_B1    = vec_lds(0, &mhu_a[8]);
-  vdt v_mhu_B2    = vec_lds(0, &mhu_a[9]);
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[7]);
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[8]);
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[13]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[14]);
+  vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[3]);
+  vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[4]);
+  vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[8]);
+  vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[9]);
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[7]);
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[8]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[13]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[14]);
 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_A2, v_mhu_A1);
   vdt v_sum2a = vec_madd(v_xa, v_mhu_B2, v_mhu_B1);
@@ -3465,14 +3485,14 @@ tauRdt[ii] = sum3[ii]/sum4[ii];
    sum4[ii] =  tauR_a[12]  + VM[ii]*sum4[ii]; 
    sum4[ii] =  tauR_a[11]  + VM[ii]*sum4[ii]; 
 */
-  v_mhu_A1    = vec_lds(0, &mhu_a[1]);
-  v_mhu_A2    = vec_lds(0, &mhu_a[2]);
-  v_mhu_B1    = vec_lds(0, &mhu_a[6]);
-  v_mhu_B2    = vec_lds(0, &mhu_a[7]);
-  v_tauRdt_C1 = vec_lds(0, &tauRdt_a[5]);
-  v_tauRdt_C2 = vec_lds(0, &tauRdt_a[6]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[11]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[12]);
+  v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);
+  v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);
+  v_mhu_B1    = VEC_LDS(0, &mhu_a[6]);
+  v_mhu_B2    = VEC_LDS(0, &mhu_a[7]);
+  v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[5]);
+  v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[6]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[11]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[12]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -3493,12 +3513,12 @@ tauRdt[ii] = sum3[ii]/sum4[ii];
    sum4[ii] = tauR_a[9]   + VM[ii]*sum4[ii]; 
 */
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[5]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[3]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[4]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[9]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[10]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[5]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[3]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[4]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[9]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[10]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); 
@@ -3513,8 +3533,8 @@ tauRdt[ii] = sum3[ii]/sum4[ii];
    sum3[ii] = tauRdt_a[1]  + VM[ii]*sum3[ii];
 */
 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[1]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[2]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[1]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[2]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -3523,7 +3543,7 @@ tauRdt[ii] = sum3[ii]/sum4[ii];
 /*
    sum3[ii] = tauRdt_a[0]  + VM[ii]*sum3[ii];
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);
  
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
 
@@ -3567,14 +3587,14 @@ tauRdt[ii] = sum3[ii]/sum4[ii];
    sum4[ii] =  tauR_a[14]; //BODYCOM1 
    sum4[ii] =  tauR_a[13]  + VM[ii]*sum4[ii]; //BODYCOM1 
 *///BODYCOM1 
-  vdt v_mhu_A1    = vec_lds(0, &mhu_a[3]);//BODYCOM1 
-  vdt v_mhu_A2    = vec_lds(0, &mhu_a[4]);//BODYCOM1 
-  vdt v_mhu_B1    = vec_lds(0, &mhu_a[8]);//BODYCOM1 
-  vdt v_mhu_B2    = vec_lds(0, &mhu_a[9]);//BODYCOM1 
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[7]);//BODYCOM1 
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[8]);//BODYCOM1 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[13]);//BODYCOM1 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[14]);//BODYCOM1 
+  vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[3]);//BODYCOM1 
+  vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[4]);//BODYCOM1 
+  vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[8]);//BODYCOM1 
+  vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[9]);//BODYCOM1 
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM1 
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM1 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[13]);//BODYCOM1 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[14]);//BODYCOM1 
 //BODYCOM1 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_A2, v_mhu_A1);//BODYCOM1 
   vdt v_sum2a = vec_madd(v_xa, v_mhu_B2, v_mhu_B1);//BODYCOM1 
@@ -3592,14 +3612,14 @@ tauRdt[ii] = sum3[ii]/sum4[ii];
    sum4[ii] =  tauR_a[12]  + VM[ii]*sum4[ii]; //BODYCOM1 
    sum4[ii] =  tauR_a[11]  + VM[ii]*sum4[ii]; //BODYCOM1 
 *///BODYCOM1 
-  v_mhu_A1    = vec_lds(0, &mhu_a[1]);//BODYCOM1 
-  v_mhu_A2    = vec_lds(0, &mhu_a[2]);//BODYCOM1 
-  v_mhu_B1    = vec_lds(0, &mhu_a[6]);//BODYCOM1 
-  v_mhu_B2    = vec_lds(0, &mhu_a[7]);//BODYCOM1 
-  v_tauRdt_C1 = vec_lds(0, &tauRdt_a[5]);//BODYCOM1 
-  v_tauRdt_C2 = vec_lds(0, &tauRdt_a[6]);//BODYCOM1 
-  v_tauR_D1   = vec_lds(0, &tauR_a[11]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[12]);//BODYCOM1 
+  v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);//BODYCOM1 
+  v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);//BODYCOM1 
+  v_mhu_B1    = VEC_LDS(0, &mhu_a[6]);//BODYCOM1 
+  v_mhu_B2    = VEC_LDS(0, &mhu_a[7]);//BODYCOM1 
+  v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM1 
+  v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM1 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[11]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[12]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
@@ -3620,12 +3640,12 @@ tauRdt[ii] = sum3[ii]/sum4[ii];
    sum4[ii] = tauR_a[9]   + VM[ii]*sum4[ii]; //BODYCOM1 
 *///BODYCOM1 
 //BODYCOM1 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);//BODYCOM1 
-   v_mhu_B1    = vec_lds(0, &mhu_a[5]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[3]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[4]);//BODYCOM1 
-   v_tauR_D1   = vec_lds(0, &tauR_a[9]);//BODYCOM1 
-   v_tauR_D2   = vec_lds(0, &tauR_a[10]);//BODYCOM1 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);//BODYCOM1 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[5]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM1 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[9]);//BODYCOM1 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[10]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); //BODYCOM1 
@@ -3640,8 +3660,8 @@ tauRdt[ii] = sum3[ii]/sum4[ii];
    sum3[ii] = tauRdt_a[1]  + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
 //BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[1]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[2]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM1 
 //BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
@@ -3650,7 +3670,7 @@ tauRdt[ii] = sum3[ii]/sum4[ii];
 /*//BODYCOM1 
    sum3[ii] = tauRdt_a[0]  + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM1 
  //BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
 //BODYCOM1 
@@ -3706,10 +3726,9 @@ tauRdt[ii] = sum3[ii]/sum4[ii]; //BODYCOM1
 
 
 // 4134
-//void update_hGate_v1(double dt, int nCells, const double *VM, double *g, double *mhu_a, double *tauR_a)
 void update_rGate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
-
+  //update_rGate(dt, nCells, VM, g, mhu_a, tauR_a); return;
   typedef vector4double vdt;
 
 int gateIndex=6;
@@ -3740,28 +3759,28 @@ int tauR_m= 7;
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM0 
 //BODYCOM0 
 // 1//BODYCOM0 
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[6]);//BODYCOM0 
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[7]);//BODYCOM0 
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[11]);//BODYCOM0 
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[12]);//BODYCOM0 
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);//BODYCOM0 
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);//BODYCOM0 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[10]);//BODYCOM0 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[11]);//BODYCOM0 
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[6]);//BODYCOM0 
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[7]);//BODYCOM0 
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[11]);//BODYCOM0 
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[12]);//BODYCOM0 
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM0 
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM0 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[10]);//BODYCOM0 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);//BODYCOM0 
 //BODYCOM0 
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);//BODYCOM0 
    vdt v_sum2a =  vec_madd(v_xa, v_mhu_B2, v_mhu_B1);//BODYCOM0 
    vdt v_sum3a =  vec_madd(v_xa, v_tauRdt_C2, v_tauRdt_C1);//BODYCOM0 
    vdt v_sum4a =  vec_madd(v_xa, v_tauR_D2, v_tauR_D1);//BODYCOM0 
 // 2//BODYCOM0 
-   v_mhu_A1  = vec_lds(0, &mhu_a[4]);//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[5]);//BODYCOM0 
-   v_mhu_B1 = vec_lds(0, &mhu_a[9]);//BODYCOM0 
-   v_mhu_B2 = vec_lds(0, &mhu_a[10]);//BODYCOM0 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);//BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);//BODYCOM0 
-  v_tauR_D1   = vec_lds(0, &tauR_a[8]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[9]);//BODYCOM0 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[4]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[5]);//BODYCOM0 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[9]);//BODYCOM0 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[10]);//BODYCOM0 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM0 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[8]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[9]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
@@ -3773,12 +3792,12 @@ int tauR_m= 7;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM0 
 // 3//BODYCOM0 
 //BODYCOM0 
-   v_mhu_A1  = vec_lds(0, &mhu_a[2]);//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[3]);//BODYCOM0 
-   v_mhu_B2 = vec_lds(0, &mhu_a[8]);//BODYCOM0 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);//BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[7]);//BODYCOM0 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[2]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[3]);//BODYCOM0 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[8]);//BODYCOM0 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[7]);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
@@ -3787,9 +3806,9 @@ int tauR_m= 7;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM0 
 // 4//BODYCOM0 
 //BODYCOM0 
-   v_mhu_A1  = vec_lds(0, &mhu_a[0]);//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[1]);//BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);//BODYCOM0 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[0]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[1]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
@@ -3837,14 +3856,14 @@ int tauR_m= 7;
    vdt v_xd   = vec_ld(0, &VM[ii+12]);  
 
 // 1
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[6]);
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[7]);
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[11]);
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[12]);
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[10]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[11]);
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[6]);
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[7]);
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[11]);
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[12]);
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[10]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);
 
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);
    vdt v_sum1b =  vec_madd(v_xb, v_mhu_A2, v_mhu_A1);
@@ -3866,14 +3885,14 @@ int tauR_m= 7;
    vdt v_sum4c =  vec_madd(v_xc, v_tauR_D2, v_tauR_D1);
    vdt v_sum4d =  vec_madd(v_xd, v_tauR_D2, v_tauR_D1);
 // 2
-   v_mhu_A1  = vec_lds(0, &mhu_a[4]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[5]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[9]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[10]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[8]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[9]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[9]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[10]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[8]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[9]);
 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -3909,12 +3928,12 @@ int tauR_m= 7;
    v_sum4d =  vec_madd(v_xd, v_sum4d, v_tauR_D1);
 // 3
 
-   v_mhu_A1  = vec_lds(0, &mhu_a[2]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[3]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[8]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[7]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[8]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[7]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -3941,9 +3960,9 @@ int tauR_m= 7;
    v_sum4d =  vec_madd(v_xd, v_sum4d, v_tauR_D2);
 // 4
 
-   v_mhu_A1  = vec_lds(0, &mhu_a[0]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[1]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[0]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[1]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum1b =  vec_madd(v_xb, v_sum1b, v_mhu_A2);
@@ -4001,28 +4020,28 @@ int tauR_m= 7;
    vdt v_xa   = vec_ld(0, &VM[ii]);  
 
 // 1
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[6]);
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[7]);
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[11]);
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[12]);
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[10]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[11]);
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[6]);
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[7]);
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[11]);
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[12]);
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[10]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);
 
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);
    vdt v_sum2a =  vec_madd(v_xa, v_mhu_B2, v_mhu_B1);
    vdt v_sum3a =  vec_madd(v_xa, v_tauRdt_C2, v_tauRdt_C1);
    vdt v_sum4a =  vec_madd(v_xa, v_tauR_D2, v_tauR_D1);
 // 2
-   v_mhu_A1  = vec_lds(0, &mhu_a[4]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[5]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[9]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[10]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[8]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[9]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[9]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[10]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[8]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[9]);
 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -4034,12 +4053,12 @@ int tauR_m= 7;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);
 // 3
 
-   v_mhu_A1  = vec_lds(0, &mhu_a[2]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[3]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[8]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[7]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[8]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[7]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -4048,9 +4067,9 @@ int tauR_m= 7;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);
 // 4
 
-   v_mhu_A1  = vec_lds(0, &mhu_a[0]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[1]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[0]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[1]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
@@ -4079,28 +4098,28 @@ int tauR_m= 7;
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM1 
 //BODYCOM1 
 // 1//BODYCOM1 
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[6]);//BODYCOM1 
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[7]);//BODYCOM1 
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[11]);//BODYCOM1 
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[12]);//BODYCOM1 
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);//BODYCOM1 
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);//BODYCOM1 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[10]);//BODYCOM1 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[11]);//BODYCOM1 
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[6]);//BODYCOM1 
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[7]);//BODYCOM1 
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[11]);//BODYCOM1 
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[12]);//BODYCOM1 
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM1 
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM1 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[10]);//BODYCOM1 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);//BODYCOM1 
 //BODYCOM1 
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);//BODYCOM1 
    vdt v_sum2a =  vec_madd(v_xa, v_mhu_B2, v_mhu_B1);//BODYCOM1 
    vdt v_sum3a =  vec_madd(v_xa, v_tauRdt_C2, v_tauRdt_C1);//BODYCOM1 
    vdt v_sum4a =  vec_madd(v_xa, v_tauR_D2, v_tauR_D1);//BODYCOM1 
 // 2//BODYCOM1 
-   v_mhu_A1  = vec_lds(0, &mhu_a[4]);//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[5]);//BODYCOM1 
-   v_mhu_B1 = vec_lds(0, &mhu_a[9]);//BODYCOM1 
-   v_mhu_B2 = vec_lds(0, &mhu_a[10]);//BODYCOM1 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);//BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);//BODYCOM1 
-  v_tauR_D1   = vec_lds(0, &tauR_a[8]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[9]);//BODYCOM1 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[4]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[5]);//BODYCOM1 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[9]);//BODYCOM1 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[10]);//BODYCOM1 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM1 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[8]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[9]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
@@ -4112,12 +4131,12 @@ int tauR_m= 7;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM1 
 // 3//BODYCOM1 
 //BODYCOM1 
-   v_mhu_A1  = vec_lds(0, &mhu_a[2]);//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[3]);//BODYCOM1 
-   v_mhu_B2 = vec_lds(0, &mhu_a[8]);//BODYCOM1 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);//BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[7]);//BODYCOM1 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[2]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[3]);//BODYCOM1 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[8]);//BODYCOM1 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[7]);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
@@ -4126,9 +4145,9 @@ int tauR_m= 7;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM1 
 // 4//BODYCOM1 
 //BODYCOM1 
-   v_mhu_A1  = vec_lds(0, &mhu_a[0]);//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[1]);//BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);//BODYCOM1 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[0]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[1]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
@@ -4172,7 +4191,7 @@ int tauR_m= 7;
 
 void update_dGate_v1(double dt, int nCells,  double *VM, double *g, double *mhu_a, double *tauR_a)
 {
-
+  //update_dGate(dt, nCells,  VM, g, mhu_a, tauR_a); return;
   typedef vector4double vdt;
 
 int gateIndex= 7;
@@ -4200,10 +4219,10 @@ int tauR_m=10;
          tauRdt_a[8]  = tauR_a[8]*dt;
          tauRdt_a[9]  = tauR_a[9]*dt;
 
- vdt v_mhu_a5  = vec_lds(0, &mhu_a[5]);
- vdt v_mhu_a6  = vec_lds(0, &mhu_a[6]); 
- vdt v_mhu_a10 = vec_lds(0, &mhu_a[10]);
- vdt v_mhu_a11 = vec_lds(0, &mhu_a[11]);   
+ vdt v_mhu_a5  = VEC_LDS(0, &mhu_a[5]);
+ vdt v_mhu_a6  = VEC_LDS(0, &mhu_a[6]); 
+ vdt v_mhu_a10 = VEC_LDS(0, &mhu_a[10]);
+ vdt v_mhu_a11 = VEC_LDS(0, &mhu_a[11]);   
 
  int ii=0;
 
@@ -4232,10 +4251,10 @@ int tauR_m=10;
   vdt v_mhu_A2;//BODYCOM0 
   vdt v_mhu_B1;//BODYCOM0 
   vdt v_mhu_B2;//BODYCOM0 
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[8]);//BODYCOM0 
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[9]);//BODYCOM0 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[15]);//BODYCOM0 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[16]);//BODYCOM0 
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM0 
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM0 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[15]);//BODYCOM0 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[16]);//BODYCOM0 
 //BODYCOM0 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_a6,  v_mhu_a5);//BODYCOM0 
   vdt v_sum2a = vec_madd(v_xa, v_mhu_a11, v_mhu_a10);//BODYCOM0 
@@ -4253,14 +4272,14 @@ int tauR_m=10;
    sum4[ii] = tauR_a[14]  + VM[ii]*sum4[ii]; //BODYCOM0 
    sum4[ii] = tauR_a[13]  + VM[ii]*sum4[ii]; //BODYCOM0 
 *///BODYCOM0 
-   v_mhu_A1     = vec_lds(0, &mhu_a[3]);//BODYCOM0 
-   v_mhu_A2     = vec_lds(0, &mhu_a[4]);//BODYCOM0 
-   v_mhu_B1     = vec_lds(0, &mhu_a[8]);//BODYCOM0 
-   v_mhu_B2     = vec_lds(0, &mhu_a[9]);//BODYCOM0 
-   v_tauRdt_C1  = vec_lds(0, &tauRdt_a[6]);//BODYCOM0 
-   v_tauRdt_C2  = vec_lds(0, &tauRdt_a[7]);//BODYCOM0 
-   v_tauR_D1    = vec_lds(0, &tauR_a[13]);//BODYCOM0 
-   v_tauR_D2    = vec_lds(0, &tauR_a[14]);//BODYCOM0 
+   v_mhu_A1     = VEC_LDS(0, &mhu_a[3]);//BODYCOM0 
+   v_mhu_A2     = VEC_LDS(0, &mhu_a[4]);//BODYCOM0 
+   v_mhu_B1     = VEC_LDS(0, &mhu_a[8]);//BODYCOM0 
+   v_mhu_B2     = VEC_LDS(0, &mhu_a[9]);//BODYCOM0 
+   v_tauRdt_C1  = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM0 
+   v_tauRdt_C2  = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM0 
+   v_tauR_D1    = VEC_LDS(0, &tauR_a[13]);//BODYCOM0 
+   v_tauR_D2    = VEC_LDS(0, &tauR_a[14]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
@@ -4282,13 +4301,13 @@ int tauR_m=10;
    sum4[ii] = tauR_a[11]  + VM[ii]*sum4[ii]; //BODYCOM0 
 *///BODYCOM0 
 //BODYCOM0 
-   v_mhu_A1    = vec_lds(0, &mhu_a[1]);//BODYCOM0 
-   v_mhu_A2    = vec_lds(0, &mhu_a[2]);//BODYCOM0 
-   v_mhu_B1    = vec_lds(0, &mhu_a[7]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[4]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[5]);//BODYCOM0 
-   v_tauR_D1   = vec_lds(0, &tauR_a[11]);//BODYCOM0 
-   v_tauR_D2   = vec_lds(0, &tauR_a[12]);//BODYCOM0 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);//BODYCOM0 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);//BODYCOM0 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[7]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM0 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[11]);//BODYCOM0 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[12]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
@@ -4306,10 +4325,10 @@ int tauR_m=10;
    sum3[ii] = tauRdt_a[2] + VM[ii]*sum3[ii];//BODYCOM0 
    sum4[ii] = tauR_a[10]  + VM[ii]*sum4[ii]; //BODYCOM0 
 *///BODYCOM0 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[2]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[3]);//BODYCOM0 
-   v_tauR_D1   = vec_lds(0, &tauR_a[10]);//BODYCOM0 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM0 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[10]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
@@ -4323,8 +4342,8 @@ int tauR_m=10;
    sum3[ii] = tauRdt_a[0]  + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
 //BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[1]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM0 
 //BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
@@ -4397,10 +4416,10 @@ int tauR_m=10;
   vdt v_mhu_A2;
   vdt v_mhu_B1;
   vdt v_mhu_B2;
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[8]);
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[9]);
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[15]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[16]);
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[8]);
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[9]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[15]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[16]);
 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_a6,  v_mhu_a5);
   vdt v_sum1b = vec_madd(v_xb, v_mhu_a6,  v_mhu_a5);
@@ -4422,14 +4441,14 @@ int tauR_m=10;
    sum4[ii] = tauR_a[14]  + VM[ii]*sum4[ii]; 
    sum4[ii] = tauR_a[13]  + VM[ii]*sum4[ii]; 
 */
-   v_mhu_A1     = vec_lds(0, &mhu_a[3]);
-   v_mhu_A2     = vec_lds(0, &mhu_a[4]);
-   v_mhu_B1     = vec_lds(0, &mhu_a[8]);
-   v_mhu_B2     = vec_lds(0, &mhu_a[9]);
-   v_tauRdt_C1  = vec_lds(0, &tauRdt_a[6]);
-   v_tauRdt_C2  = vec_lds(0, &tauRdt_a[7]);
-   v_tauR_D1    = vec_lds(0, &tauR_a[13]);
-   v_tauR_D2    = vec_lds(0, &tauR_a[14]);
+   v_mhu_A1     = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_A2     = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_B1     = VEC_LDS(0, &mhu_a[8]);
+   v_mhu_B2     = VEC_LDS(0, &mhu_a[9]);
+   v_tauRdt_C1  = VEC_LDS(0, &tauRdt_a[6]);
+   v_tauRdt_C2  = VEC_LDS(0, &tauRdt_a[7]);
+   v_tauR_D1    = VEC_LDS(0, &tauR_a[13]);
+   v_tauR_D2    = VEC_LDS(0, &tauR_a[14]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -4460,13 +4479,13 @@ int tauR_m=10;
    sum4[ii] = tauR_a[11]  + VM[ii]*sum4[ii]; 
 */
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[1]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[2]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[7]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[4]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[5]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[11]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[12]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[7]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[4]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[5]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[11]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[12]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -4492,10 +4511,10 @@ int tauR_m=10;
    sum3[ii] = tauRdt_a[2] + VM[ii]*sum3[ii];
    sum4[ii] = tauR_a[10]  + VM[ii]*sum4[ii]; 
 */
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[2]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[3]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[10]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[2]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[3]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[10]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
@@ -4514,8 +4533,8 @@ int tauR_m=10;
    sum3[ii] = tauRdt_a[0]  + VM[ii]*sum3[ii];
 */
 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[1]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[1]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -4579,10 +4598,10 @@ int tauR_m=10;
   vdt v_mhu_A2;
   vdt v_mhu_B1;
   vdt v_mhu_B2;
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[8]);
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[9]);
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[15]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[16]);
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[8]);
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[9]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[15]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[16]);
 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_a6,  v_mhu_a5);
   vdt v_sum2a = vec_madd(v_xa, v_mhu_a11, v_mhu_a10);
@@ -4600,14 +4619,14 @@ int tauR_m=10;
    sum4[ii] = tauR_a[14]  + VM[ii]*sum4[ii]; 
    sum4[ii] = tauR_a[13]  + VM[ii]*sum4[ii]; 
 */
-   v_mhu_A1     = vec_lds(0, &mhu_a[3]);
-   v_mhu_A2     = vec_lds(0, &mhu_a[4]);
-   v_mhu_B1     = vec_lds(0, &mhu_a[8]);
-   v_mhu_B2     = vec_lds(0, &mhu_a[9]);
-   v_tauRdt_C1  = vec_lds(0, &tauRdt_a[6]);
-   v_tauRdt_C2  = vec_lds(0, &tauRdt_a[7]);
-   v_tauR_D1    = vec_lds(0, &tauR_a[13]);
-   v_tauR_D2    = vec_lds(0, &tauR_a[14]);
+   v_mhu_A1     = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_A2     = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_B1     = VEC_LDS(0, &mhu_a[8]);
+   v_mhu_B2     = VEC_LDS(0, &mhu_a[9]);
+   v_tauRdt_C1  = VEC_LDS(0, &tauRdt_a[6]);
+   v_tauRdt_C2  = VEC_LDS(0, &tauRdt_a[7]);
+   v_tauR_D1    = VEC_LDS(0, &tauR_a[13]);
+   v_tauR_D2    = VEC_LDS(0, &tauR_a[14]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -4629,13 +4648,13 @@ int tauR_m=10;
    sum4[ii] = tauR_a[11]  + VM[ii]*sum4[ii]; 
 */
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[1]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[2]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[7]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[4]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[5]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[11]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[12]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[7]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[4]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[5]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[11]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[12]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -4653,10 +4672,10 @@ int tauR_m=10;
    sum3[ii] = tauRdt_a[2] + VM[ii]*sum3[ii];
    sum4[ii] = tauR_a[10]  + VM[ii]*sum4[ii]; 
 */
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[2]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[3]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[10]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[2]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[3]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[10]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
@@ -4670,8 +4689,8 @@ int tauR_m=10;
    sum3[ii] = tauRdt_a[0]  + VM[ii]*sum3[ii];
 */
 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[1]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[1]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -4721,10 +4740,10 @@ int tauR_m=10;
   vdt v_mhu_A2;//BODYCOM1 
   vdt v_mhu_B1;//BODYCOM1 
   vdt v_mhu_B2;//BODYCOM1 
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[8]);//BODYCOM1 
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[9]);//BODYCOM1 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[15]);//BODYCOM1 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[16]);//BODYCOM1 
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM1 
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM1 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[15]);//BODYCOM1 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[16]);//BODYCOM1 
 //BODYCOM1 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_a6,  v_mhu_a5);//BODYCOM1 
   vdt v_sum2a = vec_madd(v_xa, v_mhu_a11, v_mhu_a10);//BODYCOM1 
@@ -4742,14 +4761,14 @@ int tauR_m=10;
    sum4[ii] = tauR_a[14]  + VM[ii]*sum4[ii]; //BODYCOM1 
    sum4[ii] = tauR_a[13]  + VM[ii]*sum4[ii]; //BODYCOM1 
 *///BODYCOM1 
-   v_mhu_A1     = vec_lds(0, &mhu_a[3]);//BODYCOM1 
-   v_mhu_A2     = vec_lds(0, &mhu_a[4]);//BODYCOM1 
-   v_mhu_B1     = vec_lds(0, &mhu_a[8]);//BODYCOM1 
-   v_mhu_B2     = vec_lds(0, &mhu_a[9]);//BODYCOM1 
-   v_tauRdt_C1  = vec_lds(0, &tauRdt_a[6]);//BODYCOM1 
-   v_tauRdt_C2  = vec_lds(0, &tauRdt_a[7]);//BODYCOM1 
-   v_tauR_D1    = vec_lds(0, &tauR_a[13]);//BODYCOM1 
-   v_tauR_D2    = vec_lds(0, &tauR_a[14]);//BODYCOM1 
+   v_mhu_A1     = VEC_LDS(0, &mhu_a[3]);//BODYCOM1 
+   v_mhu_A2     = VEC_LDS(0, &mhu_a[4]);//BODYCOM1 
+   v_mhu_B1     = VEC_LDS(0, &mhu_a[8]);//BODYCOM1 
+   v_mhu_B2     = VEC_LDS(0, &mhu_a[9]);//BODYCOM1 
+   v_tauRdt_C1  = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM1 
+   v_tauRdt_C2  = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM1 
+   v_tauR_D1    = VEC_LDS(0, &tauR_a[13]);//BODYCOM1 
+   v_tauR_D2    = VEC_LDS(0, &tauR_a[14]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
@@ -4771,13 +4790,13 @@ int tauR_m=10;
    sum4[ii] = tauR_a[11]  + VM[ii]*sum4[ii]; //BODYCOM1 
 *///BODYCOM1 
 //BODYCOM1 
-   v_mhu_A1    = vec_lds(0, &mhu_a[1]);//BODYCOM1 
-   v_mhu_A2    = vec_lds(0, &mhu_a[2]);//BODYCOM1 
-   v_mhu_B1    = vec_lds(0, &mhu_a[7]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[4]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[5]);//BODYCOM1 
-   v_tauR_D1   = vec_lds(0, &tauR_a[11]);//BODYCOM1 
-   v_tauR_D2   = vec_lds(0, &tauR_a[12]);//BODYCOM1 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);//BODYCOM1 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);//BODYCOM1 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[7]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM1 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[11]);//BODYCOM1 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[12]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
@@ -4795,10 +4814,10 @@ int tauR_m=10;
    sum3[ii] = tauRdt_a[2] + VM[ii]*sum3[ii];//BODYCOM1 
    sum4[ii] = tauR_a[10]  + VM[ii]*sum4[ii]; //BODYCOM1 
 *///BODYCOM1 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[2]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[3]);//BODYCOM1 
-   v_tauR_D1   = vec_lds(0, &tauR_a[10]);//BODYCOM1 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM1 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[10]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
@@ -4812,8 +4831,8 @@ int tauR_m=10;
    sum3[ii] = tauRdt_a[0]  + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
 //BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[1]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM1 
 //BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
@@ -4870,10 +4889,9 @@ int tauR_m=10;
 
 
 
-//void update_hGate_v1(double dt, int nCells, const double *VM, double *g, double *mhu_a, double *tauR_a)
 void update_fGate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
-
+  //update_fGate(dt, nCells, VM, g, mhu_a, tauR_a); return;
   typedef vector4double vdt;
 
 int gateIndex=8;
@@ -4909,28 +4927,28 @@ int tauR_m=11;
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM0 
 //BODYCOM0 
 // 1//BODYCOM0 
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[6]);//BODYCOM0 
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[7]);//BODYCOM0 
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[11]);//BODYCOM0 
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[12]);//BODYCOM0 
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);//BODYCOM0 
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);//BODYCOM0 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[22]);//BODYCOM0 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[23]);//BODYCOM0 
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[6]);//BODYCOM0 
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[7]);//BODYCOM0 
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[11]);//BODYCOM0 
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[12]);//BODYCOM0 
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM0 
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);//BODYCOM0 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[22]);//BODYCOM0 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[23]);//BODYCOM0 
 //BODYCOM0 
   vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);//BODYCOM0 
    vdt v_sum2a =  vec_madd(v_xa, v_mhu_B2, v_mhu_B1);//BODYCOM0 
    vdt v_sum3a =  vec_madd(v_xa, v_tauRdt_C2, v_tauRdt_C1);//BODYCOM0 
    vdt v_sum4a =  vec_madd(v_xa, v_tauR_D2, v_tauR_D1);//BODYCOM0 
 // 2//BODYCOM0 
-   v_mhu_A1  = vec_lds(0, &mhu_a[4]);//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[5]);//BODYCOM0 
-   v_mhu_B1 = vec_lds(0, &mhu_a[9]);//BODYCOM0 
-   v_mhu_B2 = vec_lds(0, &mhu_a[10]);//BODYCOM0 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);//BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);//BODYCOM0 
-  v_tauR_D1   = vec_lds(0, &tauR_a[20]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[21]);//BODYCOM0 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[4]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[5]);//BODYCOM0 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[9]);//BODYCOM0 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[10]);//BODYCOM0 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM0 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[20]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[21]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
@@ -4942,13 +4960,13 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM0 
 // 3//BODYCOM0 
 //BODYCOM0 
-   v_mhu_A1  = vec_lds(0, &mhu_a[2]);//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[3]);//BODYCOM0 
-   v_mhu_B2 = vec_lds(0, &mhu_a[8]);//BODYCOM0 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);//BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);//BODYCOM0 
-  v_tauR_D1   = vec_lds(0, &tauR_a[18]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[19]);//BODYCOM0 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[2]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[3]);//BODYCOM0 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[8]);//BODYCOM0 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM0 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[18]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[19]);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
@@ -4957,12 +4975,12 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM0 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM0 
 // 4//BODYCOM0 
-   v_mhu_A1  = vec_lds(0, &mhu_a[0]);//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[1]);//BODYCOM0 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);//BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);//BODYCOM0 
-  v_tauR_D1   = vec_lds(0, &tauR_a[16]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[17]);//BODYCOM0 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[0]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[1]);//BODYCOM0 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM0 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[16]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[17]);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
@@ -4970,23 +4988,23 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM0 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM0 
 // 5//BODYCOM0 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);//BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);//BODYCOM0 
-  v_tauR_D1   = vec_lds(0, &tauR_a[14]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[15]);//BODYCOM0 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM0 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[14]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[15]);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM0 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM0 
 // 6//BODYCOM0 
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);//BODYCOM0 
-   v_tauR_D1   = vec_lds(0, &tauR_a[12]);//BODYCOM0 
-   v_tauR_D2   = vec_lds(0, &tauR_a[13]);//BODYCOM0 
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM0 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);//BODYCOM0 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[13]);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2); // Was missing//BODYCOM0 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM0 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM0 
 // 7//BODYCOM0 
-   v_tauR_D2   = vec_lds(0, &tauR_a[11]);//BODYCOM0 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);//BODYCOM0 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM0 
 //BODYCOM0 
 // A//BODYCOM0 
@@ -5029,14 +5047,14 @@ int tauR_m=11;
    vdt v_xb   = vec_ld(0, &VM[ii+4]);  
    vdt v_xc   = vec_ld(0, &VM[ii+8]);  
 // 1
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[6]);
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[7]);
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[11]);
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[12]);
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[22]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[23]);
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[6]);
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[7]);
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[11]);
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[12]);
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[22]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[23]);
 
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);
    vdt v_sum1b =  vec_madd(v_xb, v_mhu_A2, v_mhu_A1);
@@ -5054,14 +5072,14 @@ int tauR_m=11;
    vdt v_sum4b =  vec_madd(v_xb, v_tauR_D2, v_tauR_D1);
    vdt v_sum4c =  vec_madd(v_xc, v_tauR_D2, v_tauR_D1);
 // 2
-   v_mhu_A1  = vec_lds(0, &mhu_a[4]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[5]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[9]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[10]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[20]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[21]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[9]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[10]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[20]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[21]);
 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -5089,13 +5107,13 @@ int tauR_m=11;
    v_sum4c =  vec_madd(v_xc, v_sum4c, v_tauR_D1);
 // 3
 
-   v_mhu_A1  = vec_lds(0, &mhu_a[2]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[3]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[8]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[18]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[19]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[8]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[18]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[19]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -5119,12 +5137,12 @@ int tauR_m=11;
    v_sum4c =  vec_madd(v_xc, v_sum4c, v_tauR_D1);
 // 4
 
-   v_mhu_A1  = vec_lds(0, &mhu_a[0]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[1]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[16]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[17]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[0]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[1]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[16]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[17]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
@@ -5144,10 +5162,10 @@ int tauR_m=11;
    v_sum4c =  vec_madd(v_xc, v_sum4c, v_tauR_D2);
    v_sum4c =  vec_madd(v_xc, v_sum4c, v_tauR_D1);
 // 5
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[14]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[15]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[14]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[15]);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);
@@ -5161,9 +5179,9 @@ int tauR_m=11;
    v_sum4c =  vec_madd(v_xc, v_sum4c, v_tauR_D2);
    v_sum4c =  vec_madd(v_xc, v_sum4c, v_tauR_D1);
 // 6
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[12]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[13]);
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[13]);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3b =  vec_madd(v_xb, v_sum3b, v_tauRdt_C2);
    v_sum3c =  vec_madd(v_xc, v_sum3c, v_tauRdt_C2);
@@ -5174,7 +5192,7 @@ int tauR_m=11;
    v_sum4c =  vec_madd(v_xc, v_sum4c, v_tauR_D2);
    v_sum4c =  vec_madd(v_xc, v_sum4c, v_tauR_D1);
 // 7
-   v_tauR_D2   = vec_lds(0, &tauR_a[11]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);
    v_sum4b =  vec_madd(v_xb, v_sum4b, v_tauR_D2);
    v_sum4c =  vec_madd(v_xc, v_sum4c, v_tauR_D2);
@@ -5214,28 +5232,28 @@ int tauR_m=11;
    vdt v_xa   = vec_ld(0, &VM[ii]);  
 
 // 1
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[6]);
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[7]);
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[11]);
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[12]);
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[22]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[23]);
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[6]);
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[7]);
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[11]);
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[12]);
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[22]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[23]);
 
   vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);
    vdt v_sum2a =  vec_madd(v_xa, v_mhu_B2, v_mhu_B1);
    vdt v_sum3a =  vec_madd(v_xa, v_tauRdt_C2, v_tauRdt_C1);
    vdt v_sum4a =  vec_madd(v_xa, v_tauR_D2, v_tauR_D1);
 // 2
-   v_mhu_A1  = vec_lds(0, &mhu_a[4]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[5]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[9]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[10]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[20]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[21]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[9]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[10]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[20]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[21]);
 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -5247,13 +5265,13 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);
 // 3
 
-   v_mhu_A1  = vec_lds(0, &mhu_a[2]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[3]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[8]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[18]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[19]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[8]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[18]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[19]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -5262,12 +5280,12 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);
 // 4
-   v_mhu_A1  = vec_lds(0, &mhu_a[0]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[1]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[16]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[17]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[0]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[1]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[16]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[17]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
@@ -5275,23 +5293,23 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);
 // 5
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[14]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[15]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[14]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[15]);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);
 // 6
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[12]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[13]);
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[13]);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2); // Was missing
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);
 // 7
-   v_tauR_D2   = vec_lds(0, &tauR_a[11]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);
 
 // A
@@ -5316,28 +5334,28 @@ int tauR_m=11;
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM1 
 //BODYCOM1 
 // 1//BODYCOM1 
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[6]);//BODYCOM1 
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[7]);//BODYCOM1 
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[11]);//BODYCOM1 
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[12]);//BODYCOM1 
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);//BODYCOM1 
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);//BODYCOM1 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[22]);//BODYCOM1 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[23]);//BODYCOM1 
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[6]);//BODYCOM1 
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[7]);//BODYCOM1 
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[11]);//BODYCOM1 
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[12]);//BODYCOM1 
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM1 
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);//BODYCOM1 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[22]);//BODYCOM1 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[23]);//BODYCOM1 
 //BODYCOM1 
   vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);//BODYCOM1 
    vdt v_sum2a =  vec_madd(v_xa, v_mhu_B2, v_mhu_B1);//BODYCOM1 
    vdt v_sum3a =  vec_madd(v_xa, v_tauRdt_C2, v_tauRdt_C1);//BODYCOM1 
    vdt v_sum4a =  vec_madd(v_xa, v_tauR_D2, v_tauR_D1);//BODYCOM1 
 // 2//BODYCOM1 
-   v_mhu_A1  = vec_lds(0, &mhu_a[4]);//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[5]);//BODYCOM1 
-   v_mhu_B1 = vec_lds(0, &mhu_a[9]);//BODYCOM1 
-   v_mhu_B2 = vec_lds(0, &mhu_a[10]);//BODYCOM1 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);//BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);//BODYCOM1 
-  v_tauR_D1   = vec_lds(0, &tauR_a[20]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[21]);//BODYCOM1 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[4]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[5]);//BODYCOM1 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[9]);//BODYCOM1 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[10]);//BODYCOM1 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM1 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[20]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[21]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
@@ -5349,13 +5367,13 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM1 
 // 3//BODYCOM1 
 //BODYCOM1 
-   v_mhu_A1  = vec_lds(0, &mhu_a[2]);//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[3]);//BODYCOM1 
-   v_mhu_B2 = vec_lds(0, &mhu_a[8]);//BODYCOM1 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);//BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);//BODYCOM1 
-  v_tauR_D1   = vec_lds(0, &tauR_a[18]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[19]);//BODYCOM1 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[2]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[3]);//BODYCOM1 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[8]);//BODYCOM1 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM1 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[18]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[19]);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
@@ -5364,12 +5382,12 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM1 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM1 
 // 4//BODYCOM1 
-   v_mhu_A1  = vec_lds(0, &mhu_a[0]);//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[1]);//BODYCOM1 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);//BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);//BODYCOM1 
-  v_tauR_D1   = vec_lds(0, &tauR_a[16]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[17]);//BODYCOM1 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[0]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[1]);//BODYCOM1 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM1 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[16]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[17]);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
@@ -5377,23 +5395,23 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM1 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM1 
 // 5//BODYCOM1 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);//BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);//BODYCOM1 
-  v_tauR_D1   = vec_lds(0, &tauR_a[14]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[15]);//BODYCOM1 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM1 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[14]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[15]);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM1 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM1 
 // 6//BODYCOM1 
-   v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);//BODYCOM1 
-   v_tauR_D1   = vec_lds(0, &tauR_a[12]);//BODYCOM1 
-   v_tauR_D2   = vec_lds(0, &tauR_a[13]);//BODYCOM1 
+   v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM1 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);//BODYCOM1 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[13]);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2); // Was missing//BODYCOM1 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM1 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM1 
 // 7//BODYCOM1 
-   v_tauR_D2   = vec_lds(0, &tauR_a[11]);//BODYCOM1 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);//BODYCOM1 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM1 
 //BODYCOM1 
 // A//BODYCOM1 
@@ -5433,7 +5451,7 @@ int tauR_m=11;
 
 void update_f2Gate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
-
+  //update_f2Gate(dt, nCells, VM, g, mhu_a, tauR_a); return;
   typedef vector4double vdt;
 
 
@@ -5485,14 +5503,14 @@ int tauR_m=12;
    sum4[ii] = tauR_a[21]   + VM[ii]*sum4[ii]; //BODYCOM0 
 *///BODYCOM0 
 //BODYCOM0 
-  vdt v_mhu_A1    = vec_lds(0, &mhu_a[3]);//BODYCOM0 
-  vdt v_mhu_A2    = vec_lds(0, &mhu_a[4]);//BODYCOM0 
-  vdt v_mhu_B1    = vec_lds(0, &mhu_a[11]);//BODYCOM0 
-  vdt v_mhu_B2    = vec_lds(0, &mhu_a[12]);//BODYCOM0 
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[10]);//BODYCOM0 
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[11]);//BODYCOM0 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[21]);//BODYCOM0 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[22]);//BODYCOM0 
+  vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[3]);//BODYCOM0 
+  vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[4]);//BODYCOM0 
+  vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);//BODYCOM0 
+  vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);//BODYCOM0 
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[10]);//BODYCOM0 
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[11]);//BODYCOM0 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[21]);//BODYCOM0 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[22]);//BODYCOM0 
 //BODYCOM0 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_A2,    v_mhu_A1);//BODYCOM0 
   vdt v_sum2a = vec_madd(v_xa, v_mhu_B2,    v_mhu_B1);//BODYCOM0 
@@ -5510,14 +5528,14 @@ int tauR_m=12;
    sum4[ii] = tauR_a[20]  + VM[ii]*sum4[ii]; //BODYCOM0 
    sum4[ii] = tauR_a[19]  + VM[ii]*sum4[ii]; //BODYCOM0 
 *///BODYCOM0 
-   v_mhu_A1    = vec_lds(0, &mhu_a[1]);//BODYCOM0 
-   v_mhu_A2    = vec_lds(0, &mhu_a[2]);//BODYCOM0 
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);//BODYCOM0 
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[8]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[9]);//BODYCOM0 
-   v_tauR_D1   = vec_lds(0, &tauR_a[19]);//BODYCOM0 
-   v_tauR_D2   = vec_lds(0, &tauR_a[20]);//BODYCOM0 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);//BODYCOM0 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);//BODYCOM0 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);//BODYCOM0 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM0 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[19]);//BODYCOM0 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[20]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
@@ -5540,14 +5558,14 @@ int tauR_m=12;
 *///BODYCOM0 
 //BODYCOM0 
 //BODYCOM0 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);//BODYCOM0 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);//BODYCOM0 
 //BODYCOM0 
-   v_mhu_B1    = vec_lds(0, &mhu_a[7]);//BODYCOM0 
-   v_mhu_B2    = vec_lds(0, &mhu_a[8]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[6]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[7]);//BODYCOM0 
-   v_tauR_D1   = vec_lds(0, &tauR_a[17]);//BODYCOM0 
-   v_tauR_D2   = vec_lds(0, &tauR_a[18]);//BODYCOM0 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[7]);//BODYCOM0 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[8]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM0 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[17]);//BODYCOM0 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[18]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
@@ -5567,12 +5585,12 @@ int tauR_m=12;
    sum4[ii] = tauR_a[15]  + VM[ii]*sum4[ii]; //BODYCOM0 
 *///BODYCOM0 
 //BODYCOM0 
-   v_mhu_B1    = vec_lds(0, &mhu_a[5]);//BODYCOM0 
-   v_mhu_B2    = vec_lds(0, &mhu_a[6]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[4]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[5]);//BODYCOM0 
-   v_tauR_D1   = vec_lds(0, &tauR_a[15]);//BODYCOM0 
-   v_tauR_D2   = vec_lds(0, &tauR_a[16]);//BODYCOM0 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[5]);//BODYCOM0 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[6]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM0 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[15]);//BODYCOM0 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[16]);//BODYCOM0 
 //BODYCOM0 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); //BODYCOM0 
@@ -5588,10 +5606,10 @@ int tauR_m=12;
    sum4[ii] = tauR_a[14]  + VM[ii]*sum4[ii]; //BODYCOM0 
    sum4[ii] = tauR_a[13]  + VM[ii]*sum4[ii]; //BODYCOM0 
 *///BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[2]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[3]);//BODYCOM0 
-   v_tauR_D1   = vec_lds(0, &tauR_a[13]);//BODYCOM0 
-   v_tauR_D2   = vec_lds(0, &tauR_a[14]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM0 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[13]);//BODYCOM0 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[14]);//BODYCOM0 
 //BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
@@ -5604,9 +5622,9 @@ int tauR_m=12;
    sum3[ii] = tauRdt_a[0] + VM[ii]*sum3[ii];//BODYCOM0 
    sum4[ii] = tauR_a[12]  + VM[ii]*sum4[ii]; //BODYCOM0 
 *///BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[1]);//BODYCOM0 
-   v_tauR_D1   = vec_lds(0, &tauR_a[12]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM0 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);//BODYCOM0 
 //BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
@@ -5673,14 +5691,14 @@ int tauR_m=12;
    sum4[ii] = tauR_a[21]   + VM[ii]*sum4[ii]; 
 */
 
-  vdt v_mhu_A1    = vec_lds(0, &mhu_a[3]);
-  vdt v_mhu_A2    = vec_lds(0, &mhu_a[4]);
-  vdt v_mhu_B1    = vec_lds(0, &mhu_a[11]);
-  vdt v_mhu_B2    = vec_lds(0, &mhu_a[12]);
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[10]);
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[11]);
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[21]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[22]);
+  vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[3]);
+  vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[4]);
+  vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);
+  vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[10]);
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[11]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[21]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[22]);
 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_A2,    v_mhu_A1);
   vdt v_sum1b = vec_madd(v_xb, v_mhu_A2,    v_mhu_A1);
@@ -5702,14 +5720,14 @@ int tauR_m=12;
    sum4[ii] = tauR_a[20]  + VM[ii]*sum4[ii]; 
    sum4[ii] = tauR_a[19]  + VM[ii]*sum4[ii]; 
 */
-   v_mhu_A1    = vec_lds(0, &mhu_a[1]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[2]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[8]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[9]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[19]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[20]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[8]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[9]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[19]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[20]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -5741,14 +5759,14 @@ int tauR_m=12;
 */
 
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);
 
-   v_mhu_B1    = vec_lds(0, &mhu_a[7]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[8]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[6]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[7]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[17]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[18]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[7]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[8]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[6]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[7]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[17]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[18]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -5776,12 +5794,12 @@ int tauR_m=12;
    sum4[ii] = tauR_a[15]  + VM[ii]*sum4[ii]; 
 */
 
-   v_mhu_B1    = vec_lds(0, &mhu_a[5]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[6]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[4]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[5]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[15]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[16]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[6]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[4]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[5]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[15]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[16]);
 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); 
@@ -5805,10 +5823,10 @@ int tauR_m=12;
    sum4[ii] = tauR_a[14]  + VM[ii]*sum4[ii]; 
    sum4[ii] = tauR_a[13]  + VM[ii]*sum4[ii]; 
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[2]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[3]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[13]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[14]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[2]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[3]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[13]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[14]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -5826,9 +5844,9 @@ int tauR_m=12;
    sum3[ii] = tauRdt_a[0] + VM[ii]*sum3[ii];
    sum4[ii] = tauR_a[12]  + VM[ii]*sum4[ii]; 
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[1]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[12]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[1]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -5883,14 +5901,14 @@ int tauR_m=12;
    sum4[ii] = tauR_a[21]   + VM[ii]*sum4[ii]; 
 */
 
-  vdt v_mhu_A1    = vec_lds(0, &mhu_a[3]);
-  vdt v_mhu_A2    = vec_lds(0, &mhu_a[4]);
-  vdt v_mhu_B1    = vec_lds(0, &mhu_a[11]);
-  vdt v_mhu_B2    = vec_lds(0, &mhu_a[12]);
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[10]);
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[11]);
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[21]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[22]);
+  vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[3]);
+  vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[4]);
+  vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);
+  vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[10]);
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[11]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[21]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[22]);
 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_A2,    v_mhu_A1);
   vdt v_sum2a = vec_madd(v_xa, v_mhu_B2,    v_mhu_B1);
@@ -5908,14 +5926,14 @@ int tauR_m=12;
    sum4[ii] = tauR_a[20]  + VM[ii]*sum4[ii]; 
    sum4[ii] = tauR_a[19]  + VM[ii]*sum4[ii]; 
 */
-   v_mhu_A1    = vec_lds(0, &mhu_a[1]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[2]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[8]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[9]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[19]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[20]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[8]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[9]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[19]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[20]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -5938,14 +5956,14 @@ int tauR_m=12;
 */
 
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);
 
-   v_mhu_B1    = vec_lds(0, &mhu_a[7]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[8]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[6]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[7]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[17]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[18]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[7]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[8]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[6]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[7]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[17]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[18]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -5965,12 +5983,12 @@ int tauR_m=12;
    sum4[ii] = tauR_a[15]  + VM[ii]*sum4[ii]; 
 */
 
-   v_mhu_B1    = vec_lds(0, &mhu_a[5]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[6]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[4]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[5]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[15]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[16]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[6]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[4]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[5]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[15]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[16]);
 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); 
@@ -5986,10 +6004,10 @@ int tauR_m=12;
    sum4[ii] = tauR_a[14]  + VM[ii]*sum4[ii]; 
    sum4[ii] = tauR_a[13]  + VM[ii]*sum4[ii]; 
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[2]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[3]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[13]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[14]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[2]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[3]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[13]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[14]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -6002,9 +6020,9 @@ int tauR_m=12;
    sum3[ii] = tauRdt_a[0] + VM[ii]*sum3[ii];
    sum4[ii] = tauR_a[12]  + VM[ii]*sum4[ii]; 
 */
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[1]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[12]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[1]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);
 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
@@ -6047,14 +6065,14 @@ int tauR_m=12;
    sum4[ii] = tauR_a[21]   + VM[ii]*sum4[ii]; //BODYCOM1 
 *///BODYCOM1 
 //BODYCOM1 
-  vdt v_mhu_A1    = vec_lds(0, &mhu_a[3]);//BODYCOM1 
-  vdt v_mhu_A2    = vec_lds(0, &mhu_a[4]);//BODYCOM1 
-  vdt v_mhu_B1    = vec_lds(0, &mhu_a[11]);//BODYCOM1 
-  vdt v_mhu_B2    = vec_lds(0, &mhu_a[12]);//BODYCOM1 
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[10]);//BODYCOM1 
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[11]);//BODYCOM1 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[21]);//BODYCOM1 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[22]);//BODYCOM1 
+  vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[3]);//BODYCOM1 
+  vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[4]);//BODYCOM1 
+  vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);//BODYCOM1 
+  vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);//BODYCOM1 
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[10]);//BODYCOM1 
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[11]);//BODYCOM1 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[21]);//BODYCOM1 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[22]);//BODYCOM1 
 //BODYCOM1 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_A2,    v_mhu_A1);//BODYCOM1 
   vdt v_sum2a = vec_madd(v_xa, v_mhu_B2,    v_mhu_B1);//BODYCOM1 
@@ -6072,14 +6090,14 @@ int tauR_m=12;
    sum4[ii] = tauR_a[20]  + VM[ii]*sum4[ii]; //BODYCOM1 
    sum4[ii] = tauR_a[19]  + VM[ii]*sum4[ii]; //BODYCOM1 
 *///BODYCOM1 
-   v_mhu_A1    = vec_lds(0, &mhu_a[1]);//BODYCOM1 
-   v_mhu_A2    = vec_lds(0, &mhu_a[2]);//BODYCOM1 
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);//BODYCOM1 
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[8]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[9]);//BODYCOM1 
-   v_tauR_D1   = vec_lds(0, &tauR_a[19]);//BODYCOM1 
-   v_tauR_D2   = vec_lds(0, &tauR_a[20]);//BODYCOM1 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[1]);//BODYCOM1 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[2]);//BODYCOM1 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);//BODYCOM1 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM1 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[19]);//BODYCOM1 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[20]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
@@ -6102,14 +6120,14 @@ int tauR_m=12;
 *///BODYCOM1 
 //BODYCOM1 
 //BODYCOM1 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);//BODYCOM1 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);//BODYCOM1 
 //BODYCOM1 
-   v_mhu_B1    = vec_lds(0, &mhu_a[7]);//BODYCOM1 
-   v_mhu_B2    = vec_lds(0, &mhu_a[8]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[6]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[7]);//BODYCOM1 
-   v_tauR_D1   = vec_lds(0, &tauR_a[17]);//BODYCOM1 
-   v_tauR_D2   = vec_lds(0, &tauR_a[18]);//BODYCOM1 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[7]);//BODYCOM1 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[8]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM1 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[17]);//BODYCOM1 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[18]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
@@ -6129,12 +6147,12 @@ int tauR_m=12;
    sum4[ii] = tauR_a[15]  + VM[ii]*sum4[ii]; //BODYCOM1 
 *///BODYCOM1 
 //BODYCOM1 
-   v_mhu_B1    = vec_lds(0, &mhu_a[5]);//BODYCOM1 
-   v_mhu_B2    = vec_lds(0, &mhu_a[6]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[4]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[5]);//BODYCOM1 
-   v_tauR_D1   = vec_lds(0, &tauR_a[15]);//BODYCOM1 
-   v_tauR_D2   = vec_lds(0, &tauR_a[16]);//BODYCOM1 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[5]);//BODYCOM1 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[6]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM1 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[15]);//BODYCOM1 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[16]);//BODYCOM1 
 //BODYCOM1 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
    v_sum2a = vec_madd(v_xa, v_sum2a, v_mhu_B1); //BODYCOM1 
@@ -6150,10 +6168,10 @@ int tauR_m=12;
    sum4[ii] = tauR_a[14]  + VM[ii]*sum4[ii]; //BODYCOM1 
    sum4[ii] = tauR_a[13]  + VM[ii]*sum4[ii]; //BODYCOM1 
 *///BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[2]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[3]);//BODYCOM1 
-   v_tauR_D1   = vec_lds(0, &tauR_a[13]);//BODYCOM1 
-   v_tauR_D2   = vec_lds(0, &tauR_a[14]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM1 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[13]);//BODYCOM1 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[14]);//BODYCOM1 
 //BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
@@ -6166,9 +6184,9 @@ int tauR_m=12;
    sum3[ii] = tauRdt_a[0] + VM[ii]*sum3[ii];//BODYCOM1 
    sum4[ii] = tauR_a[12]  + VM[ii]*sum4[ii]; //BODYCOM1 
 *///BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[1]);//BODYCOM1 
-   v_tauR_D1   = vec_lds(0, &tauR_a[12]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM1 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);//BODYCOM1 
 //BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a = vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
@@ -6222,7 +6240,7 @@ int tauR_m=12;
 
 void update_jLGate_v1(double dt, int nCells,  double *VM, double *g, double *mhu_a, double *tauR_a)
 {
-
+  //update_jLGate(dt, nCells,  VM, g, mhu_a, tauR_a); return;
   typedef vector4double vdt;
 
 int gateIndex=10;
@@ -6231,24 +6249,24 @@ int mhu_m= 12;
 int tauR_l=1;
 int tauR_m=1;
    
-  vdt v_mhu_a0  = vec_lds(0, &mhu_a[0]);
-  vdt v_mhu_a1  = vec_lds(0, &mhu_a[1]);
-  vdt v_mhu_a2  = vec_lds(0, &mhu_a[2]);
-  vdt v_mhu_a3  = vec_lds(0, &mhu_a[3]);
-  vdt v_mhu_a4  = vec_lds(0, &mhu_a[4]);
-  vdt v_mhu_a5  = vec_lds(0, &mhu_a[5]);
-  vdt v_mhu_a6  = vec_lds(0, &mhu_a[6]);
-  vdt v_mhu_a7  = vec_lds(0, &mhu_a[7]);
-  vdt v_mhu_a8  = vec_lds(0, &mhu_a[8]);
-  vdt v_mhu_a9  = vec_lds(0, &mhu_a[9]);
-  vdt v_mhu_a10  = vec_lds(0, &mhu_a[10]);
-  vdt v_mhu_a11  = vec_lds(0, &mhu_a[11]);
-  vdt v_mhu_a12  = vec_lds(0, &mhu_a[12]);
-  vdt v_mhu_a13  = vec_lds(0, &mhu_a[13]);
-  vdt v_mhu_a14  = vec_lds(0, &mhu_a[14]);
-  vdt v_mhu_a15  = vec_lds(0, &mhu_a[15]);
-  vdt v_mhu_a16  = vec_lds(0, &mhu_a[16]);
-  vdt v_mhu_a17  = vec_lds(0, &mhu_a[17]);
+  vdt v_mhu_a0  = VEC_LDS(0, &mhu_a[0]);
+  vdt v_mhu_a1  = VEC_LDS(0, &mhu_a[1]);
+  vdt v_mhu_a2  = VEC_LDS(0, &mhu_a[2]);
+  vdt v_mhu_a3  = VEC_LDS(0, &mhu_a[3]);
+  vdt v_mhu_a4  = VEC_LDS(0, &mhu_a[4]);
+  vdt v_mhu_a5  = VEC_LDS(0, &mhu_a[5]);
+  vdt v_mhu_a6  = VEC_LDS(0, &mhu_a[6]);
+  vdt v_mhu_a7  = VEC_LDS(0, &mhu_a[7]);
+  vdt v_mhu_a8  = VEC_LDS(0, &mhu_a[8]);
+  vdt v_mhu_a9  = VEC_LDS(0, &mhu_a[9]);
+  vdt v_mhu_a10  = VEC_LDS(0, &mhu_a[10]);
+  vdt v_mhu_a11  = VEC_LDS(0, &mhu_a[11]);
+  vdt v_mhu_a12  = VEC_LDS(0, &mhu_a[12]);
+  vdt v_mhu_a13  = VEC_LDS(0, &mhu_a[13]);
+  vdt v_mhu_a14  = VEC_LDS(0, &mhu_a[14]);
+  vdt v_mhu_a15  = VEC_LDS(0, &mhu_a[15]);
+  vdt v_mhu_a16  = VEC_LDS(0, &mhu_a[16]);
+  vdt v_mhu_a17  = VEC_LDS(0, &mhu_a[17]);
 
 
   vdt temp1   = vec_splats(tauR_a[0]*dt);
@@ -6476,7 +6494,7 @@ int tauR_m=1;
 
 void update_s0Gate_v1(double dt, int nCells,  double *VM, double *g, double *mhu_a, double *tauR_a)
 {
-
+  //update_s0Gate(dt, nCells,  VM, g, mhu_a, tauR_a); return;
   typedef vector4double vdt;
 
 int gateIndex= 11;
@@ -6524,14 +6542,14 @@ int tauR_m=7 ;
    sum4[ii] = tauR_a[11]  + VM[ii]*sum4[ii]; //BODYCOM0 
 *///BODYCOM0 
 //BODYCOM0 
-  vdt v_mhu_A1    = vec_lds(0, &mhu_a[6]);//BODYCOM0 
-  vdt v_mhu_A2    = vec_lds(0, &mhu_a[7]);//BODYCOM0 
-  vdt v_mhu_B1    = vec_lds(0, &mhu_a[13]);//BODYCOM0 
-  vdt v_mhu_B2    = vec_lds(0, &mhu_a[14]);//BODYCOM0 
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[5]);//BODYCOM0 
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[6]);//BODYCOM0 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[11]);//BODYCOM0 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[12]);//BODYCOM0 
+  vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[6]);//BODYCOM0 
+  vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[7]);//BODYCOM0 
+  vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[13]);//BODYCOM0 
+  vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[14]);//BODYCOM0 
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM0 
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM0 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[11]);//BODYCOM0 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[12]);//BODYCOM0 
 //BODYCOM0 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_A2,    v_mhu_A1);//BODYCOM0 
   vdt v_sum2a = vec_madd(v_xa, v_mhu_B2,    v_mhu_B1);//BODYCOM0 
@@ -6551,14 +6569,14 @@ int tauR_m=7 ;
    sum4[ii] = tauR_a[9]   + VM[ii]*sum4[ii]; //BODYCOM0 
 *///BODYCOM0 
 //BODYCOM0 
-   v_mhu_A1    = vec_lds(0, &mhu_a[4]);//BODYCOM0 
-   v_mhu_A2    = vec_lds(0, &mhu_a[5]);//BODYCOM0 
-   v_mhu_B1    = vec_lds(0, &mhu_a[11]);//BODYCOM0 
-   v_mhu_B2    = vec_lds(0, &mhu_a[12]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[3]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[4]);//BODYCOM0 
-   v_tauR_D1   = vec_lds(0, &tauR_a[9]);//BODYCOM0 
-   v_tauR_D2   = vec_lds(0, &tauR_a[10]);//BODYCOM0 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[4]);//BODYCOM0 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[5]);//BODYCOM0 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);//BODYCOM0 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM0 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[9]);//BODYCOM0 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[10]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
@@ -6581,14 +6599,14 @@ int tauR_m=7 ;
    sum4[ii] = tauR_a[7]   + VM[ii]*sum4[ii]; //BODYCOM0 
 *///BODYCOM0 
 //BODYCOM0 
-   v_mhu_A1    = vec_lds(0, &mhu_a[2]);//BODYCOM0 
-   v_mhu_A2    = vec_lds(0, &mhu_a[3]);//BODYCOM0 
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);//BODYCOM0 
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[1]);//BODYCOM0 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[2]);//BODYCOM0 
-   v_tauR_D1   = vec_lds(0, &tauR_a[7]);//BODYCOM0 
-   v_tauR_D2   = vec_lds(0, &tauR_a[8]);//BODYCOM0 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[2]);//BODYCOM0 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[3]);//BODYCOM0 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);//BODYCOM0 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM0 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM0 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[7]);//BODYCOM0 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[8]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
@@ -6607,10 +6625,10 @@ int tauR_m=7 ;
    sum3[ii] = tauRdt_a[0] + VM[ii]*sum3[ii];//BODYCOM0 
 *///BODYCOM0 
 //BODYCOM0 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);//BODYCOM0 
-   v_mhu_A2    = vec_lds(0, &mhu_a[1]);//BODYCOM0 
-   v_mhu_B1    = vec_lds(0, &mhu_a[8]);//BODYCOM0 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);//BODYCOM0 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);//BODYCOM0 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[1]);//BODYCOM0 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[8]);//BODYCOM0 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
@@ -6683,14 +6701,14 @@ int tauR_m=7 ;
    sum4[ii] = tauR_a[11]  + VM[ii]*sum4[ii]; 
 */
 
-  vdt v_mhu_A1    = vec_lds(0, &mhu_a[6]);
-  vdt v_mhu_A2    = vec_lds(0, &mhu_a[7]);
-  vdt v_mhu_B1    = vec_lds(0, &mhu_a[13]);
-  vdt v_mhu_B2    = vec_lds(0, &mhu_a[14]);
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[5]);
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[6]);
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[11]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[12]);
+  vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[6]);
+  vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[7]);
+  vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[13]);
+  vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[14]);
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[5]);
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[6]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[11]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[12]);
 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_A2,    v_mhu_A1);
   vdt v_sum1b = vec_madd(v_xb, v_mhu_A2,    v_mhu_A1);
@@ -6714,14 +6732,14 @@ int tauR_m=7 ;
    sum4[ii] = tauR_a[9]   + VM[ii]*sum4[ii]; 
 */
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[4]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[5]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[11]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[12]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[3]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[4]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[9]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[10]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[3]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[4]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[9]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[10]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -6753,14 +6771,14 @@ int tauR_m=7 ;
    sum4[ii] = tauR_a[7]   + VM[ii]*sum4[ii]; 
 */
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[2]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[3]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[1]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[2]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[7]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[8]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[1]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[2]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[7]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[8]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -6788,10 +6806,10 @@ int tauR_m=7 ;
    sum3[ii] = tauRdt_a[0] + VM[ii]*sum3[ii];
 */
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[1]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[8]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[1]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[8]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -6855,14 +6873,14 @@ int tauR_m=7 ;
    sum4[ii] = tauR_a[11]  + VM[ii]*sum4[ii]; 
 */
 
-  vdt v_mhu_A1    = vec_lds(0, &mhu_a[6]);
-  vdt v_mhu_A2    = vec_lds(0, &mhu_a[7]);
-  vdt v_mhu_B1    = vec_lds(0, &mhu_a[13]);
-  vdt v_mhu_B2    = vec_lds(0, &mhu_a[14]);
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[5]);
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[6]);
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[11]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[12]);
+  vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[6]);
+  vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[7]);
+  vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[13]);
+  vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[14]);
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[5]);
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[6]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[11]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[12]);
 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_A2,    v_mhu_A1);
   vdt v_sum2a = vec_madd(v_xa, v_mhu_B2,    v_mhu_B1);
@@ -6882,14 +6900,14 @@ int tauR_m=7 ;
    sum4[ii] = tauR_a[9]   + VM[ii]*sum4[ii]; 
 */
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[4]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[5]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[11]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[12]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[3]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[4]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[9]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[10]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[3]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[4]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[9]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[10]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -6912,14 +6930,14 @@ int tauR_m=7 ;
    sum4[ii] = tauR_a[7]   + VM[ii]*sum4[ii]; 
 */
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[2]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[3]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[1]);
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[2]);
-   v_tauR_D1   = vec_lds(0, &tauR_a[7]);
-   v_tauR_D2   = vec_lds(0, &tauR_a[8]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[1]);
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[2]);
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[7]);
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[8]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -6938,10 +6956,10 @@ int tauR_m=7 ;
    sum3[ii] = tauRdt_a[0] + VM[ii]*sum3[ii];
 */
 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);
-   v_mhu_A2    = vec_lds(0, &mhu_a[1]);
-   v_mhu_B1    = vec_lds(0, &mhu_a[8]);
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[1]);
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[8]);
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);
 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -6990,14 +7008,14 @@ int tauR_m=7 ;
    sum4[ii] = tauR_a[11]  + VM[ii]*sum4[ii]; //BODYCOM1 
 *///BODYCOM1 
 //BODYCOM1 
-  vdt v_mhu_A1    = vec_lds(0, &mhu_a[6]);//BODYCOM1 
-  vdt v_mhu_A2    = vec_lds(0, &mhu_a[7]);//BODYCOM1 
-  vdt v_mhu_B1    = vec_lds(0, &mhu_a[13]);//BODYCOM1 
-  vdt v_mhu_B2    = vec_lds(0, &mhu_a[14]);//BODYCOM1 
-  vdt v_tauRdt_C1 = vec_lds(0, &tauRdt_a[5]);//BODYCOM1 
-  vdt v_tauRdt_C2 = vec_lds(0, &tauRdt_a[6]);//BODYCOM1 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[11]);//BODYCOM1 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[12]);//BODYCOM1 
+  vdt v_mhu_A1    = VEC_LDS(0, &mhu_a[6]);//BODYCOM1 
+  vdt v_mhu_A2    = VEC_LDS(0, &mhu_a[7]);//BODYCOM1 
+  vdt v_mhu_B1    = VEC_LDS(0, &mhu_a[13]);//BODYCOM1 
+  vdt v_mhu_B2    = VEC_LDS(0, &mhu_a[14]);//BODYCOM1 
+  vdt v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM1 
+  vdt v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM1 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[11]);//BODYCOM1 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[12]);//BODYCOM1 
 //BODYCOM1 
   vdt v_sum1a = vec_madd(v_xa, v_mhu_A2,    v_mhu_A1);//BODYCOM1 
   vdt v_sum2a = vec_madd(v_xa, v_mhu_B2,    v_mhu_B1);//BODYCOM1 
@@ -7017,14 +7035,14 @@ int tauR_m=7 ;
    sum4[ii] = tauR_a[9]   + VM[ii]*sum4[ii]; //BODYCOM1 
 *///BODYCOM1 
 //BODYCOM1 
-   v_mhu_A1    = vec_lds(0, &mhu_a[4]);//BODYCOM1 
-   v_mhu_A2    = vec_lds(0, &mhu_a[5]);//BODYCOM1 
-   v_mhu_B1    = vec_lds(0, &mhu_a[11]);//BODYCOM1 
-   v_mhu_B2    = vec_lds(0, &mhu_a[12]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[3]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[4]);//BODYCOM1 
-   v_tauR_D1   = vec_lds(0, &tauR_a[9]);//BODYCOM1 
-   v_tauR_D2   = vec_lds(0, &tauR_a[10]);//BODYCOM1 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[4]);//BODYCOM1 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[5]);//BODYCOM1 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[11]);//BODYCOM1 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[12]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM1 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[9]);//BODYCOM1 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[10]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
@@ -7047,14 +7065,14 @@ int tauR_m=7 ;
    sum4[ii] = tauR_a[7]   + VM[ii]*sum4[ii]; //BODYCOM1 
 *///BODYCOM1 
 //BODYCOM1 
-   v_mhu_A1    = vec_lds(0, &mhu_a[2]);//BODYCOM1 
-   v_mhu_A2    = vec_lds(0, &mhu_a[3]);//BODYCOM1 
-   v_mhu_B1    = vec_lds(0, &mhu_a[9]);//BODYCOM1 
-   v_mhu_B2    = vec_lds(0, &mhu_a[10]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[1]);//BODYCOM1 
-   v_tauRdt_C2 = vec_lds(0, &tauRdt_a[2]);//BODYCOM1 
-   v_tauR_D1   = vec_lds(0, &tauR_a[7]);//BODYCOM1 
-   v_tauR_D2   = vec_lds(0, &tauR_a[8]);//BODYCOM1 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[2]);//BODYCOM1 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[3]);//BODYCOM1 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[9]);//BODYCOM1 
+   v_mhu_B2    = VEC_LDS(0, &mhu_a[10]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM1 
+   v_tauRdt_C2 = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM1 
+   v_tauR_D1   = VEC_LDS(0, &tauR_a[7]);//BODYCOM1 
+   v_tauR_D2   = VEC_LDS(0, &tauR_a[8]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
@@ -7073,10 +7091,10 @@ int tauR_m=7 ;
    sum3[ii] = tauRdt_a[0] + VM[ii]*sum3[ii];//BODYCOM1 
 *///BODYCOM1 
 //BODYCOM1 
-   v_mhu_A1    = vec_lds(0, &mhu_a[0]);//BODYCOM1 
-   v_mhu_A2    = vec_lds(0, &mhu_a[1]);//BODYCOM1 
-   v_mhu_B1    = vec_lds(0, &mhu_a[8]);//BODYCOM1 
-   v_tauRdt_C1 = vec_lds(0, &tauRdt_a[0]);//BODYCOM1 
+   v_mhu_A1    = VEC_LDS(0, &mhu_a[0]);//BODYCOM1 
+   v_mhu_A2    = VEC_LDS(0, &mhu_a[1]);//BODYCOM1 
+   v_mhu_B1    = VEC_LDS(0, &mhu_a[8]);//BODYCOM1 
+   v_tauRdt_C1 = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a = vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
@@ -7136,10 +7154,9 @@ int tauR_m=7 ;
 
 
 
-//void update_hGate_v1(double dt, int nCells, const double *VM, double *g, double *mhu_a, double *tauR_a)
 void update_s1Gate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
-
+  //update_s1Gate(dt, nCells, VM, g, mhu_a, tauR_a); return;
   typedef vector4double vdt;
 
 int gateIndex=11;
@@ -7175,27 +7192,27 @@ int tauR_m=11;
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM0 
 //BODYCOM0 
 // 1//BODYCOM0 
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[6]);//BODYCOM0 
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[7]);//BODYCOM0 
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[13]);//BODYCOM0 
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[14]);//BODYCOM0 
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);//BODYCOM0 
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);//BODYCOM0 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[20]);//BODYCOM0 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[21]);//BODYCOM0 
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[6]);//BODYCOM0 
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[7]);//BODYCOM0 
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[13]);//BODYCOM0 
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[14]);//BODYCOM0 
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM0 
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);//BODYCOM0 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[20]);//BODYCOM0 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[21]);//BODYCOM0 
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);//BODYCOM0 
    vdt v_sum2a =  vec_madd(v_xa, v_mhu_B2, v_mhu_B1);//BODYCOM0 
    vdt v_sum3a =  vec_madd(v_xa, v_tauRdt_C2, v_tauRdt_C1);//BODYCOM0 
    vdt v_sum4a =  vec_madd(v_xa, v_tauR_D2, v_tauR_D1);//BODYCOM0 
 // 2//BODYCOM0 
-   v_mhu_A1  = vec_lds(0, &mhu_a[4]);//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[5]);//BODYCOM0 
-   v_mhu_B1 = vec_lds(0, &mhu_a[11]);//BODYCOM0 
-   v_mhu_B2 = vec_lds(0, &mhu_a[12]);//BODYCOM0 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);//BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);//BODYCOM0 
-  v_tauR_D1   = vec_lds(0, &tauR_a[18]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[19]);//BODYCOM0 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[4]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[5]);//BODYCOM0 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[11]);//BODYCOM0 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[12]);//BODYCOM0 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM0 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[18]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[19]);//BODYCOM0 
 //BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
@@ -7207,14 +7224,14 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM0 
 // 3//BODYCOM0 
 //BODYCOM0 
-   v_mhu_A1  = vec_lds(0, &mhu_a[2]);//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[3]);//BODYCOM0 
-   v_mhu_B1 = vec_lds(0, &mhu_a[9]);//BODYCOM0 
-   v_mhu_B2 = vec_lds(0, &mhu_a[10]);//BODYCOM0 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);//BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);//BODYCOM0 
-  v_tauR_D1   = vec_lds(0, &tauR_a[16]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[17]);//BODYCOM0 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[2]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[3]);//BODYCOM0 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[9]);//BODYCOM0 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[10]);//BODYCOM0 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM0 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[16]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[17]);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
@@ -7225,13 +7242,13 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM0 
 // 4//BODYCOM0 
 //BODYCOM0 
-   v_mhu_A1  = vec_lds(0, &mhu_a[0]);//BODYCOM0 
-   v_mhu_A2  = vec_lds(0, &mhu_a[1]);//BODYCOM0 
-   v_mhu_B2  = vec_lds(0, &mhu_a[8]);//BODYCOM0 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);//BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);//BODYCOM0 
-  v_tauR_D1   = vec_lds(0, &tauR_a[14]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[15]);//BODYCOM0 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[0]);//BODYCOM0 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[1]);//BODYCOM0 
+   v_mhu_B2  = VEC_LDS(0, &mhu_a[8]);//BODYCOM0 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM0 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[14]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[15]);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM0 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM0 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM0 
@@ -7240,18 +7257,18 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM0 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM0 
 // 5//BODYCOM0 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);//BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);//BODYCOM0 
-  v_tauR_D1   = vec_lds(0, &tauR_a[12]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[13]);//BODYCOM0 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM0 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[13]);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM0 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM0 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM0 
 // 6//BODYCOM0 
 //BODYCOM0 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);//BODYCOM0 
-  v_tauR_D2   = vec_lds(0, &tauR_a[11]);//BODYCOM0 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM0 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);//BODYCOM0 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM0 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM0 
 // A//BODYCOM0 
@@ -7294,14 +7311,14 @@ int tauR_m=11;
    vdt v_xc   = vec_ld(0, &VM[ii+8]);  
    vdt v_xd   = vec_ld(0, &VM[ii+12]);  
 // 1
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[6]);
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[7]);
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[13]);
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[14]);
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[20]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[21]);
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[6]);
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[7]);
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[13]);
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[14]);
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[20]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[21]);
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);
    vdt v_sum1b =  vec_madd(v_xb, v_mhu_A2, v_mhu_A1);
    vdt v_sum1c =  vec_madd(v_xc, v_mhu_A2, v_mhu_A1);
@@ -7322,14 +7339,14 @@ int tauR_m=11;
    vdt v_sum4c =  vec_madd(v_xc, v_tauR_D2, v_tauR_D1);
    vdt v_sum4d =  vec_madd(v_xd, v_tauR_D2, v_tauR_D1);
 // 2
-   v_mhu_A1  = vec_lds(0, &mhu_a[4]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[5]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[11]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[12]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[18]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[19]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[11]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[12]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[18]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[19]);
 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -7365,14 +7382,14 @@ int tauR_m=11;
    v_sum4d =  vec_madd(v_xd, v_sum4d, v_tauR_D1);
 // 3
 
-   v_mhu_A1  = vec_lds(0, &mhu_a[2]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[3]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[9]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[10]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[16]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[17]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[9]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[10]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[16]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[17]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -7407,13 +7424,13 @@ int tauR_m=11;
    v_sum4d =  vec_madd(v_xd, v_sum4d, v_tauR_D1);
 // 4
 
-   v_mhu_A1  = vec_lds(0, &mhu_a[0]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[1]);
-   v_mhu_B2  = vec_lds(0, &mhu_a[8]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[14]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[15]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[0]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[1]);
+   v_mhu_B2  = VEC_LDS(0, &mhu_a[8]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[14]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[15]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -7444,10 +7461,10 @@ int tauR_m=11;
    v_sum4d =  vec_madd(v_xd, v_sum4d, v_tauR_D1);
 // 5
 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[12]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[13]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[13]);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);
@@ -7466,8 +7483,8 @@ int tauR_m=11;
    v_sum4d =  vec_madd(v_xd, v_sum4d, v_tauR_D1);
 // 6
 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[11]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);
    v_sum3b =  vec_madd(v_xb, v_sum3b, v_tauRdt_C2);
@@ -7518,27 +7535,27 @@ int tauR_m=11;
    vdt v_xa   = vec_ld(0, &VM[ii]);  
 
 // 1
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[6]);
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[7]);
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[13]);
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[14]);
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[20]);
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[21]);
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[6]);
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[7]);
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[13]);
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[14]);
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[20]);
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[21]);
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);
    vdt v_sum2a =  vec_madd(v_xa, v_mhu_B2, v_mhu_B1);
    vdt v_sum3a =  vec_madd(v_xa, v_tauRdt_C2, v_tauRdt_C1);
    vdt v_sum4a =  vec_madd(v_xa, v_tauR_D2, v_tauR_D1);
 // 2
-   v_mhu_A1  = vec_lds(0, &mhu_a[4]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[5]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[11]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[12]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[18]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[19]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[4]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[5]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[11]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[12]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[18]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[19]);
 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
@@ -7550,14 +7567,14 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);
 // 3
 
-   v_mhu_A1  = vec_lds(0, &mhu_a[2]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[3]);
-   v_mhu_B1 = vec_lds(0, &mhu_a[9]);
-   v_mhu_B2 = vec_lds(0, &mhu_a[10]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[16]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[17]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[2]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[3]);
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[9]);
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[10]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[16]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[17]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -7568,13 +7585,13 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);
 // 4
 
-   v_mhu_A1  = vec_lds(0, &mhu_a[0]);
-   v_mhu_A2  = vec_lds(0, &mhu_a[1]);
-   v_mhu_B2  = vec_lds(0, &mhu_a[8]);
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[14]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[15]);
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[0]);
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[1]);
+   v_mhu_B2  = VEC_LDS(0, &mhu_a[8]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[14]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[15]);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);
@@ -7583,18 +7600,18 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);
 // 5
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);
-  v_tauR_D1   = vec_lds(0, &tauR_a[12]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[13]);
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[13]);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);
 // 6
 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);
-  v_tauR_D2   = vec_lds(0, &tauR_a[11]);
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);
 // A
@@ -7619,27 +7636,27 @@ int tauR_m=11;
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM1 
 //BODYCOM1 
 // 1//BODYCOM1 
-  vdt v_mhu_A1  = vec_lds(0, &mhu_a[6]);//BODYCOM1 
-  vdt v_mhu_A2  = vec_lds(0, &mhu_a[7]);//BODYCOM1 
-  vdt v_mhu_B1 = vec_lds(0, &mhu_a[13]);//BODYCOM1 
-  vdt v_mhu_B2 = vec_lds(0, &mhu_a[14]);//BODYCOM1 
-  vdt v_tauRdt_C1   = vec_lds(0, &tauRdt_a[9]);//BODYCOM1 
-  vdt v_tauRdt_C2   = vec_lds(0, &tauRdt_a[10]);//BODYCOM1 
-  vdt v_tauR_D1   = vec_lds(0, &tauR_a[20]);//BODYCOM1 
-  vdt v_tauR_D2   = vec_lds(0, &tauR_a[21]);//BODYCOM1 
+  vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[6]);//BODYCOM1 
+  vdt v_mhu_A2  = VEC_LDS(0, &mhu_a[7]);//BODYCOM1 
+  vdt v_mhu_B1 = VEC_LDS(0, &mhu_a[13]);//BODYCOM1 
+  vdt v_mhu_B2 = VEC_LDS(0, &mhu_a[14]);//BODYCOM1 
+  vdt v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[9]);//BODYCOM1 
+  vdt v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[10]);//BODYCOM1 
+  vdt v_tauR_D1   = VEC_LDS(0, &tauR_a[20]);//BODYCOM1 
+  vdt v_tauR_D2   = VEC_LDS(0, &tauR_a[21]);//BODYCOM1 
    vdt v_sum1a =  vec_madd(v_xa, v_mhu_A2, v_mhu_A1);//BODYCOM1 
    vdt v_sum2a =  vec_madd(v_xa, v_mhu_B2, v_mhu_B1);//BODYCOM1 
    vdt v_sum3a =  vec_madd(v_xa, v_tauRdt_C2, v_tauRdt_C1);//BODYCOM1 
    vdt v_sum4a =  vec_madd(v_xa, v_tauR_D2, v_tauR_D1);//BODYCOM1 
 // 2//BODYCOM1 
-   v_mhu_A1  = vec_lds(0, &mhu_a[4]);//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[5]);//BODYCOM1 
-   v_mhu_B1 = vec_lds(0, &mhu_a[11]);//BODYCOM1 
-   v_mhu_B2 = vec_lds(0, &mhu_a[12]);//BODYCOM1 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[7]);//BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[8]);//BODYCOM1 
-  v_tauR_D1   = vec_lds(0, &tauR_a[18]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[19]);//BODYCOM1 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[4]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[5]);//BODYCOM1 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[11]);//BODYCOM1 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[12]);//BODYCOM1 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[7]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[8]);//BODYCOM1 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[18]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[19]);//BODYCOM1 
 //BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
@@ -7651,14 +7668,14 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM1 
 // 3//BODYCOM1 
 //BODYCOM1 
-   v_mhu_A1  = vec_lds(0, &mhu_a[2]);//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[3]);//BODYCOM1 
-   v_mhu_B1 = vec_lds(0, &mhu_a[9]);//BODYCOM1 
-   v_mhu_B2 = vec_lds(0, &mhu_a[10]);//BODYCOM1 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[5]);//BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[6]);//BODYCOM1 
-  v_tauR_D1   = vec_lds(0, &tauR_a[16]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[17]);//BODYCOM1 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[2]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[3]);//BODYCOM1 
+   v_mhu_B1 = VEC_LDS(0, &mhu_a[9]);//BODYCOM1 
+   v_mhu_B2 = VEC_LDS(0, &mhu_a[10]);//BODYCOM1 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[5]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[6]);//BODYCOM1 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[16]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[17]);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
@@ -7669,13 +7686,13 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM1 
 // 4//BODYCOM1 
 //BODYCOM1 
-   v_mhu_A1  = vec_lds(0, &mhu_a[0]);//BODYCOM1 
-   v_mhu_A2  = vec_lds(0, &mhu_a[1]);//BODYCOM1 
-   v_mhu_B2  = vec_lds(0, &mhu_a[8]);//BODYCOM1 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[3]);//BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[4]);//BODYCOM1 
-  v_tauR_D1   = vec_lds(0, &tauR_a[14]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[15]);//BODYCOM1 
+   v_mhu_A1  = VEC_LDS(0, &mhu_a[0]);//BODYCOM1 
+   v_mhu_A2  = VEC_LDS(0, &mhu_a[1]);//BODYCOM1 
+   v_mhu_B2  = VEC_LDS(0, &mhu_a[8]);//BODYCOM1 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[3]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[4]);//BODYCOM1 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[14]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[15]);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A2);//BODYCOM1 
    v_sum1a =  vec_madd(v_xa, v_sum1a, v_mhu_A1);//BODYCOM1 
    v_sum2a =  vec_madd(v_xa, v_sum2a, v_mhu_B2);//BODYCOM1 
@@ -7684,18 +7701,18 @@ int tauR_m=11;
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM1 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM1 
 // 5//BODYCOM1 
-  v_tauRdt_C1   = vec_lds(0, &tauRdt_a[1]);//BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[2]);//BODYCOM1 
-  v_tauR_D1   = vec_lds(0, &tauR_a[12]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[13]);//BODYCOM1 
+  v_tauRdt_C1   = VEC_LDS(0, &tauRdt_a[1]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[2]);//BODYCOM1 
+  v_tauR_D1   = VEC_LDS(0, &tauR_a[12]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[13]);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C1);//BODYCOM1 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM1 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D1);//BODYCOM1 
 // 6//BODYCOM1 
 //BODYCOM1 
-  v_tauRdt_C2   = vec_lds(0, &tauRdt_a[0]);//BODYCOM1 
-  v_tauR_D2   = vec_lds(0, &tauR_a[11]);//BODYCOM1 
+  v_tauRdt_C2   = VEC_LDS(0, &tauRdt_a[0]);//BODYCOM1 
+  v_tauR_D2   = VEC_LDS(0, &tauR_a[11]);//BODYCOM1 
    v_sum3a =  vec_madd(v_xa, v_sum3a, v_tauRdt_C2);//BODYCOM1 
    v_sum4a =  vec_madd(v_xa, v_sum4a, v_tauR_D2);//BODYCOM1 
 // A//BODYCOM1 
@@ -7731,4 +7748,3 @@ int tauR_m=11;
  }
 
 }
-
