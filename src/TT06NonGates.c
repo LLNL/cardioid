@@ -421,6 +421,8 @@ void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, i
 
    double dVR = 0.0; 
    double itmp0,itmp5,itmp6 ; 
+   double sum=0.0; 
+   //double itmpB,itmpC,itmpD,itmpE,itmpF,itmpG,itmpH,itmpI,itmpJ,itmpK,itmpL,itmpM, iNaL;  //
    {
      double fv1 = fv[1]; 
      double fv2 = fv[2]; 
@@ -438,6 +440,10 @@ void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, i
      itmp6 = (cnst.c23*(_Ca_ss - _Ca_i));
      __Ca_i[ii]   = _Ca_i + (dt*cnst.c9)*(sigm3*(itmp4-itmp0+itmp6*cnst.c15-itmp5*cnst.c16));
      dVR  -= 2*itmp4;
+     //itmpH= 2.0*cnst.c7*dV3;
+     //itmpL= 2.0*cnst.c24*sigm1;
+     //sum -= (itmpH+itmpL); 
+     //printf("sum=%24.15f %24.15f\n",sum,dVR); 
     }
 
    {
@@ -461,10 +467,21 @@ void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, i
      double itmp2 = itmp0 - 1.5*itmpA+tmp1*dV1; 
      double itmp3 = itmpA + tmp0*dV0 +tmp2*dV2; 
      double iNaL = g_NaL*CUBE(mGate[ii])*jLGate[ii]*dV1;
+     //itmpB =  fv6 * dV0; 
+     //itmpC = cnst.c11*Xr1Gate[ii]*Xr2Gate[ii]*dV0; 
+     //itmpD = tmp2*dV2; 
+     //itmpE = dV1*(cnst.c20*CUBE(mGate[ii])*hGate[ii]*jGate[ii]);
+     //itmpI= g_to*rGate[ii]*sGate[ii]*dV0;
+     //itmpK = itmp0 ; 
+     //itmpJ = -0.5*itmpA; 
+     //itmpF = cnst.c21*dV1; 
+     //itmpM = fv5*dV0; 
 
      _dVK_i += dt*itmp3;
-     dVR    +=  iNaL - itmp2-itmp3;
-     __Na_i[ii]  =   _Na_i  +  (dt*cnst.c9)*(iNaL*cnst.c22+itmp2+2.0*itmp0);
+     dVR    -=  iNaL +itmp2+itmp3;
+     //sum-= itmpB+itmpC+itmpD+itmpE+itmpF+itmpI+itmpJ+itmpK+itmpM+iNaL;
+     //printf("sum=%24.15f %24.15f\n",sum,dVR); 
+     __Na_i[ii]  =   _Na_i  +  (dt*cnst.c9)*(iNaL+itmp2+2.0*itmp0);
    }
 
    {
@@ -491,8 +508,28 @@ void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, i
      __R_prime[ii] = _R_prime + (dt*cnst.c9)*(cnst.c36 - tmp9*_R_prime);
      __fCass[ii]   = _fCass   + dt*(mhu - _fCass)*tauR; 
      dVR += itmp1; 
+     //itmpG =-itmp1;
+     //sum-= itmpG;
+     //printf("sum=%24.15f %24.15f\n",sum,dVR); 
    }
    __dVK_i[ii] = _dVK_i + dt*dVR ; 
+    //FILE *file = fopen("/tmp/opt","w");
+    //fprintf(file,"%24.15f %24.15f %24.15f %24.15f\n",Vm,P_NaK,g_Ks,g_to,g_NaL); 
+    //fprintf(file, "%24.15f r\n",dVR);
+    //fprintf(file, "%24.15f B\n",itmpB);
+    //fprintf(file, "%24.15f C\n",itmpC);
+    //fprintf(file, "%24.15f D\n",itmpD);
+    //fprintf(file, "%24.15f E\n",itmpE);
+    //fprintf(file, "%24.15f F\n",itmpF);
+    //fprintf(file, "%24.15f G\n",itmpG);
+    //fprintf(file, "%24.15f H\n",itmpH);
+    //fprintf(file, "%24.15f I\n",itmpI);
+    //fprintf(file, "%24.15f J\n",itmpJ);
+    //fprintf(file, "%24.15f K\n",itmpK);
+    //fprintf(file, "%24.15f L\n",itmpL);
+    //fprintf(file, "%24.15f M\n",itmpM);
+    //fprintf(file, "%24.15f iNaL,\n",iNaL);
+    //exit(0); 
    dVdt[ii]  = dVR;
    }
 }

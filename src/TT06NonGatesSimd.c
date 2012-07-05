@@ -509,8 +509,10 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 
 
 // states[Na_i]    += (dt*c9)*(iNaL[ii]*c22+itmp2[ii]+2.0*itmp0[ii]); 
+// states[Na_i]    += (dt*c9)*(iNaL[ii]+itmp2[ii]+2.0*itmp0[ii]);   //JNG
 
-   v_tmp = vec_madd(v_iNaL, vec_splats(SP[22]), v_itmp2);
+   //v_tmp = vec_madd(v_iNaL, vec_splats(SP[22]), v_itmp2);
+   v_tmp = vec_add(v_iNaL, v_itmp2);    //JNG
    v_tmp = vec_madd(vec_splats(2.0),    v_itmp0,         v_tmp);
    v_tmp = vec_mul(v_tmp,   vec_mul(v_dt,   vec_splats(SP[12])));
 
@@ -518,11 +520,16 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
    vec_st(v_states_Na_i, 0, &_Na_i[ii]); 
 
 //  dVR[ii] +=  iNaL[ii] - itmp2[ii]-itmp3[ii];
+//   v_tmp = vec_sub(v_iNaL, v_itmp2);
+//   v_tmp = vec_sub(v_tmp,  v_itmp3);
+//   v_dVR = vec_add(v_dVR, v_tmp);
 
-   v_tmp = vec_sub(v_iNaL, v_itmp2);
-   v_tmp = vec_sub(v_tmp,  v_itmp3);
+//  dVR[ii] -=  iNaL[ii] + itmp2[ii]+itmp3[ii];  //JNG
 
-   v_dVR = vec_add(v_dVR, v_tmp);
+   v_tmp = vec_add(v_iNaL, v_itmp2);
+   v_tmp = vec_add(v_tmp,  v_itmp3);
+
+   v_dVR = vec_sub(v_dVR, v_tmp);
 
 
 
