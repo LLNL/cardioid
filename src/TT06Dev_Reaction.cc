@@ -9,6 +9,7 @@
 #include "ThreadServer.hh"
 #include "mpiUtils.h"
 #include <cstdlib>
+#include <cstring>
 #include <map>
 #include <string>
 #include <algorithm>
