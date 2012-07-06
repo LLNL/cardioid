@@ -152,7 +152,6 @@ namespace
       
       // compute initial data decomposition
       profileStart("gd_assign_init");
-      //loadbal.initialDistribution(cells, sim.nx_, sim.ny_, sim.nz_);
       loadbal.initialDistByVol(cells, sim.nx_, sim.ny_, sim.nz_);
       profileStop("gd_assign_init");
 
@@ -171,40 +170,6 @@ namespace
         fullname += "/anatomy";
         writeCells(sim.anatomy_.cellArray(), sim.nx_, sim.ny_, sim.nz_, fullname.c_str());
       }
-
-#if 0      
-      
-      // redistribute data until load balance is achieved
-      int ninner;
-      int threshold;
-      objectGet(obj, "ninner", ninner, "10");
-      objectGet(obj, "threshold", threshold, "4");
-      int nmax;
-      objectGet(obj, "niter", nmax, "5000");
-
-      loadbal.gridVolMinLoop(cells);
-
-      //int ntmp = 10;
-      //loadbal.balanceLoop(cells,ninner,threshold,ntmp);
-      //loadbal.compactLoop(cells);
-      //loadbal.compactLoop(cells);
-
-      // diffusive load balance loop
-      //profileStart("gd_balance");
-      //loadbal.balanceLoop(cells,ninner,threshold,nmax);
-      //profileStop("gd_balance");
-
-      if (visgrid == 1)
-      {
-        stringstream name;
-        name << "snap.gridfinal";
-        string fullname = name.str();
-        if (myRank == 0)
-           DirTestCreate(fullname.c_str());
-        fullname += "/anatomy";
-        writeCells(sim.anatomy_.cellArray(), sim.nx_, sim.ny_, sim.nz_, fullname.c_str());
-      }
-#endif
       
       bool testingOnly = (npegrid != nTasks);
       if (testingOnly)

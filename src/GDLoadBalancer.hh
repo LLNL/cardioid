@@ -34,8 +34,12 @@ class GDLoadBalancer {
   vector<vector<double> > pecom_;
   vector<vector<int> > pemin_;
   vector<vector<int> > pemax_;
+  vector<int> pexind_;
+  vector<int> peyind_;
   MPI_Comm comm_;
   int nTasks_, myRank_;
+
+  int distributePlane(vector<AnatomyCell>& cells, int zmin, int zmax, int zvol, int kp);
     
   public:
 
@@ -43,25 +47,9 @@ class GDLoadBalancer {
   ~GDLoadBalancer();
   void initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny, int nz);
   void xstripDist(vector<int>& xcnt, vector<int>& pexmin, vector<int>& pexmax, bool verbose);
-  void initialDistribution(vector<AnatomyCell>& cells, int nx, int ny, int nz);
-  void gridVolMinLoop(vector<AnatomyCell>& cells);
-  void assignCells(vector<AnatomyCell>& cells);
-  void applyStoredMoves(vector<MoveInfo> moves,vector<AnatomyCell>& cells);
-  void compactLoop(vector<AnatomyCell>& cells);
-  void computeLoadInfo(vector<AnatomyCell>& cells);
-  double pbcDist(double x1,double x2,int nx);
-  void balanceLoop(vector<AnatomyCell>& cells);
-  void balanceLoop(vector<AnatomyCell>& cells, int bblock, int bthresh, int maxiter);
-  bool diffuseDest(vector<AnatomyCell>& cells);
   void redistributeCells(vector<AnatomyCell>& cells);
-  void restrictMoves(vector<AnatomyCell>& cells, int ngap);
-  void nonzeroVolume(vector<AnatomyCell>& cells);
-  void nlocHistogram(vector<int>& nloc);
   void nlocHistogram(vector<AnatomyCell>& cells);
   void computeNlocHistogram();
-  void volHistogram(vector<AnatomyCell>& cells);
-  void computeVolHistogram();
-  void computeVolHistogram(vector<AnatomyCell>& cells);
   void computeReducedProcGrid(int nTasks);
   void setReducedProcGrid(int rnx, int rny, int rnz);
   int ipow(int a, int b);
