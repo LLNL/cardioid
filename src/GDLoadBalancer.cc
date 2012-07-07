@@ -109,10 +109,10 @@ void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny
    pexind_.assign(npez_*npey_*nx_,-1);
 
    // calculate min/max boundaries of each plane
-   vector<int> zmin_xloc(nz_,99999999);
-   vector<int> zmin_yloc(nz_,99999999);
-   vector<int> zmax_xloc(nz_,-99999999);
-   vector<int> zmax_yloc(nz_,-99999999);
+   vector<int> zmin_xloc(nz_,999999999);
+   vector<int> zmin_yloc(nz_,999999999);
+   vector<int> zmax_xloc(nz_,-999999999);
+   vector<int> zmax_yloc(nz_,-999999999);
    vector<int> kpzcnt_loc(nz_,0);
    
    // determine which xy-planes this process owns data for
@@ -158,11 +158,11 @@ void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny
    int kpavg = (maxz-minz+1)/npez_;
    if ((maxz-minz+1)%npez_ != 0) kpavg++;
 
-   vector<int> kpmin_x(npez_,99999999);
-   vector<int> kpmin_y(npez_,99999999);
+   vector<int> kpmin_x(npez_,999999999);
+   vector<int> kpmin_y(npez_,999999999);
    vector<int> kpmin_z(npez_,-1);
-   vector<int> kpmax_x(npez_,-99999999);
-   vector<int> kpmax_y(npez_,-99999999);
+   vector<int> kpmax_x(npez_,-999999999);
+   vector<int> kpmax_y(npez_,-999999999);
    vector<int> kpmax_z(npez_,-1);
    vector<int> kpzvol(npez_,0);
    int kpset = 0;
@@ -206,8 +206,8 @@ void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny
       {
          targetVol *= 0.99;
          int kpset = 0;
-         int xmin = 9999999;  int ymin = 9999999;
-         int xmax = -9999999;  int ymax = -9999999;
+         int xmin = 999999999;  int ymin = 999999999;
+         int xmax = -999999999;  int ymax = -999999999;
          int lastkk = minz;
          int lastvol = -1;
          // add planes until volume exceeds targetVol
@@ -246,7 +246,7 @@ void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny
          trialvol_z[npez_-1] = (xmax-xmin+1)*(ymax-ymin+1)*(maxz-trialmin_z[npez_-1]+1);
 
          int tvolmax = -1;
-         int tvolmin = 9999999;
+         int tvolmin = 999999999;
          for (int kp=0; kp<npez_; kp++)
          {
             if (trialvol_z[kp] > tvolmax) tvolmax = trialvol_z[kp];
@@ -288,13 +288,77 @@ void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny
    vector<int> distVol(nz_,0);
    for (int kp=0; kp<npez_; kp++)
    {
+      if (myRank_ == 0)
+         cout << "Distributing plane " << kp << ", kpzvol = " << kpzvol[kp] << ", kpmin_z = " << kpmin_z[kp] << ", kpmax_z = " << kpmax_z[kp] << endl;
       int volFinal = distributePlane(cells,kpmin_z[kp],kpmax_z[kp],kpzvol[kp],kp);
       for (int kk=kpmin_z[kp]; kk<=kpmax_z[kp]; kk++)
          distVol[kk] = volFinal;
    }
 
-   int minBalVol = 9999999999;
-   int maxBalVol = -9999999999;
+
+   // calculate volume of each plane
+   {
+      vector<int> cell_xmin(npegrid_,999999999);
+      vector<int> cell_ymin(npegrid_,999999999);
+      vector<int> cell_zmin(npegrid_,999999999);
+      vector<int> cell_xmax(npegrid_,-999999999);
+      vector<int> cell_ymax(npegrid_,-999999999);
+      vector<int> cell_zmax(npegrid_,-999999999);
+      for (unsigned ii=0; ii<cells.size(); ++ii)
+      {
+         int gid = cells[ii].gid_;
+         GridPoint gpt(gid,nx_,ny_,nz_);
+         int kp = pezind[gpt.z];
+         int jp = peyind_[ny_*kp + gpt.y];
+         int ip = pexind_[nx_*npey_*kp + jp*nx_ + gpt.x];
+         int peid = ip + jp*npex_ + kp*npex_*npey_;
+         if (gpt.x < cell_xmin[peid]) cell_xmin[peid] = gpt.x;
+         if (gpt.y < cell_ymin[peid]) cell_ymin[peid] = gpt.y;
+         if (gpt.z < cell_zmin[peid]) cell_zmin[peid] = gpt.z;
+         if (gpt.x > cell_xmax[peid]) cell_xmax[peid] = gpt.x;
+         if (gpt.y > cell_ymax[peid]) cell_ymax[peid] = gpt.y;
+         if (gpt.z > cell_zmax[peid]) cell_zmax[peid] = gpt.z;
+         
+         if (ip < 0 || jp < 0 || kp < 0)
+            cout << "Grid point x,y,z = " << gpt.x << " " << gpt.y << " " << gpt.z << " has no peid:  ip = " << ip << ", jp = " << jp << ", kp = " << kp << endl;
+         
+         assert(ip >= 0 && ip < npex_);
+         assert(jp >= 0 && jp < npey_);
+         assert(kp >= 0 && kp < npez_);
+         assert(peid >= 0);
+      }
+      
+      vector<int> slabvol(npez_,0);
+      vector<int> slabvolsum(npez_,0);
+      for (int ip=0; ip<npegrid_; ip++)
+      {
+         if (cell_xmin[ip] > 999999997) cell_xmin[ip] = 0;
+         if (cell_ymin[ip] > 999999997) cell_ymin[ip] = 0;
+         if (cell_zmin[ip] > 999999997) cell_zmin[ip] = 0;
+         if (cell_xmax[ip] < 0) cell_xmax[ip] = -1;
+         if (cell_ymax[ip] < 0) cell_ymax[ip] = -1;
+         if (cell_zmax[ip] < 0) cell_zmax[ip] = -1;
+         
+         int procvol = (cell_xmax[ip]-cell_xmin[ip]+1)*(cell_ymax[ip]-cell_ymin[ip]+1)*(cell_zmax[ip]-cell_zmin[ip]+1);
+         int kp = ip/(npex_*npey_);
+         slabvol[kp] += procvol;
+      }
+      MPI_Allreduce(&slabvol[0], &slabvolsum[0], npez_, MPI_INT, MPI_SUM, comm_);
+      
+
+      //ewd DEBUG
+      if (myRank_ == 0)
+         for (int kp=0; kp<npez_; kp++)
+            cout << "GDLB.DEBUG, kp = " << kp << ", slab volume = " << slabvolsum[kp] << endl;
+      //ewd DEBUG
+
+      for (int kp=0; kp<npez_; kp++)
+         for (int kk=kpmin_z[kp]; kk<=kpmax_z[kp]; kk++)
+            distVol[kk] = slabvolsum[kp];
+   }
+   
+   int minBalVol = 999999999;
+   int maxBalVol = -999999999;
    for (int kk=minz; kk<=maxz; kk++)
    {
       if (distVol[kk] < minBalVol) minBalVol = distVol[kk];
@@ -312,12 +376,13 @@ void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny
       vector<int> trialmin_z(npez_);
       vector<int> trialmax_z(npez_);
       vector<int> trialvol_z(npez_,-1);
-      
+
       double targetVol = 0.;
       for (int kk=minz; kk<=maxz; kk++)
+         //targetVol += distVol[kk]*npex_*npey_;
          targetVol += distVol[kk];
       targetVol /= (double)npez_;
-      
+          
       int kpset = 0;
       int lastkk = minz;
       int lastvol = -1;
@@ -325,6 +390,7 @@ void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny
       // add planes until volume exceeds targetVol
       for (int kk=minz; kk<=maxz; kk++)
       {
+         //tvol += distVol[kk]*npex_*npey_;
          tvol += distVol[kk];
          if (tvol > targetVol && kpset < npez_)
          {
@@ -347,12 +413,19 @@ void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny
       trialmax_z[npez_-1] = maxz;
       if (kpset < npez_)
          trialmin_z[npez_-1] = lastkk;
-      trialvol_z[npez_-1] = tvol;
+      if (trialvol_z[npez_-1] < 0)
+         trialvol_z[npez_-1] = tvol;
 
 
       for (int kp=0; kp<npez_; kp++)
       {
-         int volFinal = distributePlane(cells,trialmin_z[kp],trialmax_z[kp],trialvol_z[kp],kp);
+         if (myRank_ == 0)
+            cout << "Redistributing plane " << kp << ", trialvol = " << trialvol_z[kp] << ", zmin = " << trialmin_z[kp] << ", zmax = " << trialmax_z[kp] << endl;
+         if (trialvol_z[kp] > 0)
+            int volFinal = distributePlane(cells,trialmin_z[kp],trialmax_z[kp],trialvol_z[kp],kp);
+         else
+            if (myRank_ == 0)
+               cout << "Redistributing:  plane " << kp << ", has zero target volume!" << endl;
       }
 
    }
@@ -407,10 +480,10 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
    MPI_Allreduce(&kpxyloc[0], &kpxycnt[0], size, MPI_INT, MPI_SUM, comm_);
 
    // compute min/max values for all planes, strips
-   vector<int> kpymin_x(ny_,9999999);
-   vector<int> kpymax_x(ny_,-9999999);
-   int xmin = 9999999;  int ymin = 9999999;
-   int xmax = -9999999;  int ymax = -9999999;
+   vector<int> kpymin_x(ny_,999999999);
+   vector<int> kpymax_x(ny_,-999999999);
+   int xmin = 999999999;  int ymin = 999999999;
+   int xmax = -999999999;  int ymax = -999999999;
    for (int iy=0; iy<ny_; iy++)
       for (int ix=0; ix<nx_; ix++)
          if (kpxycnt[nx_*iy+ix] > 0)
@@ -426,7 +499,8 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
    double targetVol = (double)zvol/(npex_*npey_);
    bool xyvolConverged = false;
    int viter = 0;
-   while (!xyvolConverged)
+   const int viterMax = 5000;
+   while (!xyvolConverged && viter < viterMax)
    {
       vector<int> trialmin_y(npey_,-1);
       vector<int> trialmax_y(npey_,-1);
@@ -490,7 +564,7 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
          
       // all grid strips distributed, check volume distribution to see if target volume was exceeded
       int tvolmax = -1;
-      int tvolmin = 9999999;
+      int tvolmin = 999999999;
       for (int jp=0; jp<npey_; jp++)
       {
          if (tjpvol[jp] > tvolmax) tvolmax = tjpvol[jp];
@@ -499,6 +573,12 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
       
       if ( (tvolmax < targetVol && tvolmax != tvolmin ) || tvolmin < 0 ) // keep going
       {
+
+         //ewd DEBUG
+         //if (myRank_ == 0)
+         //   cout << "DEBUG: distributePlane iter " << viter << ", targetVol = " << targetVol << ", tvolmax = " << tvolmax << ", tvolmin = " << tvolmin << endl;
+         //ewd DEBUG
+
          // save current distribution, continue
          for (int jp=0; jp<npey_; jp++)
          {
@@ -541,7 +621,7 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
          
          
          if (myRank_ == 0)
-            cout << "Strip convergence of plane " << kp << " reached at target volume = " << targetVol << endl;
+            cout << "Strip convergence of plane " << kp << " reached at target volume per process = " << targetVol << endl;
          
          // save results in peyind
          for (int jp=0; jp<npey_; jp++)
@@ -561,16 +641,23 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
          targetVol *= 0.99;
       }
    }
+   if (viter >= viterMax)
+   {
+      if (myRank_ == 0)
+         cout << "ERROR:  distributePlane could not converge!" << endl;
+      exit(1);
+   }   
+   
    return targetVol;
 }
 ////////////////////////////////////////////////////////////////////////////////
 void GDLoadBalancer::xstripDist(vector<int>& xcnt, vector<int>& pexmin, vector<int>& pexmax, bool verbose)
 {
-   int xmin = 9999999;
-   int xmax = -9999999;
+   int xmin = 999999999;
+   int xmax = -999999999;
    for (int ix=0; ix<nx_; ix++)
    {
-      if (xcnt[ix] > 0 && xmin == 9999999)
+      if (xcnt[ix] > 0 && xmin == 999999999)
          xmin = ix;
       if (xcnt[ix] > 0)
          xmax = ix;
