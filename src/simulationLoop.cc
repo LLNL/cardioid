@@ -99,12 +99,41 @@ void simulationProlog(Simulate& sim)
 }
 
 
-void loopIO(const Simulate& sim)
+void printInitialize(Simulate &sim)
 {
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+   const Anatomy& anatomy = sim.anatomy_;
+   int index =-1; 
+   if ( sim.printGid_ == -1 )    
+   {
+       long long int minGid=-2;
+       for (int index=0;index<anatomy.nLocal();index++) if (anatomy.gid(index)< minGid) minGid = anatomy.gid(index); 
+       MPI_Allreduce(&minGid, &sim.printGid_, 1, MPI_LONG_LONG, MPI_MIN, MPI_COMM_WORLD);
+   }  
+   if ( sim.printGid_  < -1 && myRank == 0) 
+   {
+     sim.printGid_=anatomy.gid(0) ; 
+   }
+   if ( sim.printGid_ >= 0) 
+   {
+     for (index=0;index<anatomy.nLocal();index++)
+      if (anatomy.gid(index) == sim.printGid_) break; 
+   }
+   sim.printIndex_ = index; 
+
+   sim.printFile_=fopen("data","a"); 
+   printf(                "#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
+   fprintf(sim.printFile_,"#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
+   sim.printInit_=1; 
+   
+}
+void loopIO(const Simulate& sim,int firstCall)
+{
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+   const Anatomy& anatomy = sim.anatomy_;
       
-   static int firstCall=1; 
    int loop = sim.loop_; 
 
    std::vector<double>& VmArray(*sim.vdata_.VmArray_);
@@ -120,17 +149,16 @@ void loopIO(const Simulate& sim)
    stopTimer(sensorTimer);
       
    startTimer(loopIOTimer);
-   if ( (loop % sim.printRate_ == 0) && myRank == 0)
    {
-      static FILE *file; 
-      if (firstCall) 
+   if ( loop % sim.printRate_ == 0) 
+   {
+      int printIndex = sim.printIndex_; 
+      if (printIndex >= 0)
       {
-      file=fopen("data","a"); 
-       printf("#   Loop     Time         Vm(t)        dVm_r(t-h)      dVm_d(t-h)\n");
-       fprintf(file,"#   Loop     Time         Vm(t)        dVm_r(t-h)      dVm_d(t-h)\n");
+         printf("%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",loop,sim.time_,sim.anatomy_.gid(printIndex),VmArray[printIndex],dVmR[printIndex],dVmD[printIndex]);  fflush(stdout); 
+         fprintf(sim.printFile_,"%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",loop,sim.time_,sim.anatomy_.gid(printIndex),VmArray[printIndex],dVmR[printIndex],dVmD[printIndex]); fflush(sim.printFile_); 
       }
-      printf("%8d %8.3f %21.15f %21.15f %21.15f\n",loop,sim.time_,VmArray[0],dVmR[0],dVmD[0]);  fflush(stdout); 
-      fprintf(file,"%8d %8.3f %21.15f %21.15f %21.15f\n",loop,sim.time_,VmArray[0],dVmR[0],dVmD[0]); fflush(file); 
+   }
    }
 
    if (sim.loop_ > 0 && sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
@@ -171,7 +199,8 @@ void simulationLoop(Simulate& sim)
    cout << "Rank[" << myRank << "]: numOfNeighborToSend=" << sim.commTable_->_sendTask.size() << " numOfNeighborToRecv=" << sim.commTable_->_recvTask.size() << " numOfBytesToSend=" << sim.commTable_->_sendOffset[sim.commTable_->_sendTask.size()]*sizeof(double) << " numOfBytesToRecv=" << sim.commTable_->_recvOffset[sim.commTable_->_recvTask.size()]*sizeof(double) << endl;
 #endif
 
-   loopIO(sim);
+   if (!sim.printInit_) printInitialize(sim); 
+   loopIO(sim,1);
    while ( sim.loop_<sim.maxLoop_ )
    {
       int nLocal = sim.anatomy_.nLocal();
@@ -222,7 +251,7 @@ void simulationLoop(Simulate& sim)
       sim.time_ += sim.dt_;
       ++sim.loop_;
       stopTimer(integratorTimer);
-      loopIO(sim);
+      loopIO(sim,0);
    }
 }
 
@@ -333,8 +362,11 @@ void diffusionLoop(Simulate& sim,
 
    std::vector<double>& dVmDiffusion(*sim.vdata_.dVmDiffusion_);
 
-   if (tid == 0)
-      loopIO(sim);
+   if (tid == 0) 
+   {
+     if (!sim.printInit_) printInitialize(sim); 
+     loopIO(sim,1);
+   }
    while ( sim.loop_ < sim.maxLoop_ )
    {
       int nLocal = sim.anatomy_.nLocal();
@@ -420,7 +452,7 @@ void diffusionLoop(Simulate& sim,
 #else
          //pointers have been swapped by reaction thread, so no copy needed
 #endif
-         loopIO(sim);
+         loopIO(sim,0);
       }
    }
    profileStop(diffusionLoopTimer);

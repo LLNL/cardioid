@@ -65,6 +65,12 @@ void objectGet(OBJECT* obj, const string& name, Long64& value, const string& def
    object_get(obj, name.c_str(), &tmp, ULL, 1, defVal.c_str());
    value = tmp;
 }
+void objectGet(OBJECT* obj, const string& name, long long int& value, const string& defVal)
+{
+   int tmp;
+   object_get(obj, name.c_str(), &tmp, LL, 1, defVal.c_str());
+   value = tmp;
+}
 
 void objectGet(OBJECT* obj, const std::string& name, double& value, const std::string& defVal,
                const std::string& unitConvertTo)
