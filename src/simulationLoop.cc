@@ -123,8 +123,11 @@ void printInitialize(Simulate &sim)
    sim.printIndex_ = index; 
 
    sim.printFile_=fopen("data","a"); 
-   printf(                "#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
-   fprintf(sim.printFile_,"#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
+   if (myRank == 0)
+   {
+      printf(                "#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
+      fprintf(sim.printFile_,"#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
+   }
    sim.printInit_=1; 
    
 }
