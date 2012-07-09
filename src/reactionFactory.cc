@@ -29,6 +29,7 @@ namespace
    Reaction* scanTT06Dev(OBJECT* obj, Anatomy& anatomy, const ThreadTeam& group);
    Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanFHN(OBJECT* obj, const Anatomy& anatomy);
+   Reaction* scanNull(OBJECT* obj);
    Reaction* scanTest(OBJECT* obj);
    Reaction* scanConstant(OBJECT* obj, const Anatomy& anatomy);
 }
@@ -53,7 +54,7 @@ Reaction* reactionFactory(const string& name, Anatomy& anatomy,
    else if (method == "FHN" || method == "FitzhughNagumo")
       return scanFHN(obj, anatomy);
    else if (method == "null")
-      return new NullReaction();
+      return scanNull(obj);
    else if (method == "test")
       return scanTest(obj);
    else if (method == "constant")
@@ -219,6 +220,16 @@ namespace
       // None of the FHN model parameters are currently wired to the
       // input deck.
       return new ReactionFHN(anatomy);
+   }
+}
+
+namespace
+{
+   Reaction* scanNull(OBJECT* obj)
+   {
+      NullReactionParms parms;
+      objectGet(obj, "V0",    parms.initialVoltage, "-85",  "voltage");
+      return new NullReaction(parms);
    }
 }
 
