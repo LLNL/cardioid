@@ -67,7 +67,7 @@ void objectGet(OBJECT* obj, const string& name, Long64& value, const string& def
 }
 void objectGet(OBJECT* obj, const string& name, long long int& value, const string& defVal)
 {
-   int tmp;
+   long long int  tmp;
    object_get(obj, name.c_str(), &tmp, NULL, 1, defVal.c_str());
    value = tmp;
 }
