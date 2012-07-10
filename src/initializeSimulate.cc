@@ -51,7 +51,7 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "dt", sim.dt_, "0.01", "t");
    objectGet(obj, "time", sim.time_, "0", "t");
    objectGet(obj, "printRate", sim.printRate_, "20");
-   //ewd DEBUGobjectGet(obj, "printGid", sim.printGid_, "-1");
+   objectGet(obj, "printGid", sim.printGid_, "-1");
    objectGet(obj, "snapshotRate", sim.snapshotRate_, "100");
    objectGet(obj, "checkpointRate", sim.checkpointRate_, "-1");
    objectGet(obj, "parallelDiffusionReaction", sim.parallelDiffusionReaction_, "0");
