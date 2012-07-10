@@ -631,7 +631,7 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
          for (int jp=0; jp<npey_; jp++)
             if (jpvol[jp] > maxlast) maxlast = jpvol[jp];
          
-         if (maxlast < tvolmax)
+         if (maxlast > 0 && maxlast < tvolmax)
          {
             tvolmax = maxlast;
             // restore last distribution
