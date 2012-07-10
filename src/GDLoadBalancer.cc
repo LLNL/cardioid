@@ -312,6 +312,7 @@ void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny
          int jp = peyind_[ny_*kp + gpt.y];
          int ip = pexind_[nx_*npey_*kp + jp*nx_ + gpt.x];
          int peid = ip + jp*npex_ + kp*npex_*npey_;
+
          if (gpt.x < cell_xmin[peid]) cell_xmin[peid] = gpt.x;
          if (gpt.y < cell_ymin[peid]) cell_ymin[peid] = gpt.y;
          if (gpt.z < cell_zmin[peid]) cell_zmin[peid] = gpt.z;
@@ -327,6 +328,20 @@ void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny
          assert(kp >= 0 && kp < npez_);
          assert(peid >= 0);
       }
+
+
+      vector<int> cell_xmin_all(npegrid_);
+      vector<int> cell_ymin_all(npegrid_);
+      vector<int> cell_zmin_all(npegrid_);
+      vector<int> cell_xmax_all(npegrid_);
+      vector<int> cell_ymax_all(npegrid_);
+      vector<int> cell_zmax_all(npegrid_);
+      MPI_Allreduce(&cell_xmin[0], &cell_xmin_all[0], npegrid_, MPI_INT, MPI_MIN, comm_);
+      MPI_Allreduce(&cell_ymin[0], &cell_ymin_all[0], npegrid_, MPI_INT, MPI_MIN, comm_);
+      MPI_Allreduce(&cell_zmin[0], &cell_zmin_all[0], npegrid_, MPI_INT, MPI_MIN, comm_);
+      MPI_Allreduce(&cell_xmax[0], &cell_xmax_all[0], npegrid_, MPI_INT, MPI_MAX, comm_);
+      MPI_Allreduce(&cell_ymax[0], &cell_ymax_all[0], npegrid_, MPI_INT, MPI_MAX, comm_);
+      MPI_Allreduce(&cell_zmax[0], &cell_zmax_all[0], npegrid_, MPI_INT, MPI_MAX, comm_);
       
       vector<int> slabvol(npez_,0);
       vector<int> slabvolsum(npez_,0);
@@ -344,13 +359,6 @@ void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny
          slabvol[kp] += procvol;
       }
       MPI_Allreduce(&slabvol[0], &slabvolsum[0], npez_, MPI_INT, MPI_SUM, comm_);
-      
-
-      //ewd DEBUG
-      if (myRank_ == 0)
-         for (int kp=0; kp<npez_; kp++)
-            cout << "GDLB.DEBUG, kp = " << kp << ", slab volume = " << slabvolsum[kp] << endl;
-      //ewd DEBUG
 
       for (int kp=0; kp<npez_; kp++)
          for (int kk=kpmin_z[kp]; kk<=kpmax_z[kp]; kk++)
@@ -368,7 +376,7 @@ void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny
    const double imbalCurrent = (double)(maxBalVol-minBalVol)/minBalVol;
    
    // redistribute planes with new information
-   if (imbalCurrent > imbalThreshold)
+   if (false && imbalCurrent > imbalThreshold)
    {
       if (myRank_ == 0)
          cout << "Planar imbalance = " << imbalCurrent << ", exceeding threshold of " << imbalThreshold << ", redistribute planes and repeat load balancing..." << endl;
@@ -466,6 +474,13 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
    vector<int> jpmax_y(npey_,-1);      
    vector<int> jpmin_x(npex_*npey_,-1);
    vector<int> jpmax_x(npex_*npey_,-1);
+   vector<int> jpvol(npey_,-1);      
+
+   vector<int> oldjpmin_y(npey_,-1);
+   vector<int> oldjpmax_y(npey_,-1);      
+   vector<int> oldjpmin_x(npex_*npey_,-1);
+   vector<int> oldjpmax_x(npex_*npey_,-1);
+   vector<int> oldjpvol(npey_,-1);      
       
    int kpdz = zmax - zmin + 1;
    vector<int> kpxyloc(nx_*ny_,0);
@@ -495,6 +510,10 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
             if (ix < kpymin_x[iy]) kpymin_x[iy] = ix;
             if (ix > kpymax_x[iy]) kpymax_x[iy] = ix;
          }
+
+   //ewd DEBUG
+   //if (myRank_ == 0)
+   //   cout << "distributePlane DEBUG:  kp = " << kp << ", zmin = " << zmin << ", zmax = " << zmax << ", xmin = " << xmin << ", xmax = " << xmax << ", ymin = " << ymin << ", ymax = " << ymax << endl;
    
    double targetVol = (double)zvol/(npex_*npey_);
    bool xyvolConverged = false;
@@ -519,7 +538,7 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
          for (int ty=trialmin_y[jpset]; ty<=iy; ty++)
             for (int ix=0; ix<nx_; ix++)
                txcnt[ix] += kpxycnt[nx_*ty+ix];
-         
+
          xstripDist(txcnt,tmin_x,tmax_x,false);
          
          // calculate maximum volume of (iy-trialmin_y) strips distributed over npex_ tasks
@@ -533,13 +552,16 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
          {
             jpset++;
             if (jpset > npey_-1)
+            {
                jpset = npey_-1;
+               tjpvol[jpset] = maxvol;
+            }
             else
                trialmin_y[jpset] = iy;
          }
          else {
             tjpvol[jpset] = maxvol;
-         }               
+         }
          // save latest stats on this process grid strip (at jp,kp)
          trialmax_y[jpset] = iy;
          for (int ip=0; ip<npex_; ip++)
@@ -551,16 +573,7 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
       
       // update npey_-1 term
       if (jpset == npey_-1)
-      {
-         int maxvol = -1;
-         for (int ip=0; ip<npex_; ip++)
-         {
-            int tvol = (tmax_x[ip]-tmin_x[ip]+1)*(ymax-trialmin_y[npey_-1]+1)*kpdz;
-            if (tvol > maxvol) maxvol = tvol;
-         }
          trialmax_y[npey_-1] = ymax;
-         tjpvol[npey_-1] = maxvol;
-      }
          
       // all grid strips distributed, check volume distribution to see if target volume was exceeded
       int tvolmax = -1;
@@ -573,18 +586,12 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
       
       if ( (tvolmax < targetVol && tvolmax != tvolmin ) || tvolmin < 0 ) // keep going
       {
-
-         //ewd DEBUG
-         //if (myRank_ == 0)
-         //   cout << "DEBUG: distributePlane iter " << viter << ", targetVol = " << targetVol << ", tvolmax = " << tvolmax << ", tvolmin = " << tvolmin << endl;
-         //ewd DEBUG
-
          // save current distribution, continue
          for (int jp=0; jp<npey_; jp++)
          {
+            jpvol[jp] = tjpvol[jp];
             jpmin_y[jp] = trialmin_y[jp];
             jpmax_y[jp] = trialmax_y[jp];
-            
             for (int ip=0; ip<npex_; ip++)
             {
                jpmin_x[jp*npex_+ip] = trialmin_x[jp*npex_+ip];
@@ -618,10 +625,30 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
                if (jpmax_x[jp*npex_+ip] < 0) jpmax_x[jp*npex_+ip] = trialmax_x[jp*npex_+ip];
             }
          }
+
+         // compare maximum volume against max volume of last iteration
+         int maxlast = -1;
+         for (int jp=0; jp<npey_; jp++)
+            if (jpvol[jp] > maxlast) maxlast = jpvol[jp];
          
-         
+         if (maxlast < tvolmax)
+         {
+            tvolmax = maxlast;
+            // restore last distribution
+            for (int jp=0; jp<npey_; jp++)
+            {
+               jpmin_y[jp] = oldjpmin_y[jp];
+               jpmax_y[jp] = oldjpmax_y[jp];
+               for (int ip=0; ip<npex_; ip++)
+               {
+                  jpmin_x[jp*npex_+ip] = oldjpmin_x[jp*npex_+ip];
+                  jpmax_x[jp*npex_+ip] = oldjpmax_x[jp*npex_+ip];
+               }
+            }
+         }            
+            
          if (myRank_ == 0)
-            cout << "Strip convergence of plane " << kp << " reached at target volume per process = " << targetVol << endl;
+            cout << "Strip convergence of plane " << kp << " reached at target volume per process = " << targetVol << ", tvolmax = " << tvolmax << endl;
          
          // save results in peyind
          for (int jp=0; jp<npey_; jp++)
@@ -637,8 +664,21 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
       }      
       if (!xyvolConverged)
       {
+         // store last distribution
+         for (int jp=0; jp<npey_; jp++)
+         {
+            oldjpvol[jp] = jpvol[jp];
+            oldjpmin_y[jp] = jpmin_y[jp];
+            oldjpmax_y[jp] = jpmax_y[jp];
+            for (int ip=0; ip<npex_; ip++)
+            {
+               oldjpmin_x[jp*npex_+ip] = jpmin_x[jp*npex_+ip];
+               oldjpmax_x[jp*npex_+ip] = jpmax_x[jp*npex_+ip];
+            }
+         }
+
          viter++;
-         targetVol *= 0.99;
+         targetVol *= 0.995;
       }
    }
    if (viter >= viterMax)
@@ -833,22 +873,22 @@ void GDLoadBalancer::redistributeCells(vector<AnatomyCell>& cells)
       if (tnx_ < 0 || tny_ < 0 || tnz_ < 0)
       {
          computeReducedProcGrid(nTasks_);
+      }
          if (myRank_ == 0)
             cout << "GDLoadBalancer::redistributeCells:  reduced grid = " <<
                 tnx_ << " x " << tny_ << " x " << tnz_ << " used for testing." << endl;
-      }
-      
+
       // for testing, certain assumptions have to be fulfilled
       assert(npex_%2==0 && npey_%2==0 && npez_%2==0);
       assert(npex_%tnx_ == 0 && npey_%tny_ == 0 && npez_%tnz_ == 0);
         
       for (unsigned ii=0; ii<cells.size(); ++ii)
       {
-         int gid = cells[ii].dest_;
-         GridPoint gpt(gid,npex_,npey_,npez_);
-         int tix = gpt.x*tnx_/npex_;
-         int tiy = gpt.y*tny_/npey_;
-         int tiz = gpt.z*tnz_/npez_;
+         int realdestpe = cells[ii].dest_;
+         GridPoint pept(realdestpe,npex_,npey_,npez_);
+         int tix = pept.x*tnx_/npex_;
+         int tiy = pept.y*tny_/npey_;
+         int tiz = pept.z*tnz_/npez_;
          dest[ii] = tix + tiy*tnx_ + tiz*tnx_*tny_;
          cells[ii].sortind_ = dest[ii];
       }

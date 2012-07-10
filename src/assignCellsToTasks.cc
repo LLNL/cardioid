@@ -186,6 +186,11 @@ namespace
 {
     void computeVolHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm)
     {
+       int nTasks, myRank;
+       MPI_Comm_size(comm, &nTasks);
+       MPI_Comm_rank(comm, &myRank);
+       bool testingOnly = (nProcs != nTasks);       
+       
        // compute bounding box volumes from cells array
        vector<int> peminx(nProcs,99999999);
        vector<int> peminy(nProcs,99999999);
@@ -197,6 +202,7 @@ namespace
        for (unsigned ii=0; ii<cells.size(); ++ii)
        {
           int peid = cells[ii].dest_;
+
           GridPoint gpt(cells[ii].gid_,sim.nx_,sim.ny_,sim.nz_);
           if (gpt.x < peminx[peid]) peminx[peid] = gpt.x;
           if (gpt.y < peminy[peid]) peminy[peid] = gpt.y;
@@ -221,8 +227,6 @@ namespace
        MPI_Allreduce(&pemaxz[0], &pemaxz_all[0], nProcs, MPI_INT, MPI_MAX, comm);
        MPI_Allreduce(&nloc[0], &nall[0], nProcs, MPI_INT, MPI_SUM, comm);
 
-      int myRank;
-      MPI_Comm_rank(comm, &myRank);
       if (myRank == 0)
       {
          const int nhistmax = 100; // number of bins
