@@ -61,14 +61,14 @@ void objectGet(OBJECT* obj, const string& name, unsigned& value, const string& d
 
 void objectGet(OBJECT* obj, const string& name, Long64& value, const string& defVal)
 {
-   int tmp;
-   object_get(obj, name.c_str(), &tmp, NULL, 1, defVal.c_str());
+   Long64 tmp;
+   object_get(obj, name.c_str(), &tmp, ULL, 1, defVal.c_str());
    value = tmp;
 }
 void objectGet(OBJECT* obj, const string& name, long long int& value, const string& defVal)
 {
    long long int  tmp;
-   object_get(obj, name.c_str(), &tmp, NULL, 1, defVal.c_str());
+   object_get(obj, name.c_str(), &tmp, LL, 1, defVal.c_str());
    value = tmp;
 }
 
@@ -119,7 +119,7 @@ void objectGet(OBJECT* obj, const string& name, vector<unsigned>& value)
 void objectGet(OBJECT* obj, const string& name, vector<Long64>& value)
 {
    value.clear();
-   int* tmp;
+   Long64* tmp;
    unsigned n = object_getv(obj, name.c_str(), (void**) &tmp, ULL, IGNORE_IF_NOT_FOUND);
    value.reserve(n);
    for (unsigned ii=0; ii<n; ++ii)

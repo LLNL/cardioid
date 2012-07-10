@@ -122,9 +122,9 @@ void printInitialize(Simulate &sim)
    }
    sim.printIndex_ = index; 
 
-   sim.printFile_=fopen("data","a"); 
-   if (myRank == 0)
+   if (index >=0)
    {
+      sim.printFile_=fopen("data","a"); 
       printf(                "#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
       fprintf(sim.printFile_,"#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
    }
