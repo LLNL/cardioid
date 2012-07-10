@@ -99,30 +99,43 @@ void simulationProlog(Simulate& sim)
 }
 
 
+Long64 findGlobalMinGid(const Anatomy& anatomy)
+{
+   Long64 minGid=anatomy.nx()*anatomy.ny()*anatomy.nz();
+   for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
+      if (anatomy.gid(ii) < minGid)
+         minGid = anatomy.gid(ii); 
+   Long64 globalMin;
+   MPI_Allreduce(&minGid, &globalMin, 1, MPI_LONG_LONG, MPI_MIN, MPI_COMM_WORLD);
+   return globalMin;
+}  
+
+
 void printInitialize(Simulate &sim)
 {
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
    const Anatomy& anatomy = sim.anatomy_;
-   int index =-1; 
-   if ( sim.printGid_ == -1 )    
-   {
-       long long int minGid=-2;
-       for (int index=0;index<anatomy.nLocal();index++) if (anatomy.gid(index)< minGid) minGid = anatomy.gid(index); 
-       MPI_Allreduce(&minGid, &sim.printGid_, 1, MPI_LONG_LONG, MPI_MIN, MPI_COMM_WORLD);
-   }  
-   if ( sim.printGid_  < -1 && myRank == 0) 
-   {
-     sim.printGid_=anatomy.gid(0) ; 
-   }
-   if ( sim.printGid_ >= 0) 
-   {
-     for (index=0;index<anatomy.nLocal();index++)
-      if (anatomy.gid(index) == sim.printGid_) break; 
-   }
-   sim.printIndex_ = index; 
 
-   if (index >=0)
+   sim.printIndex_ = -1;
+   
+   // -2 -> print index 0 rank 0
+   if (sim.printGid_ == -2 && myRank == 0)
+   {
+      sim.printGid_ = anatomy.gid(0);
+   }
+   // -1 -> global min gid
+   if ( sim.printGid_ == -1 )    
+      sim.printGid_ = findGlobalMinGid(sim.anatomy_);
+
+   for (unsigned ii=0; ii<anatomy.nLocal(); ii++)
+      if (anatomy.gid(ii) == sim.printGid_)
+      {
+         sim.printIndex_ = ii;
+         break;
+      }
+   
+   if (sim.printIndex_ >=0)
    {
       sim.printFile_=fopen("data","a"); 
       printf(                "#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");

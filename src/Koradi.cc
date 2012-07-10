@@ -207,7 +207,8 @@ void Koradi::calculateCellDestinations()
    }
    else // we know which domains might be close
    {
-      for (unsigned ii=0; ii<cells_.size(); ++ii)
+      #pragma omp parallel for
+      for (int ii=0; ii<cells_.size(); ++ii)
       {
          int cellOwner = cells_[ii].dest_;
          Vector rCell = indexToVector_(cells_[ii].gid_);
@@ -291,6 +292,7 @@ void Koradi::computeRadii()
 {
    radii_.assign(radii_.size(), 0.);
    
+   #pragma omp parallel for
    for (int ii=0; ii<cells_.size(); ++ii)
    {
       Vector v = indexToVector_(cells_[ii].gid_);
