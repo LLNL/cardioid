@@ -606,8 +606,20 @@ int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zm
             if (tvolmax != tvolmin)
             {
                if (myRank_ == 0)
-                  cout << "ERROR:  Plane " << kp << " could not reach target volume of " << targetVol << " on first iteration!  tvolmin = " << tvolmin << ", tvolmax = " << tvolmax << endl;
-               return -1;
+                  cout << "Warning:  Plane " << kp << " could not reach target volume of " << targetVol << " on first iteration!  tvolmin = " << tvolmin << ", tvolmax = " << tvolmax << endl;
+
+               // save results in peyind
+               for (int jp=0; jp<npey_; jp++)
+               {
+                  for (int iy=trialmin_y[jp]; iy<=trialmax_y[jp]; iy++)
+                     peyind_[ny_*kp+iy] = jp;
+                  
+                  for (int ip=0; ip<npex_; ip++)
+                     for (int ix=trialmin_x[jp*npex_+ip]; ix<=trialmax_x[jp*npex_+ip]; ix++)
+                        pexind_[nx_*npey_*kp + nx_*jp + ix] = ip;
+               }
+
+               return tvolmax;
             }
             //else
             //   if (myRank_ == 0)
