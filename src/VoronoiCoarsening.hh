@@ -26,12 +26,17 @@ struct PackedData
 class LocalSums
 {
  private:
-   std::map<int,int>    nval_; // number of values summed up
+   std::map<int,int>    nval_; // number of values summed up for each color
    std::map<int,double> sum_;
    
  public:
    LocalSums()
    {
+   }
+   
+   size_t size()
+   {
+      return nval_.size();
    }
    
    void add1value(const int color, const double value)
@@ -49,6 +54,9 @@ class LocalSums
    
    void packData(PackedData* packeddata, const int ndata)
    {
+      assert( nval_.size()==sum_.size() );
+      assert( ndata==nval_.size() );
+      
       int i=0;
       std::map<int,double>::const_iterator itv=sum_.begin();
       for(std::map<int,int>::const_iterator itn  = nval_.begin();
@@ -61,8 +69,12 @@ class LocalSums
          packeddata[i].n    =itn->second;
          packeddata[i].value=itv->second;
          
-         itv++;
-         i++;
+         ++itv;
+         ++i;
+      }
+      if( i!=ndata )
+      {
+         std::cerr<<"i="<<i<<", ndata="<<ndata<<std::endl;
       }
       assert( i==ndata );
    }

@@ -68,7 +68,10 @@ int readCelllist(const string filename, vector<Long64>& cellVec)
          }
          istringstream ss ( query );
          Long64 igid;
-         while( ss >> igid )cellVec.push_back(igid);
+         while( ss >> igid ){
+            assert( igid>=0 );
+            cellVec.push_back(igid);
+         }
       }
       nSubset = cellVec.size();
    }   

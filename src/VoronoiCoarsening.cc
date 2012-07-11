@@ -61,10 +61,65 @@ int VoronoiCoarsening::bruteForceColoring()
    assert( centers_.size()>0 );
    assert( colors_.size()>0 );
    
+   int myRank;
+   MPI_Comm_rank(comm_, &myRank);  
+   if( myRank==0 )
+      cout<<"VoronoiCoarsening: brute force coloring..."<<endl;
+
    ncolors_.clear();
    local_colors_.clear();
    
    const int ncenters=centers_.size();
+   
+   // get sub-domain mass center
+   Vector domain_center(0.,0.,0.);
+   for (int icell=0; icell<colors_.size(); ++icell)
+   {
+      Vector r = indexToVector_(cells_[icell].gid_);
+      domain_center+=r;
+   }
+   domain_center/=(double)colors_.size();
+   
+   // get sub-domain radius
+   double domain_radius=0.;
+   for (int icell=0; icell<colors_.size(); ++icell)
+   {
+      Vector r = indexToVector_(cells_[icell].gid_);
+      Vector rij = r - domain_center;
+      double r2 = dot(rij, rij);
+      if( r2>domain_radius )domain_radius=r2;
+   }
+   domain_radius=sqrt(domain_radius);
+   //cout<<"Domain center: "<<domain_center<<", Domain radius: "<<domain_radius<<endl;
+
+   // get distance from sub-domain center to closest center
+   double rcmin = 1.e30;
+   for (int icenter=0; icenter<ncenters; ++icenter)
+   {
+      Vector rij = domain_center - centers_[icenter];
+      double r2 = dot(rij, rij);
+      if (r2 < rcmin)
+      {
+         rcmin = r2;
+      }
+   }
+   rcmin=sqrt(rcmin);
+   if(rcmin<domain_radius)rcmin=domain_radius;
+
+
+   // get centers closest to sub-domain
+   const double d2min=1.01*(rcmin+domain_radius)*(rcmin+domain_radius);
+   map<int,Vector> close_centers;
+   for (int icenter=0; icenter<ncenters; ++icenter)
+   {
+      Vector rij = domain_center - centers_[icenter];
+      double r2 = dot(rij, rij);
+      
+      if( r2<=d2min)close_centers.insert( pair<int,Vector>(icenter,centers_[icenter]) );
+   }
+   const int nclosecenters=(int)close_centers.size();
+   assert( nclosecenters>0 );
+   //std::cout<<"nclosecenters="<<nclosecenters<<std::endl;
    
    // color one cell at a time
    for (int icell=0; icell<colors_.size(); ++icell)
@@ -73,17 +128,17 @@ int VoronoiCoarsening::bruteForceColoring()
       int color = -1;
       Vector r = indexToVector_(cells_[icell].gid_);
       
-      // loop over all centers
-      // TBD (optimization): 
-      // we should be able to restrict that loop to a smaller subset of centers
-      for (int icenter=0; icenter<ncenters; ++icenter)
+      // loop over closest centers
+      for(map<int,Vector>::const_iterator itr =close_centers.begin();
+                                          itr!=close_centers.end();
+                                        ++itr)
       {
-         Vector rij = r - centers_[icenter];
+         Vector rij = r - itr->second;
          double r2 = dot(rij, rij);
          if (r2 < r2Min)
          {
             r2Min = r2;
-            color = icenter;
+            color = itr->first;
          }
       }
       if (color < 0 ){
@@ -110,6 +165,9 @@ int VoronoiCoarsening::bruteForceColoring()
    }
    assert( ntotal==anatomy_.nGlobal() );
 #endif
+   if( myRank==0 )
+      cout<<"VoronoiCoarsening: brute force coloring done..."<<endl;
+   
    return 0;
 }
 
@@ -222,15 +280,16 @@ void VoronoiCoarsening::setOwnedColors(const map< int, int* >& nremote_colors_fr
 
 void VoronoiCoarsening::computeRemoteTasks()
 {
+   int nTasks, myRank;
+   MPI_Comm_size(comm_, &nTasks);
+   MPI_Comm_rank(comm_, &myRank);  
+   if( myRank==0 )
+      cout<<"VoronoiCoarsening: compute remote tasks..."<<endl;
+
    for(map<int,int>::const_iterator itr =ncolors_.begin();
                                     itr!=ncolors_.end();
                                   ++itr)
       assert( local_colors_.find(itr->first)!=local_colors_.end() );
-
-   int nTasks, myRank;
-   MPI_Comm_size(comm_, &nTasks);
-   MPI_Comm_rank(comm_, &myRank);  
-
    
    int nlocalcolors=(int)(local_colors_.size());
    int max_nlocalcolors;
@@ -331,13 +390,15 @@ void VoronoiCoarsening::computeRemoteTasks()
       assert( itn!=nremote_colors_from_task.end() );
       delete[] itn->second;
    }
+   if( myRank==0 )
+      cout<<"VoronoiCoarsening: compute remote tasks done..."<<endl;
 }
 
 void VoronoiCoarsening::exchangeAndSum(LocalSums& valcolors)
 {
    // set up send buffer
-   PackedData* localpackeddata=new PackedData[ncolors_.size()];
-   valcolors.packData(localpackeddata,ncolors_.size());
+   PackedData* localpackeddata=new PackedData[valcolors.size()];
+   valcolors.packData(localpackeddata,valcolors.size());
    
    // set up buffer to recv remote data
    int ndata2recv=0;

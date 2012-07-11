@@ -10,6 +10,8 @@ using namespace std;
 
 /////////////////////////////////////////////////////////////////////
 
+static const double tol_det=1.e-8;
+
 double det3(const double a,const double b,const double c,
             const double d,const double e,const double f,
             const double g,const double h,const double i)
@@ -18,21 +20,25 @@ double det3(const double a,const double b,const double c,
 }
 
 // Cramer's rule
-void solve3x3(const double s[6], const double r[3], double x[3])
+int solve3x3(const double s[6], const double r[3], double x[3], const int color)
 {
    double a[9]={s[0],s[1],s[2],s[1],s[3],s[4],s[2],s[4],s[5]};
    double det1=det3(a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7],a[8]);
-   if( fabs(det1)<1.e-6 )
+   if( fabs(det1)<tol_det )
    {
-      cout<<"WARNING: Bad condition number for 3x3 system..."<<endl;
-      cout<<a[0]<<","<<a[1]<<","<<a[2]<<endl;
-      cout<<a[3]<<","<<a[4]<<","<<a[5]<<endl;
-      cout<<a[6]<<","<<a[7]<<","<<a[8]<<endl;
+      cout<<"WARNING: Bad condition number for 3x3 system: det="<<det1<<", color="<<color<<endl;
+      cout<<"A=["<<a[0]<<" "<<a[1]<<" "<<a[2]<<";"
+                 <<a[3]<<" "<<a[4]<<" "<<a[5]<<";"
+                 <<a[6]<<" "<<a[7]<<" "<<a[8]<<"]"<<endl;
+      //cout<<"r=["<<r[0]<<" "<<r[1]<<" "<<r[2]<<"]"<<endl;
+      return 1;
    }
    const double det1i=1./det1;
    x[0]=det3(r[0],a[1],a[2],r[1],a[4],a[5],r[2],a[7],a[8])*det1i;
    x[1]=det3(a[0],r[0],a[2],a[3],r[1],a[5],a[6],r[2],a[8])*det1i;
    x[2]=det3(a[0],a[1],r[0],a[3],a[4],r[1],a[6],a[7],r[2])*det1i;
+   
+   return 0;
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -101,7 +107,7 @@ void GradientVoronoiCoarsening::computeLSsystem(const vector<double>& val)
    valRHS2_.clear();
 
    const int nLocal = anatomy_.nLocal();
-   double minnorm2=0.001;
+   double minnorm2=1.e-8;
 
    for(int ic=0;ic<nLocal;++ic)
    {
@@ -155,15 +161,58 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
    Long64 nSnapSubLoc = owned_colors.size();
    MPI_Allreduce(&nSnapSubLoc, &nSnapSub, 1, MPI_LONG_LONG, MPI_SUM, comm_);
 
+   static bool first_time = true;
+   static std::set<int> exclude_colors;
+   static int sum_npts=0;
+   
+   if( first_time )
+   {
+      for(set<int>::const_iterator it = owned_colors.begin();
+                                   it!= owned_colors.end();
+                                 ++it)
+      {
+         const int color=(*it);
+      
+         int ncells=valcolors_.nValues(color);
+      
+         if( ncells>3 ){
+            double a[6]={valMat00_.value(color),
+                         valMat01_.value(color),
+                         valMat02_.value(color),
+                         valMat11_.value(color),
+                         valMat12_.value(color),
+                         valMat22_.value(color)};
+         
+            double det1=det3(a[0],a[1],a[2],a[1],a[3],a[4],a[2],a[4],a[5]);
+            if( fabs(det1)<tol_det )
+            {
+               exclude_colors.insert(color);
+            }
+            
+         }else{
+            exclude_colors.insert(color);
+         }
+      } 
+      
+      first_time = false;
+      
+      int npts=(int)exclude_colors.size();
+      if( npts>0 )cout<<"GradientVoronoiCoarsening --- WARNING: exclude "<<npts<<" points from coarsened data on task "<<myRank<<endl;
+      
+      MPI_Reduce(&npts, &sum_npts, 1, MPI_INT, MPI_SUM, 0, comm_);
+   }
+
    if (myRank == 0)
    {
+      Long64 nc=nSnapSub-(Long64)sum_npts;
+      
       // write header
       int nfiles;
       Pget(file,"ngroup",&nfiles);
       Pprintf(file, "cellViz FILEHEADER {\n");
       Pprintf(file, "  lrec = %d;\n", lrec);
       Pprintf(file, "  datatype = FIXRECORDASCII;\n");
-      Pprintf(file, "  nrecords = %llu;\n", nSnapSub);
+      Pprintf(file, "  nrecords = %llu;\n", nc);
       Pprintf(file, "  nfields = %d;\n", nfields);
       Pprintf(file, "  field_names = rx ry rz nvals GradVmx GradVmy GradVmz;\n");
       Pprintf(file, "  field_types = u u u u f f f;\n" );
@@ -186,24 +235,41 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
                               ++it)
    {
       const int color=(*it);
+      
+      const std::set<int>::const_iterator itn=exclude_colors.find(color);
+      if( itn!=exclude_colors.end() )continue;
+      
+      //cout<<"color="<<color<<endl;
       const Vector& v = coarsening_.center(color);
       int ix = int(v.x()) - halfNx;
       int iy = int(v.y()) - halfNy;
       int iz = int(v.z()) - halfNz;
       
+      int ncells=valcolors_.nValues(color);
+      
       double g[3]={0.,0.,0.};             
-
-      double a[6]={valMat00_.value(color),
-                   valMat01_.value(color),
-                   valMat02_.value(color),
-                   valMat11_.value(color),
-                   valMat12_.value(color),
-                   valMat22_.value(color)};
-      double b[3]={valRHS0_.value(color),
-                   valRHS1_.value(color),
-                   valRHS2_.value(color)};
-                   
-      solve3x3(a,b,g);
+      
+      if( ncells>3 ){
+         double a[6]={valMat00_.value(color),
+                      valMat01_.value(color),
+                      valMat02_.value(color),
+                      valMat11_.value(color),
+                      valMat12_.value(color),
+                      valMat22_.value(color)};
+         double b[3]={valRHS0_.value(color),
+                      valRHS1_.value(color),
+                      valRHS2_.value(color)};
+         double norm2b=b[0]*b[0]+b[1]*b[1]+b[2]*b[2];          
+         
+         if( norm2b>1.e-15){
+            int ret=solve3x3(a,b,g,color);
+            if (ret==1){
+               cout<<"WARNING: unable to compute gradient because cells ("<<ncells<<") associated to gid "<<color<<" seem to be in 2D plane!!"<<endl;
+            }
+         }
+      }else{
+          cout<<"WARNING: Not enough cells ("<<ncells<<") associated to gid "<<color<<" to compute gradient!!"<<endl;
+      } 
 
       int l = snprintf(line, lrec, fmt,
                        ix, iy, iz,
