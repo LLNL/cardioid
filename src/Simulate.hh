@@ -42,6 +42,10 @@ class PotentialData
       VmArray_     =new std::vector<double>(anatomy.size(), 0.);
       dVmDiffusion_=new std::vector<double>(anatomy.nLocal(), 0.);
       dVmReaction_ =new std::vector<double>(anatomy.nLocal(), 0.);
+      unsigned paddedSize = 4*((anatomy.nLocal()+3)/4);
+      dVmDiffusion_->reserve(paddedSize);
+      dVmReaction_->reserve(paddedSize);
+
    }
    
    std::vector<double>* swapdVmReaction(std::vector<double>* const dVmReaction)

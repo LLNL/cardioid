@@ -127,12 +127,15 @@ CommTable::CommTable(
 
    MPI_Barrier(_comm);
 
+   _offsets = 0;
+   #ifdef SPI
    _offsets = new int*[4];  //need to pass these offsets to spi_implementation
    _offsets[0]=&(_sendOffset[0]);
    _offsets[1]=&(_putOffset[0]);
    _offsets[2]=&(_putCntOffset[0]);
    _offsets[3]=&(_recvOffset[0]);
-
+   #endif
+   
    delete[] recvBuf;
    delete[] sendBuf;
    delete[] recvReq;

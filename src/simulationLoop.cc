@@ -335,6 +335,9 @@ struct SimLoopData
 
       int nLocal = sim.anatomy_.nLocal();
       dVmReaction=new vector<double>(nLocal, 0.0);
+      unsigned paddedSize = 4*((nLocal+3)/4);
+      dVmReaction->reserve(paddedSize);
+      
       mkOffsets(integratorOffset, sim.anatomy_.nLocal(), sim.reactionThreads_);
       mkSendBufInfo(sendBufOffset, sendBufIndirect, voltageExchange,
                     integratorOffset, sim.reactionThreads_);
@@ -677,7 +680,8 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
       L2_BarrierWithSync_InitInThread(loopData.diffusionBarrier, &diffusionHandle);
       
       // setup matrix voltages for first timestep.
-      sim.diffusion_->updateLocalVoltage(&VmArray[0]);
+      if (sim.reactionThreads_.teamRank() >= 0) 
+         sim.diffusion_->updateLocalVoltage(&VmArray[0]);
       loopData.voltageExchange.fillSendBuffer(VmArray);
       #pragma omp barrier
       profileStart(parallelDiffReacTimer);
