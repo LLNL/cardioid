@@ -284,8 +284,8 @@ void TT06_RRG::initConsts(int cellType)
      case 1: // Mid
       g_Ks_ = 0.098;
       g_to_ = 0.294;
-      P_NaK_ = 3.1;
-      g_NaL_ = 0.3;
+      P_NaK_ = 3.0;
+      g_NaL_ = 0.6;
       s_switch_ = 1;
       break;
      case 2: // Epi
