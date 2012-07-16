@@ -120,27 +120,9 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
          }
          sendOffset.push_back(sendBuf.size());
       }
+      sendBuf.reserve(sendOffset.back()+1);
    } //scope
-   
-   {  // prune nbrs with no posible overlap
-      vector<int>::iterator iter = myNbrs.begin();
-      do
-      {
-         unsigned dist = iter - myNbrs.begin();
-         if (sendOffset[dist+1] - sendOffset[dist] == 0)
-         {
-            iter = myNbrs.erase(iter);
-            sendOffset.erase(sendOffset.begin()+dist);
-         }
-         else
-            ++iter;
-      }
-      while (iter != myNbrs.end());
-   }
-   
-
-   
-   
+      
    // send request size to all neighbors
    vector<int> recvOffset(myNbrs.size()+1);
    { //scope
@@ -167,9 +149,14 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
       for (int ii=0; ii<myNbrs.size(); ++ii)
          recvOffset[ii+1] += recvOffset[ii];
    } //scope
-  
-   // send cell requests to neighbors
-   vector<Long64> recvBuf(recvOffset.back());
+
+   // send cell requests to neighbors.  Buffer is one slot bigger that
+   // truly needed in case last nbr sends no data.  In this case we need
+   // to recv a zero length msg, one past the normal end of the buffer.
+   // This would be harmless since no write is required for a zero
+   // lenght message, however, it does tirgger the bounds checking on
+   // STL vectors, so we need to work around it.
+   vector<Long64> recvBuf(recvOffset.back()+1);
    {
       int nNbrs = myNbrs.size();
       MPI_Request sendReq[nNbrs];
@@ -179,7 +166,6 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
       {
          int source = myNbrs[ii];
          int nRecv = recvOffset[ii+1] - recvOffset[ii];
-         assert(nRecv > 0);
          MPI_Irecv(&recvBuf[recvOffset[ii]], nRecv, MPI_LONG_LONG, source , tag ,comm_, recvReq+ii);
       }  
      
