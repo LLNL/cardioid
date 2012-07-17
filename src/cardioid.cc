@@ -135,6 +135,7 @@ int main(int argc, char** argv)
    stringstream dirname;
    dirname << "snapshot."<<setfill('0')<<setw(12)<<sim.loop_;
    profileDumpAll(dirname.str());
+   heap_deallocate();
    MPI_Finalize();
    
    return 0;

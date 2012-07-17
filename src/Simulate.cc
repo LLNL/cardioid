@@ -31,10 +31,10 @@ void Simulate::outOfRange(unsigned index, double dVmr, double dVmd)
    /** This is awful.  Some diffusion classes don't store the results in
     *  array form, but keep them in an internal matrix.  We have to go
     *  fetch them. */
-   if (diffusion_->VmBlock() != 0)
+   if (diffusion_->dVmBlock() != 0)
    {
       unsigned bi = diffusion_->blockIndex()[index];
-      dVmd += diffusion_->VmBlock()[bi] * diffusion_->diffusionScale();
+      dVmd += diffusion_->dVmBlock()[bi] * diffusion_->diffusionScale();
    }
    
    printf("WARNING: Voltage out of range: rank %d, index %d gid %llu\n"
