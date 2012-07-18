@@ -143,8 +143,8 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
    SortByRank sortFunc(tissueType2Rank);
    sort(cells.begin(), cells.end(), sortFunc);
 
-   int nCellBuffer_ =  4*((nCells_+3)/4); 
-   double *stateBuffer_=(double *)malloc(sizeof(double)*nStateVar*nCellBuffer_); 
+   nCellBuffer_ =  4*((nCells_+3)/4); 
+   stateBuffer_=(double *)malloc(sizeof(double)*nStateVar*nCellBuffer_); 
    cellTypeVector_.reserve(nCellBuffer_); 
    cellTypeVector_.resize(nCells_); 
 
