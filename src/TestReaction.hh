@@ -47,8 +47,7 @@ class TestReaction : public Reaction
                           std::vector<std::string>& fieldUnits) const{};
    int getVarHandle(const std::string& varName) const {return -1;};
    void setValue(int iCell, int varHandle, double value){};
-//   double getValue(int iCell, int varHandle) const{return 0;};
-   double getValue(int iCell, int varHandle) const{};
+   double getValue(int iCell, int varHandle) const{return 0.0;};
    void getValue(int iCell,
                  const std::vector<int>& handle,
                  std::vector<double>& value) const{};
