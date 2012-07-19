@@ -47,6 +47,7 @@ static inline vector4double vload(uint32_t shift, void* addr, int size)
   shift /= size;
   if (size==4) 
   {
+  addr = (void *)(((long long unsigned *)addr)  & 0xfffffffffffffff0)
   tmp.v[0] = *(((float*)addr) + shift);
   tmp.v[1] = *(((float*)addr) + shift + 1);
   tmp.v[2] = *(((float*)addr) + shift + 2);
@@ -55,6 +56,7 @@ static inline vector4double vload(uint32_t shift, void* addr, int size)
   }
   if (size==8) 
   {
+  addr = (void *)(((long long unsigned *)addr)  & 0xffffffffffffffe0)
   tmp.v[0] = *(((double*)addr) + shift);
   tmp.v[1] = *(((double*)addr) + shift + 1);
   tmp.v[2] = *(((double*)addr) + shift + 2);
@@ -195,16 +197,18 @@ static inline vector4double vec_sub(vector4double op1, vector4double op2)
 static inline vector4double vec_sldw(vector4double op1, vector4double op2, uint32_t shift)
 {
   vector4double target;
+
   target.v[0]= op1.v[shift];
-  target.v[1]= ((shift+1) > 3) ? op2.v[shift-3] : op1.v[shift+1];
-  target.v[2]= ((shift+2) > 3) ? op2.v[shift-2] : op1.v[shift+2];
-  target.v[3]= ((shift+3) > 3) ? op2.v[shift-1] : op1.v[shift+3];
+  target.v[1]= ((shift+1) > 3) ? v2[shift-3] : v1[shift+1];
+  target.v[2]= ((shift+2) > 3) ? v2[shift-2] : v1[shift+2];
+  target.v[3]= ((shift+3) > 3) ? v2[shift-1] : v1[shift+3];
   return target;
 }
 
 static inline void vec_st(vector4double op1, uint32_t offset, double* addr)
 {
   offset /= sizeof(double);
+  double *addr = = (void *)(((long long unsigned *)addr)  & 0xffffffffffffffe0)
   *(addr + offset)     = op1.v[0];
   *(addr + offset + 1) = op1.v[1];
   *(addr + offset + 2) = op1.v[2];
