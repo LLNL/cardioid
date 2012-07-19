@@ -14,7 +14,6 @@
 #include "mpiUtils.h"
 #include "GridPoint.hh"
 #include "AnatomyCell.hh"
-#include "ProcBox.hh"
 using namespace std;
 
 
@@ -39,10 +38,6 @@ GDLoadBalancer::GDLoadBalancer(MPI_Comm comm, int npex, int npey, int npez):
    npegrid_ = npex_*npey_*npez_;
    togive_.resize(npegrid_,vector<int>(nnbr_,0));
    penbr_.resize(npegrid_,vector<int>(nnbr_,-1));
-
-   peboxinfo_.resize(npegrid_);
-   for (int ip=0; ip<npegrid_; ip++)
-      peboxinfo_[ip] = new ProcBox(ip);
 
    // store process numbers of all neighbors
    for (int ip=0; ip<npegrid_; ip++)
@@ -85,8 +80,6 @@ GDLoadBalancer::GDLoadBalancer(MPI_Comm comm, int npex, int npey, int npez):
 ////////////////////////////////////////////////////////////////////////////////
 GDLoadBalancer::~GDLoadBalancer()
 {
-   for (int ip=0; ip<npegrid_; ip++)
-      delete peboxinfo_[ip];
 }
 ////////////////////////////////////////////////////////////////////////////////
 void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny, int nz)
@@ -463,9 +456,6 @@ void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny
    // carry out communication to match computed distribution
    redistributeCells(cells);
 
-   if (myRank_ == 0)
-      cout << "Load histogram after initial volume-weighted distribution:" << endl;
-   nlocHistogram(cells);
 }
 ////////////////////////////////////////////////////////////////////////////////
 int GDLoadBalancer::distributePlane(vector<AnatomyCell>& cells, int zmin, int zmax, int zvol, int kp)
@@ -915,64 +905,6 @@ void GDLoadBalancer::redistributeCells(vector<AnatomyCell>& cells)
       assert(nLocal <= nMax);
       cells.resize(nLocal);
    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void GDLoadBalancer::nlocHistogram(vector<AnatomyCell>& cells)
-{
-   // compute load histogram from data in cells
-   histnloc_.resize(npegrid_,0);
-   vector<int> mydata(npegrid_,0);
-   for (unsigned ii=0; ii<cells.size(); ++ii)
-      mydata[cells[ii].dest_]++;
-   MPI_Allreduce(&mydata[0], &histnloc_[0], npegrid_, MPI_INT, MPI_SUM, comm_);
-   if (myRank_ == 0)
-      computeNlocHistogram();
-    
-}
-
-////////////////////////////////////////////////////////////////////////////////
-void GDLoadBalancer::computeNlocHistogram()
-{
-   // compute histogram of current data distribution
-   const int nhistmax = 100; // number of bins
-   vector<int> phist(nhistmax,0);
-
-   int maxnum = 0;
-   int minnum = nx_*ny_*nz_;
-   int maxpe = -1;
-   for (int p=0; p<npegrid_; p++)
-   {
-      if (histnloc_[p] > maxnum) {
-         maxnum = histnloc_[p];
-         maxpe = p;
-      }
-      if (histnloc_[p] < minnum)
-         minnum = histnloc_[p];
-   }
-   int nhist = maxnum - minnum + 1;
-   if (nhist > nhistmax) nhist = nhistmax;
-   int delta = (maxnum-minnum + 1)/nhist;
-   if ((maxnum-minnum+1)%nhist !=0) delta++;
-   for (int p=0; p<npegrid_; p++)
-   {
-      int bin = (histnloc_[p]-minnum)/delta;
-      phist[bin]++;
-      //ewd DEBUG: print process number of top bin
-      //if (bin == nhist-1 && phist[bin] == 1)
-      //  cout << "nlocHistogram: top bin pe " << p << ", nloc = " << histnloc_[p] << endl;
-   }
-   cout << "load balance histogram (ncells):  " << endl;
-   for (int i=0; i<nhist; i++)
-      cout << "  " << minnum+delta*i << " - " << minnum+delta*(i+1) << ":    " << phist[i] << endl;
-
-   nloctot_ = 0;
-   for (unsigned ii=0; ii<npegrid_; ++ii)
-      nloctot_ += histnloc_[ii];
-   double nlocavg_ = (double)nloctot_/(double)npegrid_; 
-    
-   cout << "total # of non-zero grid points = " << nloctot_ << ", avg. # per task = " << nlocavg_ << ", max pe = " << maxpe << " (" << maxnum << ")" << endl << endl;
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////

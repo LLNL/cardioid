@@ -6,8 +6,6 @@
 using std::vector;
 
 class AnatomyCell;
-class ProcBox;
-class MoveInfo;
 
 class GDLoadBalancer {
 
@@ -27,9 +25,6 @@ class GDLoadBalancer {
   vector<int> haveData_;         // (testing) current process owns data for processor ip
   vector<int> myRankList_;       // (testing) list of processes owned by myRank_
   vector<vector<int> > togive_;  // list of all data exchanges needed for balance
-  vector<int> histnloc_;         // copy of nloc_ used for histogramming
-  vector<int> histvol_;          // copy of vol_ used for histogramming
-  vector<ProcBox*> peboxinfo_;  // vector of all processors' bounding box info
   vector<int> pevol_;            // bounding box volume of each processor's cells
   vector<vector<double> > pecom_;
   vector<vector<int> > pemin_;
@@ -48,8 +43,6 @@ class GDLoadBalancer {
   void initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny, int nz);
   void xstripDist(vector<int>& xcnt, vector<int>& pexmin, vector<int>& pexmax, bool verbose);
   void redistributeCells(vector<AnatomyCell>& cells);
-  void nlocHistogram(vector<AnatomyCell>& cells);
-  void computeNlocHistogram();
   void computeReducedProcGrid(int nTasks);
   void setReducedProcGrid(int rnx, int rny, int rnz);
   int ipow(int a, int b);
@@ -64,16 +57,6 @@ class GapSort
    {
       return v_[i] < v_[j];
    }
-};
-    
-class MoveInfo
-{
- public:
-    MoveInfo(int spe, int dpe, int d, int v): srcpe(spe),destpe(dpe),dim(d),val(v) {};
-    int srcpe;
-    int destpe;
-    int dim;
-    int val;
 };
     
 #endif
