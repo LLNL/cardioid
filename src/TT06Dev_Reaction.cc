@@ -144,12 +144,19 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
    sort(cells.begin(), cells.end(), sortFunc);
 
    nCellBuffer_ =  4*((nCells_+3)/4); 
-   stateBuffer_=(double *)malloc(sizeof(double)*nStateVar*nCellBuffer_); 
+   unsigned bufSize = sizeof(double)*nStateVar*nCellBuffer_;
+   int rc = posix_memalign((void**)&stateBuffer_, 32, bufSize);
+   assert((size_t)stateBuffer_ & 0x1f == 0);
+   
    cellTypeVector_.reserve(nCellBuffer_); 
    cellTypeVector_.resize(nCells_); 
 
    state_.resize(nStateVar); 
-   for (unsigned jj=0; jj<nStateVar; ++jj) state_[jj]= stateBuffer_+jj*nCellBuffer_; 
+   for (unsigned jj=0; jj<nStateVar; ++jj)
+   {
+      state_[jj]= stateBuffer_+jj*nCellBuffer_;
+      assert((size_t)state_[jj] & 0x1f == 0);
+   }
 
    vector<int> nCellsOfType(nCellTypes_,0); 
    double c9=get_c9(); 
@@ -226,6 +233,8 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
 }
 TT06Dev_Reaction::~TT06Dev_Reaction()
 {
+   free(stateBuffer_);
+   delete fit_;
 }
 // void TT06Dev_Reaction::writeStateDev(int loop)
 // {

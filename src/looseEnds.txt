@@ -133,3 +133,6 @@ to get the fast barrier stuff better designed.
 
 42.  The snapshotCellList_ and coarsedata_ members *must* be removed
      from the Simulate class.
+
+43.  The place where we call posix_memalign aren't sensitive to the
+     actual simd length.
