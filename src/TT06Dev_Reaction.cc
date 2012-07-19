@@ -146,7 +146,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
    nCellBuffer_ =  4*((nCells_+3)/4); 
    unsigned bufSize = sizeof(double)*nStateVar*nCellBuffer_;
    int rc = posix_memalign((void**)&stateBuffer_, 32, bufSize);
-   assert((size_t)stateBuffer_ & 0x1f == 0);
+   assert((size_t)stateBuffer_ % 32 == 0);
    
    cellTypeVector_.reserve(nCellBuffer_); 
    cellTypeVector_.resize(nCells_); 
@@ -155,7 +155,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
    for (unsigned jj=0; jj<nStateVar; ++jj)
    {
       state_[jj]= stateBuffer_+jj*nCellBuffer_;
-      assert((size_t)state_[jj] & 0x1f == 0);
+      assert((size_t)state_[jj] % 32 == 0);
    }
 
    vector<int> nCellsOfType(nCellTypes_,0); 
