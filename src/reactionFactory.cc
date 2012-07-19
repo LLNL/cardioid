@@ -163,7 +163,6 @@ namespace
             parms.fastReaction = fastGate+256*fastNonGate; 
          } 
       }
-      if (parms.fastReaction == 1)  parms.fastReaction = 257; 
       objectGet(obj, "cellTypes", parms.cellTypeNames) ;
       if (parms.cellTypeNames.size() == 0)
       {
