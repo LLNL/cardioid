@@ -248,7 +248,9 @@ TT06Dev_Reaction::~TT06Dev_Reaction()
 //       printf("%d %24.14le\n",i,state); 
 //    }
 // }
-int workBundle(int index, int nItems, int nGroups , int mod, int& offset)
+
+
+int workBundle(int index, int nItems, int nGroups, int mod, int& offset)
 {
    assert(0<=index && index < nGroups); 
    int nItems0 = (nItems+mod-1)/mod ;
@@ -270,6 +272,8 @@ int workBundle(int index, int nItems, int nGroups , int mod, int& offset)
    //if ( index == nGroups -1) n = mod*((nItems-offset)/mod);
    if ( index == nGroups -1) n = ((nItems-offset));
 
+   assert (offset%4 == 0);
+   
    return n;
 }
 
@@ -292,15 +296,26 @@ int partition(int index, int nItems, int nGroups , int& offset)
 int TT06Dev_Reaction::nonGateWorkPartition(int& offset)
 {
    offset=0; 
-   
-   const ThreadRankInfo& rankInfo = group_.rankInfo();
-   int nCores = group_.nSquads();
-   int coreID = rankInfo.coreRank_;
-   int hwThreadID = rankInfo.squadRank_;
-   int nHwThreads = rankInfo.squadSize_;
-   int nCellsCore= partition(coreID, nCells_, nCores, offset);
-   int nCells = partition(hwThreadID, nCellsCore, nHwThreads, offset); 
-   return nCells; 
+
+   const int simdLength = 4;
+   int nSimd = nCells_/simdLength;
+   int simdRemainder = nCells_%simdLength;
+
+   int nThreads = group_.nThreads();
+   int nSimdPerThread = nSimd / nThreads;
+   int threadRemainder = nSimd % nThreads;
+
+   int threadRank = group_.teamRank();
+   if (threadRank < threadRemainder)
+   {
+      offset = (nSimdPerThread + 1) * threadRank * simdLength;
+      return (nSimdPerThread + 1) *simdLength;
+   }
+   offset = (threadRemainder + (nSimdPerThread * threadRank)) *simdLength;
+   int size = nSimdPerThread * simdLength;
+   if (threadRank + 1 == nThreads)
+      size += simdRemainder;
+   return size;
 }
 
 void TT06Dev_Reaction::calc(double dt, const vector<double>& Vm, const vector<double>& iStim, vector<double>& dVm)
