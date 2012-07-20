@@ -14,7 +14,7 @@ TestStimulus::TestStimulus(const TestStimulusParms& p, Pulse* pulse)
 }
 
 void TestStimulus::subClassStim(double time,
-                                vector<double>& dVmDiffusion)
+                                VectorDouble32& dVmDiffusion)
 {
    if ( myRank_ != targetRank_ )
       return;

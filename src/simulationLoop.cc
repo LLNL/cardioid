@@ -49,7 +49,7 @@ namespace
 {
    void mkSendBufInfo(vector<unsigned>& sendBufOffset,
                       vector<pair<unsigned, unsigned> >& sendBufIndirect,
-                      const HaloExchange<double>& halo,
+                      const HaloExchange<double, AlignedAllocator<double> >& halo,
                       const vector<int>& integratorOffset,
                       const ThreadTeam& threadInfo)
    {
@@ -86,7 +86,7 @@ void simulationProlog(Simulate& sim)
    sim.vdata_.setup(sim.anatomy_);
    //sim.VmArray_.resize(sim.anatomy_.size());
    
-   std::vector<double>& VmArray(*sim.vdata_.VmArray_);
+   VectorDouble32& VmArray(*sim.vdata_.VmArray_);
    sim.reaction_->initializeMembraneVoltage(VmArray);
   
    for (unsigned ii=sim.anatomy_.nLocal(); ii<sim.anatomy_.size(); ++ii)
@@ -152,9 +152,9 @@ void loopIO(const Simulate& sim,int firstCall)
       
    int loop = sim.loop_; 
 
-   std::vector<double>& VmArray(*sim.vdata_.VmArray_);
-   std::vector<double>& dVmR(*sim.vdata_.dVmReaction_);
-   std::vector<double>& dVmD(*sim.vdata_.dVmDiffusion_);
+   VectorDouble32& VmArray(*sim.vdata_.VmArray_);
+   VectorDouble32& dVmR(*sim.vdata_.dVmReaction_);
+   VectorDouble32& dVmD(*sim.vdata_.dVmDiffusion_);
 
    // SENSORS
    startTimer(sensorTimer);
@@ -202,12 +202,12 @@ void simulationLoop(Simulate& sim)
 {
    vector<double> iStim(sim.anatomy_.nLocal(), 0.0);
    simulationProlog(sim);
-   HaloExchange<double> voltageExchange(sim.sendMap_, (sim.commTable_));
+   HaloExchange<double, AlignedAllocator<double> > voltageExchange(sim.sendMap_, (sim.commTable_));
 
    PotentialData& vdata=sim.vdata_;
-   std::vector<double>& vmarray(*vdata.VmArray_);
-   std::vector<double>& dVmDiffusion(*vdata.dVmDiffusion_);
-   std::vector<double>& dVmReaction(*vdata.dVmReaction_);
+   VectorDouble32& vmarray(*vdata.VmArray_);
+   VectorDouble32& dVmDiffusion(*vdata.dVmDiffusion_);
+   VectorDouble32& dVmReaction(*vdata.dVmReaction_);
 
 #if defined(SPI) && defined(TRACESPI)
    int myRank;
@@ -334,7 +334,7 @@ struct SimLoopData
 #endif
 
       int nLocal = sim.anatomy_.nLocal();
-      dVmReaction=new vector<double>(nLocal, 0.0);
+      dVmReaction=new VectorDouble32(nLocal, 0.0);
       unsigned paddedSize = 4*((nLocal+3)/4);
       dVmReaction->reserve(paddedSize);
       
@@ -362,11 +362,11 @@ struct SimLoopData
     vector<int> integratorOffset_psb;
 #endif
 
-   vector<double>* dVmReaction; 
+   VectorDouble32* dVmReaction; 
    vector<int> integratorOffset;
    vector<pair<unsigned, unsigned> > sendBufIndirect;
    vector<unsigned> sendBufOffset;
-   HaloExchange<double> voltageExchange;
+   HaloExchange<double, AlignedAllocator<double> > voltageExchange;
 };
 
 void diffusionLoop(Simulate& sim,
@@ -379,7 +379,7 @@ void diffusionLoop(Simulate& sim,
    L2_BarrierHandle_t haloBarrierHandle;
    L2_BarrierWithSync_InitInThread(loopData.haloBarrier, &haloBarrierHandle);
 
-   std::vector<double>& dVmDiffusion(*sim.vdata_.dVmDiffusion_);
+   VectorDouble32& dVmDiffusion(*sim.vdata_.dVmDiffusion_);
 
    if (tid == 0) 
    {
@@ -483,8 +483,8 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
    int tid = sim.reactionThreads_.teamRank();
    L2_BarrierHandle_t reactionWaitOnNonGateHandle;
    L2_BarrierWithSync_InitInThread(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle);
-   std::vector<double>& VmArray(*sim.vdata_.VmArray_);
-   std::vector<double>& dVmDiffusion(*sim.vdata_.dVmDiffusion_);
+   VectorDouble32& VmArray(*sim.vdata_.VmArray_);
+   VectorDouble32& dVmDiffusion(*sim.vdata_.dVmDiffusion_);
 
 #ifdef PER_SQUAD_BARRIER
    const int sqsz = sim.reactionThreads_.squadSize();
@@ -668,7 +668,7 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
    cout << "Rank[" << myRank << "]: numOfNeighborToSend=" << sim.commTable_->_sendTask.size() << " numOfNeighborToRecv=" << sim.commTable_->_recvTask.size() << " numOfBytesToSend=" << sim.commTable_->_sendOffset[sim.commTable_->_sendTask.size()]*sizeof(double) << " numOfBytesToRecv=" << sim.commTable_->_recvOffset[sim.commTable_->_recvTask.size()]*sizeof(double) << endl;
 #endif
-   std::vector<double>& VmArray(*sim.vdata_.VmArray_);
+   VectorDouble32& VmArray(*sim.vdata_.VmArray_);
 
    #pragma omp parallel
    {

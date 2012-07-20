@@ -26,8 +26,8 @@ ReactionFHN::ReactionFHN(const Anatomy& anatomy)
 
 
 
-void ReactionFHN::calc(double dt, const vector<double>& Vm,
-                       const vector<double>& iStim , vector<double>& dVm)
+void ReactionFHN::calc(double dt, const VectorDouble32& Vm,
+                       const vector<double>& iStim , VectorDouble32& dVm)
 {
   for (unsigned ii=0; ii<nCells_; ++ii)
   {
@@ -37,7 +37,7 @@ void ReactionFHN::calc(double dt, const vector<double>& Vm,
   }
 }
 
-void ReactionFHN::initializeMembraneVoltage(std::vector<double>& Vm)
+void ReactionFHN::initializeMembraneVoltage(VectorDouble32& Vm)
 {
    assert(Vm.size() >= nCells_);
    Vm.assign(Vm.size(), -85.0);

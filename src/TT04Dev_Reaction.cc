@@ -29,9 +29,9 @@ TT04Dev_Reaction::TT04Dev_Reaction(const Anatomy& anatomy)
    
 }
 void TT04Dev_Reaction::calc(double dt,
-                                const vector<double>& Vm,
+                                const VectorDouble32& Vm,
                                 const vector<double>& iStim,
-                                vector<double>& dVm)
+                                VectorDouble32& dVm)
 {
    assert(nCells_ == dVm.size());
    
@@ -41,7 +41,7 @@ void TT04Dev_Reaction::calc(double dt,
    }
 }
 
-void TT04Dev_Reaction::initializeMembraneVoltage(std::vector<double>& Vm)
+void TT04Dev_Reaction::initializeMembraneVoltage(std::VectorDouble32& Vm)
 {
    assert(Vm.size() >= cellModel_.size());
    for (unsigned ii=0; ii<cellModel_.size(); ++ii)

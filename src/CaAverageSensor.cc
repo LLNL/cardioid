@@ -34,7 +34,7 @@ CaAverageSensor::CaAverageSensor(const SensorParms& sp,
    nlocal_=anatomy.nLocal();
 }
 
-void CaAverageSensor::computeColorAverages(const vector<double>& val)
+void CaAverageSensor::computeColorAverages(const VectorDouble32& val)
 {
    // calculate local sums
    coarsening_.accumulateValues(val,avg_valcolors_);
@@ -120,7 +120,7 @@ void CaAverageSensor::writeAverages(const string& filename,
 
 void CaAverageSensor::eval(double time, int loop)
 {
-   vector<double> val(nlocal_);
+   VectorDouble32 val(nlocal_);
    
    const int handle=reaction_.getVarHandle("Ca_i");
    

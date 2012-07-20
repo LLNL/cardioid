@@ -21,10 +21,10 @@ class ConstantReaction : public Reaction
    std::string methodName() const {return "Constant";}
 
    void calc(double dt,
-             const std::vector<double>& Vm,
+             const VectorDouble32& Vm,
              const std::vector<double>& iStim,
-             std::vector<double>& dVm);
-   void initializeMembraneVoltage(std::vector<double>& Vm);
+             VectorDouble32& dVm);
+   void initializeMembraneVoltage(VectorDouble32& Vm);
    double getValue(int iCell, int handle) const;
    int getVarHandle(const string& varName) const;
 
@@ -33,7 +33,7 @@ class ConstantReaction : public Reaction
    ConstantModel* cellModel_;
    int printRate_;
 
-   void compareWithExactSol(const std::vector<double>& Vm)const;
+   void compareWithExactSol(const VectorDouble32& Vm)const;
 };
 
 #endif

@@ -24,7 +24,7 @@ class FGRDiffusion : public Diffusion
    
    void updateLocalVoltage(const double* VmLocal);
    void updateRemoteVoltage(const double* VmRemote);
-   void calc(std::vector<double>& dVm);
+   void calc(VectorDouble32& dVm);
    unsigned* blockIndex(){return &blockIndex_[0];}
    double* VmBlock() {return VmBlock_.cBlock();}
    double* dVmBlock(){return dVmBlock_.cBlock();}

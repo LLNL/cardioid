@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include "VectorDouble32.hh"
 
 class BucketOfBits;
 
@@ -12,16 +13,16 @@ class Reaction
    virtual ~Reaction(){};
    virtual std::string methodName() const = 0;
    virtual void calc(double dt,
-                     const std::vector<double>& Vm,
+                     const VectorDouble32& Vm,
                      const std::vector<double>& iStim,
-                     std::vector<double>& dVm) = 0;
-   virtual void updateNonGate(double dt, const std::vector<double>&Vm, std::vector<double>&dVR) {};
-   virtual void updateGate   (double dt, const std::vector<double>&Vm) {};
+                     VectorDouble32& dVm) = 0;
+   virtual void updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR) {};
+   virtual void updateGate   (double dt, const VectorDouble32& Vm) {};
 
    /** Populates the Vm array with some sensible default initial
     * membrane voltage.  Vm will be the parallel to the local cells in
     * the anatomy that was used to create the concrete reaction class. */
-   virtual void initializeMembraneVoltage(std::vector<double>& Vm) = 0;
+   virtual void initializeMembraneVoltage(VectorDouble32& Vm) = 0;
 
 
    /** Functions needed for checkpoint/restart */

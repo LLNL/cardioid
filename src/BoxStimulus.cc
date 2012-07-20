@@ -21,7 +21,7 @@ BoxStimulus::BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy, Puls
 }
 
 void BoxStimulus::subClassStim(double time,
-                               vector<double>& dVmDiffusion)
+                               VectorDouble32& dVmDiffusion)
 {
    double value = pulse_->eval(time);
    if (value != 0)

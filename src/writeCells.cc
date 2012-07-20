@@ -22,7 +22,7 @@ void writeCells(const Simulate& sim,
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
    const Anatomy& anatomy = sim.anatomy_;
-   const std::vector<double>& vmarray=(*sim.vdata_.VmArray_);
+   const VectorDouble32& vmarray=(*sim.vdata_.VmArray_);
    
    vector<AnatomyCell> cells = anatomy.cellArray();
    cells.resize(anatomy.nLocal());

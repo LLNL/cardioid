@@ -5,6 +5,7 @@
 #include "Anatomy.hh"
 #include "IndexToVector.hh"
 #include "Long64.hh"
+#include "VectorDouble32.hh"
 
 #include <mpi.h>
 
@@ -168,7 +169,7 @@ class VoronoiCoarsening
    void colorDisplacements(std::vector<double>& dx,
                            std::vector<double>& dy,
                            std::vector<double>& dz);
-   void accumulateValues(const std::vector<double>& val, LocalSums& valcolors);
+   void accumulateValues(const VectorDouble32& val, LocalSums& valcolors);
    
    const Vector& center(const int color)const
    {

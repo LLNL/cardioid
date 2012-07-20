@@ -69,11 +69,11 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(const SensorParms& sp,
    coarsening_.computeRemoteTasks();
 }
 
-void GradientVoronoiCoarsening::computeColorCenterValues(const vector<double>& val)
+void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& val)
 {
    // calculate local sums
    const int nLocal = anatomy_.nLocal();
-   vector<double> tmp(nLocal,0.);
+   VectorDouble32 tmp(nLocal,0.);
    for(int ic=0;ic<nLocal;++ic)
    {
       double norm2=(dx_[ic]*dx_[ic]
@@ -92,7 +92,7 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const vector<double>& v
 }
    
 // setup least square system dX^T W^2 dX grad V = dX^T W^2 dF
-void GradientVoronoiCoarsening::computeLSsystem(const vector<double>& val)
+void GradientVoronoiCoarsening::computeLSsystem(const VectorDouble32& val)
 {
    // calculate local sums
    valMat00_.clear();

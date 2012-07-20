@@ -1,7 +1,7 @@
 #ifndef STIMULUS_HH
 #define STIMULUS_HH
 
-#include <vector>
+#include "VectorDouble32.hh"
 
 struct StimulusBaseParms
 {
@@ -19,14 +19,14 @@ class Stimulus
    virtual ~Stimulus(){};
 
    void stim(double time,
-             std::vector<double>& dVmDiffusion)
+             VectorDouble32& dVmDiffusion)
    {
       if (time > t0_ && time < tf_)
          subClassStim(time, dVmDiffusion);
    }
 
    virtual void subClassStim(double time,
-             std::vector<double>& dVmDiffusion) = 0;
+             VectorDouble32& dVmDiffusion) = 0;
 
  private:
    double t0_;

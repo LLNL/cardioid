@@ -104,7 +104,7 @@ void FGRDiffusionOMP::updateRemoteVoltage(const double* VmRemote)
 }
 
 
-void FGRDiffusionOMP::calc(vector<double>& dVm)
+void FGRDiffusionOMP::calc(VectorDouble32& dVm)
 {
    int nCells = dVm.size();
 #pragma omp parallel

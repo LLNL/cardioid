@@ -74,9 +74,9 @@ TT04_CellML_Reaction::~TT04_CellML_Reaction()
 }
 
 void TT04_CellML_Reaction::calc(double dt,
-                                const vector<double>& Vm,
+                                const VectorDouble32& Vm,
                                 const vector<double>& iStim,
-                                vector<double>& dVm)
+                                VectorDouble32& dVm)
 {
    assert(nCells_ == dVm.size());
 
@@ -92,7 +92,7 @@ void TT04_CellML_Reaction::calc(double dt,
       assert(false);
    }
 }
-void TT04_CellML_Reaction::initializeMembraneVoltage(std::vector<double>& Vm)
+void TT04_CellML_Reaction::initializeMembraneVoltage(VectorDouble32& Vm)
 {
    assert(Vm.size() >= s_.size());
    for (unsigned ii=0; ii<s_.size(); ++ii)
@@ -103,9 +103,9 @@ void TT04_CellML_Reaction::initializeMembraneVoltage(std::vector<double>& Vm)
    
 void TT04_CellML_Reaction::forwardEulerIntegrator(
    double dt,
-   const vector<double>& Vm,
+   const VectorDouble32& Vm,
    const vector<double>& iStim,
-   vector<double>& dVm)
+   VectorDouble32& dVm)
 {
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
@@ -122,9 +122,9 @@ void TT04_CellML_Reaction::forwardEulerIntegrator(
 
 void TT04_CellML_Reaction::rushLarsenIntegrator(
    double dt,
-   const vector<double>& Vm,
+   const VectorDouble32& Vm,
    const vector<double>& iStim,
-   vector<double>& dVm)
+   VectorDouble32& dVm)
 {
    for (unsigned ii=0; ii<nCells_; ++ii)
    {

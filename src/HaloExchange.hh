@@ -32,7 +32,7 @@ using namespace std;
  *  exchange. 
  */
 
-template <class T>
+template <class T, class Allocator = std::allocator<T> >
 class HaloExchangeBase
 {
  public:
@@ -52,7 +52,7 @@ class HaloExchangeBase
    T* getSendBuf() {return sendBuf_;}
    const vector<int>& getSendMap() const {return sendMap_;}
    
-   void fillSendBuffer(std::vector<T>& data)
+   void fillSendBuffer(std::vector<T, Allocator>& data)
    {
       startTimer(PerformanceTimers::haloMove2BufTimer);
       // fill send buffer
@@ -90,12 +90,12 @@ class HaloExchangeBase
 
 #ifdef SPI
 // spi version
-template <class T>
-class HaloExchange : public HaloExchangeBase<T>
+template <class T, class Allocator = std::allocator<T> >
+class HaloExchange : public HaloExchangeBase<T, Allocator>
 {
   public:
    HaloExchange(const std::vector<int>& sendMap, const CommTable* comm)
-     : HaloExchangeBase<T>(sendMap,comm), bw_(1)
+   : HaloExchangeBase<T, Allocator>(sendMap,comm), bw_(1)
   {
     //create mapping table
 //    mapping_table(&spiHdl_);
@@ -132,7 +132,7 @@ class HaloExchange : public HaloExchangeBase<T>
    }
    
    
-   void execute(vector<T>& data, int nLocal)
+   void execute(vector<T, Allocator>& data, int nLocal)
    {
       fillSendBuffer(data);
       data.resize(nLocal + commTable_->recvSize());
@@ -164,17 +164,17 @@ class HaloExchange : public HaloExchangeBase<T>
 #else // not SPI
 
 // MPI version
-template <class T>
-class HaloExchange : public HaloExchangeBase<T>
+template <class T, class Allocator = std::allocator<T> >
+class HaloExchange : public HaloExchangeBase<T, Allocator>
 {
   public:
-   using HaloExchangeBase<T>::commTable_;
-   using HaloExchangeBase<T>::sendBuf_;
-   using HaloExchangeBase<T>::recvBuf_;
-   using HaloExchangeBase<T>::width_;
+   using HaloExchangeBase<T, Allocator>::commTable_;
+   using HaloExchangeBase<T, Allocator>::sendBuf_;
+   using HaloExchangeBase<T, Allocator>::recvBuf_;
+   using HaloExchangeBase<T, Allocator>::width_;
 
    HaloExchange(const std::vector<int>& sendMap, const CommTable* comm) 
-   : HaloExchangeBase<T>(sendMap,comm),
+   : HaloExchangeBase<T, Allocator>(sendMap,comm),
      recvReq_(comm->recvSize()),
      sendReq_(comm->sendSize())
    {};

@@ -74,9 +74,9 @@ TT06_CellML_Reaction::~TT06_CellML_Reaction()
 }
 
 void TT06_CellML_Reaction::calc(double dt,
-                                const vector<double>& Vm,
+                                const VectorDouble32& Vm,
                                 const vector<double>& iStim,
-                                vector<double>& dVm)
+                                VectorDouble32& dVm)
 {
    assert(nCells_ == dVm.size());
 
@@ -93,7 +93,7 @@ void TT06_CellML_Reaction::calc(double dt,
    }
 }
 
-void TT06_CellML_Reaction::initializeMembraneVoltage(std::vector<double>& Vm)
+void TT06_CellML_Reaction::initializeMembraneVoltage(VectorDouble32& Vm)
 {
    assert(Vm.size() >= s_.size());
    for (unsigned ii=0; ii<s_.size(); ++ii)
@@ -241,9 +241,9 @@ HandleMap& TT06_CellML_Reaction::getHandleMap() const
 
 void TT06_CellML_Reaction::forwardEulerIntegrator(
    double dt,
-   const vector<double>& Vm,
+   const VectorDouble32& Vm,
    const vector<double>& iStim,
-   vector<double>& dVm)
+   VectorDouble32& dVm)
 {
 #pragma omp parallel for
    for (int ii=0; ii<nCells_; ++ii)
@@ -261,9 +261,9 @@ void TT06_CellML_Reaction::forwardEulerIntegrator(
 
 void TT06_CellML_Reaction::rushLarsenIntegrator(
    double dt,
-   const vector<double>& Vm,
+   const VectorDouble32& Vm,
    const vector<double>& iStim,
-   vector<double>& dVm)
+   VectorDouble32& dVm)
 {
 #pragma omp parallel for
    for (int ii=0; ii<nCells_; ++ii)

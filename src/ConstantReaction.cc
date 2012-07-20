@@ -26,9 +26,9 @@ ConstantReaction::ConstantReaction(const Anatomy& anatomy,
 }
 
 void ConstantReaction::calc(double dt,
-                         const vector<double>& Vm,
+                         const VectorDouble32& Vm,
                          const vector<double>& iStim,
-                         vector<double>& dVm)
+                         VectorDouble32& dVm)
 {
    assert( cellModel_!=0 );
    
@@ -52,7 +52,7 @@ void ConstantReaction::calc(double dt,
    }
 }
 
-void ConstantReaction::compareWithExactSol(const std::vector<double>& Vm)const
+void ConstantReaction::compareWithExactSol(const VectorDouble32& Vm)const
 {
    const double alpha=cellModel_->getAlpha();
    const double beta =cellModel_->getBeta();
@@ -95,7 +95,7 @@ void ConstantReaction::compareWithExactSol(const std::vector<double>& Vm)const
       cout<<"Diff. with exact solution = "<<gdiff2<<endl;
 }
 
-void ConstantReaction::initializeMembraneVoltage(std::vector<double>& Vm)
+void ConstantReaction::initializeMembraneVoltage(VectorDouble32& Vm)
 {
 #if 0
    for (unsigned ii=0; ii<Vm.size(); ++ii)

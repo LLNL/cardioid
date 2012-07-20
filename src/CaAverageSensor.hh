@@ -28,7 +28,7 @@ private:
 
    LocalSums avg_valcolors_;
 
-   void computeColorAverages(const vector<double>& val);
+   void computeColorAverages(const VectorDouble32& val);
    void writeAverages(const string& filename,
                       const double current_time,
                       const int current_loop)const;

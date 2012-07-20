@@ -1,4 +1,5 @@
 #include <math.h>
+#include <assert.h>
 #include "portableSIMD.h" 
 #include "TT06Func.h" 
 #include "TT06NonGates.h" 
@@ -80,6 +81,8 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 
   typedef vector4double vdt;
 
+
+  assert(offset%4 == 0);
   
   double *_Na_i = state[Na_i]+offset;
   double *_Ca_i = state[Ca_i]+offset;

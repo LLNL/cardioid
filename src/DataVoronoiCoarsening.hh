@@ -3,6 +3,7 @@
 
 #include "VoronoiCoarsening.hh"
 #include "Sensor.hh"
+#include "VectorDouble32.hh"
 
 class PotentialData;
 class Anatomy;
@@ -20,7 +21,7 @@ class DataVoronoiCoarsening : public Sensor
 
    LocalSums avg_valcolors_;
 
-   void computeColorAverages(const std::vector<double>& val);
+   void computeColorAverages(const VectorDouble32& val);
    void writeAverages(const std::string& filename,
                       const double current_time,
                       const int current_loop)const;

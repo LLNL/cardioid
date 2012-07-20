@@ -41,10 +41,10 @@ class TT06Dev_Reaction : public Reaction
    TT06Dev_Reaction& operator=(const TT06Dev_Reaction&);
    ~TT06Dev_Reaction();
 
-   void updateNonGate(double dt, const std::vector<double>&Vm, std::vector<double>&dVR);
-   void updateGate   (double dt, const std::vector<double>&Vm) ;
-   void calc(double dt, const std::vector<double>& Vm, const std::vector<double>& iStim, std::vector<double>& dVm);
-   void initializeMembraneVoltage(std::vector<double>& Vm);
+   void updateNonGate(double dt, const VectorDouble32&Vm, VectorDouble32&dVR);
+   void updateGate   (double dt, const VectorDouble32&Vm) ;
+   void calc(double dt, const VectorDouble32& Vm, const std::vector<double>& iStim, VectorDouble32& dVm);
+   void initializeMembraneVoltage(VectorDouble32& Vm);
    void writeStateDev(int loop);
 
    /** Support for checkpoint/restart */

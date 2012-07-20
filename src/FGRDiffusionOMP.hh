@@ -19,7 +19,7 @@ class FGRDiffusionOMP : public Diffusion
    
    void updateLocalVoltage(const double* VmLocal);
    void updateRemoteVoltage(const double* VmRemote);
-   void calc(std::vector<double>& dVm);
+   void calc(VectorDouble32& dVm);
 
  private:
    void buildTupleArray(const Anatomy& anatomy);

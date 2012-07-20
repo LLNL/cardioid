@@ -10,7 +10,7 @@ class NullDiffusion : public Diffusion
    
    void updateLocalVoltage(const double* VmLocal){};
    void updateRemoteVoltage(const double* VmRemote){};
-   void calc(std::vector<double>& dVm){dVm.assign(dVm.size(), 0.0);};
+   void calc(VectorDouble32& dVm){dVm.assign(dVm.size(), 0.0);};
 };
 
 

@@ -118,7 +118,7 @@ void FGRDiffusionThreads::updateRemoteVoltage(const double* VmRemote)
 
 
 
-void FGRDiffusionThreads::calc(vector<double>& dVm)
+void FGRDiffusionThreads::calc(VectorDouble32& dVm)
 {
    startTimer(FGR_StencilTimer);
 

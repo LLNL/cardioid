@@ -31,9 +31,9 @@ TT06_RRG_Reaction::TT06_RRG_Reaction(const Anatomy& anatomy)
 }
 
 void TT06_RRG_Reaction::calc(double dt,
-                             const vector<double>& Vm,
+                             const VectorDouble32& Vm,
                              const vector<double>& iStim,
-                             vector<double>& dVm)
+                             VectorDouble32& dVm)
 {
    assert(cells_.size() == dVm.size());
 
@@ -43,7 +43,7 @@ void TT06_RRG_Reaction::calc(double dt,
       dVm[ii] = cells_[ii].calc(dt, Vm[ii], iStim[ii]);
 }
 
-void TT06_RRG_Reaction::initializeMembraneVoltage(std::vector<double>& Vm)
+void TT06_RRG_Reaction::initializeMembraneVoltage(VectorDouble32& Vm)
 {
    assert(Vm.size() >= cells_.size());
    for (unsigned ii=0; ii<cells_.size(); ++ii)

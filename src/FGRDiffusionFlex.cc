@@ -201,7 +201,7 @@ void FGRDiffusionFlex::updateRemoteVoltage(const double* VmRemote)
 }
 
 /** threaded simd version */
-void FGRDiffusionFlex::calc(vector<double>& dVm)
+void FGRDiffusionFlex::calc(VectorDouble32& dVm)
 {
    int tid = threadInfo_.teamRank();
 

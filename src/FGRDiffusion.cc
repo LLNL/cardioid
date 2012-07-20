@@ -177,7 +177,7 @@ void FGRDiffusion::updateRemoteVoltage(const double* VmRemote)
 }
 
 /** threaded simd version */
-void FGRDiffusion::calc(vector<double>& dVm)
+void FGRDiffusion::calc(VectorDouble32& dVm)
 {
    int tid = threadInfo_.teamRank();
    startTimer(FGR_AlignCopyTimer);

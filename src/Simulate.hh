@@ -10,6 +10,8 @@
 #include "Long64.hh"
 #include "Anatomy.hh"
 #include "ThreadServer.hh"
+#include "VectorDouble32.hh"
+
 class Diffusion;
 class Reaction;
 class Stimulus;
@@ -39,18 +41,22 @@ class PotentialData
    
    void setup(const Anatomy& anatomy)
    {
-      VmArray_     =new std::vector<double>(anatomy.size(), 0.);
-      dVmDiffusion_=new std::vector<double>(anatomy.nLocal(), 0.);
-      dVmReaction_ =new std::vector<double>(anatomy.nLocal(), 0.);
+      VmArray_     =new VectorDouble32(anatomy.size(), 0.);
+      dVmDiffusion_=new VectorDouble32(anatomy.nLocal(), 0.);
+      dVmReaction_ =new VectorDouble32(anatomy.nLocal(), 0.);
       unsigned paddedSize = 4*((anatomy.nLocal()+3)/4);
       dVmDiffusion_->reserve(paddedSize);
       dVmReaction_->reserve(paddedSize);
 
+      assert((size_t)&((*VmArray_)[0]) %32 == 0);
+      assert((size_t)&((*dVmDiffusion_)[0]) %32 == 0);
+      assert((size_t)&((*dVmReaction_)[0]) %32 == 0);
+      
    }
    
-   std::vector<double>* swapdVmReaction(std::vector<double>* const dVmReaction)
+   VectorDouble32* swapdVmReaction(VectorDouble32* const dVmReaction)
    {
-      std::vector<double>* tmp=dVmReaction_;
+      VectorDouble32* tmp=dVmReaction_;
       dVmReaction_=dVmReaction;
       return tmp;
    }
@@ -63,9 +69,9 @@ class PotentialData
    }
    
    // use pointers to vector so that they can be swapped
-   std::vector<double>* VmArray_; // local and remote
-   std::vector<double>* dVmDiffusion_;
-   std::vector<double>* dVmReaction_;
+   VectorDouble32* VmArray_; // local and remote
+   VectorDouble32* dVmDiffusion_;
+   VectorDouble32* dVmReaction_;
 };
 
 // Kitchen sink class for heart simulation.  This is probably a great
@@ -81,8 +87,8 @@ class Simulate
 {
  public:
 
-   void checkRanges(const std::vector<double>& dVmReaction,
-                    const std::vector<double>& dVmDiffusion);
+   void checkRanges(const VectorDouble32& dVmReaction,
+                    const VectorDouble32& dVmDiffusion);
 
    bool checkIO()const;
    

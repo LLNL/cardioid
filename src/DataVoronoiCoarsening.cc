@@ -30,7 +30,7 @@ DataVoronoiCoarsening::DataVoronoiCoarsening(const SensorParms& sp,
    coarsening_.computeRemoteTasks();
 }
 
-void DataVoronoiCoarsening::computeColorAverages(const vector<double>& val)
+void DataVoronoiCoarsening::computeColorAverages(const VectorDouble32& val)
 {
    // calculate local sums
    coarsening_.accumulateValues(val,avg_valcolors_);

@@ -24,7 +24,7 @@ PointStimulus::PointStimulus(const PointStimulusParms& p,
 }
 
 void PointStimulus::subClassStim(double time,
-                                 vector<double>& dVmDiffusion)
+                                 VectorDouble32& dVmDiffusion)
 {
    if (cellLocal_)
    {

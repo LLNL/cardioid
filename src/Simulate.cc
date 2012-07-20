@@ -11,8 +11,8 @@ using std::vector;
 
 
 /** */
-void Simulate::checkRanges(const vector<double>& dVmReaction,
-                           const vector<double>& dVmDiffusion)
+void Simulate::checkRanges(const VectorDouble32& dVmReaction,
+                           const VectorDouble32& dVmDiffusion)
 {
    unsigned nLocal = anatomy_.nLocal();
    for (unsigned ii=0; ii<nLocal; ++ii)

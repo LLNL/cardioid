@@ -113,6 +113,8 @@ int exp_l=16;
  // 3: load produces (JUNK, JUNK, JUNK, &VM[0])
  int misalignment = ((long int)&VM[0] % 32) / 8;
 
+ assert(misalignment == 0);
+
  if (misalignment) { 
       vdt v_xa = vec_ld(0, &VM[ii]);  //BODYCOM0 
 //BODYCOM0 
@@ -999,6 +1001,7 @@ int tauR_m=11;
  // 2: load produces (JUNK, JUNK, &VM[0], &VM[1])
  // 3: load produces (JUNK, JUNK, JUNK, &VM[0])
  int misalignment = ((long int)&VM[0] % 32) / 8;
+ assert(misalignment == 0);
 
 #if 1
  if (misalignment) { 
@@ -1602,6 +1605,7 @@ int tauR_m=13;
  // 2: load produces (JUNK, JUNK, &VM[0], &VM[1])
  // 3: load produces (JUNK, JUNK, JUNK, &VM[0])
  int misalignment = ((long int)&VM[0] % 32) / 8;
+ assert(misalignment == 0);
 
  if (misalignment) { 
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM0 
@@ -2149,6 +2153,7 @@ int tauR_m=13;
  // 2: load produces (JUNK, JUNK, &VM[0], &VM[1])
  // 3: load produces (JUNK, JUNK, JUNK, &VM[0])
  int misalignment = ((long int)&VM[0] % 32) / 8;
+ assert(misalignment == 0);
 
  if (misalignment) { 
       vdt v_xa = vec_ld(0, &VM[ii]);  //BODYCOM0 
@@ -2902,6 +2907,7 @@ double   tauRdt_a0  = tauR_a[0]*dt,
  // 2: load produces (JUNK, JUNK, &VM[0], &VM[1])
  // 3: load produces (JUNK, JUNK, JUNK, &VM[0])
  int misalignment = ((long int)&VM[0] % 32) / 8;
+ assert(misalignment == 0);
 
  if (misalignment) { 
       vdt v_v = vec_ld(0, &VM[ii]); //BODYCOM0 
@@ -3132,6 +3138,7 @@ int tauR_m= 9;
  // 2: load produces (JUNK, JUNK, &VM[0], &VM[1])
  // 3: load produces (JUNK, JUNK, JUNK, &VM[0])
  int misalignment = ((long int)&VM[0] % 32) / 8;
+ assert(misalignment == 0);
 
  if (misalignment) { 
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM0 
@@ -3754,6 +3761,7 @@ int tauR_m= 7;
  // 2: load produces (JUNK, JUNK, &VM[0], &VM[1])
  // 3: load produces (JUNK, JUNK, JUNK, &VM[0])
  int misalignment = ((long int)&VM[0] % 32) / 8;
+ assert(misalignment == 0);
 
  if (misalignment) { 
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM0 
@@ -4231,6 +4239,7 @@ int tauR_m=10;
  // 2: load produces (JUNK, JUNK, &VM[0], &VM[1])
  // 3: load produces (JUNK, JUNK, JUNK, &VM[0])
  int misalignment = ((long int)&VM[0] % 32) / 8;
+ assert(misalignment == 0);
 
  if (misalignment) { 
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM0 
@@ -4922,6 +4931,7 @@ int tauR_m=11;
  // 2: load produces (JUNK, JUNK, &VM[0], &VM[1])
  // 3: load produces (JUNK, JUNK, JUNK, &VM[0])
  int misalignment = ((long int)&VM[0] % 32) / 8;
+ assert(misalignment == 0);
 
  if (misalignment) { 
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM0 
@@ -5487,6 +5497,7 @@ int tauR_m=12;
  // 2: load produces (JUNK, JUNK, &VM[0], &VM[1])
  // 3: load produces (JUNK, JUNK, JUNK, &VM[0])
  int misalignment = ((long int)&VM[0] % 32) / 8;
+ assert(misalignment == 0);
 
  if (misalignment) { 
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM0 
@@ -6282,6 +6293,7 @@ int tauR_m=1;
  // 2: load produces (JUNK, JUNK, &VM[0], &VM[1])
  // 3: load produces (JUNK, JUNK, JUNK, &VM[0])
  int misalignment = ((long int)&VM[0] % 32) / 8;
+ assert(misalignment == 0);
 
  if (misalignment) { 
       vdt v_v = vec_ld(0, &VM[ii]); //BODYCOM0 
@@ -6525,6 +6537,7 @@ int tauR_m=7 ;
  // 2: load produces (JUNK, JUNK, &VM[0], &VM[1])
  // 3: load produces (JUNK, JUNK, JUNK, &VM[0])
  int misalignment = ((long int)&VM[0] % 32) / 8;
+ assert(misalignment == 0);
 
  if (misalignment) { 
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM0 
@@ -6992,7 +7005,7 @@ int tauR_m=7 ;
 
  // the elements in the end of the vector should be ignored
  int leftover = nCells - ii;
- if (leftover) { 
+ if (leftover > 0) { 
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM1 
 //BODYCOM1 
 //1//BODYCOM1 
@@ -7187,6 +7200,10 @@ int tauR_m=11;
  // 2: load produces (JUNK, JUNK, &VM[0], &VM[1])
  // 3: load produces (JUNK, JUNK, JUNK, &VM[0])
  int misalignment = ((long int)&VM[0] % 32) / 8;
+
+ // Need to allow misalignment here for now, because the workpacket is
+ // subdivided by cell teype for this equation.
+// assert(misalignment == 0);
 
  if (misalignment) { 
       vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM0 
@@ -7529,6 +7546,7 @@ int tauR_m=11;
    temp3d   = vec_madd(temp2d, temp1d, temp3d);
    vec_st(temp3d, 0, &g[ii+12]);
  }
+ 
  for (ii;ii<TTROUND(nCells,4);ii+=4)
  { 
  //BODYSTART
@@ -7632,8 +7650,9 @@ int tauR_m=11;
 
  // the elements in the end of the vector should be ignored
  int leftover = nCells - ii;
- if (leftover) { 
-      vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM1 
+ if (leftover > 0)
+ { 
+    vdt v_xa   = vec_ld(0, &VM[ii]);  //BODYCOM1 
 //BODYCOM1 
 // 1//BODYCOM1 
   vdt v_mhu_A1  = VEC_LDS(0, &mhu_a[6]);//BODYCOM1 
@@ -7722,7 +7741,7 @@ int tauR_m=11;
    temp2a   = vec_sub(temp2a, temp3a);  //BODYCOM1 
    temp3a   = vec_madd(temp2a, temp1a, temp3a);//BODYCOM1 
 
-   //printf("%d: leftover=%d\n",gateIndex,leftover); 
+//   printf("%d: leftover=%d\n",gateIndex,leftover); 
    
    //vec_st(temp3a, 0, &g[ii]);
    switch (leftover) {
@@ -7742,8 +7761,8 @@ int tauR_m=11;
      break;
 
      default:
-    //println("BAD LEFTOVER: %d\n", leftover); fflush(stdout);
-    assert(0);
+      printf("BAD LEFTOVER: %d\n", leftover); fflush(stdout);
+      assert(0);
    }
  }
 
