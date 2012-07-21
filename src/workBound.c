@@ -109,9 +109,10 @@ void destroyColumns(COLUMN *columns)
 }
 COLUMN *buildColumns(unsigned short *seg,BALANCER *balancer)
 {
-   COLUMN *columns ; 
    int NX = balancer->NX; 
    int NY = balancer->NY; 
+   COLUMN *columns = (COLUMN *)malloc(sizeof(COLUMN)*NX*NY); 
+   allocChunkBuffer(balancer); 
    if (balancer->rank==0) 
    {
       int nx = balancer->nx; 
@@ -124,12 +125,12 @@ COLUMN *buildColumns(unsigned short *seg,BALANCER *balancer)
       double maxA = -1; 
       double  a ; 
       int nTasks; 
-      for (a = 0.0;a<2.001;a+=0.1) 
+      for (a = 0.0125;a<2;a*=2.0) 
       {
          nTasks=findChunks(balancer,seg, a,NULL);
-         //if ( nTasks < balancer->nTasks) minA = a; 
-         //if ( nTasks > balancer->nTasks) {maxA = a; break;}
-      printf("min/max %f %f %f %d %d\n",a,minA,maxA,nTasks,balancer->nTasks); 
+         if ( nTasks < balancer->nTasks) minA = a; 
+         if ( nTasks > balancer->nTasks) {maxA = a; break;}
+         printf("min/max %f %f %f %d %d\n",a,minA,maxA,nTasks,balancer->nTasks); 
       }
       printf("min/max %f %f %f %d %d\n",a,minA,maxA,nTasks,balancer->nTasks); 
       int loop=0; 
@@ -140,27 +141,20 @@ COLUMN *buildColumns(unsigned short *seg,BALANCER *balancer)
         nTasks=findChunks(balancer,seg, a, NULL);
         if (nTasks < balancer->nTasks) minA = a; 
         if (nTasks > balancer->nTasks) maxA = a; 
-        if (loop++ > 20) break; 
+        if (loop++ > 30) break; 
       }
       printf("min/max %f %f %f %d\n",a,minA,maxA,nTasks); 
       if (nTasks == balancer->nTasks)  
       {
-         columns = (COLUMN *)malloc(sizeof(COLUMN)*NX*NY); 
-         allocChunkBuffer(balancer); 
          nTasks=findChunks(balancer,seg, a, columns);
       }
-   }
-   CHUNKS *chunkBufferRoot = balancer->chunkBuffer; 
-   MPI_Bcast(&(chunkBufferRoot),sizeof(CHUNKS *),MPI_BYTE,0,MPI_COMM_WORLD); 
-   assert(chunkBufferRoot!=NULL); 
-   if (balancer->rank !=0) 
-   {   
-       columns = (COLUMN *)malloc(sizeof(COLUMN)*NX*NY); 
-       allocChunkBuffer(balancer); 
    }
    MPI_Bcast(columns,NX*NY*sizeof(COLUMN),MPI_BYTE,0,MPI_COMM_WORLD); 
    MPI_Bcast(balancer->chunkBuffer,balancer->nTasks*sizeof(CHUNKS),MPI_BYTE,0,MPI_COMM_WORLD); 
 
+   CHUNKS *chunkBufferRoot = balancer->chunkBuffer; 
+   MPI_Bcast(&(chunkBufferRoot),sizeof(CHUNKS *),MPI_BYTE,0,MPI_COMM_WORLD); 
+   assert(chunkBufferRoot!=NULL); 
    long long correction = balancer->chunkBuffer-chunkBufferRoot; 
 
    for (int l=0;l<NX*NY;l++) if (columns[l].nChunks > 0) columns[l].chunks += correction; 
@@ -196,7 +190,9 @@ unsigned short *buildSeg(int nlocal, int *gidArray, BALANCER *balancer)
    unsigned short *seg = (unsigned short *)malloc(sizeof(*seg)*NXYz); 
    for (int i=0;i<NXYz;i++) seg[i]=0; 
    int minX,minY,minZ;
+   int minXG,minYG,minZG;
    int maxX,maxY,maxZ;
+   int maxXG,maxYG,maxZG;
    for (int ii=0;ii<nlocal;ii++) 
    {
       unsigned  gid = gidArray[ii]; 
@@ -214,10 +210,23 @@ unsigned short *buildSeg(int nlocal, int *gidArray, BALANCER *balancer)
       if (i==0 || y > maxY) maxY = y; 
       if (i==0 || z > maxZ) maxZ = z; 
    }
-      printf("min %d %d %d\n",minX,minY,minZ); 
-      printf("max %d %d %d\n",maxX,maxY,maxZ); 
-   if (balancer->rank !=0) MPI_Reduce(seg,         seg,NXYz,MPI_UNSIGNED_SHORT,MPI_SUM,0,MPI_COMM_WORLD); 
-   else                MPI_Reduce(MPI_IN_PLACE,seg,NXYz,MPI_UNSIGNED_SHORT,MPI_SUM,0,MPI_COMM_WORLD); 
+   MPI_Allreduce(&minX,&minXG,1,sizeof(int),MPI_MIN,MPI_COMM_WORLD); 
+   MPI_Allreduce(&minY,&minYG,1,sizeof(int),MPI_MIN,MPI_COMM_WORLD); 
+   MPI_Allreduce(&minZ,&minZG,1,sizeof(int),MPI_MIN,MPI_COMM_WORLD); 
+   MPI_Allreduce(&maxX,&maxXG,1,sizeof(int),MPI_MAX,MPI_COMM_WORLD); 
+   MPI_Allreduce(&maxY,&maxYG,1,sizeof(int),MPI_MAX,MPI_COMM_WORLD); 
+   MPI_Allreduce(&maxZ,&maxZG,1,sizeof(int),MPI_MAX,MPI_COMM_WORLD); 
+   if (balancer->rank==0) 
+   {
+      printf("min %d %d %d\n",minXG,minYG,minZG); 
+      printf("max %d %d %d\n",maxXG,maxYG,maxZG); 
+   }
+   MPI_Barrier(MPI_COMM_WORLD); 
+   
+   unsigned short *segtmp = (unsigned short *)malloc(sizeof(*seg)*NXYz); 
+   for (int i=0;i<NXYz;i++) segtmp[i] = seg[i]; 
+   MPI_Reduce(segtmp,seg,NXYz,MPI_UNSIGNED_SHORT,MPI_SUM,0,MPI_COMM_WORLD); 
+   free(segtmp); 
    return seg; 
 }
 BALANCER buildGeom(int nx,int ny,int nz,int dx,int dy,int dz, int  nTasks) 

@@ -1,4 +1,5 @@
 #include <mpi.h>
+#include <stdio.h>
 #include <cmath>
 #include <cstdlib>
 #include <algorithm>
@@ -18,27 +19,28 @@ int workBoundAssignCells(vector<AnatomyCell> &cells, int dx, int dy, int dz, int
    int *gid= (int *)malloc(sizeof(int)*nLocal); 
    for (int i=0;i<nLocal;i++) gid[i]=cells[i].gid_; 
    unsigned short *seg=buildSeg(nLocal,gid,&balancer);
-   sprintf(filename,"Stuff#%6.6d",balancer.rank);
-   FILE *stuff = fopen(filename,"w");
+   //sprintf(filename,"Stuff#%6.6d",balancer.rank);
+   //FILE *stuff = fopen(filename,"w");
    COLUMN *columns = buildColumns(seg,&balancer);
    destroySeg(seg);
    for (int i =0;i<nLocal;i++) 
    {
-      int id = domainID(gid[i], columns, &balancer) ;
-      cells[i].dest_= id ;
-      fprintf(stuff,"%d %d\n",gid[i],id);
+     int id = domainID(gid[i], columns, &balancer) ;
+     cells[i].dest_= id ;
+    // fprintf(stuff,"%d %d\n",gid[i],id);
    }
-   if (balancer.rank == 0) destroyColumns(columns);
    free(gid); 
+   unsigned nGlobal; 
+   MPI_Reduce(&nLocal,&nGlobal,1,MPI_UNSIGNED,MPI_SUM,0,MPI_COMM_WORLD); 
+   if (balancer.rank ==0) printf("nGlobal=%d\n",nGlobal); 
+   MPI_Barrier(MPI_COMM_WORLD); 
 
 
    AnatomyCellDestSort sortByDest;
    sort(cells.begin(), cells.end(), sortByDest);
    vector<unsigned> dest(nLocal);
-   for (int i =0;i<nLocal;i++)
-   {
-    dest[i] = domainID( (int)cells[i].gid_, columns, &balancer) ;
-   }
+   for (int i =0;i<nLocal;i++) dest[i] = cells[i].dest_ ;//domainID( (int)cells[i].gid_, columns, &balancer) ;
+   destroyColumns(columns);
 
    unsigned capacity = max((int)nLocal,dx*dy*dz);
    cells.resize(capacity);
@@ -50,6 +52,8 @@ int workBoundAssignCells(vector<AnatomyCell> &cells, int dx, int dy, int dz, int
                0,
                MPI_COMM_WORLD);
    cells.resize(nLocal);
+   MPI_Reduce(&nLocal,&nGlobal,1,MPI_UNSIGNED,MPI_SUM,0,MPI_COMM_WORLD); 
+   if (balancer.rank ==0) printf("nGlobal=%d\n",nGlobal); 
    sort(cells.begin(), cells.end(), sortByDest);
    int nDiffusionTasks = -1; 
    return nDiffusionTasks; 
