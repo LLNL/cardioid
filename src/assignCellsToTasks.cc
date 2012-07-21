@@ -14,6 +14,7 @@
 #include "Simulate.hh"
 #include "GDLoadBalancer.hh"
 #include "BlockLoadBalancer.hh"
+#include "workBoundBalancer.hh"
 #include "mpiUtils.h"
 #include "GridPoint.hh"
 #include "PerformanceTimers.hh"
@@ -26,6 +27,7 @@ namespace
     void koradiBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
     void gridBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
     void blockBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+    int  workBoundBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
     void computeVolHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
     void computeNCellsHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
 }
@@ -37,6 +39,7 @@ void assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
    string method;
    objectGet(obj, "method", method, "koradi");
 
+   int nDiffusionCores=-1; 
    profileStart("Assignment");
    if (method == "koradi")
       koradiBalancer(sim, obj, comm);
@@ -44,11 +47,43 @@ void assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
       gridBalancer(sim, obj, comm);
    else if (method == "block")
       blockBalancer(sim, obj, comm);
+   else if (method == "workBound")
+      nDiffusionCores = workBoundBalancer(sim, obj, comm);
    else
       assert(1==0);      
    profileStop("Assignment");
    sim.anatomy_.nLocal() = sim.anatomy_.cellArray().size();
    sim.anatomy_.nRemote() = 0;
+}
+namespace
+{
+   int  workBoundBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm)
+   {
+      int nTasks, myRank;
+      MPI_Comm_size(comm, &nTasks);
+      MPI_Comm_rank(comm, &myRank);
+
+      vector<AnatomyCell>& cells = sim.anatomy_.cellArray();
+
+      // get block dimension
+      int dx,dy,dz;
+      int target; 
+      char defaultTarget[16];
+      sprintf(defaultTarget,"%d",nTasks); 
+      objectGet(obj, "dx", dx, "0");
+      objectGet(obj, "dy", dy, "0");
+      objectGet(obj, "dz", dz, "0");
+      objectGet(obj, "targetNTasks",target,defaultTarget); 
+      assert(dx*dy*dz != 0);
+      assert((dz+2)%4 ==0); 
+      int nx = sim.anatomy_.nx(); 
+      int ny = sim.anatomy_.ny(); 
+      int nz = sim.anatomy_.nz(); 
+      int nDiffusionCores=workBoundAssignCells(cells,dx,dy,dz,nx,ny,nz,target); 
+      //int nDiffusionCores=-1; 
+      if (target != nTasks) exit(0); 
+      return nDiffusionCores; 
+   }
 }
 
 namespace

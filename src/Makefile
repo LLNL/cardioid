@@ -20,7 +20,7 @@ HEARTSRC= cardioid.cc \
 	ThreadUtils.cc \
 	Vector.cc SymmetricTensor.cc ConstantModel.cc ConstantReaction.cc \
 	PerformanceTimers.cc unionOfStrings.cc getUserInfo.cc \
-        GDLoadBalancer.cc BlockLoadBalancer.cc CommTable.cc \
+        GDLoadBalancer.cc BlockLoadBalancer.cc workBoundBalancer.cc CommTable.cc \
 	BucketOfBits.cc \
 	stateLoader.cc \
 	readPioFile.cc \
@@ -62,7 +62,7 @@ HEARTSRC= cardioid.cc \
 	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc
 
 SPISRC=	 spi_impl.c
-SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c
+SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c 
 
 DDCMD_FILES = \
 	codata.h \
