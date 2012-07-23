@@ -27,7 +27,7 @@ namespace
     void koradiBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
     void gridBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
     void blockBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
-    int  workBoundBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+    int  workBoundScan(Simulate& sim, OBJECT* obj, MPI_Comm comm);
     void computeVolHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
     void computeNCellsHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
 }
@@ -48,7 +48,7 @@ void assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
    else if (method == "block")
       blockBalancer(sim, obj, comm);
    else if (method == "workBound")
-      nDiffusionCores = workBoundBalancer(sim, obj, comm);
+      nDiffusionCores = workBoundScan(sim, obj, comm);
    else
       assert(1==0);      
    profileStop("Assignment");
@@ -57,7 +57,7 @@ void assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
 }
 namespace
 {
-   int  workBoundBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm)
+   int  workBoundScan(Simulate& sim, OBJECT* obj, MPI_Comm comm)
    {
       int nTasks, myRank;
       MPI_Comm_size(comm, &nTasks);
@@ -68,19 +68,20 @@ namespace
       // get block dimension
       int dx,dy,dz;
       int target; 
+      int printStats; 
       char defaultTarget[16];
       sprintf(defaultTarget,"%d",nTasks); 
       objectGet(obj, "dx", dx, "0");
       objectGet(obj, "dy", dy, "0");
       objectGet(obj, "dz", dz, "0");
+      objectGet(obj, "printStats", printStats, "0");
       objectGet(obj, "targetNTasks",target,defaultTarget); 
       assert(dx*dy*dz != 0);
       assert((dz+2)%4 ==0); 
       int nx = sim.anatomy_.nx(); 
       int ny = sim.anatomy_.ny(); 
       int nz = sim.anatomy_.nz(); 
-      int nDiffusionCores=workBoundAssignCells(cells,dx,dy,dz,nx,ny,nz,target); 
-      //int nDiffusionCores=-1; 
+      int nDiffusionCores=workBoundBalancer(cells,dx,dy,dz,nx,ny,nz,target,printStats,comm); 
       if (target != nTasks) exit(0); 
       return nDiffusionCores; 
    }

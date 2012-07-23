@@ -1,12 +1,9 @@
+#include "workBound.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <mpi.h>
-
-typedef  struct chunks_st { int  zL, zU, nTissue, domainID;} CHUNKS; 
-typedef  struct domain_st { int  nChunks; CHUNKS *chunks;} COLUMN; 
-typedef  struct balancer_st { int rank,  nRank, nTasks, nx, ny, nz, dx, dy, dz, NX, NY, NXYz; CHUNKS *chunkBuffer;} BALANCER; 
 
 double costFcn(int nTissue,int height, int dx, int dy, double a)
 {
@@ -30,7 +27,7 @@ int  findChunks(BALANCER *balancer, unsigned short *seg, double diffCost, COLUMN
   int dZ = dz+2; 
   if (dZ % 4  != 0) dZ += (4-dZ%4); 
   int maxCost = costFcn(dx*dy*dz,dZ-2,dx,dy,diffCost); 
-  int task=0; 
+  int offset=0; 
   int sumChunks=0; 
   for (int j=0;j<NY;j++) 
   for (int i=0;i<NX;i++) 
@@ -45,7 +42,8 @@ int  findChunks(BALANCER *balancer, unsigned short *seg, double diffCost, COLUMN
     int z0 ;
     int nChunks=0; 
     CHUNKS *chunks ; 
-    if (chunkBuffer != NULL) chunks = chunkBuffer+task;  else chunks=NULL; 
+    if (chunkBuffer != NULL) chunks = chunkBuffer+offset;  else chunks=NULL; 
+    int offsetStart = offset; 
     for (int z=zMin;z<=zMax;z++) 
     {
        int cnt = col[z]; 
@@ -64,10 +62,9 @@ int  findChunks(BALANCER *balancer, unsigned short *seg, double diffCost, COLUMN
               chunks[nChunks].zL=z0; 
               chunks[nChunks].zU=z-1; 
               chunks[nChunks].nTissue=sum; 
-              chunks[nChunks].domainID=task; 
               }
+              offset++;
               nChunks++; 
-              task++; 
               sum = cnt; 
               z0 = z; 
           }
@@ -83,160 +80,31 @@ int  findChunks(BALANCER *balancer, unsigned short *seg, double diffCost, COLUMN
           chunks[nChunks].zL=z0; 
           chunks[nChunks].zU=zMax; 
           chunks[nChunks].nTissue=sum; 
-          chunks[nChunks].domainID=task; 
        }
+       offset++;
        nChunks++; 
-       task++; 
      }
      if (column != NULL) 
      {
        column[cxy].nChunks = nChunks; 
-       if (nChunks > 0) column[cxy].chunks =  chunks; 
-       else column[cxy].chunks=NULL; 
+       if (nChunks > 0) column[cxy].offset =  offsetStart; 
+       else column[cxy].offset=-1; 
        sumChunks += nChunks; 
      }
    }
-   printf("sumChunks=%d\n",sumChunks); 
-   return task; 
+  // printf("sumChunks=%d\n",sumChunks); 
+   return offset; 
 }
-void allocChunkBuffer(BALANCER *balancer)
-{
-   balancer->chunkBuffer = (CHUNKS *)malloc(sizeof(CHUNKS)*balancer->nTasks); 
-}
-void destroyColumns(COLUMN *columns) 
-{ 
-   free(columns); 
-}
-COLUMN *buildColumns(unsigned short *seg,BALANCER *balancer)
-{
-   int NX = balancer->NX; 
-   int NY = balancer->NY; 
-   COLUMN *columns = (COLUMN *)malloc(sizeof(COLUMN)*NX*NY); 
-   allocChunkBuffer(balancer); 
-   if (balancer->rank==0) 
-   {
-      int nx = balancer->nx; 
-      int ny = balancer->ny; 
-      int nz = balancer->nz; 
-      int dx = balancer->dx; 
-      int dy = balancer->dy; 
-      int dz = balancer->dz; 
-      double minA = -1; 
-      double maxA = -1; 
-      double  a ; 
-      int nTasks; 
-      for (a = 0.0125;a<2;a*=2.0) 
-      {
-         nTasks=findChunks(balancer,seg, a,NULL);
-         if ( nTasks < balancer->nTasks) minA = a; 
-         if ( nTasks > balancer->nTasks) {maxA = a; break;}
-         printf("min/max %f %f %f %d %d\n",a,minA,maxA,nTasks,balancer->nTasks); 
-      }
-      printf("min/max %f %f %f %d %d\n",a,minA,maxA,nTasks,balancer->nTasks); 
-      int loop=0; 
-      while(nTasks != balancer->nTasks   )
-      {
-        printf("min/max %f %f %f %d\n",a,minA,maxA,nTasks); 
-        a = 0.5*(minA+maxA); 
-        nTasks=findChunks(balancer,seg, a, NULL);
-        if (nTasks < balancer->nTasks) minA = a; 
-        if (nTasks > balancer->nTasks) maxA = a; 
-        if (loop++ > 30) break; 
-      }
-      printf("min/max %f %f %f %d\n",a,minA,maxA,nTasks); 
-      if (nTasks == balancer->nTasks)  
-      {
-         nTasks=findChunks(balancer,seg, a, columns);
-      }
-   }
-   MPI_Bcast(columns,NX*NY*sizeof(COLUMN),MPI_BYTE,0,MPI_COMM_WORLD); 
-   MPI_Bcast(balancer->chunkBuffer,balancer->nTasks*sizeof(CHUNKS),MPI_BYTE,0,MPI_COMM_WORLD); 
-
-   CHUNKS *chunkBufferRoot = balancer->chunkBuffer; 
-   MPI_Bcast(&(chunkBufferRoot),sizeof(CHUNKS *),MPI_BYTE,0,MPI_COMM_WORLD); 
-   assert(chunkBufferRoot!=NULL); 
-   long long correction = balancer->chunkBuffer-chunkBufferRoot; 
-
-   for (int l=0;l<NX*NY;l++) if (columns[l].nChunks > 0) columns[l].chunks += correction; 
-     
-   MPI_Barrier(MPI_COMM_WORLD); 
-   return columns;
-}
-int  domainID(int gid, COLUMN *column, BALANCER *balancer) 
-{
-   int x=gid%balancer->nx; 
-   int y=((gid-x)/balancer->nx)%balancer->ny; 
-   int z=((gid-x-balancer->nx*y))/(balancer->nx*balancer->ny); 
-   int i = x/balancer->dx;
-   int j = y/balancer->dy;
-   int cxy = (i + balancer->NX*j); 
-   for (int ic=0;ic<column[cxy].nChunks;ic++) 
-      if (column[cxy].chunks[ic].zL <= z &&  z<= column[cxy].chunks[ic].zU) return column[cxy].chunks[ic].domainID; 
-   assert(0); 
-   return -1; 
-}
-void destroySeg(unsigned short *seg) { free(seg);}
-unsigned short *buildSeg(int nlocal, int *gidArray, BALANCER *balancer) 
-{
-   int NX = balancer->NX; 
-   int NY = balancer->NY; 
-   int NXYz =balancer->NXYz;
-   int nx = balancer->nx; 
-   int ny = balancer->ny; 
-   int nz = balancer->nz; 
-   int dx = balancer->dx; 
-   int dy = balancer->dy; 
-   int dz = balancer->dz; 
-   unsigned short *seg = (unsigned short *)malloc(sizeof(*seg)*NXYz); 
-   for (int i=0;i<NXYz;i++) seg[i]=0; 
-   int minX,minY,minZ;
-   int minXG,minYG,minZG;
-   int maxX,maxY,maxZ;
-   int maxXG,maxYG,maxZG;
-   for (int ii=0;ii<nlocal;ii++) 
-   {
-      unsigned  gid = gidArray[ii]; 
-      int x=gid%nx; 
-      int y=((gid-x)/nx)%ny; 
-      int z=((gid-x-nx*y))/(nx*ny); 
-      int i = x/dx;
-      int j = y/dy;
-      int segIndex = z + nz*(i + NX*j); 
-      seg[segIndex] += 1; 
-      if (i==0 || x < minX) minX = x; 
-      if (i==0 || y < minY) minY = y; 
-      if (i==0 || z < minZ) minZ = z; 
-      if (i==0 || x > maxX) maxX = x; 
-      if (i==0 || y > maxY) maxY = y; 
-      if (i==0 || z > maxZ) maxZ = z; 
-   }
-   MPI_Allreduce(&minX,&minXG,1,sizeof(int),MPI_MIN,MPI_COMM_WORLD); 
-   MPI_Allreduce(&minY,&minYG,1,sizeof(int),MPI_MIN,MPI_COMM_WORLD); 
-   MPI_Allreduce(&minZ,&minZG,1,sizeof(int),MPI_MIN,MPI_COMM_WORLD); 
-   MPI_Allreduce(&maxX,&maxXG,1,sizeof(int),MPI_MAX,MPI_COMM_WORLD); 
-   MPI_Allreduce(&maxY,&maxYG,1,sizeof(int),MPI_MAX,MPI_COMM_WORLD); 
-   MPI_Allreduce(&maxZ,&maxZG,1,sizeof(int),MPI_MAX,MPI_COMM_WORLD); 
-   if (balancer->rank==0) 
-   {
-      printf("min %d %d %d\n",minXG,minYG,minZG); 
-      printf("max %d %d %d\n",maxXG,maxYG,maxZG); 
-   }
-   MPI_Barrier(MPI_COMM_WORLD); 
-   
-   unsigned short *segtmp = (unsigned short *)malloc(sizeof(*seg)*NXYz); 
-   for (int i=0;i<NXYz;i++) segtmp[i] = seg[i]; 
-   MPI_Reduce(segtmp,seg,NXYz,MPI_UNSIGNED_SHORT,MPI_SUM,0,MPI_COMM_WORLD); 
-   free(segtmp); 
-   return seg; 
-}
-BALANCER buildGeom(int nx,int ny,int nz,int dx,int dy,int dz, int  nTasks) 
+BALANCER buildBalancer(int nx,int ny,int nz,int dx,int dy,int dz, int  nTasks, int printStats, MPI_Comm comm) 
 {
    int rank,nRank; 
-   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-   MPI_Comm_size(MPI_COMM_WORLD, &nRank);
+   MPI_Comm_rank(comm, &rank);
+   MPI_Comm_size(comm, &nRank);
    BALANCER balancer; 
-   balancer.rank = rank; 
-   balancer.nRank = nRank; 
+   balancer.comm = comm; 
+   balancer.printStats=printStats; 
+   balancer.rank   = rank; 
+   balancer.nRank  = nRank; 
    balancer.nTasks = nTasks; 
    balancer.nx = nx; 
    balancer.ny = ny; 
@@ -247,56 +115,148 @@ BALANCER buildGeom(int nx,int ny,int nz,int dx,int dy,int dz, int  nTasks)
    balancer.NX = (nx%dx == 0) ? nx/dx : nx/dx + 1; 
    balancer.NY = (ny%dy == 0) ? ny/dy : ny/dy + 1; 
    balancer.NXYz= balancer.NX*balancer.NY*nz; 
-   balancer.chunkBuffer=NULL; 
+   balancer.columns = (COLUMN *)malloc(sizeof(COLUMN)*balancer.NX*balancer.NY); 
+   balancer.chunkBuffer = (CHUNKS *)malloc(sizeof(CHUNKS)*nTasks); 
+   balancer.segLocal = (unsigned short *)malloc(sizeof(short unsigned)*balancer.NXYz); 
+   balancer.seg      = (unsigned short *)malloc(sizeof(short unsigned)*balancer.NXYz); 
+   for (int i=0;i<balancer.NXYz;i++) balancer.segLocal[i]=0; 
    return balancer; 
 }
-#if 0 
-int main(int argc, char *argv[])
+void destroyBalancer(BALANCER *balancer)
 {
-   MPI_Init(&argc,&argv); 
-   int rank,nRank; 
-   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-   MPI_Comm_size(MPI_COMM_WORLD, &nRank);
-   int nx=960; 
-   int ny=1050; 
-   int nz=930; 
-   int dx=18;
-   int dy=16;
-   int dz=14; 
-   unsigned int *buff = (unsigned int *)malloc(sizeof(unsigned int)*380000000); 
-   char filename[32]; 
-   int ngrid=0; 
-   int n; 
-   for (int ii=rank;ii<rank+4/nRank;ii++) 
+   free(balancer->segLocal); 
+   free(balancer->seg); 
+   free(balancer->chunkBuffer); 
+   free(balancer->columns); 
+}
+void fillSeg(int nn, long long unsigned *gidArray, BALANCER *balancer) 
+{
+   unsigned short *seg = balancer->segLocal; 
+   int rank = balancer->rank; 
+   int NX = balancer->NX; 
+   int NY = balancer->NY; 
+   int NXYz =balancer->NXYz;
+   int nx = balancer->nx; 
+   int ny = balancer->ny; 
+   int nz = balancer->nz; 
+   int dx = balancer->dx; 
+   int dy = balancer->dy; 
+   int dz = balancer->dz; 
+   for (int ii=0;ii<nn;ii++) 
    {
-   sprintf(filename,"gid#%6.6d",ii); 
-   printf("%s\n",filename); 
-   FILE *file = fopen(filename,"r"); 
-   size_t size = 16*1024 ;
-   while(!feof(file))
+      long long unsigned  gid = gidArray[ii]; 
+      int x=gid%nx; 
+      int y=((gid-x)/nx)%ny; 
+      int z=((gid-x-nx*y))/(nx*ny); 
+      int i = x/dx;
+      int j = y/dy;
+      assert(0<=i && i<NX); 
+      assert(0<=j && j<NY); 
+      int segIndex = z + nz*(i + NX*j); 
+      assert( 0 <= segIndex && segIndex < NXYz); 
+      seg[segIndex] += 1; 
+   }
+}
+void reduceSeg(BALANCER *balancer) 
+{
+   int NXYz=balancer->NXYz; 
+   unsigned short *segSum = (unsigned short *)malloc(sizeof(unsigned short)*NXYz); 
+   MPI_Allreduce(balancer->segLocal,balancer->seg,NXYz,MPI_UNSIGNED_SHORT,MPI_SUM,balancer->comm); 
+}
+int buildColumns(BALANCER *balancer)
+{
+   unsigned short *seg =balancer->seg; 
+   COLUMN *columns = balancer->columns; 
+   int rank=balancer->rank; 
+   int NX = balancer->NX; 
+   int NY = balancer->NY; 
+   int nx = balancer->nx; 
+   int ny = balancer->ny; 
+   int nz = balancer->nz; 
+   int dx = balancer->dx; 
+   int dy = balancer->dy; 
+   int dz = balancer->dz; 
+   double minCost = -1; 
+   double maxCost = -1; 
+   double  relCost ; 
+   int nTasks; 
+   for (relCost = 0.0125;relCost<2;relCost*=2.0) 
    {
-       n = fread(buff+ngrid,sizeof(*buff),size,file);   // In Cardiod just look over cells on the node. 
-       ngrid+=n;
+      nTasks=findChunks(balancer,seg, relCost,NULL);
+      if ( nTasks < balancer->nTasks) minCost = relCost; 
+      if ( nTasks > balancer->nTasks) {maxCost = relCost; break;}
+   }
+   if (minCost == -1) return 2;
+   if (maxCost == -1) return 3; 
+   int loop=0; 
+   while(nTasks != balancer->nTasks   )
+   {
+     relCost = 0.5*(minCost+maxCost); 
+     nTasks=findChunks(balancer,seg, relCost, NULL);
+     if (nTasks < balancer->nTasks) minCost = relCost; 
+     if (nTasks > balancer->nTasks) maxCost = relCost; 
+     if (loop++ > 30) break; 
+    }
+    balancer->relCost = relCost;
+   if (nTasks == balancer->nTasks)  
+   {
+      nTasks=findChunks(balancer,seg, relCost, columns);
+      return  0;
+   }
+   return 1; 
+}
+void  printDomainInfo(BALANCER *balancer) 
+{
+   if (balancer->rank != 0) return ; 
+   FILE *file=fopen("domainInfo.data","w"); 
+   COLUMN *column=balancer->columns; 
+   for (int cxy =0;cxy<balancer->NX*balancer->NY;cxy++) 
+   {
+     int offset = column[cxy].offset; 
+     for (int ic=0;ic<column[cxy].nChunks;ic++) 
+     {
+     
+       CHUNKS* chunks = balancer->chunkBuffer+(offset);
+        
+       int height = chunks[ic].zU-chunks[ic].zL+1;
+       int dz4 = (height+2)   ; 
+       if (dz4 % 4  != 0) dz4 += (4-dz4%4); 
+       int bbVol = (balancer->dx+2)*(balancer->dy+2)*dz4;
+       int nTissue = chunks[ic].nTissue; 
+       double cost = nTissue+balancer->relCost*bbVol; 
+       int id= offset+ic; 
+       fprintf(file,"%8d %4d %6d %4d %4d %f\n",id,nTissue,bbVol,height,dz4,cost); 
+     }
    }
    fclose(file); 
-   printf("n=%d %d\n",n,ngrid); 
-   }
-
-     
-   int target=96*1024; 
-
-   BALANCER balancer =buildGeom(nx,ny,nz,dx,dy,dz,target); 
-   unsigned short *seg=buildSeg(ngrid,buff,&balancer); 
-   COLUMN *columns = buildColumns(seg,&balancer);
-   destroySeg(seg); 
-   sprintf(filename,"Stuff#%6.6d",balancer.rank); 
-   FILE *stuff = fopen(filename,"w"); 
-   for (int i =0;i<ngrid;i++) 
-   {
-    int gid = buff[i]; 
-    int id = domainID( gid, columns, &balancer) ;
-    fprintf(stuff,"%d %d\n",gid,id); 
-   }
-   if (rank == 0) destroyColumns(columns); 
 }
-#endif
+BALANCE_DOMAIN  domainInfo(long long unsigned  gid, BALANCER *balancer) 
+{
+   COLUMN *column=balancer->columns; 
+   int x=gid%balancer->nx; 
+   int y=((gid-x)/balancer->nx)%balancer->ny; 
+   int z=((gid-x-balancer->nx*y))/(balancer->nx*balancer->ny); 
+   int i = x/balancer->dx;
+   int j = y/balancer->dy;
+   int cxy = (i + balancer->NX*j); 
+   BALANCE_DOMAIN domain; 
+   for (int ic=0;ic<column[cxy].nChunks;ic++) 
+   {
+       CHUNKS* chunks = balancer->chunkBuffer+(column[cxy].offset);
+      if (chunks[ic].zL <= z &&  z<= chunks[ic].zU) 
+      {
+          int height = chunks[ic].zU-chunks[ic].zL+1;
+          int dz4 = (height+2)   ; 
+          if (dz4 % 4  != 0) dz4 += (4-dz4%4); 
+          int bbVol = (balancer->dx+2)*(balancer->dy+2)*dz4;
+          domain.bbVol =bbVol; 
+          domain.bbHeight = dz4; 
+          domain.id= column[cxy].offset+ic; 
+          return domain; 
+      }
+   }
+  domain.bbHeight =0; 
+  domain.bbVol =0; 
+  domain.id= -1  ;
+  return domain; 
+}
