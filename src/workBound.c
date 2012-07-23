@@ -42,7 +42,7 @@ int  findChunks(BALANCER *balancer, unsigned short *seg, double diffCost, COLUMN
     int z0 ;
     int nChunks=0; 
     CHUNKS *chunks ; 
-    if (chunkBuffer != NULL) chunks = chunkBuffer+offset;  else chunks=NULL; 
+    if (column != NULL) chunks = chunkBuffer+offset;  else chunks=NULL; 
     int offsetStart = offset; 
     for (int z=zMin;z<=zMax;z++) 
     {
@@ -92,7 +92,6 @@ int  findChunks(BALANCER *balancer, unsigned short *seg, double diffCost, COLUMN
        sumChunks += nChunks; 
      }
    }
-  // printf("sumChunks=%d\n",sumChunks); 
    return offset; 
 }
 BALANCER buildBalancer(int nx,int ny,int nz,int dx,int dy,int dz, int  nTasks, int printStats, MPI_Comm comm) 
@@ -131,7 +130,7 @@ void destroyBalancer(BALANCER *balancer)
 }
 void fillSeg(int nn, long long unsigned *gidArray, BALANCER *balancer) 
 {
-   unsigned short *seg = balancer->segLocal; 
+   unsigned short *segLocal = balancer->segLocal; 
    int rank = balancer->rank; 
    int NX = balancer->NX; 
    int NY = balancer->NY; 
@@ -154,13 +153,12 @@ void fillSeg(int nn, long long unsigned *gidArray, BALANCER *balancer)
       assert(0<=j && j<NY); 
       int segIndex = z + nz*(i + NX*j); 
       assert( 0 <= segIndex && segIndex < NXYz); 
-      seg[segIndex] += 1; 
+      segLocal[segIndex] += 1; 
    }
 }
 void reduceSeg(BALANCER *balancer) 
 {
    int NXYz=balancer->NXYz; 
-   unsigned short *segSum = (unsigned short *)malloc(sizeof(unsigned short)*NXYz); 
    MPI_Allreduce(balancer->segLocal,balancer->seg,NXYz,MPI_UNSIGNED_SHORT,MPI_SUM,balancer->comm); 
 }
 int buildColumns(BALANCER *balancer)
@@ -183,6 +181,7 @@ int buildColumns(BALANCER *balancer)
    for (relCost = 0.0125;relCost<2;relCost*=2.0) 
    {
       nTasks=findChunks(balancer,seg, relCost,NULL);
+   if (nTasks == balancer->nTasks)  {minCost=maxCost=relCost; break;}
       if ( nTasks < balancer->nTasks) minCost = relCost; 
       if ( nTasks > balancer->nTasks) {maxCost = relCost; break;}
    }
@@ -230,6 +229,41 @@ void  printDomainInfo(BALANCER *balancer)
    }
    fclose(file); 
 }
+/*
+int balanceCores(CHUNKS chunk, BALANCER *balancer)
+{
+   int nTissue = chunk.nTissue;
+   int height =  chunk.zU-chunk.zL+1;
+   int dz4 = (height+2)   ;
+   if (dz4 % 4  != 0) dz4 += (4-dz4%4);
+   int bbVol = (dx+2)*(dy+2)*dz4;
+   int nDiffusion;
+   int hh= dz4 /4;
+   if  (hh <=4 ) nDiffusion = 2;
+   if  (hh > 4 ) nDiffusion = hh/2;
+   int nReaction = 16-nDiffusion;
+   double cost = nTissue+diffCostFinal*bbVol;
+
+   int dx=balancer->dx; 
+   int dy=balancer->dy; 
+   int dz=balancer->dz; 
+   volR = dx*dy*dz;
+   volD = (dx+2)*(dy+2)*(dz*2); 
+   double timeR = (1.0*nTissue)/volR* (14.0/nReaction );
+   double timeD = (1.0*bbVol)  /volD* ( 2.0/nDiffusion);
+   if (timeR < 0.99 && timeD > 1.01)
+   {
+      nReaction--;
+      nDiffusion++;
+      double timeR = (1.0*nTissue)/volR* (14.0/nReaction );
+      double timeD = (1.0*bbVol)  /volD* ( 2.0/nDiffusion);
+   }
+    if ( timeR > 1.001 || timeD > 1.001)
+    printf("%d %d %d %d %d %f %d %d %f %f\n",chunk.domainID,nTissue,bbVol,height,dz4,cost,nReaction,nDiffusion,timeR,timeD);
+    return nDiffusion; 
+}
+*/
+
 BALANCE_DOMAIN  domainInfo(long long unsigned  gid, BALANCER *balancer) 
 {
    COLUMN *column=balancer->columns; 

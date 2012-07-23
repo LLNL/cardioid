@@ -68,20 +68,6 @@ void initializeSimulate(const string& name, Simulate& sim)
    sim.printInit_=0; 
    sim.printFile_=NULL; 
 
-   if (sim.parallelDiffusionReaction_ == 1)
-   {
-      // diffusionThreads overrides nDiffusionCores, but when no thread
-      // list is specified, we use 1 core.
-      if (diffusionCores.size() == 0)
-         buildCoreList(nDiffusionCores, diffusionCores);
-      ThreadServer& threadServer = ThreadServer::getInstance();
-      sim.diffusionThreads_ = threadServer.getThreadTeam(diffusionCores);
-      if (getRank(0) == 0)
-         cout << "Diffusion Threads: " << sim.diffusionThreads_ << endl;
-      sim.reactionThreads_ = threadServer.getThreadTeam(vector<unsigned>());
-      if (getRank(0) == 0)
-         cout << "Reaction Threads: " << sim.reactionThreads_ << endl;
-   }
    
    
    timestampBarrier("initializing anatomy", MPI_COMM_WORLD);
@@ -103,6 +89,21 @@ void initializeSimulate(const string& name, Simulate& sim)
    string decompositionName;
    objectGet(obj, "decomposition", decompositionName, "decomposition");
    assignCellsToTasks(sim, decompositionName, MPI_COMM_WORLD);
+
+   if (sim.parallelDiffusionReaction_ == 1)
+   {
+      // diffusionThreads overrides nDiffusionCores, but when no thread
+      // list is specified, we use 1 core.
+      if (diffusionCores.size() == 0)
+         buildCoreList(nDiffusionCores, diffusionCores);
+      ThreadServer& threadServer = ThreadServer::getInstance();
+      sim.diffusionThreads_ = threadServer.getThreadTeam(diffusionCores);
+      if (getRank(0) == 0)
+         cout << "Diffusion Threads: " << sim.diffusionThreads_ << endl;
+      sim.reactionThreads_ = threadServer.getThreadTeam(vector<unsigned>());
+      if (getRank(0) == 0)
+         cout << "Reaction Threads: " << sim.reactionThreads_ << endl;
+   }
    
    timestampBarrier("building reaction object", MPI_COMM_WORLD);
    objectGet(obj, "reaction", nameTmp, "reaction");

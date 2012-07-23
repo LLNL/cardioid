@@ -51,13 +51,14 @@ int workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, int nx
       Pclose(file); 
       printDomainInfo(&balancer); 
    }
+   destroyBalancer(&balancer); 
+   int nDiffusionTasks = -1; 
 
    if (balancer.nRank != balancer.nTasks) 
    {
        if ( balancer.rank == 0) printf("target number of tasks differ from actual number. Exiting Program\n"); 
          exit(0);   
    }
-   //destroyBalancer(&balancer); 
 
    MPI_Allreduce(&nLocal,&nGlobal,1,MPI_UNSIGNED,MPI_SUM,balancer.comm); 
    if (rank==0) {printf("Before particle assignment nGlobal=%d\n",nGlobal); fflush(stdout);}
@@ -73,7 +74,6 @@ int workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, int nx
    assignArray((unsigned char*) &(cells[0]), &nLocal, capacity,
                sizeof(AnatomyCell), &(dest[0]), 0, balancer.comm);
    cells.resize(nLocal);
-   int nDiffusionTasks = -1; 
    sort(cells.begin(), cells.end(), sortByDest);
 
    MPI_Allreduce(&nLocal,&nGlobal,1,MPI_UNSIGNED,MPI_SUM,balancer.comm); 
