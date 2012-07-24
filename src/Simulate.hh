@@ -99,7 +99,6 @@ class Simulate
    long long int printGid_;
    int printRank_;
    int printIndex_;
-   int printInit_; 
    FILE *printFile_; 
    int snapshotRate_;
    std::set<Long64> snapshotCellList_;

@@ -22,6 +22,7 @@
 #include "checkpointIO.hh"
 #include "PerformanceTimers.hh"
 #include "fastBarrier.hh"
+#include "mpiUtils.h"
 
 /*
   This follwing header, fastBarrier_nosync.hh, contains barrier code
@@ -99,51 +100,6 @@ void simulationProlog(Simulate& sim)
 }
 
 
-Long64 findGlobalMinGid(const Anatomy& anatomy)
-{
-   Long64 minGid=anatomy.nx()*anatomy.ny()*anatomy.nz();
-   for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
-      if (anatomy.gid(ii) < minGid)
-         minGid = anatomy.gid(ii); 
-   Long64 globalMin;
-   MPI_Allreduce(&minGid, &globalMin, 1, MPI_LONG_LONG, MPI_MIN, MPI_COMM_WORLD);
-   return globalMin;
-}  
-
-
-void printInitialize(Simulate &sim)
-{
-   int myRank;
-   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-   const Anatomy& anatomy = sim.anatomy_;
-
-   sim.printIndex_ = -1;
-   
-   // -2 -> print index 0 rank 0
-   if (sim.printGid_ == -2 && myRank == 0)
-   {
-      sim.printGid_ = anatomy.gid(0);
-   }
-   // -1 -> global min gid
-   if ( sim.printGid_ == -1 )    
-      sim.printGid_ = findGlobalMinGid(sim.anatomy_);
-
-   for (unsigned ii=0; ii<anatomy.nLocal(); ii++)
-      if (anatomy.gid(ii) == sim.printGid_)
-      {
-         sim.printIndex_ = ii;
-         break;
-      }
-   
-   if (sim.printIndex_ >=0)
-   {
-      sim.printFile_=fopen("data","a"); 
-      printf(                "#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
-      fprintf(sim.printFile_,"#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
-   }
-   sim.printInit_=1; 
-   
-}
 void loopIO(const Simulate& sim,int firstCall)
 {
    int myRank;
@@ -215,7 +171,6 @@ void simulationLoop(Simulate& sim)
    cout << "Rank[" << myRank << "]: numOfNeighborToSend=" << sim.commTable_->_sendTask.size() << " numOfNeighborToRecv=" << sim.commTable_->_recvTask.size() << " numOfBytesToSend=" << sim.commTable_->_sendOffset[sim.commTable_->_sendTask.size()]*sizeof(double) << " numOfBytesToRecv=" << sim.commTable_->_recvOffset[sim.commTable_->_recvTask.size()]*sizeof(double) << endl;
 #endif
 
-   if (!sim.printInit_) printInitialize(sim); 
    loopIO(sim,1);
    while ( sim.loop_<sim.maxLoop_ )
    {
@@ -383,7 +338,6 @@ void diffusionLoop(Simulate& sim,
 
    if (tid == 0) 
    {
-     if (!sim.printInit_) printInitialize(sim); 
      loopIO(sim,1);
    }
    while ( sim.loop_ < sim.maxLoop_ )
@@ -669,6 +623,8 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
    cout << "Rank[" << myRank << "]: numOfNeighborToSend=" << sim.commTable_->_sendTask.size() << " numOfNeighborToRecv=" << sim.commTable_->_recvTask.size() << " numOfBytesToSend=" << sim.commTable_->_sendOffset[sim.commTable_->_sendTask.size()]*sizeof(double) << " numOfBytesToRecv=" << sim.commTable_->_recvOffset[sim.commTable_->_recvTask.size()]*sizeof(double) << endl;
 #endif
    VectorDouble32& VmArray(*sim.vdata_.VmArray_);
+
+   timestampBarrier("Entering threaded region", MPI_COMM_WORLD);
 
    #pragma omp parallel
    {

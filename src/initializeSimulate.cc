@@ -38,9 +38,22 @@ namespace
    }
 }
 
+Long64 findGlobalMinGid(const Anatomy& anatomy)
+{
+   Long64 minGid=anatomy.nx()*anatomy.ny()*anatomy.nz();
+   for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
+      if (anatomy.gid(ii) < minGid)
+         minGid = anatomy.gid(ii); 
+   Long64 globalMin;
+   MPI_Allreduce(&minGid, &globalMin, 1, MPI_LONG_LONG, MPI_MIN, MPI_COMM_WORLD);
+   return globalMin;
+}  
 
 void initializeSimulate(const string& name, Simulate& sim)
 {
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+
    sim.name_ = name;
 
    OBJECT* obj = objectFind(name, "SIMULATE");
@@ -65,7 +78,6 @@ void initializeSimulate(const string& name, Simulate& sim)
    vector<unsigned> diffusionCores;
    objectGet(obj, "nDiffusionCores", nDiffusionCores, "1");
    objectGet(obj, "diffusionThreads", diffusionCores);
-   sim.printInit_=0; 
    sim.printFile_=NULL; 
 
    
@@ -108,6 +120,34 @@ void initializeSimulate(const string& name, Simulate& sim)
    timestampBarrier("building reaction object", MPI_COMM_WORLD);
    objectGet(obj, "reaction", nameTmp, "reaction");
    sim.reaction_ = reactionFactory(nameTmp, sim.anatomy_, sim.reactionThreads_);
+
+   sim.printIndex_ = -1;
+   
+   // -2 -> print index 0 rank 0
+   if (sim.printGid_ == -2 && myRank == 0)
+     {
+       sim.printGid_ = sim.anatomy_.gid(0);
+     }
+   // -1 -> global min gid
+   if ( sim.printGid_ == -1 )    
+     sim.printGid_ = findGlobalMinGid(sim.anatomy_);
+   
+   for (unsigned ii=0; ii<sim.anatomy_.nLocal(); ii++)
+     if (sim.anatomy_.gid(ii) == sim.printGid_)
+       {
+         sim.printIndex_ = ii;
+         break;
+       }
+   
+   if (sim.printIndex_ >=0)
+     {
+       sim.printFile_=fopen("data","a"); 
+       printf(                "#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
+       fprintf(sim.printFile_,"#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
+     }
+
+
+
 
    timestampBarrier("getRemoteCells", MPI_COMM_WORLD);
    getRemoteCells(sim, decompositionName, MPI_COMM_WORLD);
