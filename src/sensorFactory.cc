@@ -180,6 +180,8 @@ namespace
          return new DataVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD);
       else if( method == "gradientVoronoiCoarsening" )
          return new GradientVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD);
+      assert(false);
+      return 0;
    }
 }
 
