@@ -8,14 +8,16 @@
 class DomainInfo
 {
  public:
-   DomainInfo(const std::vector<Long64>& gid, int nx, int ny, int nz);
+    DomainInfo(const std::vector<Long64>& gid, int nx, int ny, int nz);
    
-   const Vector& center() const {return center_;}
-   double radius() const {return radius_;}
- private:
+    const Vector& center() const {return center_;}
+    double radius() const {return radius_;}
+    int ncells() const {return ncells_;}
+private:
 
-   double radius_;
-   Vector center_;
+    int ncells_;
+    double radius_;
+    Vector center_;
 };
 
 #endif

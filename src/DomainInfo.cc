@@ -8,7 +8,7 @@
 using namespace std;
 
 DomainInfo::DomainInfo(const vector<Long64>& gid, int nx, int ny, int nz)
-: radius_(0.0), center_(0., 0., 0.)
+    : radius_(0.0), center_(0., 0., 0.), ncells_(gid.size())
 {
    IndexToVector indexToVector(nx, ny, nz);
 

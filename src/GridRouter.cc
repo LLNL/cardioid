@@ -38,7 +38,8 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
 
    // compute all tasks which overlap with this process
    vector<int> myNbrs;
-   { //scope
+   if (myInfo.ncells() > 0)
+   {
       for (int ii=0; ii<nTasks; ++ii)
       {
          if (ii == myRank)
@@ -49,6 +50,9 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
          //ewd:  neighbors will be calculated correctly.
          //if (dInfo[ii].radius() == 0.0)
          //   continue;
+         //ewd:  instead, skip tasks with no cells
+         if (dInfo[ii].ncells() <= 0)
+            continue;
          
          double rij = 0.0;
          for (int jj=0; jj<3; ++jj)
