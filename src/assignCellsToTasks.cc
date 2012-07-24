@@ -82,6 +82,10 @@ namespace
       int ny = sim.anatomy_.ny(); 
       int nz = sim.anatomy_.nz(); 
       int nDiffusionCores=workBoundBalancer(cells,dx,dy,dz,nx,ny,nz,target,printStats,comm); 
+
+      computeNCellsHistogram(sim,cells,target,comm);
+      computeVolHistogram(sim,cells,target,comm);
+
       if (target != nTasks) exit(0); 
       return nDiffusionCores; 
    }
@@ -269,10 +273,13 @@ namespace
          }
       }
       
-      if (myRank == 0)
-         cout << "Block Load Balancer:  nCols = " << nCols << " (" << ncx << " x " << ncy << ")" << ", xmult = " << xmult << ", ymult = " << ymult << endl;
-
+      int rcx = (ncx%xmult == 0 ? ncx/xmult : ncx/xmult + 1);
+      int rcy = (ncy%ymult == 0 ? ncy/ymult : ncy/ymult + 1);
+      int redTasks = rcx*rcy;
       
+      if (myRank == 0 && xmult*ymult > 1)
+         cout << "Block Load Balancer:  nCols = " << nCols << " (" << ncx << " x " << ncy << ")" << " distributed on " << redTasks << " tasks (" << rcx << " x " << rcy << ")" << endl;
+
       vector<int> dataOwner(nCols);      
       vector<int> localCols;
       for (unsigned icx=0; icx<ncx; ++icx)
@@ -280,7 +287,7 @@ namespace
          for (unsigned icy=0; icy<ncy; ++icy)
          {
             int icol = icx + ncx*icy;
-            int ipe = icx/xmult + (ncx/xmult)*icy/ymult;
+            int ipe = icx/xmult + rcx*icy/ymult;
             dataOwner[icol] = ipe;
             if (ipe == myRank)
                localCols.push_back(icol);
@@ -321,7 +328,7 @@ namespace
          assert(nLocal <= nMax);
          cells.resize(nLocal);
       }
-      
+
       BlockLoadBalancer loadbal(comm, sim.nx_, sim.ny_, sim.nz_, bx, by, bz);
       
       // compute decomposition using user-supplied parameters
@@ -336,7 +343,6 @@ namespace
       int npes;
       int pesum_loc = 0;
       pesum_loc += loadbal.block(cells, diffCost, nCols, localCols);
-
       MPI_Allreduce(&pesum_loc, &npes, 1, MPI_INT, MPI_SUM, comm);
       if (myRank == 0)
             cout << "Diffusion cost = " << diffCost << ", load distributed on " << npes << " tasks." << endl;
@@ -361,7 +367,8 @@ namespace
          if (tooMany)
             trialDiffCost *= 0.99;
          else
-            trialDiffCost *= 1.01;
+            //trialDiffCost *= 1.01;
+            trialDiffCost += 0.01;
             
          int pesum_loc = 0;
          pesum_loc += loadbal.block(cells, trialDiffCost, nCols, localCols);

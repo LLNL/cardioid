@@ -21,6 +21,7 @@ class BlockLoadBalancer {
     BlockLoadBalancer(MPI_Comm comm, int nx, int ny, int nz, int bx, int by, int bz);
     ~BlockLoadBalancer();
     int block(vector<AnatomyCell>& cells, double diffCost, int nCols, vector<int>& myCols);
+    double costFunction(int nTissue, int height, double a);
 };
 
 #endif
