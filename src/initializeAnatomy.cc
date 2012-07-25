@@ -86,7 +86,7 @@ namespace
       MPI_Comm_rank(comm, &myRank);
       
       string fileName;
-      objectGet(obj, "fileName", fileName, "snapshot.initial/atatomy#");
+      objectGet(obj, "fileName", fileName, "snapshot.initial/anatomy#");
       
       if (myRank==0) cout << "Starting read" <<endl;
 
