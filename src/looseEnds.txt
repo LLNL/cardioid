@@ -136,3 +136,9 @@ to get the fast barrier stuff better designed.
 
 43.  The place where we call posix_memalign aren't sensitive to the
      actual simd length.
+
+44.  The handling of the number of files for pio output is not
+adequate.  Each Popen should probably do something inteligent.  Perhaps
+Pclose should reset the default.  The fact that the number of files
+isn't a class member is an even bigger problem.
+

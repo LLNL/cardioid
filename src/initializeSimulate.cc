@@ -67,6 +67,7 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "printGid", sim.printGid_, "-1");
    objectGet(obj, "snapshotRate", sim.snapshotRate_, "100");
    objectGet(obj, "checkpointRate", sim.checkpointRate_, "-1");
+   objectGet(obj, "nFiles", sim.nFiles_, "0");
    objectGet(obj, "parallelDiffusionReaction", sim.parallelDiffusionReaction_, "0");
    unsigned profileAllCounters_;
    objectGet(obj, "profileAllCounters", profileAllCounters_, "0");

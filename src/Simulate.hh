@@ -103,6 +103,7 @@ class Simulate
    int snapshotRate_;
    std::set<Long64> snapshotCellList_;
    int checkpointRate_;
+   int nFiles_;
    int parallelDiffusionReaction_;
 
    ThreadTeam diffusionThreads_;

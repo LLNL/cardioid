@@ -175,6 +175,7 @@ void writeCheckpoint(const Simulate& sim, MPI_Comm comm)
    headerData.nz_ = anatomy.nz();
    
 
+   Pio_setNumWriteFiles(sim.nFiles_);
    PFILE* file = Popen(headerData.stateFileName_.c_str(), "w", comm);
    if (myRank == 0)
    {
@@ -195,6 +196,7 @@ void writeCheckpoint(const Simulate& sim, MPI_Comm comm)
       Pwrite(buf, lRec, 1, file);
    }
    int rc = Pclose(file);
+   Pio_setNumWriteFiles(0);
    if (rc == 0) 
    {
       unlink("restart");
