@@ -55,7 +55,6 @@ class Anatomy
  private:
    unsigned nx_, ny_, nz_;
    double dx_, dy_, dz_;
-   unsigned nLocal_;
    unsigned nRemote_;
    unsigned nGlobal_;
    IndexToTuple i2t_;
