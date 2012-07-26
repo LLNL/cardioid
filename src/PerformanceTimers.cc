@@ -48,6 +48,8 @@ namespace PerformanceTimers
    };
    TimerHandle loopIOTimer;
    TimerHandle sensorTimer;
+   TimerHandle sensorEvalTimer;
+   TimerHandle sensorPrintTimer;
    TimerHandle haloTimer;
    TimerHandle diffusionCalcTimer;
    TimerHandle stimulusTimer;
@@ -96,6 +98,8 @@ void  profileInit()
    allCounters_ = true;
    loopIOTimer = profileGetHandle("LoopIO");
    sensorTimer = profileGetHandle("Sensors");
+   sensorEvalTimer = profileGetHandle("EvalSensors");
+   sensorPrintTimer = profileGetHandle("PrintSensors");
    haloTimer = profileGetHandle("Halo Exchange");
    diffusionCalcTimer= profileGetHandle("DiffusionCalc");
    stimulusTimer = profileGetHandle("Stimulus");

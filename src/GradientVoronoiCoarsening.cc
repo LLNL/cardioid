@@ -1,12 +1,16 @@
 #include "GradientVoronoiCoarsening.hh"
+#include "PerformanceTimers.hh"
 #include "pio.h"
 #include "ioUtils.h"
 #include "Simulate.hh"
+using namespace PerformanceTimers;
 
 #include <iostream>
 #include <sstream>
 #include <iomanip>
 using namespace std;
+
+#define GV_DEBUG  0
 
 /////////////////////////////////////////////////////////////////////
 
@@ -22,21 +26,20 @@ double det3(const double a,const double b,const double c,
 // Cramer's rule
 int solve3x3(const double s[6], const double r[3], double x[3], const int color)
 {
-   double a[9]={s[0],s[1],s[2],s[1],s[3],s[4],s[2],s[4],s[5]};
-   double det1=det3(a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7],a[8]);
+   double det1=det3(s[0],s[1],s[2],s[1],s[3],s[4],s[2],s[4],s[5]);
    if( fabs(det1)<tol_det )
    {
       cout<<"WARNING: Bad condition number for 3x3 system: det="<<det1<<", color="<<color<<endl;
-      cout<<"A=["<<a[0]<<" "<<a[1]<<" "<<a[2]<<";"
-                 <<a[3]<<" "<<a[4]<<" "<<a[5]<<";"
-                 <<a[6]<<" "<<a[7]<<" "<<a[8]<<"]"<<endl;
+      cout<<"A=["<<s[0]<<" "<<s[1]<<" "<<s[2]<<";"
+                 <<s[1]<<" "<<s[3]<<" "<<s[4]<<";"
+                 <<s[2]<<" "<<s[4]<<" "<<s[5]<<"]"<<endl;
       //cout<<"r=["<<r[0]<<" "<<r[1]<<" "<<r[2]<<"]"<<endl;
       return 1;
    }
    const double det1i=1./det1;
-   x[0]=det3(r[0],a[1],a[2],r[1],a[4],a[5],r[2],a[7],a[8])*det1i;
-   x[1]=det3(a[0],r[0],a[2],a[3],r[1],a[5],a[6],r[2],a[8])*det1i;
-   x[2]=det3(a[0],a[1],r[0],a[3],a[4],r[1],a[6],a[7],r[2])*det1i;
+   x[0]=det3(r[0],s[1],s[2],r[1],s[3],s[4],r[2],s[4],s[5])*det1i;
+   x[1]=det3(s[0],r[0],s[2],s[1],r[1],s[4],s[2],r[2],s[5])*det1i;
+   x[2]=det3(s[0],s[1],r[0],s[1],s[3],r[1],s[2],s[4],r[2])*det1i;
    
    return 0;
 }
@@ -76,7 +79,7 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
    VectorDouble32 tmp(nLocal,0.);
    for(int ic=0;ic<nLocal;++ic)
    {
-      double norm2=(dx_[ic]*dx_[ic]
+      const double norm2=(dx_[ic]*dx_[ic]
                    +dy_[ic]*dy_[ic]
                    +dz_[ic]*dz_[ic]); 
       if( norm2<1.e-6 ){
@@ -107,7 +110,7 @@ void GradientVoronoiCoarsening::computeLSsystem(const VectorDouble32& val)
    valRHS2_.clear();
 
    const int nLocal = anatomy_.nLocal();
-   double minnorm2=1.e-8;
+   const double minnorm2=1.e-8;
 
    for(int ic=0;ic<nLocal;++ic)
    {
@@ -124,10 +127,10 @@ void GradientVoronoiCoarsening::computeLSsystem(const VectorDouble32& val)
          valMat12_.add1value(color,dy_[ic]*dz_[ic]*norm2i);
          valMat22_.add1value(color,dz_[ic]*dz_[ic]*norm2i);
          
-         const double v=valcolors_.value(color);
-         valRHS0_.add1value(color,dx_[ic]*norm2i*(val[ic]-v));
-         valRHS1_.add1value(color,dy_[ic]*norm2i*(val[ic]-v));
-         valRHS2_.add1value(color,dz_[ic]*norm2i*(val[ic]-v));
+         const double v=norm2i*(val[ic]-valcolors_.value(color));
+         valRHS0_.add1value(color,dx_[ic]*v);
+         valRHS1_.add1value(color,dy_[ic]*v);
+         valRHS2_.add1value(color,dz_[ic]*v);
       }
    }
    
@@ -152,21 +155,23 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
 
    PFILE* file = Popen(filename.c_str(), "w", comm_);
 
-   char fmt[] = "%5d %5d %5d %5d %18.12f %18.12f %18.12f";
-   int lrec = 82;
+   char fmt[] = "%5d %5d %5d %7d %18.12f %18.12f %18.12f";
+   int lrec = 84;
    int nfields = 7; 
 
-   Long64 nSnapSub = -1;
-   const std::set<int>& owned_colors=coarsening_.getOwnedColors();
-   Long64 nSnapSubLoc = owned_colors.size();
-   MPI_Allreduce(&nSnapSubLoc, &nSnapSub, 1, MPI_LONG_LONG, MPI_SUM, comm_);
+   static Long64 nSnapSub = -1;
 
    static bool first_time = true;
    static std::set<int> exclude_colors;
    static int sum_npts=0;
    
+   const std::set<int>& owned_colors=coarsening_.getOwnedColors();
+   
    if( first_time )
    {
+      Long64 nSnapSubLoc = owned_colors.size();
+      MPI_Reduce(&nSnapSubLoc, &nSnapSub, 1, MPI_LONG_LONG, MPI_SUM, 0, comm_);
+
       for(set<int>::const_iterator it = owned_colors.begin();
                                    it!= owned_colors.end();
                                  ++it)
@@ -203,7 +208,7 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
    }
 
    if (myRank == 0)
-   {
+   {      
       Long64 nc=nSnapSub-(Long64)sum_npts;
       
       // write header
@@ -229,7 +234,9 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
    const int halfNy = anatomy_.ny()/2;
    const int halfNz = anatomy_.nz()/2;
    
+#if GV_DEBUG
    int ncolors=0;
+#endif
    for(set<int>::const_iterator it = owned_colors.begin();
                                 it!= owned_colors.end();
                               ++it)
@@ -238,6 +245,8 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
       
       const std::set<int>::const_iterator itn=exclude_colors.find(color);
       if( itn!=exclude_colors.end() )continue;
+      
+      //startTimer(sensorEvalTimer);
       
       //cout<<"color="<<color<<endl;
       const Vector& v = coarsening_.center(color);
@@ -270,18 +279,21 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
       }else{
           cout<<"WARNING: Not enough cells ("<<ncells<<") associated to gid "<<color<<" to compute gradient!!"<<endl;
       } 
+      //stopTimer(sensorEvalTimer);
 
       int l = snprintf(line, lrec, fmt,
                        ix, iy, iz,
                        valcolors_.nValues(color),
                        //valcolors_.value(color),
                        g[0],g[1],g[2]);
+#if GV_DEBUG
       ncolors+=valcolors_.nValues(color);
+#endif
       
-      if (myRank == 0 && l>=lrec ){
+      if (l>=lrec ){
          cerr<<"ERROR: printed record truncated in file "<<filename<<endl;
          cerr<<"This could be caused by out of range values"<<endl;
-         cerr<<"record="<<line<<endl;
+         cerr<<"l="<<l<<", lrec="<<lrec<<", record="<<line<<endl;
          break;
       }
       for (; l < lrec - 1; l++) line[l] = (char)' ';
@@ -292,7 +304,7 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
          Pwrite(line, lrec, 1, file);
    }
    
-#if 0
+#if GV_DEBUG
    int ntotal;
    MPI_Reduce(&ncolors, &ntotal, 1, MPI_INT, MPI_SUM, 0, comm_);
    if (myRank == 0)assert( ntotal==anatomy_.nGlobal() );
@@ -303,12 +315,18 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
 
 void GradientVoronoiCoarsening::eval(double time, int loop)
 {
+   startTimer(sensorEvalTimer);
+   
    computeColorCenterValues(*vdata_.VmArray_);
    computeLSsystem(*vdata_.VmArray_);
+   
+   stopTimer(sensorEvalTimer);
 }
 
 void GradientVoronoiCoarsening::print(double time, int loop)
 {
+   startTimer(sensorPrintTimer);
+   
    int myRank;
    MPI_Comm_rank(comm_, &myRank);
 
@@ -318,7 +336,9 @@ void GradientVoronoiCoarsening::print(double time, int loop)
    if (myRank == 0)
       DirTestCreate(fullname.c_str());
    fullname += "/" + filename_;
-
+   
    writeLeastSquareGradients(fullname,time, loop);   
+
+   stopTimer(sensorPrintTimer);
 }
 

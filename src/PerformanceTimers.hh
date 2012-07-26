@@ -10,6 +10,8 @@ namespace PerformanceTimers
 {
    extern TimerHandle loopIOTimer;
    extern TimerHandle sensorTimer;
+   extern TimerHandle sensorEvalTimer;
+   extern TimerHandle sensorPrintTimer;
    extern TimerHandle haloTimer;
    extern TimerHandle diffusionCalcTimer;
    extern TimerHandle stimulusTimer;
