@@ -20,7 +20,9 @@ HEARTSRC= cardioid.cc \
 	ThreadUtils.cc \
 	Vector.cc SymmetricTensor.cc ConstantModel.cc ConstantReaction.cc \
 	PerformanceTimers.cc unionOfStrings.cc getUserInfo.cc \
-        GDLoadBalancer.cc BlockLoadBalancer.cc workBoundBalancer.cc CommTable.cc \
+        GDLoadBalancer.cc BlockLoadBalancer.cc workBoundBalancer.cc \
+	pioBalancer.cc \
+	CommTable.cc \
 	BucketOfBits.cc \
 	stateLoader.cc \
 	readPioFile.cc \

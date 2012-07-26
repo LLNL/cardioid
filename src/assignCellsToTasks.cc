@@ -15,6 +15,7 @@
 #include "GDLoadBalancer.hh"
 #include "BlockLoadBalancer.hh"
 #include "workBoundBalancer.hh"
+#include "pioBalancer.hh"
 #include "mpiUtils.h"
 #include "GridPoint.hh"
 #include "PerformanceTimers.hh"
@@ -24,12 +25,14 @@ using namespace std;
 
 namespace
 {
-    void koradiBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
-    void gridBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
-    void blockBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
-    int  workBoundScan(Simulate& sim, OBJECT* obj, MPI_Comm comm);
-    void computeVolHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
-    void computeNCellsHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
+   void koradiBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+   void gridBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+   void blockBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+   int  workBoundScan(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+   int  pioBalancerScan(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+
+   void computeVolHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
+   void computeNCellsHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
 }
 
 
@@ -49,12 +52,15 @@ void assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
       blockBalancer(sim, obj, comm);
    else if (method == "workBound")
       nDiffusionCores = workBoundScan(sim, obj, comm);
+   else if (method == "pio")
+      nDiffusionCores = pioBalancerScan(sim, obj, comm);
    else
       assert(1==0);      
    profileStop("Assignment");
    sim.anatomy_.nLocal() = sim.anatomy_.cellArray().size();
    sim.anatomy_.nRemote() = 0;
 }
+
 namespace
 {
    int  workBoundScan(Simulate& sim, OBJECT* obj, MPI_Comm comm)
@@ -458,6 +464,22 @@ namespace
       }
    }
 }
+
+
+namespace
+{
+   int pioBalancerScan(Simulate& sim, OBJECT* obj, MPI_Comm comm)
+   {
+      string domainFile;
+      string pxyzFile;
+      objectGet(obj, "domainFile", domainFile, "balance/domains#");
+      objectGet(obj, "pxyzFile",   pxyzFile,   "balance/pxyz#");
+
+      int nD = pioBalancer(domainFile, pxyzFile, sim, comm);
+      return nD;
+   }
+}
+
 
 namespace
 {
