@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <cassert>
+#include <algorithm>
 
 #include "Simulate.hh"
 #include "BucketOfBits.hh"
