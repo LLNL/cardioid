@@ -57,8 +57,6 @@ void assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
    else
       assert(1==0);      
    profileStop("Assignment");
-   sim.anatomy_.nLocal() = sim.anatomy_.cellArray().size();
-   sim.anatomy_.nRemote() = 0;
 }
 
 namespace

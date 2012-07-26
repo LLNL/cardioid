@@ -15,11 +15,10 @@ class Anatomy
  public:
 
    Anatomy()
-   : i2t_(0, 0, 0){};
+   : i2t_(0, 0, 0), nRemote_(0){};
 
    unsigned size() const;
    unsigned nLocal() const;
-   unsigned& nLocal();
    unsigned nRemote() const;
    unsigned& nRemote();
    unsigned nGlobal() const;
@@ -66,8 +65,7 @@ class Anatomy
 };
 
 inline unsigned  Anatomy::size() const { return cell_.size();}
-inline unsigned  Anatomy::nLocal() const { return nLocal_;}
-inline unsigned& Anatomy::nLocal()       { return nLocal_;}
+inline unsigned  Anatomy::nLocal() const { return cell_.size()-nRemote_;}
 inline unsigned  Anatomy::nRemote() const { return nRemote_;}
 inline unsigned& Anatomy::nRemote()       { return nRemote_;}
 inline unsigned  Anatomy::nGlobal() const { return nGlobal_;}
