@@ -101,7 +101,9 @@ void initializeSimulate(const string& name, Simulate& sim)
    timestampBarrier("assigning cells to tasks", MPI_COMM_WORLD);
    string decompositionName;
    objectGet(obj, "decomposition", decompositionName, "decomposition");
-   assignCellsToTasks(sim, decompositionName, MPI_COMM_WORLD);
+   int tmp = assignCellsToTasks(sim, decompositionName, MPI_COMM_WORLD);
+   if (tmp>0)
+     nDiffusionCores = tmp;
 
    if (sim.parallelDiffusionReaction_ == 1)
    {

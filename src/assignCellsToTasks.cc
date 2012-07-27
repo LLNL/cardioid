@@ -36,7 +36,7 @@ namespace
 }
 
 
-void assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
+int assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
 {
    OBJECT* obj = object_find(name.c_str(), "DECOMPOSITION");
    string method;
@@ -57,6 +57,7 @@ void assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
    else
       assert(1==0);      
    profileStop("Assignment");
+   return nDiffusionCores;
 }
 
 namespace
@@ -474,6 +475,13 @@ namespace
       objectGet(obj, "pxyzFile",   pxyzFile,   "balance/pxyz#");
 
       int nD = pioBalancer(domainFile, pxyzFile, sim, comm);
+
+      vector<AnatomyCell>& cells = sim.anatomy_.cellArray();
+      int nCenters;
+      MPI_Comm_size(comm, &nCenters);
+      computeNCellsHistogram(sim,cells,nCenters,comm);
+      computeVolHistogram(sim,cells,nCenters,comm);
+
       return nD;
    }
 }

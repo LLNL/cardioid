@@ -142,3 +142,12 @@ adequate.  Each Popen should probably do something inteligent.  Perhaps
 Pclose should reset the default.  The fact that the number of files
 isn't a class member is an even bigger problem.
 
+45.  The nGlobal member of Anatomy probably isn't a very good idea.
+nRemote has problems too since any change to the cell Array can change
+nRemote without actually resetting the class value.  Anatomy is an
+easy class to screw up.
+
+46.  The handling of the nDiffusionCore return value from the
+assignment code completely messes up the ability to set diffusion and
+reaction thread by thread.  This needs to be cleaned up.  I'm in too
+much of a hurry right now.

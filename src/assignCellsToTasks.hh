@@ -6,6 +6,6 @@
 
 class Simulate;
 
-void assignCellsToTasks(Simulate& sim, const std::string& name, MPI_Comm comm);
+int assignCellsToTasks(Simulate& sim, const std::string& name, MPI_Comm comm);
 
 #endif
