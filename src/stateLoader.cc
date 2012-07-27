@@ -147,12 +147,12 @@ BucketOfBits* readStateData(const string& filename, MPI_Comm comm,
 }
 
 /** There are two sets of destinations that we need to calculate.  Each
- *  task that read records needs to find the drop off rank to which the
+ *  task that reads records needs to find the drop off rank to which
  *  each record in the state data should be sent.  This is the
  *  recordDest.  Each task that has cell data in the Anatomy needs to
  *  calculate the drop off rank for each cell that it owns so that it
  *  can send a request for the record data.  This is the requestDest.
- *  The drop off rank that depends only on the gid.  This implementation
+ *  The drop off rank depends only on the gid.  This implementation
  *  assigns each gid to the task whose center is closest (voronoi rule).
  *  In the case where two or more centers are equally close, the task
  *  with the lowest rank is chosen.  */
