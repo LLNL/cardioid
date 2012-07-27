@@ -542,10 +542,10 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 		    &VmArray[0],
 		    sim.diffusion_->diffusionScale());
       
+      if (sim.checkRanges_)
+         sim.checkRanges(begin, end,*loopData.dVmReaction, dVmDiffusion);
       if (tid == 0)
       {
-         if (sim.checkRanges_)
-            sim.checkRanges(*loopData.dVmReaction, dVmDiffusion);
          
          sim.time_ += sim.dt_;
          ++sim.loop_;

@@ -61,13 +61,6 @@ class PotentialData
       return tmp;
    }
    
-   bool outOfRange(const unsigned ii)const
-   {
-      const double vMax =   60.;
-      const double vMin = -110.;
-      return ( (*VmArray_)[ii] > vMax || (*VmArray_)[ii] < vMin || isnan((*VmArray_)[ii]) );
-   }
-   
    // use pointers to vector so that they can be swapped
    VectorDouble32* VmArray_; // local and remote
    VectorDouble32* dVmDiffusion_;
@@ -87,8 +80,12 @@ class Simulate
 {
  public:
 
+   void checkRanges(int begin, int end,
+                    const VectorDouble32& dVmReaction,
+                    const VectorDouble32& dVmDiffusion);
    void checkRanges(const VectorDouble32& dVmReaction,
                     const VectorDouble32& dVmDiffusion);
+   
 
    bool checkIO()const;
    

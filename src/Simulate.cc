@@ -10,14 +10,34 @@ using std::isnan;
 using std::vector;
 
 
-/** */
+/** Offsets version.  Be sure to maintain in parallel with OMP version*/
+void Simulate::checkRanges(int begin, int end,
+                           const VectorDouble32& dVmReaction,
+                           const VectorDouble32& dVmDiffusion)
+{
+   const double vMax =   60.;
+   const double vMin = -110.;
+   const VectorDouble32& Vm = (*vdata_.VmArray_);
+   for (unsigned ii=begin; ii<end; ++ii)
+   {
+      if ( Vm[ii] > vMax || Vm[ii] < vMin )
+         outOfRange(ii, (*vdata_.dVmReaction_)[ii], (*vdata_.dVmDiffusion_)[ii]);
+   }
+}
+
+/** Omp version.  Be sure to maintain in parallel with offsets version.
+ *  Don't call from parallel loop */
 void Simulate::checkRanges(const VectorDouble32& dVmReaction,
                            const VectorDouble32& dVmDiffusion)
 {
-   unsigned nLocal = anatomy_.nLocal();
-   for (unsigned ii=0; ii<nLocal; ++ii)
+   int nLocal = anatomy_.nLocal();
+   const double vMax =   60.;
+   const double vMin = -110.;
+   const VectorDouble32& Vm = (*vdata_.VmArray_);
+   #pragma omp parallel for
+   for (int ii=0; ii<nLocal; ++ii)
    {
-      if ( vdata_.outOfRange(ii) )
+      if ( Vm[ii] > vMax || Vm[ii] < vMin )
          outOfRange(ii, (*vdata_.dVmReaction_)[ii], (*vdata_.dVmDiffusion_)[ii]);
    }
 }
