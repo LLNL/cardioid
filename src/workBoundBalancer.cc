@@ -11,17 +11,17 @@
 #include "workBound.h"
 #include "pio.h"
 using namespace std;
-int workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, int nx, int ny, int nz, int target,int printStats,MPI_Comm comm)
+int workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, int nx, int ny, int nz, int target,int nC, double alpha, int printStats,MPI_Comm comm)
 {
-   BALANCER balancer = buildBalancer(nx,ny,nz,dx,dy,dz,target,printStats,comm);
+   unsigned nLocal = cells.size(); 
+   MPI_Allreduce(&nLocal,&nGlobal,1,MPI_UNSIGNED,MPI_SUM,comm); 
+   BALANCER balancer = buildBalancer(nGlobal,nx,ny,nz,dx,dy,dz,target,nC,alpha,printStats,comm);
 
    int rank = balancer.rank; 
    //char filename[16]; 
    //sprintf(filename,"Stuff#%6.6d",rank);
    //FILE *stuff = fopen(filename,"w");
 
-   unsigned nGlobal; 
-   unsigned nLocal = cells.size(); 
    unsigned int nn = 1024; 
    vector<long long unsigned> gid(nn); 
    for (unsigned int ii=0;ii<nLocal;ii+=nn) 
@@ -51,14 +51,17 @@ int workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, int nx
       Pclose(file); 
       printDomainInfo(&balancer); 
    }
-   destroyBalancer(&balancer); 
-   int nDiffusionTasks = -1; 
 
    if (balancer.nRank != balancer.nTasks) 
    {
        if ( balancer.rank == 0) printf("target number of tasks differ from actual number. Exiting Program\n"); 
          exit(0);   
    }
+   int nDiffusionTasks = -1; 
+   setDomainInfo(&balancer); 
+   PARTITION_INFO part = corePartition(balancer.chunk,&balancer);
+   nDiffusionTasks = part.nD; 
+   destroyBalancer(&balancer); 
 
    MPI_Allreduce(&nLocal,&nGlobal,1,MPI_UNSIGNED,MPI_SUM,balancer.comm); 
    if (rank==0) {printf("Before particle assignment nGlobal=%d\n",nGlobal); fflush(stdout);}

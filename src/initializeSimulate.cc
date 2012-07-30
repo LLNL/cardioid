@@ -152,7 +152,6 @@ void initializeSimulate(const string& name, Simulate& sim)
 
 
 
-   timestampBarrier("getRemoteCells", MPI_COMM_WORLD);
    getRemoteCells(sim, decompositionName, MPI_COMM_WORLD);
 
    timestampBarrier("building diffusion object", MPI_COMM_WORLD);

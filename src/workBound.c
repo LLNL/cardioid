@@ -62,6 +62,7 @@ int  findChunks(BALANCER *balancer, unsigned short *seg, double diffCost, COLUMN
               chunks[nChunks].zL=z0; 
               chunks[nChunks].zU=z-1; 
               chunks[nChunks].nTissue=sum; 
+              chunks[nChunks].domainID=offset; 
               }
               offset++;
               nChunks++; 
@@ -80,6 +81,7 @@ int  findChunks(BALANCER *balancer, unsigned short *seg, double diffCost, COLUMN
           chunks[nChunks].zL=z0; 
           chunks[nChunks].zU=zMax; 
           chunks[nChunks].nTissue=sum; 
+          chunks[nChunks].domainID=offset; 
        }
        offset++;
        nChunks++; 
@@ -94,14 +96,21 @@ int  findChunks(BALANCER *balancer, unsigned short *seg, double diffCost, COLUMN
    }
    return offset; 
 }
-BALANCER buildBalancer(int nx,int ny,int nz,int dx,int dy,int dz, int  nTasks, int printStats, MPI_Comm comm) 
+BALANCER buildBalancer(int nCellGlobal, int nx,int ny,int nz,int dx,int dy,int dz, int  nTasks, int nC, double alpha, int printStats, MPI_Comm comm) 
 {
    int rank,nRank; 
    MPI_Comm_rank(comm, &rank);
    MPI_Comm_size(comm, &nRank);
+   int dz4 = (dz+2)   ;
+   if (dz4 % 4  != 0) dz4 += (4-dz4%4);
+
    BALANCER balancer; 
    balancer.comm = comm; 
+   balancer.nCellGlobal = nCellGlobal; 
    balancer.printStats=printStats; 
+   balancer.nC = nC; 
+   balancer.alphaWork=alpha; 
+   balancer.timeRef = (dx*dy*dz + alpha*(dx)*(dy)*(dz4))/nC ;
    balancer.rank   = rank; 
    balancer.nRank  = nRank; 
    balancer.nTasks = nTasks; 
@@ -161,6 +170,24 @@ void reduceSeg(BALANCER *balancer)
    int NXYz=balancer->NXYz; 
    MPI_Allreduce(balancer->segLocal,balancer->seg,NXYz,MPI_UNSIGNED_SHORT,MPI_SUM,balancer->comm); 
 }
+void  setDomainInfo(BALANCER *balancer) 
+{
+   COLUMN *column=balancer->columns; 
+   for (int cxy =0;cxy<balancer->NX*balancer->NY;cxy++) 
+   {
+     int offset = column[cxy].offset; 
+     CHUNKS* chunks = balancer->chunkBuffer+(offset);
+     for (int ic=0;ic<column[cxy].nChunks;ic++) 
+     {
+       int  id= offset+ic; 
+       if (id == balancer->rank)
+       {
+           balancer->chunk = chunks[ic];
+           break; 
+       }
+     }
+   }
+}
 int buildColumns(BALANCER *balancer)
 {
    unsigned short *seg =balancer->seg; 
@@ -176,30 +203,30 @@ int buildColumns(BALANCER *balancer)
    int dz = balancer->dz; 
    double minCost = -1; 
    double maxCost = -1; 
-   double  relCost ; 
+   double  alpha ; 
    int nTasks; 
-   for (relCost = 0.0125;relCost<2;relCost*=2.0) 
+   for (alpha = 0.0125;alpha<2;alpha*=2.0) 
    {
-      nTasks=findChunks(balancer,seg, relCost,NULL);
-   if (nTasks == balancer->nTasks)  {minCost=maxCost=relCost; break;}
-      if ( nTasks < balancer->nTasks) minCost = relCost; 
-      if ( nTasks > balancer->nTasks) {maxCost = relCost; break;}
+      nTasks=findChunks(balancer,seg, alpha,NULL);
+   if (nTasks == balancer->nTasks)  {minCost=maxCost=alpha; break;}
+      if ( nTasks < balancer->nTasks) minCost = alpha; 
+      if ( nTasks > balancer->nTasks) {maxCost = alpha; break;}
    }
-   if (minCost == -1) return 2;
-   if (maxCost == -1) return 3; 
+   //if (minCost == -1) return 2;
+   //if (maxCost == -1) return 3; 
    int loop=0; 
    while(nTasks != balancer->nTasks   )
    {
-     relCost = 0.5*(minCost+maxCost); 
-     nTasks=findChunks(balancer,seg, relCost, NULL);
-     if (nTasks < balancer->nTasks) minCost = relCost; 
-     if (nTasks > balancer->nTasks) maxCost = relCost; 
+     alpha = 0.5*(minCost+maxCost); 
+     nTasks=findChunks(balancer,seg, alpha, NULL);
+     if (nTasks < balancer->nTasks) minCost = alpha; 
+     if (nTasks > balancer->nTasks) maxCost = alpha; 
      if (loop++ > 30) break; 
     }
-    balancer->relCost = relCost;
+    balancer->alphaBalance = alpha;
    if (nTasks == balancer->nTasks)  
    {
-      nTasks=findChunks(balancer,seg, relCost, columns);
+      nTasks=findChunks(balancer,seg, alpha, columns);
       return  0;
    }
    return 1; 
@@ -207,32 +234,84 @@ int buildColumns(BALANCER *balancer)
 void  printDomainInfo(BALANCER *balancer) 
 {
    if (balancer->rank != 0) return ; 
-   FILE *file=fopen("domainInfo.data","w"); 
-   COLUMN *column=balancer->columns; 
-   for (int cxy =0;cxy<balancer->NX*balancer->NY;cxy++) 
+   char filename[256]; 
+   double nAve = balancer->nCellGlobal/balancer->nTasks; 
+   double nMax = balancer->dx*balancer->dy*balancer->dz; 
+   sprintf(filename,"domains#%6.6d",balancer->rank);
+   FILE *domainFile = fopen(filename,"w");
+   fprintf(domainFile,"domain HEADER {\n datatype = VARRECORDASCII;\n");
+   fprintf(domainFile,"nfiles=1; nrecords=%d; nfields=15;\n",balancer->nTasks);
+   fprintf(domainFile,"nfields=15;\n");
+   fprintf(domainFile,"field_names=domain cx cy zL ZU nT nBB, dz dz4 cost nR nD timeR timeD timeRef;\n" );
+   fprintf(domainFile,"field_types=u u u u u u u u u f u u f f f;\n" );
+   fprintf(domainFile,"nCells=%d; nx=%d; ny=%d; nz=%d;\n",balancer->nCellGlobal,balancer->nx,balancer->ny,balancer->nz);
+   fprintf(domainFile,"dx=%d; dy=%d; dz=%d; ",balancer->dx,balancer->dy,balancer->dz);
+   fprintf(domainFile,"NX=%d; NY=%d;\n",balancer->NX,balancer->NY);
+   fprintf(domainFile,"alphaWork=%f; alphaBalance=%f;\n",balancer->alphaWork,balancer->alphaBalance);
+   fprintf(domainFile,"nCellAve=%f; nCellBox=%f; ratio=%f;\n", nAve,nMax,nMax/nAve);
+   fprintf(domainFile,"nCores=%d;\n}\n\n",balancer->nC);
+ 
+   int cnt=0;
+   double timeRef = balancer->timeRef; 
+   for (int cxy =0;cxy<balancer->NX*balancer->NY;cxy++)
    {
-     int offset = column[cxy].offset; 
-     for (int ic=0;ic<column[cxy].nChunks;ic++) 
-     {
-     
-       CHUNKS* chunks = balancer->chunkBuffer+(offset);
-        
-       int height = chunks[ic].zU-chunks[ic].zL+1;
-       int dz4 = (height+2)   ; 
-       if (dz4 % 4  != 0) dz4 += (4-dz4%4); 
-       int bbVol = (balancer->dx+2)*(balancer->dy+2)*dz4;
-       int nTissue = chunks[ic].nTissue; 
-       double cost = nTissue+balancer->relCost*bbVol; 
-       int id= offset+ic; 
-       fprintf(file,"%8d %4d %6d %4d %4d %f\n",id,nTissue,bbVol,height,dz4,cost); 
-     }
+      int x = cxy % balancer->NX;
+      int y = cxy / balancer->NX;
+      CHUNKS *chunks = (balancer->chunkBuffer+(balancer->columns[cxy].offset));
+      for (int j=0;j<balancer->columns[cxy].nChunks;j++)
+      {
+        CHUNKS chunk = chunks[j];
+        int zL = chunk.zL;
+        int zU = chunk.zU;
+
+        PARTITION_INFO part = corePartition(chunk, balancer);
+        int nT = part.nT;
+        int nB = part.nB;
+        int height = part.height;
+        int dz4   = part.dz4;
+        int nR = part.nR;
+        int nD = part.nD;
+        double cost = part.cost;
+        double timeR = part.timeR;
+        double timeD = part.timeD;
+
+        fprintf(domainFile,"%6d %6d %6d %6d %6d %6d %6d %6d %6d %9.3f %6d %6d %9.3f %9.3f %9.3f ",
+          chunk.domainID,x,y,zL,zU,nT,nB,height,dz4,cost,nR,nD,timeR,timeD,timeRef);
+        if ( timeR > 1.001*timeRef || timeD > 1.001*timeRef) fprintf(domainFile," *"); 
+        fprintf(domainFile,"\n"); 
+
+        cnt ++;
+
+      }
    }
-   fclose(file); 
+   fclose(domainFile); 
 }
-/*
-int balanceCores(CHUNKS chunk, BALANCER *balancer)
+int  domainID(int gid, BALANCER *balancer)
 {
-   int nTissue = chunk.nTissue;
+   COLUMN *column = balancer->columns;
+   int x=gid%balancer->nx;
+   int y=((gid-x)/balancer->nx)%balancer->ny;
+   int z=((gid-x-balancer->nx*y))/(balancer->nx*balancer->ny);
+   int i = x/balancer->dx;
+   int j = y/balancer->dy;
+   int cxy = (i + balancer->NX*j);
+   for (int ic=0;ic<column[cxy].nChunks;ic++)
+   {
+       CHUNKS* chunks = balancer->chunkBuffer+(column[cxy].offset);
+      if (chunks[ic].zL <= z &&  z<= chunks[ic].zU) return chunks[ic].domainID;
+   }
+   assert(0);
+   return -1;
+}
+
+int balanceCores(BALANCER *balancer)
+{
+   CHUNKS chunk = balancer->chunk;
+   int nCore = 16;  // Need to replace with a call to inquire number of cores on node; 
+   int dx = balancer->dx;
+   int dy = balancer->dy;
+   int dz = balancer->dz;
+   int nTissue = chunk.nTissue; 
    int height =  chunk.zU-chunk.zL+1;
    int dz4 = (height+2)   ;
    if (dz4 % 4  != 0) dz4 += (4-dz4%4);
@@ -241,28 +320,59 @@ int balanceCores(CHUNKS chunk, BALANCER *balancer)
    int hh= dz4 /4;
    if  (hh <=4 ) nDiffusion = 2;
    if  (hh > 4 ) nDiffusion = hh/2;
-   int nReaction = 16-nDiffusion;
-   double cost = nTissue+diffCostFinal*bbVol;
+   int nReaction = nCore-nDiffusion;
 
-   int dx=balancer->dx; 
-   int dy=balancer->dy; 
-   int dz=balancer->dz; 
-   volR = dx*dy*dz;
-   volD = (dx+2)*(dy+2)*(dz*2); 
-   double timeR = (1.0*nTissue)/volR* (14.0/nReaction );
-   double timeD = (1.0*bbVol)  /volD* ( 2.0/nDiffusion);
-   if (timeR < 0.99 && timeD > 1.01)
+   int volR = dx*dy*dz;
+   int volD = (dx+2)*(dy+2)*(dz*2); 
+   double timeR = (1.0*nTissue)/volR;
+   double timeD = (1.0/7.0*bbVol)/volR * (nCore-nDiffusion)/nDiffusion; 
+   while (timeD < 0.95 && timeR > 1.05 && nDiffusion > 1)
+   {
+      nReaction++;
+      nDiffusion--;
+      timeR = (1.0*nTissue)/volR;
+      timeD = (1.0/7.0*bbVol)/volR * (nCore-nDiffusion)/nDiffusion; 
+   }
+   while (timeR < 0.95 && timeD > 1.05 && nReaction > 1)
    {
       nReaction--;
       nDiffusion++;
-      double timeR = (1.0*nTissue)/volR* (14.0/nReaction );
-      double timeD = (1.0*bbVol)  /volD* ( 2.0/nDiffusion);
+      timeR = (1.0*nTissue)/volR;
+      timeD = (1.0/7.0*bbVol)/volR * (nCore-nDiffusion)/nDiffusion; 
    }
-    if ( timeR > 1.001 || timeD > 1.001)
-    printf("%d %d %d %d %d %f %d %d %f %f\n",chunk.domainID,nTissue,bbVol,height,dz4,cost,nReaction,nDiffusion,timeR,timeD);
     return nDiffusion; 
 }
-*/
+PARTITION_INFO corePartition(CHUNKS chunk, BALANCER *balancer)
+{
+   PARTITION_INFO part; 
+   int dx = balancer->dx;
+   int dy = balancer->dy;
+   int dz = balancer->dz;
+   int nC = balancer->nC;
+   double alpha = balancer->alphaWork;
+   double timeRef = balancer->timeRef;
+   part.nT = chunk.nTissue;
+   part.height =  chunk.zU-chunk.zL+1;
+   part.dz4 = (part.height+2)   ;
+   if (part.dz4 % 4  != 0) part.dz4 += (4-part.dz4%4);
+   part.nB = (dx)*(dy)*part.dz4;
+   double timeMin =  20*part.nT;
+   int nRMin=1;
+   for (int nR =1;nR<nC;nR++)
+   {
+       int nD = nC-nR;
+       double timeD = (alpha*part.nB)/nD;
+       double timeR = (1.0*part.nT)/nR;
+       double time = (timeD > timeR) ?  timeD : timeR;
+       if ( time < timeMin ) {timeMin=time;nRMin=nR;}
+   }
+   part.nR = nRMin;
+   part.nD = nC-part.nR;
+   part.timeD = (alpha*part.nB)/part.nD;
+   part.timeR = (1.0  *part.nT)/part.nR;
+   part.cost  = part.nT + alpha*part.nB;
+   return part; 
+}
 
 BALANCE_DOMAIN  domainInfo(long long unsigned  gid, BALANCER *balancer) 
 {

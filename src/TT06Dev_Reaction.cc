@@ -321,8 +321,11 @@ int TT06Dev_Reaction::nonGateWorkPartition(int& offset)
 void TT06Dev_Reaction::calc(double dt, const VectorDouble32& Vm, const vector<double>& iStim, VectorDouble32& dVm)
 {
    WORK work ={ 0,nCells_,0,12}; 
+   if (nCells_ > 0) 
+   {
    update_nonGate_((void*)fit_,dt, &(cellTypeParms_[0]), nCells_, &(cellTypeVector_[0]),const_cast<double *>(&Vm[0]),  0, &state_[0], &dVm[0]);
    update_gate_(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],fit_,work);
+   }
 }
 void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR)
 {
@@ -331,7 +334,7 @@ void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, Vector
    //int ompID = omp_get_thread_num(); 
    //sampleLog(&logParms_[ompID], nCells, offset,&cellTypeVector_[0], const_cast<double *>(&Vm[0]),  &state_[0]);
    startTimer(nonGateTimer);
-   update_nonGate_(fit_,dt, &cellTypeParms_[0], nCells, &cellTypeVector_[offset], const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
+   if (nCells > 0) update_nonGate_(fit_,dt, &cellTypeParms_[0], nCells, &cellTypeVector_[offset], const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
    stopTimer(nonGateTimer);
 }
 void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)

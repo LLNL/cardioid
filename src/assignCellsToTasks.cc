@@ -64,34 +64,39 @@ namespace
 {
    int  workBoundScan(Simulate& sim, OBJECT* obj, MPI_Comm comm)
    {
-      int nTasks, myRank;
-      MPI_Comm_size(comm, &nTasks);
+      int nRanks, myRank;
+      MPI_Comm_size(comm, &nRanks);
       MPI_Comm_rank(comm, &myRank);
 
       vector<AnatomyCell>& cells = sim.anatomy_.cellArray();
 
       // get block dimension
+      double alpha; 
       int dx,dy,dz;
-      int target; 
+      int target,nC; 
       int printStats; 
       char defaultTarget[16];
-      sprintf(defaultTarget,"%d",nTasks); 
+      char defaultNC[16];
+      sprintf(defaultTarget,"%d",nRanks); 
+      sprintf(defaultNC,"%d",16);  // Fix this 
       objectGet(obj, "dx", dx, "0");
       objectGet(obj, "dy", dy, "0");
       objectGet(obj, "dz", dz, "0");
+      objectGet(obj, "alpha", alpha, "0.07");
       objectGet(obj, "printStats", printStats, "0");
       objectGet(obj, "targetNTasks",target,defaultTarget); 
+      objectGet(obj, "nC",nC,defaultNC); 
       assert(dx*dy*dz != 0);
       assert((dz+2)%4 ==0); 
       int nx = sim.anatomy_.nx(); 
       int ny = sim.anatomy_.ny(); 
       int nz = sim.anatomy_.nz(); 
-      int nDiffusionCores=workBoundBalancer(cells,dx,dy,dz,nx,ny,nz,target,printStats,comm); 
+      int nDiffusionCores=workBoundBalancer(cells,dx,dy,dz,nx,ny,nz,target,nC,alpha,printStats,comm); 
 
       computeNCellsHistogram(sim,cells,target,comm);
       computeVolHistogram(sim,cells,target,comm);
 
-      if (target != nTasks) exit(0); 
+      if (target != nRanks) exit(0); 
       return nDiffusionCores; 
    }
 }

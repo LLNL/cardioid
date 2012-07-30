@@ -71,14 +71,16 @@ void getRemoteCells(Simulate& sim, const string& name, MPI_Comm comm)
    objectGet(obj, "printStats", printStats, "0");
    if (printStats)
    {
+      int myRank; 
+      MPI_Comm_rank(MPI_COMM_WORLD, & myRank);
       PFILE* file = Popen("nNbrTasks", "w", comm);
-      Pprintf(file, "%d\n", sim.commTable_->nNbrs());
+      Pprintf(file, "%d : %d %d %d %d\n", 
+      myRank,anatomy.nGlobal(),anatomy.nLocal(),anatomy.nRemote(),sim.commTable_->nNbrs());
       Pclose(file);
 
       file = Popen("msgSizes", "w", comm);
       vector<int> mSize = sim.commTable_->msgSize();
-      for (unsigned ii=0; ii<mSize.size(); ++ii)
-         Pprintf(file, "%d\n", mSize[ii]);
+      for (unsigned ii=0; ii<mSize.size(); ++ii) Pprintf(file, "%d\n", mSize[ii]);
       Pclose(file);
    }
    

@@ -180,7 +180,7 @@ void updateGateFast(double dt, int nCellsTotal, int *cellTypeVector, double *Vm,
        {
             double *mhu  = gatefit[2*eq+0].coef; 
             double *tauR = gatefit[2*eq+1].coef; 
-            updateGateFuncs[eq](dt, nCell , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+            if (nCell>0) updateGateFuncs[eq](dt, nCell , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
        }
        else 
        {
