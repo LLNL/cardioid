@@ -14,6 +14,7 @@ using namespace std;
 int workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, int nx, int ny, int nz, int target,int nC, double alpha, int printStats,MPI_Comm comm)
 {
    unsigned nLocal = cells.size(); 
+   unsigned nGlobal; 
    MPI_Allreduce(&nLocal,&nGlobal,1,MPI_UNSIGNED,MPI_SUM,comm); 
    BALANCER balancer = buildBalancer(nGlobal,nx,ny,nz,dx,dy,dz,target,nC,alpha,printStats,comm);
 
