@@ -305,15 +305,25 @@ int TT06Dev_Reaction::nonGateWorkPartition(int& offset)
    int nSimdPerThread = nSimd / nThreads;
    int threadRemainder = nSimd % nThreads;
 
+   int maxAssignableThreads = nSimd + (simdRemainder > 0);
+   int nActiveThreads = min(nThreads, maxAssignableThreads);
+
    int threadRank = group_.teamRank();
+   if (threadRank >= nActiveThreads)
+   {
+      // too few cells to keep all threads busy.
+      offset = 0;
+      return 0;
+   }
+   
    if (threadRank < threadRemainder)
    {
       offset = (nSimdPerThread + 1) * threadRank * simdLength;
-      return (nSimdPerThread + 1) *simdLength;
+      return (nSimdPerThread + 1) * simdLength;
    }
-   offset = (threadRemainder + (nSimdPerThread * threadRank)) *simdLength;
+   offset = (threadRemainder + (nSimdPerThread * threadRank)) * simdLength;
    int size = nSimdPerThread * simdLength;
-   if (threadRank + 1 == nThreads)
+   if (threadRank + 1 == nActiveThreads)
       size += simdRemainder;
    return size;
 }
@@ -334,7 +344,13 @@ void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, Vector
    //int ompID = omp_get_thread_num(); 
    //sampleLog(&logParms_[ompID], nCells, offset,&cellTypeVector_[0], const_cast<double *>(&Vm[0]),  &state_[0]);
    startTimer(nonGateTimer);
-   if (nCells > 0) update_nonGate_(fit_,dt, &cellTypeParms_[0], nCells, &cellTypeVector_[offset], const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
+   if (nCells > 0) 
+   {
+      assert(offset<cellTypeVector_.size());
+      assert(offset<Vm.size());
+      assert(offset<dVR.size());
+      update_nonGate_(fit_,dt, &cellTypeParms_[0], nCells, &cellTypeVector_[offset], const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
+   }
    stopTimer(nonGateTimer);
 }
 void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)
