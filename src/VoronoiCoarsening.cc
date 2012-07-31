@@ -57,9 +57,7 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
 // set values of color_ according to index of closest centers
 int VoronoiCoarsening::bruteForceColoring()
 {
-   assert( colors_.size()>0 );
    assert( centers_.size()>0 );
-   assert( colors_.size()>0 );
    
    int myRank;
    MPI_Comm_rank(comm_, &myRank);  
@@ -69,85 +67,88 @@ int VoronoiCoarsening::bruteForceColoring()
    ncolors_.clear();
    local_colors_.clear();
    
-   const int ncenters=centers_.size();
-   
-   // get sub-domain mass center
-   Vector domain_center(0.,0.,0.);
-   for (int icell=0; icell<colors_.size(); ++icell)
+   if( colors_.size()>0 )
    {
-      Vector r = indexToVector_(cells_[icell].gid_);
-      domain_center+=r;
-   }
-   domain_center/=(double)colors_.size();
-   
-   // get sub-domain radius
-   double domain_radius=0.;
-   for (int icell=0; icell<colors_.size(); ++icell)
-   {
-      Vector r = indexToVector_(cells_[icell].gid_);
-      Vector rij = r - domain_center;
-      double r2 = dot(rij, rij);
-      if( r2>domain_radius )domain_radius=r2;
-   }
-   domain_radius=sqrt(domain_radius);
-   //cout<<"Domain center: "<<domain_center<<", Domain radius: "<<domain_radius<<endl;
-
-   // get distance from sub-domain center to closest center
-   double rcmin = 1.e30;
-   for (int icenter=0; icenter<ncenters; ++icenter)
-   {
-      Vector rij = domain_center - centers_[icenter];
-      double r2 = dot(rij, rij);
-      if (r2 < rcmin)
+      const int ncenters=centers_.size();
+      
+      // get sub-domain mass center
+      Vector domain_center(0.,0.,0.);
+      for (int icell=0; icell<colors_.size(); ++icell)
       {
-         rcmin = r2;
+         Vector r = indexToVector_(cells_[icell].gid_);
+         domain_center+=r;
       }
-   }
-   rcmin=sqrt(rcmin);
-   if(rcmin<domain_radius)rcmin=domain_radius;
-
-
-   // get centers closest to sub-domain
-   const double d2min=1.01*(rcmin+domain_radius)*(rcmin+domain_radius);
-   map<int,Vector> close_centers;
-   for (int icenter=0; icenter<ncenters; ++icenter)
-   {
-      Vector rij = domain_center - centers_[icenter];
-      double r2 = dot(rij, rij);
+      domain_center/=(double)colors_.size();
       
-      if( r2<=d2min)close_centers.insert( pair<int,Vector>(icenter,centers_[icenter]) );
-   }
-   const int nclosecenters=(int)close_centers.size();
-   assert( nclosecenters>0 );
-   //std::cout<<"nclosecenters="<<nclosecenters<<std::endl;
-   
-   // color one cell at a time
-   for (int icell=0; icell<colors_.size(); ++icell)
-   {
-      double r2Min = 1e30;
-      int color = -1;
-      Vector r = indexToVector_(cells_[icell].gid_);
-      
-      // loop over closest centers
-      for(map<int,Vector>::const_iterator itr =close_centers.begin();
-                                          itr!=close_centers.end();
-                                        ++itr)
+      // get sub-domain radius
+      double domain_radius=0.;
+      for (int icell=0; icell<colors_.size(); ++icell)
       {
-         Vector rij = r - itr->second;
+         Vector r = indexToVector_(cells_[icell].gid_);
+         Vector rij = r - domain_center;
          double r2 = dot(rij, rij);
-         if (r2 < r2Min)
+         if( r2>domain_radius )domain_radius=r2;
+      }
+      domain_radius=sqrt(domain_radius);
+      //cout<<"Domain center: "<<domain_center<<", Domain radius: "<<domain_radius<<endl;
+
+      // get distance from sub-domain center to closest center
+      double rcmin = 1.e30;
+      for (int icenter=0; icenter<ncenters; ++icenter)
+      {
+         Vector rij = domain_center - centers_[icenter];
+         double r2 = dot(rij, rij);
+         if (r2 < rcmin)
          {
-            r2Min = r2;
-            color = itr->first;
+            rcmin = r2;
          }
       }
-      if (color < 0 ){
-         cerr << "Failed to assign color to cell "<<icell<<endl;
-         return -1;
-      }else{
-         colors_[icell]=color;
-         ncolors_[color]++;
-         local_colors_.insert(color);
+      rcmin=sqrt(rcmin);
+      if(rcmin<domain_radius)rcmin=domain_radius;
+
+
+      // get centers closest to sub-domain
+      const double d2min=1.01*(rcmin+domain_radius)*(rcmin+domain_radius);
+      map<int,Vector> close_centers;
+      for (int icenter=0; icenter<ncenters; ++icenter)
+      {
+         Vector rij = domain_center - centers_[icenter];
+         double r2 = dot(rij, rij);
+         
+         if( r2<=d2min)close_centers.insert( pair<int,Vector>(icenter,centers_[icenter]) );
+      }
+      const int nclosecenters=(int)close_centers.size();
+      assert( nclosecenters>0 );
+      //std::cout<<"nclosecenters="<<nclosecenters<<std::endl;
+      
+      // color one cell at a time
+      for (int icell=0; icell<colors_.size(); ++icell)
+      {
+         double r2Min = 1e30;
+         int color = -1;
+         Vector r = indexToVector_(cells_[icell].gid_);
+         
+         // loop over closest centers
+         for(map<int,Vector>::const_iterator itr =close_centers.begin();
+                                             itr!=close_centers.end();
+                                           ++itr)
+         {
+            Vector rij = r - itr->second;
+            double r2 = dot(rij, rij);
+            if (r2 < r2Min)
+            {
+               r2Min = r2;
+               color = itr->first;
+            }
+         }
+         if (color < 0 ){
+            cerr << "Failed to assign color to cell "<<icell<<endl;
+            return -1;
+         }else{
+            colors_[icell]=color;
+            ncolors_[color]++;
+            local_colors_.insert(color);
+         }
       }
    }
 #if 0
