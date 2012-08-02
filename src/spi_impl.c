@@ -4,6 +4,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef SPI
+
+// for some reason (maybe some include file calculates
+// something in an assert?!), compiling these u=include files with -DNDEBUG
+// leads to a crash. So let's undef it here and redfine it later
+// if it was defined 
+// jlf 8/2/2012
+#ifdef NDEBUG
+#undef NDEBUG
+#define NNDEBUG
+#endif
+
 #include <spi/include/kernel/gi.h>
 #include <spi/include/kernel/location.h>
 #include <spi/include/kernel/memory.h>
@@ -20,6 +31,11 @@
 #include <spi/include/l2/lock.h>
 #include <hwi/include/bqc/dcr_support.h>
 #include <hwi/include/bqc/nd_500_dcr.h>
+
+#ifdef NNDEBUG
+#define NDEBUG
+#endif
+
 #include "node_personality.h"
 
 /* pt2pt constants */
