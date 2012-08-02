@@ -8,6 +8,7 @@
 #include "FGRDiffusion.hh"
 #include "FGRDiffusionOMP.hh"
 #include "FGRDiffusionThreads.hh"
+#include "FGRDiffusionStrip.hh"
 #include "FGRDiffusionFlex.hh"
 #include "NullDiffusion.hh"
 
@@ -73,6 +74,9 @@ namespace
          return new FGRDiffusion(p, anatomy, threadInfo, reactionThreadInfo);
       if (variant == "flex" )
          return new FGRDiffusionFlex(p, anatomy, threadInfo, reactionThreadInfo);
+
+      if (variant == "strip" )
+         return new FGRDiffusionStrip(p, anatomy, threadInfo, reactionThreadInfo);
 
 
       // unreachable.  Should have matched a clause above.

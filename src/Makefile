@@ -42,6 +42,7 @@ HEARTSRC= cardioid.cc \
 	FGRDiffusion.cc \
 	FGRDiffusionOMP.cc \
 	FGRDiffusionThreads.cc \
+	FGRDiffusionStrip.cc \
    FGRDiffusionFlex.cc \
 	FGRUtils.cc \
 	Reaction.cc \
