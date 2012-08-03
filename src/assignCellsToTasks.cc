@@ -25,14 +25,16 @@ using namespace std;
 
 namespace
 {
-   void koradiBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
-   void gridBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
-   void blockBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
-   int  workBoundScan(Simulate& sim, OBJECT* obj, MPI_Comm comm);
-   int  pioBalancerScan(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+    void koradiBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+    int gridBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+    void blockBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+    int workBoundScan(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+    int pioBalancerScan(Simulate& sim, OBJECT* obj, MPI_Comm comm);
 
-   void computeVolHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
-   void computeNCellsHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
+    void computeWorkHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm, double diffCost);
+    double costFunction(int nTissue, int area, int height, double a);
+    void computeVolHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
+    void computeNCellsHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
 }
 
 
@@ -138,18 +140,11 @@ namespace
 
 namespace
 {
-   
-   // GDLoadBalancer expects a linear array of cell types with size
-   // nx*ny*nz.  For now, all cells are expected to be on rank 0.  The
-   // types array is built from the data in Simulate, we call the
-   // balancer, then use the resulting data to reassign the cells in the
-   // Simulate anatomy.
-   //
-   // I think it would be not too hard to get the GDLoadBalancer to work
-   // directly from the cells array, but I'll save that effort for Erik
-   // (along with parallelizing the GDLoadBalancer).
-
-   void gridBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm)
+    // The grid load balancer assigns cells to a 3D process grid by minimizing
+    // the maximum value of either a cost function or the bounding box volume
+    // on any MPI task.  
+    
+   int gridBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm)
    {
       int nTasks, myRank;
       MPI_Comm_size(comm, &nTasks);
@@ -193,7 +188,7 @@ namespace
       cells.resize(nMax);
       assignArray((unsigned char*)&(cells[0]), &nLocal, cells.capacity(),
                   sizeof(AnatomyCell), &(dest[0]), 0, comm);
-      assert(nLocal <= nMax);
+      assert(nLocal <= (unsigned)nMax);
       cells.resize(nLocal);
 
       GDLoadBalancer loadbal(comm, npex, npey, npez);
@@ -207,12 +202,30 @@ namespace
          loadbal.setReducedProcGrid(rnx,rny,rnz);
       
       // compute initial data decomposition
+      double diffCost;
+      objectGet(obj, "diffCost", diffCost, "0.1");
+      if (myRank == 0)
+         cout << "Grid load balance starting with relative diffusion cost diffCost = " << diffCost << endl;
+
+      // choose quantity to minimize:  "volume" or "work" (default)
+      string minimize;
+      objectGet(obj, "minimize", minimize, "work");
+      
+      timestampBarrier("computing grid load assignment", MPI_COMM_WORLD);
       profileStart("gd_assign_init");
-      loadbal.initialDistByVol(cells, sim.nx_, sim.ny_, sim.nz_);
+      if (minimize == "volume")
+         loadbal.initialDistByVol(cells, sim.nx_, sim.ny_, sim.nz_);
+      else
+      {
+         minimize = "work"; 
+         loadbal.initialDistByWorkFn(cells, sim.nx_, sim.ny_, sim.nz_, diffCost);
+      }
       profileStop("gd_assign_init");
 
+      timestampBarrier("computing load histograms", MPI_COMM_WORLD);
       computeNCellsHistogram(sim,cells,npegrid,comm);
       computeVolHistogram(sim,cells,npegrid,comm);
+      computeWorkHistogram(sim,cells,npegrid,comm, diffCost);
 
       // set up visualization of initial distribution
       int visgrid;
@@ -236,6 +249,52 @@ namespace
                << "This must be a test run only.  Exiting now"<< endl;
         exit(0);
       }
+
+      // compute number of diffusion cores
+      int nDiffCores = -1;
+      const int nTotCores = 16;
+      if (minimize == "work")
+      {
+         int ncnt = 0;
+         int xmin = sim.nx_;
+         int ymin = sim.ny_;
+         int zmin = sim.nz_;
+         int xmax = -1;
+         int ymax = -1;
+         int zmax = -1;
+         int maxvol = sim.nx_*sim.ny_*sim.nz_;
+         for (unsigned ii=0; ii<cells.size(); ++ii)
+         {
+            int peid = cells[ii].dest_;
+            assert(peid == myRank);
+            GridPoint gpt(cells[ii].gid_,sim.nx_,sim.ny_,sim.nz_);
+            if (gpt.x < xmin) xmin = gpt.x;
+            if (gpt.y < ymin) ymin = gpt.y;
+            if (gpt.z < zmin) zmin = gpt.z;
+            if (gpt.x > xmax) xmax = gpt.x;
+            if (gpt.y > ymax) ymax = gpt.y;
+            if (gpt.z > zmax) zmax = gpt.z;
+            ncnt++;
+         }
+         int vol = (xmax-xmin+1)*(ymax-ymin+1)*(zmax-zmin+1);
+         if (vol < maxvol && ncnt > 0)
+         {
+            double reactWork = (double)ncnt;
+            double diffWork = diffCost*vol;
+            double totWork = reactWork + diffWork;
+            int ncores = nTotCores*(diffWork/totWork);
+            double dcores = (double)nTotCores*diffWork/totWork;
+            if ((dcores-(double)ncores) > 0.1) ncores++;
+            if (ncores < 2) ncores = 2;
+            if (ncores > 14) ncores = 14;   // arbitrary upper bound
+            nDiffCores = ncores;
+
+            //ewd DEBUG
+            //cout << "GDLB.WORK, myRank = " << myRank << ", ncells = " << ncnt << ", volume = " << vol << ", diffCost = " << diffCost << ", assigning " << nDiffCores << " diffusion cores." << endl;
+
+         }
+      }
+      return nDiffCores;
    }
 }
 
@@ -491,6 +550,108 @@ namespace
    }
 }
 
+
+namespace
+{
+    void computeWorkHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm, double diffCost)
+    {
+       int nTasks, myRank;
+       MPI_Comm_size(comm, &nTasks);
+       MPI_Comm_rank(comm, &myRank);
+       
+       // compute bounding box volumes from cells array
+       vector<int> peminx(nProcs,99999999);
+       vector<int> peminy(nProcs,99999999);
+       vector<int> peminz(nProcs,99999999);
+       vector<int> pemaxx(nProcs,-99999999);
+       vector<int> pemaxy(nProcs,-99999999);
+       vector<int> pemaxz(nProcs,-99999999);
+       vector<int> nloc(nProcs,0);
+       for (unsigned ii=0; ii<cells.size(); ++ii)
+       {
+          int peid = cells[ii].dest_;
+
+          GridPoint gpt(cells[ii].gid_,sim.nx_,sim.ny_,sim.nz_);
+          if (gpt.x < peminx[peid]) peminx[peid] = gpt.x;
+          if (gpt.y < peminy[peid]) peminy[peid] = gpt.y;
+          if (gpt.z < peminz[peid]) peminz[peid] = gpt.z;
+          if (gpt.x > pemaxx[peid]) pemaxx[peid] = gpt.x;
+          if (gpt.y > pemaxy[peid]) pemaxy[peid] = gpt.y;
+          if (gpt.z > pemaxz[peid]) pemaxz[peid] = gpt.z;
+          nloc[peid]++;
+       }
+       vector<int> peminx_all(nProcs);
+       vector<int> peminy_all(nProcs);
+       vector<int> peminz_all(nProcs);
+       vector<int> pemaxx_all(nProcs);
+       vector<int> pemaxy_all(nProcs);
+       vector<int> pemaxz_all(nProcs);
+       vector<int> nall(nProcs);
+       MPI_Allreduce(&peminx[0], &peminx_all[0], nProcs, MPI_INT, MPI_MIN, comm);
+       MPI_Allreduce(&peminy[0], &peminy_all[0], nProcs, MPI_INT, MPI_MIN, comm);
+       MPI_Allreduce(&peminz[0], &peminz_all[0], nProcs, MPI_INT, MPI_MIN, comm);
+       MPI_Allreduce(&pemaxx[0], &pemaxx_all[0], nProcs, MPI_INT, MPI_MAX, comm);
+       MPI_Allreduce(&pemaxy[0], &pemaxy_all[0], nProcs, MPI_INT, MPI_MAX, comm);
+       MPI_Allreduce(&pemaxz[0], &pemaxz_all[0], nProcs, MPI_INT, MPI_MAX, comm);
+       MPI_Allreduce(&nloc[0], &nall[0], nProcs, MPI_INT, MPI_SUM, comm);
+
+      if (myRank == 0)
+      {
+         const int nhistmax = 100; // number of bins
+         vector<int> phist(nhistmax,0);
+         double maxwork = 0.;
+         double minwork = 1.E+19;
+         int maxworkip = -1;
+      
+         vector<double> pework_all(nProcs);
+         for (int ip=0; ip<nProcs; ip++)
+         {
+            double twork = 0.;
+            if (nall[ip] > 0)
+            {
+               int area = (pemaxx_all[ip]-peminx_all[ip]+1)*(pemaxy_all[ip]-peminy_all[ip]+1);
+               int height = (pemaxz_all[ip]-peminz_all[ip]+1);
+               twork = costFunction(nall[ip],area,height,diffCost);
+            }
+            if (twork < minwork)
+               minwork = twork;
+            if (twork > maxwork) {
+               maxwork = twork;
+               maxworkip = ip;
+            }
+            pework_all[ip] = twork;
+         }
+         int nhist = nhistmax;
+         double range = maxwork - minwork;
+         double delta = (range+1.)/nhist;
+
+         for (int ip=0; ip<nProcs; ip++)
+         {
+            int pwork = pework_all[ip];
+            int bin = (pwork-minwork)/delta;
+            phist[bin]++;
+         }
+         cout << "load balance histogram (work):  " << endl;
+         for (int i=0; i<nhist; i++)
+            cout << "  " << setprecision(3) << minwork+delta*i << " - " << minwork+delta*(i+1) << ":    " << phist[i] << endl;
+
+         double worktot = 0.;
+         for (unsigned ip=0; ip<nProcs; ++ip)
+            worktot += pework_all[ip];
+         double workavg = worktot/(double)nProcs; 
+         cout << "total assigned work = " << setprecision(8) << worktot << ", avg. work = " << workavg << ", max work = " << maxwork << " (pe " << maxworkip << ")" << endl << endl;
+      }
+    }
+
+    double costFunction(int nTissue, int area, int height, double a)
+    {
+       int dz4 = (height+2);
+       if (dz4 % 4  != 0) dz4 += (4-dz4%4);
+       int bbVol = area*dz4;
+       double cost = nTissue+a*bbVol;
+       return cost;
+    }
+}
 
 namespace
 {
