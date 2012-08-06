@@ -179,7 +179,8 @@ static void  minimizeCost(PADE *pade,int maxCost, int lMax, int mMax)
    pade->m = mmin; 
    pade->errMax=errMaxMin; 
    pade->errRMS=errRMSMin; 
-   pade->coef = (double *)malloc(length*sizeof(double)); 
+   //pade->coef = (double *)malloc(length*sizeof(double)); 
+   int rc = posix_memalign((void**)&pade->coef, 32, length*sizeof(double));
    for (int i =0;i<length;i++) pade->coef[i]=amin[i]; 
    pade->cost=costFunc(lmin,mmin); 
 }
@@ -256,7 +257,8 @@ void padeApprox(PADE &pade, std::string name, double (*func)(double x, void *par
       {
          pade.l = l; 
          pade.m = m; 
-         pade.coef = (double *)malloc((l+m)*sizeof(double)); 
+         //pade.coef = (double *)malloc((l+m)*sizeof(double)); 
+         int rc = posix_memalign((void**)&(pade.coef), 32, (l+m)*sizeof(double));
          for (int j=0;j<(l+m);j++) pade.coef[j] = coef[j]; 
       }
       pade.afunc = (double (*)(double , void *))padeFunc; 
