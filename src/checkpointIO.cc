@@ -3,6 +3,7 @@
 #include <cassert>
 #include <vector>
 #include <sstream>
+#include <iostream>
 #include <iomanip>
 #include "pio.h"
 #include "ioUtils.h"

@@ -15,7 +15,7 @@ SVNVERSION := $(shell svnversion ./ )
 
 BINDIR = ../bin
 
-HEARTSRC= cardioid.cc \
+HEARTSRC= \
 	ThreadServer.cc \
 	ThreadUtils.cc \
 	Vector.cc SymmetricTensor.cc ConstantModel.cc ConstantReaction.cc \
@@ -118,8 +118,14 @@ HEARTOBJS = $(HEARTSRC:%.cc=$(OBJDIR)/%.o)
 HEARTOBJS += $(DDCMDSRC:%.c=$(OBJDIR)/%.o)
 HEARTOBJS += $(SPISRC:%.c=$(OBJDIR)/%.o)
 HEARTOBJS += $(SIMDSRC:%.c=$(OBJDIR)/%.o)
+
+CARDIOIDSRC = $(HEARTSRC) cardioid.cc 
+CARDIOIDOBJS = $(CARDIOIDSRC:%.cc=$(OBJDIR)/%.o)
+CARDIOIDOBJS += $(DDCMDSRC:%.c=$(OBJDIR)/%.o)
+CARDIOIDOBJS += $(SPISRC:%.c=$(OBJDIR)/%.o)
+CARDIOIDOBJS += $(SIMDSRC:%.c=$(OBJDIR)/%.o)
 ifdef TIMEOBJ
-  HEARTOBJS += $(TIMEOBJ)
+  CARDIOIDOBJS += $(TIMEOBJ)
 endif
 
 #BUILD_SUFFIX := $(ARCH)
@@ -177,9 +183,9 @@ $(OBJDIR)/%.o: %.cc
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(BINDIR)/$(EXENAME): $(HEARTOBJS) Version.cc
+$(BINDIR)/$(EXENAME): $(CARDIOIDOBJS) Version.cc
 	@if [ -d $(OBJDIR_PRECOMPILED) ]; then  cp $(OBJDIR_PRECOMPILED)/*  $(OBJDIR); fi
-	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(LDFLAGS) \
+	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(CARDIOIDOBJS) $(LDFLAGS) \
 	-DSVNVERSION="$(SVNVERSION)" \
 	-DCXXFLAGS="$(CXXFLAGS)" \
 	-DCFLAGS="$(CFLAGS)" \
@@ -188,18 +194,27 @@ $(BINDIR)/$(EXENAME): $(HEARTOBJS) Version.cc
 	-DTARGET=$(EXENAME) \
 	-DARCH=$(ARCH) 
 
+
 testLoadBalancer:
 	@$(MAKE) --no-print-directory makedirs testLoadBalancer-target \
 	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH) \
 	CFLAGS="$(CFLAGS_OPT)" CXXFLAGS="$(CXXFLAGS_OPT)" \
 	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=testLoadBalancer-$(ARCH)
 
-testLoadBalancer-target: $(HEARTOBJS) $(OBJDIR)/testLoadBalancer.o
-	$(LD) $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(OBJDIR)/testLoadBalancer.o $(HEARTOBJS) $(LDFLAGS)
+testLoadBalancer-target: $(CARDIOIDOBJS) $(OBJDIR)/testLoadBalancer.o
+	$(LD) $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(OBJDIR)/testLoadBalancer.o $(CARDIOIDOBJS) $(LDFLAGS)
 
+testGridRouter: makedirs $(CARDIOIDOBJS) $(OBJDIR)/testGridRouter.o
+	$(LD) $(DFLAGS) -o testGridRouter $(OBJDIR)/testGridRouter.o $(CARDIOIDOBJS) $(LDFLAGS)
 
-testGridRouter: makedirs $(HEARTOBJS) $(OBJDIR)/testGridRouter.o
-	$(LD) $(DFLAGS) -o testGridRouter $(OBJDIR)/testGridRouter.o $(HEARTOBJS) $(LDFLAGS)
+compareSnapshots: 
+	@$(MAKE) --no-print-directory makedirs compareSnapshots-target \
+	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH) \
+	CFLAGS="$(CFLAGS_OPT)" CXXFLAGS="$(CXXFLAGS_OPT)" \
+	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=compareSnapshots-$(ARCH)
+
+compareSnapshots-target: $(HEARTOBJS) $(OBJDIR)/compareSnapshots.o Version.cc
+	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(OBJDIR)/compareSnapshots.o $(LDFLAGS)
 
 $(DDCMD_FILES):
 	./mkLinks_ddcMD.sh $@
@@ -217,7 +232,7 @@ makedirs:
  depend :
 	makedepend -f .depend_$(BUILD_SUFFIX) -p'$(OBJDIR)/' -o '.o' -Y -- $(CFLAGS) $(CXXFLAGS) -- *.cc *.c *.hh *.h 2> /dev/null
 
-.depend_$(BUILD_SUFFIX): $(HEARTSRC)
+.depend_$(BUILD_SUFFIX): $(CARDIOIDSRC)
 	@touch .depend_$(BUILD_SUFFIX)
 	@$(MAKE) depend BUILD_SUFFIX=$(BUILD_SUFFIX)
 
@@ -230,6 +245,7 @@ clean :
 	rm -f $(BINDIR)/$(EXENAME)-$(ARCH)*
 	rm -f .depend_$(ARCH)*
 	rm -f $(BINDIR)/testLoadBalancer-$(ARCH)
+	rm -f $(BINDIR)/compareSnapshots-$(ARCH)
 	rm -f testGridRouter
 
 distclean: clean

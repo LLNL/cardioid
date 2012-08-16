@@ -48,6 +48,9 @@ endif
 ifeq ($(HOSTNAME),hera)  
   ARCHGUESS = peloton
 endif
+ifeq ($(HOSTNAME),cab)  
+  ARCHGUESS = peloton
+endif
 ifeq ($(HOSTNAME),minos)  
   ARCHGUESS = peloton
 endif
