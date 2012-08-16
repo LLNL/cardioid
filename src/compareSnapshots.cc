@@ -31,14 +31,13 @@ using namespace std;
 namespace
 {
     void readAnatomyBucket(Anatomy& anatomy, BucketOfBits* bucketP);
-    BucketOfBits* fillDataBucket(Simulate& sim, string dirName);
+    BucketOfBits* fillDataBucket(Simulate& sim, string dirName, double &time, int &nrecord);
 }
 
 MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
 
 int main(int argc, char** argv)
 {
-
    int nTasks, myRank;
    MPI_Init(&argc,&argv);
    MPI_Comm_size(MPI_COMM_WORLD, &nTasks);
@@ -100,21 +99,28 @@ int main(int argc, char** argv)
 
 
    // compare each set of snapshots across run directories
-   for (int ii=0; ii<snapshotUnion.size(); ii++)
+   for (int isnap=0; isnap<snapshotUnion.size(); isnap++)
    {
       if (myRank == 0)
-         cout << "Comparing snapshot " << snapshotUnion[ii] << "..." << endl;
-
-      string snapshotDir1 = runDir1 + '/' + snapshotUnion[ii];
-      string snapshotDir2 = runDir2 + '/' + snapshotUnion[ii];
+      {
+         cout << endl;
+         cout << "Comparing snapshot " << snapshotUnion[isnap] << "..." << endl;
+      }
+      
+      string snapshotDir1 = runDir1 + '/' + snapshotUnion[isnap];
+      string snapshotDir2 = runDir2 + '/' + snapshotUnion[isnap];
       
       // read state data from first directory
       Simulate sim1;
-      BucketOfBits* data1 = fillDataBucket(sim1,snapshotDir1);
+      int nrecord1;
+      double time1;
+      BucketOfBits* data1 = fillDataBucket(sim1,snapshotDir1,time1,nrecord1);
       
       // read state data from second directory
       Simulate sim2;
-      BucketOfBits* data2 = fillDataBucket(sim2,snapshotDir2);
+      int nrecord2;
+      double time2;
+      BucketOfBits* data2 = fillDataBucket(sim2,snapshotDir2,time2,nrecord2);
       
       assert(data1->nFields() == data2->nFields());
       int nFields = data1->nFields();
@@ -259,6 +265,7 @@ int main(int argc, char** argv)
       {
          double rmssqLoc = 0.0;
          int rmscnt = 0;
+         double maxdiffLoc = 0.0;
          for (unsigned ii=0; ii<nLoc; ++ii)
          {
             Long64 gid1 = state1[nFloats1*ii+jj].gid_;
@@ -269,13 +276,31 @@ int main(int argc, char** argv)
             double val2 = state2[nFloats2*ii+jj].value_;
             rmssqLoc += (val1-val2)*(val1-val2);
             rmscnt++;
+            if (abs(val1-val2) > maxdiffLoc) maxdiffLoc = abs(val1-val2);
          }
          double rmssq;
          MPI_Allreduce(&rmssqLoc, &rmssq, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
          double rms = sqrt(rmssq);
-         
+         double maxdiff;
+         MPI_Allreduce(&maxdiffLoc, &maxdiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+         // save output to file
          if (myRank == 0)
-            cout << "Field = " << fieldNames[jj] << ", rmsval = " << rms << endl;
+         {
+            string fieldFile = "verif." + fieldNames[jj] + ".dat";
+            ofstream ofout;
+            if (isnap == 0)
+            {
+               ofout.open(fieldFile.c_str(),ofstream::out);
+               ofout << "#     time           rms tot          rms avg          max diff" << endl;
+            }
+            else
+               ofout.open(fieldFile.c_str(),ofstream::app);
+            double rmsavg = (nrecord1 > 0 ? rms/nrecord1 : 0.0);
+            ofout.setf(ios::scientific,ios::floatfield);
+            ofout << setprecision(10) << time1 << "    " << rms << "    " << rmsavg << "    " << maxdiff << endl;
+            ofout.close();
+         }
       }
 
       delete data1;
@@ -306,7 +331,7 @@ namespace
        }
     }
     
-    BucketOfBits* fillDataBucket(Simulate& sim, string dirName)
+    BucketOfBits* fillDataBucket(Simulate& sim, string dirName, double &time, int &nrecord)
     {
        string stateFile = dirName + "/state#";
        PFILE* file = Popen(stateFile.c_str(), "r", MPI_COMM_WORLD);
@@ -317,8 +342,8 @@ namespace
        objectGet(hObj, "ny", ny, "0");
        objectGet(hObj, "nz", nz, "0");
        assert(nx*ny*nz > 0);
-       double time;
        objectGet(hObj, "time", time, "0.0");
+       objectGet(hObj, "nrecord", nrecord, "0");
        
        
        //string rTmp;
