@@ -9,6 +9,7 @@
 #include "TupleToIndex.hh"
 #include "setConductivity.hh"
 #include "BucketOfBits.hh"
+#include "Drand48Object.hh"
 
 using namespace std;
 
@@ -111,12 +112,17 @@ namespace
       bool numberSpecified = (object_testforkeyword(obj, "nx") ||
                               object_testforkeyword(obj, "ny") ||
                               object_testforkeyword(obj, "nz") );
-      int cellType;
       double xSize, ySize, zSize;
-      objectGet(obj, "cellType", cellType, "102");
       objectGet(obj, "xSize", xSize, "3", "l");
       objectGet(obj, "ySize", ySize, "7", "l");
       objectGet(obj, "zSize", zSize, "20","l");
+
+      int cellType;
+      string cellString;
+      objectGet(obj, "cellType", cellString, "102");
+      if (cellString != "random")
+         cellType = atoi(cellString.c_str());
+      Drand48Object rand(myRank);  
       
       int nx = int(xSize/anatomy.dx());
       int ny = int(ySize/anatomy.dy());
@@ -147,7 +153,10 @@ namespace
       {
          AnatomyCell tmp;
          tmp.gid_ = ii;
-         tmp.cellType_ = cellType;
+         if (cellString == "random")
+            tmp.cellType_ = 100 + rand(3);
+         else
+            tmp.cellType_ = cellType;
          cells.push_back(tmp);
       }
       return new BucketOfBits(vector<string>(), vector<string>(), vector<string>());

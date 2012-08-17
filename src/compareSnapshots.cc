@@ -80,7 +80,9 @@ int main(int argc, char** argv)
       entry = readdir(dir);
    }
    
-   // compute the subset of snapshot directories that exist in both run directories
+   // Compute the subset of snapshot directories that exist in both run directories.
+   // (If runDir2 doesn't exist, this union will be empty and the code will exit without
+   // doing anything.)
    vector<string> snapshotUnion;
    struct stat st2;
    for (int ii=0; ii<snapshotDirs1.size(); ii++)
