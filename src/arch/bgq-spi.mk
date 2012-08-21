@@ -19,7 +19,7 @@ DFLAGS = -DWITH_PIO -DWITH_MPI -DBGQ -DSPI -DHPM \
 LDFLAGS_BASE = -lc -lnss_files -lnss_dns -lresolv   -L/usr/local/tools/mpitrace/lib -lmpihpm_smp   -L/bgsys/drivers/ppcfloor/bgpm/lib -lbgpm
 #LDFLAGS_BASE = -lc -lnss_files -lnss_dns -lresolv -L/bgsys/drivers/ppcfloor/bgpm/lib -lbgpm
 
-INCLUDE = -I/usr/gapps/emhm/include -I$(SPI_PATH)/include
+INCLUDE = -I$(SPI_PATH)/include
 OPTFLAGS = -g -O3
 CFLAGS_BASE =   -qsmp=omp -qhot=novector -qsimd=auto $(INCLUDE) $(DFLAGS) $(BGSYS_INC) $(SPI_INC)
 CFLAGS_BASE =   -qsmp=omp $(INCLUDE) $(DFLAGS) $(BGSYS_INC) $(SPI_INC)
@@ -27,8 +27,8 @@ CXXFLAGS_BASE = -qsmp=omp $(INCLUDE) $(DFLAGS) $(BGSYS_INC) $(SPI_INC)
 
 HAVE_GSL = 1
 ifeq ($(HAVE_GSL),1) 
-   CFLAGS_BASE  += -DHAVE_GSL
-   CXXFLAGS_BASE  += -DHAVE_GSL
+   CFLAGS_BASE  += -DHAVE_GSL -I/usr/gapps/emhm/include 
+   CXXFLAGS_BASE  += -DHAVE_GSL -I/usr/gapps/emhm/include 
    LDFLAGS_BASE += -L/usr/gapps/emhm/lib/gsl-1.15-bgq -lgsl -lgslcblas
 endif
 

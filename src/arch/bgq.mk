@@ -17,16 +17,16 @@ LD=$(CXX)
 DFLAGS = -DWITH_PIO -DWITH_MPI -DBGQ \
 	 -DADD_ -DUSE_CSTDIO_LFS -DMPICH_IGNORE_CXX_SEEK
 
-INCLUDE = -I/usr/gapps/emhm/include
+INCLUDE = 
 OPTFLAGS = -g -O3
-CFLAGS_BASE =   -qlist -qsmp=omp -qhot=novector -qsimd=auto $(INCLUDE) $(DFLAGS)
-CXXFLAGS_BASE = -qlist -qsmp=omp $(INCLUDE) $(DFLAGS)
+CFLAGS_BASE =   -qlist -qsmp=omp -qhot=novector -qsimd=auto $(DFLAGS)
+CXXFLAGS_BASE = -qlist -qsmp=omp $(DFLAGS)
 LDFLAGS_BASE = -lc -lnss_files -lnss_dns -lresolv
 
 HAVE_GSL = 1
 ifeq ($(HAVE_GSL),1) 
-   CFLAGS_BASE  += -DHAVE_GSL
-   CXXFLAGS_BASE  += -DHAVE_GSL
+   CFLAGS_BASE  += -DHAVE_GSL -I/usr/gapps/emhm/include
+   CXXFLAGS_BASE  += -DHAVE_GSL -I/usr/gapps/emhm/include
    LDFLAGS_BASE += -L/usr/gapps/emhm/lib/gsl-1.15-bgq -lgsl -lgslcblas -L/bgsys/drivers/ppcfloor/bgpm/lib -lbgpm
 endif
 
