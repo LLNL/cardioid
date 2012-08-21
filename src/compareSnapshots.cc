@@ -99,6 +99,9 @@ int main(int argc, char** argv)
       exit(1);
    }
 
+   // sort snapshotUnion
+   sort(snapshotUnion.begin(),snapshotUnion.end());
+   
 
    // compare each set of snapshots across run directories
    for (int isnap=0; isnap<snapshotUnion.size(); isnap++)
@@ -124,28 +127,39 @@ int main(int argc, char** argv)
       double time2;
       BucketOfBits* data2 = fillDataBucket(sim2,snapshotDir2,time2,nrecord2);
       
-      assert(data1->nFields() == data2->nFields());
-      int nFields = data1->nFields();
+
+      // determine which fields both directories have in common
+      vector<string> fieldUnion;
+      vector<int> fieldIndex1;
+      vector<int> fieldIndex2;
       int gidindex1 = -1;
       int gidindex2 = -1;
-      int nFloats1 = 0;
-      int nFloats2 = 0;
-      for (unsigned jj=0; jj<nFields; ++jj)
+      int nFields1 = data1->nFields();
+      int nFields2 = data2->nFields();
+      int nFloats = 0;
+
+      for (int ifield=0; ifield<nFields1; ifield++)
       {
-         if (data1->fieldName(jj) == "gid")
-            gidindex1 = jj;
-         if (data2->fieldName(jj) == "gid")
-            gidindex2 = jj;
-         if (data1->fieldName(jj) != "gid" && data1->dataType(jj) == BucketOfBits::floatType)
-            nFloats1++;
-         if (data2->fieldName(jj) != "gid" && data2->dataType(jj) == BucketOfBits::floatType)
-            nFloats2++;
+         for (int jfield=0; jfield<nFields2; jfield++)
+         {
+            if (data1->fieldName(ifield) == data2->fieldName(jfield))
+            {
+               if (data1->fieldName(ifield) == "gid")
+               {
+                  gidindex1 = ifield;
+                  gidindex2 = jfield;
+               }
+               else
+               {
+                  fieldUnion.push_back(data1->fieldName(ifield));
+                  fieldIndex1.push_back(ifield);
+                  fieldIndex2.push_back(jfield);
+                  nFloats++;
+               }
+            }
+         }
       }
-      vector<string> fieldNames(nFloats1);
-      int floatCnt = 0;
-      for (unsigned jj=0; jj<nFields; ++jj)
-         if (data1->fieldName(jj) != "gid" && data1->dataType(jj) == BucketOfBits::floatType)
-            fieldNames[floatCnt++] = data1->fieldName(jj);
+      assert(nFloats > 0);
       
       assert(gidindex1 >= 0 && gidindex2 >= 0);
       assert(sim1.anatomy_.nx() == sim2.anatomy_.nx());
@@ -155,8 +169,8 @@ int main(int argc, char** argv)
       const int nGlobal = sim1.anatomy_.nx()*sim1.anatomy_.ny()*sim1.anatomy_.nz();
       const int nLocal1 = sim1.anatomy_.nLocal();
       const int nLocal2 = sim2.anatomy_.nLocal();
-      vector<cellState> state1(nLocal1*nFloats1);
-      vector<cellState> state2(nLocal2*nFloats2);
+      vector<cellState> state1(nLocal1*nFloats);
+      vector<cellState> state2(nLocal2*nFloats);
       
       // distribute data across all tasks in a consistent way so we can compare state files
       // generated with different load balance algorithms
@@ -174,16 +188,17 @@ int main(int argc, char** argv)
          if (dest >= nTasks) dest = nTasks-1;
          
          int floatCnt1 = 0;
-         for (unsigned jj=0; jj<nFields; ++jj)
+         for (unsigned jj=0; jj<nFloats; ++jj)
          {
-            if (data1->fieldName(jj) != "gid" && data1->dataType(jj) == BucketOfBits::floatType)
+            int find = fieldIndex1[jj];
+            if (data1->dataType(find) == BucketOfBits::floatType)
             {
                double value;
-               iRec.getValue(jj, value);
-               state1[nFloats1*ii + floatCnt1].value_ = value;
-               state1[nFloats1*ii + floatCnt1].gid_ = gid;
-               state1[nFloats1*ii + floatCnt1].dest_ = dest;
-               state1[nFloats1*ii + floatCnt1].sortind_ = nFloats1*gid + floatCnt1;
+               iRec.getValue(find, value);
+               state1[nFloats*ii + floatCnt1].value_ = value;
+               state1[nFloats*ii + floatCnt1].gid_ = gid;
+               state1[nFloats*ii + floatCnt1].dest_ = dest;
+               state1[nFloats*ii + floatCnt1].sortind_ = nFloats*gid + floatCnt1;
                floatCnt1++;
             }
          }
@@ -201,22 +216,23 @@ int main(int argc, char** argv)
          if (dest >= nTasks) dest = nTasks-1;
          
          int floatCnt2 = 0;
-         for (unsigned jj=0; jj<nFields; ++jj)
+         for (unsigned jj=0; jj<nFloats; ++jj)
          {
-            if (data2->fieldName(jj) != "gid" && data2->dataType(jj) == BucketOfBits::floatType)
+            int find = fieldIndex2[jj];
+            if (data2->dataType(find) == BucketOfBits::floatType)
             {
                double value;
-               iRec.getValue(jj, value);
-               state2[nFloats2*ii + floatCnt2].value_ = value;
-               state2[nFloats2*ii + floatCnt2].gid_ = gid;
-               state2[nFloats2*ii + floatCnt2].dest_ = dest;
-               state2[nFloats2*ii + floatCnt2].sortind_ = nFloats2*gid + floatCnt2;
+               iRec.getValue(find, value);
+               state2[nFloats*ii + floatCnt2].value_ = value;
+               state2[nFloats*ii + floatCnt2].gid_ = gid;
+               state2[nFloats*ii + floatCnt2].dest_ = dest;
+               state2[nFloats*ii + floatCnt2].sortind_ = nFloats*gid + floatCnt2;
                floatCnt2++;
             }
          }
       }
-      unsigned nSize1 = nLocal1*nFloats1;
-      unsigned nSize2 = nLocal2*nFloats2;
+      unsigned nSize1 = nLocal1*nFloats;
+      unsigned nSize2 = nLocal2*nFloats;
       
       // distribute state values
       
@@ -259,23 +275,22 @@ int main(int argc, char** argv)
       sort(state2.begin(),state2.end(),cellState::indLessThan);
       
       assert(nSize1 == nSize2);
-      assert(nFloats1 == nFloats2);
-      int nLoc = nSize1/nFields;
+      int nLoc = nSize1/nFloats;
       
       int floatCnt1 = 0;
-      for (unsigned jj=0; jj<nFloats1; ++jj)
+      for (unsigned jj=0; jj<nFloats; ++jj)
       {
          double rmssqLoc = 0.0;
          int rmscnt = 0;
          double maxdiffLoc = 0.0;
          for (unsigned ii=0; ii<nLoc; ++ii)
          {
-            Long64 gid1 = state1[nFloats1*ii+jj].gid_;
-            Long64 gid2 = state2[nFloats1*ii+jj].gid_;
+            Long64 gid1 = state1[nFloats*ii+jj].gid_;
+            Long64 gid2 = state2[nFloats*ii+jj].gid_;
             assert(gid1 == gid2);
             
-            double val1 = state1[nFloats1*ii+jj].value_;
-            double val2 = state2[nFloats2*ii+jj].value_;
+            double val1 = state1[nFloats*ii+jj].value_;
+            double val2 = state2[nFloats*ii+jj].value_;
             rmssqLoc += (val1-val2)*(val1-val2);
             rmscnt++;
             if (abs(val1-val2) > maxdiffLoc) maxdiffLoc = abs(val1-val2);
@@ -289,7 +304,7 @@ int main(int argc, char** argv)
          // save output to file
          if (myRank == 0)
          {
-            string fieldFile = "verif." + fieldNames[jj] + ".dat";
+            string fieldFile = "verif." + fieldUnion[jj] + ".dat";
             ofstream ofout;
             if (isnap == 0)
             {
