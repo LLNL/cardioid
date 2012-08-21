@@ -309,13 +309,13 @@ int main(int argc, char** argv)
             if (isnap == 0)
             {
                ofout.open(fieldFile.c_str(),ofstream::out);
-               ofout << "#     time           rms tot          rms avg          max diff" << endl;
+               ofout << "#      time            rms avg            rms tot           max diff" << endl;
             }
             else
                ofout.open(fieldFile.c_str(),ofstream::app);
             double rmsavg = (nrecord1 > 0 ? rms/nrecord1 : 0.0);
             ofout.setf(ios::scientific,ios::floatfield);
-            ofout << setprecision(10) << time1 << "    " << rms << "    " << rmsavg << "    " << maxdiff << endl;
+            ofout << setprecision(10) << time1 << "    " << rmsavg << "    " << rms << "    " << maxdiff << endl;
             ofout.close();
          }
       }
