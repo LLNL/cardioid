@@ -15,18 +15,21 @@ $pelotonExe = "../../../bin/cardioid-peloton";
 $nIterations = 100000;
 $checkpointRate = 1000;
 
-foreach $anatomy ("swiss247", "block247")
+#foreach $anatomy ("swiss247", "block247")
+foreach $anatomy ("block247")
 {
    foreach $celltype ("100", "101", "102", "random")
+#   foreach $celltype ("100")
    {
       # these correspond to if blocks in printObject (below), not cardioid reaction types
-      foreach $reaction ("TT06RRG", "TT06Opt") 
+      foreach $reaction ("TT06RRG", "TT06RRGOpt", "TT06", "TT06Opt") 
       {
          foreach $fastgates (1, 0)
          {
             foreach $rationalfns (1, 0)
             {
                foreach $ntasks (16, 32, 64)
+#               foreach $ntasks (16)
                {
                   printObject($anatomy,$celltype,$reaction,$fastgates,$rationalfns,$ntasks);
                }
@@ -43,6 +46,7 @@ sub printObject
 
    # skip file creation for conflicting parameter sets
    if ($reaction eq "TT06RRG" && !($fastgates == 0 && $rationalfns == 0)) { return; }
+   if ($reaction eq "TT06" && !($fastgates == 0 && $rationalfns == 0)) { return; }
    if ($rationalfns == 0 && $fastgates == 1) { return; }
 
    $date = `date +%m%d%y`;  chomp $date;
@@ -174,7 +178,7 @@ sub printObject
    print OBJECT "$reaction REACTION\n";
    print OBJECT "{\n";
 
-   if ($reaction eq "TT06Opt")
+   if ($reaction eq "TT06RRGOpt")
    {
       print OBJECT "   method = TT06Opt;\n";
       print OBJECT "   tolerance = 0.0001;\n";
@@ -191,6 +195,25 @@ sub printObject
    {
       print OBJECT "   method = TT06_RRG;\n";
       print OBJECT "}\n\n";
+   }
+   elsif ($reaction eq "TT06") 
+   {
+      print OBJECT "   method = TT06_CellML;\n";
+      print OBJECT "   integrator = rushLarsen;\n";
+      print OBJECT "}\n\n";
+   }
+   elsif ($reaction eq "TT06Opt")
+   {
+      print OBJECT "   method = TT06Opt;\n";
+      print OBJECT "   tolerance = 0.0001;\n";
+      print OBJECT "   mod = $rationalfns;\n";
+      print OBJECT "   fastGate =$fastgates;\n"; 
+      print OBJECT "   fastNonGate =$fastgates;\n";
+      print OBJECT "   cellTypes = endo mid epi;\n";
+      print OBJECT "}\n\n";
+      print OBJECT "endo CELLTYPE { clone=endoCellML; }\n";
+      print OBJECT "mid CELLTYPE { clone=midCellML; }\n";
+      print OBJECT "epi CELLTYPE { clone=epiCellML; }\n\n";
    }
    else
    {
