@@ -52,7 +52,7 @@ int main(int argc, char** argv)
    
    string runDir1(argv[1]);
    string runDir2(argv[2]);
-   const string snapshot("snapshot");  // text that identifies a snapshot directory name
+   const string snapshot("snapshot");  // text that identifies snapshot directory name
 
    // test if runDir1 exists
    struct stat st1;
@@ -301,6 +301,26 @@ int main(int argc, char** argv)
          double maxdiff;
          MPI_Allreduce(&maxdiffLoc, &maxdiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 
+         //ewd DEBUG:  print out gid of all cells with Vm difference within 0.95 of max
+         if (fieldUnion[jj] == "Vm")
+         {
+            cout.setf(ios::scientific,ios::floatfield);
+            for (unsigned ii=0; ii<nLoc; ++ii)
+            {
+               Long64 gid1 = state1[nFloats*ii+jj].gid_;
+               Long64 gid2 = state2[nFloats*ii+jj].gid_;
+               assert(gid1 == gid2);
+               
+               double val1 = state1[nFloats*ii+jj].value_;
+               double val2 = state2[nFloats*ii+jj].value_;
+               double diff = abs(val1-val2);
+               if (diff > 0.99*maxdiff && maxdiff > 1.E-9) 
+                  cout << "  gid " << gid1 << ", Vm difference = " << setprecision(10) << diff << ", maximum difference = " << maxdiff << endl;               
+            }
+         }
+         //ewd DEBUG
+
+         
          // save output to file
          if (myRank == 0)
          {
