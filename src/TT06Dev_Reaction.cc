@@ -197,8 +197,8 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
            string name = fitName[i]; 
            if (parms.mod  && i == 10) name = "hTauRMod";
            if (parms.mod  && i == 12) name = "jTauRMod";
-	   double V0 = (i == 6) ?   0 : -100.0; 
-	   double V1 = (i == 6) ? 130 :   50.0; 
+	        double V0 = (i == 6) ?   0 : -100.0; 
+	        double V1 = (i == 6) ? 130 :   50.0; 
            padeApprox(fit_[i],name,fitFuncMap(name),NULL,0,deltaV,V0,V1,tol,maxTerms,maxTerms,maxCost,0,0,NULL); 
            //padeSet(fit_+i,maxTerms,maxTerms,maxCost); 
          }

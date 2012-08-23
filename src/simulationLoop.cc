@@ -606,7 +606,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       startTimer(reactionL2ResetTimer);
       L2_BarrierWithSync_WaitAndReset(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
       stopTimer(reactionL2ResetTimer);
-      //#pragma omp barrier
+      //#pragma omp barrier 
    }
    profileStop(reactionLoopTimer);
 }
