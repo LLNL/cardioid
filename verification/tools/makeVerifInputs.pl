@@ -15,11 +15,9 @@ $pelotonExe = "../../../bin/cardioid-peloton";
 $nIterations = 100000;
 $checkpointRate = 1000;
 
-#foreach $anatomy ("swiss247", "block247")
-foreach $anatomy ("block247")
+foreach $anatomy ("swiss247", "block247")
 {
    foreach $celltype ("100", "101", "102", "random")
-#   foreach $celltype ("100")
    {
       # these correspond to if blocks in printObject (below), not cardioid reaction types
       foreach $reaction ("TT06RRG", "TT06RRGOpt", "TT06", "TT06Opt") 
@@ -29,7 +27,6 @@ foreach $anatomy ("block247")
             foreach $rationalfns (1, 0)
             {
                foreach $ntasks (16, 32, 64)
-#               foreach $ntasks (16)
                {
                   printObject($anatomy,$celltype,$reaction,$fastgates,$rationalfns,$ntasks);
                }
@@ -91,10 +88,10 @@ sub printObject
    print OBJECT "   printRate = $checkpointRate;\n";
    print OBJECT "   snapshotRate = $nIterations;\n";
    print OBJECT "   checkpointRate = $checkpointRate;\n";
-   if (reaction =~ /Opt/) 
+   if ($reaction =~ /Opt/) 
    {
       print OBJECT "   parallelDiffusionReaction = 1;\n";
-      print OBJECT "   nDiffusionCores = 2;\n";
+      #print OBJECT "   nDiffusionCores = 2;\n";
    }
    print OBJECT "}\n\n";
 
@@ -257,23 +254,23 @@ sub printObject
    close BGQ;
 
    $pelbatch = "msub.pel";
-   $nnodes = $ntasks/16;
+   $nnodes = $ntasks/8;
    if ($ntasks%$nnodes != 0) { $nnodes++; }
    open PEL, ">$maindir/$dirname/$pelbatch";
    print PEL "\#!/bin/bash\n";
    print PEL "\#MSUB -l nodes=$nnodes\n";
    print PEL "\#MSUB -l walltime=12:00:00\n";
    print PEL "\n";
-   print PEL "export OMP_NUM_THREADS=1\n";
+   print PEL "export OMP_NUM_THREADS=2\n";
    print PEL "srun -n $ntasks $pelotonExe\n";
    close PEL;
 
    $peldebug = "rundebug.pel";
-   $nnodes = $ntasks/16;
+   $nnodes = $ntasks/8;
    if ($ntasks%$nnodes != 0) { $nnodes++; }
    open DEB, ">$maindir/$dirname/$peldebug";
    print DEB "\#!/bin/bash\n";
-   print DEB "export OMP_NUM_THREADS=1\n";
+   print DEB "export OMP_NUM_THREADS=2\n";
    print DEB "srun -N $nnodes -n $ntasks -p pdebug $pelotonExe object.data > slurm.out\n";   
    close DEB;
    system("chmod u+x $maindir/$dirname/$peldebug");
