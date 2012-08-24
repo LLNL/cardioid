@@ -30,6 +30,14 @@ class Sensor
    int printRate()const{return printRate_;}
    int evalRate()const{return evalRate_;}
    
+   // to be implemented if sensor needs to know 
+   // about reaction data
+   virtual void bufferReactionData(const int loop)
+   { return; };
+   virtual void bufferReactionData(const int begin, const int end, const int loop)
+   { return; };
+   
+
    bool checkPrintAtStep(const int loop)const
    {
       return (loop % printRate_ == 0);

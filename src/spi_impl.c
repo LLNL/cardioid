@@ -6,7 +6,7 @@
 #ifdef SPI
 
 // for some reason (maybe some include file calculates
-// something in an assert?!), compiling these u=include files with -DNDEBUG
+// something in an assert?!), compiling these include files with -DNDEBUG
 // leads to a crash. So let's undef it here and redfine it later
 // if it was defined 
 // jlf 8/2/2012

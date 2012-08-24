@@ -19,7 +19,8 @@ CaAverageSensor::CaAverageSensor(const SensorParms& sp,
     coarsening_(anatomy,gid,comm),
     filename_(filename),
     reaction_(reaction),
-    comm_(comm)
+    comm_(comm),
+    loop_buffer_(-1)
 {
    // color local cells
    int ret=coarsening_.bruteForceColoring();
@@ -32,6 +33,8 @@ CaAverageSensor::CaAverageSensor(const SensorParms& sp,
    nz_=anatomy.nz();
    
    nlocal_=anatomy.nLocal();
+
+   buffer_val_.resize(nlocal_);
 }
 
 void CaAverageSensor::computeColorAverages(const VectorDouble32& val)
@@ -117,17 +120,25 @@ void CaAverageSensor::writeAverages(const string& filename,
    Pclose(file);
 }
 
+void CaAverageSensor::bufferReactionData(const int loop)
+{
+   bufferReactionData(0,nlocal_,loop);
+}
+
+void CaAverageSensor::bufferReactionData(const int begin, const int end, const int loop)
+{
+   loop_buffer_=loop;
+   const int handle=reaction_.getVarHandle("Ca_i");
+   
+   for (unsigned ii=begin; ii<end; ++ii)
+      buffer_val_[ii]=reaction_.getValue(ii, handle);
+}
 
 void CaAverageSensor::eval(double time, int loop)
 {
-   VectorDouble32 val(nlocal_);
+   assert( loop==loop_buffer_ );
    
-   const int handle=reaction_.getVarHandle("Ca_i");
-   
-   for (unsigned ii=0; ii<nlocal_; ++ii)
-      val[ii]=reaction_.getValue(ii, handle);
-
-   computeColorAverages(val);
+   computeColorAverages(buffer_val_);
 }
 
 void CaAverageSensor::print(double time, int loop)

@@ -87,7 +87,9 @@ class Simulate
                     const VectorDouble32& dVmDiffusion);
    
 
-   bool checkIO()const;
+   bool checkIO(int loop=-1)const;
+   void bufferReactionData(const int begin, const int end);
+   void bufferReactionData();
    
    bool checkRanges_;
    volatile int loop_; // volatile (read + modified in threaded section)

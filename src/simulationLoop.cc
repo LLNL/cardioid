@@ -222,6 +222,9 @@ void simulationLoop(Simulate& sim)
       sim.time_ += sim.dt_;
       ++sim.loop_;
       stopTimer(integratorTimer);
+      
+      if( sim.checkIO() )sim.bufferReactionData();
+      
       loopIO(sim,0);
    }
 }
@@ -450,8 +453,8 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 
    while ( sim.loop_ < sim.maxLoop_ )
    {
-      int nLocal = sim.anatomy_.nLocal();
-      
+      int loop_flag=sim.loop_+1; // save this number so that all the threads use the same after next barrier
+           
       startTimer(reactionTimer);
       sim.reaction_->updateNonGate(sim.dt_, VmArray, *loopData.dVmReaction);
       startTimer(GateNonGateTimer); 
@@ -534,6 +537,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       const int begin=loopData.integratorOffset[tid];
       const int end  =loopData.integratorOffset[tid+1];
 #endif
+
       integrateLoop(begin,end, sim.dt_, &(*loopData.dVmReaction)[0], &dVmDiffusion[0],
 		    sim.diffusion_->blockIndex(),
 		    sim.diffusion_->blockIndexB(),
@@ -544,16 +548,17 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       
       if (sim.checkRanges_)
          sim.checkRanges(begin, end,*loopData.dVmReaction, dVmDiffusion);
+
       if (tid == 0)
       {
-         
          sim.time_ += sim.dt_;
          ++sim.loop_;
-
+      }
+      
+      if( sim.checkIO(loop_flag) ) // every thread should return the same result
+      {
 #ifdef SWAP_REACTION_POINTERS
-         //probably better to just do pointer swapping even if not needed
-         //instead of testing if needed
-         //if( sim.checkIO() )
+         if(tid == 0)
          {
             startTimer(diffusiondVmRCopyTimer);
          
@@ -564,22 +569,24 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
             stopTimer(diffusiondVmRCopyTimer);
          }
 #endif
-         if( sim.checkIO() )
+
+         // jlf: needed to have correct dVm in sensors.
+         // Already calculated in integrateLoop, so maybe we 
+         // should save it there and reuse it here...
+         startTimer(FGR_Matrix2ArrayTimer);
+         const unsigned* const blockIndex = sim.diffusion_->blockIndex();
+         const double* const dVdMatrix = sim.diffusion_->dVmBlock();
+         const double diffusionScale = sim.diffusion_->diffusionScale();
+         for (unsigned ii=begin; ii<end; ++ii)
          {
-            // jlf: needed to have correct dVm in sensors.
-            // Already calculated in integrateLoop, so maybe we 
-            // should save it there and reuse it here...
-            startTimer(FGR_Matrix2ArrayTimer);
-            unsigned* blockIndex = sim.diffusion_->blockIndex();
-            double* dVdMatrix = sim.diffusion_->dVmBlock();
-            double diffusionScale = sim.diffusion_->diffusionScale();
-            for (unsigned ii=begin; ii<end; ++ii)
-            {
-               int index = blockIndex[ii];
-               dVmDiffusion[ii] += diffusionScale*dVdMatrix[index];
-            }
-            stopTimer(FGR_Matrix2ArrayTimer);
+            const int index = blockIndex[ii];
+            
+            // add diffusion to stimulus (already stored in dVmDiffusion)
+            dVmDiffusion[ii] += diffusionScale*dVdMatrix[index];
          }
+         stopTimer(FGR_Matrix2ArrayTimer);
+         
+         sim.bufferReactionData(begin, end);
       }
 
       stopTimer(integratorTimer);

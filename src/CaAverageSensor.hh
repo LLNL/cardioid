@@ -18,6 +18,9 @@ private:
    std::string filename_;
 
    const Reaction& reaction_;
+
+   VectorDouble32 buffer_val_;
+   int loop_buffer_;
    
    unsigned nx_;
    unsigned ny_;
@@ -43,6 +46,9 @@ public:
    
    void print(double time, int loop);
    void eval(double time, int loop);
+   void bufferReactionData(const int loop);
+   void bufferReactionData(const int begin, 
+                           const int end, const int loop);
 };
 
 
