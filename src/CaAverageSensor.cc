@@ -136,6 +136,8 @@ void CaAverageSensor::bufferReactionData(const int begin, const int end, const i
 
 void CaAverageSensor::eval(double time, int loop)
 {
+   if( loop_buffer_<0 )return;
+   
    assert( loop==loop_buffer_ );
    
    computeColorAverages(buffer_val_);
@@ -143,6 +145,8 @@ void CaAverageSensor::eval(double time, int loop)
 
 void CaAverageSensor::print(double time, int loop)
 {
+   if( loop_buffer_<0 )return;
+
    int myRank;
    MPI_Comm_rank(comm_, &myRank);
 
