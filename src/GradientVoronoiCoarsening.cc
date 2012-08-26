@@ -317,8 +317,8 @@ void GradientVoronoiCoarsening::eval(double time, int loop)
 {
    startTimer(sensorEvalTimer);
    
-   computeColorCenterValues(*vdata_.VmArray_);
-   computeLSsystem(*vdata_.VmArray_);
+   computeColorCenterValues(vdata_.VmArray_);
+   computeLSsystem(vdata_.VmArray_);
    
    stopTimer(sensorEvalTimer);
 }

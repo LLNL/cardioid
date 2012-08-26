@@ -115,7 +115,7 @@ void DataVoronoiCoarsening::writeAverages(const string& filename,
 
 void DataVoronoiCoarsening::eval(double time, int loop)
 {
-   computeColorAverages(*vdata_.VmArray_);
+   computeColorAverages(vdata_.VmArray_);
 }
 
 void DataVoronoiCoarsening::print(double time, int loop)

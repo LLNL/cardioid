@@ -27,44 +27,27 @@ class PotentialData
  
    PotentialData()
    {
-      VmArray_     =NULL;
-      dVmDiffusion_=NULL;
-      dVmReaction_ =NULL;
-   };
-   
-   ~PotentialData()
-   {
-      if( VmArray_     !=NULL )delete VmArray_;
-      if( dVmDiffusion_!=NULL )delete dVmDiffusion_;
-      if( dVmReaction_ !=NULL )delete dVmReaction_;
    };
    
    void setup(const Anatomy& anatomy)
    {
-      VmArray_     =new VectorDouble32(anatomy.size(), 0.);
-      dVmDiffusion_=new VectorDouble32(anatomy.nLocal(), 0.);
-      dVmReaction_ =new VectorDouble32(anatomy.nLocal(), 0.);
+      VmArray_     = VectorDouble32(anatomy.size(), 0.);
+      dVmDiffusion_= VectorDouble32(anatomy.nLocal(), 0.);
+      dVmReaction_ = VectorDouble32(anatomy.nLocal(), 0.);
       unsigned paddedSize = 4*((anatomy.nLocal()+3)/4);
-      dVmDiffusion_->reserve(paddedSize);
-      dVmReaction_->reserve(paddedSize);
+      dVmDiffusion_.reserve(paddedSize);
+      dVmReaction_.reserve(paddedSize);
 
-      assert((size_t)&((*VmArray_)[0]) %32 == 0);
-      assert((size_t)&((*dVmDiffusion_)[0]) %32 == 0);
-      assert((size_t)&((*dVmReaction_)[0]) %32 == 0);
+      assert((size_t)&(VmArray_[0])      % 32 == 0);
+      assert((size_t)&(dVmDiffusion_[0]) % 32 == 0);
+      assert((size_t)&(dVmReaction_[0])  % 32 == 0);
       
    }
    
-   VectorDouble32* swapdVmReaction(VectorDouble32* const dVmReaction)
-   {
-      VectorDouble32* tmp=dVmReaction_;
-      dVmReaction_=dVmReaction;
-      return tmp;
-   }
-   
    // use pointers to vector so that they can be swapped
-   VectorDouble32* VmArray_; // local and remote
-   VectorDouble32* dVmDiffusion_;
-   VectorDouble32* dVmReaction_;
+   VectorDouble32 VmArray_; // local and remote
+   VectorDouble32 dVmDiffusion_;
+   VectorDouble32 dVmReaction_;
 };
 
 // Kitchen sink class for heart simulation.  This is probably a great

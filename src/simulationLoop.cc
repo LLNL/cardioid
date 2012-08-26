@@ -41,8 +41,6 @@
 #include "clooper.h"
 #include "ThreadUtils.hh"
 
-#define SWAP_REACTION_POINTERS  1
-
 using namespace std;
 using namespace PerformanceTimers;
 
@@ -87,11 +85,10 @@ void simulationProlog(Simulate& sim)
    sim.vdata_.setup(sim.anatomy_);
    //sim.VmArray_.resize(sim.anatomy_.size());
    
-   VectorDouble32& VmArray(*sim.vdata_.VmArray_);
-   sim.reaction_->initializeMembraneVoltage(VmArray);
+   sim.reaction_->initializeMembraneVoltage(sim.vdata_.VmArray_);
   
    for (unsigned ii=sim.anatomy_.nLocal(); ii<sim.anatomy_.size(); ++ii)
-      VmArray[ii] = 0;
+      sim.vdata_.VmArray_[ii] = 0;
 
    // Load state file, assign corresponding values to membrane voltage and cell model
    for (unsigned ii=0; ii<sim.stateFilename_.size(); ++ii)
@@ -108,9 +105,9 @@ void loopIO(const Simulate& sim,int firstCall)
       
    int loop = sim.loop_; 
 
-   VectorDouble32& VmArray(*sim.vdata_.VmArray_);
-   VectorDouble32& dVmR(*sim.vdata_.dVmReaction_);
-   VectorDouble32& dVmD(*sim.vdata_.dVmDiffusion_);
+   const VectorDouble32& VmArray(sim.vdata_.VmArray_);
+   const VectorDouble32& dVmR(sim.vdata_.dVmReaction_);
+   const VectorDouble32& dVmD(sim.vdata_.dVmDiffusion_);
 
    // SENSORS
    startTimer(sensorTimer);
@@ -161,9 +158,9 @@ void simulationLoop(Simulate& sim)
    HaloExchange<double, AlignedAllocator<double> > voltageExchange(sim.sendMap_, (sim.commTable_));
 
    PotentialData& vdata=sim.vdata_;
-   VectorDouble32& vmarray(*vdata.VmArray_);
-   VectorDouble32& dVmDiffusion(*vdata.dVmDiffusion_);
-   VectorDouble32& dVmReaction(*vdata.dVmReaction_);
+   VectorDouble32& vmarray(vdata.VmArray_);
+   VectorDouble32& dVmDiffusion(vdata.dVmDiffusion_);
+   VectorDouble32& dVmReaction(vdata.dVmReaction_);
 
 #if defined(SPI) && defined(TRACESPI)
    int myRank;
@@ -292,10 +289,6 @@ struct SimLoopData
 #endif
 
       int nLocal = sim.anatomy_.nLocal();
-      dVmReaction=new VectorDouble32(nLocal, 0.0);
-      unsigned paddedSize = 4*((nLocal+3)/4);
-      dVmReaction->reserve(paddedSize);
-      
       mkOffsets(integratorOffset, sim.anatomy_.nLocal(), sim.reactionThreads_);
       mkSendBufInfo(sendBufOffset, sendBufIndirect, voltageExchange,
                     integratorOffset, sim.reactionThreads_);
@@ -306,7 +299,6 @@ struct SimLoopData
       free(reactionWaitOnNonGateBarrier);
       free(diffusionBarrier);
       free(reactionBarrier);
-      delete dVmReaction;
    }
    
    
@@ -320,7 +312,6 @@ struct SimLoopData
     vector<int> integratorOffset_psb;
 #endif
 
-   VectorDouble32* dVmReaction; 
    vector<int> integratorOffset;
    vector<pair<unsigned, unsigned> > sendBufIndirect;
    vector<unsigned> sendBufOffset;
@@ -337,12 +328,8 @@ void diffusionLoop(Simulate& sim,
    L2_BarrierHandle_t haloBarrierHandle;
    L2_BarrierWithSync_InitInThread(loopData.haloBarrier, &haloBarrierHandle);
 
-   VectorDouble32& dVmDiffusion(*sim.vdata_.dVmDiffusion_);
+   VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusion_);
 
-   if (tid == 0) 
-   {
-     loopIO(sim,1);
-   }
    while ( sim.loop_ < sim.maxLoop_ )
    {
       int nLocal = sim.anatomy_.nLocal();
@@ -415,21 +402,6 @@ void diffusionLoop(Simulate& sim,
       startTimer(dummyTimer);
       stopTimer(dummyTimer);
 
-      
-      if (tid == 0 )
-      {
-#ifndef SWAP_REACTION_POINTERS
-         if( sim.checkIO() )
-         {
-            startTimer(diffusiondVmRCopyTimer);
-            *sim.vdata_.dVmReaction_ = *loopData.dVmReaction; 
-            stopTimer(diffusiondVmRCopyTimer);
-         }
-#else
-         //pointers have been swapped by reaction thread, so no copy needed
-#endif
-         loopIO(sim,0);
-      }
    }
    profileStop(diffusionLoopTimer);
 }
@@ -440,8 +412,9 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
    int tid = sim.reactionThreads_.teamRank();
    L2_BarrierHandle_t reactionWaitOnNonGateHandle;
    L2_BarrierWithSync_InitInThread(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle);
-   VectorDouble32& VmArray(*sim.vdata_.VmArray_);
-   VectorDouble32& dVmDiffusion(*sim.vdata_.dVmDiffusion_);
+   VectorDouble32& VmArray(sim.vdata_.VmArray_);
+   VectorDouble32& dVmReaction(sim.vdata_.dVmReaction_);
+   VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusion_);
 
 #ifdef PER_SQUAD_BARRIER
    const int sqsz = sim.reactionThreads_.squadSize();
@@ -451,12 +424,16 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
    L2_BarrierWithSync_InitInThread(cb_ptr, &core_barrier_h);
 #endif
 
+   if (tid == 0) 
+   {
+     loopIO(sim,1);
+   }
    while ( sim.loop_ < sim.maxLoop_ )
    {
       int loop_flag=sim.loop_+1; // save this number so that all the threads use the same after next barrier
            
       startTimer(reactionTimer);
-      sim.reaction_->updateNonGate(sim.dt_, VmArray, *loopData.dVmReaction);
+      sim.reaction_->updateNonGate(sim.dt_, VmArray, dVmReaction);
       startTimer(GateNonGateTimer); 
 
 #ifdef PER_SQUAD_BARRIER
@@ -538,7 +515,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       const int end  =loopData.integratorOffset[tid+1];
 #endif
 
-      integrateLoop(begin,end, sim.dt_, &(*loopData.dVmReaction)[0], &dVmDiffusion[0],
+      integrateLoop(begin, end, sim.dt_, &dVmReaction[0], &dVmDiffusion[0],
 		    sim.diffusion_->blockIndex(),
 		    sim.diffusion_->blockIndexB(),
 		    sim.diffusion_->dVmBlock(),
@@ -547,7 +524,8 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 		    sim.diffusion_->diffusionScale());
       
       if (sim.checkRanges_)
-         sim.checkRanges(begin, end,*loopData.dVmReaction, dVmDiffusion);
+         sim.checkRanges(begin, end, dVmReaction, dVmDiffusion);
+
 
       if (tid == 0)
       {
@@ -555,21 +533,8 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
          ++sim.loop_;
       }
       
-      if( sim.checkIO(loop_flag) ) // every thread should return the same result
+      if ( sim.checkIO(loop_flag) ) // every thread should return the same result
       {
-#ifdef SWAP_REACTION_POINTERS
-         if(tid == 0)
-         {
-            startTimer(diffusiondVmRCopyTimer);
-         
-            //swap pointers to avoid copy tmp data into sim.vdata_ 
-            //allows to move on and not worry about overwriting data which
-            //may be used for IO
-            loopData.dVmReaction = sim.vdata_.swapdVmReaction(loopData.dVmReaction);
-            stopTimer(diffusiondVmRCopyTimer);
-         }
-#endif
-
          // jlf: needed to have correct dVm in sensors.
          // Already calculated in integrateLoop, so maybe we 
          // should save it there and reuse it here...
@@ -580,18 +545,22 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
          for (unsigned ii=begin; ii<end; ++ii)
          {
             const int index = blockIndex[ii];
-            
             // add diffusion to stimulus (already stored in dVmDiffusion)
             dVmDiffusion[ii] += diffusionScale*dVdMatrix[index];
          }
          stopTimer(FGR_Matrix2ArrayTimer);
-         
+            
          sim.bufferReactionData(begin, end);
       }
-
       stopTimer(integratorTimer);
 //       sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
-
+         
+      L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier,
+                                 &reactionWaitOnNonGateHandle,
+                                 sim.reactionThreads_.nThreads());
+      if (tid == 0)
+         loopIO(sim,0);
+         
       startTimer(haloMove2BufTimer);
       {
          unsigned begin = loopData.sendBufOffset[tid];
@@ -609,7 +578,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       startTimer(reactionL2ArriveTimer);
       L2_BarrierWithSync_Arrive(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
       stopTimer(reactionL2ArriveTimer);
-
+      
       startTimer(reactionL2ResetTimer);
       L2_BarrierWithSync_WaitAndReset(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
       stopTimer(reactionL2ResetTimer);
@@ -629,7 +598,7 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
    cout << "Rank[" << myRank << "]: numOfNeighborToSend=" << sim.commTable_->_sendTask.size() << " numOfNeighborToRecv=" << sim.commTable_->_recvTask.size() << " numOfBytesToSend=" << sim.commTable_->_sendOffset[sim.commTable_->_sendTask.size()]*sizeof(double) << " numOfBytesToRecv=" << sim.commTable_->_recvOffset[sim.commTable_->_recvTask.size()]*sizeof(double) << endl;
 #endif
-   VectorDouble32& VmArray(*sim.vdata_.VmArray_);
+   VectorDouble32& VmArray(sim.vdata_.VmArray_);
 
    timestampBarrier("Entering threaded region", MPI_COMM_WORLD);
 

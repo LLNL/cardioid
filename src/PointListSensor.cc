@@ -112,7 +112,7 @@ void PointListSensor::print(double time)
     for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
     {
       int ind = sensorind_[ii];
-      (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << (*vdata_.VmArray_)[ind] << endl;
+      (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << vdata_.VmArray_[ind] << endl;
     }
   }
 }
@@ -124,9 +124,9 @@ void PointListSensor::printDerivs(double time)
     for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
     {
       int ind = sensorind_[ii];
-      (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << (*vdata_.VmArray_)[ind] 
-                                                          << "   " << (*vdata_.dVmReaction_)[ind] 
-                                                          << "   " << (*vdata_.dVmDiffusion_)[ind] << endl;
+      (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << vdata_.VmArray_[ind] 
+                                                          << "   " << vdata_.dVmReaction_[ind] 
+                                                          << "   " << vdata_.dVmDiffusion_[ind] << endl;
     }
   }
 }

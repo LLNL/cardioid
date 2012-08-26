@@ -63,7 +63,7 @@ void MaxDVSensor::print(double time, int loop)
    double mindVdt= 10000.;
    for (unsigned ii=0; ii<nlocal_; ++ii)
    {
-      double dVdt=(*vdata_.dVmReaction_)[ii]+(*vdata_.dVmDiffusion_)[ii];
+      double dVdt=vdata_.dVmReaction_[ii]+vdata_.dVmDiffusion_[ii];
       if( dVdt>maxdVdt )
       {
          maxdVdt=dVdt;

@@ -54,14 +54,14 @@ void MinMaxSensor::print(double time)
   if (time >= startTime_ && (endTime_ <= 0.0 || time <= endTime_))
   {
      // find local min/max voltages
-     double vmin_loc = (*vdata_.VmArray_)[0];
-     double vmax_loc = (*vdata_.VmArray_)[0];
+     double vmin_loc = vdata_.VmArray_[0];
+     double vmax_loc = vdata_.VmArray_[0];
      for (unsigned ii=1; ii<nLocal_; ++ii)
      {
-        if ( (*vdata_.VmArray_)[ii] > vmax_loc )
-           vmax_loc = (*vdata_.VmArray_)[ii];
-        if ( (*vdata_.VmArray_)[ii] < vmin_loc )
-           vmin_loc = (*vdata_.VmArray_)[ii];
+        if ( vdata_.VmArray_[ii] > vmax_loc )
+           vmax_loc = vdata_.VmArray_[ii];
+        if ( vdata_.VmArray_[ii] < vmin_loc )
+           vmin_loc = vdata_.VmArray_[ii];
      }
      
      // MPI_Allreduce over all tasks to get global min/max

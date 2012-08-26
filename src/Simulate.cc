@@ -17,11 +17,11 @@ void Simulate::checkRanges(int begin, int end,
 {
    const double vMax =   60.;
    const double vMin = -110.;
-   const VectorDouble32& Vm = (*vdata_.VmArray_);
+   const VectorDouble32& Vm = (vdata_.VmArray_);
    for (unsigned ii=begin; ii<end; ++ii)
    {
       if ( Vm[ii] > vMax || Vm[ii] < vMin )
-         outOfRange(ii, (*vdata_.dVmReaction_)[ii], (*vdata_.dVmDiffusion_)[ii]);
+         outOfRange(ii, vdata_.dVmReaction_[ii], vdata_.dVmDiffusion_[ii]);
    }
 }
 
@@ -33,12 +33,12 @@ void Simulate::checkRanges(const VectorDouble32& dVmReaction,
    int nLocal = anatomy_.nLocal();
    const double vMax =   60.;
    const double vMin = -110.;
-   const VectorDouble32& Vm = (*vdata_.VmArray_);
+   const VectorDouble32& Vm = vdata_.VmArray_;
    #pragma omp parallel for
    for (int ii=0; ii<nLocal; ++ii)
    {
       if ( Vm[ii] > vMax || Vm[ii] < vMin )
-         outOfRange(ii, (*vdata_.dVmReaction_)[ii], (*vdata_.dVmDiffusion_)[ii]);
+         outOfRange(ii, vdata_.dVmReaction_[ii], vdata_.dVmDiffusion_[ii]);
    }
 }
 
@@ -46,7 +46,7 @@ void Simulate::outOfRange(unsigned index, double dVmr, double dVmd)
 {
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank); 
-   double Vm = (*vdata_.VmArray_)[index];
+   double Vm = vdata_.VmArray_[index];
 
    /** This is awful.  Some diffusion classes don't store the results in
     *  array form, but keep them in an internal matrix.  We have to go
@@ -64,7 +64,7 @@ void Simulate::outOfRange(unsigned index, double dVmr, double dVmd)
 }
 
 // check if any IO may be needed at this step
-bool Simulate::checkIO(int loop)const
+bool Simulate::checkIO(int loop) const
 {
    if( loop<0 )loop=loop_;
    
