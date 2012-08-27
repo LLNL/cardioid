@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#! /usr/bin/perl -w
 #
 # generate Cardioid object.data input files for verification runs.  Compare output data 
 # using compareSnapshots.cc (in Cardioid src directory) 
@@ -15,7 +15,11 @@ $pelotonExe = "../../../bin/cardioid-peloton";
 $nIterations = 100000;
 $checkpointRate = 1000;
 
-foreach $anatomy ("swiss247", "block247")
+$weakScaling = 1;   # if set to zero, anatomy size corresponding 
+                    # to $strongTaskCount will be used throughout
+$strongTaskCount = 64;
+
+foreach $anatomy ("block247", "swiss247")
 {
    foreach $celltype ("100", "101", "102", "random")
    {
@@ -26,9 +30,12 @@ foreach $anatomy ("swiss247", "block247")
          {
             foreach $rationalfns (1, 0)
             {
-               foreach $ntasks (16, 32, 64)
+               foreach $smoothing (1, 0)
                {
-                  printObject($anatomy,$celltype,$reaction,$fastgates,$rationalfns,$ntasks);
+                  foreach $ntasks (16, 32, 64)
+                  {
+                     printObject($anatomy,$celltype,$reaction,$fastgates,$rationalfns,$smoothing,$ntasks);
+                  }
                }
             }
          }
@@ -39,35 +46,37 @@ foreach $anatomy ("swiss247", "block247")
 # details of how to build object.data files for each set of parameters
 sub printObject
 {
-   my($anatomy,$celltype,$reaction,$fastgates,$rationalfns,$ntasks) = @_;
+   my($anatomy,$celltype,$reaction,$fastgates,$rationalfns,$smoothing,$ntasks) = @_;
 
    # skip file creation for conflicting parameter sets
-   if ($reaction eq "TT06RRG" && !($fastgates == 0 && $rationalfns == 0)) { return; }
-   if ($reaction eq "TT06" && !($fastgates == 0 && $rationalfns == 0)) { return; }
-   if ($rationalfns == 0 && $fastgates == 1) { return; }
+   if ($reaction eq "TT06RRG" && !($fastgates == 0 && $smoothing == 0)) { return; }
+   if ($reaction eq "TT06" && !($fastgates == 0 && $smoothing == 0)) { return; }
+   if ($smoothing == 0 && $fastgates == 1) { return; }
 
    $date = `date +%m%d%y`;  chomp $date;
    $maindir = join '','verif-runs-',$date;
-   $dirname = join '',$anatomy,'-',$celltype,'-',$reaction,'-','fast',$fastgates,'mod',$rationalfns,'-N',$ntasks;
+   if ($weakScaling == 0) { $maindir = join '','verif-runs-strong-',$date; }
+   $dirname = join '',$anatomy,'-',$celltype,'-',$reaction,'-','fast',$fastgates,'mod',$smoothing,'rfns',$rationalfns,'-N',$ntasks;
    system("mkdir -p $maindir/$dirname");
 
-   if ($ntasks == 16) { $px = 2; $py = 4; $pz = 2; }
-   elsif ($ntasks == 32) { $px = 4; $py = 4; $pz = 2; }
-   elsif ($ntasks == 64) { $px = 4; $py = 4; $pz = 4; }
-   elsif ($ntasks == 128) { $px = 4; $py = 8; $pz = 4; }
-   elsif ($ntasks == 256) { $px = 8; $py = 8; $pz = 4; }
-   elsif ($ntasks == 512) { $px = 8; $py = 8; $pz = 8; }
-   elsif ($ntasks == 1024) { $px = 8; $py = 16; $pz = 8; }
-   elsif ($ntasks == 2048) { $px = 16; $py = 16; $pz = 8; }
-   elsif ($ntasks == 4096) { $px = 16; $py = 16; $pz = 16; }
-   elsif ($ntasks == 8192) { $px = 16; $py = 32; $pz = 16; }
-   elsif ($ntasks == 16384) { $px = 32; $py = 32; $pz = 16; }
-   elsif ($ntasks == 24576) { $px = 32; $py = 32; $pz = 24; }
-   elsif ($ntasks == 32768) { $px = 32; $py = 32; $pz = 32; }
+# store different process grids in hashes
+   $px{16} = 2;     $py{16} = 4;     $pz{16} = 2;  
+   $px{32} = 4;     $py{32} = 4;     $pz{32} = 2;  
+   $px{64} = 4;     $py{64} = 4;     $pz{64} = 4;  
+   $px{128} = 4;    $py{128} = 8;    $pz{128} = 4;  
+   $px{256} = 8;    $py{256} = 8;    $pz{256} = 4;  
+   $px{512} = 8;    $py{512} = 8;    $pz{512} = 8;  
+   $px{1024} = 8;   $py{1024} = 16;  $pz{1024} = 8;  
+   $px{2048} = 16;  $py{2048} = 16;  $pz{2048} = 8;  
+   $px{4096} = 16;  $py{4096} = 16;  $pz{4096} = 16;  
+   $px{8192} = 16;  $py{8192} = 32;  $pz{8192} = 16;  
+   $px{16384} = 32; $py{16384} = 32; $pz{16384} = 16;  
+   $px{24576} = 32; $py{24576} = 32; $pz{24576} = 24;  
+   $px{32768} = 32; $py{32768} = 32; $pz{32768} = 32;  
       
-   if ($ntasks != $px*$py*$pz)
+   if ($ntasks != $px{$ntasks}*$py{$ntasks}*$pz{$ntasks})
    {
-      print "Process grid not defined correctly for ntasks = $ntasks:  px = $px, py = $py, pz = $pz\n";
+      print "Process grid not defined correctly for ntasks = $ntasks:  px = $px{$ntasks}, py = $py, pz = $pz{$ntasks}\n";
       exit;
    }
 
@@ -98,7 +107,11 @@ sub printObject
    # anatomy and conductivity blocks
    if ($anatomy eq "block247")  # 247 cells per BG/Q core, 247*16 cells per MPI task
    {
-      $nx = 16*$px; $ny = 19*$py; $nz = 13*$pz;
+      $nx = 16*$px{$ntasks}; $ny = 19*$py{$ntasks}; $nz = 13*$pz{$ntasks};
+      if ($weakScaling == 0)
+      {
+         $nx = 16*$px{$strongTaskCount}; $ny = 19*$py{$strongTaskCount}; $nz = 13*$pz{$strongTaskCount};
+      } 
 
       print OBJECT "$anatomy ANATOMY\n";
       print OBJECT "{\n";
@@ -123,7 +136,11 @@ sub printObject
    elsif ($anatomy eq "swiss247")
    {
       $nvoids = 6;
-      $nx = 16*$px; $ny = 19*$py; $nz = 13*$pz;
+      $nx = 16*$px{$ntasks}; $ny = 19*$py{$ntasks}; $nz = 13*$pz{$ntasks};
+      if ($weakScaling == 0)
+      {
+         $nx = 16*$px{$strongTaskCount}; $ny = 19*$py{$strongTaskCount}; $nz = 13*$pz{$strongTaskCount};
+      } 
 
       $anatdir = join '','anatomy-',$anatomy,'-',$celltype,'-N',$ntasks;
       $fullanat = join '',$maindir,'/',$anatdir;
@@ -166,9 +183,9 @@ sub printObject
    print OBJECT "grid DECOMPOSITION \n";
    print OBJECT "{\n";
    print OBJECT "   method = grid;\n";
-   print OBJECT "   nx = $px;\n";
-   print OBJECT "   ny = $py;\n";
-   print OBJECT "   nz = $pz;\n";
+   print OBJECT "   nx = $px{$ntasks};\n";
+   print OBJECT "   ny = $py{$ntasks};\n";
+   print OBJECT "   nz = $pz{$ntasks};\n";
    print OBJECT "}\n\n";
 
    # reaction block
@@ -178,8 +195,17 @@ sub printObject
    if ($reaction eq "TT06RRGOpt")
    {
       print OBJECT "   method = TT06Opt;\n";
-      print OBJECT "   tolerance = 0.0001;\n";
-      print OBJECT "   mod = $rationalfns;\n";
+      if ($rationalfns == 1) {
+          print OBJECT "   tolerance = 0.0001;\n";
+      }
+      elsif ($rationalfns == 0) {
+          print OBJECT "   tolerance = 0.0;\n";
+      }
+      else {
+         print "Invalid choice of rationalfns = $rationalfns!\n";
+         exit;
+      }
+      print OBJECT "   mod = $smoothing;\n";
       print OBJECT "   fastGate =$fastgates;\n"; 
       print OBJECT "   fastNonGate =$fastgates;\n";
       print OBJECT "   cellTypes = endo mid epi;\n";
@@ -202,8 +228,17 @@ sub printObject
    elsif ($reaction eq "TT06Opt")
    {
       print OBJECT "   method = TT06Opt;\n";
-      print OBJECT "   tolerance = 0.0001;\n";
-      print OBJECT "   mod = $rationalfns;\n";
+      if ($rationalfns == 1) {
+          print OBJECT "   tolerance = 0.0001;\n";
+      }
+      elsif ($rationalfns == 0) {
+          print OBJECT "   tolerance = 0.0;\n";
+      }
+      else {
+         print "Invalid choice of rationalfns = $rationalfns!\n";
+         exit;
+      }
+      print OBJECT "   mod = $smoothing;\n";
       print OBJECT "   fastGate =$fastgates;\n"; 
       print OBJECT "   fastNonGate =$fastgates;\n";
       print OBJECT "   cellTypes = endo mid epi;\n";
