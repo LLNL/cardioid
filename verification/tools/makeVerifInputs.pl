@@ -26,8 +26,8 @@ foreach $anatomy ("block247", "swiss247")
    foreach $celltype ("100", "101", "102", "random")
    {
       # these correspond to if blocks in printObject (below), not cardioid reaction types
-      foreach $reaction ("TT06RRG", "TT06RRGOpt", "TT06", "TT06Opt") 
-      #foreach $reaction ("TT06RRG", "TT06RRGOpt") 
+      #foreach $reaction ("TT06RRG", "TT06RRGOpt", "TT06", "TT06Opt") 
+      foreach $reaction ("TT06RRG", "TT06RRGOpt") 
       {
          foreach $fastgates (1, 0)
          {
@@ -35,11 +35,11 @@ foreach $anatomy ("block247", "swiss247")
             {
                foreach $smoothing (1, 0)
                {
-                  foreach $ntasks (16, 32, 64)
-                  #foreach $ntasks (512)
+                  #foreach $ntasks (16, 32, 64)
+                  foreach $ntasks (512)
                   {
-                     foreach $machine ("bgq", "peloton")
-                     #foreach $machine ("bgq")
+                     #foreach $machine ("bgq", "peloton")
+                     foreach $machine ("bgq")
                      {
                         printObject($anatomy,$celltype,$reaction,$fastgates,
                                     $rationalfns,$smoothing,$ntasks,$machine);
