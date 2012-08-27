@@ -9,8 +9,10 @@
 
 $thisdir = `pwd`;  chomp $thisdir;
 $makeVoidAnatomyScript = "$thisdir/tools/makeAnatomyBlockWithVoids.pl";
-$bgqExe = "../../../bin/cardioid-bgq-spi";
-$pelotonExe = "../../../bin/cardioid-peloton";
+$bgqExe = "../../../../bin/cardioid-bgq-spi";
+$pelotonExe = "../../../../bin/cardioid-peloton";
+$nthreadsBGQ = 64;
+$nthreadsPeloton = 4;
 
 $nIterations = 100000;
 $checkpointRate = 1000;
@@ -34,7 +36,11 @@ foreach $anatomy ("block247", "swiss247")
                {
                   foreach $ntasks (16, 32, 64)
                   {
-                     printObject($anatomy,$celltype,$reaction,$fastgates,$rationalfns,$smoothing,$ntasks);
+                     foreach $machine ("bgq", "peloton")
+                     {
+                        printObject($anatomy,$celltype,$reaction,$fastgates,
+                                    $rationalfns,$smoothing,$ntasks,$machine);
+                     }
                   }
                }
             }
@@ -46,18 +52,24 @@ foreach $anatomy ("block247", "swiss247")
 # details of how to build object.data files for each set of parameters
 sub printObject
 {
-   my($anatomy,$celltype,$reaction,$fastgates,$rationalfns,$smoothing,$ntasks) = @_;
+   my($anatomy,$celltype,$reaction,$fastgates,$rationalfns,$smoothing,$ntasks,$machine) = @_;
 
    # skip file creation for conflicting parameter sets
    if ($reaction eq "TT06RRG" && !($fastgates == 0 && $smoothing == 0)) { return; }
    if ($reaction eq "TT06" && !($fastgates == 0 && $smoothing == 0)) { return; }
    if ($smoothing == 0 && $fastgates == 1) { return; }
 
+   $nnodes = $ntasks;  # BGQ default
+   if ($machine eq "peloton") { $nnodes = $ntasks/(16/$nthreadsPeloton); }
+   if ($ntasks%$nnodes != 0) { $nnodes++; }
+   $nthreads = $nthreadsBGQ;
+   if ($machine eq "peloton") { $nthreads = $nthreadsPeloton; }
+
    $date = `date +%m%d%y`;  chomp $date;
    $maindir = join '','verif-runs-',$date;
    if ($weakScaling == 0) { $maindir = join '','verif-runs-strong-',$date; }
-   $dirname = join '',$anatomy,'-',$celltype,'-',$reaction,'-','fast',$fastgates,'mod',$smoothing,'rfns',$rationalfns,'-N',$ntasks;
-   system("mkdir -p $maindir/$dirname");
+   $dirname = join '',$anatomy,'-',$celltype,'-',$reaction,'-','fast',$fastgates,'mod',$smoothing,'rfns',$rationalfns,'-N',$nnodes,'t',$nthreads;
+   system("mkdir -p $maindir/$machine/$dirname");
 
 # store different process grids in hashes
    $px{16} = 2;     $py{16} = 4;     $pz{16} = 2;  
@@ -80,7 +92,7 @@ sub printObject
       exit;
    }
 
-   open OBJECT, ">$maindir/$dirname/object.data";
+   open OBJECT, ">$maindir/$machine/$dirname/object.data";
 
    # simulate block
    print OBJECT "simulate SIMULATE\n";
@@ -142,7 +154,7 @@ sub printObject
          $nx = 16*$px{$strongTaskCount}; $ny = 19*$py{$strongTaskCount}; $nz = 13*$pz{$strongTaskCount};
       } 
 
-      $anatdir = join '','anatomy-',$anatomy,'-',$celltype,'-N',$ntasks;
+      $anatdir = join '','anatomy-',$anatomy,'-',$celltype,'-n',$ntasks;
       $fullanat = join '',$maindir,'/',$anatdir;
       if (! -d $fullanat)
       {
@@ -160,7 +172,7 @@ sub printObject
       print OBJECT "$anatomy ANATOMY\n";
       print OBJECT "{\n";
       print OBJECT "   method = pio;\n";
-      print OBJECT "   fileName = ..\/$anatdir\/anatomy\#;\n";
+      print OBJECT "   fileName = ..\/..\/$anatdir\/anatomy\#;\n";
       print OBJECT "   conductivity = conductivity;\n";
       print OBJECT "   dx = 0.10;\n";
       print OBJECT "   dy = 0.10;\n";
@@ -276,38 +288,38 @@ sub printObject
    close OBJECT;
 
    # print batch script
-   $bgqbatch = "sbatch.bgq";
-   open BGQ, ">$maindir/$dirname/$bgqbatch";
-   print BGQ "\#!/bin/bash\n";
-   print BGQ "\#SBATCH --nodes=$ntasks\n";
-   print BGQ "\n";
-   print BGQ "export OMP_NUM_THREADS=64\n";
-   print BGQ "export MUSPI_NUMBATIDS=203\n";
-   print BGQ "export MUSPI_NUMINJFIFOS=3\n";
-   print BGQ "export MUSPI_NUMRECFIFOS=3\n\n";
-   print BGQ "srun --ntasks=$ntasks $bgqExe\n";
-   close BGQ;
+   if ($machine eq "bgq")
+   {
+      $bgqbatch = "sbatch.bgq";
+      open BGQ, ">$maindir/$machine/$dirname/$bgqbatch";
+      print BGQ "\#!/bin/bash\n";
+      print BGQ "\#SBATCH --nodes=$nnodes\n";
+      print BGQ "\n";
+      print BGQ "export OMP_NUM_THREADS=$nthreadsBGQ\n";
+      print BGQ "export MUSPI_NUMBATIDS=203\n";
+      print BGQ "export MUSPI_NUMINJFIFOS=3\n";
+      print BGQ "export MUSPI_NUMRECFIFOS=3\n\n";
+      print BGQ "srun --ntasks=$ntasks $bgqExe\n";
+      close BGQ;
+   }
+   elsif ($machine eq "peloton")
+   {
+      $pelbatch = "msub.pel";
+      open PEL, ">$maindir/$machine/$dirname/$pelbatch";
+      print PEL "\#!/bin/bash\n";
+      print PEL "\#MSUB -l nodes=$nnodes\n";
+      print PEL "\#MSUB -l walltime=12:00:00\n";
+      print PEL "\n";
+      print PEL "export OMP_NUM_THREADS=$nthreadsPeloton\n";
+      print PEL "srun -n $ntasks $pelotonExe\n";
+      close PEL;
 
-   $pelbatch = "msub.pel";
-   $nnodes = $ntasks/8;
-   if ($ntasks%$nnodes != 0) { $nnodes++; }
-   open PEL, ">$maindir/$dirname/$pelbatch";
-   print PEL "\#!/bin/bash\n";
-   print PEL "\#MSUB -l nodes=$nnodes\n";
-   print PEL "\#MSUB -l walltime=12:00:00\n";
-   print PEL "\n";
-   print PEL "export OMP_NUM_THREADS=2\n";
-   print PEL "srun -n $ntasks $pelotonExe\n";
-   close PEL;
-
-   $peldebug = "rundebug.pel";
-   $nnodes = $ntasks/8;
-   if ($ntasks%$nnodes != 0) { $nnodes++; }
-   open DEB, ">$maindir/$dirname/$peldebug";
-   print DEB "\#!/bin/bash\n";
-   print DEB "export OMP_NUM_THREADS=2\n";
-   print DEB "srun -N $nnodes -n $ntasks -p pdebug $pelotonExe object.data > slurm.out\n";   
-   close DEB;
-   system("chmod u+x $maindir/$dirname/$peldebug");
+      $peldebug = "rundebug.pel";
+      open DEB, ">$maindir/$machine/$dirname/$peldebug";
+      print DEB "\#!/bin/bash\n";
+      print DEB "export OMP_NUM_THREADS=$nthreadsPeloton\n";
+      print DEB "srun -N $nnodes -n $ntasks -p pdebug $pelotonExe object.data > slurm.out\n";   
+      close DEB;
+      system("chmod u+x $maindir/$machine/$dirname/$peldebug");
+   }
 }
-
