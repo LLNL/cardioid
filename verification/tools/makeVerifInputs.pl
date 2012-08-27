@@ -27,6 +27,7 @@ foreach $anatomy ("block247", "swiss247")
    {
       # these correspond to if blocks in printObject (below), not cardioid reaction types
       foreach $reaction ("TT06RRG", "TT06RRGOpt", "TT06", "TT06Opt") 
+      #foreach $reaction ("TT06RRG", "TT06RRGOpt") 
       {
          foreach $fastgates (1, 0)
          {
@@ -35,8 +36,10 @@ foreach $anatomy ("block247", "swiss247")
                foreach $smoothing (1, 0)
                {
                   foreach $ntasks (16, 32, 64)
+                  #foreach $ntasks (512)
                   {
                      foreach $machine ("bgq", "peloton")
+                     #foreach $machine ("bgq")
                      {
                         printObject($anatomy,$celltype,$reaction,$fastgates,
                                     $rationalfns,$smoothing,$ntasks,$machine);
@@ -55,9 +58,10 @@ sub printObject
    my($anatomy,$celltype,$reaction,$fastgates,$rationalfns,$smoothing,$ntasks,$machine) = @_;
 
    # skip file creation for conflicting parameter sets
-   if ($reaction eq "TT06RRG" && !($fastgates == 0 && $smoothing == 0)) { return; }
-   if ($reaction eq "TT06" && !($fastgates == 0 && $smoothing == 0)) { return; }
+   if ($reaction eq "TT06RRG" && !($fastgates == 0 && $smoothing == 0 && $rationalfns == 0)) { return; }
+   if ($reaction eq "TT06" && !($fastgates == 0 && $smoothing == 0 && $rationalfns == 0)) { return; }
    if ($smoothing == 0 && $fastgates == 1) { return; }
+   if ($rationalfns == 0 && $fastgates == 1) { return; }
 
    $nnodes = $ntasks;  # BGQ default
    if ($machine eq "peloton") { $nnodes = $ntasks/(16/$nthreadsPeloton); }
@@ -112,7 +116,7 @@ sub printObject
    if ($reaction =~ /Opt/) 
    {
       print OBJECT "   parallelDiffusionReaction = 1;\n";
-      #print OBJECT "   nDiffusionCores = 2;\n";
+      print OBJECT "   nDiffusionCores = 2;\n";
    }
    print OBJECT "}\n\n";
 
