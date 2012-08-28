@@ -45,7 +45,7 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
    else if (method == "FGR")
       return fgrDiffusionFactory(obj, anatomy, threadInfo, reactionThreadInfo, simLoopType);
    else if (method == "null")
-      return new NullDiffusion();
+      return new NullDiffusion(anatomy);
    
    assert(false); // reachable only due to bad input
    return 0;
