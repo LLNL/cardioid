@@ -3,6 +3,19 @@
 
 #include "VectorDouble32.hh"
 
+/**
+ *  We have managed to do something exceptionally stupid in this class.
+ *  The behavior of the calc function depends on the context from which
+ *  it is called.  From the omp simulation loop the calc function should
+ *  set the value of dVm for all cells.  From the
+ *  parallelDiffusionReaction loop calc should increment the value of
+ *  dVm.
+ *
+ *  The very fact that we have some implementations that work on the omp
+ *  loop and some for the other is another clear sign that something is
+ *  wrong.  There probably should be some sort of property defined in
+ *  the concrete classes to declare shich loop is supported.
+ */
 class Diffusion
 {
  public:
