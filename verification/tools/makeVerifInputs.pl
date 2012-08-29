@@ -227,7 +227,7 @@ sub printObject
       print OBJECT "   cellTypes = endo mid epi;\n";
       print OBJECT "}\n\n";
       print OBJECT "endo CELLTYPE { clone=endoRRG; }\n";
-      print OBJECT "mid CELLTYPE { clone=midRRG; }\n";
+      print OBJECT "mid CELLTYPE { clone=midRRG;  P_NaK=3.0; g_NaL=0.6; }\n";
       print OBJECT "epi CELLTYPE { clone=epiRRG; }\n\n";
    }
    elsif ($reaction eq "TT06RRG") 
