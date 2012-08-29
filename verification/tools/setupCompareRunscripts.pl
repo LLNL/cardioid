@@ -42,6 +42,7 @@ foreach $dir1 (@ARGV[0..$#ARGV]) {
          print PEL "\#!/bin/bash\n";
          print PEL "\#MSUB -l nodes=$nPelnodes\n";
          print PEL "\#MSUB -l walltime=12:00:00\n";
+         print PEL "\#MSUB -A gbcq\n";
          print PEL "\n";
          print PEL "export OMP_NUM_THREADS=1\n";
          print PEL "srun -n $nPeltasks $pelotonExe ../$dir1 ../$dir2\n";
