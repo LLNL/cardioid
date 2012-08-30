@@ -128,7 +128,7 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
    void startComm()
    {
      bw_=1-bw_;
-#pragma omp critical (mpi_critical)
+#pragma omp critical 
      execute_spi_alter(&spiHdl_,commTable_->_putTask.size(),bw_);
    }
    
@@ -150,7 +150,7 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
 //    };
    void wait()
    {
-#pragma omp critical (mpi_critical)
+#pragma omp critical 
       complete_spi_alter(&spiHdl_, commTable_->_recvTask.size(), commTable_->_offsets[3], bw_, width_ );
    };
 
@@ -198,7 +198,7 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
    
    void startComm()
    {
-#pragma omp critical (mpi_critical)
+#pragma omp critical 
       {
          
       char* sendBuf = (char*)sendBuf_;
@@ -232,7 +232,7 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
 
    void wait()
    {
-#pragma omp critical (mpi_critical)             
+#pragma omp critical              
    {                                            
    
       MPI_Waitall(commTable_->_sendTask.size(), &sendReq_[0], MPI_STATUS_IGNORE);

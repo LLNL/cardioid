@@ -110,7 +110,7 @@ void loopIO(const Simulate& sim,int firstCall)
    const VectorDouble32& dVmD(sim.vdata_.dVmDiffusion_);
 
    // SENSORS
-#pragma omp critical (mpi_critical)
+#pragma omp critical 
    {
    startTimer(sensorTimer);
    for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
@@ -340,9 +340,6 @@ void diffusionLoop(Simulate& sim,
       // Halo Exchange
       if (tid == 0)
       {
-//#pragma omp critical (mpi_critical)
-         {
-            
          startTimer(diffusionImbalanceTimer);
 //         loopData.voltageExchange.barrier();
          stopTimer(diffusionImbalanceTimer);
@@ -365,7 +362,6 @@ void diffusionLoop(Simulate& sim,
          stopTimer(haloTimerComplete);
 
          stopTimer(haloTimer);
-         } // critical section
       }
       
       // Need a barrier for the completion of the halo exchange.
