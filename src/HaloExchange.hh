@@ -128,6 +128,7 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
    void startComm()
    {
      bw_=1-bw_;
+#pragma omp critical (mpi_critical)
      execute_spi_alter(&spiHdl_,commTable_->_putTask.size(),bw_);
    }
    
@@ -147,7 +148,11 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
 //      bw_=1-bw_;
 //      execute_spi_alter(&spiHdl_,commTable_->_putTask.size(),bw_);
 //    };
-   void wait() {complete_spi_alter(&spiHdl_, commTable_->_recvTask.size(), commTable_->_offsets[3], bw_, width_ );};
+   void wait()
+   {
+#pragma omp critical (mpi_critical)
+      complete_spi_alter(&spiHdl_, commTable_->_recvTask.size(), commTable_->_offsets[3], bw_, width_ );
+   };
 
 //    void execute3() {execute_spi(&spiHdl_,commTable_->_putTask.size());};
 //    void execute2() {execute_spi_2(&spiHdl_,commTable_->_putTask.size());};
@@ -193,6 +198,9 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
    
    void startComm()
    {
+#pragma omp critical (mpi_critical)
+      {
+         
       char* sendBuf = (char*)sendBuf_;
       char* recvBuf = (char*)recvBuf_;
 
@@ -218,13 +226,18 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
          char* sendPtr = sendBuf + commTable_->_sendOffset[ii]*width_;
          MPI_Isend(sendPtr, len, MPI_CHAR, target, tag, commTable_->_comm, sendReq+ii);
       }
- 
+      }
+      
    };
 
    void wait()
    {
+#pragma omp critical (mpi_critical)             
+   {                                            
+   
       MPI_Waitall(commTable_->_sendTask.size(), &sendReq_[0], MPI_STATUS_IGNORE);
       MPI_Waitall(commTable_->_recvTask.size(), &recvReq_[0], MPI_STATUS_IGNORE);
+   }
    };
 
    void barrier()
