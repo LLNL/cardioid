@@ -200,12 +200,19 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 
 
 // gather into local arrays
+/*
    int cellType = cellTypeVector[0];
 
    vdt v_P_NaK   = vec_splats(cellTypeParms[cellType].P_NaK);
    vdt v_g_to    = vec_splats(cellTypeParms[cellType].g_to); 
    vdt v_g_Ks    = vec_splats(cellTypeParms[cellType].g_Ks);
    vdt v_g_NaL   = vec_splats(cellTypeParms[cellType].g_NaL);
+*/
+   vdt v_P_NaK;
+   vdt v_g_to ;
+   vdt v_g_Ks ;
+   vdt v_g_NaL;
+   int cellType = -1; 
 
 
    //vdt v_v = vec_ld(0, &VM[ii]); 
@@ -213,11 +220,35 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
    vdt v_itmp0, v_itmp5, v_itmp6 ;
    vdt v_dVR;
    vdt CSX, CSX0, CSX1, CSX2, CSX3;
-  // for (int ii=nCells-4;ii>=0;ii-=4)  ... this is faster, but try it later
+  // for (int ii=nCells-4;ii>=0;ii-=4)  ... this is faster, but try it later //JNG I broke this with the cellType code below but it could be fixed.
   for (int ii=0;ii<nCells;ii+=4) 
   {
 //   double fv[8]; 
-
+    int t3 = cellTypeVector[ii+3]; 
+    if (cellType != t3) 
+    {
+        int t0 = cellTypeVector[ii]; 
+        cellType = t0; 
+        printf("cellType update\n"); 
+        if (t0 != t3) 
+        {
+           for ( int kk  = 0 ;kk < 4; kk++) 
+           {
+            int t = cellTypeVector[ii+kk]; 
+            v_P_NaK get [kk]  = cellTypeParms[t].P_NaK;
+            v_g_to  get [kk]  = cellTypeParms[t].g_to; 
+            v_g_Ks  get [kk]  = cellTypeParms[t].g_Ks;
+            v_g_NaL get [kk]  = cellTypeParms[t].g_NaL;
+           }
+        }
+        else
+        {
+           v_P_NaK   = vec_splats(cellTypeParms[t0].P_NaK);
+           v_g_to    = vec_splats(cellTypeParms[t0].g_to); 
+           v_g_Ks    = vec_splats(cellTypeParms[t0].g_Ks);
+           v_g_NaL   = vec_splats(cellTypeParms[t0].g_NaL);
+        }
+    }
 
    v_v = vec_ld(0, &VM[ii]);
    vdt v_states_Na_i;

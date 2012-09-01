@@ -162,8 +162,6 @@ UPDATEGATE updateGateFuncs0[]={ update_mGate, update_hGate, update_jGate, update
                         update_fGate, update_f2Gate, update_jLGate, update_s0Gate, update_s1Gate} ;
 UPDATEGATE updateGateFuncs1[]={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, update_rGate_v1, update_dGate_v1, 
                           update_fGate_v1, update_f2Gate_v1, update_jLGate_v1, update_s0Gate_v1, update_s1Gate_v1} ;
-UPDATEGATE updateGateFuncs2[]={ update_mGate, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, update_rGate_v1, update_dGate_v1, 
-                          update_fGate_v1, update_f2Gate_v1, update_jLGate_v1, update_s0Gate_v1, update_s1Gate_v1} ;
 UPDATEGATE *updateGateFuncs= updateGateFuncs1; 
 void updateGateFast(double dt, int nCellsTotal, int *cellTypeVector, double *Vm, int offset, double **gate, PADE *fit,  WORK &work)
 {
