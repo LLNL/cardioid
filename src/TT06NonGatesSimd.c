@@ -229,7 +229,6 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
     {
         int t0 = cellTypeVector[ii]; 
         cellType = t0; 
-        printf("cellType update\n"); 
         if (t0 != t3) 
         {
            for ( int kk  = 0 ;kk < 4; kk++) 
