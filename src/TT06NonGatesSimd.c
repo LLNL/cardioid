@@ -233,6 +233,7 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
         {
            for ( int kk  = 0 ;kk < 4; kk++) 
            {
+            if (ii+kk == nCells) break; 
             int t = cellTypeVector[ii+kk]; 
             v_P_NaK get [kk]  = cellTypeParms[t].P_NaK;
             v_g_to  get [kk]  = cellTypeParms[t].g_to; 
