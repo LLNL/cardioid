@@ -6,9 +6,9 @@
 
 
 $bgqExe = "../../../../../bin/compareSnapshots-bgq-spi";
-$pelotonExe = "../../../../../bin/compareSnapshots-peloton";
+$pelotonExe = "../../../../bin/compareSnapshots-peloton";
 
-$nBGQnodes = 512;
+$nBGQnodes = 32;
 $nPelnodes = 1;
 
 if ($#ARGV < 0) {
