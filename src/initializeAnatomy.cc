@@ -9,7 +9,7 @@
 #include "TupleToIndex.hh"
 #include "setConductivity.hh"
 #include "BucketOfBits.hh"
-#include "Drand48Object.hh"
+#include "Prand48Object.hh"
 
 using namespace std;
 
@@ -119,10 +119,11 @@ namespace
 
       int cellType;
       string cellString;
+      uint64_t seed;
+      objectGet(obj, "seed",     seed,       "195782659275");      
       objectGet(obj, "cellType", cellString, "102");
       if (cellString != "random")
          cellType = atoi(cellString.c_str());
-      Drand48Object rand(myRank);  
       
       int nx = int(xSize/anatomy.dx());
       int ny = int(ySize/anatomy.dy());
@@ -154,7 +155,10 @@ namespace
          AnatomyCell tmp;
          tmp.gid_ = ii;
          if (cellString == "random")
+         {
+            Prand48Object rand(tmp.gid_, seed, 0xace2468bdf1357llu);  
             tmp.cellType_ = 100 + rand(3);
+         }
          else
             tmp.cellType_ = cellType;
          cells.push_back(tmp);
