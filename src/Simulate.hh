@@ -78,7 +78,7 @@ class Simulate
    volatile int loop_; // volatile (read + modified in threaded section)
    int maxLoop_;
    int printRate_;
-   long long int printGid_;
+   int64_t printGid_;
    int printRank_;
    int printIndex_;
    FILE *printFile_; 
