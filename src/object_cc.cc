@@ -59,16 +59,16 @@ void objectGet(OBJECT* obj, const string& name, unsigned& value, const string& d
    value = tmp;
 }
 
-void objectGet(OBJECT* obj, const string& name, Long64& value, const string& defVal)
+void objectGet(OBJECT* obj, const string& name, uint64_t& value, const string& defVal)
 {
-   Long64 tmp;
-   object_get(obj, name.c_str(), &tmp, ULL, 1, defVal.c_str());
+   uint64_t tmp;
+   object_get(obj, name.c_str(), &tmp, U64, 1, defVal.c_str());
    value = tmp;
 }
-void objectGet(OBJECT* obj, const string& name, long long int& value, const string& defVal)
+void objectGet(OBJECT* obj, const string& name, int64_t& value, const string& defVal)
 {
    long long int  tmp;
-   object_get(obj, name.c_str(), &tmp, LL, 1, defVal.c_str());
+   object_get(obj, name.c_str(), &tmp, I64, 1, defVal.c_str());
    value = tmp;
 }
 
@@ -116,11 +116,11 @@ void objectGet(OBJECT* obj, const string& name, vector<unsigned>& value)
    ddcFree(tmp);
 }
 
-void objectGet(OBJECT* obj, const string& name, vector<Long64>& value)
+void objectGet(OBJECT* obj, const string& name, vector<uint64_t>& value)
 {
    value.clear();
-   Long64* tmp;
-   unsigned n = object_getv(obj, name.c_str(), (void**) &tmp, ULL, IGNORE_IF_NOT_FOUND);
+   uint64_t* tmp;
+   unsigned n = object_getv(obj, name.c_str(), (void**) &tmp, U64, IGNORE_IF_NOT_FOUND);
    value.reserve(n);
    for (unsigned ii=0; ii<n; ++ii)
       value.push_back(tmp[ii]);

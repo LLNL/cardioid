@@ -1,6 +1,7 @@
 #ifndef LONG64_H
 #define LONG64_H
 
-typedef unsigned long long Long64;
+#include <stdint.h>
+typedef uint64_t Long64;
 
 #endif
