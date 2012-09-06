@@ -11,15 +11,15 @@ $thisdir = `pwd`;  chomp $thisdir;
 $makeVoidAnatomyScript = "$thisdir/tools/makeAnatomyBlockWithVoids.pl";
 $bgqExe = "../../../../bin/cardioid-bgq-spi";
 $pelotonExe = "../../../../bin/cardioid-peloton";
-#$nthreadsBGQ = 64;
-#$nthreadsPeloton = 4;
+$nthreadsBGQ = 64;
+$nthreadsPeloton = 4;
 
 $nIterations = 100000;
 $checkpointRate = 1000;
 
-$weakScaling = 0;   # if set to zero, anatomy size corresponding 
+$weakScaling = 1;   # if set to zero, anatomy size corresponding 
                     # to $strongTaskCount will be used throughout
-$strongTaskCount = 32;
+$strongTaskCount = 64;
 
 foreach $anatomy ("block247", "swiss247")
 {
@@ -29,26 +29,22 @@ foreach $anatomy ("block247", "swiss247")
       #foreach $reaction ("TT06RRG", "TT06RRGOpt", "TT06", "TT06Opt") 
       foreach $reaction ("TT06RRGOpt") 
       {
-         foreach $fastgates (1)
+         foreach $fastgates (0)
          {
-            foreach $rationalfns (1)
+            $rfncnt = 0;
+            foreach $rationalfns (0.0, 0.01, 0.001, 0.0001, 1.e-05, 1.e-06, 1.e-07, 1.e-08, 1.e-09)
             {
+               $rfncnt++;
                foreach $smoothing (1)
                {
                   #foreach $ntasks (16, 32, 64)
-                  foreach $ntasks (16, 32)
+                  foreach $ntasks (16)
                   {
                      #foreach $machine ("bgq", "peloton")
                      foreach $machine ("peloton")
                      {
-                        foreach $nthreadsPeloton ( 1, 2, 4, 8, 16 )
-                        {
-                           foreach $ndiffcores ( 1, 2, 4 )
-                           {
-                              printObject($anatomy,$celltype,$reaction,$fastgates,
-                                          $rationalfns,$smoothing,$ntasks,$machine);
-                           }
-                        }
+                        printObject($anatomy,$celltype,$reaction,$fastgates,
+                                    $rationalfns,$smoothing,$ntasks,$machine);
                      }
                   }
                }
@@ -64,10 +60,10 @@ sub printObject
    my($anatomy,$celltype,$reaction,$fastgates,$rationalfns,$smoothing,$ntasks,$machine) = @_;
 
    # skip file creation for conflicting parameter sets
-   if ($reaction eq "TT06RRG" && !($fastgates == 0 && $smoothing == 0 && $rationalfns == 0)) { return; }
-   if ($reaction eq "TT06" && !($fastgates == 0 && $smoothing == 0 && $rationalfns == 0)) { return; }
-   if ($smoothing == 0 && $fastgates == 1) { return; }
-   if ($rationalfns == 0 && $fastgates == 1) { return; }
+#   if ($reaction eq "TT06RRG" && !($fastgates == 0 && $smoothing == 0 && $rationalfns == 0)) { return; }
+#   if ($reaction eq "TT06" && !($fastgates == 0 && $smoothing == 0 && $rationalfns == 0)) { return; }
+#   if ($smoothing == 0 && $fastgates == 1) { return; }
+#   if ($rationalfns == 0 && $fastgates == 1) { return; }
 
    $nnodes = $ntasks;  # BGQ default
    if ($machine eq "peloton") { $nnodes = $ntasks/(16/$nthreadsPeloton); }
@@ -78,7 +74,8 @@ sub printObject
    $date = `date +%m%d%y`;  chomp $date;
    $maindir = join '','verif-runs-',$date;
    if ($weakScaling == 0) { $maindir = join '','verif-runs-strong-',$date; }
-   $dirname = join '',$anatomy,'-',$celltype,'-',$reaction,'-','fast',$fastgates,'mod',$smoothing,'rfns',$rationalfns,'-N',$nnodes,'t',$nthreads,'-ndc',$ndiffcores;
+   $rfnstring = sprintf("%0.2i",$rfncnt);
+   $dirname = join '',$anatomy,'-',$celltype,'-',$reaction,'-','fast',$fastgates,'mod',$smoothing,'rfns',$rfnstring,'-N',$nnodes,'t',$nthreads;
    system("mkdir -p $maindir/$machine/$dirname");
 
 # store different process grids in hashes
@@ -122,7 +119,7 @@ sub printObject
    if ($reaction =~ /Opt/) 
    {
       print OBJECT "   parallelDiffusionReaction = 1;\n";
-      print OBJECT "   nDiffusionCores = $ndiffcores;\n";
+      print OBJECT "   nDiffusionCores = 2;\n";
    }
    print OBJECT "}\n\n";
 
@@ -217,16 +214,7 @@ sub printObject
    if ($reaction eq "TT06RRGOpt")
    {
       print OBJECT "   method = TT06Opt;\n";
-      if ($rationalfns == 1) {
-          print OBJECT "   tolerance = 0.0001;\n";
-      }
-      elsif ($rationalfns == 0) {
-          print OBJECT "   tolerance = 0.0;\n";
-      }
-      else {
-         print "Invalid choice of rationalfns = $rationalfns!\n";
-         exit;
-      }
+      print OBJECT "   tolerance = $rationalfns;\n";
       print OBJECT "   mod = $smoothing;\n";
       print OBJECT "   fastGate =$fastgates;\n"; 
       print OBJECT "   fastNonGate =$fastgates;\n";
@@ -318,7 +306,7 @@ sub printObject
       open PEL, ">$maindir/$machine/$dirname/$pelbatch";
       print PEL "\#!/bin/bash\n";
       print PEL "\#MSUB -l nodes=$nnodes\n";
-      print PEL "\#MSUB -l walltime=1:00:00\n";
+      print PEL "\#MSUB -l walltime=12:00:00\n";
       print PEL "\#MSUB -A gbcq\n";
       print PEL "\n";
       print PEL "export OMP_NUM_THREADS=$nthreadsPeloton\n";

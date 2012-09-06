@@ -280,7 +280,7 @@ sub printObject
       print OBJECT "   zMax = 20;\n";
       print OBJECT "   vStim = -35.71429;\n";
       print OBJECT "   tStart = 0;\n";
-      print OBJECT "   duration = 2;\n";
+      print OBJECT "   duration = 1;\n";
       print OBJECT "   period = 1000;\n";
       print OBJECT "}\n\n";
    }
