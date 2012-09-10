@@ -35,6 +35,8 @@ CaAverageSensor::CaAverageSensor(const SensorParms& sp,
    nlocal_=anatomy.nLocal();
 
    buffer_val_.resize(nlocal_);
+
+   ca_handle_=reaction_.getVarHandle("Ca_i");
 }
 
 void CaAverageSensor::computeColorAverages(const VectorDouble32& val)
@@ -127,11 +129,10 @@ void CaAverageSensor::bufferReactionData(const int loop)
 
 void CaAverageSensor::bufferReactionData(const int begin, const int end, const int loop)
 {
-   loop_buffer_=loop;
-   const int handle=reaction_.getVarHandle("Ca_i");
+   if(begin==0)loop_buffer_=loop;
    
    for (unsigned ii=begin; ii<end; ++ii)
-      buffer_val_[ii]=reaction_.getValue(ii, handle);
+      buffer_val_[ii]=reaction_.getValue(ii, ca_handle_);
 }
 
 void CaAverageSensor::eval(double time, int loop)

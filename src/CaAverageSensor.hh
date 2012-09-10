@@ -26,6 +26,8 @@ private:
    unsigned ny_;
    unsigned nz_;
    unsigned nlocal_;
+   
+   int ca_handle_;
 
    MPI_Comm comm_;
 
