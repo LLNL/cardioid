@@ -48,10 +48,11 @@ StateVariableSensor::StateVariableSensor(const SensorParms& sp, const StateVaria
      if ( gid == gidCenter_ || locRadSq <= radius_*radius_)
      {
         localCells_.push_back(gid);
+        sensorind_.push_back(jj);
 
         // save output filename for this gid
         ostringstream ossnum;
-        ossnum.width(9);
+        ossnum.width(10);
         ossnum.fill('0');
         ossnum << gid;
         string filename = p.dirname + "/" + ossnum.str() + ".sv.dat";
@@ -74,7 +75,7 @@ StateVariableSensor::StateVariableSensor(const SensorParms& sp, const StateVaria
       fout_loc_[ii]->setf(ios::scientific,ios::floatfield);
       GridPoint gpt(localCells_[ii],sim.nx_,sim.ny_,sim.nz_);
       (*fout_loc_[ii]) << "#    gid " << localCells_[ii] << " (" << gpt.x << "," << gpt.y << "," << gpt.z << ")" << endl;
-      (*fout_loc_[ii]) << "#    time   ";
+      (*fout_loc_[ii]) << "#    time    Vm    ";
       for (int jj=0; jj<fieldNames_.size(); jj++)
          (*fout_loc_[ii]) << fieldNames_[jj] << " ";
       (*fout_loc_[ii]) << endl;
@@ -103,17 +104,13 @@ void StateVariableSensor::print(double time)
   {
      for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
      {
-        (*fout_loc_[ii]) << setprecision(10) << " " << time;
-
-
+        int kk = sensorind_[ii];
+        (*fout_loc_[ii]) << setprecision(10) << " " << time << "  " << sim_.vdata_.VmArray_[kk] << "  ";
         vector<double> value(handles_.size(), 0.0);
-        for (unsigned jj=0; jj<localCells_.size(); ++jj)
-        {
-           sim_.reaction_->getValue(jj, handles_, value);
-           for (unsigned kk=0; kk<value.size(); ++kk)
-              (*fout_loc_[jj]) << setprecision(10) << value[kk] << " ";
-           (*fout_loc_[jj]) << endl;
-        }
+        sim_.reaction_->getValue(ii, handles_, value);
+        for (unsigned kk=0; kk<value.size(); ++kk)
+           (*fout_loc_[ii]) << setprecision(10) << value[kk] << "  ";
+        (*fout_loc_[ii]) << endl;
      }
   }
 }

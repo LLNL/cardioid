@@ -10,6 +10,7 @@
 using namespace std;
 
 class Simulate;
+class PotentialData;
 
 struct StateVariableSensorParms
 {
@@ -41,6 +42,7 @@ class StateVariableSensor : public Sensor
     vector<string> fieldNames_;
     vector<int> handles_;
     vector<Long64> localCells_;  // grid gids owned by this task
+   vector<unsigned> sensorind_;      // corresponding local array index 
     vector<ofstream*> fout_loc_;
     double startTime_;
     double endTime_;
