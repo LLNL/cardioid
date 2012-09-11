@@ -15,6 +15,8 @@ $pelotonExe = "../../../bin/cardioid-peloton";
 $nthreadsBGQ = 64;
 $nthreadsPeloton = 4;
 
+$useStateSensor = 1;  # add code for the new stateVariables sensor
+
 $nIterations = 500000;
 $checkpointRate = 5000;
 
@@ -115,6 +117,10 @@ sub printObject
    print OBJECT "   printRate = $checkpointRate;\n";
    print OBJECT "   snapshotRate = $nIterations;\n";
    print OBJECT "   checkpointRate = $checkpointRate;\n";
+   if ($useStateSensor == 1)
+   {
+      print OBJECT "   sensor = stateVariable;\n";
+   }
    if ($reaction =~ /Opt/) 
    {
       print OBJECT "   parallelDiffusionReaction = 1;\n";
@@ -481,6 +487,22 @@ sub printObject
       print "Stimulus not defined for anatomy $anatomy\n";
       exit;
    }
+
+   if ($useStateSensor == 1)
+   {
+      print OBJECT "stateVariable SENSOR\n";
+      print OBJECT "{\n";
+      print OBJECT "   gid = 727354661;\n";
+      print OBJECT "   radius = 4.0;\n";
+      print OBJECT "   method = stateVariables;\n";
+      print OBJECT "   fields = all;\n";
+      print OBJECT "   startTime = 0.0;\n";
+      print OBJECT "   endTime = 500.0;\n";
+      print OBJECT "   dirname = sensorData;\n";
+      print OBJECT "   printRate = 1;\n";
+      print OBJECT "}\n\n";
+   }
+
    close OBJECT;
 
    # print batch script

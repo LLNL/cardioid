@@ -13,6 +13,7 @@
 #include "GradientVoronoiCoarsening.hh"
 #include "CaAverageSensor.hh"
 #include "MaxDVSensor.hh"
+#include "StateVariableSensor.hh"
 
 #include "Simulate.hh"
 
@@ -32,6 +33,7 @@ namespace
                         const Reaction&);
    Sensor* scanMaxDvSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                            const PotentialData& vdata);
+   Sensor* scanStateVariableSensor(OBJECT* obj, const SensorParms& sp, const Simulate& sim);
 }
 
 // Initialize cellVec with gids listed in file filename
@@ -108,6 +110,9 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
         || method == "dataVoronoiCoarsening" 
         || method == "gradientVoronoiCoarsening" )
      return scanVoronoiCoarseningSensor(obj, sp, sim.anatomy_,sim.vdata_);
+  else if (method == "stateVariables")
+     return scanStateVariableSensor(obj, sp, sim);
+
 
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -215,5 +220,20 @@ namespace
       objectGet(obj, "filename",  filename,  "cout");
 
       return new MaxDVSensor(sp, anatomy, vdata, MPI_COMM_WORLD, filename);
+   }
+}
+namespace
+{
+   Sensor* scanStateVariableSensor(OBJECT* obj, const SensorParms& sp, const Simulate& sim)
+   {
+      StateVariableSensorParms p;
+      objectGet(obj, "gid",   p.gidCenter, "-1");
+      assert(p.gidCenter >= 0);
+      objectGet(obj, "radius",   p.radius, "0.0");
+      objectGet(obj, "fields",   p.fieldList);
+      objectGet(obj, "startTime",   p.startTime,   "0.0",  "t");
+      objectGet(obj, "endTime",     p.endTime,     "-1.0", "t");
+      objectGet(obj, "dirname",     p.dirname,     "stateSensorData");
+      return new StateVariableSensor(sp, p, sim);      
    }
 }
