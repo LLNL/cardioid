@@ -3,11 +3,15 @@
 # generate Cardioid anatomy input files for block geometry w. voids
 #
 # written by Erik Draeger, LLNL, 8/17/2012
+#
+# note:  any anatomies generated before 9/13/2012 had conductivity tensors == 0.0
 
 if ($#ARGV != 4) {
    print "syntax:  makeAnatomyBlockAndVoids.pl [nx] [ny] [nz] [cellType] [nvoids]\n";
    exit;
 }
+
+$maxconductivity = 0.02;
 
 # initialize random number generator
 srand(88731);
@@ -97,7 +101,14 @@ for ($k=0; $k<$nz; $k++) {
                $type = 0;
             }
          }
-         $line = sprintf("          $gid $type 0.000 0.000 0.000 0.000 0.000 0.000");
+         $sigxx = $maxconductivity*rand();
+         $sigyy = $maxconductivity*rand();
+         $sigzz = $maxconductivity*rand();
+         $sigxy = $maxconductivity*rand();
+         $sigyz = $maxconductivity*rand();
+         $sigxz = $maxconductivity*rand();
+         #$line = sprintf("          $gid $type 0.000 0.000 0.000 0.000 0.000 0.000");
+         $line = sprintf("          $gid $type %7.5f %7.5f %7.5f %7.5f %7.5f %7.5f",$sigxx,$sigyy,$sigzz,$sigxy,$sigyz,$sigxz);
          printf ANAT "%-84s\n",$line;
       }
    }
