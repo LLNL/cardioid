@@ -184,8 +184,14 @@ sub printObject
       print OBJECT "}\n\n";
       print OBJECT "conductivity CONDUCTIVITY\n";
       print OBJECT "{\n";
-      print OBJECT "   method = pio;\n";
+      print OBJECT "    method = JHU;\n";
+      print OBJECT "    sigmaLi = 0.0001334177;\n";
+      print OBJECT "    sigmaTi = 0.0000176062;\n";
       print OBJECT "}\n\n";
+      #print OBJECT "conductivity CONDUCTIVITY\n";
+      #print OBJECT "{\n";
+      #print OBJECT "   method = pio;\n";
+      #print OBJECT "}\n\n";
    }
 
    # diffusion block
