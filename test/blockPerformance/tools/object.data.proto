@@ -86,7 +86,7 @@ boxStimulus STIMULUS
    zMax = 20;
    vStim = -35.71429;
    tStart = 0;
-   duration = 2;
+   duration = 1;
    period = 1000;
 }
 
