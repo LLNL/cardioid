@@ -15,8 +15,10 @@ void Simulate::checkRanges(int begin, int end,
                            const VectorDouble32& dVmReaction,
                            const VectorDouble32& dVmDiffusion)
 {
-   const double vMax =   60.;
-   const double vMin = -110.;
+   //const double vMax =   60.;
+   //const double vMin = -110.;
+   const double vMax = checkRange_.vMax;
+   const double vMin = checkRange_.vMin;
    const VectorDouble32& Vm = (vdata_.VmArray_);
    for (unsigned ii=begin; ii<end; ++ii)
    {
@@ -31,8 +33,10 @@ void Simulate::checkRanges(const VectorDouble32& dVmReaction,
                            const VectorDouble32& dVmDiffusion)
 {
    int nLocal = anatomy_.nLocal();
-   const double vMax =   60.;
-   const double vMin = -110.;
+   //const double vMax =   60.;
+   //const double vMin = -110.;
+   const double vMax = checkRange_.vMax;
+   const double vMin = checkRange_.vMin;
    const VectorDouble32& Vm = vdata_.VmArray_;
    #pragma omp parallel for
    for (int ii=0; ii<nLocal; ++ii)
@@ -57,8 +61,8 @@ void Simulate::outOfRange(unsigned index, double dVmr, double dVmd)
       dVmd += diffusion_->dVmBlock()[bi] * diffusion_->diffusionScale();
    }
    
-   printf("WARNING: Voltage out of range: rank %d, index %d gid %llu\n"
-          "         loop = %d, V = %e, dVmd = %e, dVmr = %e\n",
+   printf("WARNING: Voltage out of range: rank %d, index %d gid %llu "
+          "loop = %d, V = %e, dVmd = %e, dVmr = %e\n",
           myRank, index, anatomy_.gid(index), loop_, Vm, dVmd, dVmr);
    fflush(stdout);
 }

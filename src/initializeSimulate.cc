@@ -58,7 +58,9 @@ void initializeSimulate(const string& name, Simulate& sim)
 
    OBJECT* obj = objectFind(name, "SIMULATE");
 
-   objectGet(obj, "checkRanges", sim.checkRanges_, "1");
+   objectGet(obj, "checkRanges", sim.checkRange_.on, "1");
+   objectGet(obj, "VmMin", sim.checkRange_.vMin, "-110");
+   objectGet(obj, "VmMax", sim.checkRange_.vMax, " 60");
    objectGet(obj, "loop", (int&)sim.loop_, "0"); // cast away volatile
    objectGet(obj, "maxLoop", sim.maxLoop_, "1000");
    objectGet(obj, "dt", sim.dt_, "0.01", "t");

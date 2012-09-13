@@ -210,7 +210,7 @@ void simulationLoop(Simulate& sim)
       startTimer(integratorTimer);
       // no special BGQ integrator is this loop.  More bang for buck
       // from OMP threading.
-      if (sim.checkRanges_)
+      if (sim.checkRange_.on)
          sim.checkRanges(dVmReaction, dVmDiffusion);
       #pragma omp parallel for
       for (int ii=0; ii<nLocal; ++ii)
@@ -526,7 +526,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 		    &VmArray[0],
 		    sim.diffusion_->diffusionScale());
       
-      if (sim.checkRanges_)
+      if (sim.checkRange_.on)
          sim.checkRanges(begin, end, dVmReaction, dVmDiffusion);
 
 

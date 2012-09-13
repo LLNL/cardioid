@@ -21,6 +21,7 @@ using std::isnan;
 
 // storage class for persistent data such as potentials that may 
 // need to be analyzed or printed out by sensors
+struct CheckRange { bool on; double vMin,vMax;};
 class PotentialData
 {
  public:
@@ -74,7 +75,7 @@ class Simulate
    void bufferReactionData(const int begin, const int end);
    void bufferReactionData();
    
-   bool checkRanges_;
+   CheckRange checkRange_;
    volatile int loop_; // volatile (read + modified in threaded section)
    int maxLoop_;
    int printRate_;
