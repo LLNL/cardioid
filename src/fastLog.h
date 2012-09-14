@@ -35,16 +35,183 @@ static inline double fastLog(double x)
        double f = n*M_LN2 +c[0] + z*(c[1] + z2*(c[2] + z2*(c[3]+z2*(c[4]+z2*(c[5]+z2*(c[6]+z2*c[7]))))));
        return f ; 
 }
-static inline double fastLogNew(double *x)
+
+static inline vector4double fastLog4(vector4double x4)
 {
-       register unsigned exp  = ((unsigned *)x)[LeadingBits];
-       register int n = (exp >> 20)-1023+16; 
-       double m =  *x*p[n];  
-       double z = (M_SQRT1_2*m-1.0)/(M_SQRT1_2*m+1.0);
-       double z2 = z*z; 
-       double f = d[n] +c[0] + z*(c[1] + z2*(c[2] + z2*(c[3]+z2*(c[4]+z2*(c[5]+z2*(c[6]+z2*c[7]))))));
-       return f ; 
+  int n0,n1,n2,n3;
+  vector4double z, z2, m;
+
+  union {unsigned int u[4][2]; vector4double d ;} t;
+  t.d=x4; 
+  
+  vector4double c0 = vec_splats(c[0]);
+  vector4double c1 = vec_splats(c[1]);
+  vector4double c2 = vec_splats(c[2]);
+  vector4double c3 = vec_splats(c[3]);
+  vector4double c4 = vec_splats(c[4]);
+  vector4double c5 = vec_splats(c[5]);
+  vector4double c6 = vec_splats(c[6]);
+  vector4double c7 = vec_splats(c[7]);
+
+  n0 = (t.u[0][LeadingBits]>>20)-1023; 
+  t.u[0][LeadingBits] -= n0<<20;
+
+  n1 = (t.u[1][LeadingBits]>>20)-1023; 
+  t.u[1][LeadingBits] -= n1<<20;
+
+  n2 = (t.u[2][LeadingBits]>>20)-1023; 
+  t.u[2][LeadingBits] -= n2<<20;
+
+  n3 = (t.u[3][LeadingBits]>>20)-1023; 
+  t.u[3][LeadingBits] -= n3<<20;
+
+  m  = t.d;  
+
+  vector4double m_sqrt1_2 = vec_splats(M_SQRT1_2);
+  vector4double one = vec_splats(1.0);
+  vector4double zn = vec_msub(m_sqrt1_2,m,one);
+  vector4double zd = vec_madd(m_sqrt1_2,m,one);
+
+  //vector4double zn = vec_msub(vec_splats(M_SQRT1_2), m, vec_splats(1.0));
+  //vector4double zd = vec_madd(vec_splats(M_SQRT1_2), m, vec_splats(1.0));
+  z = vec_swdiv(zn, zd);
+  z2 = vec_mul(z,z);
+
+  vector4double nn = {n0, n1, n2, n3};
+  nn = vec_mul(nn, vec_splats(M_LN2));
+
+  vector4double f;
+  vector4double tmp;
+
+#define vec_madd2(c,a,b) vec_madd(a,b,c)
+
+  tmp = vec_madd2(c6, z2, c7);
+  tmp = vec_madd2(c5, z2, tmp);
+  tmp = vec_madd2(c4, z2, tmp);
+  tmp = vec_madd2(c3, z2, tmp);
+  tmp = vec_madd2(c2, z2, tmp);
+  tmp = vec_madd2(c1, z2, tmp);
+  tmp = vec_madd2(c0, z, tmp);
+  f = vec_add(nn, tmp);
+
+  return f;
 }
+
+
+//computes:
+//*ret1 = fastLog4(y4);
+//return fastLog4(x4);
+static inline vector4double fastLog8(vector4double x4, vector4double y4, vector4double *ret1)
+{
+  int n0,n1,n2,n3;
+  vector4double zx, z2x, nnx;
+  vector4double zy, z2y, nny;
+
+  union {unsigned int u[4][2]; vector4double d ;} t;
+
+  vector4double c0 = vec_splats(c[0]);
+  vector4double c1 = vec_splats(c[1]);
+  vector4double c2 = vec_splats(c[2]);
+  vector4double c3 = vec_splats(c[3]);
+  vector4double c4 = vec_splats(c[4]);
+  vector4double c5 = vec_splats(c[5]);
+  vector4double c6 = vec_splats(c[6]);
+  vector4double c7 = vec_splats(c[7]);
+
+  vector4double m_sqrt1_2 = vec_splats(M_SQRT1_2);
+  vector4double one = vec_splats(1.0);
+
+  {
+    t.d=y4; 
+  
+    n0 = (t.u[0][LeadingBits]>>20)-1023; 
+    t.u[0][LeadingBits] -= n0<<20;
+
+    n1 = (t.u[1][LeadingBits]>>20)-1023; 
+    t.u[1][LeadingBits] -= n1<<20;
+
+    n2 = (t.u[2][LeadingBits]>>20)-1023; 
+    t.u[2][LeadingBits] -= n2<<20;
+
+    n3 = (t.u[3][LeadingBits]>>20)-1023; 
+    t.u[3][LeadingBits] -= n3<<20;
+
+    vector4double m  = t.d;  
+
+    vector4double zn = vec_msub(m_sqrt1_2,m,one);
+    vector4double zd = vec_madd(m_sqrt1_2,m,one);
+
+    //vector4double zn = vec_msub(vec_splats(M_SQRT1_2), m, vec_splats(1.0));
+    //vector4double zd = vec_madd(vec_splats(M_SQRT1_2), m, vec_splats(1.0));
+    zx = vec_swdiv(zn, zd);
+    z2x = vec_mul(zx,zx);
+
+    vector4double nn = {n0, n1, n2, n3};
+    nnx = vec_mul(nn, vec_splats(M_LN2));
+  }
+
+  {
+    t.d=x4; 
+  
+    n0 = (t.u[0][LeadingBits]>>20)-1023; 
+    t.u[0][LeadingBits] -= n0<<20;
+
+    n1 = (t.u[1][LeadingBits]>>20)-1023; 
+    t.u[1][LeadingBits] -= n1<<20;
+
+    n2 = (t.u[2][LeadingBits]>>20)-1023; 
+    t.u[2][LeadingBits] -= n2<<20;
+
+    n3 = (t.u[3][LeadingBits]>>20)-1023; 
+    t.u[3][LeadingBits] -= n3<<20;
+
+    vector4double m  = t.d;  
+
+    vector4double zn = vec_msub(m_sqrt1_2,m,one);
+    vector4double zd = vec_madd(m_sqrt1_2,m,one);
+
+    //vector4double zn = vec_msub(vec_splats(M_SQRT1_2), m, vec_splats(1.0));
+    //vector4double zd = vec_madd(vec_splats(M_SQRT1_2), m, vec_splats(1.0));
+    zy = vec_swdiv(zn, zd);
+    z2y = vec_mul(zy,zy);
+
+    vector4double nn = {n0, n1, n2, n3};
+    nny = vec_mul(nn, vec_splats(M_LN2));
+
+  }
+  vector4double f;
+  vector4double tmpx, tmpy;
+
+#define vec_madd2(c,a,b) vec_madd(a,b,c)
+
+  tmpx = vec_madd2(c6, z2x, c7);
+  tmpy = vec_madd2(c6, z2y, c7);
+
+  tmpx = vec_madd2(c5, z2x, tmpx);
+  tmpy = vec_madd2(c5, z2y, tmpy);
+  
+  tmpx = vec_madd2(c4, z2x, tmpx);
+  tmpy = vec_madd2(c4, z2y, tmpy);
+  
+  tmpx = vec_madd2(c3, z2x, tmpx);
+  tmpy = vec_madd2(c3, z2y, tmpy);
+
+  tmpx = vec_madd2(c2, z2x, tmpx);
+  tmpy = vec_madd2(c2, z2y, tmpy);
+
+  tmpx = vec_madd2(c1, z2x, tmpx);
+  tmpy = vec_madd2(c1, z2y, tmpy);
+
+  tmpx = vec_madd2(c0, zx, tmpx);
+  tmpy = vec_madd2(c0, zy, tmpy);
+
+  *ret1 = vec_add(nnx, tmpx);
+  f = vec_add(nny, tmpy);
+
+    return f;
+
+}
+
 /*
 static inline double fastLog4(double *x)
 {
