@@ -1,19 +1,65 @@
 #include <math.h>
-#include <assert.h>
-#include "portableSIMD.h" 
+#include "portableSIMD.h"
 #include "TT06Func.h" 
-#include "TT06NonGates.h" 
-#include "fastLog.h" 
+#include "TT06NonGates.h"
+#include "fastLog.h"
 
 #define sigm(x)   ((x)/(1+(x)))
-#define logSeries(x)    (log(1+(x)) )
-//#define logSeries(x) ((x)*(1.0+(x)*(-0.5+(x)/3.0)))
-
-//#define fastLog(x) (log((x)))
+//#define logSeries(x)    (log(1+(x)) )
+#define fastLog(x) (log((x)))
 //#define fastLog(x) (x)
+//#define logSeries(x) ((x)*(1.0+(x)*(-0.5+(x)/3.0)))
 
 void (*fv05Func)(double Vm, double *fv);
 double (*fv6Func)(double dv);
+inline double logSeries(double x) {
+  //return x*(1.0 + x*(-0.5+(1/3.0)*(x))); 
+  vector4double x4 = vec_splats(x);
+  
+  vector4double one = vec_splats(1.0);
+  vector4double onehalf = vec_splats(0.5);
+  vector4double onethird = vec_splats(1/3.0);
+
+  // -0.5+(1/3.0)*(x)
+  vector4double tmp = vec_msub(onethird, x4, onehalf);
+  
+  tmp = vec_madd(x4, tmp, one);
+  //(1.0 + x*(-0.5+(1/3.0)*(x))); 
+
+  tmp = vec_mul(x4, tmp);
+  // x*(1.0 + x*(-0.5+(1/3.0)*(x))); 
+
+  return vec_extract(tmp, 0);
+}
+
+inline vector4double logSeries4(vector4double x4) 
+{
+  // vector4double y4 = {logSeries(x get [0]), logSeries(x get [1]), logSeries(x get [2]), logSeries(x get [3]) };
+  
+  vector4double one = vec_splats(1.0);
+  vector4double onehalf = vec_splats(0.5);
+  vector4double onethird = vec_splats(1/3.0);
+
+  // -0.5+(1/3.0)*(x)
+  vector4double tmp = vec_msub(onethird, x4, onehalf);
+  
+  tmp = vec_madd(x4, tmp, one);
+  //(1.0 + x*(-0.5+(1/3.0)*(x))); 
+
+  tmp = vec_mul(x4, tmp);
+  // x*(1.0 + x*(-0.5+(1/3.0)*(x))); 
+
+  return tmp;
+}
+
+#define ZERO const_array[0]
+#define ONE const_array[1]
+
+double const_array[2]__attribute__((aligned(32))) = {
+  0.0,
+  1.0
+};
+
 
 double SP[40]__attribute__((aligned(32)));
 
@@ -64,6 +110,9 @@ void set_SP(struct nonGateCnst cnst)
 
 
 
+
+
+
 double fvX_a[75]__attribute__((aligned(32))) = {
   6.02170007043617e-16, 2.60192856479526e-13, 6.04272220479134e-11, 1.46053164590980e-08, 2.41325169024597e-06, 1.57571330412697e-04,  
   -1.52370496566743e-12, -2.55280464729594e-10, 2.94210996176821e-08, 4.00772142804151e-07, -6.00926106818024e-04, 1.18653494080701e-01, -1.19531891610964e+01, 5.40504807620401e+02, 
@@ -76,14 +125,14 @@ double fvX_a[75]__attribute__((aligned(32))) = {
   1.89136344887477e-15, 4.55066993718199e-13, 1.18578052624143e-11, -5.22361846923760e-09, -3.79918615957248e-07, 3.41107297247441e-05, 6.31701538469039e-03, -7.81445921919197e-01, 2.55684105370893e+01};
 
 
-void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt)
+void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms,int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt)
 {
 
   typedef vector4double vdt;
 
-
-  assert(offset%4 == 0);
+  //struct  {double P_NaK, g_Ks,g_to,g_NaL;} cellParms[4]={{2.724,0.392,0.073,0.0},{2.724,0.098,0.294,0.0},{ 2.724, 0.392, 0.294, 0.0 },{0.2724,0.098,0.294,0.0}}; 
   
+//  const double mySP[40]__attribute__((aligned(32))) = {
   double *_Na_i = state[Na_i]+offset;
   double *_Ca_i = state[Ca_i]+offset;
   double *_Ca_ss = state[Ca_ss]+offset;
@@ -199,44 +248,37 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
   vdt v_dt_c9 =  vec_mul(vec_splats(dt), vec_splats(SP[12]));
 
 
-// gather into local arrays
-/*
    int cellType = cellTypeVector[0];
 
    vdt v_P_NaK   = vec_splats(cellTypeParms[cellType].P_NaK);
    vdt v_g_to    = vec_splats(cellTypeParms[cellType].g_to); 
    vdt v_g_Ks    = vec_splats(cellTypeParms[cellType].g_Ks);
    vdt v_g_NaL   = vec_splats(cellTypeParms[cellType].g_NaL);
-*/
-   vdt v_P_NaK;
-   vdt v_g_to ;
-   vdt v_g_Ks ;
-   vdt v_g_NaL;
-   int cellType = -1; 
 
+   vdt v_ONE = vec_splats(1.0);
 
    //vdt v_v = vec_ld(0, &VM[ii]); 
    vdt v_v ; //= vec_ld(0, &VM[ii]); 
    vdt v_itmp0, v_itmp5, v_itmp6 ;
    vdt v_dVR;
    vdt CSX, CSX0, CSX1, CSX2, CSX3;
-  // for (int ii=nCells-4;ii>=0;ii-=4)  ... this is faster, but try it later //JNG I broke this with the cellType code below but it could be fixed.
-  for (int ii=0;ii<nCells;ii+=4) 
+   //for (int ii=nCells-4;ii>=0;ii-=4) // ... this is faster, but try it later
+   for (int ii=0;ii<nCells;ii+=4) 
   {
 //   double fv[8]; 
-    int t3 = cellTypeVector[ii+3]; 
-    if (cellType != t3) 
+    int t3 = cellTypeVector[ii+3];
+    if (cellType != t3)
     {
-        int t0 = cellTypeVector[ii]; 
-        cellType = t0; 
-        if (t0 != t3) 
+        int t0 = cellTypeVector[ii];
+        cellType = t0;
+        if (t0 != t3)
         {
-           for ( int kk  = 0 ;kk < 4; kk++) 
+           for ( int kk  = 0 ;kk < 4; kk++)
            {
-            if (ii+kk == nCells) break; 
-            int t = cellTypeVector[ii+kk]; 
+            if (ii+kk == nCells) break;
+            int t = cellTypeVector[ii+kk];
             v_P_NaK get [kk]  = cellTypeParms[t].P_NaK;
-            v_g_to  get [kk]  = cellTypeParms[t].g_to; 
+            v_g_to  get [kk]  = cellTypeParms[t].g_to;
             v_g_Ks  get [kk]  = cellTypeParms[t].g_Ks;
             v_g_NaL get [kk]  = cellTypeParms[t].g_NaL;
            }
@@ -244,12 +286,11 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
         else
         {
            v_P_NaK   = vec_splats(cellTypeParms[t0].P_NaK);
-           v_g_to    = vec_splats(cellTypeParms[t0].g_to); 
+           v_g_to    = vec_splats(cellTypeParms[t0].g_to);
            v_g_Ks    = vec_splats(cellTypeParms[t0].g_Ks);
            v_g_NaL   = vec_splats(cellTypeParms[t0].g_NaL);
         }
     }
-
    v_v = vec_ld(0, &VM[ii]);
    vdt v_states_Na_i;
    vdt v_states_Ca_SR;
@@ -306,9 +347,9 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
    vdt v_x3 = vec_madd(v_states_Ca_i, vec_splats(SP[2]), vec_splats(SP[3])); 
        v_x3 = vec_mul(v_x3,      v_x3);
 
-   vdt v_sigm1 = vec_swdiv_nochk(v_x1, vec_add(vec_splats(1.0), v_x1));
-   vdt v_sigm2 = vec_swdiv_nochk(v_x2, vec_add(vec_splats(1.0), v_x2));
-   vdt v_sigm3 = vec_swdiv_nochk(v_x3, vec_add(vec_splats(1.0), v_x3));
+   vdt v_sigm1 = vec_swdiv_nochk(v_x1, vec_add(v_ONE, v_x1));
+   vdt v_sigm2 = vec_swdiv_nochk(v_x2, vec_add(v_ONE, v_x2));
+   vdt v_sigm3 = vec_swdiv_nochk(v_x3, vec_add(v_ONE, v_x3));
 /*
    fv[1] = sum1[ii]; 
    fv[2] = sum2[ii]; 
@@ -325,7 +366,9 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 */
 
 // logd4(v_states) is SLOWER
-   vdt v_tmp = {fastLog(v_states_Ca_i get [0]), fastLog(v_states_Ca_i get [1]), fastLog(v_states_Ca_i get [2]), fastLog(v_states_Ca_i get [3])  };
+   //vdt v_tmp = {fastLog(v_states_Ca_i get [0]), fastLog(v_states_Ca_i get [1]), fastLog(v_states_Ca_i get [2]), fastLog(v_states_Ca_i get [3])  };
+   vdt v_tmp;
+   v_tmp = fastLog4(v_states_Ca_i);
 
    vdt v_dV3 = vec_sub(v_v,   vec_mul(v_5_c3, v_tmp));
    //CSX = vec_ld(0, &SP[4]); 3.51 vs. 3.43
@@ -403,29 +446,23 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 
    vdt v_stateK_i = vec_mul(vec_splats(SP[12]), vec_sub(vec_ld(0, &_dVK_i[ii]), v_v));
    vdt v_x0       = vec_mul(v_states_Na_i, vec_splats(SP[13]));
-   vdt v_sigm0    = vec_swdiv_nochk(v_x0, vec_add(vec_splats(1.0), v_x0));
+   vdt v_sigm0    = vec_swdiv_nochk(v_x0, vec_add(v_ONE, v_x0));
        v_sigm0    = vec_mul(v_P_NaK, v_sigm0); 
 
-    v_tmp get [0] = fastLog(v_stateK_i get [0]);
-    v_tmp get [1] = fastLog(v_stateK_i get [1]);
-    v_tmp get [2] = fastLog(v_stateK_i get [2]);
-    v_tmp get [3] = fastLog(v_stateK_i get [3]);
+       //v_tmp = fastLog4(v_stateK_i);
+       //vdt v_tmpXX = fastLog4(v_states_Na_i);
 
+       vdt v_tmpXX;
+       v_tmp = fastLog8(v_stateK_i, v_states_Na_i, &v_tmpXX);
 
 //  double dV0 = Vm -c3*log(stateK_i get [ii]) -c5;
 
    vdt v_c3 = vec_splats(SP[14]);
    vdt v_dV0 = vec_sub(v_v, vec_mul(v_c3 , v_tmp));
        v_dV0 = vec_sub(v_dV0, vec_splats(SP[15]));
-   /* v_tmp get[0] = fastLog(_Na_i get [0+ii]);
-   v_tmp get [1] = fastLog(_Na_i get [1+ii]);
-   v_tmp get [2] = fastLog(_Na_i get [2+ii]);
-   v_tmp get [3] = fastLog(_Na_i get [3+ii]); */
 
-   v_tmp get [0] = fastLog(v_states_Na_i get [0]);
-   v_tmp get [1] = fastLog(v_states_Na_i get [1]);
-   v_tmp get [2] = fastLog(v_states_Na_i get [2]);
-   v_tmp get [3] = fastLog(v_states_Na_i get [3]);
+       //v_tmp = fastLog4(v_states_Na_i);
+       v_tmp = v_tmpXX;
 
 // double dV1 = Vm -c3*log(states[Na_i])-c4;
 
@@ -436,13 +473,8 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 // double dV2 = dV0[ii]-c3*logSeries(c2*states[Na_i]/stateK_i[ii])+c5-c6;
 
    vdt v_dV2 = vec_swdiv_nochk(v_states_Na_i, v_stateK_i);
-       v_dV2 = vec_add(vec_splats(1.0), vec_mul(vec_splats(SP[17]), v_dV2));
-
-       v_dV2 get [0] = fastLog(v_dV2 get [0]);
-       v_dV2 get [1] = fastLog(v_dV2 get [1]);
-       v_dV2 get [2] = fastLog(v_dV2 get [2]);
-       v_dV2 get [3] = fastLog(v_dV2 get [3]);
-
+      
+       v_dV2 = logSeries4(v_dV2);
 
        v_dV2 = vec_add(vec_nmsub(v_c3, v_dV2, v_dV0), vec_splats(SP[15])); 
        v_dV2 = vec_sub(v_dV2, vec_splats(SP[18])); 
@@ -543,10 +575,8 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 
 
 // states[Na_i]    += (dt*c9)*(iNaL[ii]*c22+itmp2[ii]+2.0*itmp0[ii]); 
-// states[Na_i]    += (dt*c9)*(iNaL[ii]+itmp2[ii]+2.0*itmp0[ii]);   //JNG
 
-   //v_tmp = vec_madd(v_iNaL, vec_splats(SP[22]), v_itmp2);
-   v_tmp = vec_add(v_iNaL, v_itmp2);    //JNG
+   v_tmp = vec_madd(v_iNaL, vec_splats(SP[22]), v_itmp2);
    v_tmp = vec_madd(vec_splats(2.0),    v_itmp0,         v_tmp);
    v_tmp = vec_mul(v_tmp,   vec_mul(v_dt,   vec_splats(SP[12])));
 
@@ -554,16 +584,11 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
    vec_st(v_states_Na_i, 0, &_Na_i[ii]); 
 
 //  dVR[ii] +=  iNaL[ii] - itmp2[ii]-itmp3[ii];
-//   v_tmp = vec_sub(v_iNaL, v_itmp2);
-//   v_tmp = vec_sub(v_tmp,  v_itmp3);
-//   v_dVR = vec_add(v_dVR, v_tmp);
 
-//  dVR[ii] -=  iNaL[ii] + itmp2[ii]+itmp3[ii];  //JNG
+   v_tmp = vec_sub(v_iNaL, v_itmp2);
+   v_tmp = vec_sub(v_tmp,  v_itmp3);
 
-   v_tmp = vec_add(v_iNaL, v_itmp2);
-   v_tmp = vec_add(v_tmp,  v_itmp3);
-
-   v_dVR = vec_sub(v_dVR, v_tmp);
+   v_dVR = vec_add(v_dVR, v_tmp);
 
 
 
@@ -622,9 +647,9 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
      double sigm6 = sigm(x6[ii]); 
 
 */
-   vdt v_sigm4 = vec_swdiv_nochk(v_x4, vec_add(vec_splats(1.0), v_x4));
-   vdt v_sigm5 = vec_swdiv_nochk(v_x5, vec_add(vec_splats(1.0), v_x5));
-   vdt v_sigm6 = vec_swdiv_nochk(v_x6, vec_add(vec_splats(1.0), v_x6));
+   vdt v_sigm4 = vec_swdiv_nochk(v_x4, vec_add(v_ONE, v_x4));
+   vdt v_sigm5 = vec_swdiv_nochk(v_x5, vec_add(v_ONE, v_x5));
+   vdt v_sigm6 = vec_swdiv_nochk(v_x6, vec_add(v_ONE, v_x6));
 
 //      double tmp8  = (c18+c19*sigm4[ii]); //Sigm4
    vdt v_tmp8 = vec_madd(vec_splats(SP[28]), v_sigm4, vec_splats(SP[29]));
@@ -651,15 +676,15 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 
 //     double t1 = 1.0/(1.0+SQ(20*states[Ca_ss])); 
   vdt v_t1 = vec_mul(vec_splats(SP[32]), v_states_Ca_ss);
-      v_t1 = vec_madd(v_t1, v_t1, vec_splats(1.0));
+      v_t1 = vec_madd(v_t1, v_t1, v_ONE);
    //   v_t1 = vec_re(v_t1);  too much error
-   v_t1 = vec_swdiv_nochk(vec_splats(1.0), v_t1);
+   v_t1 = vec_swdiv_nochk(v_ONE, v_t1);
 
 //     double mhu = 0.600000*t1[ii]+0.4000000;
    vdt v_mhu = vec_madd(vec_splats(SP[33]), v_t1, vec_splats(SP[34]));
 
 //     double tauR =    1.0/(80.0*t1[ii]+2.0);
-   vdt v_tauR = vec_swdiv_nochk(vec_splats(1.0), vec_madd(v_t1, vec_splats(SP[35]), vec_splats(2.0))); 
+   vdt v_tauR = vec_swdiv_nochk(v_ONE, vec_madd(v_t1, vec_splats(SP[35]), vec_splats(2.0))); 
 
 //     states[Ca_ss]   += (dt*c9)*sigm6[ii]*(itmp6[ii]+itmp7[ii]*c14+itmp1[ii]*c13);   
    v_tmp = vec_madd(v_itmp7, vec_splats(SP[36]), v_itmp6);
