@@ -126,8 +126,8 @@ void loopIO(const Simulate& sim,int firstCall)
       int printIndex = sim.printIndex_; 
       if (printIndex >= 0)
       {
-         printf("%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",loop,sim.time_,sim.anatomy_.gid(printIndex),VmArray[printIndex],dVmR[printIndex],dVmD[printIndex]);  fflush(stdout); 
-         fprintf(sim.printFile_,"%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",loop,sim.time_,sim.anatomy_.gid(printIndex),VmArray[printIndex],dVmR[printIndex],dVmD[printIndex]); fflush(sim.printFile_); 
+         printf("%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",loop,sim.time_,sim.anatomy_.gid(printIndex),VmArray[printIndex],dVmR[printIndex],dVmD[printIndex]);  
+         fprintf(sim.printFile_,"%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",loop,sim.time_,sim.anatomy_.gid(printIndex),VmArray[printIndex],dVmR[printIndex],dVmD[printIndex]); 
       }
    }
    }
