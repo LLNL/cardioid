@@ -8,7 +8,7 @@ hpmExe=${mpiExe}-spi-hpm
 
 for jobType in spi hpm
 do
-for jobSize in 1k 2k 4k 8k 16k 24k 48k
+for jobSize in 1k 2k 4k 8k 16k
 do
 for cellsPerNode in 224
 do

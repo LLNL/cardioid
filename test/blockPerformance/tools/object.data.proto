@@ -46,6 +46,7 @@ grid DECOMPOSITION
     nx = XX_XGRID_XX;
     ny = XX_YGRID_XX;
     nz = XX_ZGRID_XX;
+    minimize = volume;
     threshold = 4;
     printStats = 0;
     visgrid = 0;
