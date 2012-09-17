@@ -22,7 +22,7 @@ struct TT06Dev_ReactionParms
    std::vector<std::string> cellTypeNames;
    std::string fitFile; 
    double tolerance;
-   int mod;
+   int jhTauSmooth;
    PADE *fit; 
    int fastReaction;
 };
