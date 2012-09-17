@@ -16,6 +16,7 @@ namespace PerformanceTimers
    extern TimerHandle diffusionCalcTimer;
    extern TimerHandle stimulusTimer;
    extern TimerHandle reactionTimer;
+   extern TimerHandle reactionMiscTimer;
    extern TimerHandle nonGateTimer;
    extern TimerHandle GateNonGateTimer;
    extern TimerHandle gateTimer;

@@ -169,12 +169,17 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
       state_[dVK_i][ii] = state_[K_i][ii]/c9+initialVm_[cellType];
       nCellsOfType[cellType]++; 
    }
+   for (unsigned ii=nCells_; ii<nCellBuffer_;ii++) 
+   {
+     cellTypeVector_[ii] = cellTypeVector_[ii-1]; 
+     for (int j=0;j<nStateVar;j++) state_[j][ii]  =  state_[j][ii-1];  
+   }
    
    {
       fastReaction_ = 0; 
       if (parms.fastReaction >= 0) ;
       {
-         if ( (fabs(parms.tolerance/1e-4 - 1.0) < 1e-12) && parms.mod == 1 )fastReaction_ = parms.fastReaction; 
+         if ( (fabs(parms.tolerance/1e-4 - 1.0) < 1e-12) && parms.jhTauSmooth == 1 )fastReaction_ = parms.fastReaction; 
       }
       update_gate_=TT06Func::updateGate;
       update_nonGate_=update_nonGate;
@@ -195,8 +200,8 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
          for ( int i=0; i < cnt; i++) 
          {
            string name = fitName[i]; 
-           if (parms.mod  && i == 10) name = "hTauRMod";
-           if (parms.mod  && i == 12) name = "jTauRMod";
+           if (parms.jhTauSmooth  && i == 10) name = "hTauRMod";
+           if (parms.jhTauSmooth  && i == 12) name = "jTauRMod";
 	        double V0 = (i == 6) ?   0 : -100.0; 
 	        double V1 = (i == 6) ? 130 :   50.0; 
            padeApprox(fit_[i],name,fitFuncMap(name),NULL,0,deltaV,V0,V1,tol,maxTerms,maxTerms,maxCost,0,0,NULL); 
@@ -339,16 +344,16 @@ void TT06Dev_Reaction::calc(double dt, const VectorDouble32& Vm, const vector<do
 }
 void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR)
 {
+   startTimer(nonGateTimer);
    int offset; 
    int nCells = nonGateWorkPartition(offset); 
    //int ompID = omp_get_thread_num(); 
    //sampleLog(&logParms_[ompID], nCells, offset,&cellTypeVector_[0], const_cast<double *>(&Vm[0]),  &state_[0]);
-   startTimer(nonGateTimer);
    if (nCells > 0) 
    {
-      assert(offset<cellTypeVector_.size());
-      assert(offset<Vm.size());
-      assert(offset<dVR.size());
+      assert(offset < cellTypeVector_.size());
+      assert(offset < Vm.size());
+      assert(offset < dVR.size());
       update_nonGate_(fit_,dt, &cellTypeParms_[0], nCells, &cellTypeVector_[offset], const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
    }
    stopTimer(nonGateTimer);

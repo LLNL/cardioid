@@ -293,8 +293,7 @@ struct SimLoopData
 
       int nLocal = sim.anatomy_.nLocal();
       mkOffsets(integratorOffset, sim.anatomy_.nLocal(), sim.reactionThreads_);
-      mkSendBufInfo(sendBufOffset, sendBufIndirect, voltageExchange,
-                    integratorOffset, sim.reactionThreads_);
+      mkSendBufInfo(sendBufOffset, sendBufIndirect, voltageExchange, integratorOffset, sim.reactionThreads_);
    }
 
    ~SimLoopData()
@@ -437,8 +436,8 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
            
       startTimer(reactionTimer);
       sim.reaction_->updateNonGate(sim.dt_, VmArray, dVmReaction);
-      startTimer(GateNonGateTimer); 
 
+      startTimer(GateNonGateTimer); 
 #ifdef PER_SQUAD_BARRIER
       {
 	L2_Barrier_nosync_Arrive(      cb_ptr,
@@ -457,24 +456,17 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       sim.reaction_->updateGate(sim.dt_, VmArray);
       stopTimer(reactionTimer);
 
-
+      startTimer(reactionWaitTimer);
       /*
-	The following barrier makes sure the integrator
-	does not write to data still beaing read by some
-	threads still in updateGate(). With the modified
-	loop order in integratorOffset_psb[], only per
-	squad (per core) barriers are needed. With the
-	original loop order in integratorOffset[], a full
-	barrier over the reaction cores is necessary.
+	    The following barrier makes sure the integrator does not write to data still being read by some
+	    threads still in updateGate(). With the modified loop order in integratorOffset_psb[], only per
+	    squad (per core) barriers are needed. With the original loop order in integratorOffset[], a full
+	    barrier over the reaction cores is necessary.  
       */
 #ifdef PER_SQUAD_BARRIER
       {
-	L2_Barrier_nosync_Arrive(      cb_ptr,
-				       &core_barrier_h,
-				       sqsz);
-	L2_Barrier_nosync_WaitAndReset(cb_ptr,
-				       &core_barrier_h,
-				       sqsz);
+	      L2_Barrier_nosync_Arrive(      cb_ptr, &core_barrier_h, sqsz);
+	      L2_Barrier_nosync_WaitAndReset(cb_ptr, &core_barrier_h, sqsz);
       }
 #else
       L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier,
@@ -482,34 +474,13 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 				 sim.reactionThreads_.nThreads());
 #endif
 
+      L2_BarrierWithSync_WaitAndReset(loopData.diffusionBarrier, &diffusionHandle, sim.diffusionThreads_.nThreads());
+      stopTimer(reactionWaitTimer);
 
       startTimer(dummyTimer);
       stopTimer(dummyTimer);
 
-      startTimer(reactionWaitTimer);
-      L2_BarrierWithSync_WaitAndReset(loopData.diffusionBarrier, &diffusionHandle, sim.diffusionThreads_.nThreads());
-      stopTimer(reactionWaitTimer);
-
-
-//       copy the diffusion derivative from matrix to array form.
-//       This is a dinosaur track.  The code that actually does this
-//       work is now inside the integrator.      
-//       startTimer(FGR_Matrix2ArrayTimer);
-//       unsigned begin = loopData.integratorOffset[tid];
-//       unsigned end   = loopData.integratorOffset[tid+1];
-//       unsigned* blockIndex = sim.diffusion_->blockIndex();
-//       double* dVdMatrix = sim.diffusion_->dVmBlock();
-//       double diffusionScale = sim.diffusion_->diffusionScale();
-//       for (unsigned ii=begin; ii<end; ++ii)
-//       {
-//          int index = blockIndex[ii];
-//          loopData.dVmDiffusion[ii] += diffusionScale*dVdMatrix[index];
-//       }
-//       stopTimer(FGR_Matrix2ArrayTimer);
-
-      
       startTimer(integratorTimer);
-      
 #ifdef PER_SQUAD_BARRIER
       const int begin=loopData.integratorOffset_psb[tid];
       const int end  =loopData.integratorOffset_psb[tid+1]
@@ -525,11 +496,10 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 		    sim.diffusion_->VmBlock(),
 		    &VmArray[0],
 		    sim.diffusion_->diffusionScale());
-      
-      if (sim.checkRange_.on)
-         sim.checkRanges(begin, end, dVmReaction, dVmDiffusion);
+      stopTimer(integratorTimer);
 
-
+      startTimer(reactionMiscTimer); 
+      if (sim.checkRange_.on) sim.checkRanges(begin, end, dVmReaction, dVmDiffusion);
       if (tid == 0)
       {
          sim.time_ += sim.dt_;
@@ -541,7 +511,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
          // jlf: needed to have correct dVm in sensors.
          // Already calculated in integrateLoop, so maybe we 
          // should save it there and reuse it here...
-         startTimer(FGR_Matrix2ArrayTimer);
+
          const unsigned* const blockIndex = sim.diffusion_->blockIndex();
          const double* const dVdMatrix = sim.diffusion_->dVmBlock();
          const double diffusionScale = sim.diffusion_->diffusionScale();
@@ -551,18 +521,16 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
             // add diffusion to stimulus (already stored in dVmDiffusion)
             dVmDiffusion[ii] += diffusionScale*dVdMatrix[index];
          }
-         stopTimer(FGR_Matrix2ArrayTimer);
             
          sim.bufferReactionData(begin, end);
       }
-      stopTimer(integratorTimer);
-//       sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
+//    sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
          
       L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier,
                                  &reactionWaitOnNonGateHandle,
                                  sim.reactionThreads_.nThreads());
-      if (tid == 0)
-         loopIO(sim,0);
+      if (tid == 0) loopIO(sim,0);
+      stopTimer(reactionMiscTimer); 
          
       startTimer(haloMove2BufTimer);
       {
