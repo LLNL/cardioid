@@ -131,6 +131,7 @@ namespace
       int fastNonGate =-1; 
       TT06Func::initCnst(); 
       string fitFit; 
+/*
       if (object_testforkeyword(obj,"mod") )
       {
           //if (getRank(0) == 0) printf("keyword <mod> is deprecated by <jhTauSmooth>.  Replace keyword <mod> in the reaction object <%s>  with <jhTauSmooth>\n",obj->name); 
@@ -138,8 +139,8 @@ namespace
           //exit(1); 
          objectGet(obj, "mod",          parms.jhTauSmooth, "0") ;
       }
-      else
-         objectGet(obj, "jhTauSmooth",          parms.jhTauSmooth, "0") ;
+*/
+      objectGet(obj, "mod",          parms.jhTauSmooth, "0") ;
       objectGet(obj, "tolerance",    parms.tolerance, "0.0") ;
       objectGet(obj, "jhTauSmooth",          parms.jhTauSmooth, "0") ;
       objectGet(obj, "fastReaction", parms.fastReaction, "-1") ;
