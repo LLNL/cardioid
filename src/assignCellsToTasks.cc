@@ -89,7 +89,14 @@ namespace
       objectGet(obj, "targetNTasks",target,defaultTarget); 
       objectGet(obj, "nC",nC,defaultNC); 
       assert(dx*dy*dz != 0);
-      assert((dz+2)%4 ==0); 
+      //assert((dz+2)%4 ==0); 
+      //ewd:  automatically increase dz instead of core-dumping
+      if ((dz+2)%4 != 0)
+      {
+         if (myRank == 0)
+            cout << "WARNING:  workBound load balancer requires (dz+2)%4 == 0!  Increasing dz." << endl;
+         while ((dz+2)%4 != 0) dz++;
+      }
       int nx = sim.anatomy_.nx(); 
       int ny = sim.anatomy_.ny(); 
       int nz = sim.anatomy_.nz(); 
