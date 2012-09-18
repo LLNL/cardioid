@@ -75,9 +75,9 @@ tt06dev REACTION
     cellTypes = endo mid epi;
 }
 
-endo CELLTYPE { clone=endoCellML; }
-mid CELLTYPE { clone=midCellML; }
-epi CELLTYPE { clone=epiCellML; }
+endo CELLTYPE { clone=endoRRG; }
+mid CELLTYPE { clone=midRRG;  P_NaK=3.0; g_NaL=0.6; }
+epi CELLTYPE { clone=epiRRG; }
 
 boxStimulus STIMULUS
 {
