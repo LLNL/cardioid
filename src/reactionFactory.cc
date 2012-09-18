@@ -142,7 +142,6 @@ namespace
 */
       objectGet(obj, "mod",          parms.jhTauSmooth, "0") ;
       objectGet(obj, "tolerance",    parms.tolerance, "0.0") ;
-      objectGet(obj, "jhTauSmooth",          parms.jhTauSmooth, "0") ;
       objectGet(obj, "fastReaction", parms.fastReaction, "-1") ;
       objectGet(obj, "fastGate",     fastGate, "-1") ;
       objectGet(obj, "fastNonGate",  fastNonGate, "-1") ;
