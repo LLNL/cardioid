@@ -129,11 +129,12 @@ CommTable::CommTable(
 
    _offsets = 0;
    #ifdef SPI
-   _offsets = new int*[4];  //need to pass these offsets to spi_implementation
+   _offsets = new int*[5];  //need to pass these offsets to spi_implementation
    _offsets[0]=&(_sendOffset[0]);
    _offsets[1]=&(_putOffset[0]);
    _offsets[2]=&(_putCntOffset[0]);
    _offsets[3]=&(_recvOffset[0]);
+   _offsets[4]=&(_recvTask[0]);
    #endif
    
    delete[] recvBuf;

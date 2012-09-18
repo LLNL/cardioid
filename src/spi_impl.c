@@ -495,6 +495,76 @@ void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_of
 
 }
 
+void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_offset, int32_t* recv_task,int bw, int width, uint32_t myID)
+{
+  volatile uint64_t* recv_cnt = spi_hdl -> recv_cnt;
+  //checking if fifo is done.
+  #ifdef spi_debug_compl
+  printf("completion check...");
+  #endif
+  MUSPI_InjFifo_t*    IF = (MUSPI_InjFifo_t*)spi_hdl->inj_fifo_hdl;
+  while(MUSPI_getHwTail(&(IF->_fifo)) != MUSPI_getHwHead(&(IF->_fifo)));
+  #ifdef spi_debug_compl
+  printf("head=tail done...");
+  #endif
+
+//  printf("recv size ");
+//  for(int ii=0;ii<recv_size;ii++)
+//    printf("%d ",(recv_offset[ii+1]-recv_offset[ii])*width);
+//  printf("\n");
+
+  uint64_t knt=0,sum=1;
+  for(knt=0;(knt<MAX_WAIT && sum != 0);knt++)
+  {
+    sum=0;
+    for(int ii=0;ii<recv_size;ii++)
+    {
+      int recved=recv_cnt[ii+bw*MAX_PUT_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
+//      if(knt%10==0) printf("%d ",recved);
+      sum+= (recved == 0 ? 0 : 1);
+    }
+//    printf("\n");
+//    if(bw==0) for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii] == 0 ? 1 : 0);
+//    else for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii+MAX_PUT_NUM] == 0 ? 1 : 0);
+  }
+
+  if ( knt == MAX_WAIT )
+  {
+    printf("node:%d have reached MAX_WAIT\n",myID);
+    for(int ii=0;ii<recv_size;ii++)
+    {
+      int recved=recv_cnt[ii+bw*MAX_PUT_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
+//      if(knt%10==0) printf("%d ",recved);
+      if(recved != 0) printf("node:%d did NOT receive from node:%d\n",myID,recv_task[ii]); 
+      else printf("node:%d did receive from node:%d\n",myID,recv_task[ii]);
+    }
+    //wait more for others to quit
+    for(knt=0;knt<MAX_WAIT ;knt++) { }
+  }
+  assert(knt <  MAX_WAIT); 
+
+
+//  //for(int ii=0;ii<recv_size;ii++) printf("%x ",recv_cnt[ii+MAX_PUT_NUM*bw]);
+  //printf("\n");
+  #ifdef spi_debug_compl
+  printf("counter touched\n");
+  #endif
+
+
+  #ifdef spi_debug_compl
+  //for(int ii=0;ii<recv_size;ii++)
+  //{
+  //  if(bw==0)printf("%dth packet is at %x\n",ii,recv_cnt[ii]);
+  //  else printf("%dth packet is at %x\n",ii,recv_cnt[ii+MAX_PUT_NUM]);
+  //}
+  #endif
+
+  for(int ii=0;ii<recv_size;ii++)
+    recv_cnt[ii+MAX_PUT_NUM*bw]=0;
+  _bgq_msync();
+
+}
+
 
 void execute_spi_2(spi_hdl_t* spi_hdl, uint32_t put_size)
 {

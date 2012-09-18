@@ -36,6 +36,7 @@ extern "C" {
    void execute_spi_alter(spi_hdl_t* spi_hdl, uint32_t put_size,int bw);
    void complete_spi(spi_hdl_t* spi_hdl, uint32_t recv_size);
    void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_offset, int bw, int width);
+   void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_offset, int32_t* recv_task,int bw, int width, uint32_t myID);
    void free_spi(spi_hdl_t* spi_hdl);
    void global_sync(spi_hdl_t* spi_hdl);
 #ifdef __cplusplus

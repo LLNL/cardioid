@@ -99,7 +99,7 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
   {
     //create mapping table
 //    mapping_table(&spiHdl_);
-    mapping_table_new(&spiHdl_);
+    myID=mapping_table_new(&spiHdl_);
  
     //setup base address table
     //search and allocate
@@ -151,7 +151,8 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
    void wait()
    {
 #pragma omp critical 
-      complete_spi_alter(&spiHdl_, commTable_->_recvTask.size(), commTable_->_offsets[3], bw_, width_ );
+      //complete_spi_alter(&spiHdl_, commTable_->_recvTask.size(), commTable_->_offsets[3], bw_, width_ );
+      complete_spi_alter_monitor(&spiHdl_, commTable_->_recvTask.size(), commTable_->_offsets[3], commTable_->_offsets[4], bw_, width_, myID );
    };
 
 //    void execute3() {execute_spi(&spiHdl_,commTable_->_putTask.size());};
@@ -164,6 +165,7 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
    
    int bw_;
    spi_hdl_t spiHdl_;
+   uint32_t myID;
 };
 
 #else // not SPI
