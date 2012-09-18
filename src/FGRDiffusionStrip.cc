@@ -130,15 +130,19 @@ FGRDiffusionStrip::FGRDiffusionStrip(const FGRDiffusionParms& parms,
    assert(nz%4 == 0);
    dVmBlock_.resize(nx,ny,nz + (nz%4==0 ? 0:4-(nz%4)));
 
-   fprintf(stderr,"%s:%06d: Maing compute strips\n",__FILE__,__LINE__);
+#define STRIP_DIFFUSION_DEBUG 1
+
+   if(STRIP_DIFFUSION_DEBUG)
+     fprintf(stderr,"%s:%06d: Maing compute strips\n",__FILE__,__LINE__);
    /* Make compute strips */ {
      int nt = threadInfo.nThreads();
      int *board = new int[nx*ny];
      int ctot = 0,c0,c1;
      int is0,is1;
 
-     fprintf(stderr,"%s:%06d: nt = %d, nx = %d, ny = %d, nx*ny = %d\n",
-	     __FILE__,__LINE__,nt,nx,ny,nx*ny);
+     if(STRIP_DIFFUSION_DEBUG)
+       fprintf(stderr,"%s:%06d: nt = %d, nx = %d, ny = %d, nx*ny = %d\n",
+	       __FILE__,__LINE__,nt,nx,ny,nx*ny);
 
      strip_begin.resize(nt);
      strip_end.resize(nt);
@@ -164,18 +168,21 @@ FGRDiffusionStrip::FGRDiffusionStrip(const FGRDiffusionParms& parms,
      for(int i = 0; i<nx*ny; i++)
        if(board[i] == 1) ctot = ctot + 1;
 
-     fprintf(stderr,"    : ");
-     for(int j = 0; j<ny; j++)
-       fprintf(stderr,"%2d",j);
-     fprintf(stderr,"\n");
-     for(int i = 0; i<nx; i++) {
-       fprintf(stderr,"%4d: ",i);
+     if(STRIP_DIFFUSION_DEBUG) {
+       fprintf(stderr,"    : ");
        for(int j = 0; j<ny; j++)
-	 fprintf(stderr,"%2d",board[j+i*ny]);
+	 fprintf(stderr,"%2d",j);
        fprintf(stderr,"\n");
+       for(int i = 0; i<nx; i++) {
+	 fprintf(stderr,"%4d: ",i);
+	 for(int j = 0; j<ny; j++)
+	   fprintf(stderr,"%2d",board[j+i*ny]);
+	 fprintf(stderr,"\n");
+       }
      }
 
-     fprintf(stderr,"%s:%06d: Board initialized, ctot = %d\n",__FILE__,__LINE__,ctot);
+     if(STRIP_DIFFUSION_DEBUG)
+       fprintf(stderr,"%s:%06d: Board initialized, ctot = %d\n",__FILE__,__LINE__,ctot);
 
      for(int tid = 0; tid<nt; tid++) {
        
@@ -202,8 +209,9 @@ FGRDiffusionStrip::FGRDiffusionStrip(const FGRDiffusionParms& parms,
 	   }
 	 }
 
-	 fprintf(stderr,"%s:%06d: tid = %2d, is0=%d, is1=%d, c0=%d, c1=%d\n",__FILE__,__LINE__,
-		 tid,is0,is1,c0,c1);
+	 if(STRIP_DIFFUSION_DEBUG)
+	   fprintf(stderr,"%s:%06d: tid = %2d, is0=%d, is1=%d, c0=%d, c1=%d\n",__FILE__,__LINE__,
+		   tid,is0,is1,c0,c1);
 	 /* Build list of chunks (conscutive non-empty columns) */ {
 	   int empty = 0;
 	   strip_begin[tid].push_back(c0);
@@ -217,30 +225,33 @@ FGRDiffusionStrip::FGRDiffusionStrip(const FGRDiffusionParms& parms,
 	       if(board[i] == 0) {
 		 strip_end[tid].push_back(i-1);
 		 empty = 1;
-		 fprintf(stderr,"    Strip %d: begin=%d  end=%d\n",
-			(int) strip_end[tid].size(),
-
-			 strip_begin[tid][strip_end[tid].size()-1],
-			 strip_end[tid][strip_end[tid].size()-1]);
+		 if(STRIP_DIFFUSION_DEBUG)
+		   fprintf(stderr,"    Strip %d: begin=%d  end=%d\n",
+			   (int) strip_end[tid].size(),
+			   
+			   strip_begin[tid][strip_end[tid].size()-1],
+			   strip_end[tid][strip_end[tid].size()-1]);
 	       }
 	     }
 	   }
 	   if(strip_end[tid].size() < strip_begin[tid].size()) {
 	     strip_end[tid].push_back(c1);
-	     fprintf(stderr,"    Strip %d: begin=%d  end=%d\n",
-		     (int) strip_end[tid].size(),strip_begin[tid][strip_end[tid].size()-1],c1);
+	     if(STRIP_DIFFUSION_DEBUG)
+	       fprintf(stderr,"    Strip %d: begin=%d  end=%d\n",
+		       (int) strip_end[tid].size(),strip_begin[tid][strip_end[tid].size()-1],c1);
 	   }
 	 }
        }
-       fprintf(stderr,"Strip construction completed.\n\n");
+       if(STRIP_DIFFUSION_DEBUG)
+	 fprintf(stderr,"Strip construction completed.\n\n");
      }
      /* Test strip distribution for overlap and completeness */ {
-       fprintf(stderr,"nx = %d,  ny = %d, nx*ny = %d\n",nx,ny,nx*ny);
+       if(STRIP_DIFFUSION_DEBUG) fprintf(stderr,"nx = %d,  ny = %d, nx*ny = %d\n",nx,ny,nx*ny);
        int *tag = new int[nx*ny];
 
        for(int i = 0; i<nx*ny; i++) tag[i] = 0;
-       fprintf(stderr,"tag allocated and initialized. nx=%d ny=%d nx*ny=%d\n",nx,ny,nx*ny);
-
+       if(STRIP_DIFFUSION_DEBUG)
+	 fprintf(stderr,"tag allocated and initialized. nx=%d ny=%d nx*ny=%d\n",nx,ny,nx*ny);
 
        for(int tid = 0; tid<nt; tid++) {
 	 for(int is = 0; is<(int) strip_begin[tid].size(); is++) {
