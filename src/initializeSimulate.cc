@@ -70,20 +70,14 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "snapshotRate", sim.snapshotRate_, "100");
    objectGet(obj, "checkpointRate", sim.checkpointRate_, "-1");
    objectGet(obj, "nFiles", sim.nFiles_, "0");
-   objectGet(obj, "parallelDiffusionReaction", sim.parallelDiffusionReaction_, "0");
-   unsigned profileAllCounters_;
-   objectGet(obj, "profileAllCounters", profileAllCounters_, "0");
-   if (profileAllCounters_ == 1)
-      profileSetVerbosity(true);
-   else
-      profileSetVerbosity(false);
-   unsigned nDiffusionCores;
-   vector<unsigned> diffusionCores;
-   objectGet(obj, "nDiffusionCores", nDiffusionCores, "1");
-   objectGet(obj, "diffusionThreads", diffusionCores);
-   sim.printFile_=NULL; 
+   {
+      int tmp; objectGet(obj, "profileAllCounters", tmp, "0");
+      if (tmp == 1)
+         profileSetVerbosity(true);
+      else
+         profileSetVerbosity(false);
+   }
 
-   
    
    timestampBarrier("initializing anatomy", MPI_COMM_WORLD);
    string nameTmp;
@@ -103,11 +97,38 @@ void initializeSimulate(const string& name, Simulate& sim)
    timestampBarrier("assigning cells to tasks", MPI_COMM_WORLD);
    string decompositionName;
    objectGet(obj, "decomposition", decompositionName, "decomposition");
-   int tmp = assignCellsToTasks(sim, decompositionName, MPI_COMM_WORLD);
-   if (tmp>0)
-     nDiffusionCores = tmp;
+   int suggestedDiffusionCores = assignCellsToTasks(sim, decompositionName, MPI_COMM_WORLD);
 
-   if (sim.parallelDiffusionReaction_ == 1)
+   // read either the loopType or parallelDiffusionReaction
+   if (object_testforkeyword(obj, "loopType"))
+   {
+      string tmp; objectGet(obj, "loopType", tmp, "omp");
+      if (tmp == "omp")
+         sim.loopType_ = Simulate::omp;
+      else if (tmp == "pdr")
+         sim.loopType_ = Simulate::pdr;
+      else if (tmp == "allSkate")
+         sim.loopType_ = Simulate::allSkate;
+      else
+         assert(false);
+   }
+   else
+   {
+      // backward compatibility
+      int tmp; objectGet(obj, "parallelDiffusionReaction", tmp, "0");
+      if (tmp == 1)
+         sim.loopType_ = Simulate::pdr;
+      else
+         sim.loopType_ = Simulate::omp;
+   }
+   
+   unsigned nDiffusionCores;
+   vector<unsigned> diffusionCores;
+   objectGet(obj, "nDiffusionCores", nDiffusionCores, "1");
+   objectGet(obj, "diffusionThreads", diffusionCores);
+   if (suggestedDiffusionCores > 0)
+      nDiffusionCores = suggestedDiffusionCores;
+   if (sim.loopType_ == Simulate::pdr)
    {
       // diffusionThreads overrides nDiffusionCores, but when no thread
       // list is specified, we use 1 core.
@@ -121,46 +142,56 @@ void initializeSimulate(const string& name, Simulate& sim)
       if (getRank(0) == 0)
          cout << "Reaction Threads: " << sim.reactionThreads_ << endl;
    }
+   if (sim.loopType_ == Simulate::allSkate)
+   {
+      ThreadServer& threadServer = ThreadServer::getInstance();
+      sim.reactionThreads_ = threadServer.getThreadTeam(vector<unsigned>());
+      sim.diffusionThreads_ = sim.reactionThreads_;
+      if (getRank(0) == 0)
+      {
+         cout << "Reaction Threads: " << sim.reactionThreads_ << endl;
+         cout << "Diffusion Threads: " << sim.diffusionThreads_ << endl;
+      }
+   }
+   
    
    timestampBarrier("building reaction object", MPI_COMM_WORLD);
    objectGet(obj, "reaction", nameTmp, "reaction");
    sim.reaction_ = reactionFactory(nameTmp, sim.anatomy_, sim.reactionThreads_);
 
    sim.printIndex_ = -1;
-   
    // -2 -> print index 0 rank 0
    if (sim.printGid_ == -2 && myRank == 0)
-     {
-       sim.printGid_ = sim.anatomy_.gid(0);
-     }
+   {
+      sim.printGid_ = sim.anatomy_.gid(0);
+   }
    // -1 -> global min gid
    if ( sim.printGid_ == -1 )    
-     sim.printGid_ = findGlobalMinGid(sim.anatomy_);
+      sim.printGid_ = findGlobalMinGid(sim.anatomy_);
    
    for (unsigned ii=0; ii<sim.anatomy_.nLocal(); ii++)
-     if (sim.anatomy_.gid(ii) == sim.printGid_)
-       {
+      if (sim.anatomy_.gid(ii) == sim.printGid_)
+      {
          sim.printIndex_ = ii;
          break;
-       }
+      }
    
+   sim.printFile_=NULL; 
    if (sim.printIndex_ >=0)
-     {
-       sim.printFile_=fopen("data","a"); 
-       printf(                "#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
-       fprintf(sim.printFile_,"#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
-     }
-
-
-
-
+   {
+      sim.printFile_=fopen("data","a"); 
+      printf(                "#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
+      fprintf(sim.printFile_,"#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)\n");
+   }
+   
+   
    getRemoteCells(sim, decompositionName, MPI_COMM_WORLD);
 
    timestampBarrier("building diffusion object", MPI_COMM_WORLD);
    objectGet(obj, "diffusion", nameTmp, "diffusion");
    sim.diffusion_ = diffusionFactory(nameTmp, sim.anatomy_, sim.diffusionThreads_,
                                      sim.reactionThreads_,
-                                     sim.parallelDiffusionReaction_);
+                                     sim.loopType_);
    
    timestampBarrier("building stimulus object", MPI_COMM_WORLD);
    vector<string> names;

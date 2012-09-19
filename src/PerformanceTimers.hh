@@ -9,10 +9,14 @@ typedef unsigned TimerHandle;
 namespace PerformanceTimers
 {
    extern TimerHandle loopIOTimer;
+   extern TimerHandle simulationLoopTimer;
    extern TimerHandle sensorTimer;
    extern TimerHandle sensorEvalTimer;
    extern TimerHandle sensorPrintTimer;
    extern TimerHandle haloTimer;
+   extern TimerHandle haloLaunchTimer;
+   extern TimerHandle haloWaitTimer;
+   extern TimerHandle haloMove2BufTimer;
    extern TimerHandle diffusionCalcTimer;
    extern TimerHandle stimulusTimer;
    extern TimerHandle reactionTimer;
@@ -29,9 +33,6 @@ namespace PerformanceTimers
    extern TimerHandle diffusionImbalanceTimer;
    extern TimerHandle imbalanceTimer;
    extern TimerHandle dummyTimer;
-   extern TimerHandle parallelDiffReacTimer;
-   extern TimerHandle haloTimerExecute;
-   extern TimerHandle haloTimerComplete;
    extern TimerHandle diffusionL2BarrierHalo1Timer;
    extern TimerHandle diffusionL2BarrierHalo2Timer;
    extern TimerHandle diffusiondVmRCopyTimer;
@@ -44,7 +45,14 @@ namespace PerformanceTimers
    extern TimerHandle FGR_AlignCopyTimer;
    extern TimerHandle FGR_StencilTimer;
    extern TimerHandle FGR_Matrix2ArrayTimer;
-   extern TimerHandle haloMove2BufTimer;
+   extern TimerHandle initializeDVmDTimer;
+   extern TimerHandle rangeCheckTimer;
+   extern TimerHandle barrier1Timer;
+   extern TimerHandle barrier2Timer;
+   extern TimerHandle barrier3Timer;
+   extern TimerHandle barrier4Timer;
+   extern TimerHandle barrier5Timer;
+   extern TimerHandle printDataTimer;
 };
 
 /** Use the startTimer and stopTimer macros for timers that are inside

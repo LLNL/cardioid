@@ -64,6 +64,8 @@ class Simulate
 {
  public:
 
+   enum LoopType {omp, pdr, allSkate};
+   
    void checkRanges(int begin, int end,
                     const VectorDouble32& dVmReaction,
                     const VectorDouble32& dVmDiffusion);
@@ -76,6 +78,7 @@ class Simulate
    void bufferReactionData();
    
    CheckRange checkRange_;
+   LoopType loopType_;
    volatile int loop_; // volatile (read + modified in threaded section)
    int maxLoop_;
    int printRate_;
@@ -87,7 +90,6 @@ class Simulate
    std::set<Long64> snapshotCellList_;
    int checkpointRate_;
    int nFiles_;
-   int parallelDiffusionReaction_;
 
    ThreadTeam diffusionThreads_;
    ThreadTeam reactionThreads_;

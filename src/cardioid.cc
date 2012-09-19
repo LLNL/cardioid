@@ -94,8 +94,20 @@ int main(int argc, char** argv)
 #endif 
    timestampBarrier("Starting Simulation Loop", MPI_COMM_WORLD);
    profileStart_HW("Loop");
-   if ( !sim.parallelDiffusionReaction_) simulationLoop(sim);  
-   else  simulationLoopParallelDiffusionReaction(sim);
+   switch (sim.loopType_)
+   {
+     case Simulate::omp:
+      simulationLoop(sim);
+      break;
+     case Simulate::pdr:
+      simulationLoopParallelDiffusionReaction(sim);
+      break;
+     case Simulate::allSkate:
+      simulationLoopAllSkate(sim);
+      break;
+     default:
+      assert(false);
+   }
    profileStop_HW("Loop");
    timestampBarrier("Finished Simulation Loop", MPI_COMM_WORLD);
 #ifdef HPM

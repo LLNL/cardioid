@@ -5,5 +5,6 @@ class Simulate;
 
 void simulationLoop(Simulate& sim);
 void simulationLoopParallelDiffusionReaction(Simulate& sim);
+void simulationLoopAllSkate(Simulate& sim);
 
 #endif

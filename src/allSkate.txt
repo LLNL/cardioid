@@ -1,0 +1,113 @@
+Start Single threaded
+
+
+initialize shared barrier pointer
+simulationProlog
+   - initialize Vm
+   - load checkpoint
+construct Halo Exchange object
+initial call to loopIO
+
+construct offset arrays
+
+
+start parallel section
+
+store thread-wise offsets
+
+initialize barrier handles
+fill halo buffer
+omp barrier
+
+Enter loop:
+
+imbalance catcher
+
+Halo start (tid 0 only)
+
+NonGate
+
+Halo wait (tid 0 only)
+
+thread barrier 1
+  - can't copy remote voltage until halo is done
+  - probably can do better with this barrier
+
+Copy local voltages to diffusion matrix
+Copy remote voltages to diffusion matrix 
+
+Gate
+
+zero dVmD
+
+thread barrier 2
+   - can't start stimulus until dVmD has been zeroed
+
+stimulus (tid 0 only at present)
+
+thread barrier 3
+  - can't start stencil until stim is done
+
+DiffusionStencil
+
+thread barrier 4
+  - can't integrate until stencil is done
+
+integrate
+
+check ranges
+
+increment loop counter
+    - tid 0
+
+write data file
+    - tid 0
+sensors
+    - barrier under conditional?
+    - thread safety?
+
+checkpoint
+    - tid 0
+
+
+
+fill halo buffer
+
+thread barrier 5
+   - can't go on to halo exchange until all thread have filled buffers
+   - can't go to next iteration until task 0 has incremented loop counter
+
+
+End of loop
+End of parallel section
+
+
+
+Offset arrays:
+--------------
+
+
+
+
+
+
+Notes:
+------
+
+1.  The order of the Stimulus and the stencil calc is determined by the
+behavior of the stencil function.  In the pdr loop we have arranged for
+the stencil to increment the values passed in.  We could save an
+initialization step if we had the stencil do a set instead.  That would
+mean we need to to the stimulus afterward
+
+2.  The filling of the halo buffers and the updating of the local
+voltages in the diffusion matrix could be shifted into the integrator.
+If so, we need to either call the integrator at the very top of the
+simulation loop, or perform the first buffer fill and matrix copy before
+entering the simulation loop.  At present there is already a buffer fill
+before loop entry as this allows us to fill the halo at the end of the
+loop and use the end of loop barrier for multiple purposes.
+
+3.  There is no reason that the copy of local and remote voltage data
+need to be adjacent.  The copy of the local data can start any time
+after the integration is complete.

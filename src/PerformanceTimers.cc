@@ -47,19 +47,23 @@ namespace PerformanceTimers
       uint64_t total[8];
    };
    TimerHandle loopIOTimer;
+   TimerHandle simulationLoopTimer;
    TimerHandle sensorTimer;
    TimerHandle sensorEvalTimer;
    TimerHandle sensorPrintTimer;
    TimerHandle haloTimer;
+   TimerHandle haloLaunchTimer;
+   TimerHandle haloWaitTimer;
+   TimerHandle haloMove2BufTimer;
    TimerHandle diffusionCalcTimer;
    TimerHandle stimulusTimer;
    TimerHandle reactionTimer;
    TimerHandle reactionMiscTimer;
-   TimerHandle integratorTimer;
    TimerHandle nonGateTimer;
    TimerHandle GateNonGateTimer;
    TimerHandle gateTimer;
    TimerHandle diffusionLoopTimer;
+   TimerHandle integratorTimer;
    TimerHandle reactionLoopTimer;
    TimerHandle reactionWaitTimer;
    TimerHandle diffusionWaitTimer;
@@ -67,9 +71,6 @@ namespace PerformanceTimers
    TimerHandle diffusionImbalanceTimer;
    TimerHandle imbalanceTimer;
    TimerHandle dummyTimer;
-   TimerHandle parallelDiffReacTimer;
-   TimerHandle haloTimerExecute;
-   TimerHandle haloTimerComplete;
    TimerHandle diffusionL2BarrierHalo1Timer;
    TimerHandle diffusionL2BarrierHalo2Timer;
    TimerHandle diffusiondVmRCopyTimer;
@@ -82,7 +83,14 @@ namespace PerformanceTimers
    TimerHandle FGR_AlignCopyTimer;
    TimerHandle FGR_StencilTimer;
    TimerHandle FGR_Matrix2ArrayTimer;
-   TimerHandle haloMove2BufTimer;
+   TimerHandle initializeDVmDTimer;
+   TimerHandle rangeCheckTimer;
+   TimerHandle barrier1Timer;
+   TimerHandle barrier2Timer;
+   TimerHandle barrier3Timer;
+   TimerHandle barrier4Timer;
+   TimerHandle barrier5Timer;
+   TimerHandle printDataTimer;
    
    vector<TimerStruct> timers_;
    typedef map<string, TimerHandle> HandleMap;
@@ -98,10 +106,14 @@ void  profileInit()
 {
    allCounters_ = true;
    loopIOTimer = profileGetHandle("LoopIO");
+   simulationLoopTimer = profileGetHandle("SimulationLoop");;
    sensorTimer = profileGetHandle("Sensors");
-   sensorEvalTimer = profileGetHandle("EvalSensors");
-   sensorPrintTimer = profileGetHandle("PrintSensors");
-   haloTimer = profileGetHandle("Halo Exchange");
+   sensorEvalTimer = profileGetHandle("SensorsEval");
+   sensorPrintTimer = profileGetHandle("SensorsPrint");
+   haloTimer = profileGetHandle("HaloExchange");
+   haloLaunchTimer = profileGetHandle("HaloExchangeLaunch");
+   haloWaitTimer = profileGetHandle("HaloExchangeWait");
+   haloMove2BufTimer = profileGetHandle("HaloExchMove2Buf");
    diffusionCalcTimer= profileGetHandle("DiffusionCalc");
    stimulusTimer = profileGetHandle("Stimulus");
    reactionTimer= profileGetHandle("Reaction");
@@ -119,9 +131,6 @@ void  profileInit()
    diffusionImbalanceTimer = profileGetHandle("DiffusionImbalance");
    imbalanceTimer = profileGetHandle("Imbalance");
    dummyTimer = profileGetHandle("Dummy");
-   parallelDiffReacTimer = profileGetHandle("parallelDiffReac");
-   haloTimerExecute = profileGetHandle("HaloExchangeExecute");
-   haloTimerComplete = profileGetHandle("HaloExchangeComplete");
    diffusionL2BarrierHalo1Timer = profileGetHandle("DiffL2BarrHalo1");
    diffusionL2BarrierHalo2Timer = profileGetHandle("DiffL2BarrHalo2");
    diffusiondVmRCopyTimer = profileGetHandle("DiffdVmReactionCopy");
@@ -134,7 +143,14 @@ void  profileInit()
    FGR_AlignCopyTimer = profileGetHandle("FGR_AlignCopy");
    FGR_StencilTimer = profileGetHandle("FGR_Stencil");
    FGR_Matrix2ArrayTimer = profileGetHandle("FGR_Matrix2Array");
-   haloMove2BufTimer = profileGetHandle("HaloExchMove2Buf");
+   initializeDVmDTimer = profileGetHandle("zerodVmDArray");
+   rangeCheckTimer = profileGetHandle("RangeCheck");
+   barrier1Timer = profileGetHandle("Barrier1");
+   barrier2Timer = profileGetHandle("Barrier2");
+   barrier3Timer = profileGetHandle("Barrier3");
+   barrier4Timer = profileGetHandle("Barrier4");
+   barrier5Timer = profileGetHandle("Barrier5");
+   printDataTimer = profileGetHandle("PrintData");
    machineSpecficInit(); 
 }
 void profileStart(const TimerHandle& handle)
