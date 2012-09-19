@@ -6,7 +6,7 @@
 
 #define sigm(x)   ((x)/(1+(x)))
 //#define logSeries(x)    (log(1+(x)) )
-#define fastLog(x) (log((x)))
+//#define fastLog(x) (log((x)))
 //#define fastLog(x) (x)
 //#define logSeries(x) ((x)*(1.0+(x)*(-0.5+(x)/3.0)))
 
@@ -34,7 +34,9 @@ inline double logSeries(double x) {
 
 inline vector4double logSeries4(vector4double x4) 
 {
-  // vector4double y4 = {logSeries(x get [0]), logSeries(x get [1]), logSeries(x get [2]), logSeries(x get [3]) };
+  //vector4double y4 = {logSeries(x4 get [0]), logSeries(x4 get [1]), logSeries(x4 get [2]), logSeries(x4 get [3]) };
+  //vector4double y4 = {log( 1.0 + (x4 get [0])), log( 1.0 +(x4 get [1])), log( 1.0 +(x4 get [2])), log( 1.0 +(x4 get [3]))};
+  //return y4;
   
   vector4double one = vec_splats(1.0);
   vector4double onehalf = vec_splats(0.5);
@@ -241,9 +243,6 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 #pragma disjoint(*XsGate, *jLGate) too much information apparently ... slows code down */
 //-----------------------------------------
 
-  //vdt v_1     =  vec_splats(1.0);
-  //vdt v_15    =  vec_splats(1.5);
-  //vdt v_2     =  vec_splats(2.0);
   vdt v_5_c3  =  vec_splats(0.5*SP[14]);
   vdt v_dt_c9 =  vec_mul(vec_splats(dt), vec_splats(SP[12]));
 
@@ -257,15 +256,12 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 
    vdt v_ONE = vec_splats(1.0);
 
-   //vdt v_v = vec_ld(0, &VM[ii]); 
-   vdt v_v ; //= vec_ld(0, &VM[ii]); 
+   vdt v_v ;  
    vdt v_itmp0, v_itmp5, v_itmp6 ;
    vdt v_dVR;
    vdt CSX, CSX0, CSX1, CSX2, CSX3;
-   //for (int ii=nCells-4;ii>=0;ii-=4) // ... this is faster, but try it later
    for (int ii=0;ii<nCells;ii+=4) 
   {
-//   double fv[8]; 
     int t3 = cellTypeVector[ii+3];
     if (cellType != t3)
     {
@@ -386,9 +382,8 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
    v_itmp5 = vec_madd(vec_splats(SP[7]), v_itmp5,      vec_mul(vec_splats(SP[8]), v_sigm2));
    v_itmp6 = vec_mul(vec_splats(SP[9]),  vec_sub(v_states_Ca_ss, v_states_Ca_i));
 
-/*
-    _Ca_i[ii]   += (dt*c9)*(sigm3[ii]*(itmp4[ii]-itmp0[ii]+itmp6[ii]*c15-itmp5[ii]*c16));
-*/
+//    _Ca_i[ii]   += (dt*c9)*(sigm3[ii]*(itmp4[ii]-itmp0[ii]+itmp6[ii]*c15-itmp5[ii]*c16));
+
    v_tmp = vec_msub(v_itmp6, vec_splats(SP[10]), vec_mul(v_itmp5, vec_splats(SP[11])));
    v_tmp = vec_sub(v_itmp4, vec_sub(v_itmp0, v_tmp));
    v_tmp = vec_mul(vec_mul(v_tmp, v_sigm3), v_dt_c9);
@@ -463,6 +458,7 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 
        //v_tmp = fastLog4(v_states_Na_i);
        v_tmp = v_tmpXX;
+
 
 // double dV1 = Vm -c3*log(states[Na_i])-c4;
 
@@ -560,6 +556,7 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
    vdt v_itmp3 = vec_madd(v_tmp0, v_dV0, v_itmpA);
        v_itmp3 = vec_madd(v_tmp2, v_dV2, v_itmp3);
 
+
 // double iNaL = g_NaL*CUBE(mGate[ii])*jLGate[ii]*dV1[ii];
 
    vdt v_iNaL = vec_mul(v_g_NaL, c_mgate);
@@ -574,21 +571,23 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
    v_tmp_dVK_i = vec_add(v_tmp_dVK_i, v_tmp);
 
 
-// states[Na_i]    += (dt*c9)*(iNaL[ii]*c22+itmp2[ii]+2.0*itmp0[ii]); 
+// states[Na_i]    += (dt*c9)*( iNaL[ii]*c22+itmp2[ii]+2.0*itmp0[ii]); 
+// states[Na_i]    += (dt*c9)*(iNaL[ii]+itmp2[ii]+2.0*itmp0[ii]);    //JNG
 
-   v_tmp = vec_madd(v_iNaL, vec_splats(SP[22]), v_itmp2);
+   //v_tmp = vec_madd(v_iNaL, vec_splats(SP[22]), v_itmp2);
+   v_tmp = vec_add(v_iNaL, v_itmp2);
    v_tmp = vec_madd(vec_splats(2.0),    v_itmp0,         v_tmp);
    v_tmp = vec_mul(v_tmp,   vec_mul(v_dt,   vec_splats(SP[12])));
 
    v_states_Na_i = vec_add(v_states_Na_i, v_tmp);
    vec_st(v_states_Na_i, 0, &_Na_i[ii]); 
 
-//  dVR[ii] +=  iNaL[ii] - itmp2[ii]-itmp3[ii];
+//  dVR[ii] -=  iNaL[ii] + itmp2[ii]+itmp3[ii];
 
-   v_tmp = vec_sub(v_iNaL, v_itmp2);
-   v_tmp = vec_sub(v_tmp,  v_itmp3);
+   v_tmp = vec_add(v_iNaL, v_itmp2);
+   v_tmp = vec_add(v_tmp,  v_itmp3);
 
-   v_dVR = vec_add(v_dVR, v_tmp);
+   v_dVR = vec_sub(v_dVR, v_tmp);
 
 
 

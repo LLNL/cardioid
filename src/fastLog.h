@@ -38,6 +38,9 @@ static inline double fastLog(double x)
 
 static inline vector4double fastLog4(vector4double x4)
 {
+  //vector4double y4 = {log(x4 get [0]), log(x4 get [1]), log(x4 get [2]), log(x4 get [3]) };
+  //return y4; 
+
   int n0,n1,n2,n3;
   vector4double z, z2, m;
 
@@ -103,6 +106,11 @@ static inline vector4double fastLog4(vector4double x4)
 //return fastLog4(x4);
 static inline vector4double fastLog8(vector4double x4, vector4double y4, vector4double *ret1)
 {
+  //vector4double fx= {log(x4 get [0]), log(x4 get [1]), log(x4 get [2]), log(x4 get [3]) };
+  //vector4double fy= {log(y4 get [0]), log(y4 get [1]), log(y4 get [2]), log(y4 get [3]) };
+  //*ret1 = fy; 
+  //return fx; 
+
   int n0,n1,n2,n3;
   vector4double zx, z2x, nnx;
   vector4double zy, z2y, nny;
