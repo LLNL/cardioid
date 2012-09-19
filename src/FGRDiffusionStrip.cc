@@ -130,10 +130,10 @@ FGRDiffusionStrip::FGRDiffusionStrip(const FGRDiffusionParms& parms,
    assert(nz%4 == 0);
    dVmBlock_.resize(nx,ny,nz + (nz%4==0 ? 0:4-(nz%4)));
 
-#define STRIP_DIFFUSION_DEBUG 1
+#define STRIP_DIFFUSION_DEBUG 0
 
    if(STRIP_DIFFUSION_DEBUG)
-     fprintf(stderr,"%s:%06d: Maing compute strips\n",__FILE__,__LINE__);
+     fprintf(stderr,"%s:%06d: Making compute strips\n",__FILE__,__LINE__);
    /* Make compute strips */ {
      int nt = threadInfo.nThreads();
      int *board = new int[nx*ny];
@@ -141,7 +141,7 @@ FGRDiffusionStrip::FGRDiffusionStrip(const FGRDiffusionParms& parms,
      int is0,is1;
 
      if(STRIP_DIFFUSION_DEBUG)
-       fprintf(stderr,"%s:%06d: nt = %d, nx = %d, ny = %d, nx*ny = %d\n",
+       fprintf(stderr,"%s:%d: nt = %d, nx = %d, ny = %d, nx*ny = %d\n",
 	       __FILE__,__LINE__,nt,nx,ny,nx*ny);
 
      strip_begin.resize(nt);
@@ -152,7 +152,7 @@ FGRDiffusionStrip::FGRDiffusionStrip(const FGRDiffusionParms& parms,
 
        for(int i = 0; i<nx*ny; i++) board[i] = 0;
 
-       for (unsigned ii=0; ii<anatomy.size(); ++ii) {
+       for (unsigned ii=0; ii<anatomy.nLocal(); ++ii) {
 	 Tuple globalTuple = anatomy.globalTuple(ii);
 	 Tuple ll = localGrid_.localTuple(globalTuple);
 
@@ -162,6 +162,14 @@ FGRDiffusionStrip::FGRDiffusionStrip(const FGRDiffusionParms& parms,
 		   __FILE__,__LINE__,(int) ll.x(),(int) ll.y(),nx,ny);
 	   exit(1);
 	 }
+
+	 if(ll.x() < 1 || ll.x() >= nx-1 ||
+	    ll.y() < 1 || ll.y() >= ny-1) {
+	   fprintf(stderr,"%s:%d: Actually, I expected all local cells to be in the interior of [0,nx-1]x[0,ny-1]  x=%d, y=%d, nx=%d, ny=%d\n",
+		   __FILE__,__LINE__,(int) ll.x(),(int) ll.y(),nx,ny);
+	   exit(1);
+	 }
+
 	 board[ll.y() + ny*ll.x()] = 1;
        }
      }
@@ -182,7 +190,7 @@ FGRDiffusionStrip::FGRDiffusionStrip(const FGRDiffusionParms& parms,
      }
 
      if(STRIP_DIFFUSION_DEBUG)
-       fprintf(stderr,"%s:%06d: Board initialized, ctot = %d\n",__FILE__,__LINE__,ctot);
+       fprintf(stderr,"%s:%d: Board initialized, ctot = %d\n",__FILE__,__LINE__,ctot);
 
      for(int tid = 0; tid<nt; tid++) {
        
@@ -210,7 +218,7 @@ FGRDiffusionStrip::FGRDiffusionStrip(const FGRDiffusionParms& parms,
 	 }
 
 	 if(STRIP_DIFFUSION_DEBUG)
-	   fprintf(stderr,"%s:%06d: tid = %2d, is0=%d, is1=%d, c0=%d, c1=%d\n",__FILE__,__LINE__,
+	   fprintf(stderr,"%s:%d: tid = %2d, is0=%d, is1=%d, c0=%d, c1=%d\n",__FILE__,__LINE__,
 		   tid,is0,is1,c0,c1);
 	 /* Build list of chunks (conscutive non-empty columns) */ {
 	   int empty = 0;
