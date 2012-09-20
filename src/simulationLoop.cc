@@ -657,6 +657,7 @@ void simulationLoopAllSkate(Simulate& sim)
       for (int ii = fsboBegin; ii<fsboEnd; ++ii)
          haloSendBuf[ii] = VmArray[haloSendMap[ii]];
       stopTimer(haloMove2BufTimer);
+      sim.diffusion_->updateLocalVoltage(&VmArray[0]);
 
      #pragma omp barrier
       
@@ -691,9 +692,7 @@ void simulationLoopAllSkate(Simulate& sim)
          
          threadBarrier(barrier1Timer, barrierPtr, &barrierHandle, nThreads);
 
-         sim.diffusion_->updateLocalVoltage(&VmArray[0]);
          sim.diffusion_->updateRemoteVoltage(voltageExchange.getRecvBuf());
-
 
          startTimer(initializeDVmDTimer);
          for (int ii=zdoBegin; ii<zdoEnd; ++ii)
