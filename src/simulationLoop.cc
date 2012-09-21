@@ -54,42 +54,6 @@ namespace
    }
 }
 
-      
-
-namespace
-{
-   void mkSendBufInfo(vector<unsigned>& sendBufOffset,
-                      vector<pair<unsigned, unsigned> >& sendBufIndirect,
-                      const HaloExchange<double, AlignedAllocator<double> >& halo,
-                      const vector<int>& integratorOffset,
-                      const ThreadTeam& threadInfo)
-   {
-      int nThreads = threadInfo.nThreads();
-      sendBufOffset.resize(nThreads+1, 0);
-      const vector<int>& sendMap = halo.getSendMap();
-      sendBufIndirect.reserve(sendMap.size());
-      
-      for (unsigned ii=0; ii<sendMap.size(); ++ii)
-         sendBufIndirect.push_back(make_pair(sendMap[ii], ii));
-      sort(sendBufIndirect.begin(), sendBufIndirect.end());
-      
-      for (unsigned ii=0; ii<nThreads; ++ii)
-      {
-         unsigned target = integratorOffset[ii+1];
-         for (unsigned jj=sendBufOffset[ii]; jj<sendBufIndirect.size(); ++jj)
-         {
-            if (sendBufIndirect[jj].first >= target)
-            {
-               sendBufOffset[ii+1] = jj;
-               break;
-            }
-         }
-         if (sendBufOffset[ii+1] == 0) // didn't find an end point
-            sendBufOffset[ii+1] = sendBufIndirect.size();
-      }
-   }
-}
-
 
 void simulationProlog(Simulate& sim)
 {
@@ -305,8 +269,9 @@ struct SimLoopData
 #endif
 
       int nLocal = sim.anatomy_.nLocal();
+      const vector<int>& haloSendMap = voltageExchange.getSendMap();
       mkOffsets(integratorOffset, sim.anatomy_.nLocal(), sim.reactionThreads_);
-      mkSendBufInfo(sendBufOffset, sendBufIndirect, voltageExchange, integratorOffset, sim.reactionThreads_);
+      mkOffsets(fillSendBufOffset, haloSendMap.size(), sim.reactionThreads_);
    }
 
    ~SimLoopData()
@@ -329,7 +294,7 @@ struct SimLoopData
 
    vector<int> integratorOffset;
    vector<pair<unsigned, unsigned> > sendBufIndirect;
-   vector<unsigned> sendBufOffset;
+   vector<int> fillSendBufOffset;
    HaloExchange<double, AlignedAllocator<double> > voltageExchange;
 };
 
@@ -536,7 +501,6 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
             
          sim.bufferReactionData(begin, end);
       }
-//    sim.diffusion_->updateLocalVoltage(&sim.VmArray_[0]);
          
       L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier,
                                  &reactionWaitOnNonGateHandle,
@@ -546,15 +510,12 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
          
       startTimer(haloMove2BufTimer);
       {
-         unsigned begin = loopData.sendBufOffset[tid];
-         unsigned end   = loopData.sendBufOffset[tid+1];
+	const vector<int>& haloSendMap = loopData.voltageExchange.getSendMap();
+         unsigned begin = loopData.fillSendBufOffset[tid];
+         unsigned end   = loopData.fillSendBufOffset[tid+1];
          double* sendBuf = loopData.voltageExchange.getSendBuf();
          for (unsigned ii=begin; ii<end; ++ii)
-         {
-            unsigned vIndex = loopData.sendBufIndirect[ii].first;
-            unsigned sIndex = loopData.sendBufIndirect[ii].second;
-            sendBuf[sIndex] = VmArray[vIndex];
-         }
+            sendBuf[ii] = VmArray[haloSendMap[ii]];
       }
       stopTimer(haloMove2BufTimer);
       
