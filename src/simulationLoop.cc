@@ -48,6 +48,7 @@ namespace
 {
    void threadBarrier(TimerHandle tHandle, L2_Barrier_t* bPtr, L2_BarrierHandle_t* bHandlePtr, int nThreads)
    {
+     //     printf("Hello %d\n",omp_get_thread_num()); fflush(stdout);
       startTimer(tHandle);
       L2_BarrierWithSync_Barrier(bPtr, bHandlePtr, nThreads);
       stopTimer(tHandle);
@@ -230,6 +231,7 @@ struct SimLoopData
       reactionBarrier = L2_BarrierWithSync_InitShared();
       diffusionBarrier= L2_BarrierWithSync_InitShared();
       reactionWaitOnNonGateBarrier= L2_BarrierWithSync_InitShared();
+      timingBarrier = L2_BarrierWithSync_InitShared();
 
 #ifdef PER_SQUAD_BARRIER
       {
@@ -279,6 +281,7 @@ struct SimLoopData
       free(reactionWaitOnNonGateBarrier);
       free(diffusionBarrier);
       free(reactionBarrier);
+      free(timingBarrier);
    }
    
    
@@ -286,6 +289,11 @@ struct SimLoopData
    L2_Barrier_t* reactionBarrier;
    L2_Barrier_t* diffusionBarrier;
    L2_Barrier_t* reactionWaitOnNonGateBarrier;
+   // The timing barrier syncs the top of the reaction loop with the
+   // top of the diffusion loop.  This is done only to make it easier
+   // to compare and understand timings.  This barrier can be removed
+   // to slightly improve performance.
+   L2_Barrier_t* timingBarrier;
 
 #ifdef PER_SQUAD_BARRIER   
     L2_Barrier_t **core_barrier;
@@ -306,14 +314,17 @@ void diffusionLoop(Simulate& sim,
    profileStart(diffusionLoopTimer);
    int tid = sim.diffusionThreads_.teamRank();
    L2_BarrierHandle_t haloBarrierHandle;
+   L2_BarrierHandle_t timingHandle;
    L2_BarrierWithSync_InitInThread(loopData.haloBarrier, &haloBarrierHandle);
+   L2_BarrierWithSync_InitInThread(loopData.timingBarrier, &timingHandle);
+   int nTotalThreads = sim.reactionThreads_.nThreads() + sim.diffusionThreads_.nThreads();
 
    VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusion_);
 
    while ( sim.loop_ < sim.maxLoop_ )
    {
-      int nLocal = sim.anatomy_.nLocal();
-      
+      threadBarrier(timingBarrierTimer, loopData.timingBarrier, &timingHandle, nTotalThreads);
+     
       // Halo Exchange
       if (tid == 0)
       {
@@ -391,10 +402,13 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
    profileStart(reactionLoopTimer);
    int tid = sim.reactionThreads_.teamRank();
    L2_BarrierHandle_t reactionWaitOnNonGateHandle;
+   L2_BarrierHandle_t timingHandle;
    L2_BarrierWithSync_InitInThread(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle);
+   L2_BarrierWithSync_InitInThread(loopData.timingBarrier, &timingHandle);
    VectorDouble32& VmArray(sim.vdata_.VmArray_);
    VectorDouble32& dVmReaction(sim.vdata_.dVmReaction_);
    VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusion_);
+   int nTotalThreads = sim.reactionThreads_.nThreads() + sim.diffusionThreads_.nThreads();
 
 #ifdef PER_SQUAD_BARRIER
    const int sqsz = sim.reactionThreads_.squadSize();
@@ -410,6 +424,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
    }
    while ( sim.loop_ < sim.maxLoop_ )
    {
+      threadBarrier(timingBarrierTimer, loopData.timingBarrier, &timingHandle, nTotalThreads);
       int loop_flag=sim.loop_+1; // save this number so that all the threads use the same after next barrier
            
       startTimer(reactionTimer);

@@ -91,6 +91,7 @@ namespace PerformanceTimers
    TimerHandle barrier4Timer;
    TimerHandle barrier5Timer;
    TimerHandle printDataTimer;
+   TimerHandle timingBarrierTimer;
    
    vector<TimerStruct> timers_;
    typedef map<string, TimerHandle> HandleMap;
@@ -151,6 +152,7 @@ void  profileInit()
    barrier4Timer = profileGetHandle("Barrier4");
    barrier5Timer = profileGetHandle("Barrier5");
    printDataTimer = profileGetHandle("PrintData");
+   timingBarrierTimer = profileGetHandle("TimingBarrier");
    machineSpecficInit(); 
 }
 void profileStart(const TimerHandle& handle)

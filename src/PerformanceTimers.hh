@@ -53,6 +53,7 @@ namespace PerformanceTimers
    extern TimerHandle barrier4Timer;
    extern TimerHandle barrier5Timer;
    extern TimerHandle printDataTimer;
+   extern TimerHandle timingBarrierTimer;
 };
 
 /** Use the startTimer and stopTimer macros for timers that are inside
