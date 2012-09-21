@@ -504,7 +504,6 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 
       integrateLoop(begin, end, sim.dt_, &dVmReaction[0], &dVmDiffusion[0],
 		    sim.diffusion_->blockIndex(),
-		    sim.diffusion_->blockIndexB(),
 		    sim.diffusion_->dVmBlock(),
 		    sim.diffusion_->VmBlock(),
 		    &VmArray[0],
@@ -720,7 +719,6 @@ void simulationLoopAllSkate(Simulate& sim)
          startTimer(integratorTimer);
          integrateLoop(ioBegin, ioEnd, sim.dt_, &dVmReaction[0], &dVmDiffusion[0],
                        sim.diffusion_->blockIndex(),
-                       sim.diffusion_->blockIndexB(),
                        sim.diffusion_->dVmBlock(),
                        sim.diffusion_->VmBlock(),
                        &VmArray[0],

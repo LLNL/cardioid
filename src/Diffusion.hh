@@ -24,7 +24,6 @@ class Diffusion
    virtual void updateRemoteVoltage(const double* VmRemote) = 0;
    virtual void calc(VectorDouble32& dVm) = 0;
    virtual unsigned* blockIndex(){return 0;}
-   virtual unsigned* blockIndexB(){return blockIndex();}
    virtual double* VmBlock(){return 0;}
    virtual double* dVmBlock(){return 0;}
    virtual double diffusionScale(){return 1;}

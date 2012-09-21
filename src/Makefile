@@ -43,7 +43,6 @@ HEARTSRC= \
 	FGRDiffusionOMP.cc \
 	FGRDiffusionThreads.cc \
 	FGRDiffusionStrip.cc \
-   FGRDiffusionFlex.cc \
 	FGRUtils.cc \
 	Reaction.cc \
 	ReactionFHN.cc \

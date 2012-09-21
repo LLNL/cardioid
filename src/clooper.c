@@ -8,7 +8,6 @@
 #include <omp.h>
 #include <mpi.h>
 
-#undef BGQ
 /*
    This file contains four different routines:
      integrateLoop_normal(),
@@ -44,6 +43,11 @@
      blame T. Oppelstrup for any problems.
 */
 
+#ifdef BGQ
+#define integrateLoop_vector integrateLoop
+#else
+#define integrateLoop_normal integrateLoop
+#endif
 /* Other options for the "integrateLoop" macro...
 //#define integrateLoop_normal integrateLoop
 //#define integrateLoop_compare integrateLoop
@@ -54,7 +58,6 @@ void integrateLoop_normal(const int begin, const int end,
                    double* dVmR,
                    double* stim,
                    unsigned* blockOffset,
-                   unsigned* blockOffsetB,
                    double* dVmBlock,
                    double* VmBlock,
                    double* Vm,
@@ -63,16 +66,13 @@ void integrateLoop_normal(const int begin, const int end,
    for (unsigned ii=begin; ii<end; ++ii)
    {
       int ib = blockOffset[ii];
-      int ob = blockOffsetB[ii];
 
-      double dVm = dVmR[ii] + stim[ii] + diffusionScale * dVmBlock[ob];
+      double dVm = dVmR[ii] + stim[ii] + diffusionScale * dVmBlock[ib];
       Vm[ii] += dt*dVm;
-//      printf("%d: dVmR:%d stim:%e difScale:%e VmBlock:%e Vm:%e dVm:%e\n",ii,dVmR[ii],stim[ii],diffusionScale,dVmBlock[ob],Vm[ii],dVm);
       VmBlock[ib] = Vm[ii];
    }
    return;
 }
-
 
 #ifdef BGQ
 void integrateLoop_vector(const int begin, const int end,
@@ -143,6 +143,7 @@ void integrateLoop_vector(const int begin, const int end,
       }
 
       vector4double dVm = vec_madd(diffScale_val , x, stim_val) ;
+      dVm = vec_add(dVm, dVmR_val);
       vector4double dv = vec_madd(  dt_val,dVm , Vm_val);
       *Vm_ptr = dv;
       asm("stfdx %0,%1,%2" : : "v"(dv ) , "b"(ib1) , "b"(VmBlock));
@@ -177,29 +178,6 @@ void integrateLoop_vector(const int begin, const int end,
 }
 #endif
 
-void integrateLoop(const int begin, const int end,
-                   const double dt,
-                   double* dVmR,
-                   double* stim,
-                   unsigned* blockOffset,
-                   unsigned* blockOffsetB,
-                   double* dVmBlock,
-                   double* VmBlock,
-                   double* Vm,
-                   double diffusionScale)
-{
-
-#ifdef BGQ
-  if ( blockOffset == blockOffsetB )
-  {
-    integrateLoop_vector(begin, end, dt, dVmR, stim, blockOffset, dVmBlock, VmBlock, Vm, diffusionScale);
-  }
-  else
-#endif
-    integrateLoop_normal(begin, end, dt, dVmR, stim, blockOffset, blockOffsetB, dVmBlock, VmBlock, Vm, diffusionScale);
-
-}
-
 #ifdef BGQ
 void integrateLoop_compare(const int begin, const int end,
                    const double dt,
@@ -227,7 +205,7 @@ void integrateLoop_compare(const int begin, const int end,
   }
 
 
-  integrateLoop_normal(begin,end,dt,dVmR,stim,blockOffset,blockOffset,dVmBlock,
+  integrateLoop_normal(begin,end,dt,dVmR,stim,blockOffset,dVmBlock,
 		       VmBlock,Vm,diffusionScale);
 
   integrateLoop_vector(begin,end,dt,dVmR,stim,blockOffset,dVmBlock,
