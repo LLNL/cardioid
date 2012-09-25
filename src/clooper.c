@@ -74,6 +74,27 @@ void integrateLoop_normal(const int begin, const int end,
    return;
 }
 
+void integrateLoopLag(const int begin, const int end,
+                   const double dt,
+                   double* dVmR,
+                   double* stim,
+                   unsigned* blockOffset,
+                   double* dVmBlock,
+                   double* VmBlock,
+                   double* Vm,
+                   double diffusionScale)
+{
+   double dtScale = dt*diffusionScale; 
+   for (unsigned ii=begin; ii<end; ++ii)
+   {
+      int ib = blockOffset[ii];
+
+      VmBlock[ib] = Vm[ii];
+      Vm[ii] += dt*dVmR[ii] + dt*stim[ii] + dtScale * dVmBlock[ib];
+   }
+   return;
+}
+
 #ifdef BGQ
 void integrateLoop_vector(const int begin, const int end,
                    const double dt,
@@ -85,7 +106,8 @@ void integrateLoop_vector(const int begin, const int end,
                    double* Vm,
                    double diffusionScale)
 {
-  unsigned int n = end - begin,ii;
+  unsigned int n = end - begin;
+  unsigned ii;
 
   dVmR += begin - 1;
   stim += begin - 1;

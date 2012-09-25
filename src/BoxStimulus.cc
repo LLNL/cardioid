@@ -28,3 +28,4 @@ void BoxStimulus::subClassStim(double time,
       for (unsigned ii=0; ii<stimList_.size(); ++ii)
          dVmDiffusion[stimList_[ii]] += value;
 }
+

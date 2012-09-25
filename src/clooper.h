@@ -21,6 +21,16 @@ void integrateLoop(const int begin, const int end,
                    double* VmBlock,
                    double* Vm,
                    double diffusionScale);
+void integrateLoopLag(const int begin, const int end,
+                   const double dt,
+                   double* dVmR,
+                   double* stim,
+                   unsigned* blockOffset,
+                   double* dVmBlock,
+                   double* VmBlock,
+                   double* Vm,
+                   double diffusionScale);
+
 
 #ifdef __cplusplus
 } // extern "C"

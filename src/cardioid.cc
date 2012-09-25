@@ -100,10 +100,15 @@ int main(int argc, char** argv)
       simulationLoop(sim);
       break;
      case Simulate::pdr:
+     // printf("Cardioid pdr ptr=%p %p %p\n",sim.diffusion_->blockIndex(),sim.diffusion_->dVmBlock(),sim.diffusion_->VmBlock());  fflush(stdout); 
       simulationLoopParallelDiffusionReaction(sim);
       break;
      case Simulate::allSkate:
       simulationLoopAllSkate(sim);
+      break;
+     case Simulate::lag:
+      //printf("Cardioid lagptr=%p %p %p\n",sim.diffusion_->blockIndex(),sim.diffusion_->dVmBlock(),sim.diffusion_->VmBlock());  fflush(stdout); 
+      simulationLoopLag(sim);
       break;
      default:
       assert(false);

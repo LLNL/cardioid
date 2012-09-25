@@ -10,6 +10,7 @@
 #include "FGRDiffusionThreads.hh"
 #include "FGRDiffusionStrip.hh"
 #include "NullDiffusion.hh"
+#include "Simulate.hh"
 
 class Anatomy;
 class ThreadTeam;
@@ -61,7 +62,9 @@ namespace
       objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0", "l^3/capacitance");
       objectGet(obj, "printBBox",      p.printBBox_, "0");
       string defaultVariant = "omp";
-      if (simLoopType == 1) // parallelDiffusionReaction
+      if (simLoopType == Simulate::pdr) // parallelDiffusionReaction
+         defaultVariant = "simd";
+      if (simLoopType == Simulate::lag) // parallelDiffusionReaction
          defaultVariant = "simd";
       string variant;
       objectGet(obj, "variant", variant, defaultVariant);

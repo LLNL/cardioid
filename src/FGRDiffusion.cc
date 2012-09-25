@@ -180,56 +180,20 @@ void FGRDiffusion::updateRemoteVoltage(const double* VmRemote)
 void FGRDiffusion::calc(VectorDouble32& dVm)
 {
    int tid = threadInfo_.teamRank();
-   startTimer(FGR_AlignCopyTimer);
 
    Array3d<double> *VmTmp = &(VmBlock_);
 
-   //make sure z is multiple of 4
-   if(VmBlock_.nz()%4 != 0)
-   {
-      assert(false); // this shouldn't ever happen.
-     int nz_4 = VmBlock_.nz() + 4-VmBlock_.nz()%4;
-     VmTmp = new Array3d<double>;
-     VmTmp->resize(VmBlock_.nx(),VmBlock_.ny(),nz_4);
-     for(int ii=0;ii<VmBlock_.nx();ii++)
-     for(int jj=0;jj<VmBlock_.ny();jj++)
-     for(int kk=0;kk<nz_4;kk++)
-     {
-       (*VmTmp)(ii,jj,kk) = VmBlock_(ii,jj,kk);
-     }
-   }
-   stopTimer(FGR_AlignCopyTimer);
+   assert(VmBlock_.nz()%4 == 0); // make sure z is multiple of 4
    
    startTimer(FGR_StencilTimer);
-
-   //uint32_t begin = VmTmp->tupleToIndex(threadOffsetSimd_[tid],1,0);
-   //uint32_t end = VmTmp->tupleToIndex(threadOffsetSimd_[tid+1]-1,VmTmp->ny()-2,VmTmp->nz());
-   //   printf("simd version:%d-%d\n",begin,end);
-   //if (threadOffsetSimd_[tid] < threadOffsetSimd_[tid+1] )
-   //   FGRDiff_simd_thread(begin,end-begin,VmTmp,dVmBlock_.cBlock());
    if (threadOffsetSimd_[tid] < threadOffsetSimd_[tid+1] )
       FGRDiff_simd_thread(threadOffsetSimd_[tid] ,threadOffsetSimd_[tid+1],VmTmp,dVmBlock_.cBlock());
-
    stopTimer(FGR_StencilTimer);
 
    startTimer(FGR_Barrier2Timer);
    L2_BarrierWithSync_Barrier(fgrBarrier_, &barrierHandle_[tid], threadInfo_.nThreads());
    stopTimer(FGR_Barrier2Timer);
 
-   startTimer(FGR_Matrix2ArrayTimer);
-
-//    if(VmBlock_.nz()%4 != 0) delete VmTmp;
-
-//     int begin = threadOffset_[tid];
-//     int end   = threadOffset_[tid+1];
-//     double* dVmBlock_ptr = dVmBlock_.cBlock();
-//     for (int ii=begin; ii<end; ++ii)
-//     {
-//       //dVm[ii] = dVmBlock_(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
-//       dVm[ii] = dVmBlock_ptr[blockIndex_[ii]];
-//       dVm[ii] *= diffusionScale_;
-//     }
-   stopTimer(FGR_Matrix2ArrayTimer);
 }
 
 /** We're building the localTuple array only for local cells.  We can't

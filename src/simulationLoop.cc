@@ -48,7 +48,6 @@ namespace
 {
    void threadBarrier(TimerHandle tHandle, L2_Barrier_t* bPtr, L2_BarrierHandle_t* bHandlePtr, int nThreads)
    {
-     //     printf("Hello %d\n",omp_get_thread_num()); fflush(stdout);
       startTimer(tHandle);
       L2_BarrierWithSync_Barrier(bPtr, bHandlePtr, nThreads);
       stopTimer(tHandle);
@@ -305,6 +304,77 @@ struct SimLoopData
    vector<int> fillSendBufOffset;
    HaloExchange<double, AlignedAllocator<double> > voltageExchange;
 };
+void diffusionLoopLag(Simulate& sim,
+                   SimLoopData& loopData,
+                   L2_BarrierHandle_t& reactionHandle,
+                   L2_BarrierHandle_t& diffusionHandle)
+{
+   profileStart(diffusionLoopTimer);
+   int tid = sim.diffusionThreads_.teamRank();
+   L2_BarrierHandle_t haloBarrierHandle;
+   L2_BarrierHandle_t timingHandle;
+   L2_BarrierWithSync_InitInThread(loopData.haloBarrier, &haloBarrierHandle);
+   L2_BarrierWithSync_InitInThread(loopData.timingBarrier, &timingHandle);
+   int nTotalThreads = sim.reactionThreads_.nThreads() + sim.diffusionThreads_.nThreads();
+
+   VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusion_);
+
+  // Need VmArray(t-h), Vm(t) and  remoteBuffer(t)    Note VmArray has local and remote and Vm just needs local. 
+
+   while ( sim.loop_ < sim.maxLoop_ )
+   {
+      threadBarrier(timingBarrierTimer, loopData.timingBarrier, &timingHandle, nTotalThreads);
+     
+      // Halo Exchange
+      if (tid == 0)
+      {
+         startTimer(haloLaunchTimer);
+         loopData.voltageExchange.startComm();
+         stopTimer(haloLaunchTimer);
+         dVmDiffusion.assign(dVmDiffusion.size(), 0);
+         for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
+            sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
+      }
+
+      //stencil
+      startTimer(diffusionCalcTimer);
+      sim.diffusion_->calc(dVmDiffusion);
+      stopTimer(diffusionCalcTimer);
+
+      // announce that diffusion derivatives are ready.
+      L2_BarrierWithSync_Arrive(loopData.diffusionBarrier, &diffusionHandle,
+                                sim.diffusionThreads_.nThreads());
+      L2_BarrierWithSync_Reset(loopData.diffusionBarrier,
+                               &diffusionHandle,
+                               sim.diffusionThreads_.nThreads());
+      
+      // Need a barrier for the completion of the halo exchange.
+      if ( tid == 0) 
+      {
+         startTimer(haloWaitTimer);
+         loopData.voltageExchange.wait();
+         stopTimer(haloWaitTimer);
+      }
+      startTimer(diffusionL2BarrierHalo1Timer);
+      L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle, sim.diffusionThreads_.nThreads());
+      stopTimer(diffusionL2BarrierHalo1Timer);
+      
+      // copy remote. Where is the timer?
+      sim.diffusion_->updateRemoteVoltage(loopData.voltageExchange.getRecvBuf());
+
+/********   With the timer barrier  this is not needed.  *******/
+
+      // wait for reaction (integration) to finish
+      startTimer(diffusionWaitTimer); 
+      L2_BarrierWithSync_WaitAndReset(loopData.reactionBarrier,
+                                      &reactionHandle,
+                                      sim.reactionThreads_.nThreads());
+      stopTimer(diffusionWaitTimer); 
+
+
+   }
+   profileStop(diffusionLoopTimer);
+}
 
 void diffusionLoop(Simulate& sim,
                    SimLoopData& loopData,
@@ -321,6 +391,7 @@ void diffusionLoop(Simulate& sim,
 
    VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusion_);
 
+
    while ( sim.loop_ < sim.maxLoop_ )
    {
       threadBarrier(timingBarrierTimer, loopData.timingBarrier, &timingHandle, nTotalThreads);
@@ -328,9 +399,9 @@ void diffusionLoop(Simulate& sim,
       // Halo Exchange
       if (tid == 0)
       {
-         startTimer(diffusionImbalanceTimer);
+//         startTimer(diffusionImbalanceTimer);
 //         loopData.voltageExchange.barrier();
-         stopTimer(diffusionImbalanceTimer);
+//         stopTimer(diffusionImbalanceTimer);
 
          startTimer(haloTimer);
 
@@ -390,14 +461,14 @@ void diffusionLoop(Simulate& sim,
                                       sim.reactionThreads_.nThreads());
       stopTimer(diffusionWaitTimer); 
 
-      startTimer(dummyTimer);
-      stopTimer(dummyTimer);
+//      startTimer(dummyTimer);
+//      stopTimer(dummyTimer);
 
    }
    profileStop(diffusionLoopTimer);
 }
-
-void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle)
+void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle, 
+                  void (*integrate)(const int, const int, const double, double*, double*, unsigned*, double*, double*k, double*, double))
 {
    profileStart(reactionLoopTimer);
    int tid = sim.reactionThreads_.teamRank();
@@ -417,6 +488,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
    L2_Barrier_t *cb_ptr = loopData.core_barrier[b_id];
    L2_BarrierWithSync_InitInThread(cb_ptr, &core_barrier_h);
 #endif
+
 
    if (tid == 0) 
    {
@@ -482,7 +554,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       const int end  =loopData.integratorOffset[tid+1];
 #endif
 
-      integrateLoop(begin, end, sim.dt_, &dVmReaction[0], &dVmDiffusion[0],
+      integrate(begin, end, sim.dt_, &dVmReaction[0], &dVmDiffusion[0],
 		    sim.diffusion_->blockIndex(),
 		    sim.diffusion_->dVmBlock(),
 		    sim.diffusion_->VmBlock(),
@@ -582,7 +654,57 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
       }
       if ( sim.reactionThreads_.teamRank() >= 0) 
       {
-          reactionLoop(sim, loopData, reactionHandle, diffusionHandle);
+          reactionLoop(sim, loopData, reactionHandle, diffusionHandle,integrateLoop);
+      } 
+      profileStop(simulationLoopTimer);
+   }
+}
+void simulationLoopLag(Simulate& sim)
+{
+   SimLoopData loopData(sim);
+
+   simulationProlog(sim);
+
+#if defined(SPI) && defined(TRACESPI)
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+   cout << "Rank[" << myRank << "]: numOfNeighborToSend=" << sim.commTable_->_sendTask.size() << " numOfNeighborToRecv=" << sim.commTable_->_recvTask.size() << " numOfBytesToSend=" << sim.commTable_->_sendOffset[sim.commTable_->_sendTask.size()]*sizeof(double) << " numOfBytesToRecv=" << sim.commTable_->_recvOffset[sim.commTable_->_recvTask.size()]*sizeof(double) << endl;
+#endif
+   VectorDouble32& VmArray(sim.vdata_.VmArray_);
+
+   timestampBarrier("Entering threaded region", MPI_COMM_WORLD);
+
+   #pragma omp parallel
+   {
+      int ompTid = omp_get_thread_num();
+      
+      L2_BarrierHandle_t reactionHandle;
+      L2_BarrierHandle_t diffusionHandle;
+      L2_BarrierWithSync_InitInThread(loopData.reactionBarrier, &reactionHandle);
+      L2_BarrierWithSync_InitInThread(loopData.diffusionBarrier, &diffusionHandle);
+      
+      // setup matrix voltages for first timestep.
+      if (sim.reactionThreads_.teamRank() >= 0) 
+      {
+         sim.diffusion_->updateLocalVoltage(&VmArray[0]);      
+         loopData.voltageExchange.fillSendBuffer(VmArray);     // Check which tasks need to call fillSendBuffer JNG
+      }
+      #pragma omp barrier
+      if ( sim.diffusionThreads_.teamRank() == 0) // Boot strap step.  Don't know Vm(t-h) use Vm(t) and 
+      {
+           loopData.voltageExchange.startComm();
+           loopData.voltageExchange.wait(); 
+           sim.diffusion_->updateRemoteVoltage(loopData.voltageExchange.getRecvBuf());
+      }
+      #pragma omp barrier
+      profileStart(simulationLoopTimer);
+      if ( sim.diffusionThreads_.teamRank() >= 0) 
+      {
+         diffusionLoopLag(sim, loopData, reactionHandle, diffusionHandle);
+      }
+      if ( sim.reactionThreads_.teamRank() >= 0) 
+      {
+          reactionLoop(sim, loopData, reactionHandle, diffusionHandle,integrateLoopLag);   //Need to change Integration Routine to update VmArray with Vm(t) and not Vm(t+h); 
       } 
       profileStop(simulationLoopTimer);
    }

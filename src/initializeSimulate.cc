@@ -109,6 +109,8 @@ void initializeSimulate(const string& name, Simulate& sim)
          sim.loopType_ = Simulate::pdr;
       else if (tmp == "allSkate")
          sim.loopType_ = Simulate::allSkate;
+      else if (tmp == "lag")
+         sim.loopType_ = Simulate::lag;
       else
          assert(false);
    }
@@ -128,7 +130,7 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "diffusionThreads", diffusionCores);
    if (suggestedDiffusionCores > 0)
       nDiffusionCores = suggestedDiffusionCores;
-   if (sim.loopType_ == Simulate::pdr)
+   if (sim.loopType_ == Simulate::pdr || sim.loopType_ == Simulate::lag)
    {
       // diffusionThreads overrides nDiffusionCores, but when no thread
       // list is specified, we use 1 core.
