@@ -474,6 +474,94 @@ void VoronoiCoarsening::exchangeAndSum(LocalSums& valcolors)
    if( ndata2recv>0 )delete[] remotepackeddata;
 }
 
+void VoronoiCoarsening::exchangeAndSum(vector<LocalSums*> valcolors)
+{
+   const unsigned short nvect=(unsigned short)valcolors.size();
+   
+   // set up send buffer
+   PackedData* localpackeddata=new PackedData[nvect*valcolors[0]->size()];
+   for(unsigned short i=0;i<nvect;i++)
+      valcolors[i]->packData(localpackeddata+i*valcolors[i]->size(),valcolors[i]->size());
+   
+   // set up buffer to recv remote data
+   int ndata2recv=0;
+   for(map<int,int>::const_iterator p = ncolors_to_recv_.begin();
+                                    p!= ncolors_to_recv_.end();
+                                  ++p)
+      ndata2recv+=p->second;
+   
+   ndata2recv*=nvect;
+   
+   PackedData* remotepackeddata=0;
+   if( ndata2recv>0 )
+      remotepackeddata=new PackedData[ndata2recv];
+   
+   // exchange local sums
+   MPI_Request* recvReq=0;
+   if(src_tasks_.size()>0)recvReq=new MPI_Request[src_tasks_.size()];
+   MPI_Request* sendReq=0;
+   if(dst_tasks_.size()>0)sendReq=new MPI_Request[dst_tasks_.size()];
+   int tag=824;
+   int it=0;
+   int offset=0;
+   for(set<int>::const_iterator itp =src_tasks_.begin();
+                                itp!=src_tasks_.end();
+                              ++itp)
+   {
+      const int ndata=nvect*ncolors_to_recv_[*itp];
+      
+      // recv
+      MPI_Irecv(&remotepackeddata[offset], 
+                ndata*sizeof(PackedData), 
+                MPI_BYTE, *itp, tag, comm_, recvReq+it);
+      offset+=ndata;
+      it++;
+   }
+   
+   it=0;
+   for(set<int>::const_iterator itp =dst_tasks_.begin();
+                                itp!=dst_tasks_.end();
+                              ++itp)
+   {
+      // send
+      MPI_Isend(&localpackeddata[0], nvect*ncolors_to_send_[*itp]*sizeof(PackedData), MPI_BYTE, *itp, tag, comm_, sendReq+it);
+      it++;
+   }
+
+   // wait
+   if(sendReq!=0)MPI_Waitall(dst_tasks_.size(), sendReq, MPI_STATUS_IGNORE);
+   if(recvReq!=0)MPI_Waitall(src_tasks_.size(), recvReq, MPI_STATUS_IGNORE);
+   MPI_Barrier(comm_);
+   
+   if(recvReq!=0)delete[] recvReq;
+   if(sendReq!=0)delete[] sendReq;
+   
+   // accumulate data in valcolors
+   offset=0;
+   for(set<int>::const_iterator itp =src_tasks_.begin();
+                                itp!=src_tasks_.end();
+                              ++itp)
+   {
+      for(unsigned short j=0;j<nvect;j++){
+         for(int i=0;i<ncolors_to_recv_[*itp];i++)
+         {
+            int ii=offset+i;
+            int color=remotepackeddata[ii].color;
+            if( local_colors_.find(color)!=local_colors_.end() )
+            {
+               valcolors[j]->addnvalues(color,remotepackeddata[ii].value,
+                                        remotepackeddata[ii].n);
+            }
+         }
+      
+         offset+=ncolors_to_recv_[*itp];
+      }
+   }
+   
+   delete[] localpackeddata;
+   if( ndata2recv>0 )delete[] remotepackeddata;
+}
+
 void VoronoiCoarsening::accumulateValues(const VectorDouble32& val, LocalSums& valcolors)
 {
    valcolors.clear();
