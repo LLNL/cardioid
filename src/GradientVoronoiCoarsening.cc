@@ -79,13 +79,16 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
 
    // calculate local sums
    const int nLocal = anatomy_.nLocal();
-   static VectorDouble32 values(nLocal,0.);
+   
    static list<int> indexes;
+   static map<int,int> ncellsofcolor;
    
    if( first_time )
    {
+      VectorDouble32 values(nLocal,0.);
       for(int ic=0;ic<nLocal;++ic)
       {
+         const int color=coarsening_.getColor(ic);
          const double norm2=(dx_[ic]*dx_[ic]
                             +dy_[ic]*dy_[ic]
                             +dz_[ic]*dz_[ic]); 
@@ -94,24 +97,38 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
             //cout<<"values["<<ic<<"]="<<values[ic]<<endl;
             indexes.push_back(ic);
          }
+         ncellsofcolor[color]++;
       }
       first_time=false;
-   }else{
-      // reset only non-zero values
       
-      list<int>::const_iterator p=indexes.begin();
-      while(p!=indexes.end())
+      // calculate local sums
+      coarsening_.accumulateValues(values,valcolors_);
+   
+   }else{
+      
+      map<int,int>::const_iterator p=ncellsofcolor.begin();
+      while(p!=ncellsofcolor.end())
       {
-         const int ic=*p;
-         values[ic]=val[ic];
+         const int color=p->first;
          
+         valcolors_.setSum(color,ncellsofcolor[color],0.);
          p++;
       }
+      
+      list<int>::const_iterator pi=indexes.begin();
+      while(pi!=indexes.end())
+      {
+         const int ic=*pi;
+
+         int color=coarsening_.getColor(ic);
+         
+         valcolors_.setSum(color,ncellsofcolor[color],val[ic]);
+         
+         pi++;
+      }
+      
    }
 
-   // calculate local sums
-   coarsening_.accumulateValues(values,valcolors_);
-   
    coarsening_.exchangeAndSum(valcolors_);
 }
    
@@ -155,18 +172,6 @@ void GradientVoronoiCoarsening::computeLSsystem(const VectorDouble32& val)
       }
    }
 
-#if 0
-   coarsening_.exchangeAndSum(valMat00_);
-   coarsening_.exchangeAndSum(valMat01_);
-   coarsening_.exchangeAndSum(valMat02_);
-   coarsening_.exchangeAndSum(valMat11_);
-   coarsening_.exchangeAndSum(valMat12_);
-   coarsening_.exchangeAndSum(valMat22_);
-
-   coarsening_.exchangeAndSum(valRHS0_);
-   coarsening_.exchangeAndSum(valRHS1_);
-   coarsening_.exchangeAndSum(valRHS2_);
-#else
    vector<LocalSums*> valcolors;
    valcolors.push_back(&valMat00_);
    valcolors.push_back(&valMat01_);
@@ -179,7 +184,6 @@ void GradientVoronoiCoarsening::computeLSsystem(const VectorDouble32& val)
    valcolors.push_back(&valRHS2_);
    
    coarsening_.exchangeAndSum(valcolors);
-#endif
 }
 
 void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename,

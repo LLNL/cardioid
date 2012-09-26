@@ -46,6 +46,13 @@ class LocalSums
       nval_[color]++;
       sum_[color]+=value;
    }
+   void setSum(const int color, const int nval, const double sum)
+   {
+      assert( sum==sum );
+      
+      nval_[color]=nval;
+      sum_[color] =sum;
+   }
    void addnvalues(const int color, const double value, const int n)
    {
       assert( value==value );
@@ -187,7 +194,7 @@ class VoronoiCoarsening
       return owned_colors_;
    }
    
-   int getColor(const int ic)
+   int getColor(const int ic)const
    {
       return colors_[ic];
    }
