@@ -74,7 +74,7 @@
 //#define spi_debug_exec
 //#define spi_debug_compl
 #define MAX_WAIT 1600000000
-#define MAX_PUT_NUM 128
+#define MAX_RECV_NUM 128
 #define SizeInjMemFifo 128
 
 
@@ -160,7 +160,7 @@ void setup_bat(spi_hdl_t* spi_hdl,void* recv_buf,uint32_t recv_buf_size)
     assert(rc==0);
  
  
-    size_in_bytes = sizeof(uint64_t)*MAX_PUT_NUM*2;
+    size_in_bytes = sizeof(uint64_t)*MAX_RECV_NUM*2;
     recv_cnt = malloc(size_in_bytes);
     memset(recv_cnt,0x0,size_in_bytes);
     rc = Kernel_CreateMemoryRegion( recv_cnt_mem, recv_cnt, size_in_bytes );
@@ -354,7 +354,7 @@ uint32_t setup_descriptors(int** offsets, const int* dest, const int* putIdx, in
     /* set the MU info */
     MUSPI_SetRecPayloadBaseAddressInfo( mu_desc, 8*(bat->subgrpid) + free_bat_ids[jj], put_offset[ii]*width); //(uint64_t)recv_buf_mem.BasePa + (uint64_t)recv_buf - (uint64_t)recv_buf_mem.BaseVa  );
     //MUSPI_SetRecCounterBaseAddressInfo( mu_desc, 1, MUSPI_GetAtomicOffsetFromBaseAddress ( &bat, 1, (uint64_t)recv_cnt - (uint64_t)recv_cnt_mem.BaseVa + (uint64_t)recv_cnt_mem.BasePa, MUHWI_ATOMIC_OPCODE_STORE_ADD ) );
-    MUSPI_SetRecCounterBaseAddressInfo( mu_desc, 8*(bat->subgrpid) + free_bat_ids[2], (put_cnt_offset[ii]+ MAX_PUT_NUM *jj)*8);
+    MUSPI_SetRecCounterBaseAddressInfo( mu_desc, 8*(bat->subgrpid) + free_bat_ids[2], (put_cnt_offset[ii]+ MAX_RECV_NUM *jj)*8);
     MUSPI_SetPacing( mu_desc, MUHWI_PACKET_DIRECT_PUT_IS_NOT_PACED );
   _bgq_msync();
     
@@ -444,6 +444,7 @@ void execute_spi_alter(spi_hdl_t* spi_hdl, uint32_t put_size,int bw)
 void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_offset, int bw, int width)
 {
   volatile uint64_t* recv_cnt = spi_hdl -> recv_cnt;
+  assert(recv_size < MAX_RECV_NUM ); 
   //checking if fifo is done.
   #ifdef spi_debug_compl
   printf("completion check...");
@@ -465,16 +466,16 @@ void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_of
     sum=0;
     for(int ii=0;ii<recv_size;ii++)
     {
-      int recved=recv_cnt[ii+bw*MAX_PUT_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
+      int recved=recv_cnt[ii+bw*MAX_RECV_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
 //      if(knt%10==0) printf("%d ",recved);
       sum+= (recved == 0 ? 0 : 1);
     }
 //    printf("\n");
 //    if(bw==0) for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii] == 0 ? 1 : 0);
-//    else for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii+MAX_PUT_NUM] == 0 ? 1 : 0);
+//    else for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii+MAX_RECV_NUM] == 0 ? 1 : 0);
   }
   assert(knt <  MAX_WAIT); 
-//  //for(int ii=0;ii<recv_size;ii++) printf("%x ",recv_cnt[ii+MAX_PUT_NUM*bw]);
+//  //for(int ii=0;ii<recv_size;ii++) printf("%x ",recv_cnt[ii+MAX_RECV_NUM*bw]);
   //printf("\n");
   #ifdef spi_debug_compl
   printf("counter touched\n");
@@ -485,12 +486,12 @@ void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_of
   //for(int ii=0;ii<recv_size;ii++)
   //{
   //  if(bw==0)printf("%dth packet is at %x\n",ii,recv_cnt[ii]);
-  //  else printf("%dth packet is at %x\n",ii,recv_cnt[ii+MAX_PUT_NUM]);
+  //  else printf("%dth packet is at %x\n",ii,recv_cnt[ii+MAX_RECV_NUM]);
   //}
   #endif
 
   for(int ii=0;ii<recv_size;ii++)
-    recv_cnt[ii+MAX_PUT_NUM*bw]=0;
+    recv_cnt[ii+MAX_RECV_NUM*bw]=0;
   _bgq_msync();
 
 }
@@ -519,13 +520,13 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
     sum=0;
     for(int ii=0;ii<recv_size;ii++)
     {
-      int recved=recv_cnt[ii+bw*MAX_PUT_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
+      int recved=recv_cnt[ii+bw*MAX_RECV_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
 //      if(knt%10==0) printf("%d ",recved);
       sum+= (recved == 0 ? 0 : 1);
     }
 //    printf("\n");
 //    if(bw==0) for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii] == 0 ? 1 : 0);
-//    else for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii+MAX_PUT_NUM] == 0 ? 1 : 0);
+//    else for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii+MAX_RECV_NUM] == 0 ? 1 : 0);
   }
 
   if ( knt == MAX_WAIT )
@@ -533,10 +534,10 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
     printf("node:%d have reached MAX_WAIT\n",myID);
     for(int ii=0;ii<recv_size;ii++)
     {
-      int recved=recv_cnt[ii+bw*MAX_PUT_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
+      int recved=recv_cnt[ii+bw*MAX_RECV_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
 //      if(knt%10==0) printf("%d ",recved);
-      if(recved != 0) printf("node:%d did NOT receive from node:%d\n",myID,recv_task[ii]); 
-      else printf("node:%d did receive from node:%d\n",myID,recv_task[ii]);
+      if(recved != 0) printf("node:%d did NOT receive all the packets from node:%d\n",myID,recv_task[ii]); 
+      else printf("node:%d did receive all the packets from node:%d\n",myID,recv_task[ii]);
     }
     //wait more for others to quit
     for(knt=0;knt<MAX_WAIT ;knt++) { }
@@ -544,7 +545,7 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
   assert(knt <  MAX_WAIT); 
 
 
-//  //for(int ii=0;ii<recv_size;ii++) printf("%x ",recv_cnt[ii+MAX_PUT_NUM*bw]);
+//  //for(int ii=0;ii<recv_size;ii++) printf("%x ",recv_cnt[ii+MAX_RECV_NUM*bw]);
   //printf("\n");
   #ifdef spi_debug_compl
   printf("counter touched\n");
@@ -555,12 +556,12 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
   //for(int ii=0;ii<recv_size;ii++)
   //{
   //  if(bw==0)printf("%dth packet is at %x\n",ii,recv_cnt[ii]);
-  //  else printf("%dth packet is at %x\n",ii,recv_cnt[ii+MAX_PUT_NUM]);
+  //  else printf("%dth packet is at %x\n",ii,recv_cnt[ii+MAX_RECV_NUM]);
   //}
   #endif
 
   for(int ii=0;ii<recv_size;ii++)
-    recv_cnt[ii+MAX_PUT_NUM*bw]=0;
+    recv_cnt[ii+MAX_RECV_NUM*bw]=0;
   _bgq_msync();
 
 }
@@ -600,7 +601,7 @@ void complete_spi(spi_hdl_t* spi_hdl, uint32_t recv_size)
   {
     sum=0;
     for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii] == 0 ? 1 : 0);
-    for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii+MAX_PUT_NUM] == 0 ? 1 : 0);
+    for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii+MAX_RECV_NUM] == 0 ? 1 : 0);
   }
   assert(knt <  MAX_WAIT); 
   _bgq_msync();
@@ -609,7 +610,7 @@ void complete_spi(spi_hdl_t* spi_hdl, uint32_t recv_size)
   for(int ii=0;ii<recv_size;ii++)
   {
     printf("%dth packet is at %x\n",ii,recv_cnt[ii]);
-    printf("%dth packet is at %x\n",ii,recv_cnt[ii+MAX_PUT_NUM]);
+    printf("%dth packet is at %x\n",ii,recv_cnt[ii+MAX_RECV_NUM]);
   }
 
   for(int ii=0;ii<recv_size;ii++)
