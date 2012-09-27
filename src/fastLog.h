@@ -45,16 +45,36 @@ static inline double fastLog(double x)
   Defining VECTOR_PREFIX uses fast BGQ vectorized code.
   Not defining it uses integer code identical to the legacy code
   (except for being enclosed in a macro).
- */
+
+  Defining AGGRESSIVE uses an ultra-fast algorithm which loses
+  11 bits of precision (the mantissa retains 42 out of 53 bits,
+  equating 12 out of 15 digits). The aggressive code saves about
+  2.2us on 16x16x14 blockPerformance test.
+*/
 //#define LEGACY_EXPFIX
 #ifdef BGQ
 #define VECTOR_EXPFIX
+//#define AGGRESSIVE
 #endif
 #ifdef VECTOR_EXPFIX
 /*
   Fast vectorized floating point pipeline code for extracting
   mantissa and exponent from vector of 4 double precision numbers.
 */
+#ifdef AGGRESSIVE
+/* Agressive: This version loses 11 bits of precision... */
+#define expfix(x,m,nn)						\
+  do {								\
+    const double iscale = (1.0/(1<<26))/(1<<26);		\
+    vector4double z,a,t;					\
+    z = vec_cfidu(x);						\
+    a = vec_msub(z,vec_splats(iscale),vec_splats(1023.0));	\
+    t = vec_floor(a);						\
+    nn = t;							\
+    m = vec_add(vec_sub(a,t),vec_splats(1.0));			\
+  } while(0)
+#else
+/* Conservative: This version has no accuracy loss... */
 #define expfix(x,m,nn)							\
   do {									\
     const double scale = 1<<20, iscale = 1.0/scale;			\
@@ -77,6 +97,8 @@ static inline double fastLog(double x)
     b2 = vec_madd(b,vec_splats(iscale2),a2);				\
     m = vec_madd(b2,vec_splats(iscale),vec_splats(1.0));		\
   } while(0)
+#endif
+
 #else
 /*
   Old serial integer pipeline code for extracting mantissa an
