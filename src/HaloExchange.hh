@@ -160,6 +160,8 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
 //    void complete2() {complete_spi(&spiHdl_, commTable_->_recvTask.size());};
 //    void dump_mapping_table() { spi_dump_mapping( &spiHdl_); };
    void barrier() {global_sync(&spiHdl_);};
+   void barrierWithTimeout(uint64_t timeout) {global_sync_2(&spiHdl_,timeout);};
+
 
  private:
    

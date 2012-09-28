@@ -388,6 +388,19 @@ void global_sync(spi_hdl_t *spi_hdl)
   MUSPI_GIBarrierEnterAndWait((MUSPI_GIBarrier_t*)spi_hdl->barrier_hdl );
 }
 
+void global_sync_2(spi_hdl_t *spi_hdl,uint64_t timeout)
+{
+  _bgq_msync();
+  MUSPI_GIBarrier_t barrier;
+  //  MUSPI_GIBarrierInit( &barrier, 0 );
+    int32_t rc= MUSPI_GIBarrierEnterAndWaitWithTimeout((MUSPI_GIBarrier_t*)spi_hdl->barrier_hdl,timeout);
+      if( rc!=0 )
+        {
+            printf("barrier failed. It could be timeout\n");
+                assert(rc==0);
+        }
+}
+
 void execute_spi(spi_hdl_t* spi_hdl, uint32_t put_size)
 {
     printf("initiate sending %d messages\n",put_size);
