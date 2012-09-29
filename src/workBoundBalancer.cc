@@ -11,17 +11,16 @@
 #include "workBound.h"
 #include "pio.h"
 using namespace std;
-int workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, int nx, int ny, int nz, int target,int nC, double alpha, int printStats,MPI_Comm comm)
+#include "workBoundBalancer.hh"
+LoadLevel workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, int nx, int ny, int nz, int target,
+                      int nCores, int nRCoresBB, double alpha, double beta, int printStats,MPI_Comm comm)
 {
    unsigned nLocal = cells.size(); 
    unsigned nGlobal; 
    MPI_Allreduce(&nLocal,&nGlobal,1,MPI_UNSIGNED,MPI_SUM,comm); 
-   BALANCER balancer = buildBalancer(nGlobal,nx,ny,nz,dx,dy,dz,target,nC,alpha,printStats,comm);
+   BALANCER balancer = buildBalancer(nGlobal,nx,ny,nz,dx,dy,dz,target,nCores,nRCoresBB, alpha,beta, printStats,comm);
 
    int rank = balancer.rank; 
-   //char filename[16]; 
-   //sprintf(filename,"Stuff#%6.6d",rank);
-   //FILE *stuff = fopen(filename,"w");
 
    unsigned int nn = 1024; 
    vector<long long unsigned> gid(nn); 
@@ -58,10 +57,12 @@ int workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, int nx
        if ( balancer.rank == 0) printf("target number of tasks differ from actual number. Exiting Program\n"); 
          exit(0);   
    }
-   int nDiffusionTasks = -1; 
+   int nDiffusionCores = -1; 
    setDomainInfo(&balancer); 
    PARTITION_INFO part = corePartition(balancer.chunk,&balancer);
-   nDiffusionTasks = part.nD; 
+   LoadLevel loadLevel; 
+   loadLevel.stencil = part.stencilMethod; 
+   loadLevel.nDiffusionCores = part.nD; 
    destroyBalancer(&balancer); 
 
    MPI_Allreduce(&nLocal,&nGlobal,1,MPI_UNSIGNED,MPI_SUM,balancer.comm); 
@@ -83,6 +84,6 @@ int workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, int nx
    MPI_Allreduce(&nLocal,&nGlobal,1,MPI_UNSIGNED,MPI_SUM,balancer.comm); 
    if (rank==0) {printf("After particle assignment nGlobal=%d\n",nGlobal); fflush(stdout);}
 
-   return nDiffusionTasks; 
+   return loadLevel; 
 }
 

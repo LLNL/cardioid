@@ -10,6 +10,6 @@ Diffusion* diffusionFactory(const std::string& name,
                             const Anatomy& anatomy,
                             const ThreadTeam& threadInfo,
                             const ThreadTeam& reactionThreadInfo,
-                            int simLoopType);
+                            int simLoopType, std::string &variant);
 
 #endif

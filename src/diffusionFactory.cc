@@ -24,7 +24,7 @@ namespace
    Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy,
                                   const ThreadTeam& threadInfo,
                                   const ThreadTeam& reactionThreadInfo,
-                                  int simLoopType);
+                                  int simLoopType, string loadLevelVariant);
    void checkForObsoleteKeywords(OBJECT* obj);
 }
 
@@ -32,7 +32,7 @@ namespace
 Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
                             const ThreadTeam& threadInfo,
                             const ThreadTeam& reactionThreadInfo,
-                            int simLoopType)
+                            int simLoopType, string &variant)
 {
    OBJECT* obj = objectFind(name, "DIFFUSION");
 
@@ -43,7 +43,7 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
    if (method.empty())
       assert(1==0);
    else if (method == "FGR")
-      return fgrDiffusionFactory(obj, anatomy, threadInfo, reactionThreadInfo, simLoopType);
+      return fgrDiffusionFactory(obj, anatomy, threadInfo, reactionThreadInfo, simLoopType, variant);
    else if (method == "null")
       return new NullDiffusion(anatomy, simLoopType);
    
@@ -56,16 +56,11 @@ namespace
    Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy,
                                   const ThreadTeam& threadInfo,
                                   const ThreadTeam& reactionThreadInfo,
-                                  int simLoopType)
+                                  int simLoopType, string defaultVariant)
    {
       FGRUtils::FGRDiffusionParms p;
       objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0", "l^3/capacitance");
       objectGet(obj, "printBBox",      p.printBBox_, "0");
-      string defaultVariant = "omp";
-      if (simLoopType == Simulate::pdr) // parallelDiffusionReaction
-         defaultVariant = "simd";
-      if (simLoopType == Simulate::lag) // parallelDiffusionReaction
-         defaultVariant = "simd";
       string variant;
       objectGet(obj, "variant", variant, defaultVariant);
       if (variant == "omp")

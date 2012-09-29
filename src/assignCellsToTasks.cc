@@ -28,7 +28,7 @@ namespace
     void koradiBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
     int gridBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
     void blockBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
-    int workBoundScan(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+    LoadLevel workBoundScan(Simulate& sim, OBJECT* obj, MPI_Comm comm);
     int pioBalancerScan(Simulate& sim, OBJECT* obj, MPI_Comm comm);
 
     void computeWorkHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm, double diffCost);
@@ -38,13 +38,18 @@ namespace
 }
 
 
-int assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
+LoadLevel assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
 {
    OBJECT* obj = object_find(name.c_str(), "DECOMPOSITION");
    string method;
    objectGet(obj, "method", method, "koradi");
+   LoadLevel loadLevel ; 
 
-   int nDiffusionCores=-1; 
+   loadLevel.nDiffusionCores=1; 
+   loadLevel.stencil="omp"; 
+   if (sim.loopType_ == Simulate::pdr ) loadLevel.stencil = "strip"; 
+   if (sim.loopType_ == Simulate::lag ) loadLevel.stencil = "strip"; 
+
    profileStart("Assignment");
    if (method == "koradi")
       koradiBalancer(sim, obj, comm);
@@ -53,18 +58,18 @@ int assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
    else if (method == "block")
       blockBalancer(sim, obj, comm);
    else if (method == "workBound")
-      nDiffusionCores = workBoundScan(sim, obj, comm);
+      loadLevel = workBoundScan(sim, obj, comm);
    else if (method == "pio")
-      nDiffusionCores = pioBalancerScan(sim, obj, comm);
+      loadLevel.nDiffusionCores = pioBalancerScan(sim, obj, comm);
    else
       assert(1==0);      
    profileStop("Assignment");
-   return nDiffusionCores;
+   return loadLevel;
 }
 
 namespace
 {
-   int  workBoundScan(Simulate& sim, OBJECT* obj, MPI_Comm comm)
+   LoadLevel  workBoundScan(Simulate& sim, OBJECT* obj, MPI_Comm comm)
    {
       int nRanks, myRank;
       MPI_Comm_size(comm, &nRanks);
@@ -73,9 +78,9 @@ namespace
       vector<AnatomyCell>& cells = sim.anatomy_.cellArray();
 
       // get block dimension
-      double alpha; 
+      double alpha,beta; 
       int dx,dy,dz;
-      int target,nC; 
+      int target,nCores,nRCoresBB; 
       int printStats; 
       char defaultTarget[16];
       char defaultNC[16];
@@ -85,9 +90,11 @@ namespace
       objectGet(obj, "dy", dy, "0");
       objectGet(obj, "dz", dz, "0");
       objectGet(obj, "alpha", alpha, "0.07");
+      objectGet(obj, "beta", beta, "10.0");
       objectGet(obj, "printStats", printStats, "0");
       objectGet(obj, "targetNTasks",target,defaultTarget); 
-      objectGet(obj, "nC",nC,defaultNC); 
+      objectGet(obj, "nC",nCores,defaultNC); 
+      objectGet(obj, "nRCoresBB",nRCoresBB,"2"); 
       assert(dx*dy*dz != 0);
       //assert((dz+2)%4 ==0); 
       //ewd:  automatically increase dz instead of core-dumping
@@ -100,13 +107,13 @@ namespace
       int nx = sim.anatomy_.nx(); 
       int ny = sim.anatomy_.ny(); 
       int nz = sim.anatomy_.nz(); 
-      int nDiffusionCores=workBoundBalancer(cells,dx,dy,dz,nx,ny,nz,target,nC,alpha,printStats,comm); 
+      LoadLevel loadLevel=workBoundBalancer(cells,dx,dy,dz,nx,ny,nz,target,nCores,nRCoresBB,alpha,beta,printStats,comm); 
 
       computeNCellsHistogram(sim,cells,target,comm);
       computeVolHistogram(sim,cells,target,comm);
 
       if (target != nRanks) exit(0); 
-      return nDiffusionCores; 
+      return loadLevel; 
    }
 }
 

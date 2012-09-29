@@ -4,6 +4,7 @@
 #include <string.h>
 #include <assert.h>
 #include <mpi.h>
+#define MIN(A,B) ((A) < (B) ? (A) : (B))
 
 double costFcn(int nTissue,int height, int dx, int dy, double a)
 {
@@ -96,7 +97,8 @@ int  findChunks(BALANCER *balancer, unsigned short *seg, double diffCost, COLUMN
    }
    return offset; 
 }
-BALANCER buildBalancer(int nCellGlobal, int nx,int ny,int nz,int dx,int dy,int dz, int  nTasks, int nC, double alpha, int printStats, MPI_Comm comm) 
+BALANCER buildBalancer(int nCellGlobal, int nx,int ny,int nz,int dx,int dy,int dz, 
+       int  nTasks, int nCores, int nRCoresBB, double alpha, double beta, int printStats, MPI_Comm comm) 
 {
    int rank,nRank; 
    MPI_Comm_rank(comm, &rank);
@@ -108,9 +110,11 @@ BALANCER buildBalancer(int nCellGlobal, int nx,int ny,int nz,int dx,int dy,int d
    balancer.comm = comm; 
    balancer.nCellGlobal = nCellGlobal; 
    balancer.printStats=printStats; 
-   balancer.nC = nC; 
+   balancer.nC = nCores; 
    balancer.alphaWork=alpha; 
-   balancer.timeRef = (dx*dy*dz + alpha*(dx)*(dy)*(dz4))/nC ;
+   balancer.beta=beta; 
+   //balancer.timeRef = (dx*dy*dz + alpha*(dx)*(dy)*(dz4))/nC ;
+   balancer.timeRef = (1.0*dx*dy*dz)/(nRCoresBB) ;
    balancer.rank   = rank; 
    balancer.nRank  = nRank; 
    balancer.nTasks = nTasks; 
@@ -208,7 +212,7 @@ int buildColumns(BALANCER *balancer)
    for (alpha = 0.0125;alpha<2;alpha*=2.0) 
    {
       nTasks=findChunks(balancer,seg, alpha,NULL);
-   if (nTasks == balancer->nTasks)  {minCost=maxCost=alpha; break;}
+      if (nTasks == balancer->nTasks)  {minCost=maxCost=alpha; break;}
       if ( nTasks < balancer->nTasks) minCost = alpha; 
       if ( nTasks > balancer->nTasks) {maxCost = alpha; break;}
    }
@@ -247,7 +251,7 @@ void  printDomainInfo(BALANCER *balancer)
    fprintf(domainFile,"nCells=%d; nx=%d; ny=%d; nz=%d;\n",balancer->nCellGlobal,balancer->nx,balancer->ny,balancer->nz);
    fprintf(domainFile,"dx=%d; dy=%d; dz=%d; ",balancer->dx,balancer->dy,balancer->dz);
    fprintf(domainFile,"NX=%d; NY=%d;\n",balancer->NX,balancer->NY);
-   fprintf(domainFile,"alphaWork=%f; alphaBalance=%f;\n",balancer->alphaWork,balancer->alphaBalance);
+   fprintf(domainFile,"alphaWork=%f; alphaBalance=%f; beta=%f\n",balancer->alphaWork,balancer->alphaBalance,balancer->beta);
    fprintf(domainFile,"nCellAve=%f; nCellBox=%f; ratio=%f;\n", nAve,nMax,nMax/nAve);
    fprintf(domainFile,"nCores=%d;\n}\n\n",balancer->nC);
  
@@ -307,7 +311,7 @@ int  domainID(int gid, BALANCER *balancer)
 int balanceCores(BALANCER *balancer)
 {
    CHUNKS chunk = balancer->chunk;
-   int nCore = 16;  // Need to replace with a call to inquire number of cores on node; 
+   int nCore = balancer->nC; 
    int dx = balancer->dx;
    int dy = balancer->dy;
    int dz = balancer->dz;
@@ -350,6 +354,7 @@ PARTITION_INFO corePartition(CHUNKS chunk, BALANCER *balancer)
    int dz = balancer->dz;
    int nC = balancer->nC;
    double alpha = balancer->alphaWork;
+   double beta = balancer->beta;
    double timeRef = balancer->timeRef;
    part.nT = chunk.nTissue;
    part.height =  chunk.zU-chunk.zL+1;
@@ -361,14 +366,24 @@ PARTITION_INFO corePartition(CHUNKS chunk, BALANCER *balancer)
    for (int nR =1;nR<nC;nR++)
    {
        int nD = nC-nR;
-       double timeD = (alpha*part.nB)/nD;
+       double timeD_simd    = (alpha*part.nB)/nD;
+       double timeD_threads = (alpha*beta*part.nT)/nD;
+       double timeD = MIN(timeD_simd,timeD_threads); 
        double timeR = (1.0*part.nT)/nR;
        double time = (timeD > timeR) ?  timeD : timeR;
        if ( time < timeMin ) {timeMin=time;nRMin=nR;}
    }
-   part.nR = nRMin;
-   part.nD = nC-part.nR;
-   part.timeD = (alpha*part.nB)/part.nD;
+   int nR = nRMin; 
+   int nD = nC-nR; 
+   part.nR = nR;
+   part.nD = nD;
+   double timeD_simd    = (alpha*part.nB)/nD;
+   double timeD_threads = (alpha*beta*part.nT)/nD;
+   double timeD = MIN(timeD_simd,timeD_threads); 
+   
+   if (timeD_simd > timeD_threads) part.stencilMethod = strdup("strip"); 
+   else                            part.stencilMethod = strdup("threads"); 
+   part.timeD = timeD;
    part.timeR = (1.0  *part.nT)/part.nR;
    part.cost  = part.nT + alpha*part.nB;
    return part; 

@@ -3,9 +3,10 @@
 
 #include <string>
 #include <mpi.h>
+#include "loadLevel.hh" 
 
 class Simulate;
 
-int assignCellsToTasks(Simulate& sim, const std::string& name, MPI_Comm comm);
+LoadLevel assignCellsToTasks(Simulate& sim, const std::string& name, MPI_Comm comm);
 
 #endif

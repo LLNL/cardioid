@@ -1,6 +1,7 @@
 #include "initializeSimulate.hh"
 
 #include <iostream>
+#include <sstream>
 
 #include "object_cc.hh"
 #include "Simulate.hh"
@@ -94,42 +95,44 @@ void initializeSimulate(const string& name, Simulate& sim)
       if (name[name.size()-1] != '#')
          name += "#";
    }
-   timestampBarrier("assigning cells to tasks", MPI_COMM_WORLD);
-   string decompositionName;
-   objectGet(obj, "decomposition", decompositionName, "decomposition");
-   int suggestedDiffusionCores = assignCellsToTasks(sim, decompositionName, MPI_COMM_WORLD);
 
    // read either the loopType or parallelDiffusionReaction
-   if (object_testforkeyword(obj, "loopType"))
-   {
-      string tmp; objectGet(obj, "loopType", tmp, "omp");
-      if (tmp == "omp")
-         sim.loopType_ = Simulate::omp;
-      else if (tmp == "pdr")
-         sim.loopType_ = Simulate::pdr;
-      else if (tmp == "allSkate")
-         sim.loopType_ = Simulate::allSkate;
-      else if (tmp == "lag")
-         sim.loopType_ = Simulate::lag;
-      else
-         assert(false);
-   }
+   string tmp; objectGet(obj, "loopType", tmp, "omp");
+   if (tmp == "omp")
+       sim.loopType_ = Simulate::omp;
+   else if (tmp == "pdr")
+      sim.loopType_ = Simulate::pdr;
+   else if (tmp == "allSkate")
+      sim.loopType_ = Simulate::allSkate;
+   else if (tmp == "lag")
+      sim.loopType_ = Simulate::lag;
    else
+      assert(false);
+   if (object_testforkeyword(obj, "parallelDiffusionReaction"))
    {
       // backward compatibility
-      int tmp; objectGet(obj, "parallelDiffusionReaction", tmp, "0");
+      int tmp; 
+      objectGet(obj, "parallelDiffusionReaction", tmp, "0");
       if (tmp == 1)
          sim.loopType_ = Simulate::pdr;
       else
          sim.loopType_ = Simulate::omp;
    }
-   
+   timestampBarrier("assigning cells to tasks", MPI_COMM_WORLD);
+   string decompositionName;
+   objectGet(obj, "decomposition", decompositionName, "decomposition");
+   LoadLevel loadLevel = assignCellsToTasks(sim, decompositionName, MPI_COMM_WORLD);
+
+   stringstream stream;
+   stream << loadLevel.nDiffusionCores;
+   string defaultNDiffusionCores  = stream.str();
+
    unsigned nDiffusionCores;
+   objectGet(obj, "nDiffusionCores", nDiffusionCores, defaultNDiffusionCores);
+
    vector<unsigned> diffusionCores;
-   objectGet(obj, "nDiffusionCores", nDiffusionCores, "1");
    objectGet(obj, "diffusionThreads", diffusionCores);
-   if (suggestedDiffusionCores > 0)
-      nDiffusionCores = suggestedDiffusionCores;
+
    if (sim.loopType_ == Simulate::pdr || sim.loopType_ == Simulate::lag)
    {
       // diffusionThreads overrides nDiffusionCores, but when no thread
@@ -193,7 +196,7 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "diffusion", nameTmp, "diffusion");
    sim.diffusion_ = diffusionFactory(nameTmp, sim.anatomy_, sim.diffusionThreads_,
                                      sim.reactionThreads_,
-                                     sim.loopType_);
+                                     sim.loopType_,loadLevel.stencil);
    
    timestampBarrier("building stimulus object", MPI_COMM_WORLD);
    vector<string> names;
