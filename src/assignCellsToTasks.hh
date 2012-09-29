@@ -3,7 +3,7 @@
 
 #include <string>
 #include <mpi.h>
-#include "loadLevel.hh" 
+#include "loadlevel.hh" 
 
 class Simulate;
 
