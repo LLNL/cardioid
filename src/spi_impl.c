@@ -391,7 +391,7 @@ void global_sync(spi_hdl_t *spi_hdl)
 void global_sync_2(spi_hdl_t *spi_hdl,uint64_t timeout)
 {
   _bgq_msync();
-  MUSPI_GIBarrier_t barrier;
+  //MUSPI_GIBarrier_t barrier;
   //  MUSPI_GIBarrierInit( &barrier, 0 );
     int32_t rc= MUSPI_GIBarrierEnterAndWaitWithTimeout((MUSPI_GIBarrier_t*)spi_hdl->barrier_hdl,timeout);
       if( rc!=0 )
