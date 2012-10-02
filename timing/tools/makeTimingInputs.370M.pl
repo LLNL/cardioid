@@ -38,8 +38,10 @@ foreach $anatomy ("370M")
       foreach $machine ("bgqspi", "bgqhpm")
       {
          foreach $loadbal ("grid", "work")
-             printObject($anatomy,$celltype,$reaction,$fastgates,
-                         $rationalfns,$smoothing,$ntasks,$machine);
+         {
+            printObject($anatomy,$celltype,$reaction,$fastgates,
+                        $rationalfns,$smoothing,$ntasks,$machine);
+         }
       }
    }
 }
@@ -86,20 +88,14 @@ sub printObject
    $px{73728} = 32; $py{73728} = 64; $pz{73728} = 36;  
       
 # store workbound balancer block sizes for each task count
-   $wx{16} = 2;     $wy{16} = 4;     $wz{16} = 2;  
-   $wx{32} = 4;     $wy{32} = 4;     $wz{32} = 2;  
-   $wx{64} = 4;     $wy{64} = 4;     $wz{64} = 4;  
-   $wx{128} = 4;    $wy{128} = 8;    $wz{128} = 4;  
-   $wx{256} = 8;    $wy{256} = 8;    $wz{256} = 4;  
-   $wx{512} = 8;    $wy{512} = 8;    $wz{512} = 8;  
-   $wx{1024} = 8;   $wy{1024} = 16;  $wz{1024} = 8;  
-   $wx{2048} = 16;  $wy{2048} = 16;  $wz{2048} = 8;  
-   $wx{4096} = 16;  $wy{4096} = 16;  $wz{4096} = 16;  
-   $wx{8192} = 16;  $wy{8192} = 32;  $wz{8192} = 16;  
-   $wx{16384} = 32; $wy{16384} = 32; $wz{16384} = 16;  
-   $wx{24576} = 32; $wy{24576} = 32; $wz{24576} = 24;  
-   $wx{32768} = 32; $wy{32768} = 32; $wz{32768} = 32;  
-   $wx{36864} = 20; $wy{36864} = 19; $wz{36864} = 28;  
+   $wx{1024} = 32;   $wy{1024} = 24;  $wz{1024} = 398;  
+   $wx{2048} = 32;  $wy{2048} = 24;  $wz{2048} = 198;  
+   $wx{4096} = 32;  $wy{4096} = 24;  $wz{4096} = 98;  
+   $wx{8192} = 35;  $wy{8192} = 34;  $wz{8192} = 42;  
+   $wx{16384} = 18; $wy{16384} = 20; $wz{16384} = 70;  
+   $wx{24576} = 20; $wy{24576} = 20; $wz{24576} = 42;  
+   $wx{32768} = 16; $wy{32768} = 18; $wz{32768} = 42;  
+   $wx{36864} = 20; $wy{36864} = 19; $wz{36864} = 26;  
    $wx{73728} = 20; $wy{73728} = 19; $wz{73728} = 14;  
       
    if ($ntasks != $px{$ntasks}*$py{$ntasks}*$pz{$ntasks})
@@ -569,7 +565,7 @@ sub printObject
       print BGQ "export MUSPI_NUMBATIDS=203\n";
       print BGQ "export MUSPI_NUMINJFIFOS=3\n";
       print BGQ "export MUSPI_NUMRECFIFOS=3\n\n";
-      print BGQ "srun --ntasks=$ntasks $bgqSPIExe\n";
+      print BGQ "srun --ntasks=$ntasks $bgqHPMExe\n";
       close BGQ;
    }
    elsif ($machine eq "peloton")
