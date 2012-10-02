@@ -36,10 +36,10 @@ foreach $anatomy ("block247", "swiss247")
                foreach $smoothing (1, 0)
                {
                   #foreach $ntasks (16, 32, 64)
-                  foreach $ntasks (16)
+                  foreach $ntasks (512, 1024)
                   {
                      #foreach $machine ("bgq", "peloton")
-                     foreach $machine ("peloton")
+                     foreach $machine ("bgq")
                      {
                         printObject($anatomy,$celltype,$reaction,$fastgates,
                                     $rationalfns,$smoothing,$ntasks,$machine);

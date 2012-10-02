@@ -7,7 +7,7 @@
 
 # global variables
 
-$AnatomyDir370M = "/p/ls1/emhm/370M-19-Jun-2012/anatomy.370M";
+$AnatomyDir370M = "/p/ls1/emhm/370M/anatomy-19-Jun-2012";
 $thisdir = `pwd`;  chomp $thisdir;
 $makeVoidAnatomyScript = "$thisdir/tools/makeAnatomyBlockWithVoids.pl";
 $bgqExe = "../../../bin/cardioid-bgq-spi";
