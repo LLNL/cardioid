@@ -11,14 +11,15 @@ $AnatomyDir370M = "/p/ls1/emhm/370M/anatomy-19-Jun-2012";
 $thisdir = `pwd`;  chomp $thisdir;
 $makeVoidAnatomyScript = "$thisdir/tools/makeAnatomyBlockWithVoids.pl";
 $bgqSPIExe = "../../../bin/cardioid-bgq-spi";
-$bgqHPMExe = "../../../bin/cardioid-bgq-hpm";
+$bgqHPMExe = "../../../bin/cardioid-bgq-spi-hpm";
 $pelotonExe = "../../../bin/cardioid-peloton";
 $nthreadsBGQ = 64;
 $nthreadsPeloton = 4;
 
-$useStateSensor = 1;  # add code for the new stateVariables sensor
+$useStateSensor = 0;  # add code for the new stateVariables sensor
 
 $nIterations = 2000000;
+$printRate = $nIterations/10;
 $checkpointRate = 50000000;
 
 $weakScaling = 1;   # if set to zero, anatomy size corresponding 
@@ -33,7 +34,7 @@ foreach $anatomy ("370M")
    $fastgates = 1;
    $rationalfns = 1;
    $smoothing = 1;
-   foreach $ntasks (4096, 8192, 16384, 32768, 36864, 73728)
+   foreach $ntasks (4096, 8192, 16384, 24576, 32768, 73728)
    {
       foreach $machine ("bgqspi", "bgqhpm")
       {
@@ -64,7 +65,7 @@ sub printObject
    if ($machine eq "peloton") { $nthreads = $nthreadsPeloton; }
 
    $date = `date +%m%d%y`;  chomp $date;
-   $maindir = join '','verif-runs-',$date;
+   $maindir = join '','timing-runs-',$date;
    if ($weakScaling == 0) { $maindir = join '','verif-runs-strong-',$date; }
    #$dirname = join '',$anatomy,'-',$reaction,'-fast',$fastgates,'mod',$smoothing,'rfns',$rationalfns,'-N',$nnodes;
    $dirname = join '',$anatomy,'-',$reaction,'-fast1-',$machine,'-',$loadbal,'bal','-N',$nnodes;
@@ -124,8 +125,8 @@ sub printObject
    print OBJECT "   maxLoop = $nIterations;\n";
    print OBJECT "   dt = 10 us;\n";
    print OBJECT "   time = 0;\n";
-   print OBJECT "   printRate = $checkpointRate;\n";
-   print OBJECT "   snapshotRate = $nIterations;\n";
+   print OBJECT "   printRate = $printRate;\n";
+   print OBJECT "   snapshotRate = $checkpointRate;\n";
    print OBJECT "   checkpointRate = $checkpointRate;\n";
    if ($useStateSensor == 1)
    {
