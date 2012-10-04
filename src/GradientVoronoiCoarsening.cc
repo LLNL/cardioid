@@ -52,25 +52,44 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(const SensorParms& sp,
                                      const Anatomy& anatomy,
                                      const vector<Long64>& gid,
                                      const PotentialData& vdata,
-                                     MPI_Comm comm)
+                                     MPI_Comm comm,
+                                     const double max_distance)
    :Sensor(sp),
     coarsening_(anatomy,gid,comm),
     filename_(filename),
     anatomy_(anatomy),
     vdata_(vdata),
-    comm_(comm)
+    comm_(comm),
+    max_distance_(max_distance)
 {
    dx_.resize(anatomy.nLocal());
    dy_.resize(anatomy.nLocal());
    dz_.resize(anatomy.nLocal());
 
    // color local cells
-   int ret=coarsening_.bruteForceColoring();
+   int ret=coarsening_.bruteForceColoring(max_distance);
    assert( ret>=0 );
    
    coarsening_.colorDisplacements(dx_,dy_,dz_);
 
    coarsening_.computeRemoteTasks();
+   
+   const int nLocal = anatomy_.nLocal();
+   const double maxd2=max_distance*max_distance;
+   colored_cells_.reserve(27);
+   
+   //int count=0;
+   for(int ic=0;ic<nLocal;++ic)
+   {
+      const int color=coarsening_.getColor(ic);
+      if( color>=0 )
+      {
+         assert( dx_[ic]*dx_[ic]+dy_[ic]*dy_[ic]+dz_[ic]*dz_[ic]<maxd2 ); 
+         colored_cells_.push_back(ic);
+         //count++;
+      }
+   }
+   //cout<<count<<" colored cells"<<endl;
 }
 
 void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& val)
@@ -89,15 +108,18 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
       for(int ic=0;ic<nLocal;++ic)
       {
          const int color=coarsening_.getColor(ic);
-         const double norm2=(dx_[ic]*dx_[ic]
-                            +dy_[ic]*dy_[ic]
-                            +dz_[ic]*dz_[ic]); 
-         if( norm2<1.e-6 ){
-            values[ic]=val[ic];
-            //cout<<"values["<<ic<<"]="<<values[ic]<<endl;
-            indexes.push_back(ic);
+         if( color>=0 )
+         {
+            const double norm2=(dx_[ic]*dx_[ic]
+                               +dy_[ic]*dy_[ic]
+                               +dz_[ic]*dz_[ic]); 
+            if( norm2<1.e-6 ){
+               values[ic]=val[ic];
+               //cout<<"values["<<ic<<"]="<<values[ic]<<endl;
+               indexes.push_back(ic);
+            }
+            ncellsofcolor[color]++;
          }
-         ncellsofcolor[color]++;
       }
       first_time=false;
       
@@ -121,6 +143,7 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
          const int ic=*pi;
 
          int color=coarsening_.getColor(ic);
+         assert( color>=0 );
          
          valcolors_.setSum(color,ncellsofcolor[color],val[ic]);
          
@@ -147,15 +170,19 @@ void GradientVoronoiCoarsening::computeLSsystem(const VectorDouble32& val)
    valRHS1_.clear();
    valRHS2_.clear();
 
-   const int nLocal = anatomy_.nLocal();
+   const int nLocal = colored_cells_.size();
    const double minnorm2=1.e-8;
 
-   for(int ic=0;ic<nLocal;++ic)
+   for(int icc=0;icc<nLocal;++icc)
    {
+      int ic=colored_cells_[icc];
+      
       const double norm2=(dx_[ic]*dx_[ic]+dy_[ic]*dy_[ic]+dz_[ic]*dz_[ic]); 
       if( norm2>minnorm2) // skip point at distance 0 
       {
          const int color=coarsening_.getColor(ic);
+         assert( color>=0 );
+         
          const double norm2i=1./norm2; // weighting
          //const double norm2i=1.; 
          valMat00_.add1value(color,dx_[ic]*dx_[ic]*norm2i);
@@ -235,6 +262,10 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
             }
             
          }else{
+            cout<<"GradientVoronoiCoarsening --- WARNING: exclude "
+                  "point from coarsened data on task "<<myRank
+                <<" (surrounded by "<<ncells<<" cells only)"
+                <<endl;
             exclude_colors.insert(color);
          }
       } 
@@ -242,7 +273,9 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
       first_time = false;
       
       int npts=(int)exclude_colors.size();
-      if( npts>0 )cout<<"GradientVoronoiCoarsening --- WARNING: exclude "<<npts<<" points from coarsened data on task "<<myRank<<endl;
+      if( npts>0 )cout<<"GradientVoronoiCoarsening --- WARNING: exclude "
+                      <<npts<<" points from coarsened data on task "<<myRank
+                      <<endl;
       
       MPI_Reduce(&npts, &sum_npts, 1, MPI_INT, MPI_SUM, 0, comm_);
    }

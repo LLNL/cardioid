@@ -173,7 +173,7 @@ class VoronoiCoarsening
    void computeRemoteTasks();
    void exchangeAndSum(LocalSums& valcolors);
    void exchangeAndSum(std::vector<LocalSums*> valcolors);
-   int bruteForceColoring();
+   int bruteForceColoring(const double max_distance=100000.);
    void colorDisplacements(std::vector<double>& dx,
                            std::vector<double>& dy,
                            std::vector<double>& dz);

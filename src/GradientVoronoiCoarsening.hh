@@ -17,10 +17,14 @@ class GradientVoronoiCoarsening : public Sensor
    const PotentialData& vdata_;
 
    MPI_Comm comm_;
+   
+   double max_distance_;
 
    std::vector<double> dx_;
    std::vector<double> dy_;
    std::vector<double> dz_;
+   
+   std::vector<int> colored_cells_;
 
    LocalSums valcolors_;
    LocalSums valMat00_;
@@ -45,7 +49,8 @@ class GradientVoronoiCoarsening : public Sensor
                      const Anatomy& anatomy,
                      const std::vector<Long64>& gid,
                      const PotentialData& vdata_,
-                     MPI_Comm comm);
+                     MPI_Comm comm,
+                     const double max_distance);
    void eval(double time, int loop);
    void print(double time, int loop);
 };

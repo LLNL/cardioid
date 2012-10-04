@@ -55,7 +55,8 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
 }
 
 // set values of color_ according to index of closest centers
-int VoronoiCoarsening::bruteForceColoring()
+// (only for cells with max_distance from a center, other cells take color -1)
+int VoronoiCoarsening::bruteForceColoring(const double max_distance)
 {
    assert( centers_.size()>0 );
    
@@ -107,7 +108,7 @@ int VoronoiCoarsening::bruteForceColoring()
       if(rcmin<domain_radius)rcmin=domain_radius;
 
 
-      // get centers closest to sub-domain
+      // get centers closest to sub-domain to reduce cost of coloring later
       const double d2min=1.01*(rcmin+domain_radius)*(rcmin+domain_radius);
       map<int,Vector> close_centers;
       for (int icenter=0; icenter<ncenters; ++icenter)
@@ -121,6 +122,12 @@ int VoronoiCoarsening::bruteForceColoring()
       assert( nclosecenters>0 );
       //std::cout<<"nclosecenters="<<nclosecenters<<std::endl;
       
+      const double r2max=3.*max_distance*max_distance/
+                        (anatomy_.dx()*anatomy_.dx()
+                        +anatomy_.dy()*anatomy_.dy()
+                        +anatomy_.dz()*anatomy_.dz());
+      //std::cout<<"r2max="<<r2max<<std::endl;
+      
       // color one cell at a time
       for (int icell=0; icell<colors_.size(); ++icell)
       {
@@ -128,7 +135,7 @@ int VoronoiCoarsening::bruteForceColoring()
          int color = -1;
          Vector r = indexToVector_(cells_[icell].gid_);
          
-         // loop over closest centers
+         // loop over closest centers only
          for(map<int,Vector>::const_iterator itr =close_centers.begin();
                                              itr!=close_centers.end();
                                            ++itr)
@@ -144,6 +151,8 @@ int VoronoiCoarsening::bruteForceColoring()
          if (color < 0 ){
             cerr << "Failed to assign color to cell "<<icell<<endl;
             return -1;
+         }else if( r2Min>r2max ){
+            colors_[icell]=-1;
          }else{
             colors_[icell]=color;
             ncolors_[color]++;
@@ -178,11 +187,15 @@ void VoronoiCoarsening::colorDisplacements(std::vector<double>& dx,
 {
    for (int icell=0; icell<colors_.size(); ++icell)
    {
-      Vector r = indexToVector_(cells_[icell].gid_);
-      Vector rij = r - centers_[colors_[icell]];
-      dx[icell]=rij.x()*anatomy_.dx();
-      dy[icell]=rij.y()*anatomy_.dy();
-      dz[icell]=rij.z()*anatomy_.dz();
+      int color=colors_[icell];
+      if(color>=0)
+      {
+         Vector r = indexToVector_(cells_[icell].gid_);
+         Vector rij = r - centers_[color];
+         dx[icell]=rij.x()*anatomy_.dx();
+         dy[icell]=rij.y()*anatomy_.dy();
+         dz[icell]=rij.z()*anatomy_.dz();
+      }
    }
 }
 
@@ -568,6 +581,7 @@ void VoronoiCoarsening::accumulateValues(const VectorDouble32& val, LocalSums& v
    const int nLocal = colors_.size();
    for(int ic=0;ic<nLocal;++ic)
    {
-      valcolors.add1value(colors_[ic],val[ic]);
+      if( colors_[ic]>=0 )
+         valcolors.add1value(colors_[ic],val[ic]);
    }
 }
