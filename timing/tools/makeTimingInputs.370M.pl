@@ -34,7 +34,8 @@ foreach $anatomy ("370M")
    $fastgates = 1;
    $rationalfns = 1;
    $smoothing = 1;
-   foreach $ntasks (4096, 8192, 16384, 24576, 32768, 73728)
+   foreach $ntasks (2048, 4096, 8192, 16384, 24576, 32768, 73728)
+   #foreach $ntasks (2048, 8192, 73728)
    {
       foreach $machine ("bgqspi", "bgqhpm")
       {
@@ -244,6 +245,7 @@ sub printObject
       print OBJECT "   ny = $py{$ntasks};\n";
       print OBJECT "   nz = $pz{$ntasks};\n";
       print OBJECT "   diffCost = 0.1;\n";
+      print OBJECT "   printTaskInfo = 1;\n";
       print OBJECT "}\n\n";
    }
    elsif ($loadbal eq "work")
@@ -259,6 +261,7 @@ sub printObject
       print OBJECT "   alpha = 0.1;\n";
       print OBJECT "   beta = 100.0;\n";
       print OBJECT "   printStats = 0;\n";
+      print OBJECT "   printTaskInfo = 1;\n";
       print OBJECT "}\n\n";      
    }
    else {
