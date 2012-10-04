@@ -95,19 +95,29 @@ foreach $dir (@ARGV[0..$#ARGV])
       $maxpe = -1;
       $maxtime = -1;
       $avgtime = 0;
+      $avgDifftime = 0;
+      $avgReacttime = 0;
       $cnt = 0;
       for ($ip=0; $ip<$#maxDiffTime; $ip++)
       {
          $cnt++;
          if ($maxDiffTime[$ip] > $maxtime) { $maxtime = $maxDiffTime[$ip]; $maxpe = $ip; }
          if ($maxReactTime[$ip] > $maxtime) { $maxtime = $maxReactTime[$ip]; $maxpe = $ip; }
+
          if ($maxDiffTime[$ip] > $maxReactTime[$ip]) { $avgtime += $maxDiffTime[$ip]; }
          else { $avgtime += $maxReactTime[$ip]; }
+         
+         $avgDifftime += $maxDiffTime[$ip];
+         $avgReacttime += $maxReactTime[$ip];
+
       }
       $avg = $avgtime/$cnt;
+      $avgDiff = $avgDifftime/$cnt;
+      $avgReact = $avgReacttime/$cnt;
+
       print OUT "\n";
-      print OUT "Average task time = $avg\n";
-      print OUT "Maximum time spent on task $maxpe:  max time = $maxtime  (diff time = $maxDiffTime[$maxpe], react time = $maxReactTime[$maxpe])\n";
+      printf OUT "Average task time = %0.2f (avg diff = %0.2f, avg react = %0.2f)\n",$avg,$avgDiff,$avgReact;
+      printf OUT "Maximum time spent on task $maxpe:  max time = %0.2f  (diff time = %0.2f, react time = %0.2f)\n",$maxtime,$maxDiffTime[$maxpe],$maxReactTime[$maxpe];
       close OUT;
   }
 }
