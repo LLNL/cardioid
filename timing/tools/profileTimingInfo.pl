@@ -91,15 +91,22 @@ foreach $dir (@ARGV[0..$#ARGV])
          print OUT "Task $ip, $nDiffThreads[$ip] diff. threads, $nReactThreads[$ip] react. threads, max diff time = $maxDiffTime[$ip] (wait = $minDiffWait[$ip]), max react time = $maxReactTime[$ip] (wait = $minReactWait[$ip])\n";
       }
 
-      # print out maximum timing information
+      # print out maximum and average timing information
       $maxpe = -1;
       $maxtime = -1;
+      $avgtime = 0;
+      $cnt = 0;
       for ($ip=0; $ip<$#maxDiffTime; $ip++)
       {
+         $cnt++;
          if ($maxDiffTime[$ip] > $maxtime) { $maxtime = $maxDiffTime[$ip]; $maxpe = $ip; }
          if ($maxReactTime[$ip] > $maxtime) { $maxtime = $maxReactTime[$ip]; $maxpe = $ip; }
+         if ($maxDiffTime[$ip] > $maxReactTime[$ip]) { $avgtime += $maxDiffTime[$ip]; }
+         else { $avgtime += $maxReactTime[$ip]; }
       }
+      $avg = $avgtime/$cnt;
       print OUT "\n";
+      print OUT "Average task time = $avg\n";
       print OUT "Maximum time spent on task $maxpe:  max time = $maxtime  (diff time = $maxDiffTime[$maxpe], react time = $maxReactTime[$maxpe])\n";
       close OUT;
   }
