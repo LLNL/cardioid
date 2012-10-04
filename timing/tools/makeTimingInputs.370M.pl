@@ -18,7 +18,7 @@ $nthreadsPeloton = 4;
 
 $useStateSensor = 0;  # add code for the new stateVariables sensor
 
-$nIterations = 2000000;
+$nIterations = 1000000;
 $printRate = $nIterations/10;
 $checkpointRate = 50000000;
 
@@ -136,7 +136,10 @@ sub printObject
    {
       #print OBJECT "   parallelDiffusionReaction = 1;\n";
       print OBJECT "   loopType = pdr;\n";
-      print OBJECT "   nDiffusionCores = 2;\n";
+      if ($loadbal eq "grid")
+      {
+         print OBJECT "   nDiffusionCores = 2;\n";
+      }
    }
    print OBJECT "}\n\n";
 
@@ -240,6 +243,7 @@ sub printObject
       print OBJECT "   nx = $px{$ntasks};\n";
       print OBJECT "   ny = $py{$ntasks};\n";
       print OBJECT "   nz = $pz{$ntasks};\n";
+      print OBJECT "   diffCost = 0.1;\n";
       print OBJECT "}\n\n";
    }
    elsif ($loadbal eq "work")
