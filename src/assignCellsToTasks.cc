@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <sstream>
+#include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
@@ -35,6 +36,7 @@ namespace
     double costFunction(int nTissue, int area, int height, double a);
     void computeVolHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
     void computeNCellsHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
+    void printTaskLoadInfo(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
 }
 
 
@@ -111,6 +113,16 @@ namespace
 
       computeNCellsHistogram(sim,cells,target,comm);
       computeVolHistogram(sim,cells,target,comm);
+
+      int taskprint;
+      objectGet(obj, "printTaskInfo", taskprint, "0");
+      if (taskprint == 1)
+      {
+        if (myRank == 0)
+           cout << "Printing task load info..." << endl;
+        printTaskLoadInfo(sim,cells,target,comm);
+      }
+      
 
       if (target != nRanks) exit(0); 
       return loadLevel; 
@@ -241,6 +253,15 @@ namespace
       computeVolHistogram(sim,cells,npegrid,comm);
       computeWorkHistogram(sim,cells,npegrid,comm, diffCost);
 
+      int taskprint;
+      objectGet(obj, "printTaskInfo", taskprint, "0");
+      if (taskprint == 1)
+      {
+        if (myRank == 0)
+           cout << "Printing task load info..." << endl;
+        printTaskLoadInfo(sim,cells,npegrid,comm);
+      }
+      
       // set up visualization of initial distribution
       int visgrid;
       objectGet(obj, "visgrid", visgrid, "0");
@@ -816,4 +837,69 @@ namespace
 
        }
     }
+}
+
+namespace
+{
+    void printTaskLoadInfo(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm)
+    {
+       int nTasks, myRank;
+       MPI_Comm_size(comm, &nTasks);
+       MPI_Comm_rank(comm, &myRank);
+       
+       // compute bounding box volumes from cells array
+       vector<int> peminx(nProcs,99999999);
+       vector<int> peminy(nProcs,99999999);
+       vector<int> peminz(nProcs,99999999);
+       vector<int> pemaxx(nProcs,-99999999);
+       vector<int> pemaxy(nProcs,-99999999);
+       vector<int> pemaxz(nProcs,-99999999);
+       vector<int> nloc(nProcs,0);
+       for (unsigned ii=0; ii<cells.size(); ++ii)
+       {
+          int peid = cells[ii].dest_;
+
+          GridPoint gpt(cells[ii].gid_,sim.nx_,sim.ny_,sim.nz_);
+          if (gpt.x < peminx[peid]) peminx[peid] = gpt.x;
+          if (gpt.y < peminy[peid]) peminy[peid] = gpt.y;
+          if (gpt.z < peminz[peid]) peminz[peid] = gpt.z;
+          if (gpt.x > pemaxx[peid]) pemaxx[peid] = gpt.x;
+          if (gpt.y > pemaxy[peid]) pemaxy[peid] = gpt.y;
+          if (gpt.z > pemaxz[peid]) pemaxz[peid] = gpt.z;
+          nloc[peid]++;
+       }
+       vector<int> peminx_all(nProcs);
+       vector<int> peminy_all(nProcs);
+       vector<int> peminz_all(nProcs);
+       vector<int> pemaxx_all(nProcs);
+       vector<int> pemaxy_all(nProcs);
+       vector<int> pemaxz_all(nProcs);
+       vector<int> nall(nProcs);
+       MPI_Allreduce(&peminx[0], &peminx_all[0], nProcs, MPI_INT, MPI_MIN, comm);
+       MPI_Allreduce(&peminy[0], &peminy_all[0], nProcs, MPI_INT, MPI_MIN, comm);
+       MPI_Allreduce(&peminz[0], &peminz_all[0], nProcs, MPI_INT, MPI_MIN, comm);
+       MPI_Allreduce(&pemaxx[0], &pemaxx_all[0], nProcs, MPI_INT, MPI_MAX, comm);
+       MPI_Allreduce(&pemaxy[0], &pemaxy_all[0], nProcs, MPI_INT, MPI_MAX, comm);
+       MPI_Allreduce(&pemaxz[0], &pemaxz_all[0], nProcs, MPI_INT, MPI_MAX, comm);
+       MPI_Allreduce(&nloc[0], &nall[0], nProcs, MPI_INT, MPI_SUM, comm);
+
+      if (myRank == 0)
+      {
+         string taskFile("taskLoadInfo.data");
+         ofstream os;
+         os.open(taskFile.c_str(),ofstream::out);
+         os << "# task   ncells   volume          bounding box" << endl;
+         for (int ip=0; ip<nProcs; ip++)
+         {
+            if (nall[ip] > 0)
+            {
+               int area = (pemaxx_all[ip]-peminx_all[ip]+1)*(pemaxy_all[ip]-peminy_all[ip]+1);
+               int height = (pemaxz_all[ip]-peminz_all[ip]+1);
+               os << "   " << ip << "    " << nall[ip] << "    " << area*height << "    " << peminx_all[ip] << "  " << pemaxx_all[ip] << "  " << peminy_all[ip] << "  " << pemaxy_all[ip] << "  " << peminz_all[ip] << "  " << pemaxz_all[ip] << endl;
+            }
+         }
+         os.close();
+      }
+    }
+
 }
