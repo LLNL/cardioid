@@ -34,8 +34,8 @@ foreach $anatomy ("370M")
    $fastgates = 1;
    $rationalfns = 1;
    $smoothing = 1;
-   foreach $ntasks (2048, 4096, 8192, 16384, 24576, 32768, 73728)
-   #foreach $ntasks (2048, 8192, 73728)
+   #foreach $ntasks (2048, 4096, 8192, 16384, 24576, 32768, 73728)
+   foreach $ntasks (73728)
    {
       foreach $machine ("bgqspi", "bgqhpm")
       {
@@ -139,7 +139,7 @@ sub printObject
       print OBJECT "   loopType = pdr;\n";
       if ($loadbal eq "grid")
       {
-         print OBJECT "   nDiffusionCores = 2;\n";
+         print OBJECT "   nDiffusionCores = 4;\n";
       }
    }
    print OBJECT "}\n\n";
@@ -233,6 +233,7 @@ sub printObject
    print OBJECT "{\n";
    print OBJECT "   method = FGR;\n";
    print OBJECT "   diffusionScale = 714.2857143;\n";
+   print OBJECT "   variant = strip;\n";
    print OBJECT "}\n\n";
 
    # decomposition block
@@ -244,7 +245,7 @@ sub printObject
       print OBJECT "   nx = $px{$ntasks};\n";
       print OBJECT "   ny = $py{$ntasks};\n";
       print OBJECT "   nz = $pz{$ntasks};\n";
-      print OBJECT "   diffCost = 0.1;\n";
+      print OBJECT "   diffCost = 0.5;\n";
       print OBJECT "   printTaskInfo = 1;\n";
       print OBJECT "}\n\n";
    }
