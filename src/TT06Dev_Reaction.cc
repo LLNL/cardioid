@@ -144,6 +144,14 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
    sort(cells.begin(), cells.end(), sortFunc);
 
    nCellBuffer_ =  4*((nCells_+3)/4); 
+#include "slow_fix.hh"
+#ifdef SLOW_FIX
+      {
+	int ncv = nCellBuffer_ >> 2;
+	if(0) nCellBuffer_ += 4*((10 - (ncv % 8)) % 8);
+	else  nCellBuffer_ += ((10 - (ncv & 7)) & 7) << 2;
+      }
+#endif
    unsigned bufSize = sizeof(double)*nStateVar*nCellBuffer_;
    int rc = posix_memalign((void**)&stateBuffer_, 32, bufSize);
    assert((size_t)stateBuffer_ % 32 == 0);
