@@ -392,7 +392,8 @@ void diffusionLoop(Simulate& sim,
    VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusion_);
 
 
-   while ( sim.loop_ < sim.maxLoop_ )
+   uint64_t loopLocal = sim.loop_;
+   while ( loopLocal < sim.maxLoop_ )
    {
       threadBarrier(timingBarrierTimer, loopData.timingBarrier, &timingHandle, nTotalThreads);
      
@@ -460,7 +461,7 @@ void diffusionLoop(Simulate& sim,
                                       &reactionHandle,
                                       sim.reactionThreads_.nThreads());
       stopTimer(diffusionWaitTimer); 
-
+      ++loopLocal;
 //      startTimer(dummyTimer);
 //      stopTimer(dummyTimer);
 
@@ -494,10 +495,10 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
    {
      loopIO(sim,1);
    }
-   while ( sim.loop_ < sim.maxLoop_ )
+   uint64_t loopLocal = sim.loop_;
+   while ( loopLocal < sim.maxLoop_ )
    {
       threadBarrier(timingBarrierTimer, loopData.timingBarrier, &timingHandle, nTotalThreads);
-      int loop_flag=sim.loop_+1; // save this number so that all the threads use the same after next barrier
            
       startTimer(reactionTimer);
       sim.reaction_->updateNonGate(sim.dt_, VmArray, dVmReaction);
@@ -564,13 +565,14 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 
       startTimer(reactionMiscTimer); 
       if (sim.checkRange_.on) sim.checkRanges(begin, end, dVmReaction, dVmDiffusion);
+      ++loopLocal;
       if (tid == 0)
       {
          sim.time_ += sim.dt_;
          ++sim.loop_;
       }
       
-      if ( sim.checkIO(loop_flag) ) // every thread should return the same result
+      if ( sim.checkIO(loopLocal) ) // every thread should return the same result
       {
          // jlf: needed to have correct dVm in sensors.
          // Already calculated in integrateLoop, so maybe we 
@@ -611,7 +613,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       stopTimer(reactionL2ArriveTimer);
       
       startTimer(reactionL2ResetTimer);
-      L2_BarrierWithSync_WaitAndReset(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
+      L2_BarrierWithSync_Reset(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
       stopTimer(reactionL2ResetTimer);
       //#pragma omp barrier 
    }
