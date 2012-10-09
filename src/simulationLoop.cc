@@ -395,6 +395,13 @@ void diffusionLoop(Simulate& sim,
    uint64_t loopLocal = sim.loop_;
    while ( loopLocal < sim.maxLoop_ )
    {
+     // Uncomment this for strong sync
+      // if (tid == 0)
+      // {
+      //   startTimer(diffusionImbalanceTimer);
+      //   loopData.voltageExchange.barrier();
+      //   stopTimer(diffusionImbalanceTimer);
+      // }
       threadBarrier(timingBarrierTimer, loopData.timingBarrier, &timingHandle, nTotalThreads);
      
       // Halo Exchange
