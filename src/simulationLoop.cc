@@ -654,7 +654,8 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
       // setup matrix voltages for first timestep.
       if (sim.reactionThreads_.teamRank() >= 0) 
          sim.diffusion_->updateLocalVoltage(&VmArray[0]);
-      loopData.voltageExchange.fillSendBuffer(VmArray);
+      if (sim.reactionThreads_.teamRank() == 0) 
+         loopData.voltageExchange.fillSendBuffer(VmArray);
       #pragma omp barrier
       profileStart(simulationLoopTimer);
       if ( sim.diffusionThreads_.teamRank() >= 0) 
