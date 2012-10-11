@@ -217,22 +217,25 @@ void updateGateFast(double dt, int nCellsTotal, int *cellTypeVector, double *Vm,
             double *mhu  = gatefit[2*eq+0].coef;
             double *tauR = gatefit[2*eq+1].coef;
 
-            int offsetCell0=offsetCell;
+            if (nCell0 > 0) updateGateFuncs[11](dt, nCell0 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
 
             offsetCell+=nCell0;
 
-            if (rCell0 > 0) update_s0Gate(dt, rCell0 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+            if (rCell0 > 0) 
+            {
+                update_s0Gate(dt, rCell0 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+                offsetCell+=rCell0;
+            }
 
             mhu  = gatefit[2*eq+2].coef;
             tauR = gatefit[2*eq+3].coef;
 
             if (rCell0 >  0)
             {
-                 offsetCell+=rCell0;
                  update_s1Gate(dt, 4-rCell0 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
                  offsetCell+=4-rCell0;
             }
-            int nCell1 = nCell - (offsetCell-offsetCell0);
+            int nCell1 = nCell - offsetCell;
 
           if (nCell1 > 0) updateGateFuncs[12](dt, nCell1 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
           }
