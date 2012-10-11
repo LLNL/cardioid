@@ -1,0 +1,796 @@
+#include "FGRDiffusionOverlap.hh"
+#include <cassert>
+#include "DiffusionUtils.hh"
+#include "Anatomy.hh"
+#include "Vector.hh"
+#include "fastBarrier.hh"
+#include <algorithm>
+#include <cstdio>
+#include "ibmIntrinsics.hh"
+#include "ThreadServer.hh"
+#include "ThreadUtils.hh"
+#include "PerformanceTimers.hh"
+using namespace PerformanceTimers;
+
+using namespace std;
+using namespace FGRUtils;
+
+
+FGRDiffusionOverlap::FGRDiffusionOverlap(const FGRDiffusionParms& parms,
+                           const Anatomy& anatomy,
+                           const ThreadTeam& threadInfo,
+                           const ThreadTeam& reactionThreadInfo)
+: nLocal_(anatomy.nLocal()),
+  localGrid_(DiffusionUtils::findBoundingBox_simd(anatomy, parms.printBBox_)),
+  threadInfo_(threadInfo),
+  reactionThreadInfo_(reactionThreadInfo),
+  diffusionScale_(parms.diffusionScale_)
+{
+
+   unsigned nx = localGrid_.nx();
+   unsigned ny = localGrid_.ny();
+   unsigned nz = localGrid_.nz();
+
+   // This is a test
+   for (unsigned ii=0; ii<anatomy.size(); ++ii)
+   {
+      Tuple globalTuple = anatomy.globalTuple(ii);
+      Tuple ll = localGrid_.localTuple(globalTuple);
+      assert(ll.x() >= 0 && ll.y() >= 0 && ll.z() >= 0);
+      assert(ll.x() < nx && ll.y() < ny && ll.z() < nz);
+   }
+   // This has been a test
+
+   mkOffsets(threadOffset_,     anatomy.nLocal(),  threadInfo_);
+   mkOffsets(localCopyOffset_,  anatomy.nLocal(),  reactionThreadInfo_);
+   mkOffsets(remoteCopyOffset_, anatomy.nRemote(), threadInfo_);
+
+  
+   //simd thread offsets
+   int work[3]={nx,ny,nz};
+   for(int ii=0;ii<3;ii++)
+   {
+     int Twork=work[ii]-2;
+     int chunkSize = Twork / threadInfo.nThreads();
+     int leftOver = Twork % threadInfo.nThreads();
+     threadOffset2D_[ii].resize(threadInfo.nThreads()+1);
+     threadOffset2D_[ii][0]=1;
+     for (int jj=0; jj<threadInfo.nThreads(); ++jj)
+     {
+        threadOffset2D_[ii][jj+1] = threadOffset2D_[ii][jj] + chunkSize;
+        if (jj < leftOver)
+           ++threadOffset2D_[ii][jj+1];
+     }
+     assert(work[ii]-1 == threadOffset2D_[ii][threadInfo.nThreads()] );
+   }
+     
+   int chunkSize = (nx-2) / threadInfo.nThreads();
+   int leftOver = (nx-2) % threadInfo.nThreads();
+   threadOffsetSimd_.resize(threadInfo.nThreads()+1);
+   threadOffsetSimd_[0]=1;
+   for (int ii=0; ii<threadInfo.nThreads(); ++ii)
+   {
+      threadOffsetSimd_[ii+1] = threadOffsetSimd_[ii] + chunkSize;
+      if (ii < leftOver)
+         ++threadOffsetSimd_[ii+1];
+   }
+   assert(nx-1 == threadOffsetSimd_[threadInfo.nThreads()] );
+
+   barrierHandle_.resize(threadInfo.nThreads());
+   fgrBarrier_ = L2_BarrierWithSync_InitShared();
+   #pragma omp parallel
+   {
+      int tid = threadInfo.teamRank();
+      if (tid >= 0)
+         L2_BarrierWithSync_InitInThread(fgrBarrier_, &barrierHandle_[tid]);
+   }         
+   
+   weight_.resize(nx, ny, nz);
+   A0_.resize(nx, ny, nz, 0.0);
+   assert(nz%4 == 0);
+
+   VmBlock_.resize(nx,ny,nz + (nz%4==0 ? 0:4-(nz%4)),0.0);
+   VmSlab_[0].resize(1,nx,ny + (ny%4==0 ? 0:4-(ny%4)),0.0);
+   VmSlab_[1].resize(1,nx,ny + (ny%4==0 ? 0:4-(ny%4)),0.0);
+   VmSlab_[2].resize(1,ny,nz + (nz%4==0 ? 0:4-(nz%4)),0.0);
+   VmSlab_[3].resize(1,ny,nz + (nz%4==0 ? 0:4-(nz%4)),0.0);
+   VmSlab_[4].resize(1,nz,nx + (nx%4==0 ? 0:4-(nx%4)),0.0);
+   VmSlab_[5].resize(1,nz,nx + (nx%4==0 ? 0:4-(nx%4)),0.0);
+
+   dVmBlock_.resize(nx,ny,nz + (nz%4==0 ? 0:4-(nz%4)),0.0);
+   dVmSlab_[0].resize(1,nx,ny + (ny%4==0 ? 0:4-(ny%4)),0.0);
+   dVmSlab_[1].resize(1,nx,ny + (ny%4==0 ? 0:4-(ny%4)),0.0);
+   dVmSlab_[2].resize(1,ny,nz + (nz%4==0 ? 0:4-(nz%4)),0.0);
+   dVmSlab_[3].resize(1,ny,nz + (nz%4==0 ? 0:4-(nz%4)),0.0);
+   dVmSlab_[4].resize(1,nz,nx + (nx%4==0 ? 0:4-(nx%4)),0.0);
+   dVmSlab_[5].resize(1,nz,nx + (nx%4==0 ? 0:4-(nx%4)),0.0);
+
+   buildTupleArray(anatomy);
+   buildBlockIndex(anatomy);
+
+   int base = VmBlock_.tupleToIndex(1, 1, 1);
+   offset_[ZZZ] = 0;
+   offset_[PZZ] = VmBlock_.tupleToIndex(2, 1, 1) - base;
+   offset_[ZPZ] = VmBlock_.tupleToIndex(1, 2, 1) - base;
+   offset_[MZZ] = VmBlock_.tupleToIndex(0, 1, 1) - base;
+   offset_[ZMZ] = VmBlock_.tupleToIndex(1, 0, 1) - base;
+   offset_[PPZ] = VmBlock_.tupleToIndex(2, 2, 1) - base;
+   offset_[MPZ] = VmBlock_.tupleToIndex(0, 2, 1) - base;
+   offset_[MMZ] = VmBlock_.tupleToIndex(0, 0, 1) - base;
+   offset_[PMZ] = VmBlock_.tupleToIndex(2, 0, 1) - base;
+   offset_[ZZP] = VmBlock_.tupleToIndex(1, 1, 2) - base;
+   offset_[ZZM] = VmBlock_.tupleToIndex(1, 1, 0) - base;
+   offset_[ZPP] = VmBlock_.tupleToIndex(1, 2, 2) - base;
+   offset_[ZPM] = VmBlock_.tupleToIndex(1, 2, 0) - base;
+   offset_[ZMM] = VmBlock_.tupleToIndex(1, 0, 0) - base;
+   offset_[ZMP] = VmBlock_.tupleToIndex(1, 0, 2) - base;
+   offset_[PZP] = VmBlock_.tupleToIndex(2, 1, 2) - base;
+   offset_[MZP] = VmBlock_.tupleToIndex(0, 1, 2) - base;
+   offset_[MZM] = VmBlock_.tupleToIndex(0, 1, 0) - base;
+   offset_[PZM] = VmBlock_.tupleToIndex(2, 1, 0) - base;
+
+   faceNbrOffset_[0] = offset_[MZZ];
+   faceNbrOffset_[1] = offset_[ZMZ];
+   faceNbrOffset_[2] = offset_[PZZ];
+   faceNbrOffset_[3] = offset_[ZPZ];
+   faceNbrOffset_[4] = offset_[ZZM];
+   faceNbrOffset_[5] = offset_[ZZP];
+
+   for(int ii=0;ii<27;ii++) offsetMap_[ii]=-100;
+   offsetMap_[1*9+1*3+1]=ZZZ;
+   offsetMap_[2*9+1*3+1]=PZZ;
+   offsetMap_[1*9+2*3+1]=ZPZ;
+   offsetMap_[0*9+1*3+1]=MZZ;
+   offsetMap_[1*9+0*3+1]=ZMZ;
+   offsetMap_[2*9+2*3+1]=PPZ;
+   offsetMap_[0*9+2*3+1]=MPZ;
+   offsetMap_[0*9+0*3+1]=MMZ;
+   offsetMap_[2*9+0*3+1]=PMZ;
+   offsetMap_[1*9+1*3+2]=ZZP;
+   offsetMap_[1*9+1*3+0]=ZZM;
+   offsetMap_[1*9+2*3+2]=ZPP;
+   offsetMap_[1*9+2*3+0]=ZPM;
+   offsetMap_[1*9+0*3+0]=ZMM;
+   offsetMap_[1*9+0*3+2]=ZMP;
+   offsetMap_[2*9+1*3+2]=PZP;
+   offsetMap_[0*9+1*3+2]=MZP;
+   offsetMap_[0*9+1*3+0]=MZM;
+   offsetMap_[2*9+1*3+0]=PZM;
+
+//   offsetsTest();
+   precomputeCoefficients(anatomy);
+   reorder_Coeff();
+
+
+//   srand(1234);
+//   double* VmM = VmBlock_.cBlock();
+//   for(int ii=0;ii<nx*ny*nz;ii++)
+//    { VmM[ii] = rand()/1000000.0;}
+//
+//   FGRDiff_simd_thread(1,nx-1,&(VmBlock_),dVmBlock_.cBlock());
+//
+//   for(int ii=1;ii<nx-1;ii++)
+//   for(int jj=1;jj<ny-1;jj++)
+//   for(int kk=1;kk<nz-1;kk++)
+//   {
+//     printf("(%d,%d,%d) : %f -> %f with %f\n",ii,jj,kk,VmBlock_(ii,jj,kk),dVmBlock_(ii,jj,kk), *((double*)&(diffCoefT2_(ii,jj,4*20*((int)(kk/4)) + 4* 5 + (kk%4)*2))) );
+//   }
+  
+
+}
+
+void FGRDiffusionOverlap::updateLocalVoltage(const double* VmLocal)
+{
+   startTimer(FGR_ArrayLocal2MatrixTimer);
+   int tid = reactionThreadInfo_.teamRank();
+   unsigned begin = localCopyOffset_[tid];
+   unsigned end   = localCopyOffset_[tid+1];
+   for (unsigned ii=begin; ii<end; ++ii)
+   {
+      int index = blockIndex_[ii];
+      VmBlock_(index) = VmLocal[ii];
+   }
+   stopTimer(FGR_ArrayLocal2MatrixTimer);
+}
+
+void FGRDiffusionOverlap::updateRemoteVoltage(const double* VmRemote)
+{
+   startTimer(FGR_ArrayRemote2MatrixTimer);
+   unsigned nx = localGrid_.nx();
+   unsigned ny = localGrid_.ny();
+   unsigned nz = localGrid_.nz();
+   int tid = threadInfo_.teamRank();
+   unsigned begin = remoteCopyOffset_[tid];
+   unsigned end   = remoteCopyOffset_[tid+1];
+   unsigned* bb = &blockIndex_[nLocal_];
+   for (unsigned ii=begin; ii<end; ++ii)
+   {
+      int x = localTuple_[ii].x();
+      int y = localTuple_[ii].y();
+      int z = localTuple_[ii].z();
+ 
+      if ( x == 0)         VmSlab_[0](0,y,z)=VmRemote[ii];
+      else if( x == nx-1 ) VmSlab_[1](0,y,z)=VmRemote[ii];
+      else if( y == 0 )    VmSlab_[2](0,z,x)=VmRemote[ii];
+      else if( y == ny-1 ) VmSlab_[3](0,z,x)=VmRemote[ii];
+      else if( z == 0 )    VmSlab_[4](0,x,y)=VmRemote[ii];
+      else if( z == nz-1 ) VmSlab_[5](0,x,y)=VmRemote[ii];
+   }
+   stopTimer(FGR_ArrayRemote2MatrixTimer);
+}
+
+//this call will be overlap
+void FGRDiffusionOverlap::calc(VectorDouble32& dVm)
+{
+   int tid = threadInfo_.teamRank();
+   startTimer(FGR_AlignCopyTimer);
+
+   Array3d<double> *VmTmp = &(VmBlock_);
+
+   stopTimer(FGR_AlignCopyTimer);
+   startTimer(FGR_StencilTimer);
+
+   //uint32_t begin = VmTmp->tupleToIndex(threadOffsetSimd_[tid],1,0);
+   //uint32_t end = VmTmp->tupleToIndex(threadOffsetSimd_[tid+1]-1,VmTmp->ny()-2,VmTmp->nz());
+   //   printf("simd version:%d-%d\n",begin,end);
+   //if (threadOffsetSimd_[tid] < threadOffsetSimd_[tid+1] )
+   //   FGRDiff_simd_thread(begin,end-begin,VmTmp,dVmBlock_.cBlock());
+   if (threadOffsetSimd_[tid] < threadOffsetSimd_[tid+1] )
+      FGRDiff_3D(threadOffsetSimd_[tid] ,threadOffsetSimd_[tid+1],VmTmp,dVmBlock_.cBlock());
+
+   stopTimer(FGR_StencilTimer);
+
+   startTimer(FGR_Matrix2ArrayTimer);
+
+//    if(VmBlock_.nz()%4 != 0) delete VmTmp;
+
+//     int begin = threadOffset_[tid];
+//     int end   = threadOffset_[tid+1];
+//     double* dVmBlock_ptr = dVmBlock_.cBlock();
+//     for (int ii=begin; ii<end; ++ii)
+//     {
+//       //dVm[ii] = dVmBlock_(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
+//       dVm[ii] = dVmBlock_ptr[blockIndex_[ii]];
+//       dVm[ii] *= diffusionScale_;
+//     }
+   stopTimer(FGR_Matrix2ArrayTimer);
+}
+
+//stencil on boundary
+void FGRDiffusionOverlap::calc_2D(VectorDouble32& dVm)
+{
+   int tid = threadInfo_.teamRank();
+
+   startTimer(FGR_2D_StencilTimer);
+   //how to divide the work among threads
+
+   if (threadOffsetSimd_[tid] < threadOffsetSimd_[tid+1] )
+   {
+      FGRDiff_2D(0,threadOffset2D_[0][tid] ,threadOffset2D_[0][tid+1],dVmSlab_[0].cBlock());
+      FGRDiff_2D(1,threadOffset2D_[0][tid] ,threadOffset2D_[0][tid+1],dVmSlab_[1].cBlock());
+      FGRDiff_2D(2,threadOffset2D_[1][tid] ,threadOffset2D_[1][tid+1],dVmSlab_[2].cBlock());
+      FGRDiff_2D(3,threadOffset2D_[1][tid] ,threadOffset2D_[1][tid+1],dVmSlab_[3].cBlock());
+      FGRDiff_2D(4,threadOffset2D_[2][tid] ,threadOffset2D_[2][tid+1],dVmSlab_[4].cBlock());
+      FGRDiff_2D(5,threadOffset2D_[2][tid] ,threadOffset2D_[2][tid+1],dVmSlab_[5].cBlock());
+   }
+
+   stopTimer(FGR_2D_StencilTimer);
+
+   startTimer(FGR_Barrier2Timer);
+   L2_BarrierWithSync_Barrier(fgrBarrier_, &barrierHandle_[tid], threadInfo_.nThreads());
+   stopTimer(FGR_Barrier2Timer);
+
+   startTimer(FGR_Boundary2MatrixTimer);
+
+//    if(VmBlock_.nz()%4 != 0) delete VmTmp;
+
+//     int begin = threadOffset_[tid];
+//     int end   = threadOffset_[tid+1];
+//     double* dVmBlock_ptr = dVmBlock_.cBlock();
+//     for (int ii=begin; ii<end; ++ii)
+//     {
+//       //dVm[ii] = dVmBlock_(localTuple_[ii].x(),localTuple_[ii].y(),localTuple_[ii].z());
+//       dVm[ii] = dVmBlock_ptr[blockIndex_[ii]];
+//       dVm[ii] *= diffusionScale_;
+//     }
+   stopTimer(FGR_Boundary2MatrixTimer);
+}
+
+
+//We're building the localTuple array.
+void FGRDiffusionOverlap::buildTupleArray(const Anatomy& anatomy)
+{
+   localTuple_.resize(anatomy.size(), Tuple(0,0,0));
+   for (unsigned ii=0; ii<anatomy.size(); ++ii)
+   {
+      Tuple globalTuple = anatomy.globalTuple(ii);
+      localTuple_[ii] = localGrid_.localTuple(globalTuple);
+      assert(localTuple_[ii].x() > 0);
+      assert(localTuple_[ii].y() > 0);
+      assert(localTuple_[ii].z() > 0);
+      assert(localTuple_[ii].x() < localGrid_.nx()-1);
+      assert(localTuple_[ii].y() < localGrid_.ny()-1);
+      assert(localTuple_[ii].z() < localGrid_.nz()-1);
+   }
+}
+
+void FGRDiffusionOverlap::buildBlockIndex(const Anatomy& anatomy)
+{
+   blockIndex_.resize(anatomy.nLocal());
+   for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
+   {
+      Tuple globalTuple = anatomy.globalTuple(ii);
+      Tuple ll = localGrid_.localTuple(globalTuple);
+      blockIndex_[ii] = VmBlock_.tupleToIndex(ll.x()-1, ll.y()-1, ll.z()-1);
+   }
+}
+
+void FGRDiffusionOverlap::precomputeCoefficients(const Anatomy& anatomy)
+{
+   unsigned nx = localGrid_.nx();
+   unsigned ny = localGrid_.ny();
+   unsigned nz = localGrid_.nz();
+   unsigned nxGlobal = anatomy.nx();
+   unsigned nyGlobal = anatomy.ny();
+   unsigned nzGlobal = anatomy.nz();
+   Vector hInv(1.0/anatomy.dx(), 1.0/anatomy.dy(), 1.0/anatomy.dz());
+   Vector h(anatomy.dx(), anatomy.dy(), anatomy.dz());
+   double gridCellVolume = h[0]*h[1]*h[2];
+   
+   SymmetricTensor sigmaZero = {0};
+   Array3d<SymmetricTensor> sigmaBlk(nx, ny, nz, sigmaZero);
+   Array3d<int> tissueBlk(nx, ny, nz, 0);
+
+   const vector<AnatomyCell>& cell = anatomy.cellArray();
+   for (unsigned ii=0; ii<anatomy.size(); ++ii)
+   {
+      unsigned ib = blockIndex_[ii];
+      sigmaBlk(ib) = anatomy.conductivity(ii);
+      tissueBlk(ib) = isTissue(anatomy.cellType(ii));
+   }
+
+   for (unsigned ii=0; ii<weight_.size(); ++ii)
+      for (unsigned jj=0; jj<19; ++jj)
+         weight_(ii).A[jj] = 0.0;
+
+   for (unsigned iCell=0; iCell<anatomy.nLocal(); ++iCell)
+   {
+      unsigned ib = blockIndex_[iCell];
+      int tissue[19] = {0};
+      mkTissueArray(tissueBlk, ib, tissue);
+      
+      for (unsigned iFace=0; iFace<6; ++iFace)
+      {
+         unsigned faceNbrIndex = ib+faceNbrOffset_[iFace];
+         if (tissueBlk(faceNbrIndex) == 0)
+            continue;
+
+         Vector sigmaTimesS = f1(ib, iFace, h, sigmaBlk)/gridCellVolume;
+         double gradPhi[3][19] = {0};
+         f2(iFace, tissue, gradPhi);
+         
+         for (unsigned ii=0; ii<19; ++ii)
+            for (unsigned jj=0; jj<3; ++jj)
+               weight_(ib).A[ii] += sigmaTimesS[jj] * gradPhi[jj][ii] * hInv[jj];
+      }
+
+      double sum = weight_(ib).A[0];
+      for (unsigned ii=1; ii<19; ++ii)
+      {
+         sum += weight_(ib).A[ii];
+         A0_(ib) -= weight_(ib).A[ii];
+      }
+      assert(abs(sum) < weightSumTolerance);
+   }
+//   printAllWeights(tissueBlk);
+}
+
+void FGRDiffusionOverlap::mkTissueArray(
+   const Array3d<int>& tissueBlk, int ib, int* tissue)
+{
+   for (unsigned ii=0; ii<19; ++ii)
+      tissue[ii] = tissueBlk(ib + offset_[ii]);
+}
+
+
+Vector FGRDiffusionOverlap::f1(int ib, int iFace, const Vector& h,
+                        const Array3d<SymmetricTensor>& sigmaBlk)
+{
+   SymmetricTensor
+      sigma = (sigmaBlk(ib) + sigmaBlk(ib+faceNbrOffset_[iFace])) / 2.0;
+   Vector S(0, 0, 0);
+   switch (iFace)
+   {
+     case 0:
+      S[0] = -h[1]*h[2];
+      break;
+     case 1:
+      S[1] = -h[0]*h[2];
+      break;
+     case 2:
+      S[0] = h[1]*h[2];
+      break;
+     case 3:
+      S[1] = h[0]*h[2];
+      break;
+     case 4:
+      S[2] = -h[0]*h[1];
+      break;
+     case 5:
+      S[2] = h[0]*h[1];
+      break;
+      
+     default:
+      assert(false);
+   }
+   return sigma * S;
+}
+
+
+void FGRDiffusionOverlap::printAllWeights(const Array3d<int>& tissue)
+{
+   for (unsigned ii=0; ii<localTuple_.size(); ++ii)
+   {
+      Tuple globalTuple = localGrid_.globalTuple(localTuple_[ii]);
+      int xx = localTuple_[ii].x();
+      int yy = localTuple_[ii].y();
+      int zz = localTuple_[ii].z();
+
+      printf("DiffusionWeight: %5d %5d %5d %4d"
+             " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
+             " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
+             " %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e"
+             " %20.12e\n",
+             globalTuple.x(), globalTuple.y(), globalTuple.z(),
+             tissue(xx, yy, zz),
+             weight_(xx, yy, zz).A[0],
+             weight_(xx, yy, zz).A[1],
+             weight_(xx, yy, zz).A[2],
+             weight_(xx, yy, zz).A[3],
+             weight_(xx, yy, zz).A[4],
+             weight_(xx, yy, zz).A[5],
+             weight_(xx, yy, zz).A[6],
+             weight_(xx, yy, zz).A[7],
+             weight_(xx, yy, zz).A[8],
+             weight_(xx, yy, zz).A[9],
+             weight_(xx, yy, zz).A[10],
+             weight_(xx, yy, zz).A[11],
+             weight_(xx, yy, zz).A[12],
+             weight_(xx, yy, zz).A[13],
+             weight_(xx, yy, zz).A[14],
+             weight_(xx, yy, zz).A[15],
+             weight_(xx, yy, zz).A[16],
+             weight_(xx, yy, zz).A[17],
+             weight_(xx, yy, zz).A[18]);
+   }
+}
+
+void FGRDiffusionOverlap::reorder_Coeff()
+{
+  uint32_t idx=0,ll,ii,jj,kk;
+  const uint32_t Nx2 = localGrid_.nx();
+  const uint32_t Ny2 = localGrid_.ny();
+  const uint32_t Nz2 = localGrid_.nz() + ((localGrid_.nz()%4)==0 ? 0 : (4-localGrid_.nz()%4));
+
+  diffCoefT2_.resize(Nx2,Ny2,Nz2*20,0.0);
+  diffCoefT3_[0].resize(1,Nx2,Ny2*5,0.0);
+  diffCoefT3_[1].resize(1,Nx2,Ny2*5,0.0);
+  diffCoefT3_[2].resize(1,Ny2,Nz2*5,0.0);
+  diffCoefT3_[3].resize(1,Ny2,Nz2*5,0.0);
+  diffCoefT3_[4].resize(1,Nz2,Nx2*5,0.0);
+  diffCoefT3_[5].resize(1,Nz2,Nx2*5,0.0);
+
+  srand(21321);
+
+  const int n_cell = localTuple_.size() ;
+  for(int ii=0;ii<n_cell;ii++)
+  {
+    int xx = localTuple_[ii].x();
+    int yy = localTuple_[ii].y();
+    int zz = localTuple_[ii].z();
+    int zz4 = (int)(zz/4);
+    int zp = zz + 1;
+    int zm = zz - 1;
+    int zp4 = (int)(zp/4);
+    int zm4 = (int)(zm/4);
+
+    assert(zz > 0);
+    assert(zz < Nz2-1);
+
+    diffCoefT2_(xx,yy,4*20*zp4 + 4* 0 + zp%4 ) =weight_(xx,yy,zz).A[ZZP];
+    diffCoefT2_(xx,yy,4*20*zp4 + 4* 1 + zp%4 ) =weight_(xx,yy,zz).A[ZMP];
+    diffCoefT2_(xx,yy,4*20*zp4 + 4* 2 + zp%4 ) =weight_(xx,yy,zz).A[MZP];
+    diffCoefT2_(xx,yy,4*20*zp4 + 4* 3 + zp%4 ) =weight_(xx,yy,zz).A[ZPP];
+    diffCoefT2_(xx,yy,4*20*zp4 + 4* 6 + zp%4 ) =weight_(xx,yy,zz).A[PZP];
+                                 
+    *((double*)&(diffCoefT2_(xx,yy,4*20*zz4 + 4* 4 + (zz%4)*2))) = A0_(xx,yy,zz);
+//    diffCoefT2_(xx,yy,4*20*zz4 + 4* 5 + zz%4 ) =weight_(xx,yy,zz).A[ZZZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4* 7 + zz%4 ) =weight_(xx,yy,zz).A[PMZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4* 8 + zz%4 ) =weight_(xx,yy,zz).A[MMZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4* 9 + zz%4 ) =weight_(xx,yy,zz).A[MPZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4*10 + zz%4 ) =weight_(xx,yy,zz).A[PPZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4*11 + zz%4 ) =weight_(xx,yy,zz).A[ZMZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4*12 + zz%4 ) =weight_(xx,yy,zz).A[MZZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4*13 + zz%4 ) =weight_(xx,yy,zz).A[ZPZ];
+    diffCoefT2_(xx,yy,4*20*zz4 + 4*14 + zz%4 ) =weight_(xx,yy,zz).A[PZZ];
+
+    diffCoefT2_(xx,yy,4*20*zm4 + 4*15 + zm%4 ) =weight_(xx,yy,zz).A[ZZM];
+    diffCoefT2_(xx,yy,4*20*zm4 + 4*16 + zm%4 ) =weight_(xx,yy,zz).A[ZMM];
+    diffCoefT2_(xx,yy,4*20*zm4 + 4*17 + zm%4 ) =weight_(xx,yy,zz).A[MZM];
+    diffCoefT2_(xx,yy,4*20*zm4 + 4*18 + zm%4 ) =weight_(xx,yy,zz).A[ZPM];
+    diffCoefT2_(xx,yy,4*20*zm4 + 4*19 + zm%4 ) =weight_(xx,yy,zz).A[PZM];
+
+  }
+}
+
+
+void
+FGRDiffusionOverlap::FGRDiff_2D(uint32_t slabID, const uint32_t by,const int32_t ey, double* out0)
+{
+  int ii;
+
+  const unsigned Ny2 = VmSlab_[slabID].ny();
+  const unsigned Nz2 = VmSlab_[slabID].nz();
+
+  double* VmM = VmSlab_[slabID].cBlock();
+  double* out;
+  WeightType *diffC = diffCoefT3_[slabID].cBlock();
+
+  int xym1z_ =   ((0 ) *Ny2 + (-1)) * Nz2;
+  int xyp1z_ =   ((0 ) *Ny2 + (+1)) * Nz2;
+
+  vector4double B0,Sum1,B2,C0,C1,C2,Sum0,Sum2,Sum;
+  vector4double my_x_y_z    ;
+  vector4double my_x_yp1_z  ;
+  vector4double my_x_ym1_z  ;
+  vector4double my_zero_vec = vec_splats(0.0);
+
+  for(int xx=by;xx<ey;xx++)
+  {
+    int start = VmSlab_[slabID].tupleToIndex(0,xx,1);
+    int end   = VmSlab_[slabID].tupleToIndex(0,xx,Nz2);
+    int chunk_size = end - start;
+
+    double* phi_x_ym1_z   = VmM + start + xym1z_;
+    double* phi_x_y_z     = VmM + start ;
+    double* phi_x_yp1_z   = VmM + start + xyp1z_;
+ 
+    out = out0 + start;
+ 
+    WeightType *simd_diff_ = diffC + start*5; 
+ 
+//    assert((uint64_t)phi_xm1_ym1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xm1_y_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xm1_yp1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_x_ym1_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_x_y_z    %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_x_yp1_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xp1_ym1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xp1_y_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xp1_yp1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)out          %(4*sizeof(double)) == 0);
+ 
+  
+    #define load_my_vectors_2D  \
+        my_x_y_z      =vec_ld(0,      phi_x_y_z   );\
+        my_x_yp1_z    =vec_ld(0,      phi_x_yp1_z );\
+        my_x_ym1_z    =vec_ld(0,      phi_x_ym1_z );
+ 
+    #define calc_zp_2D(x) \
+        x = vec_mul( vec_ld(4*0*WTSZ,simd_diff_)  , my_x_y_z);
+ 
+    #define calc_zz_2D(x) \
+        x = vec_madd( vec_ld(4*3*WTSZ,simd_diff_)  , my_x_yp1_z, \
+            vec_madd( vec_ld(4*2*WTSZ,simd_diff_)  , my_x_yp1_z, \
+            vec_mul(  vec_ld(4*1*WTSZ,simd_diff_)  , my_x_y_z))); \
+ 
+    #define calc_zm_2D(x) \
+        x = vec_mul( vec_ld(4*4*WTSZ,simd_diff_), my_x_y_z);
+ 
+    #define shift_pointers_2D \
+            phi_x_yp1_z   +=4; \
+            phi_x_ym1_z   +=4; \
+            phi_x_y_z     +=4;
+ 
+    double* simd_diff2 = (double*)simd_diff_;
+    load_my_vectors_2D;
+ 
+    calc_zp_2D(B0);
+    calc_zz_2D(Sum1);
+    calc_zm_2D(B2);
+ 
+    Sum2 = vec_sldw(my_zero_vec,B2,3);
+ 
+//    cout << "coeff:" << *(simd_diff2 + 2*5 + 1) <<  " " <<  *(simd_diff2 + 2*5 + 2) <<  " " << *(simd_diff2 + 2*5 + 3) <<  " " << endl;
+
+//    cout << "sum1:" << Sum1[0] << endl;
+
+    for (ii=0;ii<chunk_size;ii+=4)
+    {
+
+      simd_diff_ += 5*4;
+
+      shift_pointers_2D; //note that these pointers one step further
+      load_my_vectors_2D;
+ 
+      calc_zp_2D(C0);
+      Sum0 = vec_sldw(B0,C0,1);
+      B0=C0;
+ 
+      Sum = vec_add(vec_add(Sum2,Sum1),Sum0);
+      vec_st(Sum,0,out);  //commit
+      out+=4;
+ 
+      calc_zz_2D(Sum1);
+      calc_zm_2D(C2);
+      Sum2 = vec_sldw(B2,C2,3);
+      B2 = C2;
+
+//      printf("Sum1:%f %f %f %f\n",Sum1[0],Sum1[1],Sum1[2],Sum1[3]);
+//      printf("double_vec:%f %f %f %f\n",double_vec[0],double_vec[1],double_vec[2],double_vec[3]);
+//      printf("double_vec2:%f %f %f %f\n",*((double*)(simd_diff_+4*5)),*((double*)(simd_diff_+4*5+2)),*((double*)(simd_diff_+4*5+4)),*((double*)(simd_diff_+4*5+6)));
+    }
+  }
+}
+
+// simdiazed version
+// 'start' cannot be in the middle. 'start' must point to (n,m,0). 
+void
+FGRDiffusionOverlap::FGRDiff_3D(const uint32_t bx,const int32_t ex, Array3d<double>* VmTmp, double* out0)
+{
+  int ii;
+
+  const unsigned Nx2 = VmTmp->nx();
+  const unsigned Ny2 = VmTmp->ny();
+  const unsigned Nz2 = VmTmp->nz();
+
+  double* VmM = VmTmp->cBlock();
+  double* out;
+  WeightType *diffC = diffCoefT2_.cBlock();
+
+  int xm1ym1z_ = ((-1) *Ny2 + (-1)) * Nz2;
+  int xm1yz_ =   ((-1) *Ny2 + ( 0)) * Nz2;
+  int xm1yp1z_ = ((-1) *Ny2 + (+1)) * Nz2;
+  int xym1z_ =   ((0 ) *Ny2 + (-1)) * Nz2;
+  int xyp1z_ =   ((0 ) *Ny2 + (+1)) * Nz2;
+  int xp1ym1z_ = ((+1) *Ny2 + (-1)) * Nz2;
+  int xp1yz_ =   ((+1) *Ny2 + ( 0)) * Nz2;
+  int xp1yp1z_ = ((+1) *Ny2 + (+1)) * Nz2;
+
+  vector4double B0,Sum1,B2,C0,C1,C2,Sum0,Sum2,Sum;
+  vector4double my_x_y_z    ;
+  vector4double my_xp1_y_z  ;
+  vector4double my_x_yp1_z  ;
+  vector4double my_xm1_y_z  ;
+  vector4double my_x_ym1_z  ;
+  vector4double my_xp1_yp1_z;
+  vector4double my_xm1_yp1_z;
+  vector4double my_xm1_ym1_z;
+  vector4double my_xp1_ym1_z;
+  vector4double double_vec;
+  vector4double my_zero_vec = vec_splats(0.0);
+
+  for(int xx=bx;xx<ex;xx++)
+  {
+    int start = VmTmp->tupleToIndex(xx,1,0);
+    int end   = VmTmp->tupleToIndex(xx,Ny2-2,Nz2);
+    int chunk_size = end - start;
+
+    double* phi_xm1_ym1_z = VmM + start + xm1ym1z_;
+    double* phi_xm1_y_z   = VmM + start + xm1yz_;
+    double* phi_xm1_yp1_z = VmM + start + xm1yp1z_;
+    double* phi_x_ym1_z   = VmM + start + xym1z_;
+    double* phi_x_y_z     = VmM + start ;
+    double* phi_x_yp1_z   = VmM + start + xyp1z_;
+    double* phi_xp1_ym1_z = VmM + start + xp1ym1z_;
+    double* phi_xp1_y_z   = VmM + start + xp1yz_;
+    double* phi_xp1_yp1_z = VmM + start + xp1yp1z_;
+ 
+    out = out0 + start;
+ 
+    WeightType *simd_diff_ = diffC + start*20; 
+ 
+//    assert((uint64_t)phi_xm1_ym1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xm1_y_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xm1_yp1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_x_ym1_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_x_y_z    %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_x_yp1_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xp1_ym1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xp1_y_z  %(4*sizeof(double)) == 0);
+//    assert((uint64_t)phi_xp1_yp1_z%(4*sizeof(double)) == 0);
+//    assert((uint64_t)out          %(4*sizeof(double)) == 0);
+ 
+  
+    #define load_my_vectors  \
+        my_x_y_z      =vec_ld(0,      phi_x_y_z   );\
+        my_xp1_y_z    =vec_ld(0,      phi_xp1_y_z );\
+        my_x_yp1_z    =vec_ld(0,      phi_x_yp1_z );\
+        my_xm1_y_z    =vec_ld(0,      phi_xm1_y_z );\
+        my_x_ym1_z    =vec_ld(0,      phi_x_ym1_z );\
+        my_xp1_yp1_z  =vec_ld(0,    phi_xp1_yp1_z );\
+        my_xm1_yp1_z  =vec_ld(0,    phi_xm1_yp1_z );\
+        my_xm1_ym1_z  =vec_ld(0,    phi_xm1_ym1_z );\
+        my_xp1_ym1_z  =vec_ld(0,    phi_xp1_ym1_z );
+ 
+    #define calc_zp(x) \
+        x =  vec_madd(vec_ld(4*6*WTSZ,simd_diff_)  , my_xp1_y_z, \
+             vec_madd(vec_ld(4*3*WTSZ,simd_diff_)  , my_x_yp1_z, \
+             vec_madd(vec_ld(4*2*WTSZ,simd_diff_)  , my_xm1_y_z, \
+             vec_madd(vec_ld(4*1*WTSZ,simd_diff_)  , my_x_ym1_z, \
+             vec_mul( vec_ld(4*0*WTSZ,simd_diff_)  , my_x_y_z)))));
+ 
+    #define calc_zz(x) \
+        double_vec = vec_ld(4*4*WTSZ,(double*)simd_diff_); \
+        x = vec_madd( vec_ld(4*14*WTSZ,simd_diff_)  , my_xp1_y_z, \
+            vec_madd( vec_ld(4*13*WTSZ,simd_diff_)  , my_x_yp1_z, \
+            vec_madd( vec_ld(4*12*WTSZ,simd_diff_)  , my_xm1_y_z, \
+            vec_madd( vec_ld(4*11*WTSZ,simd_diff_)  , my_x_ym1_z, \
+            vec_madd( vec_ld(4*10*WTSZ,simd_diff_)  , my_xp1_yp1_z, \
+            vec_madd( vec_ld(4*9*WTSZ,simd_diff_)  , my_xm1_yp1_z, \
+            vec_madd( vec_ld(4*8*WTSZ,simd_diff_)  , my_xm1_ym1_z, \
+            vec_madd( vec_ld(4*7*WTSZ,simd_diff_)  , my_xp1_ym1_z, \
+            vec_mul (double_vec  , my_x_y_z)))))))));
+//            vec_mul ( vec_ld(4*5*WTSZ,(double*)simd_diff_)  , my_x_y_z)))))))));
+            //vec_mul ( vec_ld(4*5*WTSZ,simd_diff_)  , my_x_y_z)))))))));
+ 
+    #define calc_zm(x) \
+        x = vec_madd( vec_ld(4*19*WTSZ,simd_diff_)  , my_xp1_y_z, \
+            vec_madd( vec_ld(4*18*WTSZ,simd_diff_)  , my_x_yp1_z, \
+            vec_madd( vec_ld(4*17*WTSZ,simd_diff_)  , my_xm1_y_z, \
+            vec_madd( vec_ld(4*16*WTSZ,simd_diff_)  , my_x_ym1_z, \
+            vec_mul ( vec_ld(4*15*WTSZ,simd_diff_)  , my_x_y_z)))));
+ 
+    #define shift_pointers \
+            phi_xp1_y_z   +=4; \
+            phi_x_yp1_z   +=4; \
+            phi_xm1_y_z   +=4; \
+            phi_x_ym1_z   +=4; \
+            phi_xp1_yp1_z +=4; \
+            phi_xm1_yp1_z +=4; \
+            phi_xm1_ym1_z +=4; \
+            phi_xp1_ym1_z +=4; \
+            phi_x_y_z     +=4;
+ 
+    double* simd_diff2 = (double*)simd_diff_;
+    load_my_vectors;
+ 
+    calc_zp(B0);
+    calc_zz(Sum1);
+    calc_zm(B2);
+ 
+    Sum2 = vec_sldw(my_zero_vec,B2,3);
+ 
+//    cout << "coeff:" << *(simd_diff2 + 2*5 + 1) <<  " " <<  *(simd_diff2 + 2*5 + 2) <<  " " << *(simd_diff2 + 2*5 + 3) <<  " " << endl;
+
+//    cout << "sum1:" << Sum1[0] << endl;
+
+    for (ii=0;ii<chunk_size;ii+=4)
+    {
+
+      simd_diff_ += 20*4;
+
+
+
+      shift_pointers; //note that these pointers one step further
+      load_my_vectors;
+ 
+      calc_zp(C0);
+      Sum0 = vec_sldw(B0,C0,1);
+      B0=C0;
+ 
+      Sum = vec_add(vec_add(Sum2,Sum1),Sum0);
+      vec_st(Sum,0,out);  //commit
+      out+=4;
+ 
+      calc_zz(Sum1);
+      calc_zm(C2);
+      Sum2 = vec_sldw(B2,C2,3);
+      B2 = C2;
+
+//      printf("Sum1:%f %f %f %f\n",Sum1[0],Sum1[1],Sum1[2],Sum1[3]);
+//      printf("double_vec:%f %f %f %f\n",double_vec[0],double_vec[1],double_vec[2],double_vec[3]);
+//      printf("double_vec2:%f %f %f %f\n",*((double*)(simd_diff_+4*5)),*((double*)(simd_diff_+4*5+2)),*((double*)(simd_diff_+4*5+4)),*((double*)(simd_diff_+4*5+6)));
+    }
+  }
+}
