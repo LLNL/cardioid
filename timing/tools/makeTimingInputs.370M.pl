@@ -35,7 +35,7 @@ foreach $anatomy ("370M")
    $rationalfns = 1;
    $smoothing = 1;
    #foreach $ntasks (2048, 4096, 8192, 16384, 24576, 32768, 73728)
-   foreach $ntasks (73728)
+   foreach $ntasks (49152, 73728)
    {
       foreach $machine ("bgqspi", "bgqhpm")
       {
@@ -87,6 +87,7 @@ sub printObject
    $px{24576} = 32; $py{24576} = 32; $pz{24576} = 24;  
    $px{32768} = 32; $py{32768} = 32; $pz{32768} = 32;  
    $px{36864} = 32; $py{36864} = 36; $pz{36864} = 32;  
+   $px{49152} = 32; $py{49152} = 32; $pz{49152} = 48;  
    $px{73728} = 32; $py{73728} = 64; $pz{73728} = 36;  
       
 # store workbound balancer block sizes for each task count
@@ -98,6 +99,7 @@ sub printObject
    $wx{24576} = 20; $wy{24576} = 20; $wz{24576} = 42;  
    $wx{32768} = 16; $wy{32768} = 18; $wz{32768} = 42;  
    $wx{36864} = 20; $wy{36864} = 19; $wz{36864} = 26;  
+   $wx{49152} = 20; $wy{49152} = 19; $wz{49152} = 22;  
    $wx{73728} = 20; $wy{73728} = 19; $wz{73728} = 14;  
       
    if ($ntasks != $px{$ntasks}*$py{$ntasks}*$pz{$ntasks})
@@ -126,6 +128,7 @@ sub printObject
    print OBJECT "   maxLoop = $nIterations;\n";
    print OBJECT "   dt = 10 us;\n";
    print OBJECT "   time = 0;\n";
+   print OBJECT "   checkRanges = 0;\n";
    print OBJECT "   printRate = $printRate;\n";
    print OBJECT "   snapshotRate = $checkpointRate;\n";
    print OBJECT "   checkpointRate = $checkpointRate;\n";
