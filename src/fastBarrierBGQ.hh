@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <spi/include/l2/atomic.h>
 #include <builtins.h>
+#include <stdlib.h>
 
 #ifndef FAST_BARRIER_HH
 #error "Do not #include fastBarrierBGQ.hh.  #include fastBarrier.hh instead"
