@@ -393,15 +393,25 @@ void diffusionLoop(Simulate& sim,
 
 
    uint64_t loopLocal = sim.loop_;
+   int globalSyncRate=sim.globalSyncRate_;
+//  if globalSyncCnt == -1 never sync
+//  if globalSyncCnt ==  0  sync only once at start of loop
+//  if globalSyncCnt >   0  sync at start of loop and then every globalSyncCnt timestep; 
+   int globalSyncCnt = 1; 
+   if (globalSyncRate == -1 ) globalSyncCnt=-1;
    while ( loopLocal < sim.maxLoop_ )
    {
-     // Uncomment this for strong sync
-      // if (tid == 0)
-      // {
-      //   startTimer(diffusionImbalanceTimer);
-      //   loopData.voltageExchange.barrier();
-      //   stopTimer(diffusionImbalanceTimer);
-      // }
+      if (globalSyncCnt >=0) globalSyncCnt--; 
+      if (globalSyncCnt == 0 )
+      {
+	 globalSyncCnt=globalSyncRate; 
+         if (tid == 0)
+         {
+          startTimer(diffusionImbalanceTimer);
+          loopData.voltageExchange.barrier();
+          stopTimer(diffusionImbalanceTimer);
+         }
+      }
       threadBarrier(timingBarrierTimer, loopData.timingBarrier, &timingHandle, nTotalThreads);
      
       // Halo Exchange
@@ -508,7 +518,9 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       threadBarrier(timingBarrierTimer, loopData.timingBarrier, &timingHandle, nTotalThreads);
            
       startTimer(reactionTimer);
+      startTimer(nonGateRLTimer);
       sim.reaction_->updateNonGate(sim.dt_, VmArray, dVmReaction);
+      stopTimer(nonGateRLTimer);
 
       startTimer(GateNonGateTimer); 
 #ifdef PER_SQUAD_BARRIER
@@ -526,7 +538,9 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 				 sim.reactionThreads_.nThreads());
 #endif
       stopTimer(GateNonGateTimer); 
+      startTimer(gateRLTimer);
       sim.reaction_->updateGate(sim.dt_, VmArray);
+      stopTimer(gateRLTimer);
       stopTimer(reactionTimer);
 
       startTimer(reactionWaitTimer);
@@ -570,8 +584,10 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 		    sim.diffusion_->diffusionScale());
       stopTimer(integratorTimer);
 
-      startTimer(reactionMiscTimer); 
+      startTimer(rangeCheckTimer); 
       if (sim.checkRange_.on) sim.checkRanges(begin, end, dVmReaction, dVmDiffusion);
+      stopTimer(rangeCheckTimer); 
+      startTimer(reactionMiscTimer); 
       ++loopLocal;
       if (tid == 0)
       {

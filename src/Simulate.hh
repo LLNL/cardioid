@@ -90,6 +90,7 @@ class Simulate
    LoopType loopType_;
    volatile int loop_; // volatile (read + modified in threaded section)
    int maxLoop_;
+   int globalSyncRate_;
    int printRate_;
    int64_t printGid_;
    int printRank_;

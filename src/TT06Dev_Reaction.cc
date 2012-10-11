@@ -352,25 +352,23 @@ void TT06Dev_Reaction::calc(double dt, const VectorDouble32& Vm, const vector<do
 }
 void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR)
 {
-   startTimer(nonGateTimer);
    int offset; 
    int nCells = nonGateWorkPartition(offset); 
-   //int ompID = omp_get_thread_num(); 
-   //sampleLog(&logParms_[ompID], nCells, offset,&cellTypeVector_[0], const_cast<double *>(&Vm[0]),  &state_[0]);
    if (nCells > 0) 
    {
-      assert(offset < cellTypeVector_.size());
-      assert(offset < Vm.size());
-      assert(offset < dVR.size());
+      //assert(offset < cellTypeVector_.size());
+      //assert(offset < Vm.size());
+      //assert(offset < dVR.size());
+      startTimer(nonGateTimer);
       update_nonGate_(fit_,dt, &cellTypeParms_[0], nCells, &cellTypeVector_[offset], const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
+      stopTimer(nonGateTimer);
    }
-   stopTimer(nonGateTimer);
 }
 void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)
 {
-   startTimer(gateTimer);
    const ThreadRankInfo& rankInfo = group_.rankInfo();
    int teamRank = rankInfo.teamRank_;
+   startTimer(gateTimer);
    update_gate_(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],fit_,gateWork_[teamRank]);
    stopTimer(gateTimer);
 }

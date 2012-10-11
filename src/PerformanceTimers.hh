@@ -22,8 +22,10 @@ namespace PerformanceTimers
    extern TimerHandle reactionTimer;
    extern TimerHandle reactionMiscTimer;
    extern TimerHandle nonGateTimer;
+   extern TimerHandle nonGateRLTimer;
    extern TimerHandle GateNonGateTimer;
    extern TimerHandle gateTimer;
+   extern TimerHandle gateRLTimer;
    extern TimerHandle diffusionLoopTimer;
    extern TimerHandle integratorTimer;
    extern TimerHandle reactionLoopTimer;

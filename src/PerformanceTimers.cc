@@ -60,8 +60,10 @@ namespace PerformanceTimers
    TimerHandle reactionTimer;
    TimerHandle reactionMiscTimer;
    TimerHandle nonGateTimer;
+   TimerHandle nonGateRLTimer;
    TimerHandle GateNonGateTimer;
    TimerHandle gateTimer;
+   TimerHandle gateRLTimer;
    TimerHandle diffusionLoopTimer;
    TimerHandle integratorTimer;
    TimerHandle reactionLoopTimer;
@@ -119,8 +121,11 @@ void  profileInit()
    stimulusTimer = profileGetHandle("Stimulus");
    reactionTimer= profileGetHandle("Reaction");
    reactionMiscTimer= profileGetHandle("ReactionMisc");
+   rangeCheckTimer= profileGetHandle("rangeCheck");
    nonGateTimer= profileGetHandle("Reaction_nonGate");
+   nonGateRLTimer= profileGetHandle("Reaction_nonGateRL");
    gateTimer = profileGetHandle("Reaction_Gate");
+   gateRLTimer = profileGetHandle("Reaction_GateRL");
    GateNonGateTimer = profileGetHandle("GateNonGateBarrier");
    diffusionLoopTimer= profileGetHandle("DiffusionLoop");
    integratorTimer = profileGetHandle("Integrator");
