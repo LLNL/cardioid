@@ -75,7 +75,8 @@
 //#define spi_debug_desc
 //#define spi_debug_exec
 //#define spi_debug_compl
-#define MAX_WAIT 1600000000
+#define MAX_WAIT   1600000000
+#define MAX_WAIT_SE 800000000
 #define MAX_RECV_NUM 128
 #define SizeInjMemFifo 128
 
@@ -578,12 +579,15 @@ void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_of
 void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_offset, int32_t* recv_task,int bw, int width, uint32_t myID)
 {
   volatile uint64_t* recv_cnt = spi_hdl -> recv_cnt;
+  uint64_t knt=0;
   //checking if fifo is done.
   #ifdef spi_debug_compl
   printf("completion check...");
   #endif
   MUSPI_InjFifo_t*    IF = (MUSPI_InjFifo_t*)spi_hdl->inj_fifo_hdl;
-  while(MUSPI_getHwTail(&(IF->_fifo)) != MUSPI_getHwHead(&(IF->_fifo)));
+  for(knt=0; knt<MAX_WAIT_SE &&  (MUSPI_getHwTail(&(IF->_fifo)) != MUSPI_getHwHead(&(IF->_fifo))); knt++);
+  assert(knt<MAX_WAIT_SE);
+  
   #ifdef spi_debug_compl
   printf("head=tail done...");
   #endif
@@ -594,7 +598,6 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
 //  printf("\n");
 
   volatile uint64_t sum=1;
-  uint64_t knt=0;
   for(knt=0;(knt<MAX_WAIT && sum != 0);knt++)
   {
     sum=0;
