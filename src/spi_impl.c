@@ -616,8 +616,15 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
     {
       volatile int recved=recv_cnt[ii+bw*MAX_RECV_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
 //      if(knt%10==0) printf("%d ",recved);
-      if(recved != 0) printf("node:%d did NOT receive %d bytes from node:%d while expecting %d\n",myID,recved,recv_task[ii],(recv_offset[ii+1]-recv_offset[ii])*width); 
-      else printf("node:%d did receive all the packets from node:%d\n",myID,recv_task[ii]);
+      if(recved != 0)
+      {
+         printf("node:%d did NOT receive %d bytes from node:%d while expecting %d\n",myID,recved,recv_task[ii],(recv_offset[ii+1]-recv_offset[ii])*width); 
+         
+         MUHWI_Destination_t* mapping = spi_hdl->mapping_hdl;
+         printf("node:%d=(%d,%d,%d,%d,%d)\n",myID,(mapping)[myID].Destination.A_Destination,(mapping)[myID].Destination.B_Destination,(mapping)[myID].Destination.C_Destination,(mapping)[myID].Destination.D_Destination,(mapping)[myID].Destination.E_Destination);
+         printf("node:%d=(%d,%d,%d,%d,%d)\n",recv_task[ii],(mapping)[recv_task[ii]].Destination.A_Destination,(mapping)[recv_task[ii]].Destination.B_Destination,(mapping)[recv_task[ii]].Destination.C_Destination,(mapping)[recv_task[ii]].Destination.D_Destination,(mapping)[recv_task[ii]].Destination.E_Destination);
+     } 
+     else printf("node:%d did receive all the packets from node:%d\n",myID,recv_task[ii]);
     }
     //wait more for others to quit
     for(knt=0;knt<MAX_WAIT ;knt++) { }
