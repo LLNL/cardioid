@@ -70,18 +70,16 @@ void Simulate::outOfRange(unsigned index, double dVmr, double dVmd)
 // check if any IO may be needed at this step
 bool Simulate::checkIO(int loop) const
 {
-   if( loop<0 )loop=loop_;
+   if ( loop<0 )loop=loop_;
    
-   if( loop % printRate_ == 0 )return true;
-   if( loop > 0 && checkpointRate_ > 0 
+   if ( loop > 0 && checkpointRate_ > 0 
                 && loop % checkpointRate_ == 0)return true;
    if (loop > 0 && loop % snapshotRate_ == 0)return true;
    
-   for(std::vector<Sensor*>::const_iterator is = sensor_.begin(); 
-                                            is!= sensor_.end();
-                                          ++is)
+   for (unsigned ii=0; ii<sensor_.size(); ++ii)
    {
-      if( (*is)->checkPrintAtStep(loop) )return true;
+      if ( sensor_[ii]->checkPrintAtStep(loop) )
+         return true;
    }
    
    return false;

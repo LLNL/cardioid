@@ -54,6 +54,33 @@ namespace
    }
 }
 
+namespace
+{
+   void printData(const Simulate& sim)
+   {
+      startTimer(printDataTimer);
+      int pi = sim.printIndex_; 
+      if (pi >= 0)
+      {
+         const VectorDouble32& VmArray(sim.vdata_.VmArray_);
+         const VectorDouble32& dVmReaction(sim.vdata_.dVmReaction_);
+         const VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusion_);
+         const unsigned* const blockIndex = sim.diffusion_->blockIndex();
+         const double* const dVdMatrix = sim.diffusion_->dVmBlock();
+         const double scale = sim.diffusion_->diffusionScale();
+         const int index = blockIndex[pi];
+         double dVd = dVmDiffusion[pi] + scale*dVdMatrix[index];
+         printf("%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",
+                sim.loop_, sim.time_, sim.anatomy_.gid(pi),
+                VmArray[pi], dVmReaction[pi], dVd);  
+         fprintf(sim.printFile_,
+                 "%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",
+                 sim.loop_, sim.time_, sim.anatomy_.gid(pi),
+                 VmArray[pi], dVmReaction[pi], dVd);  
+      }
+      stopTimer(printDataTimer);
+   }
+}
 
 void simulationProlog(Simulate& sim)
 {
@@ -95,18 +122,6 @@ void loopIO(const Simulate& sim,int firstCall)
    stopTimer(sensorTimer);
       
    startTimer(loopIOTimer);
-   {
-   if ( loop % sim.printRate_ == 0) 
-   {
-      int printIndex = sim.printIndex_; 
-      if (printIndex >= 0)
-      {
-         printf("%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",loop,sim.time_,sim.anatomy_.gid(printIndex),VmArray[printIndex],dVmR[printIndex],dVmD[printIndex]);  
-         fprintf(sim.printFile_,"%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",loop,sim.time_,sim.anatomy_.gid(printIndex),VmArray[printIndex],dVmR[printIndex],dVmD[printIndex]); 
-      }
-   }
-   }
-
    if (sim.loop_ > 0 && sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
       writeCheckpoint(sim, MPI_COMM_WORLD);
 
@@ -146,6 +161,7 @@ void simulationLoop(Simulate& sim)
    cout << "Rank[" << myRank << "]: numOfNeighborToSend=" << sim.commTable_->_sendTask.size() << " numOfNeighborToRecv=" << sim.commTable_->_recvTask.size() << " numOfBytesToSend=" << sim.commTable_->_sendOffset[sim.commTable_->_sendTask.size()]*sizeof(double) << " numOfBytesToRecv=" << sim.commTable_->_recvOffset[sim.commTable_->_recvTask.size()]*sizeof(double) << endl;
 #endif
 
+   printData(sim);
    loopIO(sim,1);
    profileStart(simulationLoopTimer);
    while ( sim.loop_<sim.maxLoop_ )
@@ -201,6 +217,7 @@ void simulationLoop(Simulate& sim)
       
       if( sim.checkIO() )sim.bufferReactionData();
       
+      printData(sim);
       loopIO(sim,0);
    }
    profileStop(simulationLoopTimer);
@@ -510,7 +527,8 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 
    if (tid == 0) 
    {
-     loopIO(sim,1);
+      printData(sim);
+      loopIO(sim,1);
    }
    uint64_t loopLocal = sim.loop_;
    while ( loopLocal < sim.maxLoop_ )
@@ -595,6 +613,9 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
          ++sim.loop_;
       }
       
+      if ( tid == 0 && sim.loop_ % sim.printRate_ == 0) 
+         printData(sim);
+
       if ( sim.checkIO(loopLocal) ) // every thread should return the same result
       {
          // jlf: needed to have correct dVm in sensors.
@@ -612,12 +633,15 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
          }
             
          sim.bufferReactionData(begin, end);
+         L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier,
+                                    &reactionWaitOnNonGateHandle,
+                                    sim.reactionThreads_.nThreads());
+         if (tid == 0) loopIO(sim,0);
       }
          
       L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier,
                                  &reactionWaitOnNonGateHandle,
                                  sim.reactionThreads_.nThreads());
-      if (tid == 0) loopIO(sim,0);
       stopTimer(reactionMiscTimer); 
          
       startTimer(haloMove2BufTimer);
@@ -742,6 +766,7 @@ void simulationLoopAllSkate(Simulate& sim)
    simulationProlog(sim);
    HaloExchange<double, AlignedAllocator<double> >
       voltageExchange(sim.sendMap_, (sim.commTable_));
+   printData(sim);
    loopIO(sim, 1);
 
    // define useful aliases
@@ -863,26 +888,7 @@ void simulationLoopAllSkate(Simulate& sim)
          }
          
          if ( tid == 0 && sim.loop_ % sim.printRate_ == 0) 
-         {
-            startTimer(printDataTimer);
-            int pi = sim.printIndex_; 
-            if (pi >= 0)
-            {
-               const unsigned* const blockIndex = sim.diffusion_->blockIndex();
-               const double* const dVdMatrix = sim.diffusion_->dVmBlock();
-               const double scale = sim.diffusion_->diffusionScale();
-               const int index = blockIndex[pi];
-               double dVd = dVmDiffusion[pi] + scale*dVdMatrix[index];
-               printf("%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",
-                      sim.loop_, sim.time_, sim.anatomy_.gid(pi),
-                      VmArray[pi], dVmReaction[pi], dVd);  
-               fprintf(sim.printFile_,
-                       "%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",
-                       sim.loop_, sim.time_, sim.anatomy_.gid(pi),
-                       VmArray[pi], dVmReaction[pi], dVd);  
-            }
-            stopTimer(printDataTimer);
-         }
+            printData(sim);
          
 //         sensors;
 //         checkpoint;
