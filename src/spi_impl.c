@@ -121,7 +121,7 @@ void setup_GI(spi_hdl_t* spi_hdl)
   assert(nClassRoutes>0);
   assert(classRouteIds[0]==1);
   //printf("free Ids are ");
-  for(ii=0;ii<nClassRoutes;ii++) printf("%d ",classRouteIds[ii]);
+//  for(ii=0;ii<nClassRoutes;ii++) printf("%d ",classRouteIds[ii]);
   //printf("\n");
 
   Kernel_AllocateGlobalInterruptClassRoute( classRouteIds[0], NULL);
