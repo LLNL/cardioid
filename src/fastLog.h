@@ -54,7 +54,7 @@ static inline double fastLog(double x)
 //#define LEGACY_EXPFIX
 #ifdef BGQ
 #define VECTOR_EXPFIX
-//#define AGGRESSIVE
+#define AGGRESSIVE
 #endif
 #ifdef VECTOR_EXPFIX
 /*
