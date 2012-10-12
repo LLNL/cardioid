@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef SPI
+#define NEW_GI
 
 // for some reason (maybe some include file calculates
 // something in an assert?!), compiling these include files with -DNDEBUG
@@ -31,6 +32,7 @@
 #include <spi/include/l2/lock.h>
 #include <hwi/include/bqc/dcr_support.h>
 #include <hwi/include/bqc/nd_500_dcr.h>
+#include <hwi/include/bqc/classroute.h>
 
 #ifdef NNDEBUG
 #define NDEBUG
@@ -107,6 +109,47 @@ void spi_dump_mapping(spi_hdl_t* spi_hdl)
     printf("id=%d, %d,%d,%d,%d,%d\n",id, (mapping)[id].Destination.A_Destination, (mapping)[id].Destination.B_Destination, (mapping)[id].Destination.C_Destination, (mapping)[id].Destination.D_Destination, (mapping)[id].Destination.E_Destination);
 };
 
+void setup_GI(spi_hdl_t* spi_hdl)
+{
+  uint32_t nClassRoutes;
+  uint32_t classRouteIds[256];
+  size_t   sizeofClassRouteIds;
+  uint32_t ii,rc;
+
+  rc=Kernel_QueryGlobalInterruptClassRoutes ( &nClassRoutes, classRouteIds, 256*4 );
+  //printf("# of free Id:%d\n",nClassRoutes);
+  assert(nClassRoutes>0);
+  assert(classRouteIds[0]==1);
+  //printf("free Ids are ");
+  for(ii=0;ii<nClassRoutes;ii++) printf("%d ",classRouteIds[ii]);
+  //printf("\n");
+
+  Kernel_AllocateGlobalInterruptClassRoute( classRouteIds[0], NULL);
+  spi_hdl->giID = classRouteIds[0];
+
+  Kernel_SetGlobalInterruptClassRoute (spi_hdl->giID, (spi_hdl->cr));
+  Kernel_CheckGlobalInterruptClassRoute (spi_hdl->giID, (spi_hdl->cr));
+
+  //copy form MUSPI_GIBarrierInitMU
+  global_sync_A(spi_hdl);
+
+  /* Step 2: Reset the control register to the initial state */
+  rc = MUSPI_GIBarrierInitMU1(spi_hdl->giID);
+  assert(rc==0);
+
+  global_sync_A(spi_hdl);
+
+  rc = MUSPI_GIBarrierInitMU2(spi_hdl->giID,MAX_WAIT);
+
+  assert(rc==0);
+
+  global_sync_A(spi_hdl);
+
+  spi_hdl->barrier_hdl_B = malloc(sizeof(MUSPI_GIBarrier_t));
+
+  MUSPI_GIBarrierInit( (MUSPI_GIBarrier_t*)(spi_hdl->barrier_hdl_B), spi_hdl->giID ); 
+}
+
 void setup_bat(spi_hdl_t* spi_hdl,void* recv_buf,uint32_t recv_buf_size)
 {
   uint32_t grp;
@@ -115,9 +158,15 @@ void setup_bat(spi_hdl_t* spi_hdl,void* recv_buf,uint32_t recv_buf_size)
   uint32_t* free_ids=spi_hdl->free_bat_id;
   //uint32_t free_ids[256];
   uint32_t ii,size_in_bytes,rc;
+  uint32_t classRouteId;
 
+  Kernel_GetGlobalBarrierUserClassRouteId ( &classRouteId );
   spi_hdl->barrier_hdl = malloc(sizeof(MUSPI_GIBarrier_t));
-  MUSPI_GIBarrierInit( (MUSPI_GIBarrier_t*)(spi_hdl->barrier_hdl), 0 ); //ready global barrier
+  MUSPI_GIBarrierInit( (MUSPI_GIBarrier_t*)(spi_hdl->barrier_hdl), classRouteId ); 
+
+  //printf("Barrier Init status:%x\n",((MUSPI_GIBarrier_t*)(spi_hdl->barrier_hdl))->state);
+  //printf("Barrier ID :%d\n",classRouteId);
+
   Kernel_MemoryRegion_t* recv_buf_mem=(Kernel_MemoryRegion_t*)malloc(sizeof(Kernel_MemoryRegion_t));
   Kernel_MemoryRegion_t* recv_cnt_mem=(Kernel_MemoryRegion_t*)malloc(sizeof(Kernel_MemoryRegion_t));
   MUSPI_BaseAddressTableSubGroup_t* bat=(MUSPI_BaseAddressTableSubGroup_t*)malloc(sizeof(MUSPI_BaseAddressTableSubGroup_t));
@@ -191,6 +240,10 @@ void setup_bat(spi_hdl_t* spi_hdl,void* recv_buf,uint32_t recv_buf_size)
   spi_hdl->mem_region_hdl[0]=(void*) recv_buf_mem;
   spi_hdl->mem_region_hdl[1]=(void*) recv_cnt_mem;
   _bgq_msync();
+
+  #ifdef NEW_GI
+  setup_GI(spi_hdl);
+  #endif
 }
 
 uint32_t setup_inj_fifo(spi_hdl_t* spi_hdl)
@@ -380,12 +433,24 @@ uint32_t setup_descriptors(int** offsets, const int* dest, const int* putIdx, in
   _bgq_msync();
 }
 
-void global_sync(spi_hdl_t *spi_hdl)
+void global_sync_A(spi_hdl_t *spi_hdl)
 {
   _bgq_msync();
 //  MUSPI_GIBarrier_t barrier;
 //  MUSPI_GIBarrierInit( &barrier, 0 );
   MUSPI_GIBarrierEnterAndWait((MUSPI_GIBarrier_t*)spi_hdl->barrier_hdl );
+}
+
+void global_sync(spi_hdl_t *spi_hdl)
+{
+  _bgq_msync();
+//  MUSPI_GIBarrier_t barrier;
+//  MUSPI_GIBarrierInit( &barrier, 0 );
+  #ifdef NEW_GI
+  MUSPI_GIBarrierEnterAndWait((MUSPI_GIBarrier_t*)spi_hdl->barrier_hdl_B );
+  #else
+  MUSPI_GIBarrierEnterAndWait((MUSPI_GIBarrier_t*)spi_hdl->barrier_hdl );
+  #endif
 }
 
 void global_sync_2(spi_hdl_t *spi_hdl,uint64_t timeout)
@@ -473,13 +538,14 @@ void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_of
 //    printf("%d ",(recv_offset[ii+1]-recv_offset[ii])*width);
 //  printf("\n");
 
-  uint64_t knt=0,sum=1;
+  volatile uint64_t sum=1;
+  uint64_t knt=0;
   for(knt=0;(knt<MAX_WAIT && sum != 0);knt++)
   {
     sum=0;
     for(int ii=0;ii<recv_size;ii++)
     {
-      int recved=recv_cnt[ii+bw*MAX_RECV_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
+      volatile int recved=recv_cnt[ii+bw*MAX_RECV_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
 //      if(knt%10==0) printf("%d ",recved);
       sum+= (recved == 0 ? 0 : 1);
     }
@@ -527,13 +593,14 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
 //    printf("%d ",(recv_offset[ii+1]-recv_offset[ii])*width);
 //  printf("\n");
 
-  uint64_t knt=0,sum=1;
+  volatile uint64_t sum=1;
+  uint64_t knt=0;
   for(knt=0;(knt<MAX_WAIT && sum != 0);knt++)
   {
     sum=0;
     for(int ii=0;ii<recv_size;ii++)
     {
-      int recved=recv_cnt[ii+bw*MAX_RECV_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
+      volatile int recved=recv_cnt[ii+bw*MAX_RECV_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
 //      if(knt%10==0) printf("%d ",recved);
       sum+= (recved == 0 ? 0 : 1);
     }
@@ -547,9 +614,9 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
     printf("node:%d have reached MAX_WAIT\n",myID);
     for(int ii=0;ii<recv_size;ii++)
     {
-      int recved=recv_cnt[ii+bw*MAX_RECV_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
+      volatile int recved=recv_cnt[ii+bw*MAX_RECV_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
 //      if(knt%10==0) printf("%d ",recved);
-      if(recved != 0) printf("node:%d did NOT receive %d bytes from node:%d\n",myID,recved,recv_task[ii]); 
+      if(recved != 0) printf("node:%d did NOT receive %d bytes from node:%d while expecting %d\n",myID,recved,recv_task[ii],(recv_offset[ii+1]-recv_offset[ii])*width); 
       else printf("node:%d did receive all the packets from node:%d\n",myID,recv_task[ii]);
     }
     //wait more for others to quit
@@ -609,7 +676,8 @@ void complete_spi(spi_hdl_t* spi_hdl, uint32_t recv_size)
   printf("complete:Injected :%d \n", IF->numInjected);
   printf("complete:descCount :%d \n", MUSPI_getHwDescCount(IF));
 
-  uint64_t knt=0,sum=1;
+  volatile uint64_t sum=1;
+  uint64_t knt=0;
   for(knt=0;(knt<MAX_WAIT && sum != 0);knt++)
   {
     sum=0;
@@ -646,6 +714,8 @@ void free_spi(spi_hdl_t* spi_hdl)
   rc = Kernel_DeallocateInjFifos ((MUSPI_InjFifoSubGroup_t *)(spi_hdl->inj_fifo_subgrp), 1, spi_hdl->free_fifo_id);
   assert(rc==0);
   rc = Kernel_DeallocateBaseAddressTable( (MUSPI_BaseAddressTableSubGroup_t *)(spi_hdl->bat_hdl), 3, spi_hdl->free_bat_id);
+  assert(rc==0);
+  rc = Kernel_DeallocateGlobalInterruptClassRoute ( spi_hdl->giID );
   assert(rc==0);
 
   free(spi_hdl->recv_cnt);
@@ -772,7 +842,13 @@ uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
   BG_JobCoords_t sblock;
   Kernel_JobCoords(&sblock); 
   assert(sblock.corner.core == 0);
+  Personality_t Mypersonality;
   
+  rc = Kernel_GetPersonality( &Mypersonality, sizeof( Mypersonality ) );
+  assert(rc == 0);
+  spi_hdl->cr = malloc(sizeof(ClassRoute_t));
+  ((ClassRoute_t*)(spi_hdl->cr))->input=Mypersonality.Network_Config.PrimordialClassRoute.GlobIntUpPortInputs;
+  ((ClassRoute_t*)(spi_hdl->cr))->output=Mypersonality.Network_Config.PrimordialClassRoute.GlobIntUpPortOutputs;
 //  node.dim[CR_AXIS_A] = node.a_nodes = sblock.shape.a;
 //  node.dim[CR_AXIS_B] = node.b_nodes = sblock.shape.b;
 //  node.dim[CR_AXIS_C] = node.c_nodes = sblock.shape.c;
