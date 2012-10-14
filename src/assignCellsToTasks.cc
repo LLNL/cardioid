@@ -662,7 +662,7 @@ namespace
 
          for (int ip=0; ip<nProcs; ip++)
          {
-            int pwork = pework_all[ip];
+            double pwork = pework_all[ip];
             int bin = (pwork-minwork)/delta;
             phist[bin]++;
          }
