@@ -2,11 +2,11 @@
 #
 # generate Cardioid object.data input files for timing runs.
 #
-# written by Erik Draeger, LLNL, 9/7/2012
+# written by Erik Draeger, LLNL, 10/15/2012
 
 # global variables
 
-$AnatomyDir370M = "/p/ls1/emhm/370M/anatomy-19-Jun-2012";
+$AnatomyDir370M = "/p/ls1/emhm/3B_human_0.05mm";
 $thisdir = `pwd`;  chomp $thisdir;
 $makeVoidAnatomyScript = "$thisdir/tools/makeAnatomyBlockWithVoids.pl";
 $bgqSPIExe = "../../../bin/cardioid-bgq-spi";
@@ -27,7 +27,7 @@ $strongTaskCount = 64;
 
 $celltype = "undefined";  # placeholder
 
-foreach $anatomy ("370M")
+foreach $anatomy ("3B")
 {
    $reaction = "TT06RRGOpt";
    $fastgates = 1;
@@ -90,16 +90,16 @@ sub printObject
    $px{73728} = 32; $py{73728} = 64; $pz{73728} = 36;  
       
 # store workbound balancer block sizes for each task count
-   $wx{1024} = 32;   $wy{1024} = 24;  $wz{1024} = 398;  
-   $wx{2048} = 32;  $wy{2048} = 24;  $wz{2048} = 198;  
-   $wx{4096} = 32;  $wy{4096} = 24;  $wz{4096} = 98;  
-   $wx{8192} = 35;  $wy{8192} = 34;  $wz{8192} = 42;  
-   $wx{16384} = 18; $wy{16384} = 20; $wz{16384} = 70;  
-   $wx{24576} = 20; $wy{24576} = 20; $wz{24576} = 42;  
-   $wx{32768} = 16; $wy{32768} = 18; $wz{32768} = 42;  
-   $wx{36864} = 20; $wy{36864} = 19; $wz{36864} = 26;  
-   $wx{49152} = 20; $wy{49152} = 19; $wz{49152} = 22;  
-   $wx{73728} = 20; $wy{73728} = 19; $wz{73728} = 14;  
+   $wx{1024} = 92;   $wy{1024} = 88;  $wz{1024} = 398;  
+   $wx{2048} = 46;  $wy{2048} = 88;  $wz{2048} = 398;  
+   $wx{4096} = 46;  $wy{4096} = 44;  $wz{4096} = 398;  
+   $wx{8192} = 46;  $wy{8192} = 44;  $wz{8192} = 198;  
+   $wx{16384} = 46; $wy{16384} = 44; $wz{16384} = 98;  
+   $wx{24576} = 38; $wy{24576} = 36; $wz{24576} = 98;  
+   $wx{32768} = 46; $wy{32768} = 22; $wz{32768} = 98;  
+   $wx{36864} = 30; $wy{36864} = 30; $wz{36864} = 98;  
+   $wx{49152} = 26; $wy{49152} = 26; $wz{49152} = 98;  
+   $wx{73728} = 21; $wy{73728} = 22; $wz{73728} = 98;  
       
    if ($ntasks != $px{$ntasks}*$py{$ntasks}*$pz{$ntasks})
    {
@@ -116,7 +116,7 @@ sub printObject
    print OBJECT "   decomposition = $loadbal;\n";
    print OBJECT "   diffusion = FGR;\n";
    print OBJECT "   reaction = $reaction;\n";
-   if ($anatomy eq "370M")
+   if ($anatomy eq "3B")
    {
       print OBJECT "   stimulus = box0 box1 box2 box3 box4 box5 box6 box7 box8 box10 box11;\n";
    }
