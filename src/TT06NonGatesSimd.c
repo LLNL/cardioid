@@ -12,7 +12,7 @@
 
 void (*fv05Func)(double Vm, double *fv);
 double (*fv6Func)(double dv);
-inline double logSeries(double x) {
+static inline double logSeries(double x) {
   //return x*(1.0 + x*(-0.5+(1/3.0)*(x))); 
   vector4double x4 = vec_splats(x);
   
@@ -32,7 +32,7 @@ inline double logSeries(double x) {
   return vec_extract(tmp, 0);
 }
 
-inline vector4double logSeries4(vector4double x4) 
+static inline vector4double logSeries4(vector4double x4) 
 {
   //vector4double y4 = {logSeries(x4 get [0]), logSeries(x4 get [1]), logSeries(x4 get [2]), logSeries(x4 get [3]) };
   //vector4double y4 = {log( 1.0 + (x4 get [0])), log( 1.0 +(x4 get [1])), log( 1.0 +(x4 get [2])), log( 1.0 +(x4 get [3]))};
