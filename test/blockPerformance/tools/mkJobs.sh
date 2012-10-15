@@ -8,7 +8,7 @@ hpmExe=${mpiExe}-spi-hpm
 
 for jobType in spi hpm
 do
-for jobSize in 1k 2k 4k 8k 16k
+for jobSize in 1  32 1k 2k 4k 8k 16k
 do
 for cellsPerNode in 224
 do
@@ -65,6 +65,16 @@ do
 
 
   case $jobSize in
+      1)
+      nNodes=
+      xGrid=1;   yGrid=1;   zGrid=1
+      nNodeName=$jobSize
+      ;;
+      32)
+      nNodes=
+      xGrid=2;   yGrid=4;   zGrid=4
+      nNodeName=$jobSize
+      ;;
       1k)
       nNodes=1024
       xGrid=8;   yGrid=8;   zGrid=16
