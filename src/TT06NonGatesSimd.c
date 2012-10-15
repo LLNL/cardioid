@@ -240,7 +240,8 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 #pragma disjoint(*Xr1Gate, *jLGate)
 #pragma disjoint(*Xr2Gate, *XsGate)
 #pragma disjoint(*Xr2Gate, *jLGate)
-#pragma disjoint(*XsGate, *jLGate) too much information apparently ... slows code down */
+#pragma disjoint(*XsGate, *jLGate) 
+too much information apparently ... slows code down */
 //-----------------------------------------
 
   vdt v_5_c3  =  vec_splats(0.5*SP[14]);
@@ -262,9 +263,15 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
    vdt CSX, CSX0, CSX1, CSX2, CSX3;
    for (int ii=0;ii<nCells;ii+=4) 
   {
+   __dcbt(&fvX_a[0]);
+   __dcbt(&fvX_a[4]);
+   __dcbt(&SP[0]);
+   __dcbt(&SP[4]);
+   // __dcbt(&VM[ii]); //no help ... no hurt either
     int t3 = cellTypeVector[ii+3];
     if (cellType != t3)
     {
+// bad #pragma execution_frequency(very_low)
         int t0 = cellTypeVector[ii];
         cellType = t0;
         if (t0 != t3)
@@ -302,6 +309,7 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
    //    v_sum1 =  vec_madd(v_v, v_sum1, vec_splats(fvX_a[3]));
    vdt v_sum1 =  vec_madd(v_v, CSX0, CSX1);
        v_sum1 =  vec_madd(v_v, v_sum1, CSX2);
+   //__dcbt(&fvX_a[8]); ... hurts
        v_sum1 =  vec_madd(v_v, v_sum1, CSX3);
    CSX = vec_ld(0, &fvX_a[4]);
    CSX0 = vec_splat(CSX,0);
@@ -319,6 +327,8 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
        v_sum2 =  vec_madd(v_v, v_sum2, vec_splats(fvX_a[8]));
        v_sum2 =  vec_madd(v_v, v_sum2, vec_splats(fvX_a[9])); 
        v_sum2 =  vec_madd(v_v, v_sum2, vec_splats(fvX_a[10]));
+   // __dcbt(&_Na_i[ii]);  ... hurts
+   // __dcbt(&_Ca_i[ii]);  ... hurts
        v_sum2 =  vec_madd(v_v, v_sum2, vec_splats(fvX_a[11]));
        v_sum2 =  vec_madd(v_v, v_sum2, vec_splats(fvX_a[12]));
        v_sum2 =  vec_madd(v_v, v_sum2, vec_splats(fvX_a[13]));
@@ -468,6 +478,7 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 
 // double dV2 = dV0[ii]-c3*logSeries(c2*states[Na_i]/stateK_i[ii])+c5-c6;
 
+   //__dcbt(&fvX_a[40]); ... hurts
    vdt v_dV2 = vec_swdiv_nochk(v_states_Na_i, v_stateK_i);
       
        v_dV2 = logSeries4(v_dV2);
@@ -490,26 +501,31 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
    return sum6/sum6d; 
 */
    // CSX = vec_ld(0, &fvX_a[40]);  slowdown 4.15 to 4.33
-   CSX = vec_ld(0, &fvX_a[44]); 
+   CSX = vec_ld(0, &fvX_a[40]); 
    CSX0 = vec_splat(CSX,0);
    CSX1 = vec_splat(CSX,1);
    CSX2 = vec_splat(CSX,2);
    CSX3 = vec_splat(CSX,3);
    vdt v_sum6 =  vec_madd(v_dV0, vec_splats(fvX_a[37]), vec_splats(fvX_a[38]));
        v_sum6 =  vec_madd(v_dV0, v_sum6, vec_splats(fvX_a[39]));
-       v_sum6 =  vec_madd(v_dV0, v_sum6, vec_splats(fvX_a[40]));
-       v_sum6 =  vec_madd(v_dV0, v_sum6, vec_splats(fvX_a[41]));
-       v_sum6 =  vec_madd(v_dV0, v_sum6, vec_splats(fvX_a[42])); 
-       v_sum6 =  vec_madd(v_dV0, v_sum6, vec_splats(fvX_a[43]));
+       v_sum6 =  vec_madd(v_dV0, v_sum6, CSX0);
+       v_sum6 =  vec_madd(v_dV0, v_sum6, CSX1);
+       v_sum6 =  vec_madd(v_dV0, v_sum6, CSX2); 
+       v_sum6 =  vec_madd(v_dV0, v_sum6, CSX3);
 
 
-   vdt v_sum6d =  vec_madd(v_dV0, CSX0, CSX1);
+   CSX = vec_ld(0, &fvX_a[48]); 
+   CSX0 = vec_splat(CSX,0);
+   CSX1 = vec_splat(CSX,1);
+   CSX2 = vec_splat(CSX,2);
+   CSX3 = vec_splat(CSX,3);
+   vdt v_sum6d =  vec_madd(v_dV0, vec_splats(fvX_a[44]),vec_splats(fvX_a[45]));
+       v_sum6d =  vec_madd(v_dV0, v_sum6d, vec_splats(fvX_a[46]));
+       v_sum6d =  vec_madd(v_dV0, v_sum6d, vec_splats(fvX_a[47]));
+       v_sum6d =  vec_madd(v_dV0, v_sum6d, CSX0);
+       v_sum6d =  vec_madd(v_dV0, v_sum6d, CSX1);
        v_sum6d =  vec_madd(v_dV0, v_sum6d, CSX2);
        v_sum6d =  vec_madd(v_dV0, v_sum6d, CSX3);
-       v_sum6d =  vec_madd(v_dV0, v_sum6d, vec_splats(fvX_a[48]));
-       v_sum6d =  vec_madd(v_dV0, v_sum6d, vec_splats(fvX_a[49]));
-       v_sum6d =  vec_madd(v_dV0, v_sum6d, vec_splats(fvX_a[50]));
-       v_sum6d =  vec_madd(v_dV0, v_sum6d, vec_splats(fvX_a[51]));
        v_sum6d =  vec_madd(v_dV0, v_sum6d, vec_splats(fvX_a[52]));
        v_sum6d =  vec_madd(v_dV0, v_sum6d, vec_splats(fvX_a[53]));
        v_sum6d =  vec_madd(v_dV0, v_sum6d, vec_splats(fvX_a[54]));
@@ -602,20 +618,29 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 
 */
    //CSX = vec_ld(0, &fvX_a[60]); bad ... 3.44 to 3.77
-   // CSX = vec_ld(0, &fvX_a[64]); bad ... 3.44 to 3.73
+   CSX = vec_ld(0, &fvX_a[56]); //xxx bad ... 3.44 to 3.73
+   CSX0 = vec_splat(CSX,0);
+   CSX1 = vec_splat(CSX,1);
+   CSX2 = vec_splat(CSX,2);
+   CSX3 = vec_splat(CSX,3);
    //CSX = vec_ld(0, &fvX_a[68]); bad ... 3.44 to 3.74
-   vdt v_sum3 =  vec_madd(v_v, vec_splats(fvX_a[55]), vec_splats(fvX_a[56]));
-       v_sum3 =  vec_madd(v_v, v_sum3, vec_splats(fvX_a[57]));
-       v_sum3 =  vec_madd(v_v, v_sum3, vec_splats(fvX_a[58]));
-       v_sum3 =  vec_madd(v_v, v_sum3, vec_splats(fvX_a[59])); 
+   vdt v_sum3 =  vec_madd(v_v, vec_splats(fvX_a[55]), CSX0);
+       v_sum3 =  vec_madd(v_v, v_sum3, CSX1);
+       v_sum3 =  vec_madd(v_v, v_sum3, CSX2);
+       v_sum3 =  vec_madd(v_v, v_sum3, CSX3); 
+   CSX = vec_ld(0, &fvX_a[64]); //xxx bad ... 3.44 to 3.73
+   CSX0 = vec_splat(CSX,0);
+   CSX1 = vec_splat(CSX,1);
+   CSX2 = vec_splat(CSX,2);
+   CSX3 = vec_splat(CSX,3);
        v_sum3 =  vec_madd(v_v, v_sum3, vec_splats(fvX_a[60]));
        v_sum3 =  vec_madd(v_v, v_sum3, vec_splats(fvX_a[61]));
        v_sum3 =  vec_madd(v_v, v_sum3, vec_splats(fvX_a[62]));
        v_sum3 =  vec_madd(v_v, v_sum3, vec_splats(fvX_a[63]));
-       v_sum3 =  vec_madd(v_v, v_sum3, vec_splats(fvX_a[64])); 
-       v_sum3 =  vec_madd(v_v, v_sum3, vec_splats(fvX_a[65]));
+       v_sum3 =  vec_madd(v_v, v_sum3, CSX0); 
+       v_sum3 =  vec_madd(v_v, v_sum3, CSX1);
 
-   vdt v_sum4 =  vec_madd(v_v, vec_splats(fvX_a[66]), vec_splats(fvX_a[67]));
+   vdt v_sum4 =  vec_madd(v_v, CSX2, CSX3);
        v_sum4 =  vec_madd(v_v, v_sum4, vec_splats(fvX_a[68])); 
        v_sum4 =  vec_madd(v_v, v_sum4, vec_splats(fvX_a[69]));
        v_sum4 =  vec_madd(v_v, v_sum4, vec_splats(fvX_a[70]));
@@ -633,12 +658,17 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 //    double x5 = SQ(states[Ca_SR]*c31+c32); 
 
    // CSX = vec_ld(0, &SP[24]);  3.55
-   vdt v_x5  = vec_madd(v_states_Ca_SR, vec_splats(SP[24]), vec_splats(SP[25]));
+   CSX = vec_ld(0, &SP[24]); 
+   CSX0 = vec_splat(CSX,0);
+   CSX1 = vec_splat(CSX,1);
+   CSX2 = vec_splat(CSX,2);
+   CSX3 = vec_splat(CSX,3);
+   vdt v_x5  = vec_madd(v_states_Ca_SR, CSX0, CSX1);
        v_x5  = vec_mul(v_x5, v_x5);
 
 //    double x6 = SQ(states[Ca_ss]*c33+c34); 
 
-   vdt v_x6  = vec_madd(v_states_Ca_ss, vec_splats(SP[26]), vec_splats(SP[27]));
+   vdt v_x6  = vec_madd(v_states_Ca_ss, CSX2, CSX3);
        v_x6  = vec_mul(v_x6, v_x6);
 /*
      double sigm4 = sigm(x4[ii]); 

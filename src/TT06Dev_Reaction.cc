@@ -13,6 +13,7 @@
 #include <map>
 #include <string>
 #include <algorithm>
+#include "pio.h"
 
 using namespace std;
 using namespace PerformanceTimers;
@@ -144,14 +145,11 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
    sort(cells.begin(), cells.end(), sortFunc);
 
    nCellBuffer_ =  4*((nCells_+3)/4); 
-#include "slow_fix.hh"
-#ifdef SLOW_FIX
-      {
-	int ncv = nCellBuffer_ >> 2;
-	if(0) nCellBuffer_ += 4*((10 - (ncv % 8)) % 8);
-	else  nCellBuffer_ += ((10 - (ncv & 7)) & 7) << 2;
-      }
-#endif
+// {
+	int nFourVecs = nCellBuffer_ >> 2;     // Number of full four vectors. 
+	if(0) nCellBuffer_ += 4*((10 - (nFourVecs % 8)) % 8);
+	else  nCellBuffer_ += ((10 - (nFourVecs & 7)) & 7) << 2;   
+//  }
    unsigned bufSize = sizeof(double)*nStateVar*nCellBuffer_;
    int rc = posix_memalign((void**)&stateBuffer_, 32, bufSize);
    assert((size_t)stateBuffer_ % 32 == 0);
@@ -177,6 +175,11 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
       state_[dVK_i][ii] = state_[K_i][ii]/c9+initialVm_[cellType];
       nCellsOfType[cellType]++; 
    }
+   PFILE *file= Popen("type","w",MPI_COMM_WORLD); 
+   Pprintf(file,"%d ",getRank(0)); 
+   for (int ii=0;ii<nCellTypes_;ii++) Pprintf(file,"%d ",nCellsOfType[ii]); 
+   Pprintf(file,"\n"); 
+   Pclose(file); 
    for (unsigned ii=nCells_; ii<nCellBuffer_;ii++) 
    {
      cellTypeVector_[ii] = cellTypeVector_[ii-1]; 
@@ -356,9 +359,6 @@ void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, Vector
    int nCells = nonGateWorkPartition(offset); 
    if (nCells > 0) 
    {
-      //assert(offset < cellTypeVector_.size());
-      //assert(offset < Vm.size());
-      //assert(offset < dVR.size());
       startTimer(nonGateTimer);
       update_nonGate_(fit_,dt, &cellTypeParms_[0], nCells, &cellTypeVector_[offset], const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
       stopTimer(nonGateTimer);

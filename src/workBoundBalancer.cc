@@ -45,9 +45,9 @@ LoadLevel workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, 
    }
    if (balancer.printStats)
    {
-      PFILE* file = Popen("domainMap.data", "w", balancer.comm);
+      PFILE* file = Popen("domainMap", "w", balancer.comm);
       if (balancer.rank ==0) Pprintf(file,"domainMap HEADER {labels=gid task}\n\n"); 
-      for (int i =0;i<nLocal;i++) Pprintf(file,"%llu %u\n",cells[i].gid_,cells[i].dest_); 
+      for (int i =0;i<nLocal;i++) Pprintf(file,"%llu %u %d\n",cells[i].gid_,cells[i].dest_,cells[i].cellType_); 
       Pclose(file); 
       printDomainInfo(&balancer); 
    }

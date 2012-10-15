@@ -86,8 +86,8 @@ int main(int argc, char** argv)
    timestampBarrier("Finished initializeSimulate", MPI_COMM_WORLD);
 
    //ewd:  turn on mpiP
-   MPI_Barrier(MPI_COMM_WORLD);
-   MPI_Pcontrol(1);
+   //MPI_Barrier(MPI_COMM_WORLD);
+   //MPI_Pcontrol(1);
 
 #ifdef HPM
   HPM_Start("Loop"); 
@@ -120,7 +120,7 @@ int main(int argc, char** argv)
 #endif 
    
    //ewd:  turn off mpiP
-   MPI_Pcontrol(0);
+   //MPI_Pcontrol(0);
 
    profileStop("Total");
    profileSetRefTimer("00:Loop");
