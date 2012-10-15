@@ -1,0 +1,62 @@
+
+#________________________________________________________________________
+#
+#
+CC       = /bgsys/drivers/ppcfloor/comm/xl/bin/mpixlc_r
+LDR      = /bgsys/drivers/ppcfloor/comm/xl/bin/mpixlc_r
+
+FLOOR     = /bgsys/drivers/ppcfloor
+
+INCDIR    =  -I$(FLOOR) -I/bgsys/drivers/ppcfloor/spi/include/kernel/cnk
+
+
+#CFLAGS   =  -c  -O3 -DBGQ -qhot -g $(INCDIR) -qalias=allp -qsmp=omp:noauto
+CFLAGS   =  -c  -O3 -DBGQ  -g $(INCDIR) -qalias=allp -qsmp=omp:noauto
+
+
+LDFLAGS  = -lm  -qsmp=omp
+
+LIBS     = 
+
+#LIB_DIRS = -L$(FLOOR)/spi/lib -lSPI_l1p -lSPI_cnk  -L/bgusr/local/lib -lmpihpm_smp -L/bgsys/drivers/ppcfloor/bgpm/lib -lbgpm -lmassv -lmass_simd
+
+LIB_DIRS = -L$(FLOOR)/spi/lib -lSPI_l1p -lSPI_cnk  -L/usr/local/tools/mpitrace/lib -lmpihpm_smp -L/bgsys/drivers/ppcfloor/bgpm/lib -lbgpm -lmassv -lmass_simd
+
+
+PROG     = driver 
+
+OBJS           =  driver.o initCode.o TT06NonGates.o TT06NonGatesSimd.o TT06Gates.o TT06GatesSimd.o
+#OBJS_04Oct     =  driver.o initCode.o TT06NonGates.o TT06NonGatesSimd04Oct12_11-18.o TT06Gates.o TT06GatesSimd.o
+#OBJS_06Oct     =  driver.o initCode.o TT06NonGates.o TT06NonGatesSimd06Oct12_07-41.o TT06Gates.o TT06GatesSimd.o
+
+
+all : $(PROG)
+
+driver : $(OBJS)
+	$(LDR)  $(LDFLAGS) -o  driver      $(OBJS) $(LIB_DIRS) $(LIBS) $(TRACE) $(MPI_LIB)  
+driver04Oct : $(OBJS_04Oct)
+	$(LDR)  $(LDFLAGS) -o  driver04Oct  $(OBJS_04Oct) $(LIB_DIRS) $(LIBS) $(TRACE) $(MPI_LIB) 
+driver06Oct : $(OBJS_06Oct)
+	$(LDR)  $(LDFLAGS) -o  driver06Oct  $(OBJS_06Oct) $(LIB_DIRS) $(LIBS) $(TRACE) $(MPI_LIB) 
+
+
+clean :
+	rm -f *.o $(PROG) core job.out *~ batch* hpm_* mpi_* out.file error.file
+
+
+.SUFFIXES : .o  .c .cpp
+
+#*****************************************************************
+#* Rules for C object file dependencies
+#*****************************************************************
+.c.o :
+	$(CC) $(CFLAGS) $*.c 
+
+
+.cpp.o :
+	$(CC) $(CFLAGS) $*.cpp 
+
+
+
+
+

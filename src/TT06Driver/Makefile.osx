@@ -1,0 +1,53 @@
+
+#________________________________________________________________________
+#
+#
+CC       = mpicc  -fopenmp
+LDR      =mpicc   -fopenmp
+
+
+INCDIR    =  
+
+
+CFLAGS   =  -c  -O3 -g $(INCDIR)  -std=gnu99
+
+
+LDFLAGS  = -lm  -qsmp=omp
+
+LIBS     = 
+
+
+LIB_DIRS = 
+
+
+PROG     = driverQ
+
+OBJS     =  TT06Driver.o initCode.o TT06NonGates.o TT06NonGatesSimd.o TT06Gates.o TT06GatesSimd.o
+
+
+all : $(PROG)
+
+$(PROG) : $(OBJS)
+	$(LDR)  $(LDFLAGS) -o $(PROG) $(OBJS) $(LIB_DIRS) $(LIBS) $(TRACE) $(MPI_LIB) 
+
+
+clean :
+	rm -f *.o $(PROG) core job.out *~ batch* hpm_* mpi_* out.file error.file
+
+
+.SUFFIXES : .o  .c .cpp
+
+#*****************************************************************
+#* Rules for C object file dependencies
+#*****************************************************************
+.c.o :
+	$(CC) $(CFLAGS) $*.c 
+
+
+.cpp.o :
+	$(CC) $(CFLAGS) $*.cpp 
+
+
+
+
+

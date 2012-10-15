@@ -1,0 +1,10 @@
+#!/bin/csh 
+foreach exe ( driver04Oct ) 
+foreach n  (  `seq 4096 5028` ) 
+srun -vvvv --ntasks=1 $exe 4096 nonGates  >& stdErrOut  
+set jobId = `fgrep INFO  stdErrOut | fgrep started | awk '{ print $8}'`
+echo jobId=$jobId 
+set jobDir = jobId.${jobId}
+mv stdErrOut $jobDir
+mv stdErrOut $jobDir
+end
