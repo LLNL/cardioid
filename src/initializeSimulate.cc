@@ -17,6 +17,8 @@
 #include "mpiUtils.h"
 #include "PerformanceTimers.hh"
 #include "readSnapshotCellList.hh"
+#include "hardwareInfo.h"
+#include "pio.h"
 
 using namespace std;
 
@@ -50,6 +52,43 @@ Long64 findGlobalMinGid(const Anatomy& anatomy)
    return globalMin;
 }  
 
+namespace
+{
+   void writeTorusMap(MPI_Comm comm, const string& filename)
+   {
+      if ( hi_hasTorus() == 0)
+         return;
+
+      int myRank;
+      MPI_Comm_rank(comm, &myRank);
+
+      int nDims = hi_nTorusDim();
+      int coord[nDims];
+      hi_torusCoords(coord);
+      
+      PFILE* pfile = Popen(filename.c_str(), "w", comm);
+      PioSet(pfile, "ngroup", 1);
+      if (myRank == 0)
+      {
+         int size[nDims];
+         hi_torusSize(size);
+         Pprintf(pfile, "# mpiRank coords[%d]\n", nDims);
+         Pprintf(pfile, "# torus size:");
+         for (unsigned ii=0; ii<nDims; ++ii)
+            Pprintf(pfile, " %4d", size[ii]);
+         Pprintf(pfile, "\n");
+      }
+      
+      Pprintf(pfile, "%7d", myRank);
+      for (unsigned ii=0; ii<nDims; ++ii)
+         Pprintf(pfile, " %4d", coord[ii]);
+      Pprintf(pfile, "\n");
+
+      Pclose(pfile);      
+   }
+}
+
+
 void initializeSimulate(const string& name, Simulate& sim)
 {
    int myRank;
@@ -79,7 +118,12 @@ void initializeSimulate(const string& name, Simulate& sim)
       else
          profileSetVerbosity(false);
    }
-
+   {
+      int tmp;         objectGet(obj, "writeTorusMap", tmp, "1");
+      string filename; objectGet(obj, "torusMapFile", filename, "torusMap");
+      if (tmp == 1)
+         writeTorusMap(MPI_COMM_WORLD, filename);
+   }
    
    timestampBarrier("initializing anatomy", MPI_COMM_WORLD);
    string nameTmp;
