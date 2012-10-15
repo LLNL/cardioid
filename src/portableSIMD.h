@@ -31,6 +31,7 @@ file contains all of the portability logic so that you don't need any
 #ifndef unint32_t
 #define uint32_t unsigned 
 #endif
+#define __dcbt(x) 
 
 typedef struct vector4double_
 {
