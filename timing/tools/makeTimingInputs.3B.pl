@@ -6,7 +6,8 @@
 
 # global variables
 
-$AnatomyDir370M = "/p/ls1/emhm/3B_human_0.05mm";
+$AnatomyDir370M = "/p/ls1/emhm/370M/anatomy-19-Jun-2012";
+$AnatomyDir3B = "/p/ls1/emhm/3B_human_0.05mm";
 $thisdir = `pwd`;  chomp $thisdir;
 $makeVoidAnatomyScript = "$thisdir/tools/makeAnatomyBlockWithVoids.pl";
 $bgqSPIExe = "../../../bin/cardioid-bgq-spi";
@@ -27,7 +28,7 @@ $strongTaskCount = 64;
 
 $celltype = "undefined";  # placeholder
 
-foreach $anatomy ("3B")
+foreach $anatomy ("370M", "3B")
 {
    $reaction = "TT06RRGOpt";
    $fastgates = 1;
@@ -116,7 +117,7 @@ sub printObject
    print OBJECT "   decomposition = $loadbal;\n";
    print OBJECT "   diffusion = FGR;\n";
    print OBJECT "   reaction = $reaction;\n";
-   if ($anatomy eq "3B")
+   if ($anatomy eq "3B" || $anatomy eq "370M")
    {
       print OBJECT "   stimulus = box0 box1 box2 box3 box4 box5 box6 box7 box8 box10 box11;\n";
    }
@@ -223,6 +224,22 @@ sub printObject
       print OBJECT "   dx = 0.100966;\n";
       print OBJECT "   dy = 0.102087;\n";
       print OBJECT "   dz = 0.100805;\n";
+      print OBJECT "}\n\n";
+      print OBJECT "conductivity CONDUCTIVITY\n";
+      print OBJECT "{\n";
+      print OBJECT "   method = pio;\n";
+      print OBJECT "}\n\n";
+   }
+   elsif ($anatomy eq "3B")
+   {
+      print OBJECT "$anatomy ANATOMY\n";
+      print OBJECT "{\n";
+      print OBJECT "   method = pio;\n";
+      print OBJECT "   fileName = $AnatomyDir3B\/anatomy\#;\n";
+      print OBJECT "   conductivity = conductivity;\n";
+      print OBJECT "   dx = 0.0504831;\n";
+      print OBJECT "   dy = 0.0500896;\n";
+      print OBJECT "   dz = 0.0504024;\n";
       print OBJECT "}\n\n";
       print OBJECT "conductivity CONDUCTIVITY\n";
       print OBJECT "{\n";
@@ -526,6 +543,180 @@ sub printObject
       print OBJECT "   period = 2000;\n";
       print OBJECT "}\n";
    }
+   elsif ($anatomy eq "3B")
+   {
+      print OBJECT "box0 STIMULUS\n";
+      print OBJECT "{\n";
+      print OBJECT "   method = box;\n";
+      print OBJECT "   xMin = 452;\n";
+      print OBJECT "   xMax = 472;\n";
+      print OBJECT "   yMin = 324;\n";
+      print OBJECT "   yMax = 344;\n";
+      print OBJECT "   zMin = 510;\n";
+      print OBJECT "   zMax = 530;\n"; 
+      print OBJECT "   vStim = -36 mV/ms;\n";
+      print OBJECT "   tStart = 0;\n";
+      print OBJECT "   duration = 1;\n";
+      print OBJECT "   period = 2000;\n";
+      print OBJECT "}\n\n";
+      print OBJECT "box1 STIMULUS\n";
+      print OBJECT "{\n";
+      print OBJECT "   method = box;\n";
+      print OBJECT "   xMin = 476;\n";
+      print OBJECT "   xMax = 496;\n";
+      print OBJECT "   yMin = 315;\n";
+      print OBJECT "   yMax = 335;\n";
+      print OBJECT "   zMin = 605;\n";
+      print OBJECT "   zMax = 625;\n";
+      print OBJECT "   vStim = -36 mV/ms;\n";
+      print OBJECT "   tStart = 0;\n";
+      print OBJECT "   duration = 1;\n";
+      print OBJECT "   period = 2000;\n";
+      print OBJECT "}\n";
+      print OBJECT "box2 STIMULUS\n";
+      print OBJECT "{\n";
+      print OBJECT "   method = box;\n";
+      print OBJECT "   xMin = 411;\n";
+      print OBJECT "   xMax = 431;\n";
+      print OBJECT "   yMin = 318;\n";
+      print OBJECT "   yMax = 338;\n"; 
+      print OBJECT "   zMin = 406;\n";
+      print OBJECT "   zMax = 426;\n"; 
+      print OBJECT "   vStim = -36 mV/ms;\n";
+      print OBJECT "   tStart = 0;\n";
+      print OBJECT "   duration = 1;\n";
+      print OBJECT "   period = 2000;\n";
+      print OBJECT "}\n";
+      print OBJECT "box3 STIMULUS\n";
+      print OBJECT "{\n";
+      print OBJECT "   method = box;\n";
+      print OBJECT "   xMin = 556;\n";
+      print OBJECT "   xMax = 576;\n";
+      print OBJECT "   yMin = 424;\n";
+      print OBJECT "   yMax = 444;\n"; 
+      print OBJECT "   zMin = 479;\n";
+      print OBJECT "   zMax = 499;\n"; 
+      print OBJECT "   vStim = -36 mV/ms;\n";
+      print OBJECT "   tStart = 0;\n";
+      print OBJECT "   duration = 1;\n";
+      print OBJECT "   period = 2000;\n";
+      print OBJECT "}\n";
+      print OBJECT "\n";
+      print OBJECT "box4 STIMULUS\n";
+      print OBJECT "{\n";
+      print OBJECT "   method = box;\n";
+      print OBJECT "   xMin = 624;\n";
+      print OBJECT "   xMax = 644;\n";
+      print OBJECT "   yMin = 388;\n";
+      print OBJECT "   yMax = 408;\n"; 
+      print OBJECT "   zMin = 520;\n";
+      print OBJECT "   zMax = 540;\n"; 
+      print OBJECT "   vStim = -36 mV/ms;\n";
+      print OBJECT "   tStart = 0;\n";
+      print OBJECT "   duration = 1;\n";
+      print OBJECT "   period = 2000;\n";
+      print OBJECT "}\n";
+      print OBJECT "box5 STIMULUS\n";
+      print OBJECT "{\n";
+      print OBJECT "   method = box;\n";
+      print OBJECT "   xMin = 536;\n";
+      print OBJECT "   xMax = 556;\n";
+      print OBJECT "   yMin = 413;\n";
+      print OBJECT "   yMax = 433;\n"; 
+      print OBJECT "   zMin = 367;\n";
+      print OBJECT "   zMax = 387;\n"; 
+      print OBJECT "   vStim = -36 mV/ms;\n";
+      print OBJECT "   tStart = 0;\n";
+      print OBJECT "   duration = 1;\n";
+      print OBJECT "   period = 2000;\n";
+      print OBJECT "}\n";
+      print OBJECT "\n";
+      print OBJECT "box6 STIMULUS\n";
+      print OBJECT "{\n";
+      print OBJECT "   method = box;\n";
+      print OBJECT "   xMin = 224;\n";
+      print OBJECT "   xMax = 244;\n";
+      print OBJECT "   yMin = 560;\n";
+      print OBJECT "   yMax = 580;\n"; 
+      print OBJECT "   zMin = 675;\n";
+      print OBJECT "   zMax = 695;\n"; 
+      print OBJECT "   vStim = -36 mV/ms;\n";
+      print OBJECT "   tStart = 0;\n";
+      print OBJECT "   duration = 1;\n";
+      print OBJECT "   period = 2000;\n";
+      print OBJECT "}\n";
+      print OBJECT "box7 STIMULUS\n";
+      print OBJECT "{\n";
+      print OBJECT "   method = box;\n";
+      print OBJECT "   xMin = 232;\n";
+      print OBJECT "   xMax = 252;\n";
+      print OBJECT "   yMin = 453;\n";
+      print OBJECT "   yMax = 473;\n"; 
+      print OBJECT "   zMin = 714;\n";
+      print OBJECT "   zMax = 734;\n"; 
+      print OBJECT "   vStim = -36 mV/ms;\n";
+      print OBJECT "   tStart = 0;\n";
+      print OBJECT "   duration = 1;\n";
+      print OBJECT "   period = 2000;\n";
+      print OBJECT "}\n";
+      print OBJECT "box8 STIMULUS\n";
+      print OBJECT "{\n";
+      print OBJECT "   method = box;\n";
+      print OBJECT "   xMin = 414;\n";
+      print OBJECT "   xMax = 434;\n";
+      print OBJECT "   yMin = 501;\n";
+      print OBJECT "   yMax = 521;\n"; 
+      print OBJECT "   zMin = 590;\n";
+      print OBJECT "   zMax = 610;\n"; 
+      print OBJECT "   vStim = -36 mV/ms;\n";
+      print OBJECT "   tStart = 0;\n";
+      print OBJECT "   duration = 1;\n";
+      print OBJECT "   period = 2000;\n";
+      print OBJECT "}\n";
+      print OBJECT "box9 STIMULUS\n";
+      print OBJECT "{\n";
+      print OBJECT "   method = box;\n";
+      print OBJECT "   xMin = 33;\n";
+      print OBJECT "   xMax = 53;\n";
+      print OBJECT "   yMin = 561;\n";
+      print OBJECT "   yMax = 581;\n"; 
+      print OBJECT "   zMin = 579;\n";
+      print OBJECT "   zMax = 599;\n"; 
+      print OBJECT "   vStim = -36 mV/ms;\n";
+      print OBJECT "   tStart = 0;\n";
+      print OBJECT "   duration = 1;\n";
+      print OBJECT "   period = 2000;\n";
+      print OBJECT "}\n";
+      print OBJECT "\n";
+      print OBJECT "box10 STIMULUS\n";
+      print OBJECT "{\n";
+      print OBJECT "   method = box;\n";
+      print OBJECT "   xMin = 123;\n";
+      print OBJECT "   xMax = 143;\n";
+      print OBJECT "   yMin = 760;\n";
+      print OBJECT "   yMax = 780;\n"; 
+      print OBJECT "   zMin = 509;\n";
+      print OBJECT "   zMax = 529;\n"; 
+      print OBJECT "   vStim = -36 mV/ms;\n";
+      print OBJECT "   tStart = 0;\n";
+      print OBJECT "   duration = 1;\n";
+      print OBJECT "   period = 2000;\n";
+      print OBJECT "}\n";
+      print OBJECT "box11 STIMULUS\n";
+      print OBJECT "{\n";
+      print OBJECT "   method = box;\n";
+      print OBJECT "   xMin = 364;\n";
+      print OBJECT "   xMax = 384;\n";
+      print OBJECT "   yMin = 434;\n";
+      print OBJECT "   yMax = 454;\n"; 
+      print OBJECT "   zMin = 196;\n";
+      print OBJECT "   zMax = 216;\n"; 
+      print OBJECT "   vStim = -36 mV/ms;\n";
+      print OBJECT "   tStart = 0;\n";
+      print OBJECT "   duration = 1;\n";
+      print OBJECT "   period = 2000;\n";
+      print OBJECT "}\n";
+   }
    else 
    {
       print "Stimulus not defined for anatomy $anatomy\n";
@@ -560,7 +751,7 @@ sub printObject
       print BGQ "export OMP_NUM_THREADS=$nthreadsBGQ\n";
       print BGQ "export MUSPI_NUMBATIDS=203\n";
       print BGQ "export MUSPI_NUMINJFIFOS=3\n";
-      print BGQ "export MUSPI_NUMRECFIFOS=3\n\n";
+      print BGQ "export MUSPI_NUMRECFIFOS=3\n";
       print BGQ "export MUSPI_NUMCLASSROUTES=3\n\n";
       print BGQ "srun --ntasks=$ntasks $bgqSPIExe\n";
       close BGQ;
@@ -576,7 +767,7 @@ sub printObject
       print BGQ "export OMP_NUM_THREADS=$nthreadsBGQ\n";
       print BGQ "export MUSPI_NUMBATIDS=203\n";
       print BGQ "export MUSPI_NUMINJFIFOS=3\n";
-      print BGQ "export MUSPI_NUMRECFIFOS=3\n\n";
+      print BGQ "export MUSPI_NUMRECFIFOS=3\n";
       print BGQ "export MUSPI_NUMCLASSROUTES=3\n\n";
       print BGQ "srun --ntasks=$ntasks $bgqHPMExe\n";
       close BGQ;
