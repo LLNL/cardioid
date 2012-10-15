@@ -36,15 +36,15 @@ class PotentialData
       dVmDiffusion_= VectorDouble32(anatomy.nLocal(), 0.);
       dVmReaction_ = VectorDouble32(anatomy.nLocal(), 0.);
       unsigned paddedSize = 4*((anatomy.nLocal()+3)/4);
-#include "slow_fix.hh"
-#ifdef SLOW_FIX
+//#include "slow_fix.hh"
+//#ifdef SLOW_FIX
       {
-	int ncv = paddedSize>>2;
-	if(0) paddedSize += 4*((10 - (ncv % 8)) % 8);
-	else  paddedSize += ((10 - (ncv & 7)) & 7) << 2;
+	int nFourVecs = paddedSize>>2;
+	if(0) paddedSize += 4*((10 - (nFourVecs % 8)) % 8);
+	else  paddedSize += ((10 - (nFourVecs & 7)) & 7) << 2;
 	VmArray_.reserve(paddedSize);
       }
-#endif
+//#endif
       dVmDiffusion_.reserve(paddedSize);
       dVmReaction_.reserve(paddedSize);
 

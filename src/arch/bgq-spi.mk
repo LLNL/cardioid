@@ -16,7 +16,7 @@ LD=$(CXX)
 
 DFLAGS = -DWITH_PIO -DWITH_MPI -DBGQ -DSPI \
 	 -DADD_ -DUSE_CSTDIO_LFS -DMPICH_IGNORE_CXX_SEEK
-LDFLAGS_BASE = -lnss_files -lnss_dns -lresolv -L/usr/local/tools/mpitrace/lib  -L/bgsys/drivers/ppcfloor/bgpm/lib -lbgpm
+LDFLAGS_BASE = -lc -lnss_files -lnss_dns -lresolv -L/usr/local/tools/mpitrace/lib  -L/bgsys/drivers/ppcfloor/bgpm/lib -lbgpm
 #LDFLAGS_BASE = -lnss_files -lnss_dns -lresolv -L/bgsys/drivers/ppcfloor/bgpm/lib -lbgpm
 
 INCLUDE = -I$(SPI_PATH)/include
