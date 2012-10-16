@@ -32,7 +32,8 @@ BucketOfBits* readAnatomy(const string& filename, MPI_Comm comm,
    objectGet(hObj, "nz", nz, "0");
 //   objectGet(hObj, "cellTypes", cellType_s);
 
-   assert(nx*ny*nz > 0);
+   Long64 nGlobal = nx*ny*nz;
+   assert(nGlobal > 0);
 //   assert(cellType_s.size() > 0);
 
    anatomy.setGridSize(nx, ny,nz);

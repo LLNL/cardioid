@@ -17,6 +17,7 @@
 #include "BlockLoadBalancer.hh"
 #include "workBoundBalancer.hh"
 #include "pioBalancer.hh"
+#include "Long64.hh"
 #include "mpiUtils.h"
 #include "GridPoint.hh"
 #include "PerformanceTimers.hh"
@@ -33,7 +34,7 @@ namespace
     int pioBalancerScan(Simulate& sim, OBJECT* obj, MPI_Comm comm);
 
     void computeWorkHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm, double diffCost);
-    double costFunction(int nTissue, int area, int height, double a);
+    double costFunction(Long64 nTissue, Long64 area, Long64 height, double a);
     void computeVolHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
     void computeNCellsHistogram(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
     void printTaskLoadInfo(Simulate& sim, vector<AnatomyCell>& cells, int nProcs, MPI_Comm comm);
@@ -601,7 +602,7 @@ namespace
        vector<int> pemaxx(nProcs,-99999999);
        vector<int> pemaxy(nProcs,-99999999);
        vector<int> pemaxz(nProcs,-99999999);
-       vector<int> nloc(nProcs,0);
+       vector<Long64> nloc(nProcs,0);
        for (unsigned ii=0; ii<cells.size(); ++ii)
        {
           int peid = cells[ii].dest_;
@@ -621,19 +622,19 @@ namespace
        vector<int> pemaxx_all(nProcs);
        vector<int> pemaxy_all(nProcs);
        vector<int> pemaxz_all(nProcs);
-       vector<int> nall(nProcs);
+       vector<Long64> nall(nProcs);
        MPI_Allreduce(&peminx[0], &peminx_all[0], nProcs, MPI_INT, MPI_MIN, comm);
        MPI_Allreduce(&peminy[0], &peminy_all[0], nProcs, MPI_INT, MPI_MIN, comm);
        MPI_Allreduce(&peminz[0], &peminz_all[0], nProcs, MPI_INT, MPI_MIN, comm);
        MPI_Allreduce(&pemaxx[0], &pemaxx_all[0], nProcs, MPI_INT, MPI_MAX, comm);
        MPI_Allreduce(&pemaxy[0], &pemaxy_all[0], nProcs, MPI_INT, MPI_MAX, comm);
        MPI_Allreduce(&pemaxz[0], &pemaxz_all[0], nProcs, MPI_INT, MPI_MAX, comm);
-       MPI_Allreduce(&nloc[0], &nall[0], nProcs, MPI_INT, MPI_SUM, comm);
+       MPI_Allreduce(&nloc[0], &nall[0], nProcs, MPI_LONG_LONG, MPI_SUM, comm);
 
       if (myRank == 0)
       {
          const int nhistmax = 100; // number of bins
-         vector<int> phist(nhistmax,0);
+         vector<Long64> phist(nhistmax,0);
          double maxwork = 0.;
          double minwork = 1.E+19;
          int maxworkip = -1;
@@ -644,8 +645,8 @@ namespace
             double twork = 0.;
             if (nall[ip] > 0)
             {
-               int area = (pemaxx_all[ip]-peminx_all[ip]+1)*(pemaxy_all[ip]-peminy_all[ip]+1);
-               int height = (pemaxz_all[ip]-peminz_all[ip]+1);
+               Long64 area = (pemaxx_all[ip]-peminx_all[ip]+1)*(pemaxy_all[ip]-peminy_all[ip]+1);
+               Long64 height = (pemaxz_all[ip]-peminz_all[ip]+1);
                twork = costFunction(nall[ip],area,height,diffCost);
             }
             if (twork < minwork)
@@ -656,18 +657,18 @@ namespace
             }
             pework_all[ip] = twork;
          }
-         int nhist = nhistmax;
+         unsigned nhist = nhistmax;
          double range = maxwork - minwork;
          double delta = (range+1.)/nhist;
 
          for (int ip=0; ip<nProcs; ip++)
          {
             double pwork = pework_all[ip];
-            int bin = (pwork-minwork)/delta;
+            Long64 bin = (pwork-minwork)/delta;
             phist[bin]++;
          }
          cout << "load balance histogram (work):  " << endl;
-         for (int i=0; i<nhist; i++)
+         for (unsigned i=0; i<nhist; i++)
             cout << "  " << setprecision(3) << minwork+delta*i << " - " << minwork+delta*(i+1) << ":    " << phist[i] << endl;
 
          double worktot = 0.;
@@ -678,12 +679,12 @@ namespace
       }
     }
 
-    double costFunction(int nTissue, int area, int height, double a)
+    double costFunction(Long64 nTissue, Long64 area, Long64 height, double a)
     {
-       int dz4 = (height+2);
+       Long64 dz4 = (height+2);
        if (dz4 % 4  != 0) dz4 += (4-dz4%4);
-       int bbVol = area*dz4;
-       double cost = nTissue+a*bbVol;
+       double bbVol = area*dz4;
+       double cost = (double)nTissue+a*bbVol;
        return cost;
     }
 }
@@ -704,8 +705,8 @@ namespace
        vector<int> pemaxx(nProcs,-99999999);
        vector<int> pemaxy(nProcs,-99999999);
        vector<int> pemaxz(nProcs,-99999999);
-       vector<int> nloc(nProcs,0);
-       for (unsigned ii=0; ii<cells.size(); ++ii)
+       vector<Long64> nloc(nProcs,0);
+       for (Long64 ii=0; ii<cells.size(); ++ii)
        {
           int peid = cells[ii].dest_;
 
@@ -724,27 +725,27 @@ namespace
        vector<int> pemaxx_all(nProcs);
        vector<int> pemaxy_all(nProcs);
        vector<int> pemaxz_all(nProcs);
-       vector<int> nall(nProcs);
+       vector<Long64> nall(nProcs);
        MPI_Allreduce(&peminx[0], &peminx_all[0], nProcs, MPI_INT, MPI_MIN, comm);
        MPI_Allreduce(&peminy[0], &peminy_all[0], nProcs, MPI_INT, MPI_MIN, comm);
        MPI_Allreduce(&peminz[0], &peminz_all[0], nProcs, MPI_INT, MPI_MIN, comm);
        MPI_Allreduce(&pemaxx[0], &pemaxx_all[0], nProcs, MPI_INT, MPI_MAX, comm);
        MPI_Allreduce(&pemaxy[0], &pemaxy_all[0], nProcs, MPI_INT, MPI_MAX, comm);
        MPI_Allreduce(&pemaxz[0], &pemaxz_all[0], nProcs, MPI_INT, MPI_MAX, comm);
-       MPI_Allreduce(&nloc[0], &nall[0], nProcs, MPI_INT, MPI_SUM, comm);
+       MPI_Allreduce(&nloc[0], &nall[0], nProcs, MPI_LONG_LONG, MPI_SUM, comm);
 
       if (myRank == 0)
       {
          const int nhistmax = 100; // number of bins
-         vector<int> phist(nhistmax,0);
-         int maxvol = 0;
-         int minvol = sim.nx_*sim.ny_*sim.nz_;
+         vector<Long64> phist(nhistmax,0);
+         Long64 maxvol = 0;
+         Long64 minvol = sim.nx_*sim.ny_*sim.nz_;
          int maxvolip;
       
-         vector<int> pevol_all(nProcs);
+         vector<Long64> pevol_all(nProcs);
          for (int ip=0; ip<nProcs; ip++)
          {
-            int tvol = 0;
+            Long64 tvol = 0;
             if (nall[ip] > 0)
                tvol = (pemaxx_all[ip]-peminx_all[ip]+1)*(pemaxy_all[ip]-peminy_all[ip]+1)*(pemaxz_all[ip]-peminz_all[ip]+1);
             if (tvol > maxvol)
@@ -756,21 +757,21 @@ namespace
             pevol_all[ip] = tvol;
          }
       
-         int nhist = maxvol - minvol + 1;
+         Long64 nhist = maxvol - minvol + 1;
          if (nhist > nhistmax) nhist = nhistmax;
-         int delta = (maxvol-minvol + 1)/nhist;
+         Long64 delta = (maxvol-minvol + 1)/nhist;
          if ((maxvol-minvol+1)%nhist !=0) delta++;
          for (int ip=0; ip<nProcs; ip++)
          {
-            int pvol = pevol_all[ip];
-            int bin = (pvol-minvol)/delta;
+            Long64 pvol = pevol_all[ip];
+            Long64 bin = (pvol-minvol)/delta;
             phist[bin]++;
          }
          cout << "load balance histogram (volume):  " << endl;
          for (int i=0; i<nhist; i++)
             cout << "  " << minvol+delta*i << " - " << minvol+delta*(i+1) << ":    " << phist[i] << endl;
 
-         int voltot = 0;
+         Long64 voltot = 0;
          for (unsigned ip=0; ip<nProcs; ++ip)
             voltot += pevol_all[ip];
          double volavg = (double)voltot/(double)nProcs; 
@@ -792,19 +793,19 @@ namespace
        bool testingOnly = (nProcs != nTasks);       
        
        // compute load histogram from data in cells
-       vector<int> histnloc_(nProcs,0);
-       vector<int> mydata(nProcs,0);
-       for (unsigned ii=0; ii<cells.size(); ++ii)
+       vector<Long64> histnloc_(nProcs,0);
+       vector<Long64> mydata(nProcs,0);
+       for (Long64 ii=0; ii<cells.size(); ++ii)
           mydata[cells[ii].dest_]++;
-       MPI_Allreduce(&mydata[0], &histnloc_[0], nProcs, MPI_INT, MPI_SUM, comm);
+       MPI_Allreduce(&mydata[0], &histnloc_[0], nProcs, MPI_LONG_LONG, MPI_SUM, comm);
        if (myRank == 0)
        {
           // compute histogram of current data distribution
           const int nhistmax = 100; // number of bins
-          vector<int> phist(nhistmax,0);
+          vector<Long64> phist(nhistmax,0);
 
-          int maxnum = 0;
-          int minnum = sim.nx_*sim.ny_*sim.nz_;
+          Long64 maxnum = 0;
+          Long64 minnum = sim.nx_*sim.ny_*sim.nz_;
           int maxpe = -1;
           for (int p=0; p<nProcs; p++)
           {
@@ -815,20 +816,20 @@ namespace
              if (histnloc_[p] < minnum)
                 minnum = histnloc_[p];
           }
-          int nhist = maxnum - minnum + 1;
+          Long64 nhist = maxnum - minnum + 1;
           if (nhist > nhistmax) nhist = nhistmax;
-          int delta = (maxnum-minnum + 1)/nhist;
+          Long64 delta = (maxnum-minnum + 1)/nhist;
           if ((maxnum-minnum+1)%nhist !=0) delta++;
           for (int p=0; p<nProcs; p++)
           {
-             int bin = (histnloc_[p]-minnum)/delta;
+             Long64 bin = (histnloc_[p]-minnum)/delta;
              phist[bin]++;
           }
           cout << "load balance histogram (ncells):  " << endl;
           for (int i=0; i<nhist; i++)
              cout << "  " << minnum+delta*i << " - " << minnum+delta*(i+1) << ":    " << phist[i] << endl;
           
-          int nloctot_ = 0;
+          Long64 nloctot_ = 0;
           for (unsigned ii=0; ii<nProcs; ++ii)
              nloctot_ += histnloc_[ii];
           double nlocavg_ = (double)nloctot_/(double)nProcs; 

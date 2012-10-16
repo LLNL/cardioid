@@ -84,7 +84,7 @@ void GDLoadBalancer::initialDistByWorkFn(vector<AnatomyCell>& cells, int nx, int
       vector<int> planecnt(nz_,0);
       for (unsigned ii=0; ii<cells.size(); ++ii)
       {
-         int gid = cells[ii].gid_;
+         Long64 gid = cells[ii].gid_;
          GridPoint gpt(gid,nx_,ny_,nz_);
          if (gpt.z < zmin_loc) zmin_loc = gpt.z;
          if (gpt.z > zmax_loc) zmax_loc = gpt.z;
@@ -175,7 +175,7 @@ void GDLoadBalancer::initialDistByWorkFn(vector<AnatomyCell>& cells, int nx, int
    // index in cells array
    for (unsigned ii=0; ii<cells.size(); ++ii)
    {
-      int gid = cells[ii].gid_;
+      Long64 gid = cells[ii].gid_;
       GridPoint gpt(gid,nx_,ny_,nz_);
       int kp = pezind[gpt.z];
       int jp = peyind_[ny_*kp + gpt.y];
@@ -1099,7 +1099,7 @@ void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny
       vector<int> cell_zmax(npegrid_,-999999999);
       for (unsigned ii=0; ii<cells.size(); ++ii)
       {
-         int gid = cells[ii].gid_;
+         Long64 gid = cells[ii].gid_;
          GridPoint gpt(gid,nx_,ny_,nz_);
          int kp = pezind[gpt.z];
          int jp = peyind_[ny_*kp + gpt.y];
@@ -1246,7 +1246,7 @@ void GDLoadBalancer::initialDistByVol(vector<AnatomyCell>& cells, int nx, int ny
    // index in cells array
    for (unsigned ii=0; ii<cells.size(); ++ii)
    {
-      int gid = cells[ii].gid_;
+      Long64 gid = cells[ii].gid_;
       GridPoint gpt(gid,nx_,ny_,nz_);
       int kp = pezind[gpt.z];
       int jp = peyind_[ny_*kp + gpt.y];
@@ -1665,28 +1665,30 @@ void GDLoadBalancer::redistributeCells(vector<AnatomyCell>& cells)
    if (!testingOnly)
    {
       sort(cells.begin(),cells.end(),AnatomyCell::destLessThan);
-      unsigned nLocal = cells.size();
+      Long64 nLocal = cells.size();
       vector<unsigned> dest(nLocal);
       for (unsigned ii=0; ii<cells.size(); ++ii)
          dest[ii] = cells[ii].dest_;
 
       // compute largest possible local size
-      int maxLocbuf = nLocal;
-      int nMax;
-      MPI_Allreduce(&maxLocbuf, &nMax, 1, MPI_INT, MPI_MAX, comm_);
+      Long64 maxLocbuf = nLocal;
+      Long64 nMax;
+      MPI_Allreduce(&maxLocbuf, &nMax, 1, MPI_LONG_LONG, MPI_MAX, comm_);
       nMax *= 4;  //fudge factor
       //int nMax = 10*nx_*ny_*nz_/nTasks_;      // 10 is a fudge factor for safety
       cells.resize(nMax);
-      assignArray((unsigned char*)&(cells[0]), &nLocal, cells.capacity(),
+      unsigned nLocu = nLocal;
+      assignArray((unsigned char*)&(cells[0]), &nLocu, cells.capacity(),
                   sizeof(AnatomyCell), &(dest[0]), 0, comm_);
-      if (nLocal > (unsigned)nMax)
+      nLocal = nLocu;
+      if (nLocal > nMax)
          cout << "GDLB::redistributeCells assertion failure on myRank = " << myRank_ << ", nLocal = " << nLocal << ", nMax = " << nMax << endl;
-      assert(nLocal <= (unsigned)nMax);
+      assert(nLocal <= nMax);
       cells.resize(nLocal);
    }
    else  // testing case:  nTasks < target process grid size
    {
-      unsigned nLocal = cells.size();
+      Long64 nLocal = cells.size();
       vector<unsigned> dest(nLocal);
 
       // compress process grid onto nTasks
@@ -1716,11 +1718,13 @@ void GDLoadBalancer::redistributeCells(vector<AnatomyCell>& cells)
       sort(dest.begin(),dest.end());
       sort(cells.begin(),cells.end(),AnatomyCell::indLessThan);
 
-      int nMax = 2*nx_*ny_*nz_/nTasks_;  // 2 is a fudge factor for safety
+      Long64 nMax = 2*nx_*ny_*nz_/nTasks_;  // 2 is a fudge factor for safety
       cells.resize(nMax);
-      assignArray((unsigned char*)&(cells[0]), &nLocal, cells.capacity(),
+      unsigned nLocu = nLocal;
+      assignArray((unsigned char*)&(cells[0]), &nLocu, cells.capacity(),
                   sizeof(AnatomyCell), &(dest[0]), 0, comm_);
-      assert(nLocal <= (unsigned)nMax);
+      nLocal = nLocu;
+      assert(nLocal <= nMax);
       cells.resize(nLocal);
    }
 }

@@ -8,6 +8,7 @@
 #include "mpiUtils.h"
 #include "Simulate.hh"
 #include "AnatomyCell.hh"
+#include "Long64.hh"
 #include "workBound.h"
 #include "pio.h"
 using namespace std;
@@ -15,9 +16,9 @@ using namespace std;
 LoadLevel workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, int nx, int ny, int nz, int target,
                       int nCores, int nRCoresBB, double alpha, double beta, int printStats,MPI_Comm comm)
 {
-   unsigned nLocal = cells.size(); 
-   unsigned nGlobal; 
-   MPI_Allreduce(&nLocal,&nGlobal,1,MPI_UNSIGNED,MPI_SUM,comm); 
+   Long64 nLocal = cells.size(); 
+   Long64 nGlobal; 
+   MPI_Allreduce(&nLocal,&nGlobal,1,MPI_LONG_LONG,MPI_SUM,comm); 
    BALANCER balancer = buildBalancer(nGlobal,nx,ny,nz,dx,dy,dz,target,nCores,nRCoresBB, alpha,beta, printStats,comm);
 
    int rank = balancer.rank; 
@@ -65,8 +66,8 @@ LoadLevel workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, 
    loadLevel.nDiffusionCores = part.nD; 
    destroyBalancer(&balancer); 
 
-   MPI_Allreduce(&nLocal,&nGlobal,1,MPI_UNSIGNED,MPI_SUM,balancer.comm); 
-   if (rank==0) {printf("Before particle assignment nGlobal=%d\n",nGlobal); fflush(stdout);}
+   MPI_Allreduce(&nLocal,&nGlobal,1,MPI_LONG_LONG,MPI_SUM,balancer.comm); 
+   if (rank==0) {printf("Before particle assignment nGlobal=%llu\n",nGlobal); fflush(stdout);}
    MPI_Barrier(balancer.comm); 
 
    AnatomyCellDestSort sortByDest;
@@ -74,15 +75,18 @@ LoadLevel workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, 
    vector<unsigned> dest(nLocal);
    for (int i =0;i<nLocal;i++) dest[i] = cells[i].dest_ ;
 
-   unsigned capacity = max((int)nLocal,dx*dy*dz);
+   //unsigned capacity = max((int)nLocal,dx*dy*dz);
+   unsigned capacity = 2*max((int)nLocal,dx*dy*dz);  // factor of two is a fudge factor for debugging
+   unsigned nLocu = nLocal;
    cells.resize(capacity);
-   assignArray((unsigned char*) &(cells[0]), &nLocal, capacity,
-               sizeof(AnatomyCell), &(dest[0]), 0, balancer.comm);
+   assignArray((unsigned char*) &(cells[0]), &nLocu, capacity,
+               sizeof(AnatomyCell), &(dest[0]), 1, balancer.comm);
+   nLocal = nLocu;
    cells.resize(nLocal);
    sort(cells.begin(), cells.end(), sortByDest);
 
-   MPI_Allreduce(&nLocal,&nGlobal,1,MPI_UNSIGNED,MPI_SUM,balancer.comm); 
-   if (rank==0) {printf("After particle assignment nGlobal=%d\n",nGlobal); fflush(stdout);}
+   MPI_Allreduce(&nLocal,&nGlobal,1,MPI_LONG_LONG,MPI_SUM,balancer.comm); 
+   if (rank==0) {printf("After particle assignment nGlobal=%llu\n",nGlobal); fflush(stdout);}
 
    return loadLevel; 
 }
