@@ -21,7 +21,8 @@ typedef struct spi_hdl_s
     uint64_t send_buf_base_pa;
     uint64_t nNodes;
     uint64_t tStep;
-    uint64_t errAvg[10];
+    uint64_t *errAvg;
+    uint64_t curDescCnt;
     void* mem_region_hdl[4];  //recv_buf, recv_cnt, inj_fifo, send_buf
     void* barrier_hdl;
     void* barrier_hdl_B;

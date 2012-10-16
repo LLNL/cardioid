@@ -78,6 +78,7 @@
 //#define spi_debug_compl
 #define MAX_WAIT   1600000000
 #define MAX_WAIT_SE 800000000
+#define MAX_WAIT_DescCnt 80000000
 #define MAX_RECV_NUM 128
 #define SizeInjMemFifo 128
 
@@ -118,7 +119,11 @@ void setup_GI(spi_hdl_t* spi_hdl)
   size_t   sizeofClassRouteIds;
   uint32_t ii,rc;
 
-  if (spi_hdl->nNodes==1) return;
+  if (spi_hdl->nNodes==1) 
+  {
+    printf("Single node run\n");
+    return;
+  }
 
   rc=Kernel_QueryGlobalInterruptClassRoutes ( &nClassRoutes, classRouteIds, 256*4 );
   //printf("# of free Id:%d\n",nClassRoutes);
@@ -452,7 +457,11 @@ void global_sync(spi_hdl_t *spi_hdl)
   _bgq_msync();
 //  MUSPI_GIBarrier_t barrier;
 //  MUSPI_GIBarrierInit( &barrier, 0 );
-  if(spi_hdl->nNodes == 1) return;
+  if(spi_hdl->nNodes == 1)
+  {
+    printf("global sync:single node run\n");
+    return;
+  }
   #ifdef NEW_GI
   MUSPI_GIBarrierEnterAndWait((MUSPI_GIBarrier_t*)spi_hdl->barrier_hdl_B );
   #else
@@ -521,6 +530,7 @@ void execute_spi_alter(spi_hdl_t* spi_hdl, uint32_t put_size,int bw)
     _bgq_msync();
     rc = Kernel_InjFifoActivate( IF_subgroup,1, spi_hdl->free_fifo_id, KERNEL_INJ_FIFO_ACTIVATE );
     assert(rc==0);
+    spi_hdl->curDescCnt = MUSPI_getHwDescCount(IF);
 #ifdef spi_debug_exec
     printf("Done \n");
 #endif
@@ -586,11 +596,11 @@ void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_of
 void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_offset, int32_t* recv_task,int bw, int width, uint32_t myID)
 {
   uint64_t  tStep=spi_hdl->tStep;
-  uint64_t* const errAvg = spi_hdl->errAvg;
+  uint64_t* errAvg = spi_hdl->errAvg;
 
   for(int ii=0;ii<10;ii++)
   {
-    volatile uint64_t dcrRead = *((volatile uint64_t*)ND_RESE_DCR(ii, SE_RETRANS_CNT));//read dcr
+    volatile uint64_t dcrRead = DCRReadUser(ND_RESE_DCR(ii, SE_RETRANS_CNT));//read dcr
     if(tStep > 10)
       if(errAvg[ii] < dcrRead*2)
       {
@@ -606,31 +616,16 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
 
   volatile uint64_t* recv_cnt = spi_hdl -> recv_cnt;
   uint64_t knt=0;
-  uint64_t tStep=spi_hdl->tStep;
-  uint64_t multFactor = (tStep-tStep%2)/2+1;
-  uint64_t* errAvg = spi_hdl->errAvg;
-
-  for(int ii=0;ii<10;ii++)
-  {
-    volatile uint64_t dcrRead = DCRReadUser(ND_RESE_DCR(ii, SE_RETRANS_CNT));//read dcr
-    if(tStep > 10)
-      if(errAvg[ii] < dcrRead*2)
-      {
-        printf("my ID:%d detected too many dcr error in link:%d Avg:%d Cur:%d at tStep:%d\n",myID,ii,errAvg[ii],dcrRead,tStep);
-      }
-    errAvg[ii]+= (errAvg[ii]*(tStep) + dcrRead) / (tStep+1);
-  }
-
-
-  tStep++;
-  spi_hdl->tStep=tStep;
   //checking if fifo is done.
   #ifdef spi_debug_compl
   printf("completion check...");
   #endif
   MUSPI_InjFifo_t*    IF = (MUSPI_InjFifo_t*)spi_hdl->inj_fifo_hdl;
-  for(knt=0; knt<MAX_WAIT_SE &&  (MUSPI_getHwTail(&(IF->_fifo)) != MUSPI_getHwHead(&(IF->_fifo))); knt++);
-  assert(knt<MAX_WAIT_SE);
+//  for(knt=0; knt<MAX_WAIT_SE && (MUSPI_getHwTail(&(IF->_fifo)) != MUSPI_getHwHead(&(IF->_fifo))); knt++);
+//  assert(knt<MAX_WAIT_SE);
+  for(knt=0; (knt<MAX_WAIT_DescCnt) && ((MUSPI_getHwDescCount(IF) - spi_hdl->curDescCnt) != recv_size); knt++);
+  assert(knt < MAX_WAIT_DescCnt);
+  spi_hdl->curDescCnt = MUSPI_getHwDescCount(IF);
   
   #ifdef spi_debug_compl
   printf("head=tail done...");
@@ -774,13 +769,14 @@ void free_spi(spi_hdl_t* spi_hdl)
     rc = Kernel_DeallocateGlobalInterruptClassRoute ( spi_hdl->giID );
     assert(rc==0);
   }
+  free ( spi_hdl->errAvg );
 
   free(spi_hdl->recv_cnt);
   aligned_free(spi_hdl->inj_fifo);
   free(spi_hdl->bat_hdl);
   free(spi_hdl->mapping_hdl);
   free(spi_hdl->inj_fifo_subgrp);
-  free(spi_hdl->errAvg);
+  free(spi_hdl->cr);
 
 }
 
@@ -846,6 +842,8 @@ uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
   ((ClassRoute_t*)(spi_hdl->cr))->output=Mypersonality.Network_Config.PrimordialClassRoute.GlobIntUpPortOutputs;
 
   spi_hdl->tStep=0;
+  spi_hdl->curDescCnt=0;
+  spi_hdl->errAvg = (uint64_t*) malloc( sizeof(uint64_t) * 10 );
   for(int ii=0;ii<10;ii++) spi_hdl->errAvg[ii]=0;
 //  node.dim[CR_AXIS_A] = node.a_nodes = sblock.shape.a;
 //  node.dim[CR_AXIS_B] = node.b_nodes = sblock.shape.b;
@@ -864,14 +862,10 @@ uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
   assert(bg_map);
   uint64_t totN;
   Kernel_RanksToCoords(nodes * sizeof(BG_CoordinateMapping_t),bg_map,&totN);
-  spi_hdl->nNodes=nodes;
+  spi_hdl->nNodes=totN;
   if(node_id==0) printf("total nodes in this block :%d\n",nodes);
   if(node_id==0) printf("number of node being used :%d\n",totN);
   if(node_id==0) printf("the corner node is %d,%d,%d,%d,%d\n", sblock.corner.a,sblock.corner.b,sblock.corner.c,sblock.corner.d,sblock.corner.e);
-  spi_hdl->nNodes=totN;
-  spi_hdl->tStep=0;
-  spi_hdl->errAvg = (uint64_t*)malloc(sizeof(uint64_t)*10);
-  for(int ii=0;ii<10;ii++) spi_hdl->errAvg[ii]=0;
 //  assert(totN == nodes);
 
   for( ii =0 ; ii < nodes ; ii++)
