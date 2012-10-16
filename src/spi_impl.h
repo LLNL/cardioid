@@ -19,6 +19,9 @@ typedef struct spi_hdl_s
     uint32_t free_bat_id[256];
     uint32_t free_fifo_id[256];
     uint64_t send_buf_base_pa;
+    uint64_t nNodes;
+    uint64_t tStep;
+    uint64_t errAvg[10];
     void* mem_region_hdl[4];  //recv_buf, recv_cnt, inj_fifo, send_buf
     void* barrier_hdl;
     void* barrier_hdl_B;

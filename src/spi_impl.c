@@ -33,6 +33,7 @@
 #include <hwi/include/bqc/dcr_support.h>
 #include <hwi/include/bqc/nd_500_dcr.h>
 #include <hwi/include/bqc/classroute.h>
+#include <hwi/include/bqc/nd_rese_dcr.h>
 
 #ifdef NNDEBUG
 #define NDEBUG
@@ -117,6 +118,7 @@ void setup_GI(spi_hdl_t* spi_hdl)
   size_t   sizeofClassRouteIds;
   uint32_t ii,rc;
 
+  if (spi_hdl->nNodes==1) return; 
   rc=Kernel_QueryGlobalInterruptClassRoutes ( &nClassRoutes, classRouteIds, 256*4 );
   //printf("# of free Id:%d\n",nClassRoutes);
   assert(nClassRoutes>0);
@@ -128,8 +130,10 @@ void setup_GI(spi_hdl_t* spi_hdl)
   Kernel_AllocateGlobalInterruptClassRoute( classRouteIds[0], NULL);
   spi_hdl->giID = classRouteIds[0];
 
-  Kernel_SetGlobalInterruptClassRoute (spi_hdl->giID, (spi_hdl->cr));
-  Kernel_CheckGlobalInterruptClassRoute (spi_hdl->giID, (spi_hdl->cr));
+  rc = Kernel_SetGlobalInterruptClassRoute (spi_hdl->giID, (spi_hdl->cr));
+  assert(rc==0);
+  rc = Kernel_CheckGlobalInterruptClassRoute (spi_hdl->giID, (spi_hdl->cr));
+  assert(rc==0);
 
   //copy form MUSPI_GIBarrierInitMU
   global_sync_A(spi_hdl);
@@ -447,6 +451,7 @@ void global_sync(spi_hdl_t *spi_hdl)
   _bgq_msync();
 //  MUSPI_GIBarrier_t barrier;
 //  MUSPI_GIBarrierInit( &barrier, 0 );
+  if(spi_hdl->nNodes == 1) return;
   #ifdef NEW_GI
   MUSPI_GIBarrierEnterAndWait((MUSPI_GIBarrier_t*)spi_hdl->barrier_hdl_B );
   #else
@@ -522,6 +527,7 @@ void execute_spi_alter(spi_hdl_t* spi_hdl, uint32_t put_size,int bw)
 }
 void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_offset, int bw, int width)
 {
+  
   volatile uint64_t* recv_cnt = spi_hdl -> recv_cnt;
   assert(recv_size < MAX_RECV_NUM ); 
   //checking if fifo is done.
@@ -578,6 +584,25 @@ void complete_spi_alter(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_of
 
 void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t* recv_offset, int32_t* recv_task,int bw, int width, uint32_t myID)
 {
+  uint64_t  tStep=spi_hdl->tStep;
+  uint64_t* const errAvg = spi_hdl->errAvg;
+
+  for(int ii=0;ii<10;ii++)
+  {
+    volatile uint64_t dcrRead = *((volatile uint64_t*)ND_RESE_DCR(ii, SE_RETRANS_CNT));//read dcr
+    if(tStep > 10)
+      if(errAvg[ii] < dcrRead*2)
+      {
+        printf("my ID:%d detected too many dcr error in link:%d Avg:%d Cur:%d at tStep:%d\n",myID,ii,errAvg[ii],dcrRead,tStep);
+      }
+    errAvg[ii]+= (errAvg[ii]*(tStep) + dcrRead) / (tStep+1);
+  }
+
+  assert(tStep%2 == bw); 
+  uint64_t multFactor = (tStep-tStep%2)/2+1;
+  tStep++;
+  spi_hdl->tStep=tStep;
+
   volatile uint64_t* recv_cnt = spi_hdl -> recv_cnt;
   uint64_t knt=0;
   //checking if fifo is done.
@@ -603,7 +628,7 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
     sum=0;
     for(int ii=0;ii<recv_size;ii++)
     {
-      volatile int recved=recv_cnt[ii+bw*MAX_RECV_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
+      volatile int recved=recv_cnt[ii+bw*MAX_RECV_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width*multFactor;
 //      if(knt%10==0) printf("%d ",recved);
       sum+= (recved == 0 ? 0 : 1);
     }
@@ -617,11 +642,11 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
     printf("node:%d have reached MAX_WAIT\n",myID);
     for(int ii=0;ii<recv_size;ii++)
     {
-      volatile int recved=recv_cnt[ii+bw*MAX_RECV_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width;
+      volatile int recved=recv_cnt[ii+bw*MAX_RECV_NUM]+(recv_offset[ii+1]-recv_offset[ii])*width*multFactor;
 //      if(knt%10==0) printf("%d ",recved);
       if(recved != 0)
       {
-         printf("node:%d did NOT receive %d bytes from node:%d while expecting %d\n",myID,recved,recv_task[ii],(recv_offset[ii+1]-recv_offset[ii])*width); 
+         printf("node:%d 's recv_counter is at %d receving from node:%d while expecting %d at %d\n",myID,recv_cnt[ii+bw*MAX_RECV_NUM],recv_task[ii],(recv_offset[ii+1]-recv_offset[ii])*width,tStep); 
          
          MUHWI_Destination_t* mapping = spi_hdl->mapping_hdl;
          printf("node:%d=(%d,%d,%d,%d,%d)\n",myID,(mapping)[myID].Destination.A_Destination,(mapping)[myID].Destination.B_Destination,(mapping)[myID].Destination.C_Destination,(mapping)[myID].Destination.D_Destination,(mapping)[myID].Destination.E_Destination);
@@ -650,8 +675,8 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
   //}
   #endif
 
-  for(int ii=0;ii<recv_size;ii++)
-    recv_cnt[ii+MAX_RECV_NUM*bw]=0;
+//  for(int ii=0;ii<recv_size;ii++)
+//    recv_cnt[ii+MAX_RECV_NUM*bw]=0;
   _bgq_msync();
 
 }
@@ -781,69 +806,6 @@ void aligned_free( void *ptr )
   free(ptr);
 }
 
-uint32_t mapping_table(spi_hdl_t* spi_hdl)
-{
-  uint32_t a, b, c, d, e, id;
-  uint32_t rc;
-  node_personality node; 
-
-  rc = Kernel_GetPersonality( &node.personality, sizeof( node.personality ) );
-  assert(rc == 0);
-
-  node.node_id = compute_node_id( &node.personality );
-  
-  node.coord[CR_AXIS_A] = node.a = node.personality.Network_Config.Acoord;
-  node.coord[CR_AXIS_B] = node.b = node.personality.Network_Config.Bcoord;
-  node.coord[CR_AXIS_C] = node.c = node.personality.Network_Config.Ccoord;
-  node.coord[CR_AXIS_D] = node.d = node.personality.Network_Config.Dcoord;
-  node.coord[CR_AXIS_E] = node.e = node.personality.Network_Config.Ecoord;
-
-  node.dim[CR_AXIS_A] = node.a_nodes = node.personality.Network_Config.Anodes;
-  node.dim[CR_AXIS_B] = node.b_nodes = node.personality.Network_Config.Bnodes;
-  node.dim[CR_AXIS_C] = node.c_nodes = node.personality.Network_Config.Cnodes;
-  node.dim[CR_AXIS_D] = node.d_nodes = node.personality.Network_Config.Dnodes;
-  node.dim[CR_AXIS_E] = node.e_nodes = node.personality.Network_Config.Enodes;
-
-  node.nodes =  node.a_nodes * node.b_nodes * node.c_nodes *
-    node.d_nodes * node.e_nodes;
- 
-  /* allocate the mapping table */
-  MUHWI_Destination_t* mapping = malloc( node.nodes * sizeof(  MUHWI_Destination_t ) );
-  assert(mapping);
-  spi_hdl->mapping_hdl = (void*) mapping; 
-
-
-  for( a = 0; a < node.a_nodes; a++ )
-    for( b = 0; b < node.b_nodes; b++ )
-      for( c = 0; c < node.c_nodes; c++ )
-        for( d = 0; d < node.d_nodes; d++ )
-          for( e = 0; e < node.e_nodes; e++ )
-            {
-              Personality_Networks_t *net = &(node.personality.Network_Config);
-              id = ((((((( (a * net->Bnodes) + b)
-                         * net->Cnodes) + c )
-                       * net->Dnodes) + d )
-                     * net->Enodes) + e );
-
-              (mapping)[id].Destination.A_Destination = a;
-              (mapping)[id].Destination.B_Destination = b;
-              (mapping)[id].Destination.C_Destination = c;
-              (mapping)[id].Destination.D_Destination = d;
-              (mapping)[id].Destination.E_Destination = e;
-            }
-
-  #ifdef spi_debug
-  printf( "anodes %u bnodes %u cnodes %u dnodes %u enodes %u\n",
-             node.a_nodes, node.b_nodes, node.c_nodes, node.d_nodes,
-             node.e_nodes );
-  printf("completing init_mapping_table\n" );
-  #endif
-
-  return node.node_id;
-
-};
-
-#if 1
 uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
 {
   uint32_t a, b, c, d, e, id;
@@ -859,6 +821,9 @@ uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
   spi_hdl->cr = malloc(sizeof(ClassRoute_t));
   ((ClassRoute_t*)(spi_hdl->cr))->input=Mypersonality.Network_Config.PrimordialClassRoute.GlobIntUpPortInputs;
   ((ClassRoute_t*)(spi_hdl->cr))->output=Mypersonality.Network_Config.PrimordialClassRoute.GlobIntUpPortOutputs;
+
+  spi_hdl->tStep=0;
+  for(int ii=0;ii<10;ii++) spi_hdl->errAvg[ii]=0;
 //  node.dim[CR_AXIS_A] = node.a_nodes = sblock.shape.a;
 //  node.dim[CR_AXIS_B] = node.b_nodes = sblock.shape.b;
 //  node.dim[CR_AXIS_C] = node.c_nodes = sblock.shape.c;
@@ -876,6 +841,7 @@ uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
   assert(bg_map);
   uint64_t totN;
   Kernel_RanksToCoords(nodes * sizeof(BG_CoordinateMapping_t),bg_map,&totN);
+  spi_hdl->nNodes=nodes;
   if(node_id==0) printf("total nodes in this block :%d\n",nodes);
   if(node_id==0) printf("number of node being used :%d\n",totN);
   if(node_id==0) printf("the corner node is %d,%d,%d,%d,%d\n", sblock.corner.a,sblock.corner.b,sblock.corner.c,sblock.corner.d,sblock.corner.e);
@@ -903,7 +869,7 @@ uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
   return node_id;
 
 };
-#endif
+
 //MUSPI_GIBarrier_t barrier;
   //MUSPI_GIBarrierInit( &barrier, 0 );
   //MUSPI_GIBarrierEnterAndWait( &barrier );
