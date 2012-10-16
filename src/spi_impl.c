@@ -77,7 +77,7 @@
 //#define spi_debug_exec
 //#define spi_debug_compl
 #define MAX_WAIT   1600000000
-#define MAX_WAIT_SE 800000000
+//#define MAX_WAIT_SE 800000000
 #define MAX_WAIT_DescCnt 80000000
 #define MAX_RECV_NUM 128
 #define SizeInjMemFifo 128
@@ -597,6 +597,8 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
 {
   uint64_t  tStep=spi_hdl->tStep;
   uint64_t* errAvg = spi_hdl->errAvg;
+  uint64_t startTime;
+  int rc;
 
   for(int ii=0;ii<10;ii++)
   {
@@ -623,9 +625,20 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
   MUSPI_InjFifo_t*    IF = (MUSPI_InjFifo_t*)spi_hdl->inj_fifo_hdl;
 //  for(knt=0; knt<MAX_WAIT_SE && (MUSPI_getHwTail(&(IF->_fifo)) != MUSPI_getHwHead(&(IF->_fifo))); knt++);
 //  assert(knt<MAX_WAIT_SE);
-  for(knt=0; (knt<MAX_WAIT_DescCnt) && ((MUSPI_getHwDescCount(IF) - spi_hdl->curDescCnt) != recv_size); knt++);
-  assert(knt < MAX_WAIT_DescCnt);
+  startTime = GetTimeBase();
+  rc=-1;
+  do
+  {
+    if ((MUSPI_getHwDescCount(IF) - spi_hdl->curDescCnt) == recv_size)
+    {
+      rc=0;
+      break;
+    }
+  } while ( (GetTimeBase() - startTime) < MAX_WAIT_DescCnt);
+
+  assert(rc==0);
   spi_hdl->curDescCnt = MUSPI_getHwDescCount(IF);
+
   
   #ifdef spi_debug_compl
   printf("head=tail done...");
@@ -637,8 +650,11 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
 //  printf("\n");
 
   volatile uint64_t sum=1;
-  for(knt=0;(knt<MAX_WAIT && sum != 0);knt++)
-  {
+  rc = -1; /* Init to "timeout" error */
+
+  startTime = GetTimeBase();
+
+  do {
     sum=0;
     for(int ii=0;ii<recv_size;ii++)
     {
@@ -646,12 +662,14 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
 //      if(knt%10==0) printf("%d ",recved);
       sum+= (recved == 0 ? 0 : 1);
     }
-//    printf("\n");
-//    if(bw==0) for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii] == 0 ? 1 : 0);
-//    else for(int ii=0;ii<recv_size;ii++) sum+= (recv_cnt[ii+MAX_RECV_NUM] == 0 ? 1 : 0);
-  }
+    if ( sum==0) 
+      {
+        rc = 0;
+        break;
+      }
+  } while ( (GetTimeBase() - startTime) < MAX_WAIT );
 
-  if ( knt == MAX_WAIT )
+  if ( rc !=0 )
   {
     printf("node:%d have reached MAX_WAIT\n",myID);
     for(int ii=0;ii<recv_size;ii++)
@@ -669,9 +687,9 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
      else printf("node:%d did receive all the packets from node:%d\n",myID,recv_task[ii]);
     }
     //wait more for others to quit
-    for(knt=0;knt<MAX_WAIT ;knt++) { }
+    DelayTimeBase(MAX_WAIT);
   }
-  assert(knt <  MAX_WAIT); 
+  assert(rc==0);
 
 
 //  //for(int ii=0;ii<recv_size;ii++) printf("%x ",recv_cnt[ii+MAX_RECV_NUM*bw]);
