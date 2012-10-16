@@ -118,7 +118,8 @@ void setup_GI(spi_hdl_t* spi_hdl)
   size_t   sizeofClassRouteIds;
   uint32_t ii,rc;
 
-  if (spi_hdl->nNodes==1) return; 
+  if (spi_hdl->nNodes==1) return;
+
   rc=Kernel_QueryGlobalInterruptClassRoutes ( &nClassRoutes, classRouteIds, 256*4 );
   //printf("# of free Id:%d\n",nClassRoutes);
   assert(nClassRoutes>0);
@@ -605,6 +606,24 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
 
   volatile uint64_t* recv_cnt = spi_hdl -> recv_cnt;
   uint64_t knt=0;
+  uint64_t tStep=spi_hdl->tStep;
+  uint64_t multFactor = (tStep-tStep%2)/2+1;
+  uint64_t* errAvg = spi_hdl->errAvg;
+
+  for(int ii=0;ii<10;ii++)
+  {
+    volatile uint64_t dcrRead = DCRReadUser(ND_RESE_DCR(ii, SE_RETRANS_CNT));//read dcr
+    if(tStep > 10)
+      if(errAvg[ii] < dcrRead*2)
+      {
+        printf("my ID:%d detected too many dcr error in link:%d Avg:%d Cur:%d at tStep:%d\n",myID,ii,errAvg[ii],dcrRead,tStep);
+      }
+    errAvg[ii]+= (errAvg[ii]*(tStep) + dcrRead) / (tStep+1);
+  }
+
+
+  tStep++;
+  spi_hdl->tStep=tStep;
   //checking if fifo is done.
   #ifdef spi_debug_compl
   printf("completion check...");
@@ -750,14 +769,18 @@ void free_spi(spi_hdl_t* spi_hdl)
   assert(rc==0);
   rc = Kernel_DeallocateBaseAddressTable( (MUSPI_BaseAddressTableSubGroup_t *)(spi_hdl->bat_hdl), 3, spi_hdl->free_bat_id);
   assert(rc==0);
-  rc = Kernel_DeallocateGlobalInterruptClassRoute ( spi_hdl->giID );
-  assert(rc==0);
+  if (spi_hdl->nNodes!=1)
+  {
+    rc = Kernel_DeallocateGlobalInterruptClassRoute ( spi_hdl->giID );
+    assert(rc==0);
+  }
 
   free(spi_hdl->recv_cnt);
   aligned_free(spi_hdl->inj_fifo);
   free(spi_hdl->bat_hdl);
   free(spi_hdl->mapping_hdl);
   free(spi_hdl->inj_fifo_subgrp);
+  free(spi_hdl->errAvg);
 
 }
 
@@ -845,6 +868,10 @@ uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
   if(node_id==0) printf("total nodes in this block :%d\n",nodes);
   if(node_id==0) printf("number of node being used :%d\n",totN);
   if(node_id==0) printf("the corner node is %d,%d,%d,%d,%d\n", sblock.corner.a,sblock.corner.b,sblock.corner.c,sblock.corner.d,sblock.corner.e);
+  spi_hdl->nNodes=totN;
+  spi_hdl->tStep=0;
+  spi_hdl->errAvg = (uint64_t*)malloc(sizeof(uint64_t)*10);
+  for(int ii=0;ii<10;ii++) spi_hdl->errAvg[ii]=0;
 //  assert(totN == nodes);
 
   for( ii =0 ; ii < nodes ; ii++)
