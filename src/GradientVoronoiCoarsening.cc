@@ -12,8 +12,6 @@ using namespace PerformanceTimers;
 #include <string.h>
 using namespace std;
 
-#define GV_DEBUG  0
-
 namespace
 {
    /** Concatenates the strings in vv into a single string with a space
@@ -70,6 +68,7 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(const SensorParms& sp,
                                      const vector<Long64>& gid,
                                      const PotentialData& vdata,
                                      MPI_Comm comm,
+                                     const string format,
                                      const double max_distance)
    :Sensor(sp),
     coarsening_(anatomy,gid,comm),
@@ -77,6 +76,7 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(const SensorParms& sp,
     anatomy_(anatomy),
     vdata_(vdata),
     comm_(comm),
+    format_(format),
     max_distance_(max_distance)
 {
    dx_.resize(anatomy.nLocal());
@@ -254,7 +254,7 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
       {
          const int color=(*it);
       
-         int ncells=valcolors_.nValues(color);
+         const int ncells=valcolors_.nValues(color);
       
          if( ncells>3 ){
             double a[6]={valMat00_.value(color),
@@ -297,7 +297,7 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
    {
       const int color=(*it);
       
-      int ncells=valcolors_.nValues(color);
+      const int ncells=valcolors_.nValues(color);
       
       double g[3]={0.,0.,0.};             
       
@@ -319,14 +319,38 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
                cout<<"WARNING: unable to compute gradient because cells ("<<ncells<<") associated to gid "<<color<<" seem to be in 2D plane!!"<<endl;
             }
          }
-      }else{
-          cout<<"WARNING: Not enough cells ("<<ncells<<") associated to gid "<<color<<" to compute gradient!!"<<endl;
+      //}else{
+      //    cout<<"WARNING: Not enough cells ("<<ncells<<") associated to gid "<<color<<" to compute gradient!!"<<endl;
       }
       
       vector<float>& color_gradient(gradients_[color]);
-      color_gradient.push_back(g[0]);
-      color_gradient.push_back(g[1]);
-      color_gradient.push_back(g[2]);
+      
+      // use first 2 records (6 fields) to store x,y,z and nb. values used for averaging
+      if( color_gradient.empty() && format_.compare("ascii")!=0 )
+      {
+         const int halfNx = anatomy_.nx()/2;
+         const int halfNy = anatomy_.ny()/2;
+         const int halfNz = anatomy_.nz()/2;
+
+         const Vector& v = coarsening_.center(color);
+         float ix = float(v.x()) - float(halfNx);
+         float iy = float(v.y()) - float(halfNy);
+         float iz = float(v.z()) - float(halfNz);
+      
+         color_gradient.push_back(ix);
+         color_gradient.push_back(iy);
+         color_gradient.push_back(iz);
+         
+         color_gradient.push_back( float(valcolors_.nValues(color)) );
+         // fill with dummies to get a record of length 3
+         float dummy=0.;
+         color_gradient.push_back(dummy);
+         color_gradient.push_back(dummy);
+      }
+      
+      color_gradient.push_back(float(g[0]));
+      color_gradient.push_back(float(g[1]));
+      color_gradient.push_back(float(g[2]));
    }
    
    first_time = false;
@@ -341,8 +365,6 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
 
    PFILE* file = Popen(filename.c_str(), "w", comm_);
 
-   const int nfields = 4+3*(int)times_.size(); 
-   const int lrec    = 25+13*3*(int)times_.size();
 
    if (myRank == 0)
    {      
@@ -350,14 +372,27 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
       int nfiles;
       Pget(file,"ngroup",&nfiles);
       Pprintf(file, "gradV FILEHEADER {\n");
-      Pprintf(file, "  lrec = %d;\n", lrec);
-      Pprintf(file, "  datatype = FIXRECORDASCII;\n");
-      Pprintf(file, "  nrecords = %llu;\n", nb_sampling_pts_);
-      Pprintf(file, "  nfields = %d;\n", nfields);
-      string fieldNames="rx ry rz nvals " + concat(vector<string>(times_.size(), "gx gy gz"));
-      Pprintf(file, "  field_names = %s;\n", fieldNames.c_str());
-      string fieldTypes="d d d d " + concat(vector<string>(3*times_.size(), "f"));
-      Pprintf(file, "  field_types = %s;\n", fieldTypes.c_str());
+      if( format_.compare("ascii")!=0 )
+      {
+         Pprintf(file, "  datatype = FIXRECORDBINARY;\n");
+         const int lrec    = 3*sizeof(float);
+         Pprintf(file, "  lrec = %d;\n", lrec);
+         Pprintf(file, "  nfields = %d;\n", 3);
+         Pprintf(file, "  nrecords = %llu;\n", nb_sampling_pts_*(times_.size()+2));
+         Pprintf(file, "  field_names = gx gy gz\n");
+         Pprintf(file, "  field_types = f4 f4 f4;\n");
+      }else{
+         Pprintf(file, "  datatype = FIXRECORDASCII;\n");
+         const int lrec    = 25+13*3*(int)times_.size();
+         const int nfields = 4+3*(int)times_.size(); 
+         Pprintf(file, "  lrec = %d;\n", lrec);
+         Pprintf(file, "  nfields = %d;\n", nfields);
+         Pprintf(file, "  nrecords = %llu;\n", nb_sampling_pts_);
+         string fieldNames="rx ry rz nvals " + concat(vector<string>(times_.size(), "gx gy gz"));
+         Pprintf(file, "  field_names = %s;\n", fieldNames.c_str());
+         string fieldTypes="d d d d " + concat(vector<string>(3*times_.size(), "f"));
+         Pprintf(file, "  field_types = %s;\n", fieldTypes.c_str());
+      }
       Pprintf(file, "  nfiles = %u;\n", nfiles);
       Pprintf(file, "  time = %f; loop = %u;\n", times_[0], current_loop);
       if( times_.size()>1 )
@@ -368,58 +403,59 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
       Pprintf(file, "}\n\n");
    }
    
-#if GV_DEBUG
-   int ncolors=0;
-#endif
-   
-   const int halfNx = anatomy_.nx()/2;
-   const int halfNy = anatomy_.ny()/2;
-   const int halfNz = anatomy_.nz()/2;
-   
-   for(set<int>::const_iterator it = included_owned_colors_.begin();
-                                it!= included_owned_colors_.end();
-                              ++it)
+   if( format_.compare("ascii")!=0 )
    {
-      const int color=(*it);
-
-      const Vector& v = coarsening_.center(color);
-      int ix = int(v.x()) - halfNx;
-      int iy = int(v.y()) - halfNy;
-      int iz = int(v.z()) - halfNz;
-
-      const map< int, vector<float> >::const_iterator itn=gradients_.find(color);
-      const vector<float>& color_gradient(itn->second);
-      
-      stringstream ss;
-      ss << setw(5)<< right << ix<<" ";
-      ss << setw(5)<< right << iy<<" ";
-      ss << setw(5)<< right << iz<<" ";
-      ss << setw(7)<< right << valcolors_.nValues(color);
-      
-      ss << setprecision(8);
-      for(int it=0;it<times_.size();++it)
+      for(map< int, vector<float> >::const_iterator itn =gradients_.begin();
+                                                    itn!=gradients_.end();
+                                                  ++itn)
       {
-         ss <<" "<< setw(12)<< right << color_gradient[3*it+0];
-         ss <<" "<< setw(12)<< right << color_gradient[3*it+1];
-         ss <<" "<< setw(12)<< right << color_gradient[3*it+2];
+         const int color=(itn->first);
 
-#if GV_DEBUG
-         ncolors+=valcolors_.nValues(color);
-#endif
+         const short m=coarsening_.multiplicity(color); // usually, m=1
+         for(short ii=0;ii<m;ii++)
+            Pwrite(&itn->second[0], sizeof(float), itn->second.size(), file);
       }
-      ss << endl;
-      string line(ss.str());
-      const short m=coarsening_.multiplicity(color);
-      for(short ii=0;ii<m;ii++)
-         Pwrite(line.c_str(), line.size(), 1, file);
+   }else{
+      const int halfNx = anatomy_.nx()/2;
+      const int halfNy = anatomy_.ny()/2;
+      const int halfNz = anatomy_.nz()/2;
+   
+      for(set<int>::const_iterator it = included_owned_colors_.begin();
+                                   it!= included_owned_colors_.end();
+                                 ++it)
+      {
+         const int color=(*it);
+
+         const Vector& v = coarsening_.center(color);
+         int ix = int(v.x()) - halfNx;
+         int iy = int(v.y()) - halfNy;
+         int iz = int(v.z()) - halfNz;
+
+         const map< int, vector<float> >::const_iterator itn=gradients_.find(color);
+         const vector<float>& color_gradient(itn->second);
+      
+         stringstream ss;
+         ss << setw(5)<< right << ix<<" ";
+         ss << setw(5)<< right << iy<<" ";
+         ss << setw(5)<< right << iz<<" ";
+         ss << setw(7)<< right << valcolors_.nValues(color);
+      
+         ss << setprecision(8);
+         for(int it=0;it<times_.size();++it)
+         {
+            ss <<" "<< setw(12)<< right << color_gradient[3*it+0];
+            ss <<" "<< setw(12)<< right << color_gradient[3*it+1];
+            ss <<" "<< setw(12)<< right << color_gradient[3*it+2];
+
+         }
+         ss << endl;
+         string line(ss.str());
+         const short m=coarsening_.multiplicity(color);
+         for(short ii=0;ii<m;ii++)
+            Pwrite(line.c_str(), line.size(), 1, file);
+      }
    }
-   
-#if GV_DEBUG
-   int ntotal;
-   MPI_Reduce(&ncolors, &ntotal, 1, MPI_INT, MPI_SUM, 0, comm_);
-   if (myRank == 0)assert( ntotal==anatomy_.nGlobal() );
-#endif
-   
+      
    Pclose(file);
 }
 
@@ -458,6 +494,7 @@ void GradientVoronoiCoarsening::print(double time, int loop)
                                             ++itg)
    {
       (itg->second).clear();
+      (itg->second).reserve(3*printRate()/evalRate());
    }
    
    stopTimer(sensorPrintTimer);

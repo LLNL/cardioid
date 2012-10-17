@@ -181,13 +181,17 @@ namespace
       double maxdistance;
       objectGet(obj, "maxDistance",  maxdistance,  "100000.0");
 
+      string format;
+      objectGet(obj, "format", format, "ascii");
+      assert( format.compare("ascii")==0 || format.compare("bin")==0 );
+
       string method;
       objectGet(obj, "method", method, "undefined");
       if ( method == "voronoiCoarsening" ||
            method == "dataVoronoiCoarsening" )
          return new DataVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD, maxdistance);
       else if( method == "gradientVoronoiCoarsening" )
-         return new GradientVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD, maxdistance);
+         return new GradientVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD, format, maxdistance);
       assert(false);
       return 0;
    }

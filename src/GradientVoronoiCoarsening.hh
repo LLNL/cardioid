@@ -4,6 +4,8 @@
 #include "VoronoiCoarsening.hh"
 #include "Sensor.hh"
 
+#include <string.h>
+
 class Anatomy;
 class PotentialData;
 
@@ -12,13 +14,14 @@ class GradientVoronoiCoarsening : public Sensor
  private:
    VoronoiCoarsening coarsening_;
  
-   std::string filename_;
+   const std::string filename_;
    const Anatomy& anatomy_;
    const PotentialData& vdata_;
 
-   MPI_Comm comm_;
+   const MPI_Comm comm_;
+   const std::string format_;
    
-   double max_distance_;
+   const double max_distance_;
 
    std::vector<double> dx_;
    std::vector<double> dy_;
@@ -65,6 +68,7 @@ class GradientVoronoiCoarsening : public Sensor
                      const std::vector<Long64>& gid,
                      const PotentialData& vdata_,
                      MPI_Comm comm,
+                     const std::string format,
                      const double max_distance);
    void eval(double time, int loop);
    void print(double time, int loop);
