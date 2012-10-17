@@ -1,13 +1,33 @@
 #include "CaAverageSensor.hh"
 
+#include "PerformanceTimers.hh"
 #include "Anatomy.hh"
 #include "pio.h"
 #include "ioUtils.h"
 #include "Reaction.hh"
+using namespace PerformanceTimers;
 
 #include <vector>
 #include <iomanip>
 #include <sstream>
+
+namespace
+{
+   /** Concatenates the strings in vv into a single string with a space
+    * separating each element.  No space is added to the beginning or
+    * end. */
+   string concat(const vector<string> vv)
+   {
+      if (vv.size() == 0)
+         return "";
+      string tmp = vv[0];
+      for (unsigned ii=1; ii<vv.size(); ++ii)
+         tmp += " " + vv[ii];
+      return tmp;
+   }
+}
+
+/////////////////////////////////////////////////////////////////////
 
 CaAverageSensor::CaAverageSensor(const SensorParms& sp,
                    string filename,
@@ -56,36 +76,43 @@ void CaAverageSensor::writeAverages(const string& filename,
 
    PFILE* file = Popen(filename.c_str(), "w", comm_);
 
-   char fmt[] = "%5d %5d %5d %5d %18.12f";
-   int lrec = 55;
-   int nfields = 5; 
+   const int nfields = 4+(int)times_.size(); 
+   const int lrec    = 25+13*(int)times_.size();
 
-   Long64 nSnapSub = -1;
    const std::set<int>& owned_colors=coarsening_.getOwnedColors();
-   Long64 nSnapSubLoc = owned_colors.size();
-   MPI_Allreduce(&nSnapSubLoc, &nSnapSub, 1, MPI_LONG_LONG, MPI_SUM, comm_);
+
+   static Long64 nSnapSub = -1;
+   static bool first_time = true;
+   if( first_time )
+   {
+      Long64 nSnapSubLoc = owned_colors.size();
+      MPI_Allreduce(&nSnapSubLoc, &nSnapSub, 1, MPI_LONG_LONG, MPI_SUM, comm_);
+   }
 
    if (myRank == 0)
    {
       // write header
       int nfiles;
       Pget(file,"ngroup",&nfiles);
-      Pprintf(file, "cellViz FILEHEADER {\n");
+      Pprintf(file, "coarsenedCa FILEHEADER {\n");
       Pprintf(file, "  lrec = %d;\n", lrec);
       Pprintf(file, "  datatype = FIXRECORDASCII;\n");
       Pprintf(file, "  nrecords = %llu;\n", nSnapSub);
       Pprintf(file, "  nfields = %d;\n", nfields);
-      Pprintf(file, "  field_names = rx ry rz nvals avgCa;\n");
-      Pprintf(file, "  field_types = u u u u f;\n" );
+      string fieldNames="rx ry rz nvals " + concat(vector<string>(times_.size(), "avgCa"));
+      Pprintf(file, "  field_names = %s;\n", fieldNames.c_str());
+      string fieldTypes="d d d d " + concat(vector<string>(times_.size(), "f"));
+      Pprintf(file, "  field_types = %s;\n", fieldTypes.c_str());
       Pprintf(file, "  nfiles = %u;\n", nfiles);
-      Pprintf(file, "  time = %f; loop = %u;\n", current_time, current_loop);
+      Pprintf(file, "  time = %f; loop = %u;\n",times_[0], current_loop);
+      if( times_.size()>1 )
+         Pprintf(file, "  nsteps = %d; dt = %f\n", times_.size(), times_[1]-times_[0]);
       Pprintf(file, "  h = %4u  0    0\n", nx_);
       Pprintf(file, "        0    %4u  0\n", ny_);
       Pprintf(file, "        0    0    %4u;\n", nz_);
       Pprintf(file, "}\n\n");
    }
    
-   char line[lrec+1];
    const int halfNx = nx_/2;
    const int halfNy = ny_/2;
    const int halfNz = nz_/2;
@@ -100,23 +127,25 @@ void CaAverageSensor::writeAverages(const string& filename,
       int iy = int(v.y()) - halfNy;
       int iz = int(v.z()) - halfNz;
       
-      int l = snprintf(line, lrec, fmt,
-                       ix, iy, iz,
-                       avg_valcolors_.nValues(color),
-                       avg_valcolors_.averageValue(color));
+      const map< int, vector<float> >::const_iterator itn=averages_.find(color);
+      const vector<float>& color_avg(itn->second);
       
-      if (myRank == 0 && l>=lrec ){
-         cerr<<"ERROR: printed record truncated in file "<<filename<<endl;
-         cerr<<"This could be caused by out of range values"<<endl;
-         cerr<<"record="<<line<<endl;
-         break;
+      stringstream ss;
+      ss << setw(5)<< right << ix<<" ";
+      ss << setw(5)<< right << iy<<" ";
+      ss << setw(5)<< right << iz<<" ";
+      ss << setw(7)<< right << avg_valcolors_.nValues(color);
+      
+      ss << setprecision(8);
+      for(int it=0;it<times_.size();++it)
+      {
+         ss <<" "<< setw(12)<< right<< color_avg[it];
       }
-      for (; l < lrec - 1; l++) line[l] = (char)' ';
-      line[l++] = (char)'\n';
-      assert (l==lrec);
+      ss << endl;
+      string line(ss.str());
       const short m=coarsening_.multiplicity(color);
       for(short ii=0;ii<m;ii++)
-         Pwrite(line, lrec, 1, file);
+         Pwrite(line.c_str(), line.size(), 1, file);
    }
    
    Pclose(file);
@@ -141,11 +170,30 @@ void CaAverageSensor::eval(double time, int loop)
    
    assert( loop==loop_buffer_ );
    
+   startTimer(sensorEvalTimer);
+   
+   times_.push_back(time);
+   
    computeColorAverages(buffer_val_);
+   
+   const std::set<int>& owned_colors(coarsening_.getOwnedColors());
+   for(set<int>::const_iterator it = owned_colors.begin();
+                                it!= owned_colors.end();
+                              ++it)
+   {
+      const int color=(*it);
+      
+      vector<float>& color_avg(averages_[color]);
+      color_avg.push_back( avg_valcolors_.averageValue(color) );
+   }
+   
+   stopTimer(sensorEvalTimer);
 }
 
 void CaAverageSensor::print(double time, int loop)
 {
+   startTimer(sensorPrintTimer);
+   
    if( loop_buffer_<0 )return;
 
    int myRank;
@@ -159,4 +207,14 @@ void CaAverageSensor::print(double time, int loop)
    fullname += "/" + filename_;
 
    writeAverages(fullname,time, loop);   
+
+   times_.clear();
+   for(map<int,std::vector<float> >::iterator itg =averages_.begin();
+                                              itg!=averages_.end();
+                                            ++itg)
+   {
+      (itg->second).clear();
+   }
+   
+   stopTimer(sensorPrintTimer);
 }

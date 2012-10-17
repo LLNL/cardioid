@@ -1,6 +1,7 @@
 #ifndef SENSOR_HH
 #define SENSOR_HH
 #include <vector>
+#include <iostream>
 
 struct SensorParms
 {
@@ -20,9 +21,12 @@ class Sensor
 
    virtual void run(double time, int loop)
    {
-      if (loop % printRate_ == 0)
+      if (loop % evalRate_ == 0)
       {
          eval( time, loop);
+      }
+      if (loop % printRate_ == 0)
+      {
          print(time, loop);
       }
    }

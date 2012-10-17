@@ -78,6 +78,8 @@ bool Simulate::checkIO(int loop) const
    
    for (unsigned ii=0; ii<sensor_.size(); ++ii)
    {
+      if ( sensor_[ii]->checkEvalAtStep(loop) )
+         return true;
       if ( sensor_[ii]->checkPrintAtStep(loop) )
          return true;
    }

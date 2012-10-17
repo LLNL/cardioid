@@ -9,9 +9,26 @@ using namespace PerformanceTimers;
 #include <sstream>
 #include <iomanip>
 #include <list>
+#include <string.h>
 using namespace std;
 
 #define GV_DEBUG  0
+
+namespace
+{
+   /** Concatenates the strings in vv into a single string with a space
+    * separating each element.  No space is added to the beginning or
+    * end. */
+   string concat(const vector<string> vv)
+   {
+      if (vv.size() == 0)
+         return "";
+      string tmp = vv[0];
+      for (unsigned ii=1; ii<vv.size(); ++ii)
+         tmp += " " + vv[ii];
+      return tmp;
+   }
+}
 
 /////////////////////////////////////////////////////////////////////
 
@@ -213,30 +230,22 @@ void GradientVoronoiCoarsening::computeLSsystem(const VectorDouble32& val)
    coarsening_.exchangeAndSum(valcolors);
 }
 
-void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename,
-                                                  const double current_time,
-                                                  const int current_loop)const
+void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current_time,
+                                                            const int current_loop)
 {
-   int myRank;
-   MPI_Comm_rank(comm_, &myRank);
-
-   PFILE* file = Popen(filename.c_str(), "w", comm_);
-
-   char fmt[] = "%5d %5d %5d %7d %18.12f %18.12f %18.12f";
-   int lrec = 84;
-   int nfields = 7; 
-
-   static Long64 nSnapSub = -1;
-
    static bool first_time = true;
-   static std::set<int> exclude_colors;
-   static int sum_npts=0;
    
    const std::set<int>& owned_colors=coarsening_.getOwnedColors();
    
    if( first_time )
    {
+      int myRank;
+      MPI_Comm_rank(comm_, &myRank);
+
+      nb_excluded_pts_=0;
+      
       Long64 nSnapSubLoc = owned_colors.size();
+      Long64 nSnapSub;
       MPI_Reduce(&nSnapSubLoc, &nSnapSub, 1, MPI_LONG_LONG, MPI_SUM, 0, comm_);
 
       for(set<int>::const_iterator it = owned_colors.begin();
@@ -256,9 +265,11 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
                          valMat22_.value(color)};
          
             double det1=det3(a[0],a[1],a[2],a[1],a[3],a[4],a[2],a[4],a[5]);
-            if( fabs(det1)<tol_det )
+            if( fabs(det1)>tol_det )
             {
-               exclude_colors.insert(color);
+               included_owned_colors_.insert(color);
+               
+               gradients_[color].reserve(3*printRate()/evalRate());
             }
             
          }else{
@@ -266,66 +277,25 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
                   "point from coarsened data on task "<<myRank
                 <<" (surrounded by "<<ncells<<" cells only)"
                 <<endl;
-            exclude_colors.insert(color);
          }
       } 
       
-      first_time = false;
+      nb_local_sampling_pts_ = included_owned_colors_.size();
       
-      int npts=(int)exclude_colors.size();
+      int npts=((int)owned_colors.size()-(int)included_owned_colors_.size());
       if( npts>0 )cout<<"GradientVoronoiCoarsening --- WARNING: exclude "
                       <<npts<<" points from coarsened data on task "<<myRank
                       <<endl;
       
-      MPI_Reduce(&npts, &sum_npts, 1, MPI_INT, MPI_SUM, 0, comm_);
+      MPI_Reduce(&npts, &nb_excluded_pts_, 1, MPI_INT, MPI_SUM, 0, comm_);
+      nb_sampling_pts_=nSnapSub-(Long64)nb_excluded_pts_;
    }
 
-   if (myRank == 0)
-   {      
-      Long64 nc=nSnapSub-(Long64)sum_npts;
-      
-      // write header
-      int nfiles;
-      Pget(file,"ngroup",&nfiles);
-      Pprintf(file, "cellViz FILEHEADER {\n");
-      Pprintf(file, "  lrec = %d;\n", lrec);
-      Pprintf(file, "  datatype = FIXRECORDASCII;\n");
-      Pprintf(file, "  nrecords = %llu;\n", nc);
-      Pprintf(file, "  nfields = %d;\n", nfields);
-      Pprintf(file, "  field_names = rx ry rz nvals GradVmx GradVmy GradVmz;\n");
-      Pprintf(file, "  field_types = u u u u f f f;\n" );
-      Pprintf(file, "  nfiles = %u;\n", nfiles);
-      Pprintf(file, "  time = %f; loop = %u;\n", current_time, current_loop);
-      Pprintf(file, "  h = %4u  0    0\n", anatomy_.nx());
-      Pprintf(file, "        0    %4u  0\n", anatomy_.ny());
-      Pprintf(file, "        0    0    %4u;\n", anatomy_.nz());
-      Pprintf(file, "}\n\n");
-   }
-   
-   char line[lrec+1];
-   const int halfNx = anatomy_.nx()/2;
-   const int halfNy = anatomy_.ny()/2;
-   const int halfNz = anatomy_.nz()/2;
-   
-#if GV_DEBUG
-   int ncolors=0;
-#endif
-   for(set<int>::const_iterator it = owned_colors.begin();
-                                it!= owned_colors.end();
+   for(set<int>::const_iterator it = included_owned_colors_.begin();
+                                it!= included_owned_colors_.end();
                               ++it)
    {
       const int color=(*it);
-      
-      const std::set<int>::const_iterator itn=exclude_colors.find(color);
-      if( itn!=exclude_colors.end() )continue;
-      
-      //startTimer(sensorEvalTimer);
-      
-      //cout<<"color="<<color<<endl;
-      const Vector& v = coarsening_.center(color);
-      int ix = int(v.x()) - halfNx;
-      int iy = int(v.y()) - halfNy;
-      int iz = int(v.z()) - halfNz;
       
       int ncells=valcolors_.nValues(color);
       
@@ -351,30 +321,97 @@ void GradientVoronoiCoarsening::writeLeastSquareGradients(const string& filename
          }
       }else{
           cout<<"WARNING: Not enough cells ("<<ncells<<") associated to gid "<<color<<" to compute gradient!!"<<endl;
-      } 
-      //stopTimer(sensorEvalTimer);
-
-      int l = snprintf(line, lrec, fmt,
-                       ix, iy, iz,
-                       valcolors_.nValues(color),
-                       //valcolors_.value(color),
-                       g[0],g[1],g[2]);
-#if GV_DEBUG
-      ncolors+=valcolors_.nValues(color);
-#endif
-      
-      if (l>=lrec ){
-         cerr<<"ERROR: printed record truncated in file "<<filename<<endl;
-         cerr<<"This could be caused by out of range values"<<endl;
-         cerr<<"l="<<l<<", lrec="<<lrec<<", record="<<line<<endl;
-         break;
       }
-      for (; l < lrec - 1; l++) line[l] = (char)' ';
-      line[l++] = (char)'\n';
-      assert (l==lrec);
+      
+      vector<float>& color_gradient(gradients_[color]);
+      color_gradient.push_back(g[0]);
+      color_gradient.push_back(g[1]);
+      color_gradient.push_back(g[2]);
+   }
+   
+   first_time = false;
+}
+   
+void GradientVoronoiCoarsening::writeGradients(const string& filename,
+                                               const double current_time,
+                                               const int current_loop)const
+{
+   int myRank;
+   MPI_Comm_rank(comm_, &myRank);
+
+   PFILE* file = Popen(filename.c_str(), "w", comm_);
+
+   const int nfields = 4+3*(int)times_.size(); 
+   const int lrec    = 25+13*3*(int)times_.size();
+
+   if (myRank == 0)
+   {      
+      // write header
+      int nfiles;
+      Pget(file,"ngroup",&nfiles);
+      Pprintf(file, "gradV FILEHEADER {\n");
+      Pprintf(file, "  lrec = %d;\n", lrec);
+      Pprintf(file, "  datatype = FIXRECORDASCII;\n");
+      Pprintf(file, "  nrecords = %llu;\n", nb_sampling_pts_);
+      Pprintf(file, "  nfields = %d;\n", nfields);
+      string fieldNames="rx ry rz nvals " + concat(vector<string>(times_.size(), "gx gy gz"));
+      Pprintf(file, "  field_names = %s;\n", fieldNames.c_str());
+      string fieldTypes="d d d d " + concat(vector<string>(3*times_.size(), "f"));
+      Pprintf(file, "  field_types = %s;\n", fieldTypes.c_str());
+      Pprintf(file, "  nfiles = %u;\n", nfiles);
+      Pprintf(file, "  time = %f; loop = %u;\n", times_[0], current_loop);
+      if( times_.size()>1 )
+         Pprintf(file, "  nsteps = %d; dt = %f\n", times_.size(), times_[1]-times_[0]);
+      Pprintf(file, "  h = %4u  0    0\n", anatomy_.nx());
+      Pprintf(file, "        0    %4u  0\n", anatomy_.ny());
+      Pprintf(file, "        0    0    %4u;\n", anatomy_.nz());
+      Pprintf(file, "}\n\n");
+   }
+   
+#if GV_DEBUG
+   int ncolors=0;
+#endif
+   
+   const int halfNx = anatomy_.nx()/2;
+   const int halfNy = anatomy_.ny()/2;
+   const int halfNz = anatomy_.nz()/2;
+   
+   for(set<int>::const_iterator it = included_owned_colors_.begin();
+                                it!= included_owned_colors_.end();
+                              ++it)
+   {
+      const int color=(*it);
+
+      const Vector& v = coarsening_.center(color);
+      int ix = int(v.x()) - halfNx;
+      int iy = int(v.y()) - halfNy;
+      int iz = int(v.z()) - halfNz;
+
+      const map< int, vector<float> >::const_iterator itn=gradients_.find(color);
+      const vector<float>& color_gradient(itn->second);
+      
+      stringstream ss;
+      ss << setw(5)<< right << ix<<" ";
+      ss << setw(5)<< right << iy<<" ";
+      ss << setw(5)<< right << iz<<" ";
+      ss << setw(7)<< right << valcolors_.nValues(color);
+      
+      ss << setprecision(8);
+      for(int it=0;it<times_.size();++it)
+      {
+         ss <<" "<< setw(12)<< right << color_gradient[3*it+0];
+         ss <<" "<< setw(12)<< right << color_gradient[3*it+1];
+         ss <<" "<< setw(12)<< right << color_gradient[3*it+2];
+
+#if GV_DEBUG
+         ncolors+=valcolors_.nValues(color);
+#endif
+      }
+      ss << endl;
+      string line(ss.str());
       const short m=coarsening_.multiplicity(color);
       for(short ii=0;ii<m;ii++)
-         Pwrite(line, lrec, 1, file);
+         Pwrite(line.c_str(), line.size(), 1, file);
    }
    
 #if GV_DEBUG
@@ -390,8 +427,11 @@ void GradientVoronoiCoarsening::eval(double time, int loop)
 {
    startTimer(sensorEvalTimer);
    
+   times_.push_back(time);
+   
    computeColorCenterValues(vdata_.VmArray_);
    computeLSsystem(vdata_.VmArray_);
+   computeLeastSquareGradients(time, loop);   
    
    stopTimer(sensorEvalTimer);
 }
@@ -410,8 +450,16 @@ void GradientVoronoiCoarsening::print(double time, int loop)
       DirTestCreate(fullname.c_str());
    fullname += "/" + filename_;
    
-   writeLeastSquareGradients(fullname,time, loop);   
+   writeGradients(fullname,time, loop);   
 
+   times_.clear();
+   for(map<int,std::vector<float> >::iterator itg =gradients_.begin();
+                                              itg!=gradients_.end();
+                                            ++itg)
+   {
+      (itg->second).clear();
+   }
+   
    stopTimer(sensorPrintTimer);
 }
 

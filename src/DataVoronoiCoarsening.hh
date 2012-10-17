@@ -21,6 +21,12 @@ class DataVoronoiCoarsening : public Sensor
 
    LocalSums avg_valcolors_;
 
+   // eval times
+   std::vector<double> times_;
+   
+   // average for each local color
+   std::map<int,std::vector<float> > averages_;
+   
    void computeColorAverages(const VectorDouble32& val);
    void writeAverages(const std::string& filename,
                       const double current_time,
@@ -32,7 +38,8 @@ class DataVoronoiCoarsening : public Sensor
                      const Anatomy& anatomy,
                      const std::vector<Long64>& gid,
                      const PotentialData& vdata,
-                     MPI_Comm comm);
+                     MPI_Comm comm,
+                     const double max_distance);
    void eval(double time, int loop);
    void print(double time, int loop);
 };

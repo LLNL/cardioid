@@ -25,6 +25,13 @@ class GradientVoronoiCoarsening : public Sensor
    std::vector<double> dz_;
    
    std::vector<int> colored_cells_;
+   
+   std::set<int> included_owned_colors_;
+   
+   Long64 nb_sampling_pts_;
+   int nb_excluded_pts_;
+   
+   int nb_local_sampling_pts_;
 
    LocalSums valcolors_;
    LocalSums valMat00_;
@@ -36,10 +43,18 @@ class GradientVoronoiCoarsening : public Sensor
    LocalSums valRHS0_;
    LocalSums valRHS1_;
    LocalSums valRHS2_;
+   
+   // eval times
+   std::vector<double> times_;
+   
+   // gradient for each local color
+   std::map<int,std::vector<float> > gradients_;
 
-   void writeLeastSquareGradients(const std::string& filename,
-                                  const double current_time,
-                                  const int current_loop)const;
+   void computeLeastSquareGradients(const double current_time,
+                                    const int current_loop);
+   void writeGradients(const std::string& filename,
+                       const double current_time,
+                       const int current_loop)const;
    void computeLSsystem(const VectorDouble32& val);
    void computeColorCenterValues(const VectorDouble32& val);
 

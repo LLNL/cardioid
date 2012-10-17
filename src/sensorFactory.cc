@@ -91,8 +91,8 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
   objectGet(obj, "method", method, "undefined");
   SensorParms sp;
   objectGet(obj, "printRate", sp.printRate, "1");
-  objectGet(obj, "evalRate",  sp.evalRate,  "1");
-
+  objectGet(obj, "evalRate",  sp.evalRate,  "-1");
+  if(sp.evalRate == -1)sp.evalRate=sp.printRate;
 
   if (method == "undefined")
     assert(false);
@@ -185,7 +185,7 @@ namespace
       objectGet(obj, "method", method, "undefined");
       if ( method == "voronoiCoarsening" ||
            method == "dataVoronoiCoarsening" )
-         return new DataVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD);
+         return new DataVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD, maxdistance);
       else if( method == "gradientVoronoiCoarsening" )
          return new GradientVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD, maxdistance);
       assert(false);

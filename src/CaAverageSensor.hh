@@ -33,6 +33,12 @@ private:
 
    LocalSums avg_valcolors_;
 
+   // eval times
+   std::vector<double> times_;
+   
+   // average for each local color
+   std::map<int,std::vector<float> > averages_;
+   
    void computeColorAverages(const VectorDouble32& val);
    void writeAverages(const string& filename,
                       const double current_time,
