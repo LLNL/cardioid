@@ -204,8 +204,8 @@ __INLINE__ void L2_BarrierWithSync_Arrive(
  * handle, and the number of arrival event expected at the barrier.
  */
 
-__INLINE__ void L2_BarrierWithSync_SpinAndReset(
-//__INLINE__ void L2_BarrierWithSync_WaitAndReset(
+//__INLINE__ void L2_BarrierWithSync_SpinAndReset(
+__INLINE__ void L2_BarrierWithSync_WaitAndReset(
   L2_Barrier_t *b,       /* global barrier */
   L2_BarrierHandle_t *h, /* barrier handle private to this thread */
   int eventNum)          /* number of arrival events */
@@ -221,8 +221,8 @@ __INLINE__ void L2_BarrierWithSync_SpinAndReset(
 }
 
 
-//__INLINE__ void L2_BarrierWithSync_SleepAndReset(
-__INLINE__ void L2_BarrierWithSync_WaitAndReset(
+__INLINE__ void L2_BarrierWithSync_SleepAndReset(
+//__INLINE__ void L2_BarrierWithSync_WaitAndReset(
   L2_Barrier_t *b,       /* global barrier */
   L2_BarrierHandle_t *h, /* barrier handle private to this thread */
   int eventNum)          /* number of arrival events */
