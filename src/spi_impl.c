@@ -671,7 +671,8 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
     for(knt=0;knt<maxWait ;knt++) { }
   }
   if (knt >= maxWait)
-    while(1){};
+     //while(1){};
+     sleep(1800);  // die after 30 minutes
   assert(knt <  maxWait); 
 
 
