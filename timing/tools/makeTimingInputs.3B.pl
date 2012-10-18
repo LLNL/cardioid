@@ -8,6 +8,13 @@
 
 $AnatomyDir370M = "/p/ls1/emhm/370M/anatomy-19-Jun-2012";
 $AnatomyDir3B = "/p/ls1/emhm/3B_human_0.05mm";
+
+###DEBUG:  run out of /nfs/tmp2/emhm until Lustre comes back
+#$AnatomyDir370M ="/nfs/tmp2/emhm/370M-19-Jun-2012/anatomy.370M";
+#$AnatomyDir3B = "/nfs/tmp2/emhm/vgurev/human_05";
+
+
+
 $thisdir = `pwd`;  chomp $thisdir;
 $makeVoidAnatomyScript = "$thisdir/tools/makeAnatomyBlockWithVoids.pl";
 $bgqSPIExe = "../../../bin/cardioid-bgq-spi";
@@ -19,7 +26,7 @@ $nthreadsPeloton = 4;
 $useStateSensor = 0;  # add code for the new stateVariables sensor
 
 $nIterations = 1000000;
-$printRate = $nIterations/10;
+$printRate = $nIterations/1000;
 $checkpointRate = 50000000;
 
 $weakScaling = 1;   # if set to zero, anatomy size corresponding 
@@ -35,7 +42,8 @@ foreach $anatomy ("370M", "3B")
    $rationalfns = 1;
    $smoothing = 1;
    #foreach $ntasks (2048, 4096, 8192, 16384, 24576, 32768, 73728)
-   foreach $ntasks (49152, 73728)
+   #foreach $ntasks (49152, 73728)
+   $ntasks = 98304;
    {
       foreach $machine ("bgqspi", "bgqhpm")
       {
@@ -104,6 +112,7 @@ sub printObject
    $px{36864} = 32; $py{36864} = 36; $pz{36864} = 32;  
    $px{49152} = 32; $py{49152} = 32; $pz{49152} = 48;  
    $px{73728} = 32; $py{73728} = 64; $pz{73728} = 36;  
+   $px{98304} = 32; $py{98304} = 64; $pz{98304} = 48;  
       
 # store workbound balancer block sizes for each task count
    if ($anatomy eq "3B")
@@ -118,6 +127,7 @@ sub printObject
       $wx{36864} = 30; $wy{36864} = 30; $wz{36864} = 98;  
       $wx{49152} = 26; $wy{49152} = 26; $wz{49152} = 98;  
       $wx{73728} = 21; $wy{73728} = 22; $wz{73728} = 98;  
+      $wx{98304} = 26; $wy{98304} = 52; $wz{98304} = 98;  
    }
    elsif ($anatomy eq "370M")
    {
@@ -131,6 +141,8 @@ sub printObject
       $wx{36864} = 20; $wy{36864} = 19; $wz{36864} = 26;
       $wx{49152} = 20; $wy{49152} = 19; $wz{49152} = 22;
       $wx{73728} = 20; $wy{73728} = 19; $wz{73728} = 14;
+      #$wx{98304} = 8; $wy{98304} = 12; $wz{98304} = 42;  
+      $wx{98304} = 18; $wy{98304} = 16; $wz{98304} = 14;  
    }
 
    if ($ntasks != $px{$ntasks}*$py{$ntasks}*$pz{$ntasks})
@@ -150,7 +162,8 @@ sub printObject
    print OBJECT "   reaction = $reaction;\n";
    if ($anatomy eq "3B")
    {
-      print OBJECT "   stimulus = box0 box1 box2 box3 box4 box5 box6 box7 box8 box10 box11 box12;\n";
+      print OBJECT "   stimulus = box0 box1 box2 box3 box4 box5 box6 box7 box8 box10 box11 box12;
+\n";
    }
    elsif ($anatomy eq "370M")
    {
@@ -182,6 +195,7 @@ sub printObject
       if ($loadbal eq "grid")
       {
          print OBJECT "   nDiffusionCores = 3;\n";
+         #print OBJECT "   nDiffusionCores = 4;\n";
       }
    }
    print OBJECT "}\n\n";
