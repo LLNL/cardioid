@@ -17,7 +17,7 @@ MPI_Comm COMM_LOCAL;
 
 void ioTest(int kBytes, int nFiles)
 {
-   pio_setNumWriteFiles(nFiles);
+   Pio_setNumWriteFiles(nFiles);
    vector<char> data(kBytes*1024);
    stringstream dirname;
    dirname << kBytes <<"kPerTask_"<<nFiles<<"files";
