@@ -4,7 +4,7 @@
 
 using std::vector;
 
-Grid3DStencil::Grid3DStencil(int gid, int nx, int ny, int nz)
+Grid3DStencil::Grid3DStencil(Long64 gid, int nx, int ny, int nz)
 {
    const bool faces = true;
    const bool edges = true;

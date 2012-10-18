@@ -9,7 +9,7 @@ class Grid3DStencil
 {
  public:
    
-   Grid3DStencil(int gid, int nx, int ny, int nz);
+   Grid3DStencil(Long64 gid, int nx, int ny, int nz);
    
    int nStencil(void) const { return nbrGids_.size(); }
    Long64 nbrGid(int i) const { return nbrGids_[i]; }
