@@ -17,6 +17,7 @@ MPI_Comm COMM_LOCAL;
 
 void ioTest(int kBytes, int nFiles)
 {
+   pio_setNumWriteFiles(nFiles);
    vector<char> data(kBytes*1024);
    stringstream dirname;
    dirname << kBytes <<"kPerTask_"<<nFiles<<"files";
@@ -41,7 +42,7 @@ void ioTest(int kBytes, int nFiles)
 int main(int argc, char** argv)
 {
    MPI_Init(&argc, &argv);
-   heap_allocate(50);
+   heap_start(50);
    COMM_LOCAL = MPI_COMM_WORLD;
    
    int myRank;
