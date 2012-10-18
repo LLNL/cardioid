@@ -47,6 +47,9 @@ class GradientVoronoiCoarsening : public Sensor
    LocalSums valRHS1_;
    LocalSums valRHS2_;
    
+   // matrices for LS systems for each local color
+   std::map<int,double*> matLS_;
+   
    // eval times
    std::vector<double> times_;
    
@@ -58,8 +61,10 @@ class GradientVoronoiCoarsening : public Sensor
    void writeGradients(const std::string& filename,
                        const double current_time,
                        const int current_loop)const;
-   void computeLSsystem(const VectorDouble32& val);
+   void setupLSsystem(const VectorDouble32& val);
    void computeColorCenterValues(const VectorDouble32& val);
+   void setupLSmatrix();
+   void prologComputeLeastSquareGradients();
 
  public:
    GradientVoronoiCoarsening(const SensorParms& sp,
@@ -70,6 +75,16 @@ class GradientVoronoiCoarsening : public Sensor
                      MPI_Comm comm,
                      const std::string format,
                      const double max_distance);
+   ~GradientVoronoiCoarsening()
+   {
+      for(std::map<int,double*>::const_iterator it = matLS_.begin();
+                                                it!= matLS_.end();
+                                              ++it)
+      {
+         delete[] it->second;
+      }
+   }
+   
    void eval(double time, int loop);
    void print(double time, int loop);
 };

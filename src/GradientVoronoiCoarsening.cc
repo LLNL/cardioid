@@ -171,17 +171,63 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
 
    coarsening_.exchangeAndSum(valcolors_);
 }
-   
-// setup least square system dX^T W^2 dX grad V = dX^T W^2 dF
-void GradientVoronoiCoarsening::computeLSsystem(const VectorDouble32& val)
+
+// setup matrix of least square system dX^T W^2 dX grad V = dX^T W^2 dF
+void GradientVoronoiCoarsening::setupLSmatrix()
 {
-   // calculate local sums
    valMat00_.clear();
    valMat01_.clear();
    valMat02_.clear();
    valMat11_.clear();
    valMat12_.clear();
    valMat22_.clear();
+
+   const int nLocal = colored_cells_.size();
+   const double minnorm2=1.e-8;
+
+   for(int icc=0;icc<nLocal;++icc)
+   {
+      int ic=colored_cells_[icc];
+      
+      const double norm2=(dx_[ic]*dx_[ic]+dy_[ic]*dy_[ic]+dz_[ic]*dz_[ic]); 
+      if( norm2>minnorm2) // skip point at distance 0 
+      {
+         const int color=coarsening_.getColor(ic);
+         assert( color>=0 );
+         
+         const double norm2i=1./norm2; // weighting
+         
+         valMat00_.add1value(color,dx_[ic]*dx_[ic]*norm2i);
+         valMat01_.add1value(color,dx_[ic]*dy_[ic]*norm2i);
+         valMat02_.add1value(color,dx_[ic]*dz_[ic]*norm2i);
+         valMat11_.add1value(color,dy_[ic]*dy_[ic]*norm2i);
+         valMat12_.add1value(color,dy_[ic]*dz_[ic]*norm2i);
+         valMat22_.add1value(color,dz_[ic]*dz_[ic]*norm2i);
+      }
+   }
+   
+   // consolidate matrices over MPI tasks
+   vector<LocalSums*> valcolors;
+   valcolors.push_back(&valMat00_);
+   valcolors.push_back(&valMat01_);
+   valcolors.push_back(&valMat02_);
+   valcolors.push_back(&valMat11_);
+   valcolors.push_back(&valMat12_);
+   valcolors.push_back(&valMat22_);
+   
+   coarsening_.exchangeAndSum(valcolors);
+}
+   
+// setup r.h.s. of least square system dX^T W^2 dX grad V = dX^T W^2 dF
+void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
+{
+   static bool first_time = true;
+   if( first_time )
+   {
+      setupLSmatrix();
+      
+      first_time=false;
+   }
 
    valRHS0_.clear();
    valRHS1_.clear();
@@ -201,13 +247,6 @@ void GradientVoronoiCoarsening::computeLSsystem(const VectorDouble32& val)
          assert( color>=0 );
          
          const double norm2i=1./norm2; // weighting
-         //const double norm2i=1.; 
-         valMat00_.add1value(color,dx_[ic]*dx_[ic]*norm2i);
-         valMat01_.add1value(color,dx_[ic]*dy_[ic]*norm2i);
-         valMat02_.add1value(color,dx_[ic]*dz_[ic]*norm2i);
-         valMat11_.add1value(color,dy_[ic]*dy_[ic]*norm2i);
-         valMat12_.add1value(color,dy_[ic]*dz_[ic]*norm2i);
-         valMat22_.add1value(color,dz_[ic]*dz_[ic]*norm2i);
          
          const double v=norm2i*(val[ic]-valcolors_.value(color));
          valRHS0_.add1value(color,dx_[ic]*v);
@@ -216,18 +255,72 @@ void GradientVoronoiCoarsening::computeLSsystem(const VectorDouble32& val)
       }
    }
 
+   // consolidate vector over MPI tasks
    vector<LocalSums*> valcolors;
-   valcolors.push_back(&valMat00_);
-   valcolors.push_back(&valMat01_);
-   valcolors.push_back(&valMat02_);
-   valcolors.push_back(&valMat11_);
-   valcolors.push_back(&valMat12_);
-   valcolors.push_back(&valMat22_);
    valcolors.push_back(&valRHS0_);
    valcolors.push_back(&valRHS1_);
    valcolors.push_back(&valRHS2_);
    
-   coarsening_.exchangeAndSum(valcolors);
+   coarsening_.exchangeAndSum(valcolors);   
+}
+
+void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
+{
+   const std::set<int>& owned_colors(coarsening_.getOwnedColors());
+   
+   int myRank;
+   MPI_Comm_rank(comm_, &myRank);
+
+   nb_excluded_pts_=0;
+   
+   Long64 nSnapSubLoc = owned_colors.size();
+   Long64 nSnapSub;
+   MPI_Reduce(&nSnapSubLoc, &nSnapSub, 1, MPI_LONG_LONG, MPI_SUM, 0, comm_);
+
+   for(set<int>::const_iterator it = owned_colors.begin();
+                                it!= owned_colors.end();
+                              ++it)
+   {
+      const int color=(*it);
+   
+      const int ncells=valcolors_.nValues(color);
+   
+      if( ncells>3 ){
+         double* a=new double[6];
+         a[0]=valMat00_.value(color);
+         a[1]=valMat01_.value(color);
+         a[2]=valMat02_.value(color);
+         a[3]=valMat11_.value(color);
+         a[4]=valMat12_.value(color);
+         a[5]=valMat22_.value(color);
+      
+         matLS_.insert(pair<int,double*>(color,a));
+         
+         double det1=det3(a[0],a[1],a[2],a[1],a[3],a[4],a[2],a[4],a[5]);
+         if( fabs(det1)>tol_det )
+         {
+            included_owned_colors_.insert(color);
+            
+            gradients_[color].reserve(3*printRate()/evalRate());
+         }
+         
+      }else{
+         cout<<"GradientVoronoiCoarsening --- WARNING: exclude "
+               "point from coarsened data on task "<<myRank
+             <<" (surrounded by "<<ncells<<" cells only)"
+             <<endl;
+      }
+   } 
+   
+   nb_local_sampling_pts_ = included_owned_colors_.size();
+   
+   int npts=((int)owned_colors.size()-(int)included_owned_colors_.size());
+   if( npts>0 )cout<<"GradientVoronoiCoarsening --- WARNING: exclude "
+                   <<npts<<" points from coarsened data on task "<<myRank
+                   <<endl;
+   
+   MPI_Reduce(&npts, &nb_excluded_pts_, 1, MPI_INT, MPI_SUM, 0, comm_);
+   nb_sampling_pts_=nSnapSub-(Long64)nb_excluded_pts_;
 }
 
 void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current_time,
@@ -235,60 +328,13 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
 {
    static bool first_time = true;
    
-   const std::set<int>& owned_colors=coarsening_.getOwnedColors();
+   const std::set<int>& owned_colors(coarsening_.getOwnedColors());
    
    if( first_time )
    {
-      int myRank;
-      MPI_Comm_rank(comm_, &myRank);
-
-      nb_excluded_pts_=0;
+      prologComputeLeastSquareGradients();
       
-      Long64 nSnapSubLoc = owned_colors.size();
-      Long64 nSnapSub;
-      MPI_Reduce(&nSnapSubLoc, &nSnapSub, 1, MPI_LONG_LONG, MPI_SUM, 0, comm_);
-
-      for(set<int>::const_iterator it = owned_colors.begin();
-                                   it!= owned_colors.end();
-                                 ++it)
-      {
-         const int color=(*it);
-      
-         const int ncells=valcolors_.nValues(color);
-      
-         if( ncells>3 ){
-            double a[6]={valMat00_.value(color),
-                         valMat01_.value(color),
-                         valMat02_.value(color),
-                         valMat11_.value(color),
-                         valMat12_.value(color),
-                         valMat22_.value(color)};
-         
-            double det1=det3(a[0],a[1],a[2],a[1],a[3],a[4],a[2],a[4],a[5]);
-            if( fabs(det1)>tol_det )
-            {
-               included_owned_colors_.insert(color);
-               
-               gradients_[color].reserve(3*printRate()/evalRate());
-            }
-            
-         }else{
-            cout<<"GradientVoronoiCoarsening --- WARNING: exclude "
-                  "point from coarsened data on task "<<myRank
-                <<" (surrounded by "<<ncells<<" cells only)"
-                <<endl;
-         }
-      } 
-      
-      nb_local_sampling_pts_ = included_owned_colors_.size();
-      
-      int npts=((int)owned_colors.size()-(int)included_owned_colors_.size());
-      if( npts>0 )cout<<"GradientVoronoiCoarsening --- WARNING: exclude "
-                      <<npts<<" points from coarsened data on task "<<myRank
-                      <<endl;
-      
-      MPI_Reduce(&npts, &nb_excluded_pts_, 1, MPI_INT, MPI_SUM, 0, comm_);
-      nb_sampling_pts_=nSnapSub-(Long64)nb_excluded_pts_;
+      first_time = false;
    }
 
    for(set<int>::const_iterator it = included_owned_colors_.begin();
@@ -302,19 +348,13 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
       double g[3]={0.,0.,0.};             
       
       if( ncells>3 ){
-         double a[6]={valMat00_.value(color),
-                      valMat01_.value(color),
-                      valMat02_.value(color),
-                      valMat11_.value(color),
-                      valMat12_.value(color),
-                      valMat22_.value(color)};
          double b[3]={valRHS0_.value(color),
                       valRHS1_.value(color),
                       valRHS2_.value(color)};
          double norm2b=b[0]*b[0]+b[1]*b[1]+b[2]*b[2];          
          
          if( norm2b>1.e-15){
-            int ret=solve3x3(a,b,g,color);
+            int ret=solve3x3(matLS_[color],b,g,color);
             if (ret==1){
                cout<<"WARNING: unable to compute gradient because cells ("<<ncells<<") associated to gid "<<color<<" seem to be in 2D plane!!"<<endl;
             }
@@ -353,7 +393,6 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
       color_gradient.push_back(float(g[2]));
    }
    
-   first_time = false;
 }
    
 void GradientVoronoiCoarsening::writeGradients(const string& filename,
@@ -466,7 +505,7 @@ void GradientVoronoiCoarsening::eval(double time, int loop)
    times_.push_back(time);
    
    computeColorCenterValues(vdata_.VmArray_);
-   computeLSsystem(vdata_.VmArray_);
+   setupLSsystem(vdata_.VmArray_);
    computeLeastSquareGradients(time, loop);   
    
    stopTimer(sensorEvalTimer);
