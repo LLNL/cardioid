@@ -644,22 +644,22 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
       if(recved != 0)
       {
 	printf("node:%d did NOT receive %d bytes from node:%d on step %u while expecting %d\n",myID,recved,recv_task[ii],nCompleteCalls, (recv_offset[ii+1]-recv_offset[ii])*width); 
-	{
-	  double* rBuf = spi_hdl->recvBuf0;
-	  if (bw = 1) rBuf = spi_hdl->recvBuf1;
-	  printf("node:%d recvBuf[%d] = %f\n", myID, recv_offset[ii], rBuf[recv_offset[ii]]);
-	  for (int jj = recv_offset[ii]; jj<recv_offset[ii+1]; ++jj)
-	    if (rBuf[jj] != rBuf[recv_offset[ii]])
-		printf("node:%d Inconsistent recv buffer at %d\n", myID, jj);
-	}
-	{
-	  double* rBuf = spi_hdl->recvBuf0;
-	  if (bw = 0) rBuf = spi_hdl->recvBuf1;
-	  printf("node:%d recvBufOther[%d] = %f\n", myID, recv_offset[ii], rBuf[recv_offset[ii]]);
-	  for (int jj = recv_offset[ii]; jj<recv_offset[ii+1]; ++jj)
-	    if (rBuf[jj] != rBuf[recv_offset[ii]])
-		printf("node:%d Inconsistent other recv buffer at %d\n", myID, jj);
-	}
+/* 	{ */
+/* 	  double* rBuf = spi_hdl->recvBuf0; */
+/* 	  if (bw = 1) rBuf = spi_hdl->recvBuf1; */
+/* 	  printf("node:%d recvBuf[%d] = %f\n", myID, recv_offset[ii], rBuf[recv_offset[ii]]); */
+/* 	  for (int jj = recv_offset[ii]; jj<recv_offset[ii+1]; ++jj) */
+/* 	    if (rBuf[jj] != rBuf[recv_offset[ii]]) */
+/* 		printf("node:%d Inconsistent recv buffer at %d\n", myID, jj); */
+/* 	} */
+/* 	{ */
+/* 	  double* rBuf = spi_hdl->recvBuf0; */
+/* 	  if (bw = 0) rBuf = spi_hdl->recvBuf1; */
+/* 	  printf("node:%d recvBufOther[%d] = %f\n", myID, recv_offset[ii], rBuf[recv_offset[ii]]); */
+/* 	  for (int jj = recv_offset[ii]; jj<recv_offset[ii+1]; ++jj) */
+/* 	    if (rBuf[jj] != rBuf[recv_offset[ii]]) */
+/* 		printf("node:%d Inconsistent other recv buffer at %d\n", myID, jj); */
+/* 	} */
 	
          MUHWI_Destination_t* mapping = spi_hdl->mapping_hdl;
          printf("node:%d=(%d,%d,%d,%d,%d)\n",myID,(mapping)[myID].Destination.A_Destination,(mapping)[myID].Destination.B_Destination,(mapping)[myID].Destination.C_Destination,(mapping)[myID].Destination.D_Destination,(mapping)[myID].Destination.E_Destination);
