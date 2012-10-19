@@ -51,10 +51,10 @@ foreach $anatomy ("370M", "3B")
          {
             $globalsync = -1;
             #foreach $globalsync (-1, 0, 1, 10, 100)
-            #{
+            {
                printObject($anatomy,$celltype,$reaction,$fastgates,
                            $rationalfns,$smoothing,$ntasks,$machine);
-            #}
+            }
          }
       }
    }
@@ -112,7 +112,8 @@ sub printObject
    $px{36864} = 32; $py{36864} = 36; $pz{36864} = 32;  
    $px{49152} = 32; $py{49152} = 32; $pz{49152} = 48;  
    $px{73728} = 32; $py{73728} = 64; $pz{73728} = 36;  
-   $px{98304} = 32; $py{98304} = 64; $pz{98304} = 48;  
+   #$px{98304} = 32; $py{98304} = 64; $pz{98304} = 48;  
+   $px{98304} = 48; $py{98304} = 32; $pz{98304} = 64;  
       
 # store workbound balancer block sizes for each task count
    if ($anatomy eq "3B")
@@ -127,7 +128,7 @@ sub printObject
       $wx{36864} = 30; $wy{36864} = 30; $wz{36864} = 98;  
       $wx{49152} = 26; $wy{49152} = 26; $wz{49152} = 98;  
       $wx{73728} = 21; $wy{73728} = 22; $wz{73728} = 98;  
-      $wx{98304} = 26; $wy{98304} = 52; $wz{98304} = 98;  
+      $wx{98304} = 14; $wy{98304} = 26; $wz{98304} = 98;  
    }
    elsif ($anatomy eq "370M")
    {
@@ -141,6 +142,7 @@ sub printObject
       $wx{36864} = 20; $wy{36864} = 19; $wz{36864} = 26;
       $wx{49152} = 20; $wy{49152} = 19; $wz{49152} = 22;
       $wx{73728} = 20; $wy{73728} = 19; $wz{73728} = 14;
+      #$wx{98304} = 12; $wy{98304} = 8; $wz{98304} = 42;  
       #$wx{98304} = 8; $wy{98304} = 12; $wz{98304} = 42;  
       $wx{98304} = 18; $wy{98304} = 16; $wz{98304} = 14;  
    }
