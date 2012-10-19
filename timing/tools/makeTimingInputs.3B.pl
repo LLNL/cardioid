@@ -128,7 +128,7 @@ sub printObject
       $wx{36864} = 30; $wy{36864} = 30; $wz{36864} = 98;  
       $wx{49152} = 26; $wy{49152} = 26; $wz{49152} = 98;  
       $wx{73728} = 21; $wy{73728} = 22; $wz{73728} = 98;  
-      $wx{98304} = 14; $wy{98304} = 26; $wz{98304} = 98;  
+      $wx{98304} = 14; $wy{98304} = 24; $wz{98304} = 98;  
    }
    elsif ($anatomy eq "370M")
    {
@@ -176,7 +176,14 @@ sub printObject
    }
    print OBJECT "   loop = 0;\n";
    print OBJECT "   maxLoop = $nIterations;\n";
-   print OBJECT "   dt = 10 us;\n";
+   if ($anatomy eq "3B")
+   {
+      print OBJECT "   dt = 0.1 us;\n";
+   }
+   else 
+   {
+      print OBJECT "   dt = 10 us;\n";
+   }
    print OBJECT "   time = 0;\n";
    print OBJECT "   checkRanges = 0;\n";
    if ($globalsync >= 0)
