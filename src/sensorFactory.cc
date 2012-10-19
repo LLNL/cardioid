@@ -191,7 +191,15 @@ namespace
            method == "dataVoronoiCoarsening" )
          return new DataVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD, maxdistance);
       else if( method == "gradientVoronoiCoarsening" )
-         return new GradientVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD, format, maxdistance);
+      {
+         string algo;
+         objectGet(obj, "algorithm", algo, "comm");
+         assert( algo.compare("comm")==0 || algo.compare("nocomm")==0 );
+         const bool use_communication_avoiding_algorithm = ( algo.compare("nocomm")==0 );
+
+         return new GradientVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD, format, maxdistance,
+                                              use_communication_avoiding_algorithm);
+      }
       assert(false);
       return 0;
    }

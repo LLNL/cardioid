@@ -12,6 +12,12 @@ using namespace PerformanceTimers;
 #include <string.h>
 using namespace std;
 
+// algorithm inspired by reference:
+// C.D. Correa, R. Hero, K.-W. Ma, 
+// "A comparison of gradient estimation methods for volume
+//  rendering on unstructured meshes"
+// (see section 3.2)
+
 namespace
 {
    /** Concatenates the strings in vv into a single string with a space
@@ -69,7 +75,8 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(const SensorParms& sp,
                                      const PotentialData& vdata,
                                      MPI_Comm comm,
                                      const string format,
-                                     const double max_distance)
+                                     const double max_distance,
+                                     const bool use_communication_avoiding_algorithm)
    :Sensor(sp),
     coarsening_(anatomy,gid,comm),
     filename_(filename),
@@ -77,23 +84,26 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(const SensorParms& sp,
     vdata_(vdata),
     comm_(comm),
     format_(format),
-    max_distance_(max_distance)
+    max_distance_(max_distance),
+    use_communication_avoiding_algorithm_(use_communication_avoiding_algorithm)
 {
-   dx_.resize(anatomy.nLocal());
-   dy_.resize(anatomy.nLocal());
-   dz_.resize(anatomy.nLocal());
-
+   const int nLocal = anatomy_.nLocal();
+   
    // color local cells
    int ret=coarsening_.bruteForceColoring(max_distance);
    assert( ret>=0 );
    
+   dx_.resize(nLocal);
+   dy_.resize(nLocal);
+   dz_.resize(nLocal);
+
    coarsening_.colorDisplacements(dx_,dy_,dz_);
 
    coarsening_.computeRemoteTasks();
    
-   const int nLocal = anatomy_.nLocal();
    const double maxd2=max_distance*max_distance;
    colored_cells_.reserve(27);
+   
    
    //int count=0;
    for(int ic=0;ic<nLocal;++ic)
@@ -106,6 +116,7 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(const SensorParms& sp,
          //count++;
       }
    }
+   
    //cout<<count<<" colored cells"<<endl;
 }
 
@@ -114,14 +125,14 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
    static bool first_time=true;
 
    // calculate local sums
-   const int nLocal = anatomy_.nLocal();
    
-   static list<int> indexes;
+   static list<int> center_indexes;
    static map<int,int> ncellsofcolor;
    
    if( first_time )
    {
-      VectorDouble32 values(nLocal,0.);
+      const int nLocal = anatomy_.nLocal();
+
       for(int ic=0;ic<nLocal;++ic)
       {
          const int color=coarsening_.getColor(ic);
@@ -131,45 +142,41 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
                                +dy_[ic]*dy_[ic]
                                +dz_[ic]*dz_[ic]); 
             if( norm2<1.e-6 ){
-               values[ic]=val[ic];
-               //cout<<"values["<<ic<<"]="<<values[ic]<<endl;
-               indexes.push_back(ic);
+               center_indexes.push_back(ic);
             }
             ncellsofcolor[color]++;
          }
       }
       first_time=false;
-      
-      // calculate local sums
-      coarsening_.accumulateValues(values,valcolors_);
+   }
    
-   }else{
+   // set sum of n values to 0. for all colors known locally
+   map<int,int>::const_iterator p=ncellsofcolor.begin();
+   while(p!=ncellsofcolor.end())
+   {
+      const int color=p->first;
       
-      map<int,int>::const_iterator p=ncellsofcolor.begin();
-      while(p!=ncellsofcolor.end())
-      {
-         const int color=p->first;
-         
-         valcolors_.setSum(color,ncellsofcolor[color],0.);
-         p++;
-      }
-      
-      list<int>::const_iterator pi=indexes.begin();
-      while(pi!=indexes.end())
-      {
-         const int ic=*pi;
+      valcolors_.setSum(color,ncellsofcolor[color],0.);
+      ++p;
+   }
+   
+   // set sum of n values to val[ic] ( (n-1)*0. + val[ic] )
+   // for all colors centered locally
+   list<int>::const_iterator pi=center_indexes.begin();
+   while(pi!=center_indexes.end())
+   {
+      const int ic=*pi;
 
-         int color=coarsening_.getColor(ic);
-         assert( color>=0 );
-         
-         valcolors_.setSum(color,ncellsofcolor[color],val[ic]);
-         
-         pi++;
-      }
+      int color=coarsening_.getColor(ic);
+      assert( color>=0 );
       
+      valcolors_.setSum(color,ncellsofcolor[color],val[ic]);
+      
+      ++pi;
    }
 
-   coarsening_.exchangeAndSum(valcolors_);
+   if( !use_communication_avoiding_algorithm_ )
+      coarsening_.exchangeAndSum(valcolors_);
 }
 
 // setup matrix of least square system dX^T W^2 dX grad V = dX^T W^2 dF
@@ -182,10 +189,10 @@ void GradientVoronoiCoarsening::setupLSmatrix()
    valMat12_.clear();
    valMat22_.clear();
 
-   const int nLocal = colored_cells_.size();
+   const int nLocalcoloredCells = colored_cells_.size();
    const double minnorm2=1.e-8;
 
-   for(int icc=0;icc<nLocal;++icc)
+   for(int icc=0;icc<nLocalcoloredCells;++icc)
    {
       int ic=colored_cells_[icc];
       
@@ -221,11 +228,60 @@ void GradientVoronoiCoarsening::setupLSmatrix()
 // setup r.h.s. of least square system dX^T W^2 dX grad V = dX^T W^2 dF
 void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
 {
+   const int nLocalcoloredCells = colored_cells_.size();
+   const double minnorm2=1.e-8;
+   
+   static map<int,double*> bf0;
+
    static bool first_time = true;
    if( first_time )
    {
       setupLSmatrix();
       
+      if( use_communication_avoiding_algorithm_ )
+      {
+         valRHS0_.clear();
+         valRHS1_.clear();
+         valRHS2_.clear();
+         for(int icc=0;icc<nLocalcoloredCells;++icc)
+         {
+            int ic=colored_cells_[icc];
+      
+            const double norm2=(dx_[ic]*dx_[ic]+dy_[ic]*dy_[ic]+dz_[ic]*dz_[ic]); 
+            if( norm2>minnorm2) // skip point at distance 0 
+            {
+               const int color=coarsening_.getColor(ic);
+               assert( color>=0 );
+         
+               const double norm2i=1./norm2; // weighting
+         
+               valRHS0_.add1value(color,dx_[ic]*norm2i);
+               valRHS1_.add1value(color,dy_[ic]*norm2i);
+               valRHS2_.add1value(color,dz_[ic]*norm2i);
+            }
+         }
+      
+         vector<LocalSums*> valcolors;
+         valcolors.push_back(&valRHS0_);
+         valcolors.push_back(&valRHS1_);
+         valcolors.push_back(&valRHS2_);
+   
+         coarsening_.exchangeAndSum(valcolors);
+      
+         const std::set<int>& compute_colors(coarsening_.getOwnedColors());
+         for(set<int>::const_iterator it = compute_colors.begin();
+                                      it!= compute_colors.end();
+                                    ++it)
+         {
+            const int color=(*it);
+            double* array=new double[3];
+            array[0]=valRHS0_.value(color);
+            array[1]=valRHS1_.value(color);
+            array[2]=valRHS2_.value(color);
+            bf0.insert(pair<int,double*>(color,array));
+         }
+      }
+
       first_time=false;
    }
 
@@ -233,57 +289,90 @@ void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
    valRHS1_.clear();
    valRHS2_.clear();
 
-   const int nLocal = colored_cells_.size();
-   const double minnorm2=1.e-8;
-
-   for(int icc=0;icc<nLocal;++icc)
+   if( use_communication_avoiding_algorithm_ )
    {
-      int ic=colored_cells_[icc];
-      
-      const double norm2=(dx_[ic]*dx_[ic]+dy_[ic]*dy_[ic]+dz_[ic]*dz_[ic]); 
-      if( norm2>minnorm2) // skip point at distance 0 
+      for(int icc=0;icc<nLocalcoloredCells;++icc)
       {
-         const int color=coarsening_.getColor(ic);
-         assert( color>=0 );
+         int ic=colored_cells_[icc];
+      
+         const double norm2=(dx_[ic]*dx_[ic]+dy_[ic]*dy_[ic]+dz_[ic]*dz_[ic]); 
+         if( norm2>minnorm2) // skip point at distance 0 
+         {
+            const int color=coarsening_.getColor(ic);
+            assert( color>=0 );
          
-         const double norm2i=1./norm2; // weighting
+            const double norm2i=1./norm2; // weighting
          
-         const double v=norm2i*(val[ic]-valcolors_.value(color));
-         valRHS0_.add1value(color,dx_[ic]*v);
-         valRHS1_.add1value(color,dy_[ic]*v);
-         valRHS2_.add1value(color,dz_[ic]*v);
+            const double v=norm2i*val[ic];
+            valRHS0_.add1value(color,dx_[ic]*v);
+            valRHS1_.add1value(color,dy_[ic]*v);
+            valRHS2_.add1value(color,dz_[ic]*v);
+         }
       }
-   }
+      const std::set<int>& compute_colors(coarsening_.getOwnedColors());
+      for(set<int>::const_iterator it = compute_colors.begin();
+                                   it!= compute_colors.end();
+                                 ++it)
+      {
+         const int color=(*it);
+         
+         valRHS0_.increaseValue(color,-1.*valcolors_.value(color)*bf0[color][0]);
+         valRHS1_.increaseValue(color,-1.*valcolors_.value(color)*bf0[color][1]);
+         valRHS2_.increaseValue(color,-1.*valcolors_.value(color)*bf0[color][2]);
+      }
+      
+   }else{
+      for(int icc=0;icc<nLocalcoloredCells;++icc)
+      {
+         int ic=colored_cells_[icc];
+      
+         const double norm2=(dx_[ic]*dx_[ic]+dy_[ic]*dy_[ic]+dz_[ic]*dz_[ic]); 
+         if( norm2>minnorm2) // skip point at distance 0 
+         {
+            const int color=coarsening_.getColor(ic);
+            assert( color>=0 );
+         
+            const double norm2i=1./norm2; // weighting
+         
+            const double v=norm2i*(val[ic]-valcolors_.value(color));
+            valRHS0_.add1value(color,dx_[ic]*v);
+            valRHS1_.add1value(color,dy_[ic]*v);
+            valRHS2_.add1value(color,dz_[ic]*v);
+         }
+      }
 
-   // consolidate vector over MPI tasks
-   vector<LocalSums*> valcolors;
-   valcolors.push_back(&valRHS0_);
-   valcolors.push_back(&valRHS1_);
-   valcolors.push_back(&valRHS2_);
+      // consolidate vector over MPI tasks
+      vector<LocalSums*> valcolors;
+      valcolors.push_back(&valRHS0_);
+      valcolors.push_back(&valRHS1_);
+      valcolors.push_back(&valRHS2_);
    
-   coarsening_.exchangeAndSum(valcolors);   
+      coarsening_.exchangeAndSum(valcolors);   
+   }
 }
 
 void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
 {
-   const std::set<int>& owned_colors(coarsening_.getOwnedColors());
-   
    int myRank;
    MPI_Comm_rank(comm_, &myRank);
 
    nb_excluded_pts_=0;
    
-   Long64 nSnapSubLoc = owned_colors.size();
+   const std::set<int>& compute_colors = 
+      use_communication_avoiding_algorithm_ ? coarsening_.getLocalColors()
+                                            : coarsening_.getOwnedColors();
+
+   Long64 nSnapSubLoc = compute_colors.size();
    Long64 nSnapSub;
    MPI_Reduce(&nSnapSubLoc, &nSnapSub, 1, MPI_LONG_LONG, MPI_SUM, 0, comm_);
 
-   for(set<int>::const_iterator it = owned_colors.begin();
-                                it!= owned_colors.end();
+   for(set<int>::const_iterator it = compute_colors.begin();
+                                it!= compute_colors.end();
                               ++it)
    {
       const int color=(*it);
    
-      const int ncells=valcolors_.nValues(color);
+      const int ncells=valMat00_.nValues(color);
    
       if( ncells>3 ){
          double* a=new double[6];
@@ -299,7 +388,7 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
          double det1=det3(a[0],a[1],a[2],a[1],a[3],a[4],a[2],a[4],a[5]);
          if( fabs(det1)>tol_det )
          {
-            included_owned_colors_.insert(color);
+            included_eval_colors_.insert(color);
             
             gradients_[color].reserve(3*printRate()/evalRate());
          }
@@ -312,9 +401,7 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
       }
    } 
    
-   nb_local_sampling_pts_ = included_owned_colors_.size();
-   
-   int npts=((int)owned_colors.size()-(int)included_owned_colors_.size());
+   int npts=((int)compute_colors.size()-(int)included_eval_colors_.size());
    if( npts>0 )cout<<"GradientVoronoiCoarsening --- WARNING: exclude "
                    <<npts<<" points from coarsened data on task "<<myRank
                    <<endl;
@@ -328,8 +415,6 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
 {
    static bool first_time = true;
    
-   const std::set<int>& owned_colors(coarsening_.getOwnedColors());
-   
    if( first_time )
    {
       prologComputeLeastSquareGradients();
@@ -337,30 +422,24 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
       first_time = false;
    }
 
-   for(set<int>::const_iterator it = included_owned_colors_.begin();
-                                it!= included_owned_colors_.end();
+   for(set<int>::const_iterator it = included_eval_colors_.begin();
+                                it!= included_eval_colors_.end();
                               ++it)
    {
       const int color=(*it);
       
-      const int ncells=valcolors_.nValues(color);
-      
       double g[3]={0.,0.,0.};             
       
-      if( ncells>3 ){
-         double b[3]={valRHS0_.value(color),
-                      valRHS1_.value(color),
-                      valRHS2_.value(color)};
-         double norm2b=b[0]*b[0]+b[1]*b[1]+b[2]*b[2];          
-         
-         if( norm2b>1.e-15){
-            int ret=solve3x3(matLS_[color],b,g,color);
-            if (ret==1){
-               cout<<"WARNING: unable to compute gradient because cells ("<<ncells<<") associated to gid "<<color<<" seem to be in 2D plane!!"<<endl;
-            }
+      double b[3]={valRHS0_.value(color),
+                   valRHS1_.value(color),
+                   valRHS2_.value(color)};
+      double norm2b=b[0]*b[0]+b[1]*b[1]+b[2]*b[2];          
+      
+      if( norm2b>1.e-15){
+         int ret=solve3x3(matLS_[color],b,g,color);
+         if (ret==1){
+            cout<<"WARNING: unable to compute gradient because of bad condition number!!"<<endl;
          }
-      //}else{
-      //    cout<<"WARNING: Not enough cells ("<<ncells<<") associated to gid "<<color<<" to compute gradient!!"<<endl;
       }
       
       vector<float>& color_gradient(gradients_[color]);
@@ -459,8 +538,8 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
       const int halfNy = anatomy_.ny()/2;
       const int halfNz = anatomy_.nz()/2;
    
-      for(set<int>::const_iterator it = included_owned_colors_.begin();
-                                   it!= included_owned_colors_.end();
+      for(set<int>::const_iterator it = included_eval_colors_.begin();
+                                   it!= included_eval_colors_.end();
                                  ++it)
       {
          const int color=(*it);

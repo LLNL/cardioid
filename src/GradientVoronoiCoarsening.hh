@@ -23,19 +23,21 @@ class GradientVoronoiCoarsening : public Sensor
    
    const double max_distance_;
 
+   // flag telling us if values used for gradient are
+   // limited to a 3x3x3 mesh around sensor point
+   const bool use_communication_avoiding_algorithm_;
+
    std::vector<double> dx_;
    std::vector<double> dy_;
    std::vector<double> dz_;
    
    std::vector<int> colored_cells_;
    
-   std::set<int> included_owned_colors_;
+   std::set<int> included_eval_colors_;
    
    Long64 nb_sampling_pts_;
    int nb_excluded_pts_;
    
-   int nb_local_sampling_pts_;
-
    LocalSums valcolors_;
    LocalSums valMat00_;
    LocalSums valMat01_;
@@ -55,7 +57,7 @@ class GradientVoronoiCoarsening : public Sensor
    
    // gradient for each local color
    std::map<int,std::vector<float> > gradients_;
-
+   
    void computeLeastSquareGradients(const double current_time,
                                     const int current_loop);
    void writeGradients(const std::string& filename,
@@ -74,7 +76,9 @@ class GradientVoronoiCoarsening : public Sensor
                      const PotentialData& vdata_,
                      MPI_Comm comm,
                      const std::string format,
-                     const double max_distance);
+                     const double max_distance,
+                     const bool use_communication_avoiding_algorithm=false);
+   
    ~GradientVoronoiCoarsening()
    {
       for(std::map<int,double*>::const_iterator it = matLS_.begin();

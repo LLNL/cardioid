@@ -28,7 +28,7 @@ class LocalSums
 {
  private:
    std::map<int,int>    nval_; // number of values summed up for each color
-   std::map<int,double> sum_;
+   std::map<int,double> sum_;  // sum of values for each color
    
  public:
    LocalSums()
@@ -40,6 +40,11 @@ class LocalSums
       return nval_.size();
    }
    
+   void increaseValue(const int color, const double value)
+   {
+      assert( value==value );
+      sum_[color]+=value;
+   }
    void add1value(const int color, const double value)
    {
       assert( value==value );
@@ -192,6 +197,11 @@ class VoronoiCoarsening
    const std::set<int>& getOwnedColors()const
    {
       return owned_colors_;
+   }
+   
+   const std::set<int>& getLocalColors()const
+   {
+      return local_colors_;
    }
    
    int getColor(const int ic)const

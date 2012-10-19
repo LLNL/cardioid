@@ -406,6 +406,9 @@ void VoronoiCoarsening::computeRemoteTasks()
    }
    if( myRank==0 )
       cout<<"VoronoiCoarsening: compute remote tasks done..."<<endl;
+
+   //cout<<"Task "<<myRank<<" receives data from "<<src_tasks_.size()
+   //                     <<" tasks and sends data to "<<dst_tasks_.size()<<endl;
 }
 
 void VoronoiCoarsening::exchangeAndSum(LocalSums& valcolors)
