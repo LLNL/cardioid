@@ -233,15 +233,15 @@ void GridRouter::selfTest()
       else
          sendBuf[ii] = -1;
 
-   int allSends[nTasks][maxSend];
-   MPI_Allgather(&sendBuf, maxSend, MPI_INT, &allSends, maxSend, MPI_INT, comm_);
+   int allSends[nTasks*maxSend];
+   MPI_Allgather(sendBuf, maxSend, MPI_INT, allSends, maxSend, MPI_INT, comm_);
 
    for (unsigned ii=0; ii<sendRank_.size(); ++ii)
    {
       int target = sendRank_[ii];
       bool found = false;
       for (int jj=0; jj<maxSend; ++jj)
-         if (allSends[target][jj] == myRank)
+         if (allSends[target*maxSend+jj] == myRank)
             found = true;
 
       if (!found)
