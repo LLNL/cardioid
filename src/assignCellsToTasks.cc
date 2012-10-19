@@ -28,7 +28,7 @@ using namespace std;
 namespace
 {
     void koradiBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
-    int gridBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
+    LoadLevel gridBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
     void blockBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm);
     LoadLevel workBoundScan(Simulate& sim, OBJECT* obj, MPI_Comm comm);
     int pioBalancerScan(Simulate& sim, OBJECT* obj, MPI_Comm comm);
@@ -57,7 +57,7 @@ LoadLevel assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
    if (method == "koradi")
       koradiBalancer(sim, obj, comm);
    else if (method == "grid")
-      gridBalancer(sim, obj, comm);
+      LoadLevel = gridBalancer(sim, obj, comm);
    else if (method == "block")
       blockBalancer(sim, obj, comm);
    else if (method == "workBound")
@@ -171,7 +171,7 @@ namespace
     // the maximum value of either a cost function or the bounding box volume
     // on any MPI task.  
     
-   int gridBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm)
+   LoadLevel gridBalancer(Simulate& sim, OBJECT* obj, MPI_Comm comm)
    {
       int nTasks, myRank;
       MPI_Comm_size(comm, &nTasks);
@@ -287,9 +287,101 @@ namespace
       }
 
       // compute number of diffusion cores
-      int nDiffCores = -1;
+      int nDiffCores;   // default number of diffusion cores to use, chosen to be optimal for solid bricks
+      objectGet(obj, "nDiffCores", nDiffCores, "2");
       const int nTotCores = 16;
+
+      LoadLevel loadLevel; 
+      loadLevel.nDiffusionCores=nDiffCores; 
+      loadLevel.stencil="strip"; 
+
+      int nReaction = nTotCores - nDiffCores;
+      
       if (minimize == "work")
+      {
+         // want to test for:
+         //   a.  density (N/V), assign more diffusion cores as it decreases and maybe set loadLevel.stencil=omp?
+         //   b.  V < some fraction of V_max, set nDiffusionCores to a smallish fixed number
+
+
+         // calculate this task's number of cells and bounding box volume
+         int ncnt = 0;
+         int xmin = sim.nx_;
+         int ymin = sim.ny_;
+         int zmin = sim.nz_;
+         int xmax = -1;
+         int ymax = -1;
+         int zmax = -1;
+         for (unsigned ii=0; ii<cells.size(); ++ii)
+         {
+            int peid = cells[ii].dest_;
+            assert(peid == myRank);
+            GridPoint gpt(cells[ii].gid_,sim.nx_,sim.ny_,sim.nz_);
+            if (gpt.x < xmin) xmin = gpt.x;
+            if (gpt.y < ymin) ymin = gpt.y;
+            if (gpt.z < zmin) zmin = gpt.z;
+            if (gpt.x > xmax) xmax = gpt.x;
+            if (gpt.y > ymax) ymax = gpt.y;
+            if (gpt.z > zmax) zmax = gpt.z;
+            ncnt++;
+         }
+         int vol = (xmax-xmin+1)*(ymax-ymin+1)*(zmax-zmin+1);
+
+         vector<int> nCellsLoc(nTasks,0);
+         vector<int> volLoc(nTasks,0);
+         vector<int> peNCells(nTasks,0);
+         vector<int> peVol(nTasks,0);
+         nCellsLoc[myRank] = ncnt;
+         volLoc[myRank] = vol;
+         MPI_Allreduce(&nCellsLoc[0], &peNCells[0], nTasks, MPI_INT, MPI_SUM, comm);
+         MPI_Allreduce(&volLoc[0], &peVol[0], nTasks, MPI_INT, MPI_SUM, comm);
+
+         double nCellsAvg = 0.;
+         int nCellsMax = 0;
+         double volAvg = 0.;
+         int volMax = 0;
+         for (int ip=0; ip<nTasks; ip++)
+         {
+            nCellsAvg += peNCells[ip];
+            if (peNCells[ip] > nCellsMax) ncellsMax = peNCells[ip];
+            volAvg += peVol[ip];
+            if (peVol[ip] > volMax) volMax = peVol[ip];
+         }
+         nCellsAvg /= nTasks;
+         volAvg /= nTasks;
+         
+         double fraction = (double)ncnt/(double)nCellsMax;
+         double density = (double)ncnt/(double)vol;
+
+         if (density < 0.1)
+            loadLevel.stencil="omp"; 
+
+         if (ncnt >= 0.90*nCellsMax && density > 0.80)
+         {
+            // for large, mostly filled bricks, use default values for nDiffusionCores
+         }
+         else if (vol < 0.2*volMax)
+         {
+            // for small cells, use default values for nDiffusionCores
+         }
+         else
+         {
+            // set nReactionCores roughly proportional to the number of cells
+            int nR = fraction*nReaction + 1;
+            if (nR > nReaction) nR = nReaction;
+
+            int nD = nTotCores - nR;
+            if (nD < 2) nD = 2;
+            loadLevel.nDiffusionCores=nD; 
+
+            if (density < 0.1)
+               loadLevel.stencil="omp";       
+         }
+
+      }
+
+      // old half-finished algorithm, didn't work
+      if (false && minimize == "work")
       {
          int ncnt = 0;
          int xmin = sim.nx_;
@@ -298,7 +390,7 @@ namespace
          int xmax = -1;
          int ymax = -1;
          int zmax = -1;
-         int maxvol = sim.nx_*sim.ny_*sim.nz_;
+         Long64 maxvol = sim.nx_*sim.ny_*sim.nz_;
          for (unsigned ii=0; ii<cells.size(); ++ii)
          {
             int peid = cells[ii].dest_;
@@ -330,7 +422,7 @@ namespace
 
          }
       }
-      return nDiffCores;
+      return loadLevel;
    }
 }
 
