@@ -8,7 +8,8 @@ typedef  struct column_st { int  nChunks; int offset ;} COLUMN;
 typedef  struct balance_domain_st { int id, nTissue, bbVol, bbHeight; } BALANCE_DOMAIN; 
 typedef  struct balancer_st 
 { 
-   int rank,  nRank, nTasks, nC, nx, ny, nz, dx, dy, dz, NX, NY, NXYz,nCellLocal,nCellGlobal; 
+   int rank,  nRank, nTasks, nC, nx, ny, nz, dx, dy, dz, NX, NY, NXYz, nCellLocal; 
+   long long unsigned nCellGlobal;
    double alphaWork; 
    double alphaBalance; 
    double beta; 
@@ -26,7 +27,7 @@ typedef  struct balancer_st
 extern "C" {
 #endif
 PARTITION_INFO  corePartition(CHUNKS chunk, BALANCER *balancer);
-BALANCER buildBalancer(int nCellGlobal, int nx,int ny,int nz,int dx,int dy,int dz, int  nTasks, int nCores, int nRCoresBB, double alpha, double beta, int printStat, MPI_Comm comm) ;
+BALANCER buildBalancer(long long unsigned nCellGlobal, int nx,int ny,int nz,int dx,int dy,int dz, int  nTasks, int nCores, int nRCoresBB, double alpha, double beta, int printStat, MPI_Comm comm) ;
 void fillSeg(int nn, long long unsigned *gidArray, BALANCER *balancer) ;
 void reduceSeg(BALANCER *balancer) ;
 int buildColumns(BALANCER *balancer);

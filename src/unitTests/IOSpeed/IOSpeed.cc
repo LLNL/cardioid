@@ -42,8 +42,8 @@ void ioTest(int kBytes, int nFiles)
 int main(int argc, char** argv)
 {
    MPI_Init(&argc, &argv);
-   heap_start(50);
    COMM_LOCAL = MPI_COMM_WORLD;
+   heap_start(50);
    
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);

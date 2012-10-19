@@ -97,7 +97,7 @@ int  findChunks(BALANCER *balancer, unsigned short *seg, double diffCost, COLUMN
    }
    return offset; 
 }
-BALANCER buildBalancer(int nCellGlobal, int nx,int ny,int nz,int dx,int dy,int dz, 
+BALANCER buildBalancer(long long unsigned nCellGlobal, int nx,int ny,int nz,int dx,int dy,int dz, 
        int  nTasks, int nCores, int nRCoresBB, double alpha, double beta, int printStats, MPI_Comm comm) 
 {
    int rank,nRank; 
