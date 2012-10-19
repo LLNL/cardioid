@@ -57,7 +57,7 @@ LoadLevel assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
    if (method == "koradi")
       koradiBalancer(sim, obj, comm);
    else if (method == "grid")
-      LoadLevel = gridBalancer(sim, obj, comm);
+      loadLevel = gridBalancer(sim, obj, comm);
    else if (method == "block")
       blockBalancer(sim, obj, comm);
    else if (method == "workBound")
@@ -343,7 +343,7 @@ namespace
          for (int ip=0; ip<nTasks; ip++)
          {
             nCellsAvg += peNCells[ip];
-            if (peNCells[ip] > nCellsMax) ncellsMax = peNCells[ip];
+            if (peNCells[ip] > nCellsMax) nCellsMax = peNCells[ip];
             volAvg += peVol[ip];
             if (peVol[ip] > volMax) volMax = peVol[ip];
          }
