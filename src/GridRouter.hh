@@ -10,6 +10,8 @@ class CommTable;
 class GridRouter
 {
  private:
+
+   void selfTest();
    
    MPI_Comm comm_;
    std::vector<int> sendRank_;

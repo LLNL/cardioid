@@ -4,6 +4,7 @@
 #include <cmath>
 #include <set>
 #include <algorithm>
+#include <stdio.h>
 #include "CommTable.hh"
 #include "Grid3DStencil.hh"
 #include "DomainInfo.hh"
@@ -203,6 +204,8 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
       }
      
    }
+   selfTest();
+
 }
 
 CommTable GridRouter::commTable() const
@@ -212,3 +215,37 @@ CommTable GridRouter::commTable() const
 }
 
 
+void GridRouter::selfTest()
+{
+   int nTasks;
+   int myRank;
+   MPI_Comm_size(comm_, &nTasks);
+   MPI_Comm_rank(comm_, &myRank);
+
+   int nSend = sendRank_.size();
+   int maxSend;
+   MPI_Allreduce(&nSend, &maxSend, 1, MPI_INT, MPI_MAX, comm_);
+
+   int sendBuf[maxSend];
+   for (int ii=0; ii<maxSend; ++ii)
+      if (ii<sendRank_.size())
+         sendBuf[ii] = sendRank_[ii];
+      else
+         sendBuf[ii] = -1;
+
+   int allSends[nTasks][maxSend];
+   MPI_Allgather(&sendBuf, maxSend, MPI_INT, &allSends, maxSend, MPI_INT, comm_);
+
+   for (unsigned ii=0; ii<sendRank_.size(); ++ii)
+   {
+      int target = sendRank_[ii];
+      bool found = false;
+      for (int jj=0; jj<maxSend; ++jj)
+         if (allSends[target][jj] == myRank)
+            found = true;
+
+      if (!found)
+         printf("GridRouter::selfCheck FAILED:  Rank %d sends to rank %d but not vice-versa\n", myRank, target);
+   }
+   
+}
