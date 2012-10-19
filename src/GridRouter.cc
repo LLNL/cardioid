@@ -10,6 +10,7 @@
 #include "DomainInfo.hh"
 #include "Vector.hh"
 #include "IndexToVector.hh"
+#include "pio.h"
 
 // #include <iostream> //ddt
 // #include <fstream> //ddt
@@ -25,13 +26,18 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
    MPI_Comm_size(comm_, &nTasks);
    MPI_Comm_rank(comm_, &myRank);  
 
+   PFILE* ddtFile = Popen("ddtGridRouter", "w", comm_);
+   
    double deltaR = 2.0;
   
 
    DomainInfo myInfo(gid, nx, ny, nz);
    Vector myCenter = myInfo.center();
    double myRadius = myInfo.radius();
-  
+
+   Pprintf(ddtFile, "%5d: c= %f %f %f, r= %f\n", myRank, myCenter[0], myCenter[1], myCenter[2], myRadius);
+   
+   
    // distribute process centers and radii to all tasks
    vector<DomainInfo> dInfo(nTasks, myInfo);
    int dSize = sizeof(DomainInfo);
@@ -69,6 +75,10 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
       }
    } //scope
 
+   Pprintf(ddtFile, "%5d:, nNbrs = %u\n", myRank, myNbrs.size());
+   for (unsigned ii=0; ii<myNbrs.size(); ++ii)
+      Pprintf(ddtFile, "%5d:  nbr[%u] = %d\n", myRank, ii, myNbrs[ii]);
+   
    // Get a list of all of the cells I might possibly need on this task.
    // This list might include non-tissue cells since we have no way of
    // telling. 
@@ -88,6 +98,9 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
                      back_inserter(neededCells));
    } //scope
    
+   Pprintf(ddtFile, "%5d:, neededCells = %u\n", myRank, neededCells.size());
+
+
 //    { //ddt
 //       IndexToTuple indexToTuple(nx, ny, nz);
 //       stringstream buf;
@@ -204,6 +217,11 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
       }
      
    }
+
+   Pprintf(ddtFile, "%5d: nSend = %u\n", myRank, sendRank_.size());
+   for (unsigned ii=0; ii<sendRank_.size(); ++ii)
+      Pprintf(ddtFile, "%5d:   s[%u] = %u\n", myRank, ii, sendRank_[ii]);
+
    selfTest();
 
 }
