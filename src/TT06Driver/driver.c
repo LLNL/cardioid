@@ -11,6 +11,12 @@
 void HPM_Start(char *); 
 void HPM_Stop(char *); 
 typedef struct { int nCores, nThreads; struct { int coreID, threadID;} map[64];} threadInfo; 
+typedef struct { double nonGateMin, nonGateMax, gateMin, gateMax;} TIME; 
+int perm[24][4] = {{0,1,2,3}, {0,1,3,2}, {0,2,1,3}, {0,2,3,1}, {0,3,1,2}, {0,3,2,1},
+                   {1,0,2,3}, {1,0,3,2}, {1,2,0,3}, {1,2,3,0}, {1,3,0,2}, {1,3,2,0},
+                   {2,0,1,3}, {2,0,3,1}, {2,1,0,3}, {2,1,3,0}, {2,3,0,1}, {2,3,1,0},
+                   {3,0,1,2}, {3,0,2,1}, {3,1,0,2}, {3,1,2,0}, {3,2,0,1}, {3,2,1,0}};
+         
 //#define BGQ
 #ifdef BGQ
 #include <spi/include/l1p/pprefetch.h> 
@@ -35,6 +41,24 @@ static   double tauR[13][50];
 static   double dt=0.01; 
 static   int nonGatesFlag=0;
 static   int gatesFlag=0;
+static   int map[12]={0,1,2,3,4,5,6,7,8,9,10,11}; 
+static   int gateSwap=1; 
+
+int mapBad(int *map)
+{
+  int flag[12]; 
+  for (int i=0;i<12;i++) flag[i]=0; 
+  for (int i=0;i<12;i++) 
+  {
+    if ( flag[map[i]] == 0) flag[map[i]] = 1; 
+    else 
+    {
+     printf("%d\n",i);
+     return 1;
+    } 
+  }
+  return 0; 
+}
 
 threadInfo getThreadInfo()
 {
@@ -55,7 +79,7 @@ threadInfo getThreadInfo()
    return info; 
 }
    
-void init(int nCellsOnNode, int *cellTypeVector, double **g, double *Vm)
+void init(int cellType, int nCellsOnNode, int *cellTypeVector, double **g, double *Vm)
 {
       int ompID = omp_get_thread_num(); 
    for (int i=0;i<nCellsOnNode;i++) 
@@ -63,12 +87,17 @@ void init(int nCellsOnNode, int *cellTypeVector, double **g, double *Vm)
         
         double state[nStateVar]; 
         double gate[1]; 
-        int cellType=0; 
         double vm=initState(state,gate,cellType); 
         cellTypeVector[i] = cellType; 
         Vm[i] = vm; 
-	     for (int j=0;j<19;j++)  g[j][i]=state[j];
-	     g[19][i]=state[18];
+         int k; 
+        for (int j=0;j<19;j++)  
+        {
+           if (gateSwap && j>6) k = 7+map[j-7]; else k = j; 
+           g[j][i]=state[k];
+        }
+       //if (gateSwap) k = 7+map[11]; else k = 18; 
+       // g[19][i]=state[k];
    }
 }
 void readData()
@@ -93,12 +122,12 @@ void readData()
    }
    fclose(file); 
 }
-void parallelSection(threadInfo *info,  UPDATENONGATE updateNonGateFunc, UPDATEGATE updateGateFuncs[], double dt, int maxLoop, int nCells, int *cellTypeVector, double *Vm, double *g[19], double *dVdt, FILE *file)
+TIME  parallelSection(threadInfo *info,  UPDATENONGATE updateNonGateFunc, UPDATEGATE updateGateFuncs[], double dt, int maxLoop, int nCells, int *cellTypeVector, double *Vm, double *g[19], double *dVdt, FILE *file)
 {
   struct CellTypeParms cellParms[4]={{0,0,2.724,0.392,0.073,0.0},{0,0,2.724,0.098,0.294,0.0},{ 0,0,2.724, 0.392, 0.294, 0.0 },{0,0,0.2724,0.098,0.294,0.0}}; 
 #ifdef BGQ
    HPM_Start("Reaction"); 
-   vprof_start(); 
+   //vprof_start(); 
 #endif 
    double cpuTimes[128]; 
    for(int i=0;i<128;i++) cpuTimes[i]=0.0; 
@@ -130,7 +159,6 @@ void parallelSection(threadInfo *info,  UPDATENONGATE updateNonGateFunc, UPDATEG
 
       int loop;  
       double time=0.0; 
-      int map[12]={0,1,2,3,4,5,6,7,8,9,10,11}; 
       for (loop=0;loop<maxLoop;loop++)
       {
              double t0,t1; 
@@ -151,7 +179,9 @@ void parallelSection(threadInfo *info,  UPDATENONGATE updateNonGateFunc, UPDATEG
              {
                int eqx = offsetGEq+i; 
                int eq = map[eqx]; 
-                 updateGateFuncs[eq](dt, nCellPerCore, Vm+offsetCore, g[eq+7]+offsetCore, mhu[eq], tauR[eq]);  
+               int gateIndex; 
+               if (gateSwap) gateIndex = eqx ; else gateIndex = eq; 
+                 updateGateFuncs[eq](dt, nCellPerCore, Vm+offsetCore, g[gateIndex+7]+offsetCore, mhu[eq], tauR[eq]);  
              }
              t1 = omp_get_wtime(); 
              cpuTimes[2*ompID+1]+= t1-t0; 
@@ -161,23 +191,45 @@ void parallelSection(threadInfo *info,  UPDATENONGATE updateNonGateFunc, UPDATEG
      #pragma omp barrier 
    }
 #ifdef BGQ
-   vprof_stop(); 
+   //vprof_stop(); 
    HPM_Stop("Reaction"); 
 #endif
-   int nThreads   = info ->nThreads; 
-   for (int i=0;i<19;i++) printf("%4d %4d %3d %24.14e %24.14e %24.14e\n", maxLoop,nCells,i,g[i][0],g[i][nCells/2],g[i][nCells-1] );
+  
+  int nThreads   = info ->nThreads; 
+  TIME time; 
+  time.gateMax =0.0; 
+  time.gateMin =10000.0; 
+  time.nonGateMax =0.0; 
+  time.nonGateMin =10000.0; 
+  for(int ompID=0;ompID<nThreads;ompID++) 
+  {  
+          double nonGateTime = cpuTimes[2*ompID];
+          double gateTime    = cpuTimes[2*ompID+1];
+          if (nonGateTime > time.nonGateMax) time.nonGateMax = nonGateTime;   
+          if (   gateTime > time.gateMax   ) time.gateMax    =    gateTime;   
+          if (nonGateTime < time.nonGateMin) time.nonGateMin = nonGateTime;   
+          if (   gateTime < time.gateMin   ) time.gateMin    =    gateTime;   
+   }
+   
    if (file != NULL) 
    {
-   fprintf(file,"#ompID coreID nonGate    gate\n");
-   for(int ompID=0;ompID<nThreads;ompID++) fprintf(file,"%6d %6d %8.3f %8.3f\n",ompID,ompID%16,cpuTimes[2*ompID],cpuTimes[2*ompID+1]);fflush(stdout);
-   fprintf(file,"end_of_data\n");
+      double cT = 1e6/maxLoop; 
+      fprintf(file,"#ompID coreID nonGate    gate\n");
+      for(int ompID=0;ompID<nThreads;ompID++) 
+      {  
+          fprintf(file,"%6d %6d %12.6f %12.6f\n",ompID,ompID%16,cT*cpuTimes[2*ompID],cT*cpuTimes[2*ompID+1]);fflush(stdout);
+      }
+      fprintf(file,"end_of_data\n"); fflush(file); 
    }
+   return time;
 
 
 }
 int main(int argc, char **argv)
 {
+   int compare=0; 
    int maxLoop = 100000; 
+   int nMinSteps = 0; 
    int nCellsOnNode=4096;
    int jobId=Kernel_GetJobID(); 
    printf("jobId=%d\n",jobId); 
@@ -187,6 +239,7 @@ int main(int argc, char **argv)
    int rc; 
    rc = mkdir(dirname, mode);
    rc = chdir(dirname); 
+   int cellType = 100; 
 
    FILE *file=fopen("time.data","w"); 
    for (int i=1;i<argc;i++)
@@ -195,13 +248,21 @@ int main(int argc, char **argv)
       if (strcmp(argv[i],"-gates") ==0)  gatesFlag=1; 
       if (strcmp(argv[i],"-n") ==0)  nCellsOnNode = atol(argv[++i]); 
       if (strcmp(argv[i],"-maxLoop") ==0)  maxLoop = atol(argv[++i]); 
+      if (strcmp(argv[i],"-cellType") == 0)  cellType = atol(argv[++i]); 
+      if (strcmp(argv[i],"-compare") == 0)  compare=1; 
+      if (strcmp(argv[i],"-nMinSteps") == 0)  nMinSteps = atol(argv[++i]); 
+      if (strcmp(argv[i],"-map") == 0) 
+      {
+	for (int j=0;j<12;j++)  map[j] = atol(argv[++i]); 
+      }
+    
       if (strcmp(argv[i],"-h") ==0)  
       {
-	printf("usage: driver [-nonGates] [-gates] [-maxLoop <#TimeSteps>] [-n <#Particles>]\n"); 
+	printf("usage: driver [-nonGates] [-gates] [-compare] [-nMinSteps <steps>] [-maxLoop <#TimeSteps>] [-n <#cells>] [-map 0 1 2 3 4 5 6 7 8 9 10 11] [-cellType <100|101|102>]>\n"); 
         exit(0); 
       }
    }
-   printf("%d %d %d %d\n",nonGatesFlag,gatesFlag,nCellsOnNode,maxLoop);  
+   cellType -= 100; 
    int myid; 
    MPI_Init(&argc,&argv);
    MPI_Comm_rank(MPI_COMM_WORLD, &myid); 
@@ -210,6 +271,11 @@ int main(int argc, char **argv)
                           update_fGate, update_f2Gate, update_jLGate, update_s0Gate, update_s1Gate} ;
    UPDATEGATE updateFuncs1[]={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, update_rGate_v1, update_dGate_v1, 
                           update_fGate_v1, update_f2Gate_v1, update_jLGate_v1, update_s0Gate_v1, update_s1Gate_v1} ;
+   if (cellType != 0) 
+   {
+	updateFuncs0[11] = update_s1Gate; 
+	updateFuncs1[11] = update_s1Gate_v1; 
+   }
 
 // create a aligned buffer and offset 
    uint64_t sizeBuffer   = 22*(nCellsOnNode+63)*sizeof(double); 
@@ -239,30 +305,99 @@ int main(int argc, char **argv)
 
    threadInfo info = getThreadInfo(); 
    
-   init(nCellsOnNode, cellTypeVector,g, Vm);
-
-   parallelSection(&info, update_nonGate, updateFuncs0, dt, maxLoop, nCellsOnNode, cellTypeVector, Vm, g, dVdt,NULL);
    double sum0[19]; 
-   for (int eq =0;eq<19;eq++)
+   if (compare)
    {
-      sum0[eq]=0; 
-      for (int i=0;i<nCellsOnNode;i++) sum0[eq]+=g[eq][i];  sum0[eq] /= nCellsOnNode; 
+      init(cellType,nCellsOnNode, cellTypeVector,g, Vm);
+
+      parallelSection(&info, update_nonGate, updateFuncs0, dt, maxLoop, nCellsOnNode, cellTypeVector, Vm, g, dVdt,NULL);
+      for (int eq =0;eq<19;eq++)
+      {
+         sum0[eq]=0; 
+         for (int i=0;i<nCellsOnNode;i++) sum0[eq]+=g[eq][i];  sum0[eq] /= nCellsOnNode; 
+      }
    }
 
-   init(nCellsOnNode, cellTypeVector,g, Vm);
-   parallelSection(&info, update_nonGate_v1, updateFuncs1, dt, maxLoop, nCellsOnNode, cellTypeVector, Vm, g, dVdt,file);
-
-   printf("\n********************************\n"); 
-   printf("g0 = gSNorm[eq][0]\n");    
-   printf("g1 = gSimd[eq][0]\n");    
-   printf("ave  = 1 -0.5*(<g0>+<g1>)/g1\n"); 
-   printf("diff  = <g1>-<g1>)/<g0>\n"); 
-   printf("%2s %-9s %9s %9s %9s %15s %9s\n","eq","eq Name","g1","<g0>","<g1>","ave  ","diff");    
-   for (int eq =0;eq<19;eq++)
+   printf("nMinStep=%d\n",nMinSteps); 
+   if (nMinSteps >  1)   
    {
-     double sum1=0; for (int i=0;i<nCellsOnNode;i++)   sum1+=g[eq][i]; sum1 /= nCellsOnNode; 
-     double sum = g[eq][0]; 
-     printf("%2d %-9s %10.3e %10.3e %10.3e error=%9.2e %9.2e\n",eq,getStateName(eq), sum,sum0[eq],sum1,1.0-0.5*(sum0[eq]+sum1)/sum,(sum1-sum0[eq])/sum0[eq]);    
+      int i,j,m;
+      init(cellType,nCellsOnNode, cellTypeVector,g, Vm);
+      TIME time = parallelSection(&info, update_nonGate_v1, updateFuncs1, dt, maxLoop, nCellsOnNode, cellTypeVector, Vm, g, dVdt,NULL);
+      double  gateTimeBest = time.gateMax;
+      double cT =  1e6/maxLoop; 
+      printf("%8d %8d",0,0); 
+      printf(" %12.6f %12.6f",cT*time.gateMin,cT*time.gateMax); 
+      for (int k=0;k<12;k++) {printf(" %2d",map[k]); } printf("\n");  fflush(stdout); 
+      for (int step=0;step<nMinSteps;step++)
+      {
+         int cnt =0; 
+         int flag[] ={ 0,0,0,0,0,0,0,0,0,0,0,0}; 
+         int list[4]; 
+         while (cnt< 4) 
+         {
+           int ii = 12 * drand48(); 
+           if (ii == 12) continue; 
+           if (flag[ii] == 0) list[cnt++]=ii; 
+           flag[ii] = 1; 
+         }
+         int listValues[4]; 
+         for (int k=0;k<4;k++) listValues[k] = map[list[k]]; 
+         for (int l=1;l<24;l++) 
+         {
+            for (int k=0;k<4;k++) map[list[k]] = listValues[perm[l][k]]; 
+            if (mapBad(map)) 
+            {
+               printf("bad %d %d %d %d\n",list[0],list[1],list[2],list[3]); 
+               for (int k=0;k<12;k++) {printf(" %2d",map[k]); } printf("\n"); fflush(stdout); 
+               exit(0); 
+            }
+            init(cellType,nCellsOnNode, cellTypeVector,g, Vm);
+            TIME time = parallelSection(&info, update_nonGate_v1, updateFuncs1, dt, maxLoop, nCellsOnNode, cellTypeVector, Vm, g, dVdt,NULL);
+            if (time.gateMax < gateTimeBest) 
+            {  
+               gateTimeBest = time.gateMax; 
+               rewind(file); 
+               printf("%8d %8d",step,l); 
+               printf(" %12.6f %12.6f",cT*time.gateMin,cT*time.gateMax); 
+               for (int k=0;k<12;k++) {printf(" %2d",map[k]); } printf("\n");  fflush(stdout); 
+               fprintf(file,"#"); for (i=0;i<argc;i++) fprintf(file, "%s ", argv[i]);  fprintf(file,"\n"); 
+               fprintf(file,"# new map=");for(int i=0;i<12;i++) fprintf(file," %2d",map[i]); fprintf(file,"\n");  
+               TIME time = parallelSection(&info, update_nonGate_v1, updateFuncs1, dt, maxLoop, nCellsOnNode, cellTypeVector, Vm, g, dVdt,file);
+               fflush(stdout); 
+            }
+            else 
+            { 
+            for (int k=0;k<4;k++) map[list[k]] = listValues[k];    //Undo change
+            }
+
+        }
+      }
+   }
+   else
+   {
+      double cT = 1e6/maxLoop; 
+      init(cellType,nCellsOnNode, cellTypeVector,g, Vm);
+      TIME time = parallelSection(&info, update_nonGate_v1, updateFuncs1, dt, maxLoop, nCellsOnNode, cellTypeVector, Vm, g, dVdt,file);
+       printf("Time per time-step  (usec)\n"); 
+       printf("nonGate(min/max) = %12.6f/%12.6f",cT*time.nonGateMin,cT*time.nonGateMax); 
+       printf("   Gate(min/max) = %12.6f/%12.6f\n",cT*time.gateMin,cT*time.gateMax); 
+   }
+
+   if (compare) 
+   {
+      printf("\n********************************\n"); 
+      printf("g0 = gSNorm[eq][0]\n");    
+      printf("g1 = gSimd[eq][0]\n");    
+      printf("ave  = 1 -0.5*(<g0>+<g1>)/g1\n"); 
+      printf("diff  = <g1>-<g1>)/<g0>\n"); 
+      printf("%2s %-9s %9s %9s %9s %15s %9s\n","eq","eq Name","g1","<g0>","<g1>","ave  ","diff");    
+      for (int eq =0;eq<19;eq++)
+      {
+        double sum1=0; for (int i=0;i<nCellsOnNode;i++)   sum1+=g[eq][i]; sum1 /= nCellsOnNode; 
+        double sum = g[eq][0]; 
+        printf("%2d %-9s %10.3e %10.3e %10.3e error=%9.2e %9.2e\n",eq,getStateName(eq), sum,sum0[eq],sum1,1.0-0.5*(sum0[eq]+sum1)/sum,(sum1-sum0[eq])/sum0[eq]);    
+      }
    }
 
    MPI_Finalize(); 

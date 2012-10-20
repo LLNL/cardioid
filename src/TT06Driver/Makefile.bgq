@@ -11,7 +11,8 @@ INCDIR    =  -I$(FLOOR) -I/bgsys/drivers/ppcfloor/spi/include/kernel/cnk
 
 
 #CFLAGS   =  -c  -O3 -DBGQ -qhot -g $(INCDIR) -qalias=allp -qsmp=omp:noauto
-CFLAGS   =  -c  -O3 -DBGQ  -g $(INCDIR) -qalias=allp -qsmp=omp:noauto
+#CFLAGS   =  -c  -O3 -DBGQ  -g $(INCDIR) -qalias=allp -qsmp=omp:noauto
+CFLAGS   =  -c  -DBGQ  -g $(INCDIR) -qalias=allp -qsmp=omp:noauto
 
 
 LDFLAGS  = -lm  -qsmp=omp
