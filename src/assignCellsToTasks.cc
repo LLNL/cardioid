@@ -350,7 +350,8 @@ namespace
          nCellsAvg /= nTasks;
          volAvg /= nTasks;
          
-         double fraction = (double)ncnt/(double)nCellsMax;
+         double maxFraction = (double)ncnt/(double)nCellsMax;
+         double avgFraction = (double)ncnt/(double)nCellsAvg;
          double density = (double)ncnt/(double)vol;
 
          if (density < 0.1)
@@ -366,18 +367,33 @@ namespace
          }
          else
          {
-            // set nReactionCores roughly proportional to the number of cells
-            int nR = fraction*nReaction + 1;
-            if (nR > nReaction) nR = nReaction;
+            if (density > 0.8)
+            {
+               // set nReactionCores roughly proportional to the average number of cells
+               int nR = avgFraction*nReaction + 1;
+               if (nR > nReaction) nR = nReaction;
 
-            int nD = nTotCores - nR;
-            if (nD < 2) nD = 2;
-            loadLevel.nDiffusionCores=nD; 
+               int nD = nTotCores - nR;
+               if (nD < 2) nD = 2;
+               loadLevel.nDiffusionCores=nD;
+            }
+            else
+            {
+               // set nReactionCores roughly proportional to the maximum number of cells
+               int nR = maxFraction*nReaction + 1;
+               if (nR > nReaction) nR = nReaction;
 
-            if (density < 0.1)
-               loadLevel.stencil="omp";       
+               int nD = nTotCores - nR;
+               if (nD < 2) nD = 2;
+               loadLevel.nDiffusionCores=nD; 
+            }
          }
 
+         //ewd DEBUG
+         //cout << "GDLB.DEBUG:  myRank = " << myRank << ", ncnt = " << ncnt << ", vol = " << vol << ", density = " << density << ", nDiffCores = " << loadLevel.nDiffusionCores << ", stencil = " << loadLevel.stencil << endl;
+         
+
+         
       }
 
       // old half-finished algorithm, didn't work
