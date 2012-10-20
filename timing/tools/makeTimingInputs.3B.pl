@@ -42,8 +42,7 @@ foreach $anatomy ("370M", "3B")
    $rationalfns = 1;
    $smoothing = 1;
    #foreach $ntasks (2048, 4096, 8192, 16384, 24576, 32768, 73728)
-   #foreach $ntasks (49152, 73728)
-   $ntasks = 98304;
+   foreach $ntasks (98304, 73728)
    {
       foreach $machine ("bgqspi", "bgqhpm")
       {
@@ -203,7 +202,8 @@ sub printObject
       print OBJECT "   loopType = pdr;\n";
       if ($loadbal eq "grid")
       {
-         print OBJECT "   nDiffusionCores = 3;\n";
+         # comment this out for now, let assignCellsToTasks try to figure it out
+         #print OBJECT "   nDiffusionCores = 3;\n";
          #print OBJECT "   nDiffusionCores = 4;\n";
       }
    }
@@ -327,6 +327,7 @@ sub printObject
       print OBJECT "   ny = $py{$ntasks};\n";
       print OBJECT "   nz = $pz{$ntasks};\n";
       print OBJECT "   diffCost = 0.5;\n";
+      print OBJECT "   nDiffCores = 2;\n";
       print OBJECT "   printTaskInfo = 1;\n";
       print OBJECT "}\n\n";
    }
@@ -342,7 +343,7 @@ sub printObject
       print OBJECT "   nRCoresBB = 2;\n";
       print OBJECT "   alpha = 0.1;\n";
       print OBJECT "   beta = 100.0;\n";
-      print OBJECT "   printStats = 0;\n";
+      print OBJECT "   printStats = 1;\n";
       print OBJECT "   printTaskInfo = 1;\n";
       print OBJECT "}\n\n";      
    }
