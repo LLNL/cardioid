@@ -11,9 +11,9 @@ class TupleToIndex
    Long64 const operator()(int ix, int iy, int iz);
    
  private:
-   int nx_;
-   int ny_;
-   int nz_;
+    Long64 nx_;  // needs to be Long64 to force 64-bit math below
+    Long64 ny_;
+    Long64 nz_;
 };
 
 inline TupleToIndex::TupleToIndex(int nx, int ny, int nz)
