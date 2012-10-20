@@ -222,6 +222,7 @@ GridRouter::GridRouter(vector<Long64>& gid, int nx, int ny, int nz, MPI_Comm com
    for (unsigned ii=0; ii<sendRank_.size(); ++ii)
       Pprintf(ddtFile, "%5d:   s[%u] = %u\n", myRank, ii, sendRank_[ii]);
 
+   Pclose(ddtFile);
    selfTest();
 
 }
