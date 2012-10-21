@@ -248,7 +248,7 @@ void  printDomainInfo(BALANCER *balancer)
    fprintf(domainFile,"nfields=15;\n");
    fprintf(domainFile,"field_names=domain cx cy zL ZU nT nBB, dz dz4 cost nR nD timeR timeD timeRef;\n" );
    fprintf(domainFile,"field_types=u u u u u u u u u f u u f f f;\n" );
-   fprintf(domainFile,"nCells=%d; nx=%d; ny=%d; nz=%d;\n",balancer->nCellGlobal,balancer->nx,balancer->ny,balancer->nz);
+   fprintf(domainFile,"nCells=%llu; nx=%d; ny=%d; nz=%d;\n",balancer->nCellGlobal,balancer->nx,balancer->ny,balancer->nz);
    fprintf(domainFile,"dx=%d; dy=%d; dz=%d; ",balancer->dx,balancer->dy,balancer->dz);
    fprintf(domainFile,"NX=%d; NY=%d;\n",balancer->NX,balancer->NY);
    fprintf(domainFile,"alphaWork=%f; alphaBalance=%f; beta=%f\n",balancer->alphaWork,balancer->alphaBalance,balancer->beta);
