@@ -49,7 +49,7 @@ LoadLevel assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
    LoadLevel loadLevel ; 
 
    loadLevel.nDiffusionCores=1; 
-   loadLevel.stencil="omp"; 
+   loadLevel.stencil="threads"; 
    if (sim.loopType_ == Simulate::pdr ) loadLevel.stencil = "strip"; 
    if (sim.loopType_ == Simulate::lag ) loadLevel.stencil = "strip"; 
 
@@ -355,7 +355,7 @@ namespace
          double density = (double)ncnt/(double)vol;
 
          if (density < 0.1)
-            loadLevel.stencil="omp"; 
+            loadLevel.stencil="threads"; 
 
          if (ncnt >= 0.90*nCellsMax && density > 0.80)
          {
