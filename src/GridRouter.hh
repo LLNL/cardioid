@@ -11,7 +11,7 @@ class GridRouter
 {
  private:
 
-   void selfTest();
+  int selfTest();
    
    MPI_Comm comm_;
    std::vector<int> sendRank_;

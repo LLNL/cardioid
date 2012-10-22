@@ -30,6 +30,7 @@ HEARTSRC= \
 	Koradi.cc GridRouter.cc Grid3DStencil.cc writeCells.cc \
 	checkpointIO.cc \
 	DomainInfo.cc \
+	BoundingBox.cc \
 	initializeSimulate.cc \
 	Simulate.cc \
 	initializeAnatomy.cc setConductivity.cc assignCellsToTasks.cc \

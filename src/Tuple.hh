@@ -4,11 +4,15 @@
 class Tuple
 {
  public:
-   Tuple(int ix, int iy, int iz);
+   Tuple(int ix, int iy, int iz) : ix_(ix), iy_(iy), iz_(iz){}
 
-   const int& x() const;
-   const int& y() const;
-   const int& z() const;
+   const int& x() const {return ix_;}
+   const int& y() const {return iy_;}
+   const int& z() const {return iz_;}
+
+   int& x() {return ix_;}
+   int& y() {return iy_;}
+   int& z() {return iz_;}
 
    Tuple& operator-=(const Tuple& a);
    Tuple& operator+=(const Tuple& a);
@@ -24,26 +28,6 @@ Tuple operator+(const Tuple& a, const Tuple& b);
 bool operator==(const Tuple& a, const Tuple& b);
 
 
-
-inline Tuple::Tuple(int ix, int iy, int iz)
-: ix_(ix), iy_(iy), iz_(iz)
-{
-}
-
-inline const int& Tuple::x() const
-{
-   return ix_;
-}
-
-inline const int& Tuple::y() const 
-{
-   return iy_;
-}
-
-inline const int& Tuple::z() const
-{
-   return iz_;
-}
 
 inline Tuple& Tuple::operator-=(const Tuple& a)
 {

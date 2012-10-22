@@ -8,15 +8,22 @@
 using namespace std;
 
 DomainInfo::DomainInfo(const vector<Long64>& gid, int nx, int ny, int nz)
-    : radius_(0.0), center_(0., 0., 0.), ncells_(gid.size())
+: nCells_(gid.size()),
+  radius_(0.0),
+  center_(0., 0., 0.),
+  minCorner_(Tuple(0, 0, 0)),
+  maxCorner_(Tuple(0, 0, 0))
 {
+
+   if (gid.size() == 0)
+      return;
+   
    IndexToVector indexToVector(nx, ny, nz);
 
    for (unsigned ii=0; ii<gid.size(); ++ii)
       center_ += indexToVector(gid[ii]);
 
-   if (gid.size() > 0)
-      center_ /= double(gid.size());
+   center_ /= double(gid.size());
    
    for (unsigned ii=0; ii<gid.size(); ++ii)
    {
@@ -25,5 +32,21 @@ DomainInfo::DomainInfo(const vector<Long64>& gid, int nx, int ny, int nz)
       radius_ = max(radius_, rSq);
    }
    radius_ = sqrt(radius_);
+
+   IndexToTuple indexToTuple(nx, ny, nz);
+
+   minCorner_ = indexToTuple(gid[0]);
+   maxCorner_ = indexToTuple(gid[0]);
+   for (unsigned ii=1; ii<nCells_; ++ii)
+   {
+      Tuple tt = indexToTuple(gid[ii]);
+      minCorner_.x() = min(tt.x(), minCorner_.x());
+      minCorner_.y() = min(tt.y(), minCorner_.y());
+      minCorner_.z() = min(tt.z(), minCorner_.z());
+      maxCorner_.x() = max(tt.x(), maxCorner_.x());
+      maxCorner_.y() = max(tt.y(), maxCorner_.y());
+      maxCorner_.z() = max(tt.z(), maxCorner_.z());
+   }
 }
+
 
