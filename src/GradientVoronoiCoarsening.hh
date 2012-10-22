@@ -39,12 +39,15 @@ class GradientVoronoiCoarsening : public Sensor
    int nb_excluded_pts_;
    
    LocalSums valcolors_;
+
    LocalSums valMat00_;
    LocalSums valMat01_;
    LocalSums valMat02_;
    LocalSums valMat11_;
    LocalSums valMat12_;
    LocalSums valMat22_;
+   std::map<int,double> invDetMat_;
+
    LocalSums valRHS0_;
    LocalSums valRHS1_;
    LocalSums valRHS2_;
@@ -67,6 +70,7 @@ class GradientVoronoiCoarsening : public Sensor
    void computeColorCenterValues(const VectorDouble32& val);
    void setupLSmatrix();
    void prologComputeLeastSquareGradients();
+   int solve3x3(const double s[6], const double r[3], double x[3], const int color);
 
  public:
    GradientVoronoiCoarsening(const SensorParms& sp,

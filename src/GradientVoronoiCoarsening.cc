@@ -38,7 +38,7 @@ namespace
 
 static const double tol_det=1.e-8;
 
-double det3(const double a,const double b,const double c,
+inline double det3(const double a,const double b,const double c,
             const double d,const double e,const double f,
             const double g,const double h,const double i)
 {
@@ -46,8 +46,9 @@ double det3(const double a,const double b,const double c,
 }
 
 // Cramer's rule
-int solve3x3(const double s[6], const double r[3], double x[3], const int color)
+int GradientVoronoiCoarsening::solve3x3(const double s[6], const double r[3], double x[3], const int color)
 {
+#if 0
    double det1=det3(s[0],s[1],s[2],s[1],s[3],s[4],s[2],s[4],s[5]);
    if( fabs(det1)<tol_det )
    {
@@ -59,6 +60,9 @@ int solve3x3(const double s[6], const double r[3], double x[3], const int color)
       return 1;
    }
    const double det1i=1./det1;
+#else
+   const double det1i=invDetMat_[color];
+#endif
    x[0]=det3(r[0],s[1],s[2],r[1],s[3],s[4],r[2],s[4],s[5])*det1i;
    x[1]=det3(s[0],r[0],s[2],s[1],r[1],s[4],s[2],r[2],s[5])*det1i;
    x[2]=det3(s[0],s[1],r[0],s[1],s[3],r[1],s[2],s[4],r[2])*det1i;
@@ -127,6 +131,7 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
    // calculate local sums
    
    static list<int> center_indexes;
+   static list<int> no_center_indexes;
    static map<int,int> ncellsofcolor;
    
    if( first_time )
@@ -147,17 +152,19 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
             ncellsofcolor[color]++;
          }
       }
-      first_time=false;
    }
    
    // set sum of n values to 0. for all colors known locally
-   map<int,int>::const_iterator p=ncellsofcolor.begin();
-   while(p!=ncellsofcolor.end())
+   if( !use_communication_avoiding_algorithm_ || first_time )
    {
-      const int color=p->first;
+      map<int,int>::const_iterator p=ncellsofcolor.begin();
+      while(p!=ncellsofcolor.end())
+      {
+         const int color=p->first;
       
-      valcolors_.setSum(color,ncellsofcolor[color],0.);
-      ++p;
+         valcolors_.setSum(color,ncellsofcolor[color],0.);
+         ++p;
+      }
    }
    
    // set sum of n values to val[ic] ( (n-1)*0. + val[ic] )
@@ -167,7 +174,7 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
    {
       const int ic=*pi;
 
-      int color=coarsening_.getColor(ic);
+      const int color=coarsening_.getColor(ic);
       assert( color>=0 );
       
       valcolors_.setSum(color,ncellsofcolor[color],val[ic]);
@@ -177,6 +184,8 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
 
    if( !use_communication_avoiding_algorithm_ )
       coarsening_.exchangeAndSum(valcolors_);
+   
+   first_time=false;
 }
 
 // setup matrix of least square system dX^T W^2 dX grad V = dX^T W^2 dF
@@ -315,10 +324,11 @@ void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
                                  ++it)
       {
          const int color=(*it);
+         const double v=-1.*valcolors_.value(color);
          
-         valRHS0_.increaseValue(color,-1.*valcolors_.value(color)*bf0[color][0]);
-         valRHS1_.increaseValue(color,-1.*valcolors_.value(color)*bf0[color][1]);
-         valRHS2_.increaseValue(color,-1.*valcolors_.value(color)*bf0[color][2]);
+         valRHS0_.increaseValue(color,v*bf0[color][0]);
+         valRHS1_.increaseValue(color,v*bf0[color][1]);
+         valRHS2_.increaseValue(color,v*bf0[color][2]);
       }
       
    }else{
@@ -366,6 +376,9 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
    Long64 nSnapSub;
    MPI_Reduce(&nSnapSubLoc, &nSnapSub, 1, MPI_LONG_LONG, MPI_SUM, 0, comm_);
 
+   matLS_.clear();
+   invDetMat_.clear();
+   
    for(set<int>::const_iterator it = compute_colors.begin();
                                 it!= compute_colors.end();
                               ++it)
@@ -388,9 +401,14 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
          double det1=det3(a[0],a[1],a[2],a[1],a[3],a[4],a[2],a[4],a[5]);
          if( fabs(det1)>tol_det )
          {
+            invDetMat_.insert(pair<int,double>(color,1./det1));
+            
             included_eval_colors_.insert(color);
             
             gradients_[color].reserve(3*printRate()/evalRate());
+         }else{
+            cout<<"WARNING: unable to compute gradient because of bad condition number of matrix: color "
+                <<color<<" will be skipped..."<<endl;
          }
          
       }else{
@@ -428,24 +446,11 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
    {
       const int color=(*it);
       
-      double g[3]={0.,0.,0.};             
-      
-      double b[3]={valRHS0_.value(color),
-                   valRHS1_.value(color),
-                   valRHS2_.value(color)};
-      double norm2b=b[0]*b[0]+b[1]*b[1]+b[2]*b[2];          
-      
-      if( norm2b>1.e-15){
-         int ret=solve3x3(matLS_[color],b,g,color);
-         if (ret==1){
-            cout<<"WARNING: unable to compute gradient because of bad condition number!!"<<endl;
-         }
-      }
-      
       vector<float>& color_gradient(gradients_[color]);
       
       // use first 2 records (6 fields) to store x,y,z and nb. values used for averaging
-      if( color_gradient.empty() && format_.compare("ascii")!=0 )
+      if( color_gradient.empty() )
+      if( format_.compare("ascii")!=0 )
       {
          const int halfNx = anatomy_.nx()/2;
          const int halfNy = anatomy_.ny()/2;
@@ -465,6 +470,16 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
          float dummy=0.;
          color_gradient.push_back(dummy);
          color_gradient.push_back(dummy);
+      }
+      
+      double b[3]={valRHS0_.value(color),
+                   valRHS1_.value(color),
+                   valRHS2_.value(color)};
+      double norm2b=b[0]*b[0]+b[1]*b[1]+b[2]*b[2];          
+      
+      double g[3]={0.,0.,0.};             
+      if( norm2b>1.e-15){
+         solve3x3(matLS_[color],b,g,color);
       }
       
       color_gradient.push_back(float(g[0]));
