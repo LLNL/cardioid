@@ -42,14 +42,15 @@ foreach $anatomy ("370M", "3B")
    $rationalfns = 1;
    $smoothing = 1;
    #foreach $ntasks (2048, 4096, 8192, 16384, 24576, 32768, 73728)
-   foreach $ntasks (98304, 73728)
+   foreach $ntasks (98304)
    {
       foreach $machine ("bgqspi", "bgqhpm")
       {
-         foreach $loadbal ("grid", "work")
+         $loadbal = "work";
+         #foreach $loadbal ("grid", "work")
          {
-            $globalsync = -1;
-            #foreach $globalsync (-1, 0, 1, 10, 100)
+            #$globalsync = -1;
+            foreach $globalsync (-1, 0, 1)
             {
                printObject($anatomy,$celltype,$reaction,$fastgates,
                            $rationalfns,$smoothing,$ntasks,$machine);
@@ -177,7 +178,7 @@ sub printObject
    print OBJECT "   maxLoop = $nIterations;\n";
    if ($anatomy eq "3B")
    {
-      print OBJECT "   dt = 0.1 us;\n";
+      print OBJECT "   dt = 4 us;\n";
    }
    else 
    {
@@ -370,6 +371,7 @@ sub printObject
          exit;
       }
       print OBJECT "   mod = $smoothing;\n";
+      print OBJECT "   fitFile = fit.data;\n";
       print OBJECT "   fastGate =$fastgates;\n"; 
       print OBJECT "   fastNonGate =$fastgates;\n";
       print OBJECT "   cellTypes = endo mid epi;\n";
