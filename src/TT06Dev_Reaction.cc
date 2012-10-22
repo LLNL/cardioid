@@ -15,6 +15,8 @@
 #include <algorithm>
 #include "pio.h"
 
+#include "slow_fix.hh"
+
 using namespace std;
 using namespace PerformanceTimers;
 using namespace TT06Func;
@@ -79,6 +81,61 @@ class SortByRank
    vector<int> map_;
 };
 
+class SortByRank_andTuple
+{
+  /*
+    This class has the same major sorting as SortByRank obove,
+    but introduces a minor sorting corresponding to the memory
+    layout of the voltage block data. This improves the the over
+    all simulation loop time by about a microsecond.
+  */
+  
+  struct mytup {
+    long long int xc,yc,zc;
+    mytup() : xc(0),yc(0),zc(0) {}
+    mytup(const Tuple& t) : xc(t.x()),yc(t.y()),zc(t.z()) {}
+    long long int x() { return xc; }
+    long long int y() { return yc; }
+    long long int z() { return zc; }
+  };
+
+ public:
+  SortByRank_andTuple(const vector<int>& typeMap,const Anatomy& a)
+    : map_(typeMap) {
+
+    for(unsigned int i = 0; i<a.size(); i++) {
+      tmap[(long long int) a.gid(i)] = mytup(a.globalTuple(i));
+      //tmap.insert(map<long long int,Tuple>::value_type(a.gid(i),a.globalTuple(i)));
+    }
+  }
+
+   bool operator()(const AnatomyCell& a, const AnatomyCell& b)
+   {
+      const int aRank = map_[a.cellType_];
+      const int bRank = map_[b.cellType_];
+      assert(aRank >= 0 && bRank >= 0);
+      if (aRank < bRank)
+         return true;
+      if (aRank == bRank)
+      {
+         if (a.cellType_ < b.cellType_)
+            return true;
+         if (a.cellType_ == b.cellType_) {
+	   mytup ta = tmap[a.gid_], tb = tmap[b.gid_];
+	   if(ta.x() != tb.x()) return ta.x() < tb.x();
+	   if(ta.y() != tb.y()) return ta.y() < tb.y();
+	   return ta.z() < tb.z();
+	   //return (a.gid_ < b.gid_);
+	 }
+      }
+      return false;
+   }
+      
+ private:
+   vector<int> map_;
+   map<long long int,mytup> tmap;
+};
+
 
 // Can't pass parms by const reference since the parms contain a map and
 // we access the map with the subscript operator.  This is a non-const
@@ -141,8 +198,18 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
       }
       assert(stateCnt==nStateVar); 
    }
-   SortByRank sortFunc(tissueType2Rank);
-   sort(cells.begin(), cells.end(), sortFunc);
+
+   // The LEGACY_SORTING macro is defined in slow_fix.hh
+   if(LEGACY_SORTING == 1) {
+     // Previous sorting scheme.
+     SortByRank sortFunc(tissueType2Rank);
+     sort(cells.begin(), cells.end(), sortFunc);
+   } else {
+     // This sorting scheme improves over all loop time
+     // because data access more sequencial.
+     SortByRank_andTuple sortFunc(tissueType2Rank,anatomy);
+     sort(cells.begin(), cells.end(), sortFunc);
+   }
 
    nCellBuffer_ =  4*((nCells_+3)/4); 
 // {
