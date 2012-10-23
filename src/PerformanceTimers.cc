@@ -85,6 +85,8 @@ namespace PerformanceTimers
    TimerHandle FGR_AlignCopyTimer;
    TimerHandle FGR_StencilTimer;
    TimerHandle FGR_Matrix2ArrayTimer;
+   TimerHandle FGR_2D_StencilTimer;
+   TimerHandle FGR_Boundary2MatrixTimer; 
    TimerHandle initializeDVmDTimer;
    TimerHandle rangeCheckTimer;
    TimerHandle barrier1Timer;
@@ -94,6 +96,8 @@ namespace PerformanceTimers
    TimerHandle barrier5Timer;
    TimerHandle printDataTimer;
    TimerHandle timingBarrierTimer;
+   TimerHandle FGR_2D_StencilTimerTimer;
+   TimerHandle stencilOverlapTimer;
    
    vector<TimerStruct> timers_;
    typedef map<string, TimerHandle> HandleMap;
@@ -158,6 +162,8 @@ void  profileInit()
    barrier5Timer = profileGetHandle("Barrier5");
    printDataTimer = profileGetHandle("PrintData");
    timingBarrierTimer = profileGetHandle("TimingBarrier");
+   FGR_2D_StencilTimer = profileGetHandle("FGR_2D_Stencil");
+   stencilOverlapTimer = profileGetHandle("stencilOverlap");
    machineSpecficInit(); 
 }
 void profileStart(const TimerHandle& handle)

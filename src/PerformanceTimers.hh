@@ -47,6 +47,8 @@ namespace PerformanceTimers
    extern TimerHandle FGR_AlignCopyTimer;
    extern TimerHandle FGR_StencilTimer;
    extern TimerHandle FGR_Matrix2ArrayTimer;
+   extern TimerHandle FGR_2D_StencilTimer;
+   extern TimerHandle FGR_Boundary2MatrixTimer; 
    extern TimerHandle initializeDVmDTimer;
    extern TimerHandle rangeCheckTimer;
    extern TimerHandle barrier1Timer;
@@ -56,6 +58,7 @@ namespace PerformanceTimers
    extern TimerHandle barrier5Timer;
    extern TimerHandle printDataTimer;
    extern TimerHandle timingBarrierTimer;
+   extern TimerHandle stencilOverlapTimer;
 };
 
 /** Use the startTimer and stopTimer macros for timers that are inside
