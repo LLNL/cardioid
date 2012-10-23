@@ -1,5 +1,5 @@
-#ifndef FGRDIFFUSION_HH
-#define FGRDIFFUSION_HH
+#ifndef FGRDIFFUSIONOVERLAP_HH
+#define FGRDIFFUSIONOVERLAP_HH
 
 #include "Diffusion.hh"
 #include "LocalGrid.hh"
@@ -24,8 +24,10 @@ class FGRDiffusionOverlap : public Diffusion
    
    void updateLocalVoltage(const double* VmLocal);
    void updateRemoteVoltage(const double* VmRemote);
+   void updateRemoteVoltageOld(const double* VmRemote);
+   void calc_overlap(VectorDouble32& dVm);
    void calc(VectorDouble32& dVm);
-   void calc_2D(VectorDouble32& dVm);
+   void test();
    unsigned* blockIndex(){return &blockIndex_[0];}
    double* VmBlock() {return VmBlock_.cBlock();}
    double* dVmBlock(){return dVmBlock_.cBlock();}
@@ -33,7 +35,8 @@ class FGRDiffusionOverlap : public Diffusion
 
  private:
    void FGRDiff_simd_thread(const uint32_t start,const int32_t chunk_size, Array3d<double>* VmTmp, double* out);
-   void FGRDiff_2D(uint32_t slabID,const uint32_t start,const int32_t chunk_size, double* out);
+   void FGRDiff_2D_xy(uint32_t slabID,const uint32_t start,const int32_t ey);
+   void FGRDiff_2D_z(uint32_t slabID,const uint32_t start,const int32_t ey, double* out);
    void FGRDiff_3D(const uint32_t start,const int32_t chunk_size, Array3d<double>* VmTmp, double* out);
 
    void buildTupleArray(const Anatomy& anatomy);
@@ -46,8 +49,14 @@ class FGRDiffusionOverlap : public Diffusion
    Vector f1(int ib, int iFace, const Vector& h,
              const Array3d<SymmetricTensor>& sigmaBlk);
    void printAllWeights(const Array3d<int>& tissue);
+   void printAllVoltage(Array3d<double>& Voltage,int map);
+   void setAllVoltage(Array3d<double>& Voltage,int cut=0);
+   void copySlabToBlock();
+   void clearBlockBD();
+   void compareVoltage(Array3d<double>& A,Array3d<double>& B);
 
    int                             nLocal_;
+   int                             nRemote_;
    int                             offset_[19];
    int                             offsetMap_[27];
    int                             faceNbrOffset_[6];
@@ -74,6 +83,9 @@ class FGRDiffusionOverlap : public Diffusion
    Array3d<double>                 VmSlab_[6]; // 6 slabs
    Array3d<WeightType>             diffCoefT3_[6]; //3x3 stencil on slabs. WeightType is to be redefined
    Array3d<double>                 dVmSlab_[6];
+   unsigned                        dVmBlock2Doffset_[6];
+   unsigned                        dVmBlock2Djump_[6];
+
 
 };
 
