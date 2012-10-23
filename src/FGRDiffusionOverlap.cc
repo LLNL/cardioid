@@ -70,15 +70,15 @@ FGRDiffusionOverlap::FGRDiffusionOverlap(const FGRDiffusionParms& parms,
      int leftOver = Twork % threadInfo.nThreads();
      threadOffset2D_[ii].resize(threadInfo.nThreads()+1);
      threadOffset2D_[ii][0]=1;
-     cout << "2D trhead offset:";
+     //cout << "2D trhead offset:";
      for (int jj=0; jj<threadInfo.nThreads(); ++jj)
      {
         threadOffset2D_[ii][jj+1] = threadOffset2D_[ii][jj] + chunkSize;
         if (jj < leftOver)
            ++threadOffset2D_[ii][jj+1];
-        cout <<ii<<":"<<jj<<":"<<threadOffset2D_[ii][jj+1]<<":";
+        //cout <<ii<<":"<<jj<<":"<<threadOffset2D_[ii][jj+1]<<":";
      }
-     cout << endl;
+     //cout << endl;
      assert(work[ii]-1 == threadOffset2D_[ii][threadInfo.nThreads()] );
    }
      
