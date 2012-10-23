@@ -23,11 +23,13 @@ class Diffusion
    virtual void updateLocalVoltage(const double* VmLocal) = 0;
    virtual void updateRemoteVoltage(const double* VmRemote) = 0;
    virtual void calc(VectorDouble32& dVm) = 0;
+   virtual void calc_overlap(VectorDouble32& dVm) {};
    virtual unsigned* blockIndex(){return 0;}
    virtual double* VmBlock(){return 0;}
    virtual double* dVmBlock(){return 0;}
    virtual double diffusionScale(){return 1;}
    virtual void  dump_VmBlock(int tmp){;}
+   virtual void test() {return;};
 };
 
 #endif

@@ -41,6 +41,8 @@
 #include "clooper.h"
 #include "ThreadUtils.hh"
 
+//#define timebase(x) asm volatile ("mftb %0" : "=r"(x) : )
+
 using namespace std;
 using namespace PerformanceTimers;
 
@@ -408,6 +410,8 @@ void diffusionLoop(Simulate& sim,
 
    VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusion_);
 
+   
+   //sim.diffusion_->test();
 
    uint64_t loopLocal = sim.loop_;
    int globalSyncRate=sim.globalSyncRate_;
@@ -450,7 +454,15 @@ void diffusionLoop(Simulate& sim,
          for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
             sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
          stopTimer(stimulusTimer);
+      }
 
+      //L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle, sim.diffusionThreads_.nThreads());
+      startTimer(stencilOverlapTimer);
+      sim.diffusion_->calc_overlap(dVmDiffusion); //DelayTimeBase(160000);
+      stopTimer(stencilOverlapTimer);
+      
+      if (tid ==0)
+      {
          startTimer(haloWaitTimer);
          loopData.voltageExchange.wait();
          stopTimer(haloWaitTimer);

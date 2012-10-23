@@ -9,6 +9,7 @@
 #include "FGRDiffusionOMP.hh"
 #include "FGRDiffusionThreads.hh"
 #include "FGRDiffusionStrip.hh"
+#include "FGRDiffusionOverlap.hh"
 #include "NullDiffusion.hh"
 #include "Simulate.hh"
 
@@ -71,6 +72,8 @@ namespace
          return new FGRDiffusion(p, anatomy, threadInfo, reactionThreadInfo);
       if (variant == "strip" )
          return new FGRDiffusionStrip(p, anatomy, threadInfo, reactionThreadInfo);
+      if (variant == "overlap" )
+         return new FGRDiffusionOverlap(p, anatomy, threadInfo, reactionThreadInfo);
 
 
       // unreachable.  Should have matched a clause above.
