@@ -44,6 +44,7 @@ class FGRDiffusionOverlap : public Diffusion
    void precomputeCoefficients(const Anatomy& anatomy);
    void precomputeCoefficientsPositive(const Anatomy & anatomy);
    void reorder_Coeff();
+   void reset_Coeff();
 
    void mkTissueArray(const Array3d<int>& tissueBlk, int ib, int* tissue);
    Vector f1(int ib, int iFace, const Vector& h,
@@ -60,6 +61,8 @@ class FGRDiffusionOverlap : public Diffusion
    int                             offset_[19];
    int                             offsetMap_[27];
    int                             faceNbrOffset_[6];
+   uint64_t                        BBzb;
+   uint64_t                        BBze;
    LocalGrid                       localGrid_;
    double                          diffusionScale_;
    const ThreadTeam&               threadInfo_;

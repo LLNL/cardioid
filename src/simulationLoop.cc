@@ -410,8 +410,8 @@ void diffusionLoop(Simulate& sim,
 
    VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusion_);
 
-   
-   //sim.diffusion_->test();
+    
+    //sim.diffusion_->test();
 
    uint64_t loopLocal = sim.loop_;
    int globalSyncRate=sim.globalSyncRate_;
@@ -819,6 +819,7 @@ void simulationLoopAllSkate(Simulate& sim)
       stopTimer(haloMove2BufTimer);
       sim.diffusion_->updateLocalVoltage(&VmArray[0]);
 
+   
      #pragma omp barrier
       
       profileStart(simulationLoopTimer);
