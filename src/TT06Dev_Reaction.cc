@@ -81,7 +81,7 @@ class SortByRank
    vector<int> map_;
 };
 
-class SortByRank_andTuple
+class SortByRank_andTuple_factory
 {
   /*
     This class has the same major sorting as SortByRank obove,
@@ -100,7 +100,7 @@ class SortByRank_andTuple
   };
 
  public:
-  SortByRank_andTuple(const vector<int>& typeMap,const Anatomy& a)
+  SortByRank_andTuple_factory(const vector<int>& typeMap,const Anatomy& a)
     : map_(typeMap) {
 
     for(unsigned int i = 0; i<a.size(); i++) {
@@ -109,28 +109,38 @@ class SortByRank_andTuple
     }
   }
 
-   bool operator()(const AnatomyCell& a, const AnatomyCell& b)
-   {
+  class compare_junk {
+  private:
+    vector<int> &map_;
+    map<long long int,mytup>& tmap;
+  public:
+    compare_junk(vector<int>& map_in,map<long long int,mytup>& tmapin) : map_(map_in),tmap(tmapin) {}
+
+    bool operator()(const AnatomyCell& a, const AnatomyCell& b)
+    {
       const int aRank = map_[a.cellType_];
       const int bRank = map_[b.cellType_];
       assert(aRank >= 0 && bRank >= 0);
       if (aRank < bRank)
-         return true;
+	return true;
       if (aRank == bRank)
-      {
-         if (a.cellType_ < b.cellType_)
+	{
+	  if (a.cellType_ < b.cellType_)
             return true;
-         if (a.cellType_ == b.cellType_) {
-	   mytup ta = tmap[a.gid_], tb = tmap[b.gid_];
-	   if(ta.x() != tb.x()) return ta.x() < tb.x();
-	   if(ta.y() != tb.y()) return ta.y() < tb.y();
-	   return ta.z() < tb.z();
-	   //return (a.gid_ < b.gid_);
-	 }
-      }
+	  if (a.cellType_ == b.cellType_) {
+	    mytup ta = tmap[a.gid_], tb = tmap[b.gid_];
+	    if(ta.x() != tb.x()) return ta.x() < tb.x();
+	    if(ta.y() != tb.y()) return ta.y() < tb.y();
+	    return ta.z() < tb.z();
+	    //return (a.gid_ < b.gid_);
+	  }
+	}
       return false;
-   }
-      
+    }
+  };
+  
+  compare_junk emit_sorter() { return compare_junk(map_,tmap); }
+
  private:
    vector<int> map_;
    map<long long int,mytup> tmap;
@@ -207,8 +217,8 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
    } else {
      // This sorting scheme improves over all loop time
      // because data access more sequencial.
-     SortByRank_andTuple sortFunc(tissueType2Rank,anatomy);
-     sort(cells.begin(), cells.end(), sortFunc);
+     SortByRank_andTuple_factory sortFunc(tissueType2Rank,anatomy);
+     sort(cells.begin(), cells.end(), sortFunc.emit_sorter());
    }
 
    nCellBuffer_ =  4*((nCells_+3)/4); 
