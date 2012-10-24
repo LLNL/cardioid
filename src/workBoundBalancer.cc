@@ -19,9 +19,22 @@ LoadLevel workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, 
    Long64 nLocal = cells.size(); 
    Long64 nGlobal; 
    MPI_Allreduce(&nLocal,&nGlobal,1,MPI_LONG_LONG,MPI_SUM,comm); 
+
    BALANCER balancer = buildBalancer(nGlobal,nx,ny,nz,dx,dy,dz,target,nCores,nRCoresBB, alpha,beta, printStats,comm);
 
-   int rank = balancer.rank; 
+   int myRank = balancer.rank; 
+   int nTasks = balancer.nTasks;
+
+   int averageSize = nGlobal/nTasks;
+   int blockSize = dx*dy*dz;
+   if (averageSize > blockSize && myRank == 0)
+   {
+      printf("workBoundBalancer: basic block size is too small.\n"
+             "   Average cells/task = %d, block size = %d (%d, %d, %d)\n"
+             "   Please select larger values for dx, dy, and dz\n",
+             averageSize, blockSize, dx, dy, dz);
+      exit(-1);
+   }
 
    unsigned int nn = 1024; 
    vector<long long unsigned> gid(nn); 
@@ -34,9 +47,9 @@ LoadLevel workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, 
    reduceSeg(&balancer);
 
    int rc = buildColumns(&balancer);
-   if (rank==0 && rc == 1) printf("buildColumns failed to converge to target number of tasks"); 
-   if (rank==0 && rc == 2) printf("buildColumns failed to minA"); 
-   if (rank==0 && rc == 3) printf("buildColumns failed to maxA"); 
+   if (myRank==0 && rc == 1) printf("buildColumns failed to converge to target number of tasks"); 
+   if (myRank==0 && rc == 2) printf("buildColumns failed to minA"); 
+   if (myRank==0 && rc == 3) printf("buildColumns failed to maxA"); 
    if (rc !=0) exit(0); 
 
    for (int i =0;i<nLocal;i++) 
@@ -67,7 +80,7 @@ LoadLevel workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, 
    destroyBalancer(&balancer); 
 
    MPI_Allreduce(&nLocal,&nGlobal,1,MPI_LONG_LONG,MPI_SUM,balancer.comm); 
-   if (rank==0) {printf("Before particle assignment nGlobal=%llu\n",nGlobal); fflush(stdout);}
+   if (myRank==0) {printf("Before particle assignment nGlobal=%llu\n",nGlobal); fflush(stdout);}
    MPI_Barrier(balancer.comm); 
 
    AnatomyCellDestSort sortByDest;
@@ -75,8 +88,9 @@ LoadLevel workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, 
    vector<unsigned> dest(nLocal);
    for (int i =0;i<nLocal;i++) dest[i] = cells[i].dest_ ;
 
-   //unsigned capacity = max((int)nLocal,dx*dy*dz);
-   unsigned capacity = 2*max((int)nLocal,dx*dy*dz);  // factor of two is a fudge factor for debugging
+   // Allow extra capacity just in case.  Check for more than dx*dy*dz
+   // cells comes later.
+   unsigned capacity = 2*max((int)nLocal,dx*dy*dz); 
    unsigned nLocu = nLocal;
    cells.resize(capacity);
    assignArray((unsigned char*) &(cells[0]), &nLocu, capacity,
@@ -86,8 +100,18 @@ LoadLevel workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, 
    sort(cells.begin(), cells.end(), sortByDest);
 
    MPI_Allreduce(&nLocal,&nGlobal,1,MPI_LONG_LONG,MPI_SUM,balancer.comm); 
-   if (rank==0) {printf("After particle assignment nGlobal=%llu\n",nGlobal); fflush(stdout);}
+   if (myRank==0) {printf("After particle assignment nGlobal=%llu\n",nGlobal); fflush(stdout);}
 
+   if (nLocal > blockSize)
+   {
+      printf("workBoundBalancer: Error - too many cells on rank %u\n"
+             "   basic block size = %d (%d, %d, %d), nCells = %llu\n",
+             myRank, blockSize, dx, dy, dz, nLocal);
+      exit(-1);
+   }
+   
+
+   
    return loadLevel; 
 }
 
