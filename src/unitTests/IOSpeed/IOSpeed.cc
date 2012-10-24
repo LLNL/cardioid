@@ -54,14 +54,19 @@ int main(int argc, char** argv)
    
 
    vector<pair<int, int> > testList; //kb/task, nFiles
-   testList.push_back(make_pair(10, 512));
-   testList.push_back(make_pair(10, 1024));
-   testList.push_back(make_pair(100, 512));
-   testList.push_back(make_pair(100, 1024));
-   testList.push_back(make_pair(1000, 512));
-   testList.push_back(make_pair(1000, 1024));
+   // testList.push_back(make_pair(10, 512));
+   // testList.push_back(make_pair(10, 1024));
+   // testList.push_back(make_pair(100, 512));
+   // testList.push_back(make_pair(100, 1024));
+   // testList.push_back(make_pair(1000, 512));
+   // testList.push_back(make_pair(1000, 1024));
+   testList.push_back(make_pair(10000, 384));
    testList.push_back(make_pair(10000, 512));
+   testList.push_back(make_pair(10000, 768));
    testList.push_back(make_pair(10000, 1024));
+   testList.push_back(make_pair(10000, 1450));
+   testList.push_back(make_pair(10000, 1500));
+   testList.push_back(make_pair(10000, 1536));
    
 
    
@@ -74,7 +79,7 @@ int main(int argc, char** argv)
       int nFiles = testList[ii].second;
       startMsg << "Starting I/O test for " <<kBytesPerTask << "k per task, "
                << nFiles << " files";
-      startMsg << "Finished I/O test for " <<kBytesPerTask << "k per task, "
+      endMsg << "Finished I/O test for " <<kBytesPerTask << "k per task, "
                << nFiles << " files";
       timestampBarrier(startMsg.str().c_str(), MPI_COMM_WORLD);
       ioTest(kBytesPerTask, nFiles);
