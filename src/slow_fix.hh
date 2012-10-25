@@ -11,3 +11,7 @@
 #ifndef LEGACY_SORTING
 #define LEGACY_SORTING 0
 #endif
+
+#ifndef LEGACY_NG_WORKPARTITION
+//#define LEGACY_NG_WORKPARTITION
+#endif

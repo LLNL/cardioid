@@ -82,6 +82,8 @@ class TT06Dev_Reaction : public Reaction
    double *tauR_[nGateVar];
    const ThreadTeam& group_;
    std::vector<TT06Func::WORK> gateWork_; 
+   typedef struct { int offsetCell,nCell; } ngwork;
+   std::vector<ngwork> nonGateWork_;
    LogParms logParms_[64]; 
    
    std::vector<int>              ttType_; // maps cellType to ttType

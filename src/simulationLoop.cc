@@ -35,7 +35,10 @@
   including it, the original code with a barrier accross all reaction
   threads is used.
 */
-//#include "fastBarrier_nosync.hh"
+#include "slow_fix.hh"
+#ifndef LEGACY_NG_WORKPARTITION
+#include "fastBarrier_nosync.hh"
+#endif
 
 #include "object_cc.hh"
 #include "clooper.h"
@@ -270,10 +273,12 @@ struct SimLoopData
 	integratorOffset_psb[0] = 0;
 	for(int i = 0; i<nsq; i++) {
 	  const int vlen = 4;
-	  int ic,nc,nc_div,nc_mod;
+	  int ic,nc,nv,nv_div,nv_mod;
+
 	  nc = workBundle(i,sim.anatomy_.nLocal(),nsq,vlen,ic);
-	  nc_div = nc / sqsz;
-	  nc_mod = nc % sqsz;
+	  nv = (nc+3)/4;
+	  nv_div = nv / sqsz;
+	  nv_mod = nv % sqsz;
 
 	  if(integratorOffset_psb[i*sqsz] != ic) {
 	    printf("%s:%d: Offset error, nsq=%d i=%d sqsz=%d nc=%d iOff[]=%d ic=%d\n",
@@ -281,11 +286,13 @@ struct SimLoopData
 	    exit(1);
 	  }
 
-	  for(int j = 0; j<sqsz; j++)
+	  for(int j = 0; j<sqsz; j++) {
 	    integratorOffset_psb[i*sqsz + j + 1] = 
-	      integratorOffset_psb[i*sqsz + j] + nc_div + (j < nc_mod);
-	}
-	  
+	      integratorOffset_psb[i*sqsz + j] + 4*(nv_div + (j < nv_mod));
+	    if(integratorOffset_psb[i*sqsz + j + 1] > integratorOffset_psb[i*sqsz]+nc)
+	      integratorOffset_psb[i*sqsz + j + 1] = integratorOffset_psb[i*sqsz]+nc;
+	  }
+	}	  
       }
 #endif
 
@@ -627,7 +634,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       startTimer(integratorTimer);
 #ifdef PER_SQUAD_BARRIER
       const int begin=loopData.integratorOffset_psb[tid];
-      const int end  =loopData.integratorOffset_psb[tid+1]
+      const int end  =loopData.integratorOffset_psb[tid+1];
 #else
       const int begin=loopData.integratorOffset[tid];
       const int end  =loopData.integratorOffset[tid+1];

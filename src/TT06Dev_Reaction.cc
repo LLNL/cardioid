@@ -304,7 +304,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
    if (nSquads >0) squadSize= nThreads/nSquads;
    int nEq = 12/squadSize;
    gateWork_.resize(nThreads); 
-   
+   nonGateWork_.resize(nThreads);   
    for (int id=0;id<nThreads;id++) 
    {
       const ThreadRankInfo& rankInfo = group_.rankInfo(id);
@@ -321,6 +321,27 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
       gateWork_[teamRank].nCell =   nCell; 
       gateWork_[teamRank].offsetEq = nEq*squadRank; 
       gateWork_[teamRank].nEq     =  nEq; 
+
+      /* non Gate work partitioning */ {
+	int nv = (nCell+3)/4;
+	int q = nv/squadSize, r = nv%squadSize;
+	int i0,i1;
+	
+	i0 = q*squadRank;
+	if(squadRank < r) {
+	  i0 = i0 + squadRank;
+	  i1 = i0 + q + 1;
+	} else {
+	  i0 = i0 + r;
+	  i1 = i0 + q;
+	}
+	i0 = i0*4;
+	i1 = i1*4;
+	if(i1 > nCell) i1 = nCell;
+	nonGateWork_[teamRank].offsetCell = offset + i0;
+	nonGateWork_[teamRank].nCell = i1 - i0;
+      }
+
    }
 
 }
@@ -432,8 +453,15 @@ void TT06Dev_Reaction::calc(double dt, const VectorDouble32& Vm, const vector<do
 }
 void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR)
 {
-   int offset; 
-   int nCells = nonGateWorkPartition(offset); 
+  int offset,nCells; 
+
+#ifdef LEGACY_NG_WORKPARTITION
+   nCells = nonGateWorkPartition(offset);
+#else
+   const int tid = group_.teamRank();
+   offset = nonGateWork_[tid].offsetCell;
+   nCells = nonGateWork_[tid].nCell;
+#endif
    if (nCells > 0) 
    {
       startTimer(nonGateTimer);
