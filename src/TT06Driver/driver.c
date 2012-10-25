@@ -36,13 +36,17 @@ void fastLogInit();
 typedef void (*UPDATENONGATE)(void *ptr, double dt, struct CellTypeParms *p,int nCells, int *cellTypeVector, const double *VM, int offset, double *gates[19], double *dVdt);
 typedef void  (*UPDATEGATE)(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a) ; 
 
-static   double mhu[13][50]; 
-static   double tauR[13][50]; 
+//static   double mhu[13][50]; 
+//static   double tauR[13][50]; 
+static   double *mhu[13]; 
+static   double *tauR[13]; 
 static   double dt=0.01; 
 static   int nonGatesFlag=0;
 static   int gatesFlag=0;
 static   int map[12]={0,1,2,3,4,5,6,7,8,9,10,11}; 
-static   int gateSwap=1; 
+static   int gateSwap=0; 
+static   double mhuB[13*50]; 
+static   double tauRB[13*50]; 
 
 int mapBad(int *map)
 {
@@ -240,6 +244,13 @@ int main(int argc, char **argv)
    rc = mkdir(dirname, mode);
    rc = chdir(dirname); 
    int cellType = 100; 
+   mhu[0]  = mhuB; 
+   tauR[0] = &tauRB[0]; 
+   for (int i=1;i<13;i++)
+   {
+      mhu[i] = mhu[i-1]+50; 
+      tauR[i] =tauR[i-1]+50; 
+   }
 
    FILE *file=fopen("time.data","w"); 
    for (int i=1;i<argc;i++)
@@ -275,6 +286,8 @@ int main(int argc, char **argv)
    {
 	updateFuncs0[11] = update_s1Gate; 
 	updateFuncs1[11] = update_s1Gate_v1; 
+    mhu[11] = mhu[12]; 
+    tauR[11] = tauR[12]; 
    }
 
 // create a aligned buffer and offset 
