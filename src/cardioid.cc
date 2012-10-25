@@ -74,7 +74,9 @@ int main(int argc, char** argv)
    
    profileInit();
    profileStart("Total");
-   heap_start(500);
+   // heap_start moved to initializeSimulate so that the size can be set
+   // in the input deck.
+//   heap_start(500);
 
    if (mype == 0)
      printBanner();

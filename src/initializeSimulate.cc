@@ -19,6 +19,7 @@
 #include "readSnapshotCellList.hh"
 #include "hardwareInfo.h"
 #include "pio.h"
+#include "heap.h"
 
 using namespace std;
 
@@ -98,6 +99,9 @@ void initializeSimulate(const string& name, Simulate& sim)
 
    OBJECT* obj = objectFind(name, "SIMULATE");
 
+   objectGet(obj, "heap", heapSize, "500");
+   heap_start(heapSize);
+   
    objectGet(obj, "checkRanges", sim.checkRange_.on, "1");
    objectGet(obj, "VmMin", sim.checkRange_.vMin, "-110");
    objectGet(obj, "VmMax", sim.checkRange_.vMax, " 60");
