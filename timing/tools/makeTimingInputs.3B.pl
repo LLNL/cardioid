@@ -41,16 +41,16 @@ foreach $anatomy ("370M", "3B")
    $fastgates = 1;
    $rationalfns = 1;
    $smoothing = 1;
-   #foreach $ntasks (2048, 4096, 8192, 16384, 24576, 32768, 73728)
-   foreach $ntasks (98304)
+   foreach $ntasks (2048, 4096, 8192, 16384, 24576, 32768, 49152, 73728, 98304)
+   #foreach $ntasks (98304)
    {
       foreach $machine ("bgqspi", "bgqhpm")
       {
          $loadbal = "work";
          #foreach $loadbal ("grid", "work")
          {
-            #$globalsync = -1;
-            foreach $globalsync (-1, 0, 1)
+            $globalsync = -1;
+            #foreach $globalsync (-1, 0, 1)
             {
                printObject($anatomy,$celltype,$reaction,$fastgates,
                            $rationalfns,$smoothing,$ntasks,$machine);
