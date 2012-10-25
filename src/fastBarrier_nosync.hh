@@ -36,15 +36,20 @@ __INLINE__ void L2_Barrier_nosync_WaitAndReset(
   // wait until barrier's start is advanced
   if (b->start < target) {
     // must wait
-    while (1) {
-      // load start and reserve
-      uint64_t remoteVal = __ldarx((volatile long *) &b->start);
-      if (remoteVal >= target) {
-        // just witnessed the value to be fine
-        break;
-        // wait with sleep (may be awoken spuriously)
-        ppc_waitrsv();
+
+    if(0) { /* Sleep loop , rumorously causes SPI error */
+      while (1) {
+	// load start and reserve
+	uint64_t remoteVal = __ldarx((volatile long *) &b->start);
+	if (remoteVal >= target) {
+	  // just witnessed the value to be fine
+	  break;
+	  // wait with sleep (may be awoken spuriously)
+	  ppc_waitrsv();
+	}
       }
+    } else { /* Spin loop */
+      while(b->start < target) {}
     }
   }
   // prevent speculation
