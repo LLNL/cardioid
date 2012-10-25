@@ -49,7 +49,7 @@ public:
             const Anatomy& anatomy,
             const vector<Long64>& gid,
             const Reaction& reaction,
-            MPI_Comm comm);
+            const CommTable* commtable);
    ~CaAverageSensor(){};
    
    void print(double time, int loop);

@@ -28,9 +28,9 @@ namespace
    Sensor* scanActivationTimeSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                                     const PotentialData&);
    Sensor* scanVoronoiCoarseningSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
-                                       const PotentialData&);
+                                       const PotentialData&, const Simulate& sim);
    Sensor* scanCaSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
-                        const Reaction&);
+                        const Reaction&, const Simulate& sim);
    Sensor* scanMaxDvSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                            const PotentialData& vdata);
    Sensor* scanStateVariableSensor(OBJECT* obj, const SensorParms& sp, const Simulate& sim);
@@ -103,13 +103,13 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
   else if (method == "activationTime")
      return scanActivationTimeSensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "averageCa")
-     return scanCaSensor(obj, sp, sim.anatomy_,*sim.reaction_);
+     return scanCaSensor(obj, sp, sim.anatomy_,*sim.reaction_, sim);
   else if (method == "maxDV")
      return scanMaxDvSensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "voronoiCoarsening" 
         || method == "dataVoronoiCoarsening" 
         || method == "gradientVoronoiCoarsening" )
-     return scanVoronoiCoarseningSensor(obj, sp, sim.anatomy_,sim.vdata_);
+     return scanVoronoiCoarseningSensor(obj, sp, sim.anatomy_,sim.vdata_, sim);
   else if (method == "stateVariables")
      return scanStateVariableSensor(obj, sp, sim);
 
@@ -167,7 +167,8 @@ namespace
 namespace
 {
    Sensor* scanVoronoiCoarseningSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
-                                       const PotentialData& vdata)
+                                       const PotentialData& vdata,
+                                       const Simulate& sim)
    {
       string cellListFilename;
       objectGet(obj, "cellList", cellListFilename, "");
@@ -189,7 +190,7 @@ namespace
       objectGet(obj, "method", method, "undefined");
       if ( method == "voronoiCoarsening" ||
            method == "dataVoronoiCoarsening" )
-         return new DataVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD, maxdistance);
+         return new DataVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, sim.commTable_, maxdistance);
       else if( method == "gradientVoronoiCoarsening" )
       {
          string algo;
@@ -197,7 +198,7 @@ namespace
          assert( algo.compare("comm")==0 || algo.compare("nocomm")==0 );
          const bool use_communication_avoiding_algorithm = ( algo.compare("nocomm")==0 );
 
-         return new GradientVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, MPI_COMM_WORLD, format, maxdistance,
+         return new GradientVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, sim.commTable_, format, maxdistance,
                                               use_communication_avoiding_algorithm);
       }
       assert(false);
@@ -208,7 +209,8 @@ namespace
 namespace
 {
    Sensor* scanCaSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
-                        const Reaction& reaction)
+                        const Reaction& reaction,
+                        const Simulate& sim)
    {
       int myRank;
       MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -222,7 +224,7 @@ namespace
       string filename;
       objectGet(obj, "filename",  filename,  "coarsened_Ca");
 
-      return new CaAverageSensor(sp, filename, anatomy, cellVec, reaction, MPI_COMM_WORLD);
+      return new CaAverageSensor(sp, filename, anatomy, cellVec, reaction, sim.commTable_);
    }
 }
 

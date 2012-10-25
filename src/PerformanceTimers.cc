@@ -50,6 +50,9 @@ namespace PerformanceTimers
    TimerHandle simulationLoopTimer;
    TimerHandle sensorTimer;
    TimerHandle sensorEvalTimer;
+   TimerHandle sensorCompColorCenterTimer;
+   TimerHandle sensorSetupLSTimer;
+   TimerHandle sensorComputeLSTimer;
    TimerHandle sensorPrintTimer;
    TimerHandle haloTimer;
    TimerHandle haloLaunchTimer;
@@ -116,6 +119,9 @@ void  profileInit()
    simulationLoopTimer = profileGetHandle("SimulationLoop");;
    sensorTimer = profileGetHandle("Sensors");
    sensorEvalTimer = profileGetHandle("SensorsEval");
+   sensorCompColorCenterTimer = profileGetHandle("SensorCompColorCenter");
+   sensorSetupLSTimer = profileGetHandle("SensorSetupLS");
+   sensorComputeLSTimer = profileGetHandle("SensorComputeLS");
    sensorPrintTimer = profileGetHandle("SensorsPrint");
    haloTimer = profileGetHandle("HaloExchange");
    haloLaunchTimer = profileGetHandle("HaloExchangeLaunch");

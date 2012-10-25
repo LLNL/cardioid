@@ -3,6 +3,7 @@
 #include "pio.h"
 #include "ioUtils.h"
 #include "Simulate.hh"
+#include "CommTable.hh"
 using namespace PerformanceTimers;
 
 #include <iostream>
@@ -33,14 +34,14 @@ DataVoronoiCoarsening::DataVoronoiCoarsening(const SensorParms& sp,
                                      const Anatomy& anatomy,
                                      const vector<Long64>& gid,
                                      const PotentialData& vdata,
-                                     MPI_Comm comm,
+                                     const CommTable* commtable,
                                      const double max_distance)
    :Sensor(sp),
-    coarsening_(anatomy,gid,comm),
+    coarsening_(anatomy,gid,commtable),
     filename_(filename),
     anatomy_(anatomy),
     vdata_(vdata),
-    comm_(comm)
+    comm_(commtable->_comm)
 {
    // color local cells
    int ret=coarsening_.bruteForceColoring(max_distance);

@@ -13,6 +13,9 @@ namespace PerformanceTimers
    extern TimerHandle sensorTimer;
    extern TimerHandle sensorEvalTimer;
    extern TimerHandle sensorPrintTimer;
+   extern TimerHandle sensorCompColorCenterTimer;
+   extern TimerHandle sensorSetupLSTimer;
+   extern TimerHandle sensorComputeLSTimer;
    extern TimerHandle haloTimer;
    extern TimerHandle haloLaunchTimer;
    extern TimerHandle haloWaitTimer;

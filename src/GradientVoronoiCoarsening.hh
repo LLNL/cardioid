@@ -78,7 +78,7 @@ class GradientVoronoiCoarsening : public Sensor
                      const Anatomy& anatomy,
                      const std::vector<Long64>& gid,
                      const PotentialData& vdata_,
-                     MPI_Comm comm,
+                     const CommTable* commtable,
                      const std::string format,
                      const double max_distance,
                      const bool use_communication_avoiding_algorithm=false);

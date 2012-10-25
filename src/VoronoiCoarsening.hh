@@ -14,6 +14,7 @@
 #include <vector>
 #include <cassert>
 #include <iostream>
+class CommTable;
 
 // packed format for communications
 struct PackedData
@@ -114,7 +115,15 @@ class LocalSums
    
    double value(const int color)const
    {
+      //assert( sum_.size()>0 );
       std::map<int,double>::const_iterator is=sum_.find(color);
+      if( is==sum_.end() )
+      {
+         int myRank;
+         MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+         std::cerr<<"ERROR: rank="<<myRank<<", value(color="<<color<<") not in map of size "<<sum_.size()<<std::endl;
+         usleep(1);
+      }
       assert( is!=sum_.end() );
       if( is->second!=is->second )
          std::cerr<<"ERROR!!! is->second="<<is->second<<std::endl;
@@ -150,6 +159,7 @@ class VoronoiCoarsening
    std::map<int,int> ncolors_; // color -> number of local cells of that color
    
    MPI_Comm comm_;
+   const CommTable* commTable_;
 
    const Anatomy& anatomy_;
 
@@ -174,7 +184,7 @@ class VoronoiCoarsening
  public:
    VoronoiCoarsening(const Anatomy& anatomy,
                      const std::vector<Long64>& gid,
-                     MPI_Comm comm);
+                     const CommTable* commtable);
    void computeRemoteTasks();
    void exchangeAndSum(LocalSums& valcolors);
    void exchangeAndSum(std::vector<LocalSums*> valcolors);

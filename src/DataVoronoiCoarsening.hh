@@ -38,7 +38,7 @@ class DataVoronoiCoarsening : public Sensor
                      const Anatomy& anatomy,
                      const std::vector<Long64>& gid,
                      const PotentialData& vdata,
-                     MPI_Comm comm,
+                     const CommTable* commtable,
                      const double max_distance);
    void eval(double time, int loop);
    void print(double time, int loop);

@@ -7,13 +7,15 @@ using namespace std;
 #include "VoronoiCoarsening.hh"
 #include "pio.h"
 #include "ioUtils.h"
+#include "CommTable.hh"
 
 VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
                                      const vector<Long64>& gid,
-                                     MPI_Comm comm)
+                                     const CommTable* commtable)
    :anatomy_(anatomy),
     cells_(anatomy.cellArray()),
-    comm_(comm),
+    comm_(commtable->_comm),
+    commTable_(commtable),
     indexToVector_(anatomy.nx(), anatomy.ny(), anatomy.nz())
 {
    int myRank;
@@ -68,22 +70,24 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
    ncolors_.clear();
    local_colors_.clear();
    
-   if( colors_.size()>0 )
+   const int ncells=(int)colors_.size();
+   if( ncells>0 )
    {
       const int ncenters=centers_.size();
+      //cout<<"VoronoiCoarsening: ncenters="<<ncenters<<endl;
       
       // get sub-domain mass center
       Vector domain_center(0.,0.,0.);
-      for (int icell=0; icell<colors_.size(); ++icell)
+      for (int icell=0; icell<ncells; ++icell)
       {
          Vector r = indexToVector_(cells_[icell].gid_);
          domain_center+=r;
       }
-      domain_center/=(double)colors_.size();
+      domain_center/=(double)ncells;
       
       // get sub-domain radius
       double domain_radius=0.;
-      for (int icell=0; icell<colors_.size(); ++icell)
+      for (int icell=0; icell<ncells; ++icell)
       {
          Vector r = indexToVector_(cells_[icell].gid_);
          Vector rij = r - domain_center;
@@ -106,7 +110,7 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
       }
       rcmin=sqrt(rcmin);
       if(rcmin<domain_radius)rcmin=domain_radius;
-
+      //std::cout<<"rcmin="<<rcmin<<std::endl;
 
       // get centers closest to sub-domain to reduce cost of coloring later
       const double d2min=1.01*(rcmin+domain_radius)*(rcmin+domain_radius);
@@ -129,7 +133,7 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
       //std::cout<<"r2max="<<r2max<<std::endl;
       
       // color one cell at a time
-      for (int icell=0; icell<colors_.size(); ++icell)
+      for (int icell=0; icell<ncells; ++icell)
       {
          double r2Min = 1e30;
          int color = -1;
@@ -160,7 +164,8 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
          }
       }
    }
-#if 0
+
+#ifdef DEBUG
    int nlocal=0;
    for(map<int,int>::const_iterator itr =ncolors_.begin();
                                     itr!=ncolors_.end();
@@ -177,7 +182,7 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
 #endif
    if( myRank==0 )
       cout<<"VoronoiCoarsening: brute force coloring done..."<<endl;
-   
+
    return 0;
 }
 
@@ -282,7 +287,7 @@ void VoronoiCoarsening::setOwnedColors(const map< int, int* >& nremote_colors_fr
       }
    }
 
-#if 0
+#ifdef DEBUG
    for(set<int>::const_iterator  itp =owned_colors_.begin();
                                  itp!=owned_colors_.end();
                                ++itp)
@@ -294,47 +299,90 @@ void VoronoiCoarsening::setOwnedColors(const map< int, int* >& nremote_colors_fr
 
 void VoronoiCoarsening::computeRemoteTasks()
 {
-   int nTasks, myRank;
-   MPI_Comm_size(comm_, &nTasks);
+   int myRank;
    MPI_Comm_rank(comm_, &myRank);  
    if( myRank==0 )
       cout<<"VoronoiCoarsening: compute remote tasks..."<<endl;
 
+#if 0
    for(map<int,int>::const_iterator itr =ncolors_.begin();
                                     itr!=ncolors_.end();
                                   ++itr)
       assert( local_colors_.find(itr->first)!=local_colors_.end() );
+#endif
    
    int nlocalcolors=(int)(local_colors_.size());
    int max_nlocalcolors;
    MPI_Allreduce(&nlocalcolors, &max_nlocalcolors, 1, MPI_INT, MPI_MAX, comm_);
+   if( myRank==0 )
+      cout<<"VoronoiCoarsening: max_nlocalcolors/task="<<max_nlocalcolors<<endl;
    
    // copy local_colors_ into vector
    vector<int> local_colors(local_colors_.size());
    copy(local_colors_.begin(),local_colors_.end(),local_colors.begin());
    local_colors.resize(max_nlocalcolors,-1);
-   
+
+#if 1
+   int nTasks;
+   MPI_Comm_size(comm_, &nTasks);
    // calculate all the remote tasks which share colors with local task
    // (simplest algorithm... may not scale...)
-   {
-      remote_tasks_.clear();
-      vector<int> remote_colors(max_nlocalcolors*nTasks,-1);
-      MPI_Allgather(&local_colors[0],  max_nlocalcolors, MPI_INT, 
-                    &remote_colors[0], max_nlocalcolors, MPI_INT, comm_);
-
-      // get set of tasks I need to talk to
-      for(int pe=0;pe<nTasks;pe++)
-      if( pe!=myRank ){
-         int* remote_colors_pe=&remote_colors[max_nlocalcolors*pe];
-         for(int j=0;j<max_nlocalcolors;j++){
-            if( ncolors_.find(remote_colors_pe[j])!=ncolors_.end() ){
-               remote_tasks_.insert(pe);
-               break;
-            }
+   
+   remote_tasks_.clear();
+   vector<int> remote_colors(max_nlocalcolors*nTasks,-1);
+   MPI_Allgather(&local_colors[0],  max_nlocalcolors, MPI_INT, 
+                 &remote_colors[0], max_nlocalcolors, MPI_INT, comm_);
+   
+   // get set of tasks I need to talk to
+   for(int pe=0;pe<nTasks;pe++)
+   if( pe!=myRank ){
+      int* remote_colors_pe=&remote_colors[max_nlocalcolors*pe];
+      for(int j=0;j<max_nlocalcolors;j++){
+         if( ncolors_.find(remote_colors_pe[j])!=ncolors_.end() ){
+            remote_tasks_.insert(pe);
+            break;
          }
       }
    }
+#else
    
+   int nRecvTasks=commTable_->_recvTask.size();
+   int nSendTasks=commTable_->_sendTask.size();
+   int nTasks=nRecvTasks;
+   vector<int> remote_colors(max_nlocalcolors*nRecvTasks,-1);
+   
+   {
+      
+      std::vector<MPI_Request> recvReq(nRecvTasks);
+      std::vector<MPI_Request> sendReq(nSendTasks);
+   
+      MPI_Request* precvReq = &recvReq[0];      
+      const int tag = 181818;
+      for (unsigned ii=0; ii< commTable_->_recvTask.size(); ++ii)
+      {
+         unsigned sender = commTable_->_recvTask[ii];
+         MPI_Irecv(&remote_colors[ii*max_nlocalcolors], max_nlocalcolors, MPI_INT, sender, tag, commTable_->_comm, precvReq+ii);
+      }
+ 
+      MPI_Request* psendReq = &sendReq[0];
+      for (unsigned ii=0; ii<commTable_->_sendTask.size(); ++ii)
+      {
+         unsigned target = commTable_->_sendTask[ii];
+         MPI_Isend(&local_colors[0], max_nlocalcolors, MPI_INT, target, tag, commTable_->_comm, psendReq+ii);
+      }
+   }
+   // get set of tasks I need to talk to
+   for(int ii=0;ii<commTable_->_recvTask.size();ii++){
+      unsigned sender = commTable_->_recvTask[ii];
+      int* remote_colors_pe=&remote_colors[max_nlocalcolors*ii];
+      for(int j=0;j<max_nlocalcolors;j++){
+         if( ncolors_.find(remote_colors_pe[j])!=ncolors_.end() ){
+            remote_tasks_.insert(sender);
+            break;
+         }
+      }
+   }
+#endif   
    
    int tag=822;
    MPI_Request* recvReq=0;
@@ -383,13 +431,11 @@ void VoronoiCoarsening::computeRemoteTasks()
       delete[] sendReq;
    }
 
-#if 0
+#ifdef DEBUG
    for(set<int>::const_iterator  itp =remote_tasks_.begin();
                                  itp!=remote_tasks_.end();
                                ++itp)
       cout<<"PE "<<myRank<<" exchange data with task "<<*itp<<endl;
-   MPI_Barrier(comm_);
-   sleep(1);
 #endif
 
    setOwnedColors(nremote_colors_from_task, max_nlocalcolors);
@@ -414,6 +460,14 @@ void VoronoiCoarsening::computeRemoteTasks()
 void VoronoiCoarsening::exchangeAndSum(LocalSums& valcolors)
 {
    // set up send buffer
+   if( valcolors.size()==0 )
+   {
+      assert( ncolors_to_recv_.size()==0 );
+      assert( src_tasks_.size()==0 );
+      assert( dst_tasks_.size()==0 );
+      return;
+   }
+
    PackedData* localpackeddata=new PackedData[valcolors.size()];
    valcolors.packData(localpackeddata,valcolors.size());
    
@@ -461,7 +515,7 @@ void VoronoiCoarsening::exchangeAndSum(LocalSums& valcolors)
    // wait
    if(sendReq!=0)MPI_Waitall(dst_tasks_.size(), sendReq, MPI_STATUS_IGNORE);
    if(recvReq!=0)MPI_Waitall(src_tasks_.size(), recvReq, MPI_STATUS_IGNORE);
-   MPI_Barrier(comm_);
+   //MPI_Barrier(comm_);
    
    if(recvReq!=0)delete[] recvReq;
    if(sendReq!=0)delete[] sendReq;
@@ -493,6 +547,13 @@ void VoronoiCoarsening::exchangeAndSum(LocalSums& valcolors)
 void VoronoiCoarsening::exchangeAndSum(vector<LocalSums*> valcolors)
 {
    const unsigned short nvect=(unsigned short)valcolors.size();
+   if( valcolors[0]->size()==0 )
+   {
+      assert( ncolors_to_recv_.size()==0 );
+      assert( src_tasks_.size()==0 );
+      assert( dst_tasks_.size()==0 );
+      return;
+   }
    
    // set up send buffer
    PackedData* localpackeddata=new PackedData[nvect*valcolors[0]->size()];
@@ -547,7 +608,7 @@ void VoronoiCoarsening::exchangeAndSum(vector<LocalSums*> valcolors)
    // wait
    if(sendReq!=0)MPI_Waitall(dst_tasks_.size(), sendReq, MPI_STATUS_IGNORE);
    if(recvReq!=0)MPI_Waitall(src_tasks_.size(), recvReq, MPI_STATUS_IGNORE);
-   MPI_Barrier(comm_);
+   //MPI_Barrier(comm_);
    
    if(recvReq!=0)delete[] recvReq;
    if(sendReq!=0)delete[] sendReq;

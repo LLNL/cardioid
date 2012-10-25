@@ -3,6 +3,7 @@
 #include "pio.h"
 #include "ioUtils.h"
 #include "Simulate.hh"
+#include "CommTable.hh"
 using namespace PerformanceTimers;
 
 #include <iostream>
@@ -61,6 +62,7 @@ int GradientVoronoiCoarsening::solve3x3(const double s[6], const double r[3], do
    }
    const double det1i=1./det1;
 #else
+   //assert( invDetMat_.find(color)!=invDetMat_.end() );
    const double det1i=invDetMat_[color];
 #endif
    x[0]=det3(r[0],s[1],s[2],r[1],s[3],s[4],r[2],s[4],s[5])*det1i;
@@ -77,16 +79,16 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(const SensorParms& sp,
                                      const Anatomy& anatomy,
                                      const vector<Long64>& gid,
                                      const PotentialData& vdata,
-                                     MPI_Comm comm,
+                                     const CommTable* commtable,
                                      const string format,
                                      const double max_distance,
                                      const bool use_communication_avoiding_algorithm)
    :Sensor(sp),
-    coarsening_(anatomy,gid,comm),
+    coarsening_(anatomy,gid,commtable),
     filename_(filename),
     anatomy_(anatomy),
     vdata_(vdata),
-    comm_(comm),
+    comm_(commtable->_comm),
     format_(format),
     max_distance_(max_distance),
     use_communication_avoiding_algorithm_(use_communication_avoiding_algorithm)
@@ -126,6 +128,8 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(const SensorParms& sp,
 
 void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& val)
 {
+   startTimer(sensorCompColorCenterTimer);
+
    static bool first_time=true;
 
    // calculate local sums
@@ -186,6 +190,8 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
       coarsening_.exchangeAndSum(valcolors_);
    
    first_time=false;
+
+   stopTimer(sensorCompColorCenterTimer);
 }
 
 // setup matrix of least square system dX^T W^2 dX grad V = dX^T W^2 dF
@@ -219,6 +225,15 @@ void GradientVoronoiCoarsening::setupLSmatrix()
          valMat11_.add1value(color,dy_[ic]*dy_[ic]*norm2i);
          valMat12_.add1value(color,dy_[ic]*dz_[ic]*norm2i);
          valMat22_.add1value(color,dz_[ic]*dz_[ic]*norm2i);
+      }else{
+         const int color=coarsening_.getColor(ic);
+         assert( color>=0 );
+         valMat00_.add1value(color,0.);
+         valMat01_.add1value(color,0.);
+         valMat02_.add1value(color,0.);
+         valMat11_.add1value(color,0.);
+         valMat12_.add1value(color,0.);
+         valMat22_.add1value(color,0.);
       }
    }
    
@@ -237,6 +252,7 @@ void GradientVoronoiCoarsening::setupLSmatrix()
 // setup r.h.s. of least square system dX^T W^2 dX grad V = dX^T W^2 dF
 void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
 {
+   startTimer(sensorSetupLSTimer);
    const int nLocalcoloredCells = colored_cells_.size();
    const double minnorm2=1.e-8;
    
@@ -267,6 +283,12 @@ void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
                valRHS0_.add1value(color,dx_[ic]*norm2i);
                valRHS1_.add1value(color,dy_[ic]*norm2i);
                valRHS2_.add1value(color,dz_[ic]*norm2i);
+            }else{
+               const int color=coarsening_.getColor(ic);
+               assert( color>=0 );
+               valRHS0_.add1value(color,0.);
+               valRHS1_.add1value(color,0.);
+               valRHS2_.add1value(color,0.);
             }
          }
       
@@ -359,12 +381,16 @@ void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
    
       coarsening_.exchangeAndSum(valcolors);   
    }
+   stopTimer(sensorSetupLSTimer);
 }
 
 void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
 {
    int myRank;
    MPI_Comm_rank(comm_, &myRank);
+   
+   if( myRank==0 )
+      cout<<"GradientVoronoiCoarsening::prologComputeLeastSquareGradients()..."<<endl;
 
    nb_excluded_pts_=0;
    
@@ -375,6 +401,9 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
    Long64 nSnapSubLoc = compute_colors.size();
    Long64 nSnapSub;
    MPI_Reduce(&nSnapSubLoc, &nSnapSub, 1, MPI_LONG_LONG, MPI_SUM, 0, comm_);
+   
+   if( myRank==0 )
+      cout<<"nSnapSub="<<nSnapSub<<endl;
 
    matLS_.clear();
    invDetMat_.clear();
@@ -386,6 +415,11 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
       const int color=(*it);
    
       const int ncells=valMat00_.nValues(color);
+      //assert( ncells==valMat01_.nValues(color) );
+      //assert( ncells==valMat02_.nValues(color) );
+      //assert( ncells==valMat11_.nValues(color) );
+      //assert( ncells==valMat12_.nValues(color) );
+      //assert( ncells==valMat22_.nValues(color) );
    
       if( ncells>3 ){
          double* a=new double[6];
@@ -396,11 +430,11 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
          a[4]=valMat12_.value(color);
          a[5]=valMat22_.value(color);
       
-         matLS_.insert(pair<int,double*>(color,a));
-         
          double det1=det3(a[0],a[1],a[2],a[1],a[3],a[4],a[2],a[4],a[5]);
          if( fabs(det1)>tol_det )
          {
+            matLS_.insert(pair<int,double*>(color,a));
+         
             invDetMat_.insert(pair<int,double>(color,1./det1));
             
             included_eval_colors_.insert(color);
@@ -409,6 +443,7 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
          }else{
             cout<<"WARNING: unable to compute gradient because of bad condition number of matrix: color "
                 <<color<<" will be skipped..."<<endl;
+            delete[] a;
          }
          
       }else{
@@ -426,11 +461,15 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
    
    MPI_Reduce(&npts, &nb_excluded_pts_, 1, MPI_INT, MPI_SUM, 0, comm_);
    nb_sampling_pts_=nSnapSub-(Long64)nb_excluded_pts_;
+
+   if( myRank==0 )
+      cout<<"GradientVoronoiCoarsening: prolog done... nb_sampling_pts_="<<nb_sampling_pts_<<endl;
 }
 
 void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current_time,
                                                             const int current_loop)
 {
+   startTimer(sensorComputeLSTimer);
    static bool first_time = true;
    
    if( first_time )
@@ -445,6 +484,7 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
                               ++it)
    {
       const int color=(*it);
+      //cout<<"computeLeastSquareGradients, color="<<color<<endl;
       
       vector<float>& color_gradient(gradients_[color]);
       
@@ -479,6 +519,7 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
       
       double g[3]={0.,0.,0.};             
       if( norm2b>1.e-15){
+         assert( matLS_.find(color)!=matLS_.end() );
          solve3x3(matLS_[color],b,g,color);
       }
       
@@ -486,7 +527,14 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
       color_gradient.push_back(float(g[1]));
       color_gradient.push_back(float(g[2]));
    }
-   
+
+#ifdef DEBUG  
+   int myRank;
+   MPI_Comm_rank(comm_, &myRank);
+   if( myRank==0 )
+      cout<<"done with GradientVoronoiCoarsening::computeLeastSquareGradients()..."<<endl;
+#endif
+   stopTimer(sensorComputeLSTimer);
 }
    
 void GradientVoronoiCoarsening::writeGradients(const string& filename,

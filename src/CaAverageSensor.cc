@@ -5,6 +5,7 @@
 #include "pio.h"
 #include "ioUtils.h"
 #include "Reaction.hh"
+#include "CommTable.hh"
 using namespace PerformanceTimers;
 
 #include <vector>
@@ -34,12 +35,12 @@ CaAverageSensor::CaAverageSensor(const SensorParms& sp,
                    const Anatomy& anatomy,
                    const vector<Long64>& gid,
                    const Reaction& reaction,
-                   MPI_Comm comm)
+                   const CommTable* commtable)
    :Sensor(sp),
-    coarsening_(anatomy,gid,comm),
+    coarsening_(anatomy,gid,commtable),
     filename_(filename),
     reaction_(reaction),
-    comm_(comm),
+    comm_(commtable->_comm),
     loop_buffer_(-1)
 {
    // color local cells
