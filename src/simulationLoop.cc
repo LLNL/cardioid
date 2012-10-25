@@ -298,7 +298,9 @@ struct SimLoopData
 
       int nLocal = sim.anatomy_.nLocal();
       const vector<int>& haloSendMap = voltageExchange.getSendMap();
+#ifndef PER_SQUAD_BARRIER
       mkOffsets(integratorOffset, sim.anatomy_.nLocal(), sim.reactionThreads_);
+#endif
       mkOffsets(fillSendBufOffset, haloSendMap.size(), sim.reactionThreads_);
    }
 
@@ -327,7 +329,9 @@ struct SimLoopData
     vector<int> integratorOffset_psb;
 #endif
 
+#ifndef PER_SQUAD_BARRIER
    vector<int> integratorOffset;
+#endif
    vector<pair<unsigned, unsigned> > sendBufIndirect;
    vector<int> fillSendBufOffset;
    HaloExchange<double, AlignedAllocator<double> > voltageExchange;
@@ -639,6 +643,48 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       const int begin=loopData.integratorOffset[tid];
       const int end  =loopData.integratorOffset[tid+1];
 #endif
+
+      if(PRINT_WP) {
+	static int inited[64] = {0};
+
+	if(inited[tid] == 0) {
+	  int pid,np;
+	  const int nt = sim.reactionThreads_.nThreads();
+	  static volatile int tag[64] = {0};
+
+	  MPI_Comm_size(MPI_COMM_WORLD,&np);
+	  MPI_Comm_rank(MPI_COMM_WORLD,&pid);	  
+	  
+	  if(tid == 0) {
+	    int i;
+
+	    MPI_Barrier(MPI_COMM_WORLD);
+	    for(i = 0; i<np; i++) {
+	      if(i == pid) {
+		int j;
+		printf("@pid=%03d,tid=%02d :I WP: offset = %6d  nCells = %6d  end = %6d\n",
+		       pid,tid,begin,end-begin,end);
+
+		tag[tid] = 1;
+		while(tag[nt-1] == 0) {}
+		for(j = 0; j<nt; j++) tag[j] = 0;
+	      }
+	      MPI_Barrier(MPI_COMM_WORLD);
+	    }
+	  } else {
+	    while(tag[tid-1] == 0) {}
+
+	    printf("@pid=%03d,tid=%02d :I WP: offset = %6d  nCells = %6d  end = %6d\n",
+		   pid,tid,begin,end-begin,end);
+
+	    tag[tid] = 1;
+	    while(tag[0] > 0) {}
+	  }
+	  
+	  inited[tid] = 1;
+	}
+      }
+
 
       integrate(begin, end, sim.dt_, &dVmReaction[0], &dVmDiffusion[0],
 		    sim.diffusion_->blockIndex(),

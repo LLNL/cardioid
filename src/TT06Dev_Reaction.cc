@@ -455,13 +455,60 @@ void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, Vector
 {
   int offset,nCells; 
 
-#ifdef LEGACY_NG_WORKPARTITION
+  //#ifdef LEGACY_NG_WORKPARTITION
    nCells = nonGateWorkPartition(offset);
+   /*
 #else
    const int tid = group_.teamRank();
    offset = nonGateWork_[tid].offsetCell;
    nCells = nonGateWork_[tid].nCell;
 #endif
+   */
+      if(PRINT_WP) {
+	static int inited[64] = {0};
+	const int tid = group_.teamRank();
+
+	if(inited[tid] == 0) {
+	  int pid,np;
+	  const int nt = group_.nThreads();
+	  static volatile int tag[64] = {0};
+
+	  MPI_Comm_size(MPI_COMM_WORLD,&np);
+	  MPI_Comm_rank(MPI_COMM_WORLD,&pid);	  
+	  
+	  if(tid == 0) {
+	    int i;
+
+	    MPI_Barrier(MPI_COMM_WORLD);
+	    for(i = 0; i<np; i++) {
+	      if(i == pid) {
+		int j;
+		printf("@pid=%03d,tid=%02d :NGWP: offset = %6d  nCells = %6d  end = %6d\n",
+		       pid,tid,offset,nCells,offset+nCells);
+
+		tag[tid] = 1;
+		while(tag[nt-1] == 0) {}
+		for(j = 0; j<nt; j++) tag[j] = 0;
+	      }
+	      MPI_Barrier(MPI_COMM_WORLD);
+	    }
+	  } else {
+	    while(tag[tid-1] == 0) {}
+
+	    printf("@pid=%03d,tid=%02d :NGWP: offset = %6d  nCells = %6d  end = %6d\n",
+		   pid,tid,offset,nCells,offset+nCells);
+
+	    tag[tid] = 1;
+	    while(tag[0] > 0) {}
+	  }
+	  
+	  inited[tid] = 1;
+	}
+      }
+
+
+
+
    if (nCells > 0) 
    {
       startTimer(nonGateTimer);
@@ -473,6 +520,64 @@ void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)
 {
    const ThreadRankInfo& rankInfo = group_.rankInfo();
    int teamRank = rankInfo.teamRank_;
+
+      if(PRINT_WP) {
+	static int inited[64] = {0};
+	const int tid = teamRank;
+	
+	if(inited[tid] == 0) {
+	  int pid,np;
+	  const int nt = group_.nThreads();
+	  static volatile int tag[64] = {0};
+
+	  MPI_Comm_size(MPI_COMM_WORLD,&np);
+	  MPI_Comm_rank(MPI_COMM_WORLD,&pid);	  
+	  
+	  if(tid == 0) {
+	    int i;
+
+	    MPI_Barrier(MPI_COMM_WORLD);
+	    for(i = 0; i<np; i++) {
+	      if(i == pid) {
+		int j;
+		printf("@pid=%03d,tid=%02d :G WP: "
+		       "offset = %6d  nCells = %6d  end = %6d  eq=%02d..%02d\n",
+		       pid,tid,
+		       gateWork_[tid].offsetCell,
+		       gateWork_[tid].nCell,
+		       gateWork_[tid].offsetCell + gateWork_[tid].nCell,
+		       gateWork_[tid].offsetEq,
+		       gateWork_[tid].offsetEq + gateWork_[tid].nEq);
+
+		tag[tid] = 1;
+		while(tag[nt-1] == 0) {}
+		for(j = 0; j<nt; j++) tag[j] = 0;
+	      }
+	      MPI_Barrier(MPI_COMM_WORLD);
+	    }
+	  } else {
+	    while(tag[tid-1] == 0) {}
+
+	    printf("@pid=%03d,tid=%02d :G WP: "
+		   "offset = %6d  nCells = %6d  end = %6d  eq=%02d..%02d\n",
+		   pid,tid,
+		   gateWork_[tid].offsetCell,
+		   gateWork_[tid].nCell,
+		   gateWork_[tid].offsetCell + gateWork_[tid].nCell,
+		   gateWork_[tid].offsetEq,
+		   gateWork_[tid].offsetEq + gateWork_[tid].nEq);
+
+	    tag[tid] = 1;
+	    while(tag[0] > 0) {}
+	  }
+	  
+	  inited[tid] = 1;
+	}
+      }
+
+
+
+
    startTimer(gateTimer);
    update_gate_(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],fit_,gateWork_[teamRank]);
    stopTimer(gateTimer);
