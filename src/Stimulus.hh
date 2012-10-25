@@ -17,16 +17,19 @@ class Stimulus
    : t0_(p.t0), tf_(p.tf){}
    
    virtual ~Stimulus(){};
-
-   void stim(double time,
-             VectorDouble32& dVmDiffusion)
+   /** Returns non-zero if stimulus was "on" */ 
+   int stim(double time,
+            VectorDouble32& dVmDiffusion)
    {
       if (time > t0_ && time < tf_)
-         subClassStim(time, dVmDiffusion);
+	 return subClassStim(time, dVmDiffusion);
+      return 0;
    }
 
-   virtual void subClassStim(double time,
-             VectorDouble32& dVmDiffusion) = 0;
+   virtual int subClassStim(double time,
+                            VectorDouble32& dVmDiffusion) = 0;
+
+   virtual int nStim() = 0;
 
  private:
    double t0_;

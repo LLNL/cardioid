@@ -20,12 +20,18 @@ BoxStimulus::BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy, Puls
    }
 }
 
-void BoxStimulus::subClassStim(double time,
-                               VectorDouble32& dVmDiffusion)
+int BoxStimulus::subClassStim(double time,
+                              VectorDouble32& dVmDiffusion)
 {
    double value = pulse_->eval(time);
-   if (value != 0)
-      for (unsigned ii=0; ii<stimList_.size(); ++ii)
-         dVmDiffusion[stimList_[ii]] += value;
+   if (value == 0)
+      return 0;
+   for (unsigned ii=0; ii<stimList_.size(); ++ii)
+      dVmDiffusion[stimList_[ii]] += value;
+   return 1;
 }
 
+int BoxStimulus::nStim()
+{
+   return stimList_.size();
+}

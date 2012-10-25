@@ -13,11 +13,19 @@ TestStimulus::TestStimulus(const TestStimulusParms& p, Pulse* pulse)
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank_);
 }
 
-void TestStimulus::subClassStim(double time,
+int TestStimulus::subClassStim(double time,
                                 VectorDouble32& dVmDiffusion)
 {
    if ( myRank_ != targetRank_ )
-      return;
-
+      return 0;
+   
    dVmDiffusion[targetCell_] = pulse_->eval(time);
+   return 1;
+}
+
+int TestStimulus::nStim()
+{
+   if (myRank_ == targetRank_)
+      return 1;
+   return 0;
 }

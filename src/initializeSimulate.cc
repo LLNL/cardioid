@@ -11,6 +11,7 @@
 #include "diffusionFactory.hh"
 #include "reactionFactory.hh"
 #include "stimulusFactory.hh"
+#include "Stimulus.hh"
 #include "sensorFactory.hh"
 #include "getRemoteCells.hh"
 #include "Anatomy.hh"
@@ -213,6 +214,7 @@ void initializeSimulate(const string& name, Simulate& sim)
    timestampBarrier("building reaction object", MPI_COMM_WORLD);
    objectGet(obj, "reaction", nameTmp, "reaction");
    sim.reaction_ = reactionFactory(nameTmp, sim.anatomy_, sim.reactionThreads_);
+   timestampBarrier("finished building reaction object", MPI_COMM_WORLD);
 
    sim.printIndex_ = -1;
    // -2 -> print index 0 rank 0
@@ -252,7 +254,13 @@ void initializeSimulate(const string& name, Simulate& sim)
    vector<string> names;
    objectGet(obj, "stimulus", names);
    for (unsigned ii=0; ii<names.size(); ++ii)
-      sim.stimulus_.push_back(stimulusFactory(names[ii], sim.anatomy_));
+   {
+      Stimulus* stim = stimulusFactory(names[ii], sim.anatomy_);
+      if (stim->nStim() > 0)
+	 sim.stimulus_.push_back(stim);
+      else
+	 delete stim;
+   }
 
    timestampBarrier("building sensor object", MPI_COMM_WORLD);
    names.clear();

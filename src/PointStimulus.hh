@@ -18,8 +18,9 @@ class PointStimulus : public Stimulus
  public:
    PointStimulus(const PointStimulusParms& p, const Anatomy& anatomy, 
                  Pulse* pulse);
-   void subClassStim(double time,
-                     VectorDouble32& dVmDiffusion);
+   int subClassStim(double time,
+		    VectorDouble32& dVmDiffusion);
+   int nStim();
    
  private:
    Long64 targetCell_;

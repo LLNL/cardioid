@@ -245,7 +245,8 @@ struct SimLoopData
    SimLoopData(const Simulate& sim)
    : voltageExchange(sim.sendMap_, (sim.commTable_))
    {
-      haloBarrier = L2_BarrierWithSync_InitShared();
+      stimIsNonZero = 1;
+      diffMiscBarrier = L2_BarrierWithSync_InitShared();
       reactionBarrier = L2_BarrierWithSync_InitShared();
       diffusionBarrier= L2_BarrierWithSync_InitShared();
       reactionWaitOnNonGateBarrier= L2_BarrierWithSync_InitShared();
@@ -303,7 +304,8 @@ struct SimLoopData
    }
    
    
-   L2_Barrier_t* haloBarrier;
+   int stimIsNonZero;
+   L2_Barrier_t* diffMiscBarrier;
    L2_Barrier_t* reactionBarrier;
    L2_Barrier_t* diffusionBarrier;
    L2_Barrier_t* reactionWaitOnNonGateBarrier;
@@ -330,9 +332,9 @@ void diffusionLoopLag(Simulate& sim,
 {
    profileStart(diffusionLoopTimer);
    int tid = sim.diffusionThreads_.teamRank();
-   L2_BarrierHandle_t haloBarrierHandle;
+   L2_BarrierHandle_t diffMiscBarrierHandle;
    L2_BarrierHandle_t timingHandle;
-   L2_BarrierWithSync_InitInThread(loopData.haloBarrier, &haloBarrierHandle);
+   L2_BarrierWithSync_InitInThread(loopData.diffMiscBarrier, &diffMiscBarrierHandle);
    L2_BarrierWithSync_InitInThread(loopData.timingBarrier, &timingHandle);
    int nTotalThreads = sim.reactionThreads_.nThreads() + sim.diffusionThreads_.nThreads();
 
@@ -375,7 +377,7 @@ void diffusionLoopLag(Simulate& sim,
          stopTimer(haloWaitTimer);
       }
       startTimer(diffusionL2BarrierHalo1Timer);
-      L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle, sim.diffusionThreads_.nThreads());
+      L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle, sim.diffusionThreads_.nThreads());
       stopTimer(diffusionL2BarrierHalo1Timer);
       
       // copy remote. Where is the timer?
@@ -402,15 +404,21 @@ void diffusionLoop(Simulate& sim,
 {
    profileStart(diffusionLoopTimer);
    int tid = sim.diffusionThreads_.teamRank();
-   L2_BarrierHandle_t haloBarrierHandle;
+   int nThreads = sim.diffusionThreads_.nThreads();
+   L2_BarrierHandle_t diffMiscBarrierHandle;
    L2_BarrierHandle_t timingHandle;
-   L2_BarrierWithSync_InitInThread(loopData.haloBarrier, &haloBarrierHandle);
+   L2_BarrierWithSync_InitInThread(loopData.diffMiscBarrier, &diffMiscBarrierHandle);
    L2_BarrierWithSync_InitInThread(loopData.timingBarrier, &timingHandle);
    int nTotalThreads = sim.reactionThreads_.nThreads() + sim.diffusionThreads_.nThreads();
 
    VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusion_);
 
-    
+   vector<int> zeroDiffusionOffset(nThreads+1);
+   mkOffsets(zeroDiffusionOffset, dVmDiffusion.size(), sim.diffusionThreads_);
+   int zdoBegin = zeroDiffusionOffset[tid];
+   int zdoEnd =   zeroDiffusionOffset[tid+1];
+
+   
     //sim.diffusion_->test();
 
    uint64_t loopLocal = sim.loop_;
@@ -443,20 +451,39 @@ void diffusionLoop(Simulate& sim,
 //         stopTimer(diffusionImbalanceTimer);
 
          startTimer(haloTimer);
-
+         
          startTimer(haloLaunchTimer);
          loopData.voltageExchange.startComm();
          stopTimer(haloLaunchTimer);
-
-      // stimulus
-         startTimer(stimulusTimer);
-         dVmDiffusion.assign(dVmDiffusion.size(), 0);
-         for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
-            sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
-         stopTimer(stimulusTimer);
       }
+      
+      // stimulus
+      if (sim.stimulus_.size() > 0)
+      {
+         startTimer(initializeDVmDTimer);
+         if (loopData.stimIsNonZero > 0)
+         {
+            // we has a non-zero stimulus in the last time step so we
+            // need to zero out the storage.
+            for (unsigned ii=zdoBegin; ii<zdoEnd; ++ii)
+               dVmDiffusion[ii] = 0;
+            L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle,
+                                       sim.diffusionThreads_.nThreads());
+         }
+         stopTimer(initializeDVmDTimer);
+         if (tid == 0)
+         {
+            startTimer(stimulusTimer);
+            loopData.stimIsNonZero = 0;
+            for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
+               loopData.stimIsNonZero += sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
+            stopTimer(stimulusTimer);
+         }
+      }
+      
 
-      //L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle, sim.diffusionThreads_.nThreads());
+
+      //L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle, sim.diffusionThreads_.nThreads());
       startTimer(stencilOverlapTimer);
       sim.diffusion_->calc_overlap(dVmDiffusion); //DelayTimeBase(160000);
       stopTimer(stencilOverlapTimer);
@@ -472,7 +499,7 @@ void diffusionLoop(Simulate& sim,
       
       // Need a barrier for the completion of the halo exchange.
       startTimer(diffusionL2BarrierHalo1Timer);
-      L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
+      L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle,
                                  sim.diffusionThreads_.nThreads());
       stopTimer(diffusionL2BarrierHalo1Timer);
       
@@ -480,7 +507,7 @@ void diffusionLoop(Simulate& sim,
       // copy remote
       sim.diffusion_->updateRemoteVoltage(loopData.voltageExchange.getRecvBuf());
       // temporary barrier
-      L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
+      L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle,
                                  sim.diffusionThreads_.nThreads());
       //stencil
       sim.diffusion_->calc(dVmDiffusion);
@@ -488,7 +515,7 @@ void diffusionLoop(Simulate& sim,
       
       //barrier
       startTimer(diffusionL2BarrierHalo2Timer);
-      L2_BarrierWithSync_Barrier(loopData.haloBarrier, &haloBarrierHandle,
+      L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle,
                                  sim.diffusionThreads_.nThreads());
       stopTimer(diffusionL2BarrierHalo2Timer);
 

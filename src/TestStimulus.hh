@@ -15,8 +15,9 @@ class TestStimulus : public Stimulus
 {
  public:
    TestStimulus(const TestStimulusParms& p, Pulse* pulse);
-   void subClassStim(double time,
-                     VectorDouble32& dVmDiffusion);
+   int subClassStim(double time,
+		    VectorDouble32& dVmDiffusion);
+   int nStim();
    
  private:
    int targetRank_;
