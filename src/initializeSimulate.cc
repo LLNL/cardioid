@@ -99,6 +99,7 @@ void initializeSimulate(const string& name, Simulate& sim)
 
    OBJECT* obj = objectFind(name, "SIMULATE");
 
+   int heapSize;
    objectGet(obj, "heap", heapSize, "500");
    heap_start(heapSize);
    
