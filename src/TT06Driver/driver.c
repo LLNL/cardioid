@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <stdlib.h>
 #include <omp.h>
 #include <mpi.h> 
@@ -34,7 +35,7 @@ void fastLogInit();
 //void initArray();
 
 typedef void (*UPDATENONGATE)(void *ptr, double dt, struct CellTypeParms *p,int nCells, int *cellTypeVector, const double *VM, int offset, double *gates[19], double *dVdt);
-typedef void  (*UPDATEGATE)(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a) ; 
+typedef void  (*UPDATEGATE)(double dt, int *nCells, double *VM, double *g, double *mhu_a, double *tauR_a) ; 
 
 //static   double mhu[13][50]; 
 //static   double tauR[13][50]; 
@@ -44,7 +45,6 @@ static   double dt=0.01;
 static   int nonGatesFlag=0;
 static   int gatesFlag=0;
 static   int map[12]={0,1,2,3,4,5,6,7,8,9,10,11}; 
-static   int gateSwap=0; 
 static   double mhuB[13*50]; 
 static   double tauRB[13*50]; 
 
@@ -94,14 +94,11 @@ void init(int cellType, int nCellsOnNode, int *cellTypeVector, double **g, doubl
         double vm=initState(state,gate,cellType); 
         cellTypeVector[i] = cellType; 
         Vm[i] = vm; 
-         int k; 
+        int k; 
         for (int j=0;j<19;j++)  
         {
-           if (gateSwap && j>6) k = 7+map[j-7]; else k = j; 
-           g[j][i]=state[k];
+           g[j][i]=state[j];
         }
-       //if (gateSwap) k = 7+map[11]; else k = 18; 
-       // g[19][i]=state[k];
    }
 }
 void readData()
@@ -136,6 +133,18 @@ TIME  parallelSection(threadInfo *info,  UPDATENONGATE updateNonGateFunc, UPDATE
    double cpuTimes[128]; 
    for(int i=0;i<128;i++) cpuTimes[i]=0.0; 
    int loop = 0; 
+   for (int i=nCells;i<nCells+3;i++) cellTypeVector[i]  = cellTypeVector[i-1];  
+
+   int startBreak;
+   if (cellTypeVector[0] !=0) 
+   {
+      startBreak = -1; 
+   }
+   else
+   {
+   for (startBreak=0;startBreak<nCells;startBreak+=4) if ( cellTypeVector[startBreak+3] != 0) break; 
+   }
+   int cellType = cellTypeVector[0]; 
    
    #pragma omp parallel
    {
@@ -160,9 +169,19 @@ TIME  parallelSection(threadInfo *info,  UPDATENONGATE updateNonGateFunc, UPDATE
       int offsetGEq =   squadID* nEq;
       
       int squadRank = threadID % nSquad; 
+      int cnt[6]; 
+      cnt[0] = nCellPerCore;
+      cnt[1] =0;
+      cnt[2]= 0;
+      cnt[3]= 0;
+      cnt[4]= 0;
+      cnt[5]=50; 
+      if (cellType==0) cnt[1] = cnt[0];
+      else             cnt[4] = cnt[0]; 
 
       int loop;  
       double time=0.0; 
+      double **gate = g+7; 
       for (loop=0;loop<maxLoop;loop++)
       {
              double t0,t1; 
@@ -181,11 +200,9 @@ TIME  parallelSection(threadInfo *info,  UPDATENONGATE updateNonGateFunc, UPDATE
              t0 = omp_get_wtime(); 
              for (int i=0;i<nEq;i++) 
              {
-               int eqx = offsetGEq+i; 
-               int eq = map[eqx]; 
-               int gateIndex; 
-               if (gateSwap) gateIndex = eqx ; else gateIndex = eq; 
-                 updateGateFuncs[eq](dt, nCellPerCore, Vm+offsetCore, g[gateIndex+7]+offsetCore, mhu[eq], tauR[eq]);  
+               int j = offsetGEq+i; 
+               int eq = map[j]; 
+               updateGateFuncs[eq](dt, cnt, Vm+offsetCore, gate[eq]+offsetCore, mhu[eq], tauR[eq]);  
              }
              t1 = omp_get_wtime(); 
              cpuTimes[2*ompID+1]+= t1-t0; 
@@ -235,7 +252,8 @@ int main(int argc, char **argv)
    int maxLoop = 100000; 
    int nMinSteps = 0; 
    int nCellsOnNode=4096;
-   int jobId=Kernel_GetJobID(); 
+   //int jobId=Kernel_GetJobID(); 
+   int jobId=0; 
    printf("jobId=%d\n",jobId); 
    int mode = 0775;
    char dirname[256]; 

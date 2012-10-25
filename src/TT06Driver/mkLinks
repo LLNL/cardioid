@@ -1,0 +1,9 @@
+#!/bin/csh
+ln -s ../TT06Func.h
+ln -s ../TT06Gates.c
+ln -s ../TT06Gates.h
+ln -s ../TT06GatesSimd.c
+ln -s ../TT06NonGatesSimd.c
+ln -s ../fastLog.h
+ln -s ../portableSIMD.h
+

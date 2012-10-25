@@ -1,1 +1,1 @@
-Makefile.bgq
+Makefile.osx

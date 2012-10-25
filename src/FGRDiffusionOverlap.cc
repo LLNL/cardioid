@@ -1068,6 +1068,7 @@ FGRDiffusionOverlap::FGRDiff_simd_thread(const uint32_t bx,const int32_t ex, Arr
 void
 FGRDiffusionOverlap::FGRDiff_2D_xy(uint32_t slabID, const uint32_t by,const int32_t ey)
 {
+#ifdef BGQ 
   int ii;
 
   const unsigned Ny2 = VmSlab_[slabID].ny(); //ny means the second dimension
@@ -1194,6 +1195,7 @@ FGRDiffusionOverlap::FGRDiff_2D_xy(uint32_t slabID, const uint32_t by,const int3
   #undef calc_zz_2D
   #undef calc_zm_2D 
   #undef shift_pointers_2D 
+#endif
 }
 
 void

@@ -9,7 +9,8 @@ LDR      =mpicc   -fopenmp
 INCDIR    =  
 
 
-CFLAGS   =  -c  -O3 -g $(INCDIR)  -std=gnu99
+#CFLAGS   =  -c  -O3 -g $(INCDIR)  -std=gnu99
+CFLAGS   =  -c   -g $(INCDIR)  -std=gnu99
 
 
 LDFLAGS  = -lm  -qsmp=omp
@@ -20,9 +21,9 @@ LIBS     =
 LIB_DIRS = 
 
 
-PROG     = driverQ
+PROG     = driver
 
-OBJS     =  TT06Driver.o initCode.o TT06NonGates.o TT06NonGatesSimd.o TT06Gates.o TT06GatesSimd.o
+OBJS     =  driver.o initCode.o TT06NonGates.o TT06NonGatesSimd.o TT06Gates.o TT06GatesSimd.o
 
 
 all : $(PROG)

@@ -1,5 +1,5 @@
 #include <math.h>
-void update_mGateNew(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_mGateNew(double dt, int *nCellsPtr, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 int gateIndex=0;
 int mhu_l=10;
@@ -7,6 +7,7 @@ int mhu_m=5;
 int tauR_l=1;
 int tauR_m=18;
 int exp_l=16;
+int nCells = *nCellsPtr; 
 
    
  double  tauRdt_a[tauR_m];
@@ -32,13 +33,14 @@ int exp_l=16;
     g[ii] +=  mhu*tauRdt - g[ii]*tauRdt;
   }
 }
-void update_mGate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_mGate(double dt, int *nCellsPtr, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 int gateIndex=0;
 int mhu_l=10;
 int mhu_m=5;
 int tauR_l=1;
 int tauR_m=18;
+int nCells = *nCellsPtr; 
 
    
  double  tauRdt_a[tauR_m];
@@ -61,13 +63,14 @@ int tauR_m=18;
   }
 }
 #define recipApprox(x) 1.0/(x)
-void update_hGate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_hGate(double dt, int *nCellsPtr, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 int gateIndex=1;
 int mhu_l=7 ;
 int mhu_m= 9;
 int tauR_l=11;
 int tauR_m=11;
+int nCells = *nCellsPtr; 
    
  double  tauRdt_a[tauR_m];
  for (int j=tauR_m-1;j>=0;j--)    tauRdt_a[j] = tauR_a[j]*dt;
@@ -98,13 +101,14 @@ int tauR_m=11;
   }
 }
 // hGate and jGate have the same mhu function.   There could be some advantage of combining these two updates
-void update_jGate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_jGate(double dt, int *nCellsPtr, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 int  gateIndex=2;
 int mhu_l= 7 ;
 int mhu_m= 9;
 int tauR_l= 1;
 int tauR_m=13;
+int nCells = *nCellsPtr; 
    
  double  tauRdt_a[tauR_m];
  for (int j=tauR_m-1;j>=0;j--)    tauRdt_a[j] = tauR_a[j]*dt;
@@ -125,13 +129,14 @@ int tauR_m=13;
     g[ii] +=  mhu*tauRdt - g[ii]*tauRdt;
   }
 }
-void update_Xr1Gate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_Xr1Gate(double dt, int *nCellsPtr, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 int gateIndex=3;
 int mhu_l= 5 ;
 int mhu_m= 8;
 int tauR_l= 1;
 int tauR_m=13;
+int nCells = *nCellsPtr; 
    
  double  tauRdt_a[tauR_m];
  for (int j=tauR_m-1;j>=0;j--)    tauRdt_a[j] = tauR_a[j]*dt;
@@ -153,13 +158,14 @@ int tauR_m=13;
     g[ii] +=  mhu*tauRdt - g[ii]*tauRdt;
   }
 }
-void update_Xr2Gate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_Xr2Gate(double dt, int *nCellsPtr, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 int gateIndex= 4;
 int mhu_l= 1 ;
 int mhu_m= 10;
 int tauR_l= 1;
 int tauR_m=10;
+int nCells = *nCellsPtr; 
    
  double  tauRdt_a[tauR_m];
  for (int j=tauR_m-1;j>=0;j--)    tauRdt_a[j] = tauR_a[j]*dt;
@@ -177,13 +183,14 @@ int tauR_m=10;
     g[ii] +=  mhu*tauRdt - g[ii]*tauRdt;
   }
 }
-void update_XsGate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_XsGate(double dt, int *nCellsPtr, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 int gateIndex= 5;
 int mhu_l= 5 ;
 int mhu_m= 5;
 int tauR_l= 6;
 int tauR_m= 9;
+int nCells = *nCellsPtr; 
    
  double  tauRdt_a[tauR_m];
  for (int j=tauR_m-1;j>=0;j--)    tauRdt_a[j] = tauR_a[j]*dt;
@@ -205,13 +212,14 @@ int tauR_m= 9;
     g[ii] +=  mhu*tauRdt - g[ii]*tauRdt;
   }
 }
-void update_rGate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_rGate(double dt, int *nCellsPtr, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 int gateIndex= 6;
 int mhu_l= 5 ;
 int mhu_m= 8;
 int tauR_l=5 ;
 int tauR_m=7;
+int nCells = *nCellsPtr; 
    
  double  tauRdt_a[tauR_m];
  for (int j=tauR_m-1;j>=0;j--)    tauRdt_a[j] = tauR_a[j]*dt;
@@ -233,13 +241,14 @@ int tauR_m=7;
     g[ii] +=  mhu*tauRdt - g[ii]*tauRdt;
   }
 }
-void update_dGate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_dGate(double dt, int *nCellsPtr, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 int gateIndex= 7;
 int mhu_l= 5 ;
 int mhu_m= 7;
 int tauR_l=7 ;
 int tauR_m=10;
+int nCells = *nCellsPtr; 
    
  double  tauRdt_a[tauR_m];
  for (int j=tauR_m-1;j>=0;j--)    tauRdt_a[j] = tauR_a[j]*dt;
@@ -261,13 +270,14 @@ int tauR_m=10;
     g[ii] +=  mhu*tauRdt - g[ii]*tauRdt;
   }
 }
-void update_fGate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_fGate(double dt, int *nCellsPtr, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 int gateIndex= 8;
 int mhu_l= 5 ;
 int mhu_m= 8;
 int tauR_l=13;
 int tauR_m=11;
+int nCells = *nCellsPtr; 
    
  double  tauRdt_a[tauR_m];
  for (int j=tauR_m-1;j>=0;j--)    tauRdt_a[j] = tauR_a[j]*dt;
@@ -289,13 +299,14 @@ int tauR_m=11;
     g[ii] +=  mhu*tauRdt - g[ii]*tauRdt;
   }
 }
-void update_f2Gate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_f2Gate(double dt, int *nCellsPtr, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 int gateIndex= 9;
 int mhu_l= 8 ;
 int mhu_m= 5;
 int tauR_l=11;
 int tauR_m=12;
+int nCells = *nCellsPtr; 
    
  double  tauRdt_a[tauR_m];
  for (int j=tauR_m-1;j>=0;j--)    tauRdt_a[j] = tauR_a[j]*dt;
@@ -317,13 +328,14 @@ int tauR_m=12;
     g[ii] +=  mhu*tauRdt - g[ii]*tauRdt;
   }
 }
-void update_jLGate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_jLGate(double dt, int *nCellsPtr, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 int gateIndex= 10;
 int mhu_l= 6 ;
 int mhu_m= 12;
 int tauR_l=1;
 int tauR_m=1;
+int nCells = *nCellsPtr; 
    
  double  tauRdt_a[tauR_m];
  for (int j=tauR_m-1;j>=0;j--)    tauRdt_a[j] = tauR_a[j]*dt;
@@ -344,13 +356,14 @@ int tauR_m=1;
   }
 }
 
-void update_s0Gate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_s0Gate(double dt, int *nCellsPtr, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 int gateIndex= 11;
 int mhu_l= 7 ;
 int mhu_m= 8;
 int tauR_l=6 ;
 int tauR_m=7 ;
+int nCells = *nCellsPtr; 
    
  double  tauRdt_a[tauR_m];
  for (int j=tauR_m-1;j>=0;j--)    tauRdt_a[j] = tauR_a[j]*dt;
@@ -372,13 +385,14 @@ int tauR_m=7 ;
     g[ii] +=  mhu*tauRdt - g[ii]*tauRdt;
   }
 }
-void update_s1Gate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a)
+void update_s1Gate(double dt, int *nCellsPtr, double *VM, double *g, double *mhu_a, double *tauR_a)
 {
 int gateIndex= 11;
 int mhu_l= 7 ;
 int mhu_m= 8;
 int tauR_l=11;
 int tauR_m=11;
+int nCells = *nCellsPtr; 
    
  double  tauRdt_a[tauR_m];
  for (int j=tauR_m-1;j>=0;j--)    tauRdt_a[j] = tauR_a[j]*dt;
@@ -399,4 +413,43 @@ int tauR_m=11;
    double mhu= sum1/sum2;
     g[ii] +=  mhu*tauRdt - g[ii]*tauRdt;
   }
+}
+void update_sGate(double dt, int *cnts, double *Vm, double *g, double *mhu, double *tauR)
+{
+        int *nCells=cnts; 
+
+        int offsetCell =0; 
+        if (nCells[1] > 0) update_s0Gate(dt, &nCells[1], Vm+offsetCell, g+offsetCell, mhu, tauR);
+        offsetCell+=nCells[1];
+
+        if (nCells[2] > 0) update_s0Gate(dt, &nCells[2], Vm+offsetCell, g+offsetCell, mhu, tauR);
+        offsetCell+=nCells[2];
+
+        mhu  += cnts[5];
+        tauR += cnts[6];
+
+        if (nCells[3] > 0) update_s1Gate(dt, &nCells[3], Vm+offsetCell, g+offsetCell, mhu, tauR);
+        offsetCell+=nCells[3]; 
+
+        if (nCells[4] > 0) update_s1Gate(dt, &nCells[4], Vm+offsetCell, g+offsetCell, mhu, tauR);
+}
+void update_sGate_v1(double dt, int *cnts, double *Vm, double *g, double *mhu, double *tauR)
+{
+        int *nCells=cnts; 
+        int coeffStride=cnts[5]; 
+
+        int offsetCell =0; 
+        if (nCells[1] > 0) update_s0Gate_v1(dt, &nCells[1], Vm+offsetCell, g+offsetCell, mhu, tauR);
+        offsetCell+=nCells[1];
+
+        if (nCells[2] > 0) update_s0Gate(dt, &nCells[2], Vm+offsetCell, g+offsetCell, mhu, tauR);
+        offsetCell+=nCells[2];
+
+        mhu  += cnts[5];
+        tauR += cnts[6];
+
+        if (nCells[3] > 0) update_s1Gate(dt, &nCells[3], Vm+offsetCell, g+offsetCell, mhu, tauR);
+        offsetCell+=nCells[3]; 
+
+        if (nCells[4] > 0) update_s1Gate_v1(dt, &nCells[4], Vm+offsetCell, g+offsetCell, mhu, tauR);
 }

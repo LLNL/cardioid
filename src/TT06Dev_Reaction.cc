@@ -21,7 +21,31 @@ using namespace std;
 using namespace PerformanceTimers;
 using namespace TT06Func;
 
+static UPDATEGATE updateGateSlowFuncs[] = { update_mGate, update_hGate, update_jGate, update_Xr1Gate, update_Xr2Gate, update_XsGate,
+                                    update_rGate, update_dGate, update_fGate, update_f2Gate,  update_jLGate, update_sGate} ;
+static UPDATEGATE updateGateFastFuncs[] = { update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1,
+                                    update_rGate_v1, update_dGate_v1, update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, update_sGate_v1} ;
+static UPDATEGATE *updateGateFuncs ;
+
 int workBundle(int index, int nItems, int nGroups , int mod, int& offset);
+static void updateGateFastNew(double dt, int nCellsTotal, int *cellTypeVector, double *Vm, int offset, double **gate, PADE *fit,  GATEWORK &work)
+{
+   int *nCell=work.nCell;
+   if (nCell[0] ==0) return;
+   int offsetCell=work.offsetCell;
+   int offsetEq = work.offsetEq;
+   int nEq = work.nEq;
+
+   PADE *gatefit = fit + gateFitOffset;
+
+   for (int eq=offsetEq;eq<offsetEq+nEq;eq++)
+   {
+            double *mhu  = gatefit[2*eq+0].coef;
+            double *tauR = gatefit[2*eq+1].coef;
+            updateGateFuncs[eq](dt, nCell , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+   }
+}
+
 OVF fitFuncMap(string name) 
 {
       const char *fitName[] ={ "fv0", "fv1", "fv2", "fv3", "fv4", "fv5", "fv6", "mMhu", "mTauR", "hMhu", "hTauR", "hTauRMod", "jMhu", "jTauR", "jTauRMod", "Xr1Mhu", "Xr1TauR", "Xr2Mhu", "Xr2TauR", 
@@ -269,9 +293,14 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
       {
          if ( (fabs(parms.tolerance/1e-4 - 1.0) < 1e-12) && parms.jhTauSmooth == 1 )fastReaction_ = parms.fastReaction; 
       }
-      update_gate_=TT06Func::updateGate;
+      //update_gate_=TT06Func::updateGate;
       update_nonGate_=update_nonGate;
-      if ((fastReaction_&0x00ff)   > 0) update_gate_   =TT06Func::updateGateFast;
+      updateGateFuncs= updateGateSlowFuncs;
+      if ((fastReaction_&0x00ff)   > 0) 
+      {
+           //update_gate_   =TT06Func::updateGateFast;
+           updateGateFuncs= updateGateFastFuncs; 
+      }
       if ((fastReaction_&0xff00)   > 0) update_nonGate_=update_nonGate_v1;
       fit_ = parms.fit; 
       if (fit_ == NULL ) 
@@ -305,6 +334,24 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
    int nEq = 12/squadSize;
    gateWork_.resize(nThreads); 
    nonGateWork_.resize(nThreads);   
+   int startBreak=0; 
+   for (startBreak=0;startBreak<nCells_;startBreak++)    if ( cellTypeVector_[startBreak]!=0) break; 
+   int flag = 2; 
+   if (startBreak == nCells_) flag = (cellTypeVector_[0] != 0); 
+   
+   PADE *gatefit = fit_ + gateFitOffset; 
+   double *s0Mhu  = gatefit[2*11  ].coef; 
+   double *s0TauR = gatefit[2*11+1].coef; 
+   double *s1Mhu  = gatefit[2*12  ].coef; 
+   double *s1TauR = gatefit[2*12+1].coef; 
+   int mhuOffset  = (((int64_t)s1Mhu)-((int64_t)s0Mhu))/8; 
+   int tauROffset = (((int64_t)s1TauR)-((int64_t)s0TauR))/8; 
+   //printf("mhuOffset=x0%x tauROffset=x0%x\n",mhuOffset,tauROffset); 
+   //printf("mhuOffset=%d tauROffset=%d\n",mhuOffset,tauROffset); 
+   //printf("mhu =%p %p %p\n",s0Mhu,s1Mhu,s0Mhu+mhuOffset); 
+   //printf("tauR=%p %p %p\n",s0TauR,s1TauR,s0TauR+tauROffset); 
+   //exit(0); 
+   
    for (int id=0;id<nThreads;id++) 
    {
       const ThreadRankInfo& rankInfo = group_.rankInfo(id);
@@ -318,7 +365,33 @@ TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parm
       int squadRank  = id%squadSize ;
       int nCell = workBundle(squadID, nCells_, nSquads , 4, offset);
       gateWork_[teamRank].offsetCell =  offset; 
-      gateWork_[teamRank].nCell =   nCell; 
+      int nC[7]; 
+      nC[0] =   nCell; 
+      nC[5] =   mhuOffset   ; 
+      nC[6] =   tauROffset   ; 
+      if (flag == 0) 
+      {
+         nC[1] =   nCell; 
+         nC[2] =       0; 
+         nC[3] =       0; 
+         nC[4] =       0; 
+      }
+      if (flag == 1) 
+      {
+         nC[1] =       0; 
+         nC[2] =   nCell;
+         nC[3] =       0; 
+         nC[4] =       0; 
+      }
+      if (flag == 2) 
+      {
+         nC[1] =   (startBreak-offset)&3; 
+         nC[2] =   startBreak-offset-nC[1]    ;
+         nC[3] =   (4- nC[2])%4          ;
+         nC[4] =   nC[0]-nC[1]-nC[2]-nC[3]; 
+      }
+      for (int i=0;i<7;i++) gateWork_[teamRank].nCell[i] =  nC[i]; 
+      
       gateWork_[teamRank].offsetEq = nEq*squadRank; 
       gateWork_[teamRank].nEq     =  nEq; 
 
@@ -444,7 +517,7 @@ int TT06Dev_Reaction::nonGateWorkPartition(int& offset)
 
 void TT06Dev_Reaction::calc(double dt, const VectorDouble32& Vm, const vector<double>& iStim, VectorDouble32& dVm)
 {
-   WORK work ={ 0,nCells_,0,12}; 
+   GATEWORK work ={ 0,nCells_,0,12}; 
    if (nCells_ > 0) 
    {
    update_nonGate_((void*)fit_,dt, &(cellTypeParms_[0]), nCells_, &(cellTypeVector_[0]),const_cast<double *>(&Vm[0]),  0, &state_[0], &dVm[0]);
@@ -579,8 +652,13 @@ void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)
 
 
    startTimer(gateTimer);
-   update_gate_(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],fit_,gateWork_[teamRank]);
+   double **gate = &(state_[gateOffset]); 
+   double *vm = const_cast<double *>(&Vm[0]); 
+ //update_gate_(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],fit_,gateWork_[teamRank]);
+   updateGateFastNew(dt, nCells_, &(cellTypeVector_[0]), vm,                      0, gate               ,fit_,gateWork_[teamRank]);
+    
    stopTimer(gateTimer);
+
 }
 
 void TT06Dev_Reaction::initializeMembraneVoltage(VectorDouble32& Vm)
