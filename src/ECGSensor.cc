@@ -7,8 +7,10 @@
 #include "pio.h"
 #include "ioUtils.h"
 #include "Simulate.hh"
+#include "PerformanceTimers.hh"
 
 using namespace std;
+using PerformanceTimers::sensorEvalTimer;
 
 ECGSensor::ECGSensor(const SensorParms& sp,
                      const ECGSensorParms& p,
@@ -63,7 +65,7 @@ void ECGSensor::print(double time, int loop)
 
 void ECGSensor::eval(double time, int loop)
 {
-
+   startTimer(sensorEvalTimer);
    int index = 0;
    int dataIndex = (nEval_+2)*3;
    for (unsigned ii=0; ii<nSensorPoints_; ++ii)
@@ -81,5 +83,6 @@ void ECGSensor::eval(double time, int loop)
       }
    }
    ++nEval_;
+   stopTimer(sensorEvalTimer);
 }
 
