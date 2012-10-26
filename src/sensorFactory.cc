@@ -14,7 +14,7 @@
 #include "CaAverageSensor.hh"
 #include "MaxDVSensor.hh"
 #include "StateVariableSensor.hh"
-
+#include "ECGSensor.hh"
 #include "Simulate.hh"
 
 using namespace std;
@@ -34,6 +34,7 @@ namespace
    Sensor* scanMaxDvSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                            const PotentialData& vdata);
    Sensor* scanStateVariableSensor(OBJECT* obj, const SensorParms& sp, const Simulate& sim);
+   Sensor* scanECGSensor(OBJECT* obj, const SensorParms& sp, const Simulate& sim);
 }
 
 // Initialize cellVec with gids listed in file filename
@@ -112,6 +113,8 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
      return scanVoronoiCoarseningSensor(obj, sp, sim.anatomy_,sim.vdata_, sim);
   else if (method == "stateVariables")
      return scanStateVariableSensor(obj, sp, sim);
+  else if (method == "ECG")
+     return scanECGSensor(obj, sp, sim);
 
 
    int myRank;
@@ -254,3 +257,15 @@ namespace
       return new StateVariableSensor(sp, p, sim);      
    }
 }
+namespace
+{
+   Sensor* scanECGSensor(OBJECT* obj, const SensorParms& sp, const Simulate& sim)
+   {
+      ECGSensorParms p;
+      objectGet(obj, "filename",      p.filename,      "ecgData");
+      objectGet(obj, "stencilSize",   p.stencilSize,   "4");
+      objectGet(obj, "nSensorPoints", p.nSensorPoints, "4");
+      return new ECGSensor(sp, p, sim);      
+   }
+}
+

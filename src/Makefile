@@ -63,6 +63,7 @@ HEARTSRC= \
 	 PointListSensor.cc ActivationTimeSensor.cc readSnapshotCellList.cc \
 	VoronoiCoarsening.cc DataVoronoiCoarsening.cc GradientVoronoiCoarsening.cc \
 	CaAverageSensor.cc \
+	ECGSensor.cc \
 	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc \
    StateVariableSensor.cc
 
