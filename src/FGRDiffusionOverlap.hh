@@ -35,12 +35,14 @@ class FGRDiffusionOverlap : public Diffusion
 
  private:
    void FGRDiff_simd_thread(const uint32_t start,const int32_t chunk_size, Array3d<double>* VmTmp, double* out);
+   void FGRDiff_strip(const uint32_t start,const int32_t chunk_size, Array3d<double>* VmTmp, double* out);
    void FGRDiff_2D_xy(uint32_t slabID,const uint32_t start,const int32_t ey);
    void FGRDiff_2D_z(uint32_t slabID,const uint32_t start,const int32_t ey, double* out);
    void FGRDiff_3D(const uint32_t start,const int32_t chunk_size, Array3d<double>* VmTmp, double* out);
 
    void buildTupleArray(const Anatomy& anatomy);
    void buildBlockIndex(const Anatomy& anatomy);
+   void buildSlabIndex(const Anatomy& anatomy);
    void precomputeCoefficients(const Anatomy& anatomy);
    void precomputeCoefficientsPositive(const Anatomy & anatomy);
    void reorder_Coeff();
@@ -76,6 +78,7 @@ class FGRDiffusionOverlap : public Diffusion
    std::vector<int>                threadOffset2D_[3];
 
    std::vector<unsigned>           blockIndex_; // for local and remote cells
+   std::vector<unsigned>           slabIndex_; // for local and remote cells
    std::vector<Tuple>              localTuple_; // only for local cells
    Array3d<double>                 A0_;
    Array3d<FGRUtils::DiffWeight>   weight_;
@@ -83,12 +86,17 @@ class FGRDiffusionOverlap : public Diffusion
    Array3d<WeightType>             diffCoefT2_;
    Array3d<double>                 dVmBlock_;
 
-   Array3d<double>                 VmSlab_[6]; // 6 slabs
+   double*                         VmSlab_[6]; // 6 slabs
+   double*                         VmSlabT_; 
+   unsigned                        VmSlabY_[6];
+   unsigned                        VmSlabZ_[6];
    Array3d<WeightType>             diffCoefT3_[6]; //3x3 stencil on slabs. WeightType is to be redefined
    Array3d<double>                 dVmSlab_[6];
    unsigned                        dVmBlock2Doffset_[6];
    unsigned                        dVmBlock2Djump_[6];
 
+  /* Stuff for yz-strip version. */
+  std::vector< std::vector<int> >  strip_begin,strip_end;
 
 };
 
