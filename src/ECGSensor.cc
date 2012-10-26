@@ -79,8 +79,8 @@ void ECGSensor::eval(double time, int loop)
             ++index;
          }
          data_[dataIndex+jj] = sum;
-         dataIndex += dataOffset_;
       }
+      dataIndex += dataOffset_;
    }
    ++nEval_;
    stopTimer(sensorEvalTimer);

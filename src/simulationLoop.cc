@@ -106,6 +106,7 @@ void simulationProlog(Simulate& sim)
 
 void loopIO(const Simulate& sim,int firstCall)
 {
+  if (firstCall) return;
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
    const Anatomy& anatomy = sim.anatomy_;
@@ -469,23 +470,24 @@ void diffusionLoop(Simulate& sim,
       }
       
       // stimulus
+      startTimer(initializeDVmDTimer);
+      if (loopData.stimIsNonZero > 0)
+	{
+	  // we has a non-zero stimulus in the last time step so we
+	  // need to zero out the storage.
+	  for (unsigned ii=zdoBegin; ii<zdoEnd; ++ii)
+	    dVmDiffusion[ii] = 0;
+	  L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle,
+				     sim.diffusionThreads_.nThreads());
+	  if (tid == 0)
+            loopData.stimIsNonZero = 0;
+	}
+      stopTimer(initializeDVmDTimer);
       if (sim.stimulus_.size() > 0)
       {
-         startTimer(initializeDVmDTimer);
-         if (loopData.stimIsNonZero > 0)
-         {
-            // we has a non-zero stimulus in the last time step so we
-            // need to zero out the storage.
-            for (unsigned ii=zdoBegin; ii<zdoEnd; ++ii)
-               dVmDiffusion[ii] = 0;
-            L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle,
-                                       sim.diffusionThreads_.nThreads());
-         }
-         stopTimer(initializeDVmDTimer);
          if (tid == 0)
          {
             startTimer(stimulusTimer);
-            loopData.stimIsNonZero = 0;
             for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
                loopData.stimIsNonZero += sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
             stopTimer(stimulusTimer);
@@ -723,7 +725,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
             // add diffusion to stimulus (already stored in dVmDiffusion)
             dVmDiffusion[ii] += diffusionScale*dVdMatrix[index];
          }
-            
+	 loopData.stimIsNonZero = 1;
          sim.bufferReactionData(begin, end);
          L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier,
                                     &reactionWaitOnNonGateHandle,
