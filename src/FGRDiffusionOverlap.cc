@@ -1473,7 +1473,6 @@ FGRDiffusionOverlap::FGRDiff_strip(const uint32_t bx,const int32_t ex, Array3d<d
 void
 FGRDiffusionOverlap::FGRDiff_2D_xy(uint32_t slabID, const uint32_t by,const int32_t ey)
 {
-#ifdef BGQ 
   int ii;
 
   const unsigned Ny2 = VmSlabY_[slabID]; //ny means the second dimension
@@ -1609,7 +1608,6 @@ FGRDiffusionOverlap::FGRDiff_2D_xy(uint32_t slabID, const uint32_t by,const int3
   #undef calc_zz_2D
   #undef calc_zm_2D 
   #undef shift_pointers_2D 
-#endif
 }
 
 void

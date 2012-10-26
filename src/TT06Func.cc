@@ -62,6 +62,203 @@ void initCnst()
 }
 // Update Gates; 
 
+void updateGate(double dt, int nCellsTotal, int *cellTypeVector, double *VM, int offset, double **gate, PADE *fit, WORK &work)
+{
+   
+  int offsetCell = work.offsetCell; 
+  int nCell      = work.nCell; 
+  int offsetEq =  work.offsetEq; 
+  int nEq =  work.nEq; 
+
+  PADE *gatefit = fit + gateFitOffset; 
+  double *g; 
+
+  void *mhuParms ; 
+  void *tauRParms ; 
+  double (*mhuFunc)(double V,void *parms); 
+  double (*tauRFunc)(double V,void *parms);
+  for (int eq=offsetEq;eq<offsetEq+nEq;eq++) 
+  {
+   switch (eq)
+   {
+     case  0:
+     {
+        double *g = gate[eq]; 
+        mhuParms  = (gatefit[2*eq+0].aparms); 
+        tauRParms = (gatefit[2*eq+1].aparms); 
+        mhuFunc =gatefit[2*eq+0].afunc; 
+        tauRFunc=gatefit[2*eq+1].afunc; 
+
+        for (int ii=offsetCell;ii<offsetCell+nCell;ii++) 
+        {
+            double Vm = VM[ii]; 
+            double mhu =mhuFunc(Vm,mhuParms); 
+            double tauR=tauRFunc(Vm,tauRParms); 
+            g[ii] +=   (mhu - g[ii])*(1-exp(-dt*tauR));                   //mtauR can be very large   ~1140.0 use Rush_Larson to integrate. 
+        }
+     }
+     break; 
+     case  1:
+     case  2:
+     case  3:
+     case  4:
+     case  5:
+     case  6:
+     case  7:
+     case  8:
+     case  9:
+     case 10:
+     {
+        double *g = gate[eq]; 
+        mhuParms  = (gatefit[2*eq].aparms); 
+        tauRParms = (gatefit[2*eq+1].aparms); 
+        mhuFunc   = (gatefit[2*eq].afunc); 
+        tauRFunc  = (gatefit[2*eq+1].afunc); 
+        for (int ii=offsetCell;ii<offsetCell+nCell;ii++) 
+        {
+          double Vm = VM[ii]; 
+          double mhu=mhuFunc(Vm,mhuParms); 
+          double tauR=tauRFunc(Vm,tauRParms); 
+          g[ii] +=  dt*(mhu - g[ii])*tauR; 
+        }
+     }
+     break; 
+     case 11:
+     {
+        double *g = gate[eq]; 
+        mhuParms  = (gatefit[2*eq+0].aparms); 
+        tauRParms = (gatefit[2*eq+1].aparms); 
+        mhuFunc   = (gatefit[2*eq+0].afunc); 
+        tauRFunc  = (gatefit[2*eq+1].afunc); 
+        int ii=offsetCell; 
+        for (;ii<offsetCell+nCell;ii++) 
+        {
+          if (cellTypeVector[ii] != 0) break; 
+          double Vm = VM[ii]; 
+          double mhu =mhuFunc (Vm,mhuParms); 
+          double tauR=tauRFunc(Vm,tauRParms); 
+          g[ii] +=  dt*(mhu - g[ii])*tauR;     //sGate
+        }
+        mhuParms  = (gatefit[2*eq+2].aparms); 
+        tauRParms = (gatefit[2*eq+3].aparms); 
+        mhuFunc   = (gatefit[2*eq+2].afunc); 
+        tauRFunc  = (gatefit[2*eq+3].afunc); 
+        for (;ii<offsetCell+nCell;ii++) 
+        {
+           double Vm = VM[ii]; 
+           double mhu =mhuFunc (Vm,mhuParms); 
+           double tauR=tauRFunc(Vm,tauRParms); 
+           g[ii] +=  dt*(mhu - g[ii])*tauR;     //sGate
+        }
+      }
+      break; 
+      default:
+        assert(0); 
+   }
+  }
+}
+typedef void  (*UPDATEGATE)(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a) ; 
+/*
+UPDATEGATE updateGateFuncs0[]={ update_mGate, update_hGate, update_jGate, update_Xr1Gate, update_Xr2Gate, update_XsGate, update_rGate, update_dGate, 
+                        update_fGate, update_f2Gate, update_jLGate, update_s0Gate, update_s1Gate} ;
+UPDATEGATE updateGateFuncs1[]={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, update_rGate_v1, update_dGate_v1, 
+                          update_fGate_v1, update_f2Gate_v1, update_jLGate_v1, update_s0Gate_v1, update_s1Gate_v1} ;
+*/
+void updateGateFast(double dt, int nCellsTotal, int *cellTypeVector, double *Vm, int offset, double **gate, PADE *fit,  WORK &work)
+{
+     UPDATEGATE updateGateFuncs[]={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, 
+                                    update_rGate_v1, update_dGate_v1, update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, 
+                                    update_s0Gate_v1,update_s1Gate_v1} ;
+    int nCell=work.nCell; 
+    if (nCell ==0) return; 
+    int offsetCell=work.offsetCell; 
+    int offsetEq = work.offsetEq; 
+    int nEq = work.nEq; 
+
+   PADE *gatefit = fit + gateFitOffset; 
+
+   for (int eq=offsetEq;eq<offsetEq+nEq;eq++)
+   {
+       if (eq < 11) 
+       {
+            double *mhu  = gatefit[2*eq+0].coef; 
+            double *tauR = gatefit[2*eq+1].coef; 
+            updateGateFuncs[eq](dt, nCell , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+       }
+       else 
+       {
+            int nCell0=0;
+            for (;nCell0<nCell;nCell0++) if (cellTypeVector[nCell0+offsetCell] != 0) break;
+
+            int rCell0= nCell0 %4;
+
+            nCell0-=rCell0;
+
+            double *mhu  = gatefit[2*eq+0].coef;
+            double *tauR = gatefit[2*eq+1].coef;
+
+            if (nCell0 > 0) updateGateFuncs[11](dt, nCell0 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+            offsetCell+=nCell0;
+
+            if (rCell0 > 0) 
+            {
+                update_s0Gate(dt, rCell0 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+                offsetCell+=rCell0;
+            }
+
+            mhu  = gatefit[2*eq+2].coef;
+            tauR = gatefit[2*eq+3].coef;
+
+            if (rCell0 >  0)
+            {
+                 update_s1Gate(dt, 4-rCell0 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+                 offsetCell+=4-rCell0;
+            }
+            int nCell1 = nCell - offsetCell;
+
+          if (nCell1 > 0) updateGateFuncs[12](dt, nCell1 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+       }
+
+    }
+}
+void updateGateFast0(double dt, int nCellsTotal, int *cellTypeVector, double *Vm, int offset, double **gate, PADE *fit,  WORK &work)
+{
+     UPDATEGATE updateGateFuncs[]={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, 
+                                    update_rGate_v1, update_dGate_v1, update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, update_s0Gate_v1} ;
+    int nCell=work.nCell; 
+   if ( nCell ==0)  return; 
+    int offsetCell=work.offsetCell; 
+    int offsetEq = work.offsetEq; 
+    int nEq = work.nEq; 
+
+   PADE *gatefit = fit + gateFitOffset; 
+
+   for (int eq=offsetEq;eq<offsetEq+nEq;eq++)
+   {
+         double *mhu  = gatefit[2*eq+0].coef; 
+         double *tauR = gatefit[2*eq+1].coef; 
+         updateGateFuncs[eq](dt, nCell , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+   }
+}
+void updateGateFast1(double dt, int nCellsTotal, int *cellTypeVector, double *Vm, int offset, double **gate, PADE *fit,  WORK &work)
+{
+     UPDATEGATE updateGateFuncs[]={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, 
+                                    update_rGate_v1, update_dGate_v1, update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, update_s1Gate_v1} ;
+    int nCell=work.nCell; 
+   if ( nCell ==0)  return; 
+    int offsetCell=work.offsetCell; 
+    int offsetEq = work.offsetEq; 
+    int nEq = work.nEq; 
+
+   PADE *gatefit = fit + gateFitOffset; 
+
+   for (int eq=offsetEq;eq<offsetEq+nEq;eq++)
+   {
+         double *mhu  = gatefit[2*eq+0].coef; 
+         double *tauR = gatefit[2*eq+1].coef; 
+         updateGateFuncs[eq](dt, nCell , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+   }
+}
 double Xr1Mhu(double Vm, void *) 
 { 
    double mhu=1.0/(1.0+(exp(((-26.0 - Vm)/7.0))));

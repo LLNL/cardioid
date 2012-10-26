@@ -10,8 +10,6 @@
 #include "pade.hh"
 
 typedef double (*OVF)(double x, void *parms) ;
-typedef void  (*UPDATEGATE)(double dt, int *nCells, double *VM, double *g, double *mhu_a, double *tauR_a) ; 
-struct GATEWORK { int offsetCell, nCell[7], offsetEq, nEq; }; 
 
 OVF fitFuncMap(std::string name) ;
 
@@ -72,11 +70,9 @@ class TT06Dev_Reaction : public Reaction
    unsigned nCells_;
    std::vector<unsigned> nCellsOfType_; 
 
-   void (*update_gate_)   (double dt,                                      int nCells, int *cellType, double *Vm, int offset, double **state, PADE* xfit, GATEWORK& work);
+   void (*update_gate_)   (double dt,                                      int nCells, int *cellType, double *Vm, int offset, double **state, PADE* xfit, TT06Func::WORK& work);
    void (*update_nonGate_)(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellType, double *Vm, int offset, double **state, double *dVdt);
-   void updateGateFast_(double dt, int nCellsTotal, int *cellTypeVector, double *Vm, int offset, double **gate, PADE *fit,  GATEWORK &work);
    int nonGateWorkPartition(int& offset);
-   UPDATEGATE *updateGateFuncs_; 
    
    double tolerance_; 
    int mod_; 
@@ -85,7 +81,7 @@ class TT06Dev_Reaction : public Reaction
    double *mhu_[nGateVar];
    double *tauR_[nGateVar];
    const ThreadTeam& group_;
-   std::vector<GATEWORK> gateWork_; 
+   std::vector<TT06Func::WORK> gateWork_; 
    typedef struct { int offsetCell,nCell; } ngwork;
    std::vector<ngwork> nonGateWork_;
    LogParms logParms_[64]; 
