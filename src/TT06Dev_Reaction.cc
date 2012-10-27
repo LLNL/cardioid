@@ -455,15 +455,14 @@ void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, Vector
 {
   int offset,nCells; 
 
-  //#ifdef LEGACY_NG_WORKPARTITION
+#ifdef LEGACY_NG_WORKPARTITION
    nCells = nonGateWorkPartition(offset);
-   /*
 #else
    const int tid = group_.teamRank();
    offset = nonGateWork_[tid].offsetCell;
    nCells = nonGateWork_[tid].nCell;
 #endif
-   */
+
       if(PRINT_WP) {
 	static int inited[64] = {0};
 	const int tid = group_.teamRank();
