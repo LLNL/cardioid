@@ -28,7 +28,9 @@ $rationalfns = 1;
 $smoothing = 1;
 $ntasks = 98304;
 $machine = "bgqspi";
-$loadbal = "work";
+#$loadbal = "work";
+#$loadbal = "grid1";  # minimize work
+$loadbal = "grid2";   # minimize volume
 
 foreach $dt (30, 35, 40, 45, 50)
 {
@@ -73,7 +75,7 @@ sub printObject
 # store workbound balancer block sizes for each task count
    if ($anatomy eq "180M")
    {
-      $wx{98304} = 12; $wy{98304} = 12; $wz{98304} = 14;  
+      $wx{98304} = 16; $wy{98304} = 16; $wz{98304} = 14;  
 
       if ($ntasks != 98304)
       {
@@ -115,7 +117,8 @@ sub printObject
    print OBJECT "   maxLoop = $nIterations;\n";
    print OBJECT "   dt = $dt us;\n";
    print OBJECT "   time = 0;\n";
-   print OBJECT "   checkRanges = 0;\n";
+   print OBJECT "   checkRanges = 1;\n";
+   print OBJECT "   writeTorusMap = 0;\n";
    print OBJECT "   printRate = $printRate;\n";
    print OBJECT "   snapshotRate = $checkpointRate;\n";
    print OBJECT "   checkpointRate = $checkpointRate;\n";
@@ -126,7 +129,7 @@ sub printObject
    if ($reaction =~ /Opt/) 
    {
       print OBJECT "   loopType = pdr;\n";
-      if ($loadbal eq "grid")
+      if ($loadbal =~ /grid/)
       {
          # comment this out for now, let assignCellsToTasks try to figure it out
          #print OBJECT "   nDiffusionCores = 3;\n";
@@ -165,7 +168,7 @@ sub printObject
    print OBJECT "}\n\n";
 
    # decomposition block
-   if ($loadbal eq "grid")
+   if ($loadbal eq "grid1")
    {
       print OBJECT "$loadbal DECOMPOSITION \n";
       print OBJECT "{\n";
@@ -176,6 +179,20 @@ sub printObject
       print OBJECT "   diffCost = 0.5;\n";
       print OBJECT "   nDiffCores = 2;\n";
       print OBJECT "   printTaskInfo = 1;\n";
+      print OBJECT "}\n\n";
+   }
+   elsif ($loadbal eq "grid2")
+   {
+      print OBJECT "$loadbal DECOMPOSITION \n";
+      print OBJECT "{\n";
+      print OBJECT "   method = grid;\n";
+      print OBJECT "   nx = $px{$ntasks};\n";
+      print OBJECT "   ny = $py{$ntasks};\n";
+      print OBJECT "   nz = $pz{$ntasks};\n";
+      print OBJECT "   diffCost = 0.5;\n";
+      print OBJECT "   nDiffCores = 2;\n";
+      print OBJECT "   printTaskInfo = 1;\n";
+      print OBJECT "   minimize = volume;\n";
       print OBJECT "}\n\n";
    }
    elsif ($loadbal eq "work")
@@ -190,7 +207,7 @@ sub printObject
       print OBJECT "   nRCoresBB = 2;\n";
       print OBJECT "   alpha = 0.1;\n";
       print OBJECT "   beta = 100.0;\n";
-      print OBJECT "   printStats = 0;\n";
+      print OBJECT "   printStats = 1;\n";
       print OBJECT "   printTaskInfo = 1;\n";
       print OBJECT "}\n\n";      
    }
