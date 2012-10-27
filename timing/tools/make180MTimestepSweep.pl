@@ -6,7 +6,7 @@
 
 # global variables
 
-$AnatomyDir180M = "/p/ls1/emhm/370M/anatomy-15-Mar-2012-nospur";
+$AnatomyDir180M = "/p/ls1/emhm/180M/anatomy-15-Mar-2012-nospur";
 
 $thisdir = `pwd`;  chomp $thisdir;
 $bgqSPIExe = "../../../bin/cardioid-bgq-spi";
