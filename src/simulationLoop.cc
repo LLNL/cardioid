@@ -697,7 +697,9 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       stopTimer(integratorTimer);
 
       startTimer(rangeCheckTimer); 
+      #ifndef NTIMING
       if (sim.checkRange_.on) sim.checkRanges(begin, end, dVmReaction, dVmDiffusion);
+      #endif
       stopTimer(rangeCheckTimer); 
       startTimer(reactionMiscTimer); 
       ++loopLocal;
