@@ -16,6 +16,7 @@ ECGSensor::ECGSensor(const SensorParms& sp,
                      const ECGSensorParms& p,
                      const Simulate& sim)
 : Sensor(sp),
+  nFiles_(p.nFiles),
   nSensorPoints_(p.nSensorPoints),
   stencilSize_(p.stencilSize),
   filename_(p.filename),
@@ -50,7 +51,9 @@ void ECGSensor::print(double time, int loop)
    fullname += "/" + filename_;
 
    PFILE* file = Popen(fullname.c_str(), "w", MPI_COMM_WORLD);
-
+   if (nFiles_ > 0)
+     PioSet(file, "ngroup", nFiles_);
+ 
    int nRec = nEval_+2; // Two dummy records for each sensor point.
    int lRec = 3*sizeof(float);
    for (unsigned ii=0; ii<nSensorPoints_; ++ii)

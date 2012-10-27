@@ -265,6 +265,7 @@ namespace
       objectGet(obj, "filename",      p.filename,      "ecgData");
       objectGet(obj, "stencilSize",   p.stencilSize,   "4");
       objectGet(obj, "nSensorPoints", p.nSensorPoints, "4");
+      objectGet(obj, "nFiles",        p.nFiles,        "0");
       return new ECGSensor(sp, p, sim);      
    }
 }

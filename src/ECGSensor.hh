@@ -6,6 +6,7 @@
 
 struct ECGSensorParms
 {
+   int nFiles;
    int nSensorPoints;
    int stencilSize;
    std::string filename;
@@ -26,6 +27,7 @@ class ECGSensor : public Sensor
    void print(double time, int loop);
    void eval(double time, int loop);
 
+   int nFiles_;
    unsigned nSensorPoints_;
    int stencilSize_;
    int nEval_;
