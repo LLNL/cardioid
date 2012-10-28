@@ -110,7 +110,6 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(const SensorParms& sp,
    const double maxd2=max_distance*max_distance;
    colored_cells_.reserve(27);
    
-   
    //int count=0;
    for(int ic=0;ic<nLocal;++ic)
    {
@@ -135,7 +134,6 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
    // calculate local sums
    
    static list<int> center_indexes;
-   static list<int> no_center_indexes;
    static map<int,int> ncellsofcolor;
    
    if( first_time )
@@ -177,10 +175,13 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
    while(pi!=center_indexes.end())
    {
       const int ic=*pi;
+      assert( ic<anatomy_.nLocal() );
+      assert( ic>=0 );
 
       const int color=coarsening_.getColor(ic);
       assert( color>=0 );
       
+      assert( val[ic]==val[ic] );
       valcolors_.setSum(color,ncellsofcolor[color],val[ic]);
       
       ++pi;
@@ -226,8 +227,20 @@ void GradientVoronoiCoarsening::setupLSmatrix()
          valMat12_.add1value(color,dy_[ic]*dz_[ic]*norm2i);
          valMat22_.add1value(color,dz_[ic]*dz_[ic]*norm2i);
       }else{
+         // need to add 0,otherwise datastructure may be empty
+         // for local MPI task and exchangeAndSum() will fail
          const int color=coarsening_.getColor(ic);
          assert( color>=0 );
+         
+         if( coarsening_.getOwnedColors().find(color)
+                ==coarsening_.getOwnedColors().end() )
+         {
+            int myRank;
+            MPI_Comm_rank(comm_, &myRank);
+            cout<<"myRank="<<myRank<<", color="<<color<<", norm2="<<norm2<<endl;
+            assert( coarsening_.getOwnedColors().find(color)
+                   !=coarsening_.getOwnedColors().end() );
+         }
          valMat00_.add1value(color,0.);
          valMat01_.add1value(color,0.);
          valMat02_.add1value(color,0.);
@@ -286,6 +299,10 @@ void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
             }else{
                const int color=coarsening_.getColor(ic);
                assert( color>=0 );
+               //cout<<"add value 0 for color="<<color<<" on task "<<myRank<<endl;
+               assert( coarsening_.getOwnedColors().find(color)
+                      !=coarsening_.getOwnedColors().end() );
+         
                valRHS0_.add1value(color,0.);
                valRHS1_.add1value(color,0.);
                valRHS2_.add1value(color,0.);
@@ -304,7 +321,9 @@ void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
                                       it!= compute_colors.end();
                                     ++it)
          {
+            assert( valRHS0_.size()>0 );
             const int color=(*it);
+            //cout<<"color="<<color<<endl;
             double* array=new double[3];
             array[0]=valRHS0_.value(color);
             array[1]=valRHS1_.value(color);
@@ -338,6 +357,12 @@ void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
             valRHS0_.add1value(color,dx_[ic]*v);
             valRHS1_.add1value(color,dy_[ic]*v);
             valRHS2_.add1value(color,dz_[ic]*v);
+         }else{
+            const int color=coarsening_.getColor(ic);
+            assert( color>=0 );
+            valRHS0_.add1value(color,0.);
+            valRHS1_.add1value(color,0.);
+            valRHS2_.add1value(color,0.);
          }
       }
       const std::set<int>& compute_colors(coarsening_.getOwnedColors());
@@ -370,6 +395,12 @@ void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
             valRHS0_.add1value(color,dx_[ic]*v);
             valRHS1_.add1value(color,dy_[ic]*v);
             valRHS2_.add1value(color,dz_[ic]*v);
+         }else{
+            const int color=coarsening_.getColor(ic);
+            assert( color>=0 );
+            valRHS0_.add1value(color,0.);
+            valRHS1_.add1value(color,0.);
+            valRHS2_.add1value(color,0.);
          }
       }
 
@@ -389,8 +420,10 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
    int myRank;
    MPI_Comm_rank(comm_, &myRank);
    
+MPI_Barrier(MPI_COMM_WORLD);
    if( myRank==0 )
       cout<<"GradientVoronoiCoarsening::prologComputeLeastSquareGradients()..."<<endl;
+MPI_Barrier(MPI_COMM_WORLD);
 
    nb_excluded_pts_=0;
    
@@ -404,6 +437,7 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
    
    if( myRank==0 )
       cout<<"nSnapSub="<<nSnapSub<<endl;
+MPI_Barrier(MPI_COMM_WORLD);
 
    matLS_.clear();
    invDetMat_.clear();
@@ -413,13 +447,15 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
                               ++it)
    {
       const int color=(*it);
+      assert( color<300000000 );
    
+      assert( valMat00_.size()>0 );
       const int ncells=valMat00_.nValues(color);
-      //assert( ncells==valMat01_.nValues(color) );
-      //assert( ncells==valMat02_.nValues(color) );
-      //assert( ncells==valMat11_.nValues(color) );
-      //assert( ncells==valMat12_.nValues(color) );
-      //assert( ncells==valMat22_.nValues(color) );
+      assert( ncells==valMat01_.nValues(color) );
+      assert( ncells==valMat02_.nValues(color) );
+      assert( ncells==valMat11_.nValues(color) );
+      assert( ncells==valMat12_.nValues(color) );
+      assert( ncells==valMat22_.nValues(color) );
    
       if( ncells>3 ){
          double* a=new double[6];
@@ -454,6 +490,7 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
       }
    } 
    
+MPI_Barrier(MPI_COMM_WORLD);
    int npts=((int)compute_colors.size()-(int)included_eval_colors_.size());
    if( npts>0 )cout<<"GradientVoronoiCoarsening --- WARNING: exclude "
                    <<npts<<" points from coarsened data on task "<<myRank
@@ -462,6 +499,7 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
    MPI_Reduce(&npts, &nb_excluded_pts_, 1, MPI_INT, MPI_SUM, 0, comm_);
    nb_sampling_pts_=nSnapSub-(Long64)nb_excluded_pts_;
 
+MPI_Barrier(MPI_COMM_WORLD);
    if( myRank==0 )
       cout<<"GradientVoronoiCoarsening: prolog done... nb_sampling_pts_="<<nb_sampling_pts_<<endl;
 }

@@ -117,13 +117,13 @@ class LocalSums
    {
       //assert( sum_.size()>0 );
       std::map<int,double>::const_iterator is=sum_.find(color);
-      if( is==sum_.end() )
-      {
-         int myRank;
-         MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-         std::cerr<<"ERROR: rank="<<myRank<<", value(color="<<color<<") not in map of size "<<sum_.size()<<std::endl;
-         usleep(1);
-      }
+      //if( is==sum_.end() )
+      //{
+      //   int myRank;
+      //   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+      //   std::cerr<<"ERROR: rank="<<myRank<<", value(color="<<color<<") not in map of size "<<sum_.size()<<std::endl;
+      //   usleep(1);
+      //}
       assert( is!=sum_.end() );
       if( is->second!=is->second )
          std::cerr<<"ERROR!!! is->second="<<is->second<<std::endl;
@@ -134,7 +134,7 @@ class LocalSums
    int nValues(const int color)const
    {
       std::map<int,int>::const_iterator in=nval_.find(color);
-      assert( in!=nval_.end() );
+      if( in==nval_.end() )return 0;
       assert( in->second>0 );
       return in->second;
    }
@@ -164,12 +164,11 @@ class VoronoiCoarsening
    const Anatomy& anatomy_;
 
    // shared globally
-   std::vector<Vector> centers_;
-   std::vector<short> multiplicities_;
+   std::map<int,Vector> centers_; // color->position
+   std::map<int,short>  multiplicities_; // color->multiplicity
 
    // local only
-   const std::vector<AnatomyCell>& cells_; // local cells
-   std::vector<int> colors_; // colors of local cells
+   std::vector<int> cell_colors_; // colors of local cells
 
    // set of colors local task is responsible for
    std::set<int> owned_colors_;
@@ -194,14 +193,15 @@ class VoronoiCoarsening
                            std::vector<double>& dz);
    void accumulateValues(const VectorDouble32& val, LocalSums& valcolors);
    
-   const Vector& center(const int color)const
+   const Vector center(const int color)const
    {
-      return centers_[color];
+      assert( centers_.find(color)!=centers_.end() );
+      return centers_.find(color)->second;
    }
    
    short multiplicity(const int color)const
    {
-      return multiplicities_[color];
+      return (*multiplicities_.find(color)).second;
    }
    
    const std::set<int>& getOwnedColors()const
@@ -216,7 +216,7 @@ class VoronoiCoarsening
    
    int getColor(const int ic)const
    {
-      return colors_[ic];
+      return cell_colors_[ic];
    }
 };
 

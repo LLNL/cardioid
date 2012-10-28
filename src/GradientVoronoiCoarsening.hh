@@ -23,8 +23,8 @@ class GradientVoronoiCoarsening : public Sensor
    
    const double max_distance_;
 
-   // flag telling us if values used for gradient are
-   // limited to a 3x3x3 mesh around sensor point
+   // flag telling us if values dumped for gradient are partial contribution and need
+   // to be consolidated with other tasks output
    const bool use_communication_avoiding_algorithm_;
 
    std::vector<double> dx_;

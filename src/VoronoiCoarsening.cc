@@ -9,11 +9,12 @@ using namespace std;
 #include "ioUtils.h"
 #include "CommTable.hh"
 
+//#define DEBUG
+
 VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
                                      const vector<Long64>& gid,
                                      const CommTable* commtable)
    :anatomy_(anatomy),
-    cells_(anatomy.cellArray()),
     comm_(commtable->_comm),
     commTable_(commtable),
     indexToVector_(anatomy.nx(), anatomy.ny(), anatomy.nz())
@@ -21,37 +22,76 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
    int myRank;
    MPI_Comm_rank(comm_, &myRank);  
    assert( gid.size()>0 );
+   if( myRank==0)cout<<"VoronoiCoarsening: number of gids = "<<gid.size()<<endl;
    
-   // initialize centers_ with vectors corresponding to gids passed in
-   std::map<Long64,short> multiplicities;
-   for(vector<Long64>::const_iterator igid  = gid.begin();
-                                      igid != gid.end();
-                                    ++igid)
+   const unsigned global_ncolors = (int)gid.size();
+   vector<short> gidfound(global_ncolors,0);
+   const int ncells=(int)anatomy_.nLocal();
+   
+   owned_colors_.clear();
+   for (unsigned color=0; color<global_ncolors; ++color)
    {
-      std::map<Long64,short>::iterator is=multiplicities.find(*igid);
-      
-      if( is==multiplicities.end() )
+      const Long64& rgid = gid[color];
+      for (unsigned icell=0; icell<ncells; ++icell)
       {
-         Long64 color=*igid;
-         centers_.push_back(indexToVector_(color));
-         multiplicities.insert(make_pair(color, 1));
-      }else{
-         is->second++;
+         if (anatomy_.gid(icell) == rgid)
+         {
+            gidfound[color] = 1;
+            owned_colors_.insert(color);
+         }
       }
-      //if( myRank==0)cout<<"gid="<<*igid<<endl;
    }
+
+   vector<short> gidsum(global_ncolors,0);
+   MPI_Allreduce(&gidfound[0], &gidsum[0], global_ncolors, MPI_SHORT, MPI_SUM, comm_);
    
-   multiplicities_.reserve( multiplicities.size() );
-   for(std::map<Long64,short>::const_iterator is =multiplicities.begin();
-                                              is!=multiplicities.end();
-                                              is++)
+   std::map<Long64,int> included_ids;
+   for (unsigned color=0; color<global_ncolors; ++color)
    {
-      multiplicities_.push_back(is->second);
+      if (gidsum[color] == 0)
+      {
+         if (myRank == 0)
+            cout << "WARNING: VoronoiCoarsening could not find non-zero cell type with gid "
+                 << gid[color] << "!  Skipping sensor point. color="<<color << endl;
+      }else{
+         std::map<Long64,int>::iterator is=included_ids.find(gid[color]);
+         if( is==included_ids.end() )
+         {
+            included_ids.insert(pair<Long64,int>(gid[color],color));
+            multiplicities_.insert(make_pair(color, 1));
+            
+            centers_.insert(pair<int,Vector>(color,indexToVector_(gid[color])));
+         }else{
+            int cc=is->second;
+            if (myRank == 0)
+               cout << "WARNING: VoronoiCoarsening, gid "
+                    << gid[color] << " already found before... Remove color "<<cc<< endl;
+            assert( multiplicities_.find(is->second)!=multiplicities_.end() );
+            multiplicities_[cc]++;
+            owned_colors_.erase(color);
+         }
+         //if (myRank == 0)
+         //   cout << "gid "<< gid[color] << " is of color "<<color << endl;
+      }
    }
+#if 0
+   for(set<int>::const_iterator  itp =owned_colors_.begin();
+                                 itp!=owned_colors_.end();
+                               ++itp)
+      cout<<"PE "<<myRank<<" owns color "<<*itp<<endl;
+   MPI_Barrier(comm_);
+   sleep(1);
+#endif   
 
    if( myRank==0)cout<<"VoronoiCoarsening: number of colors = "<<centers_.size()<<endl;
 
-   colors_.resize(anatomy.nLocal()); // color only local cells
+   cell_colors_.resize(anatomy.nLocal(),-1); // color only local cells
+   
+   if( centers_.size()!=multiplicities_.size() )
+   {
+      cout<<"centers_.size()="<<centers_.size()
+          <<", multiplicities_.size()="<<multiplicities_.size()<<endl;
+   }
    
    assert( centers_.size()==multiplicities_.size() );
 }
@@ -70,17 +110,16 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
    ncolors_.clear();
    local_colors_.clear();
    
-   const int ncells=(int)colors_.size();
+   const int ncells=(int)anatomy_.nLocal();
    if( ncells>0 )
    {
-      const int ncenters=centers_.size();
-      //cout<<"VoronoiCoarsening: ncenters="<<ncenters<<endl;
+      if( myRank==0 )cout<<"VoronoiCoarsening: ncenters="<<centers_.size()<<endl;
       
       // get sub-domain mass center
       Vector domain_center(0.,0.,0.);
       for (int icell=0; icell<ncells; ++icell)
       {
-         Vector r = indexToVector_(cells_[icell].gid_);
+         Vector r = indexToVector_(anatomy_.gid(icell));
          domain_center+=r;
       }
       domain_center/=(double)ncells;
@@ -89,7 +128,7 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
       double domain_radius=0.;
       for (int icell=0; icell<ncells; ++icell)
       {
-         Vector r = indexToVector_(cells_[icell].gid_);
+         Vector r = indexToVector_(anatomy_.gid(icell));
          Vector rij = r - domain_center;
          double r2 = dot(rij, rij);
          if( r2>domain_radius )domain_radius=r2;
@@ -99,9 +138,11 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
 
       // get distance from sub-domain center to closest center
       double rcmin = 1.e30;
-      for (int icenter=0; icenter<ncenters; ++icenter)
+      for(map<int,Vector>::const_iterator icenter =centers_.begin();
+                                          icenter!=centers_.end();
+                                        ++icenter)
       {
-         Vector rij = domain_center - centers_[icenter];
+         Vector rij = domain_center - icenter->second;
          double r2 = dot(rij, rij);
          if (r2 < rcmin)
          {
@@ -115,12 +156,14 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
       // get centers closest to sub-domain to reduce cost of coloring later
       const double d2min=1.01*(rcmin+domain_radius)*(rcmin+domain_radius);
       map<int,Vector> close_centers;
-      for (int icenter=0; icenter<ncenters; ++icenter)
+      for(map<int,Vector>::const_iterator icenter =centers_.begin();
+                                          icenter!=centers_.end();
+                                        ++icenter)
       {
-         Vector rij = domain_center - centers_[icenter];
+         Vector rij = domain_center - icenter->second;
          double r2 = dot(rij, rij);
          
-         if( r2<=d2min)close_centers.insert( pair<int,Vector>(icenter,centers_[icenter]) );
+         if( r2<=d2min)close_centers.insert( *icenter );
       }
       const int nclosecenters=(int)close_centers.size();
       assert( nclosecenters>0 );
@@ -133,11 +176,12 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
       //std::cout<<"r2max="<<r2max<<std::endl;
       
       // color one cell at a time
+      // color = index of closest sensor point (center)
       for (int icell=0; icell<ncells; ++icell)
       {
          double r2Min = 1e30;
          int color = -1;
-         Vector r = indexToVector_(cells_[icell].gid_);
+         Vector r = indexToVector_(anatomy_.gid(icell));
          
          // loop over closest centers only
          for(map<int,Vector>::const_iterator itr =close_centers.begin();
@@ -156,9 +200,9 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
             cerr << "Failed to assign color to cell "<<icell<<endl;
             return -1;
          }else if( r2Min>r2max ){
-            colors_[icell]=-1;
+            cell_colors_[icell]=-1;
          }else{
-            colors_[icell]=color;
+            cell_colors_[icell]=color;
             ncolors_[color]++;
             local_colors_.insert(color);
          }
@@ -166,19 +210,22 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
    }
 
 #ifdef DEBUG
-   int nlocal=0;
-   for(map<int,int>::const_iterator itr =ncolors_.begin();
-                                    itr!=ncolors_.end();
-                                  ++itr)
-      nlocal+=itr->second;
-      
-   int ntotal;
-   MPI_Allreduce(&nlocal, &ntotal, 1, MPI_INT, MPI_SUM, comm_);
-   if( ntotal!=anatomy_.nGlobal() )
+   if( max_distance>99999. )
    {
-      cerr<<"ERROR in VoronoiCoarsening::bruteForceColoring(): ntotal colors="<<ntotal<<", anatomy_.nGlobal()="<<anatomy_.nGlobal()<<endl;
+      int nlocal=0;
+      for(map<int,int>::const_iterator itr =ncolors_.begin();
+                                       itr!=ncolors_.end();
+                                     ++itr)
+         nlocal+=itr->second;
+      
+      int ntotal;
+      MPI_Allreduce(&nlocal, &ntotal, 1, MPI_INT, MPI_SUM, comm_);
+      if( ntotal!=anatomy_.nGlobal() )
+      {
+         cerr<<"ERROR in VoronoiCoarsening::bruteForceColoring(): ntotal colors="<<ntotal<<", anatomy_.nGlobal()="<<anatomy_.nGlobal()<<endl;
+      }
+      assert( ntotal==anatomy_.nGlobal() );
    }
-   assert( ntotal==anatomy_.nGlobal() );
 #endif
    if( myRank==0 )
       cout<<"VoronoiCoarsening: brute force coloring done..."<<endl;
@@ -190,16 +237,51 @@ void VoronoiCoarsening::colorDisplacements(std::vector<double>& dx,
                                            std::vector<double>& dy,
                                            std::vector<double>& dz)
 {
-   for (int icell=0; icell<colors_.size(); ++icell)
+#ifdef DEBUG
+   int myRank;
+   MPI_Comm_rank(comm_, &myRank);  
+#endif
+   const int ncells=(int)anatomy_.nLocal();
+
+   for (int icell=0; icell<ncells; ++icell)
    {
-      int color=colors_[icell];
+      int color=cell_colors_[icell];
       if(color>=0)
       {
-         Vector r = indexToVector_(cells_[icell].gid_);
+         Vector r = indexToVector_(anatomy_.gid(icell));
          Vector rij = r - centers_[color];
          dx[icell]=rij.x()*anatomy_.dx();
          dy[icell]=rij.y()*anatomy_.dy();
          dz[icell]=rij.z()*anatomy_.dz();
+#ifdef DEBUG
+         const double norm2=(dx[icell]*dx[icell]+dy[icell]*dy[icell]+dz[icell]*dz[icell]); 
+         if( norm2<1.e-8 )
+         {
+            if( owned_colors_.size()==0 )
+            {
+               cout<<"colorDisplacements --- ERROR owned_colors_.size(), myRank="<<myRank
+                   <<", color="<<color
+                   <<", gid="<<anatomy_.gid(icell)<<endl;
+               cout<<"myRank="<<myRank<<", r="<<r<<", center="<<centers_[color]<<endl;
+            }
+            assert( owned_colors_.size()>0 );
+            
+            if( owned_colors_.find(color)==owned_colors_.end() )
+            {
+               cout<<"colorDisplacements --- ERROR, myRank="<<myRank
+                   <<", color="<<color
+                   <<", gid="<<anatomy_.gid(icell)
+                   <<", r="<<r<<", center="<<centers_[color]<<endl;
+               for(set<int>::const_iterator it =owned_colors_.begin();
+                                            it!=owned_colors_.end();
+                                          ++it)
+               {
+                  cout<<"rank="<<myRank<<" owns color "<<*it<<endl;
+               } 
+            }
+            assert( owned_colors_.find(color)!=owned_colors_.end() );
+         }
+#endif
       }
    }
 }
@@ -262,14 +344,12 @@ void VoronoiCoarsening::setOwnedColors(const map< int, int* >& nremote_colors_fr
       assert( itn!=nremote_colors_from_task.end() );
       const int* const nremote_colors=itn->second;
       int count=0;
-      // reduce owned_colors_ so that each color is on one task only
+      // reduce owned_colors_ so that each color is "owned" by one task only
       // (the one where the corresponding color is the most present)
       for(int i=0;i<size_nremote_colors_from_task;++i)
       {
          const int color=nremote_colors[2*i];
          const int nc   =nremote_colors[2*i+1];
-         
-         assert( color<(int)centers_.size() );
          
          set<int>::const_iterator iti=owned_colors_.find(color);
          if( iti!=owned_colors_.end() )
@@ -432,13 +512,13 @@ void VoronoiCoarsening::computeRemoteTasks()
    }
 
 #ifdef DEBUG
-   for(set<int>::const_iterator  itp =remote_tasks_.begin();
-                                 itp!=remote_tasks_.end();
-                               ++itp)
-      cout<<"PE "<<myRank<<" exchange data with task "<<*itp<<endl;
+   //for(set<int>::const_iterator  itp =remote_tasks_.begin();
+   //                              itp!=remote_tasks_.end();
+   //                            ++itp)
+   //   cout<<"PE "<<myRank<<" exchange data with task "<<*itp<<endl;
 #endif
 
-   setOwnedColors(nremote_colors_from_task, max_nlocalcolors);
+   //setOwnedColors(nremote_colors_from_task, max_nlocalcolors);
 
    setupComm(nremote_colors_from_task, max_nlocalcolors);
 
@@ -549,6 +629,7 @@ void VoronoiCoarsening::exchangeAndSum(vector<LocalSums*> valcolors)
    const unsigned short nvect=(unsigned short)valcolors.size();
    if( valcolors[0]->size()==0 )
    {
+      //cout<<"WARNING: valcolors.size()=0 in VoronoiCoarsening::exchangeAndSum()"<<endl;
       assert( ncolors_to_recv_.size()==0 );
       assert( src_tasks_.size()==0 );
       assert( dst_tasks_.size()==0 );
@@ -642,10 +723,10 @@ void VoronoiCoarsening::exchangeAndSum(vector<LocalSums*> valcolors)
 void VoronoiCoarsening::accumulateValues(const VectorDouble32& val, LocalSums& valcolors)
 {
    valcolors.clear();
-   const int nLocal = colors_.size();
+   const int nLocal = cell_colors_.size();
    for(int ic=0;ic<nLocal;++ic)
    {
-      if( colors_[ic]>=0 )
-         valcolors.add1value(colors_[ic],val[ic]);
+      if( cell_colors_[ic]>=0 )
+         valcolors.add1value(cell_colors_[ic],val[ic]);
    }
 }
