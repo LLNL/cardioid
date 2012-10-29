@@ -26,6 +26,9 @@ class GradientVoronoiCoarsening : public Sensor
    // flag telling us if values dumped for gradient are partial contribution and need
    // to be consolidated with other tasks output
    const bool use_communication_avoiding_algorithm_;
+   
+   // number of files for IO
+   const int nfiles_;
 
    std::vector<double> dx_;
    std::vector<double> dy_;
@@ -81,7 +84,8 @@ class GradientVoronoiCoarsening : public Sensor
                      const CommTable* commtable,
                      const std::string format,
                      const double max_distance,
-                     const bool use_communication_avoiding_algorithm=false);
+                     const bool use_communication_avoiding_algorithm=false,
+                     const int nfiles=0);
    
    ~GradientVoronoiCoarsening()
    {

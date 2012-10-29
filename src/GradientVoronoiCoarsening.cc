@@ -82,7 +82,8 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(const SensorParms& sp,
                                      const CommTable* commtable,
                                      const string format,
                                      const double max_distance,
-                                     const bool use_communication_avoiding_algorithm)
+                                     const bool use_communication_avoiding_algorithm,
+                                     const int nfiles)
    :Sensor(sp),
     coarsening_(anatomy,gid,commtable),
     filename_(filename),
@@ -91,7 +92,8 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(const SensorParms& sp,
     comm_(commtable->_comm),
     format_(format),
     max_distance_(max_distance),
-    use_communication_avoiding_algorithm_(use_communication_avoiding_algorithm)
+    use_communication_avoiding_algorithm_(use_communication_avoiding_algorithm),
+    nfiles_(nfiles)
 {
    const int nLocal = anatomy_.nLocal();
    
@@ -583,6 +585,8 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
    MPI_Comm_rank(comm_, &myRank);
 
    PFILE* file = Popen(filename.c_str(), "w", comm_);
+   if (nfiles_ > 0)
+     PioSet(file, "ngroup", nfiles_);
 
 
    if (myRank == 0)

@@ -189,6 +189,9 @@ namespace
       objectGet(obj, "format", format, "ascii");
       assert( format.compare("ascii")==0 || format.compare("bin")==0 );
 
+      int nFiles;
+      objectGet(obj, "nFiles", nFiles, "0");
+
       string method;
       objectGet(obj, "method", method, "undefined");
       if ( method == "voronoiCoarsening" ||
@@ -202,7 +205,7 @@ namespace
          const bool use_communication_avoiding_algorithm = ( algo.compare("nocomm")==0 );
 
          return new GradientVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, sim.commTable_, format, maxdistance,
-                                              use_communication_avoiding_algorithm);
+                                              use_communication_avoiding_algorithm, nFiles);
       }
       assert(false);
       return 0;

@@ -43,12 +43,12 @@ class LocalSums
    
    void increaseValue(const int color, const double value)
    {
-      assert( value==value );
+      //assert( value==value );
       sum_[color]+=value;
    }
    void add1value(const int color, const double value)
    {
-      assert( value==value );
+      //assert( value==value );
       nval_[color]++;
       sum_[color]+=value;
    }
