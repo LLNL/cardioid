@@ -82,6 +82,8 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
    MPI_Barrier(comm_);
    sleep(1);
 #endif   
+   cout<<"ECG sensors: PE "<<myRank<<" owns "
+       <<owned_colors_.size()<<" sensor points "<<endl;
 
    if( myRank==0)cout<<"VoronoiCoarsening: number of colors = "<<centers_.size()<<endl;
 
