@@ -151,7 +151,7 @@ class SortByRank_andTuple_factory
 // we access the map with the subscript operator.  This is a non-const
 // operation.  Maybe we can re-write this code to avoid the subscript
 // operator. 
-TT06Dev_Reaction::TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parms, const ThreadTeam& group)
+TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_ReactionParms& parms, const ThreadTeam& group)
 : nCells_(anatomy.nLocal()),
   group_(group)
 {

@@ -32,7 +32,7 @@ class TT06Dev_Reaction : public Reaction
 {
  public:
    
-   TT06Dev_Reaction(Anatomy& anatomy, TT06Dev_ReactionParms& parms,
+   TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_ReactionParms& parms,
       const ThreadTeam& group);
    std::string methodName() const {return "TT06_Dev";}
    // copy constructor and assignment operator intentionally

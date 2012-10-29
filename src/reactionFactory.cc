@@ -26,7 +26,7 @@ namespace
 {
    Reaction* scanTT04_CellML(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanTT06_CellML(OBJECT* obj, const Anatomy& anatomy);
-   Reaction* scanTT06Dev(OBJECT* obj, Anatomy& anatomy, const ThreadTeam& group);
+   Reaction* scanTT06Dev(OBJECT* obj, double dt, Anatomy& anatomy, const ThreadTeam& group);
    Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanFHN(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanNull(OBJECT* obj);
@@ -35,7 +35,7 @@ namespace
 }
 
 
-Reaction* reactionFactory(const string& name, Anatomy& anatomy,
+Reaction* reactionFactory(const string& name, double dt, Anatomy& anatomy,
                           const ThreadTeam& group)
 {
    OBJECT* obj = objectFind(name, "REACTION");
@@ -46,9 +46,9 @@ Reaction* reactionFactory(const string& name, Anatomy& anatomy,
    else if (method == "TT06_CellML" || method == "tenTusscher06_CellML")
       return scanTT06_CellML(obj, anatomy);
    else if (method == "TT06Dev" )
-      return scanTT06Dev(obj, anatomy, group);
+      return scanTT06Dev(obj, dt, anatomy, group);
    else if (method == "TT06Opt" )
-      return scanTT06Dev(obj, anatomy, group);
+      return scanTT06Dev(obj, dt, anatomy, group);
    else if (method == "TT06_RRG" )
       return scanTT06_RRG(obj, anatomy);
    else if (method == "FHN" || method == "FitzhughNagumo")
@@ -123,7 +123,7 @@ namespace
       }
       return fit; 
    }
-   Reaction* scanTT06Dev(OBJECT* obj, Anatomy& anatomy, const ThreadTeam& group)
+   Reaction* scanTT06Dev(OBJECT* obj, double dt, Anatomy& anatomy, const ThreadTeam& group)
    {
       TT06Dev_ReactionParms parms;
       parms.cellTypeParms=TT06Func::getStandardCellTypes(); 
@@ -207,7 +207,7 @@ namespace
          
       }
       
-      Reaction *reaction = new TT06Dev_Reaction(anatomy, parms, group);
+      Reaction *reaction = new TT06Dev_Reaction(dt, anatomy, parms, group);
       return  reaction; 
    }
 }

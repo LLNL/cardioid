@@ -6,7 +6,7 @@ class ThreadTeam;
 class Reaction;
 class Anatomy;
 
-Reaction* reactionFactory(const std::string& name, Anatomy& anatomy,
+Reaction* reactionFactory(const std::string& name, double dt, Anatomy& anatomy,
                           const ThreadTeam &group);
 
 #endif
