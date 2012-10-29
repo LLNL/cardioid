@@ -9,6 +9,51 @@
 class Anatomy;
 class PotentialData;
 
+
+class ColoredCell
+{
+   int index_;
+   int color_;
+   double norm2_;
+   double inorm2_;
+   
+   double tol_;
+   
+public:
+   ColoredCell(const int index, const int color, const double norm2)
+      :index_(index),
+       color_(color),
+       norm2_(norm2)
+      
+   {
+      tol_=1.e-8;
+      if( norm2_>tol_ )inorm2_=1./norm2_;
+      else             inorm2_=-1.;
+   }
+   
+   bool normLargerThanTol()const
+   {
+      return (norm2_>tol_);
+   }
+   
+   int index()const
+   {
+      return index_;
+   }
+   int color()const
+   {
+      return color_;
+   }
+   double norm2()const
+   {
+      return norm2_;
+   }
+   double inorm2()const
+   {
+      return inorm2_;
+   }
+};
+
 class GradientVoronoiCoarsening : public Sensor
 {
  private:
@@ -34,7 +79,7 @@ class GradientVoronoiCoarsening : public Sensor
    std::vector<double> dy_;
    std::vector<double> dz_;
    
-   std::vector<int> colored_cells_;
+   std::vector<ColoredCell>  colored_cells_;
    
    std::set<int> included_eval_colors_;
    
@@ -74,7 +119,7 @@ class GradientVoronoiCoarsening : public Sensor
    void setupLSmatrix();
    void prologComputeLeastSquareGradients();
    int solve3x3(const double s[6], const double r[3], double x[3], const int color);
-
+   
  public:
    GradientVoronoiCoarsening(const SensorParms& sp,
                      std::string filename,
