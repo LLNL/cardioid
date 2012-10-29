@@ -33,7 +33,7 @@ namespace
 Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
                             const ThreadTeam& threadInfo,
                             const ThreadTeam& reactionThreadInfo,
-                            int simLoopType, string &variant)
+                            int simLoopType, string &variantHint)
 {
    OBJECT* obj = objectFind(name, "DIFFUSION");
 
@@ -44,7 +44,7 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
    if (method.empty())
       assert(1==0);
    else if (method == "FGR")
-      return fgrDiffusionFactory(obj, anatomy, threadInfo, reactionThreadInfo, simLoopType, variant);
+      return fgrDiffusionFactory(obj, anatomy, threadInfo, reactionThreadInfo, simLoopType, variantHint);
    else if (method == "null")
       return new NullDiffusion(anatomy, simLoopType);
    
@@ -57,11 +57,14 @@ namespace
    Diffusion* fgrDiffusionFactory(OBJECT* obj, const Anatomy& anatomy,
                                   const ThreadTeam& threadInfo,
                                   const ThreadTeam& reactionThreadInfo,
-                                  int simLoopType, string defaultVariant)
+                                  int simLoopType, string variantHint)
    {
       FGRUtils::FGRDiffusionParms p;
       objectGet(obj, "diffusionScale", p.diffusionScale_, "1.0", "l^3/capacitance");
       objectGet(obj, "printBBox",      p.printBBox_, "0");
+      string defaultVariant = "omp";
+      if (! variantHint.empty())
+         defaultVariant = variantHint;
       string variant;
       objectGet(obj, "variant", variant, defaultVariant);
       if (variant == "omp")

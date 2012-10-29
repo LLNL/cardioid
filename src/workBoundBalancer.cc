@@ -75,8 +75,8 @@ LoadLevel workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, 
    setDomainInfo(&balancer); 
    PARTITION_INFO part = corePartition(balancer.chunk,&balancer);
    LoadLevel loadLevel; 
-   loadLevel.stencil = part.stencilMethod; 
-   loadLevel.nDiffusionCores = part.nD; 
+   loadLevel.variantHint = part.stencilMethod; 
+   loadLevel.nDiffusionCoresHint = part.nD; 
    destroyBalancer(&balancer); 
 
    MPI_Allreduce(&nLocal,&nGlobal,1,MPI_LONG_LONG,MPI_SUM,balancer.comm); 

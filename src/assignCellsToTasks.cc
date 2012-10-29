@@ -22,6 +22,7 @@
 #include "GridPoint.hh"
 #include "PerformanceTimers.hh"
 #include "AnatomyCell.hh"
+#include "LoadLevel.hh" 
 
 using namespace std;
 
@@ -48,10 +49,8 @@ LoadLevel assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
    objectGet(obj, "method", method, "koradi");
    LoadLevel loadLevel ; 
 
-   loadLevel.nDiffusionCores=1; 
-   loadLevel.stencil="threads"; 
-   if (sim.loopType_ == Simulate::pdr ) loadLevel.stencil = "strip"; 
-   if (sim.loopType_ == Simulate::lag ) loadLevel.stencil = "strip"; 
+   loadLevel.nDiffusionCoresHint=0; 
+   loadLevel.variantHint=""; 
 
    profileStart("Assignment");
    if (method == "koradi")
@@ -63,7 +62,7 @@ LoadLevel assignCellsToTasks(Simulate& sim, const string& name, MPI_Comm comm)
    else if (method == "workBound")
       loadLevel = workBoundScan(sim, obj, comm);
    else if (method == "pio")
-      loadLevel.nDiffusionCores = pioBalancerScan(sim, obj, comm);
+      loadLevel.nDiffusionCoresHint = pioBalancerScan(sim, obj, comm);
    else
       assert(1==0);      
    profileStop("Assignment");
@@ -292,8 +291,8 @@ namespace
       const int nTotCores = 16;
 
       LoadLevel loadLevel; 
-      loadLevel.nDiffusionCores=nDiffCores; 
-      loadLevel.stencil="strip"; 
+      loadLevel.nDiffusionCoresHint=nDiffCores; 
+      loadLevel.variantHint="strip"; 
 
       int nReaction = nTotCores - nDiffCores;
       
@@ -355,7 +354,7 @@ namespace
          double density = (double)ncnt/(double)vol;
 
          if (density < 0.1)
-            loadLevel.stencil="threads"; 
+            loadLevel.variantHint="threads"; 
 
          if (ncnt >= 0.90*nCellsMax && density > 0.80)
          {
@@ -375,7 +374,7 @@ namespace
 
                int nD = nTotCores - nR;
                if (nD < 2) nD = 2;
-               loadLevel.nDiffusionCores=nD;
+               loadLevel.nDiffusionCoresHint=nD;
             }
             else
             {
@@ -385,7 +384,7 @@ namespace
 
                int nD = nTotCores - nR;
                if (nD < 2) nD = 2;
-               loadLevel.nDiffusionCores=nD; 
+               loadLevel.nDiffusionCoresHint=nD; 
             }
          }
 

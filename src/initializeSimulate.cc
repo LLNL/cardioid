@@ -21,6 +21,7 @@
 #include "hardwareInfo.h"
 #include "pio.h"
 #include "heap.h"
+#include "LoadLevel.hh"
 
 using namespace std;
 
@@ -174,10 +175,16 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "decomposition", decompositionName, "decomposition");
    LoadLevel loadLevel = assignCellsToTasks(sim, decompositionName, MPI_COMM_WORLD);
 
-   stringstream stream;
-   stream << loadLevel.nDiffusionCores;
-   string defaultNDiffusionCores  = stream.str();
-
+   // default number of diffusion cores is 1 unless the load leveler
+   // said otherwise.
+   string defaultNDiffusionCores = "1";
+   if (loadLevel.nDiffusionCoresHint > 0)
+   {
+      stringstream stream;
+      stream << loadLevel.nDiffusionCoresHint;
+      defaultNDiffusionCores  = stream.str();
+   }
+   
    unsigned nDiffusionCores;
    objectGet(obj, "nDiffusionCores", nDiffusionCores, defaultNDiffusionCores);
 
@@ -248,7 +255,7 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "diffusion", nameTmp, "diffusion");
    sim.diffusion_ = diffusionFactory(nameTmp, sim.anatomy_, sim.diffusionThreads_,
                                      sim.reactionThreads_,
-                                     sim.loopType_,loadLevel.stencil);
+                                     sim.loopType_,loadLevel.variantHint);
    
    timestampBarrier("building stimulus object", MPI_COMM_WORLD);
    vector<string> names;
