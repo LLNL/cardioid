@@ -17,11 +17,21 @@
 
 #include "slow_fix.hh"
 
+typedef void  (*UPDATEGATE)(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a) ; 
+
 using namespace std;
 using namespace PerformanceTimers;
 using namespace TT06Func;
-
 int workBundle(int index, int nItems, int nGroups , int mod, int& offset);
+static   UPDATEGATE gateEq[] ={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, 
+                               update_Xr2Gate_v1, update_XsGate_v1, update_rGate_v1, update_dGate_v1, 
+                               update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, update_s0Gate_v1, 
+                               update_s1Gate_v1, update_sGate_v1} ;
+static double *mhuX[14]; 
+static double *tauRX[14]; 
+static double *gateX[14]; 
+static UPDATEGATE gateEqX[14]; 
+static int gateMap[] = { 0,1,2,3,4,5,6,7,8,9,10,12,9,10,12,9,10,13}; 
 OVF fitFuncMap(string name) 
 {
       const char *fitName[] ={ "fv0", "fv1", "fv2", "fv3", "fv4", "fv5", "fv6", "mMhu", "mTauR", "hMhu", "hTauR", "hTauRMod", "jMhu", "jTauR", "jTauRMod", "Xr1Mhu", "Xr1TauR", "Xr2Mhu", "Xr2TauR", 
@@ -251,8 +261,10 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
       for (int j=0;j<nStateVar;j++) state_[j][ii]  = stateInitial[cellType][j]; 
       state_[dVK_i][ii] = state_[K_i][ii]/c9+initialVm_[cellType];
       nCellsOfType[cellType]++; 
-   }
+   } 
+
    PFILE *file= Popen("type","w",MPI_COMM_WORLD); 
+   PioSet(file,"ngroup",1); 
    Pprintf(file,"%d ",getRank(0)); 
    for (int ii=0;ii<nCellTypes_;ii++) Pprintf(file,"%d ",nCellsOfType[ii]); 
    Pprintf(file,"\n"); 
@@ -261,6 +273,13 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
    {
      cellTypeVector_[ii] = cellTypeVector_[ii-1]; 
      for (int j=0;j<nStateVar;j++) state_[j][ii]  =  state_[j][ii-1];  
+   }
+   int switchBreak=0; 
+   for (;switchBreak<nCells_;switchBreak++)
+   {
+     int cellType = cellTypeVector_[switchBreak];
+     int s_switch = cellTypeParms_[cellType].s_switch;
+     if (s_switch != 0) break; 
    }
    
    {
@@ -298,6 +317,30 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
          writeFit(parms.fitFile,fit_,cnt); 
       }
    }
+   PADE *gateFit = fit_+gateFitOffset; 
+#if 1
+   for (int eq=0;eq<13;eq++) 
+   {
+        double *tauR  = gateFit[2*eq+1].coef; 
+        int m         = gateFit[2*eq+1].m; 
+        for (int j=0;j<m;j++)    tauR[j] *= dt;
+   }
+#endif
+   double **gate = &state_[gateOffset]; 
+   int eq; 
+   for (eq=0;eq<13;eq++) 
+   {
+      gateEqX[eq]  = gateEq[eq];  
+      if (eq < 12) gateX[eq]    = gate[eq];  
+      mhuX[eq]     = gateFit[2*eq+0].coef; 
+      tauRX[eq]    = gateFit[2*eq+1].coef; 
+      printf("sGate Parm %x %x\n",mhuX[eq],tauRX[eq]); fflush(stdout); 
+   }
+   gateX[12]    = gate[11];  
+   printf("sGate Parm %x %x\n",mhuX[12],tauRX[12]); fflush(stdout); 
+   printf("sGate Parm mhu[0]=%e\n",mhuX[12][0]); fflush(stdout); 
+   printf("sGate Parm tauR[0]=%e\n",tauRX[12][0]); fflush(stdout); 
+
    int nThreads = group_.nThreads();
    int nSquads = group_.nSquads();
    int squadSize =1; 
@@ -305,6 +348,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
    int nEq = 12/squadSize;
    gateWork_.resize(nThreads); 
    nonGateWork_.resize(nThreads);   
+   assert(nEq == 3); 
    for (int id=0;id<nThreads;id++) 
    {
       const ThreadRankInfo& rankInfo = group_.rankInfo(id);
@@ -321,8 +365,10 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
       gateWork_[teamRank].nCell =   nCell; 
       gateWork_[teamRank].offsetEq = nEq*squadRank; 
       gateWork_[teamRank].nEq     =  nEq; 
+      gateWork_[teamRank].map =  gateMap+nEq*squadRank; 
 
-      /* non Gate work partitioning */ {
+      /* non Gate work partitioning */ 
+      {
 	int nv = (nCell+3)/4;
 	int q = nv/squadSize, r = nv%squadSize;
 	int i0,i1;
@@ -520,67 +566,63 @@ void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)
    const ThreadRankInfo& rankInfo = group_.rankInfo();
    int teamRank = rankInfo.teamRank_;
 
-      if(PRINT_WP) {
-	static int inited[64] = {0};
-	const int tid = teamRank;
-	
-	if(inited[tid] == 0) {
-	  int pid,np;
-	  const int nt = group_.nThreads();
-	  static volatile int tag[64] = {0};
+   TT06Func::WORK work = gateWork_[teamRank]; 
+   int nCell=work.nCell; 
+   if ( nCell ==0)  return; 
+   int offsetCell=work.offsetCell; 
+   int *map = work.map; 
+   int nEq  = work.nEq;       //We could assume each HW thread get the same number of equations; 
 
-	  MPI_Comm_size(MPI_COMM_WORLD,&np);
-	  MPI_Comm_rank(MPI_COMM_WORLD,&pid);	  
-	  
-	  if(tid == 0) {
-	    int i;
+   double *vm = const_cast<double *>(&Vm[offsetCell]); 
+   int ompID = omp_get_thread_num(); 
+   int mpiID = getRank(0); 
 
-	    MPI_Barrier(MPI_COMM_WORLD);
-	    for(i = 0; i<np; i++) {
-	      if(i == pid) {
-		int j;
-		printf("@pid=%03d,tid=%02d :G WP: "
-		       "offset = %6d  nCells = %6d  end = %6d  eq=%02d..%02d\n",
-		       pid,tid,
-		       gateWork_[tid].offsetCell,
-		       gateWork_[tid].nCell,
-		       gateWork_[tid].offsetCell + gateWork_[tid].nCell,
-		       gateWork_[tid].offsetEq,
-		       gateWork_[tid].offsetEq + gateWork_[tid].nEq);
+   startTimer(gateTimer);
+   for (int ii=0;ii<nEq;ii++)
+   {
+         int eq = map[ii]; 
+         gateEqX[eq](dt, nCell , vm , gateX[eq]+offsetCell, mhuX[eq], tauRX[eq]);
+   }
+   stopTimer(gateTimer);
+}
+/*
+void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)
+{
+typedef void  (*UPDATEGATE)(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a) ; 
+   const ThreadRankInfo& rankInfo = group_.rankInfo();
+   int teamRank = rankInfo.teamRank_;
 
-		tag[tid] = 1;
-		while(tag[nt-1] == 0) {}
-		for(j = 0; j<nt; j++) tag[j] = 0;
-	      }
-	      MPI_Barrier(MPI_COMM_WORLD);
-	    }
-	  } else {
-	    while(tag[tid-1] == 0) {}
+   TT06Func::WORK work = gateWork_[teamRank]; 
+    int nCell=work.nCell; 
+   if ( nCell ==0)  return; 
+    int offsetCell=work.offsetCell; 
+    int offsetEq = work.offsetEq; 
+    int nEq = work.nEq; 
+    double *vm = const_cast<double *>(&Vm[offsetCell]); 
+    double **gate = &state_[gateOffset]; 
 
-	    printf("@pid=%03d,tid=%02d :G WP: "
-		   "offset = %6d  nCells = %6d  end = %6d  eq=%02d..%02d\n",
-		   pid,tid,
-		   gateWork_[tid].offsetCell,
-		   gateWork_[tid].nCell,
-		   gateWork_[tid].offsetCell + gateWork_[tid].nCell,
-		   gateWork_[tid].offsetEq,
-		   gateWork_[tid].offsetEq + gateWork_[tid].nEq);
+   PADE *gatefit = fit_ + gateFitOffset; 
 
-	    tag[tid] = 1;
-	    while(tag[0] > 0) {}
-	  }
-	  
-	  inited[tid] = 1;
-	}
-      }
-
-
-
+   startTimer(gateTimer);
+   for (int eq=offsetEq;eq<offsetEq+nEq;eq++)
+   {
+         double *mhu  = gatefit[2*eq+0].coef; 
+         double *tauR = gatefit[2*eq+1].coef; 
+         //updateGateFuncs[eq](dt, nCell , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+         updateGateFuncs[eq](dt, nCell , vm , gate[eq]+offsetCell, mhu, tauR);
+   }
+   stopTimer(gateTimer);
+}
+void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)
+{
+   const ThreadRankInfo& rankInfo = group_.rankInfo();
+   int teamRank = rankInfo.teamRank_;
 
    startTimer(gateTimer);
    update_gate_(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],fit_,gateWork_[teamRank]);
    stopTimer(gateTimer);
 }
+*/
 
 void TT06Dev_Reaction::initializeMembraneVoltage(VectorDouble32& Vm)
 {

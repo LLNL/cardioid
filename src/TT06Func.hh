@@ -57,7 +57,7 @@ struct CellTypeParmsFull
 
 struct WORK
 {
-   int offsetCell, nCell, offsetEq, nEq;
+   int offsetCell, nCell, offsetEq, nEq, *map;
 }; 
 double Xr1Mhu(double Vm, void *parms) ;
 double Xr2Mhu(double Vm, void *parms) ;
@@ -96,6 +96,7 @@ double jTauRMod(double Vm, void *parms) ;
 void initCnst();
 void updateGate(double dt, int n, int *cellType, double *Vm, int offset, double **state, PADE *fit, WORK& work);
 void updateGateFast(double dt, int n, int *cellType, double *Vm, int offset, double **state, PADE *fit, WORK& work);
+void updateGateFast1(double dt, int n, int *cellType, double *Vm, int offset, double **state, PADE *fit, WORK& work);
 PADE **makeFit(char *fitNames[], double tol, double V0, double V1, double deltaV, int mod);
 std::map<std::string,CellTypeParmsFull> getStandardCellTypes();
 };

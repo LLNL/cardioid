@@ -187,36 +187,43 @@ void updateGateFast(double dt, int nCellsTotal, int *cellTypeVector, double *Vm,
        }
        else 
        {
-            int nCell0=0;
-            for (;nCell0<nCell;nCell0++) if (cellTypeVector[nCell0+offsetCell] != 0) break;
-
-            int rCell0= nCell0 %4;
-
-            nCell0-=rCell0;
+            int cell=0;
+            int nCell1 = nCell; 
+            int rCell1=0; 
+            int nCell0=0; 
+            int rCell0=0; 
 
             double *mhu  = gatefit[2*eq+0].coef;
             double *tauR = gatefit[2*eq+1].coef;
 
+            if (cellTypeVector[offsetCell] == 0) 
+            {
+
+            for (;cell<nCell;cell+=4) if (cellTypeVector[cell+offsetCell+3] != 0) break;
+            int nCell0=cell; 
+
+            for (;cell<nCell;cell++) if (cellTypeVector[cell+offsetCell] != 0) break;
+            rCell0 = cell-nCell0; ; 
+            rCell1 = (4-rCell0)%4; 
+            nCell1 = nCell-cell; 
+
             if (nCell0 > 0) updateGateFuncs[11](dt, nCell0 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
             offsetCell+=nCell0;
 
-            if (rCell0 > 0) 
-            {
-                update_s0Gate(dt, rCell0 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
-                offsetCell+=rCell0;
+            if (rCell0 > 0) update_s0Gate(dt, rCell0 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+            offsetCell+=rCell0;
             }
 
             mhu  = gatefit[2*eq+2].coef;
             tauR = gatefit[2*eq+3].coef;
 
-            if (rCell0 >  0)
-            {
-                 update_s1Gate(dt, 4-rCell0 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
-                 offsetCell+=4-rCell0;
-            }
-            int nCell1 = nCell - offsetCell;
+            if (rCell1 >  0) update_s1Gate(dt, rCell1 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+            offsetCell+=rCell1;
 
-          if (nCell1 > 0) updateGateFuncs[12](dt, nCell1 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+            if (nCell1 > 0) updateGateFuncs[12](dt, nCell1 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+            int   sum=nCell0+rCell0+rCell1+nCell1;
+            //printf("nCell = %d %d\n",nCell,sum);  fflush(stdout); 
+            //printf("nCell all  = %d %d %d %d\n",nCell0,rCell0,rCell1,nCell1);  fflush(stdout); 
        }
 
     }
@@ -226,7 +233,7 @@ void updateGateFast0(double dt, int nCellsTotal, int *cellTypeVector, double *Vm
      UPDATEGATE updateGateFuncs[]={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, 
                                     update_rGate_v1, update_dGate_v1, update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, update_s0Gate_v1} ;
     int nCell=work.nCell; 
-   if ( nCell ==0)  return; 
+    if ( nCell ==0)  return; 
     int offsetCell=work.offsetCell; 
     int offsetEq = work.offsetEq; 
     int nEq = work.nEq; 

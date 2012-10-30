@@ -17,6 +17,7 @@ void update_f2Gate(double dt, int nCells, double *VM, double *g, double *mhu_a, 
 void update_jLGate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a);
 void update_s0Gate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a);
 void update_s1Gate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a);
+void update_sGate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a);
 
 void update_mGate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a);
 void update_hGate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a);
@@ -31,6 +32,7 @@ void update_f2Gate_v1(double dt, int nCells, double *VM, double *g, double *mhu_
 void update_jLGate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a);
 void update_s0Gate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a);
 void update_s1Gate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a);
+void update_sGate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a);
 #ifdef __cplusplus
 }
 #endif
