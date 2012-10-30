@@ -36,7 +36,7 @@ class LocalSums
    {
    }
    
-   size_t size()
+   size_t size()const
    {
       return nval_.size();
    }
@@ -177,8 +177,6 @@ class VoronoiCoarsening
 
    void setupComm(const std::map< int, int* >& nremote_colors_for_task, 
                 const int size_nremote_colors_for_task);
-   void setOwnedColors(const std::map< int, int* >& nremote_colors_for_task, 
-                       const int size_nremote_colors_for_task);
 
  public:
    VoronoiCoarsening(const Anatomy& anatomy,

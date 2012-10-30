@@ -12,12 +12,12 @@ class PotentialData;
 
 class ColoredCell
 {
-   int index_;
-   int color_;
-   double norm2_;
-   double inorm2_;
+   static double tol_;
    
-   double tol_;
+   int index_;     // index of cell in storage array
+   int color_;
+   double norm2_;  // distance from color center
+   double inorm2_; // 1./norm2_
    
 public:
    ColoredCell(const int index, const int color, const double norm2)
@@ -26,7 +26,6 @@ public:
        norm2_(norm2)
       
    {
-      tol_=1.e-8;
       if( norm2_>tol_ )inorm2_=1./norm2_;
       else             inorm2_=-1.;
    }
@@ -103,8 +102,10 @@ class GradientVoronoiCoarsening : public Sensor
    // matrices for LS systems for each local color
    std::map<int,double*> matLS_;
    
-   // eval times
-   std::vector<double> times_;
+   // number of eval times
+   int eval_count_;
+   double time0_;
+   double dt_;
    
    // gradient for each local color
    std::map<int,std::vector<float> > gradients_;

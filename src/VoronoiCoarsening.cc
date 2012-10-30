@@ -327,58 +327,6 @@ void VoronoiCoarsening::setupComm(const map< int, int* >& nremote_colors_from_ta
    }
 }
 
-void VoronoiCoarsening::setOwnedColors(const map< int, int* >& nremote_colors_from_task, 
-                                       const int size_nremote_colors_from_task)
-{   
-   assert( centers_.size()>0 );
-   
-   int myRank;
-   MPI_Comm_rank(comm_, &myRank);  
-
-   owned_colors_=local_colors_;
-   
-   // now remove local colors that are centered somewhere else
-   for(set<int>::const_iterator  itp =remote_tasks_.begin();
-                                 itp!=remote_tasks_.end();
-                               ++itp)
-   {
-      const map< int, int* >::const_iterator itn=nremote_colors_from_task.find(*itp);
-      assert( itn!=nremote_colors_from_task.end() );
-      const int* const nremote_colors=itn->second;
-      int count=0;
-      // reduce owned_colors_ so that each color is "owned" by one task only
-      // (the one where the corresponding color is the most present)
-      for(int i=0;i<size_nremote_colors_from_task;++i)
-      {
-         const int color=nremote_colors[2*i];
-         const int nc   =nremote_colors[2*i+1];
-         
-         set<int>::const_iterator iti=owned_colors_.find(color);
-         if( iti!=owned_colors_.end() )
-         {
-            assert( color>=0 );
-            if( nc>=ncolors_[color] )
-            {
-               if( nc>ncolors_[color] || myRank<(*itp))
-               {
-                  owned_colors_.erase(iti);
-                  //cout<<"PE "<<myRank<<" remove color "<<*iti<<endl;
-               }
-            }
-         }
-      }
-   }
-
-#ifdef DEBUG
-   for(set<int>::const_iterator  itp =owned_colors_.begin();
-                                 itp!=owned_colors_.end();
-                               ++itp)
-      cout<<"PE "<<myRank<<" owns color "<<*itp<<endl;
-   MPI_Barrier(comm_);
-   sleep(1);
-#endif
-}
-
 void VoronoiCoarsening::computeRemoteTasks()
 {
    int myRank;
@@ -519,8 +467,6 @@ void VoronoiCoarsening::computeRemoteTasks()
    //                            ++itp)
    //   cout<<"PE "<<myRank<<" exchange data with task "<<*itp<<endl;
 #endif
-
-   //setOwnedColors(nremote_colors_from_task, max_nlocalcolors);
 
    setupComm(nremote_colors_from_task, max_nlocalcolors);
 

@@ -38,6 +38,7 @@ namespace
 /////////////////////////////////////////////////////////////////////
 
 static const double tol_det=1.e-8;
+double ColoredCell::tol_=1.e-8;
 
 inline double det3(const double a,const double b,const double c,
             const double d,const double e,const double f,
@@ -576,25 +577,25 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
          const int lrec    = 3*sizeof(float);
          Pprintf(file, "  lrec = %d;\n", lrec);
          Pprintf(file, "  nfields = %d;\n", 3);
-         Pprintf(file, "  nrecords = %llu;\n", nb_sampling_pts_*(times_.size()+2));
+         Pprintf(file, "  nrecords = %llu;\n", nb_sampling_pts_*(eval_count_+2));
          Pprintf(file, "  field_names = gx gy gz\n");
          Pprintf(file, "  field_types = f4 f4 f4;\n");
       }else{
          Pprintf(file, "  datatype = FIXRECORDASCII;\n");
-         const int lrec    = 25+13*3*(int)times_.size();
-         const int nfields = 4+3*(int)times_.size(); 
+         const int lrec    = 25+13*3*eval_count_;
+         const int nfields = 4+3*eval_count_; 
          Pprintf(file, "  lrec = %d;\n", lrec);
          Pprintf(file, "  nfields = %d;\n", nfields);
          Pprintf(file, "  nrecords = %llu;\n", nb_sampling_pts_);
-         string fieldNames="rx ry rz nvals " + concat(vector<string>(times_.size(), "gx gy gz"));
+         string fieldNames="rx ry rz nvals " + concat(vector<string>(eval_count_, "gx gy gz"));
          Pprintf(file, "  field_names = %s;\n", fieldNames.c_str());
-         string fieldTypes="d d d d " + concat(vector<string>(3*times_.size(), "f"));
+         string fieldTypes="d d d d " + concat(vector<string>(eval_count_, "f"));
          Pprintf(file, "  field_types = %s;\n", fieldTypes.c_str());
       }
       Pprintf(file, "  nfiles = %u;\n", nfiles);
-      Pprintf(file, "  time = %f; loop = %u;\n", times_[0], current_loop);
-      if( times_.size()>1 )
-         Pprintf(file, "  nsteps = %d; dt = %f\n", times_.size(), times_[1]-times_[0]);
+      Pprintf(file, "  time = %f; loop = %u;\n", time0_, current_loop);
+      if( eval_count_>1 )
+         Pprintf(file, "  nsteps = %d; dt = %f\n", eval_count_, dt_);
       Pprintf(file, "  h = %4u  0    0\n", anatomy_.nx());
       Pprintf(file, "        0    %4u  0\n", anatomy_.ny());
       Pprintf(file, "        0    0    %4u;\n", anatomy_.nz());
@@ -639,7 +640,7 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
          ss << setw(7)<< right << valcolors_.nValues(color);
       
          ss << setprecision(8);
-         for(int it=0;it<times_.size();++it)
+         for(int it=0;it<eval_count_;++it)
          {
             ss <<" "<< setw(12)<< right << color_gradient[3*it+0];
             ss <<" "<< setw(12)<< right << color_gradient[3*it+1];
@@ -661,12 +662,15 @@ void GradientVoronoiCoarsening::eval(double time, int loop)
 {
    startTimer(sensorEvalTimer);
    
-   times_.push_back(time);
+   if( eval_count_==0 )time0_=time;
+   if( eval_count_==1 )dt_=time-time0_;
    
    computeColorCenterValues(vdata_.VmArray_);
    setupLSsystem(vdata_.VmArray_);
    computeLeastSquareGradients(time, loop);   
    
+   eval_count_++;
+
    stopTimer(sensorEvalTimer);
 }
 
@@ -686,7 +690,7 @@ void GradientVoronoiCoarsening::print(double time, int loop)
    
    writeGradients(fullname,time, loop);   
 
-   times_.clear();
+   eval_count_=0;
    for(map<int,std::vector<float> >::iterator itg =gradients_.begin();
                                               itg!=gradients_.end();
                                             ++itg)
