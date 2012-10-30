@@ -334,12 +334,12 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
       if (eq < 12) gateX[eq]    = gate[eq];  
       mhuX[eq]     = gateFit[2*eq+0].coef; 
       tauRX[eq]    = gateFit[2*eq+1].coef; 
-      printf("sGate Parm %x %x\n",mhuX[eq],tauRX[eq]); fflush(stdout); 
+      //ewd      printf("sGate Parm %x %x\n",mhuX[eq],tauRX[eq]); fflush(stdout); 
    }
    gateX[12]    = gate[11];  
-   printf("sGate Parm %x %x\n",mhuX[12],tauRX[12]); fflush(stdout); 
-   printf("sGate Parm mhu[0]=%e\n",mhuX[12][0]); fflush(stdout); 
-   printf("sGate Parm tauR[0]=%e\n",tauRX[12][0]); fflush(stdout); 
+   //ewd   printf("sGate Parm %x %x\n",mhuX[12],tauRX[12]); fflush(stdout); 
+   //ewdprintf("sGate Parm mhu[0]=%e\n",mhuX[12][0]); fflush(stdout); 
+   //ewdprintf("sGate Parm tauR[0]=%e\n",tauRX[12][0]); fflush(stdout); 
 
    int nThreads = group_.nThreads();
    int nSquads = group_.nSquads();
