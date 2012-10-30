@@ -35,18 +35,20 @@ $strongTaskCount = 64;
 
 $celltype = "undefined";  # placeholder
 
-foreach $anatomy ("370M", "3B")
+$anatomy = "370M";
+#foreach $anatomy ("370M", "3B")
 {
    $reaction = "TT06RRGOpt";
    $fastgates = 1;
    $rationalfns = 1;
    $smoothing = 1;
-   foreach $ntasks (2048, 4096, 8192, 16384, 24576, 32768, 49152, 73728, 98304)
-   #foreach $ntasks (98304)
+   foreach $ntasks (1024, 2048, 4096)
+   #foreach $ntasks (1024, 2048, 4096, 8192, 16384, 24576, 32768, 49152, 73728, 98304)
    {
-      foreach $machine ("bgqspi", "bgqhpm")
+      $machine = "bgqhpm";
+      #foreach $machine ("bgqspi", "bgqhpm")
       {
-         $loadbal = "work";
+         $loadbal = "grid";
          #foreach $loadbal ("grid", "work")
          {
             $globalsync = -1;
@@ -142,8 +144,6 @@ sub printObject
       $wx{36864} = 20; $wy{36864} = 19; $wz{36864} = 26;
       $wx{49152} = 20; $wy{49152} = 19; $wz{49152} = 22;
       $wx{73728} = 20; $wy{73728} = 19; $wz{73728} = 14;
-      #$wx{98304} = 12; $wy{98304} = 8; $wz{98304} = 42;  
-      #$wx{98304} = 8; $wy{98304} = 12; $wz{98304} = 42;  
       $wx{98304} = 18; $wy{98304} = 16; $wz{98304} = 14;  
    }
 
@@ -182,10 +182,11 @@ sub printObject
    }
    else 
    {
-      print OBJECT "   dt = 10 us;\n";
+      print OBJECT "   dt = 20 us;\n";
    }
    print OBJECT "   time = 0;\n";
    print OBJECT "   checkRanges = 0;\n";
+   print OBJECT "   writeTorusMap = 0;\n";
    if ($globalsync >= 0)
    {
       print OBJECT "   globalSyncRate = $globalsync;\n";
@@ -193,6 +194,7 @@ sub printObject
    print OBJECT "   printRate = $printRate;\n";
    print OBJECT "   snapshotRate = $checkpointRate;\n";
    print OBJECT "   checkpointRate = $checkpointRate;\n";
+   print OBJECT "   sensor = ecg;\n";
    if ($useStateSensor == 1)
    {
       print OBJECT "   sensor = stateVariable;\n";
@@ -310,6 +312,17 @@ sub printObject
       print OBJECT "}\n\n";
    }
 
+   # ecg block
+   print OBJECT "ecg SENSOR\n";
+   print OBJECT "{\n";
+   print OBJECT "   method = ECG;\n";
+   print OBJECT "   evalRate =  500;\n";
+   print OBJECT "   printRate = $nIterations;\n";
+   print OBJECT "   stencilSize = 9;\n";
+   print OBJECT "   nSensorPoints = 6;\n";
+   print OBJECT "   nFiles = 3072;\n";
+   print OBJECT "}\n\n";
+
    # diffusion block
    print OBJECT "FGR DIFFUSION\n";
    print OBJECT "{\n";
@@ -344,8 +357,8 @@ sub printObject
       print OBJECT "   nRCoresBB = 2;\n";
       print OBJECT "   alpha = 0.1;\n";
       print OBJECT "   beta = 100.0;\n";
-      print OBJECT "   printStats = 1;\n";
-      print OBJECT "   printTaskInfo = 1;\n";
+      print OBJECT "   printStats = 0;\n";
+      print OBJECT "   printTaskInfo = 0;\n";
       print OBJECT "}\n\n";      
    }
    else {
@@ -376,8 +389,11 @@ sub printObject
       print OBJECT "   fastNonGate =$fastgates;\n";
       print OBJECT "   cellTypes = endo mid epi;\n";
       print OBJECT "}\n\n";
-      print OBJECT "endo CELLTYPE { clone=endoRRG; }\n";
-      print OBJECT "mid CELLTYPE { clone=midRRG;  P_NaK=3.0; g_NaL=0.6; }\n";
+      # hack for this version of the code only
+      #print OBJECT "endo CELLTYPE { clone=endoRRG; }\n";
+      #print OBJECT "mid CELLTYPE { clone=midRRG;  P_NaK=3.0; g_NaL=0.6; }\n";
+      print OBJECT "endo CELLTYPE { clone=endoRRG; anatomyIndices=30 31;}\n";
+      print OBJECT "mid CELLTYPE { clone=midRRG;  P_NaK=3.0; g_NaL=0.6;anatomyIndices=76 100 101; }\n";
       print OBJECT "epi CELLTYPE { clone=epiRRG; }\n\n";
    }
    elsif ($reaction eq "TT06RRG") 
