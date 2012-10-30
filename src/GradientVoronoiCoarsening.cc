@@ -96,6 +96,8 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(const SensorParms& sp,
     use_communication_avoiding_algorithm_(use_communication_avoiding_algorithm),
     nfiles_(nfiles)
 {
+   eval_count_=0;
+   
    const int nLocal = anatomy_.nLocal();
    
    // color local cells
