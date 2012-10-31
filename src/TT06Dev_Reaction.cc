@@ -31,7 +31,7 @@ static double *mhuX[14];
 static double *tauRX[14]; 
 static double *gateX[14]; 
 static UPDATEGATE gateEqX[14]; 
-static int gateMap[] = { 0,1,2,3,4,5,6,7,8,9,10,12,9,10,12,9,10,13}; 
+static int gateThreadMap[] = { 0,1,2,3,4,5,6,7,8,9,10,12,9,10,12,9,10,13}; 
 OVF fitFuncMap(string name) 
 {
       const char *fitName[] ={ "fv0", "fv1", "fv2", "fv3", "fv4", "fv5", "fv6", "mMhu", "mTauR", "hMhu", "hTauR", "hTauRMod", "jMhu", "jTauR", "jTauRMod", "Xr1Mhu", "Xr1TauR", "Xr2Mhu", "Xr2TauR", 
@@ -332,14 +332,10 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
    {
       gateEqX[eq]  = gateEq[eq];  
       if (eq < 12) gateX[eq]    = gate[eq];  
+      else gateX[12]    = gate[11];  
       mhuX[eq]     = gateFit[2*eq+0].coef; 
       tauRX[eq]    = gateFit[2*eq+1].coef; 
-      //ewd      printf("sGate Parm %x %x\n",mhuX[eq],tauRX[eq]); fflush(stdout); 
    }
-   gateX[12]    = gate[11];  
-   //ewd   printf("sGate Parm %x %x\n",mhuX[12],tauRX[12]); fflush(stdout); 
-   //ewdprintf("sGate Parm mhu[0]=%e\n",mhuX[12][0]); fflush(stdout); 
-   //ewdprintf("sGate Parm tauR[0]=%e\n",tauRX[12][0]); fflush(stdout); 
 
    int nThreads = group_.nThreads();
    int nSquads = group_.nSquads();
@@ -349,6 +345,12 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
    gateWork_.resize(nThreads); 
    nonGateWork_.resize(nThreads);   
    assert(nEq == 3); 
+   assert(parms.gateThreadMap.size() <=18); 
+   if (parms.gateThreadMap.size() > 0) 
+   {
+      assert(parms.gateThreadMap.size() >= 12); 
+      for (int ii=0;ii<parms.gateThreadMap.size();ii++) gateThreadMap[ii] = parms.gateThreadMap[ii]; 
+   }
    for (int id=0;id<nThreads;id++) 
    {
       const ThreadRankInfo& rankInfo = group_.rankInfo(id);
@@ -365,7 +367,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
       gateWork_[teamRank].nCell =   nCell; 
       gateWork_[teamRank].offsetEq = nEq*squadRank; 
       gateWork_[teamRank].nEq     =  nEq; 
-      gateWork_[teamRank].map =  gateMap+nEq*squadRank; 
+      gateWork_[teamRank].map =  gateThreadMap+nEq*squadRank; 
 
       /* non Gate work partitioning */ 
       {

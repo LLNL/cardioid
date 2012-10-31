@@ -145,6 +145,7 @@ namespace
       objectGet(obj, "fastReaction", parms.fastReaction, "-1") ;
       objectGet(obj, "fastGate",     fastGate, "-1") ;
       objectGet(obj, "fastNonGate",  fastNonGate, "-1") ;
+      if (object_testforkeyword(obj, "gateThreadMap") ) objectGet(obj,"gateThreadMap",parms.gateThreadMap);
       parms.fit = NULL; 
       parms.fitFile = "fit.data"; 
       if (object_testforkeyword(obj,"fitFile") )
