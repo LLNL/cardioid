@@ -18,7 +18,7 @@ static double *s1_tauR_a;
 //nCell0_in is the number of s0 type cells on that thread.  
 //s1Mhu and s1TauR are the values for the s1 type cells. 
 //
-void initSplit(double *s1Mhu, double *s1TauR, int nCell_s0, int nCell_s1)
+void sGateInit(double *s1Mhu, double *s1TauR, int nCell_s0, int nCell_s1)
 {
    s1_mhu_a=s1Mhu; 
    s1_tauR_a=s1TauR; 
