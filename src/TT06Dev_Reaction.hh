@@ -33,11 +33,10 @@ class TT06Dev_Reaction : public Reaction
 {
  public:
    
-   TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_ReactionParms& parms,
-      const ThreadTeam& group);
+   TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_ReactionParms& parms, const ThreadTeam& group);
+
    std::string methodName() const {return "TT06_Dev";}
-   // copy constructor and assignment operator intentionally
-   // left unimplemented.
+   // copy constructor and assignment operator intentionally left unimplemented.
    TT06Dev_Reaction(const TT06Dev_Reaction&);
    TT06Dev_Reaction& operator=(const TT06Dev_Reaction&);
    ~TT06Dev_Reaction();
@@ -69,11 +68,19 @@ class TT06Dev_Reaction : public Reaction
    std::vector<CellTypeParms> cellTypeParms_; 
    std::vector<double> initialVm_; 
    unsigned nCells_;
+   std::vector<int> tissueType2Rank_;
    std::vector<unsigned> nCellsOfType_; 
+   std::vector<    std::vector<double> > stateInitial_;
+   int nCell_s0_; 
 
    void (*update_gate_)   (double dt,                                      int nCells, int *cellType, double *Vm, int offset, double **state, PADE* xfit, TT06Func::WORK& work);
    void (*update_nonGate_)(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellType, double *Vm, int offset, double **state, double *dVdt);
-   int nonGateWorkPartition(int& offset);
+   int nonGateWorkPartition_(int& offset);
+   void mkCellTypeParms_(Anatomy& anatomy,TT06Dev_ReactionParms& parms);
+   void mkCellTypeVector_(Anatomy& anatomy, TT06Dev_ReactionParms& parms);
+   void mkState_(TT06Dev_ReactionParms& parms);
+   void mkFitParms_(TT06Dev_ReactionParms& parms);
+   void mkWorkBundles_(TT06Dev_ReactionParms& parms); 
    
    double tolerance_; 
    int mod_; 

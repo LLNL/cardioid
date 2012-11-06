@@ -4,6 +4,8 @@
 extern "C" {
 #endif
 void initExp(void); 
+void sGateInit(double *s1Mhu, double *s1TauR, int nCell_s0, int nCell_s1);
+
 void update_mGate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a);
 void update_hGate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a);
 void update_jGate(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a);
