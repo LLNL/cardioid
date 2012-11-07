@@ -32,9 +32,9 @@ static double *mhuX[14];
 static double *tauRX[14]; 
 static double *gateX[14]; 
 static UPDATEGATE gateEqX[14]; 
-static int gateThreadMapS[] = { 0,1,2,3,4,5,6,7,8,9,10,12,9,10,13,9,10,13}; 
-static int gateThreadMapS0[] = { 0,1,2,3,4,5,6,7,8,9,10,12,9,10,11,9,10,13}; 
-static int gateThreadMapS1[] = { 0,1,2,3,4,5,6,7,8,9,10,12,9,10,12,9,10,13}; 
+static int gateThreadMapS0[] = { 0,1,2,3,4,5,6,7,8,9,10,11}; 
+static int gateThreadMapS1[] = { 0,1,2,3,4,5,6,7,8,9,10,12}; 
+static int gateThreadMapS[] =  { 0,1,2,3,4,5,6,7,8,9,10,13}; 
 
 
 OVF fitFuncMap(string name) 
@@ -355,13 +355,15 @@ void TT06Dev_Reaction::mkWorkBundles_(TT06Dev_ReactionParms& parms)
       for (int ii=0;ii<12;ii++) 
       {
          int m = parms.gateThreadMap[ii]; 
+         gateThreadMapS0[ii]  = m; 
+         gateThreadMapS1[ii]  = m; 
+         gateThreadMapS [ii]  = m; 
          if ( m == 11) 
          {
-           gateThreadMapS[ii]   = 13; 
            gateThreadMapS1[ii]  = 12; 
+           gateThreadMapS[ii]   = 13; 
            sGateIndex = ii; 
          }
-         gateThreadMapS0[ii]  = m; 
       }
    }
    gateWork_.resize(nThreads); 
