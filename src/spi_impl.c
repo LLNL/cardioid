@@ -121,6 +121,12 @@ void setup_GI(spi_hdl_t* spi_hdl)
   size_t   sizeofClassRouteIds;
   uint32_t ii,rc;
 
+  if (spi_hdl->nNodes==1) 
+  {
+    printf("Single node run\n");
+    return;
+  }
+
   rc=Kernel_QueryGlobalInterruptClassRoutes ( &nClassRoutes, classRouteIds, 256*4 );
   //printf("# of free Id:%d\n",nClassRoutes);
   assert(nClassRoutes>0);
@@ -459,6 +465,11 @@ void global_sync(spi_hdl_t *spi_hdl)
   _bgq_msync();
 //  MUSPI_GIBarrier_t barrier;
 //  MUSPI_GIBarrierInit( &barrier, 0 );
+  if(spi_hdl->nNodes == 1)
+  {
+    printf("global sync:single node run\n");
+    return;
+  }
   #ifdef NEW_GI
   MUSPI_GIBarrierEnterAndWait((MUSPI_GIBarrier_t*)spi_hdl->barrier_hdl_B );
   #else
@@ -618,7 +629,7 @@ void complete_spi_alter_monitor(spi_hdl_t* spi_hdl, uint32_t recv_size, int32_t*
 //  printf("\n");
 
   volatile uint64_t sum=1;
-  uint64_t maxWait = MAX_WAIT/recv_size;
+  uint64_t maxWait = recv_size==0 ?  100 : MAX_WAIT/recv_size;
   for(knt=0;(knt<maxWait && sum != 0);knt++)
   {
     sum=0;
@@ -766,8 +777,11 @@ void free_spi(spi_hdl_t* spi_hdl)
   assert(rc==0);
   rc = Kernel_DeallocateBaseAddressTable( (MUSPI_BaseAddressTableSubGroup_t *)(spi_hdl->bat_hdl), 3, spi_hdl->free_bat_id);
   assert(rc==0);
-  rc = Kernel_DeallocateGlobalInterruptClassRoute ( spi_hdl->giID );
-  assert(rc==0);
+  if (spi_hdl->nNodes!=1)
+  {
+    rc = Kernel_DeallocateGlobalInterruptClassRoute ( spi_hdl->giID );
+    assert(rc==0);
+  }
 
   free(spi_hdl->recv_cnt);
   aligned_free(spi_hdl->inj_fifo);
@@ -822,69 +836,6 @@ void aligned_free( void *ptr )
   free(ptr);
 }
 
-uint32_t mapping_table(spi_hdl_t* spi_hdl)
-{
-  uint32_t a, b, c, d, e, id;
-  uint32_t rc;
-  node_personality node; 
-
-  rc = Kernel_GetPersonality( &node.personality, sizeof( node.personality ) );
-  assert(rc == 0);
-
-  node.node_id = compute_node_id( &node.personality );
-  
-  node.coord[CR_AXIS_A] = node.a = node.personality.Network_Config.Acoord;
-  node.coord[CR_AXIS_B] = node.b = node.personality.Network_Config.Bcoord;
-  node.coord[CR_AXIS_C] = node.c = node.personality.Network_Config.Ccoord;
-  node.coord[CR_AXIS_D] = node.d = node.personality.Network_Config.Dcoord;
-  node.coord[CR_AXIS_E] = node.e = node.personality.Network_Config.Ecoord;
-
-  node.dim[CR_AXIS_A] = node.a_nodes = node.personality.Network_Config.Anodes;
-  node.dim[CR_AXIS_B] = node.b_nodes = node.personality.Network_Config.Bnodes;
-  node.dim[CR_AXIS_C] = node.c_nodes = node.personality.Network_Config.Cnodes;
-  node.dim[CR_AXIS_D] = node.d_nodes = node.personality.Network_Config.Dnodes;
-  node.dim[CR_AXIS_E] = node.e_nodes = node.personality.Network_Config.Enodes;
-
-  node.nodes =  node.a_nodes * node.b_nodes * node.c_nodes *
-    node.d_nodes * node.e_nodes;
- 
-  /* allocate the mapping table */
-  MUHWI_Destination_t* mapping = malloc( node.nodes * sizeof(  MUHWI_Destination_t ) );
-  assert(mapping);
-  spi_hdl->mapping_hdl = (void*) mapping; 
-
-
-  for( a = 0; a < node.a_nodes; a++ )
-    for( b = 0; b < node.b_nodes; b++ )
-      for( c = 0; c < node.c_nodes; c++ )
-        for( d = 0; d < node.d_nodes; d++ )
-          for( e = 0; e < node.e_nodes; e++ )
-            {
-              Personality_Networks_t *net = &(node.personality.Network_Config);
-              id = ((((((( (a * net->Bnodes) + b)
-                         * net->Cnodes) + c )
-                       * net->Dnodes) + d )
-                     * net->Enodes) + e );
-
-              (mapping)[id].Destination.A_Destination = a;
-              (mapping)[id].Destination.B_Destination = b;
-              (mapping)[id].Destination.C_Destination = c;
-              (mapping)[id].Destination.D_Destination = d;
-              (mapping)[id].Destination.E_Destination = e;
-            }
-
-  #ifdef spi_debug
-  printf( "anodes %u bnodes %u cnodes %u dnodes %u enodes %u\n",
-             node.a_nodes, node.b_nodes, node.c_nodes, node.d_nodes,
-             node.e_nodes );
-  printf("completing init_mapping_table\n" );
-  #endif
-
-  return node.node_id;
-
-};
-
-#if 1
 uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
 {
   uint32_t a, b, c, d, e, id;
@@ -917,6 +868,7 @@ uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
   assert(bg_map);
   uint64_t totN;
   Kernel_RanksToCoords(nodes * sizeof(BG_CoordinateMapping_t),bg_map,&totN);
+  spi_hdl->nNodes=totN;
   if(node_id==0) printf("total nodes in this block :%d\n",nodes);
   if(node_id==0) printf("number of node being used :%d\n",totN);
   if(node_id==0) printf("the corner node is %d,%d,%d,%d,%d\n", sblock.corner.a,sblock.corner.b,sblock.corner.c,sblock.corner.d,sblock.corner.e);
@@ -944,7 +896,6 @@ uint32_t mapping_table_new(spi_hdl_t* spi_hdl)
   return node_id;
 
 };
-#endif
 //MUSPI_GIBarrier_t barrier;
   //MUSPI_GIBarrierInit( &barrier, 0 );
   //MUSPI_GIBarrierEnterAndWait( &barrier );

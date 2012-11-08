@@ -13,6 +13,7 @@ typedef struct spi_hdl_s
     void* mapping_hdl;
     void* cr;
     uint32_t giID;
+    uint32_t nNodes;
     uint32_t n_bat_ids;
     uint32_t bat_subgrp_id;
     uint32_t n_fifo_ids;
