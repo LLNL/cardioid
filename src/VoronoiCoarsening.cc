@@ -138,25 +138,34 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
       domain_radius=sqrt(domain_radius);
       //cout<<"Domain center: "<<domain_center<<", Domain radius: "<<domain_radius<<endl;
 
+      const double r2max=3.*max_distance*max_distance/
+                        (anatomy_.dx()*anatomy_.dx()
+                        +anatomy_.dy()*anatomy_.dy()
+                        +anatomy_.dz()*anatomy_.dz());
       // get distance from sub-domain center to closest center
-      double rcmin = 1.e30;
-      for(map<int,Vector>::const_iterator icenter =centers_.begin();
-                                          icenter!=centers_.end();
-                                        ++icenter)
-      {
-         Vector rij = domain_center - icenter->second;
-         double r2 = dot(rij, rij);
-         if (r2 < rcmin)
+      double extra_radius = sqrt(r2max);
+      if( extra_radius>domain_radius ){
+         const double domain_radius2=domain_radius*domain_radius;
+         double extra_radius2=extra_radius*extra_radius;
+         for(map<int,Vector>::const_iterator icenter =centers_.begin();
+                                             icenter!=centers_.end();
+                                           ++icenter)
          {
-            rcmin = r2;
+            Vector rij = domain_center - icenter->second;
+            double r2 = dot(rij, rij);
+            if (r2 < extra_radius2)
+            {
+               extra_radius2 = r2;
+            }
+            if( extra_radius2<domain_radius2 )break;
          }
+         extra_radius=sqrt(extra_radius2);
+         if(extra_radius<domain_radius)extra_radius=domain_radius;
+         //std::cout<<"extra_radius="<<extra_radius<<std::endl;
       }
-      rcmin=sqrt(rcmin);
-      if(rcmin<domain_radius)rcmin=domain_radius;
-      //std::cout<<"rcmin="<<rcmin<<std::endl;
 
       // get centers closest to sub-domain to reduce cost of coloring later
-      const double d2min=1.01*(rcmin+domain_radius)*(rcmin+domain_radius);
+      const double d2min=1.01*(extra_radius+domain_radius)*(extra_radius+domain_radius);
       map<int,Vector> close_centers;
       for(map<int,Vector>::const_iterator icenter =centers_.begin();
                                           icenter!=centers_.end();
@@ -171,10 +180,6 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
       assert( nclosecenters>0 );
       //std::cout<<"nclosecenters="<<nclosecenters<<std::endl;
       
-      const double r2max=3.*max_distance*max_distance/
-                        (anatomy_.dx()*anatomy_.dx()
-                        +anatomy_.dy()*anatomy_.dy()
-                        +anatomy_.dz()*anatomy_.dz());
       //std::cout<<"r2max="<<r2max<<std::endl;
       
       // color one cell at a time
@@ -198,11 +203,12 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
                color = itr->first;
             }
          }
-         if (color < 0 ){
+         
+         if( r2Min>r2max ){
+            cell_colors_[icell]=-1;
+         }else if (color < 0 ){
             cerr << "Failed to assign color to cell "<<icell<<endl;
             return -1;
-         }else if( r2Min>r2max ){
-            cell_colors_[icell]=-1;
          }else{
             cell_colors_[icell]=color;
             ncolors_[color]++;
