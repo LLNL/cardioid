@@ -178,6 +178,11 @@ class VoronoiCoarsening
    void setupComm(const std::map< int, int* >& nremote_colors_for_task, 
                 const int size_nremote_colors_for_task);
 
+   Vector getDomaincenter()const;
+   double getDomainRadius(const Vector& domain_center)const;
+   std::map<int,Vector> getCloseCenters(const Vector& domain_center, 
+                                        const double)const;
+   
  public:
    VoronoiCoarsening(const Anatomy& anatomy,
                      const std::vector<Long64>& gid,

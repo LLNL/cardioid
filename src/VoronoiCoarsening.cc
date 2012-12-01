@@ -102,6 +102,26 @@ double VoronoiCoarsening::getDomainRadius(const Vector& domain_center)const
    return domain_radius;
 }
 
+map<int,Vector> VoronoiCoarsening::getCloseCenters(const Vector& domain_center, 
+                                                   const double d2min)const
+{
+      map<int,Vector> close_centers;
+      for(map<int,Vector>::const_iterator icenter =centers_.begin();
+                                          icenter!=centers_.end();
+                                        ++icenter)
+      {
+         Vector rij = domain_center - icenter->second;
+         double r2 = dot(rij, rij);
+         
+         if( r2<=d2min)close_centers.insert( *icenter );
+      }
+      const int nclosecenters=(int)close_centers.size();
+      assert( nclosecenters>0 );
+      //std::cout<<"nclosecenters="<<nclosecenters<<std::endl;
+
+   return close_centers;
+}
+    
 VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
                                      const vector<Long64>& gid,
                                      const CommTable* commtable)
@@ -118,24 +138,39 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
    const unsigned global_ncolors = (unsigned)gid.size();
    vector<char> gidfound(global_ncolors,0);
    const int ncells=(int)anatomy_.nLocal();
-   
    owned_colors_.clear();
-   for (unsigned color=0; color<global_ncolors; ++color)
+   
+   if( ncells>0 )
    {
-      const Long64& rgid = gid[color];
-      for (unsigned icell=0; icell<ncells; ++icell)
+      const Vector domain_center( getDomaincenter() ); 
+      const double domain_radius=getDomainRadius(domain_center);
+      const double dr2=1.01*domain_radius*domain_radius;
+
+      for (unsigned color=0; color<global_ncolors; ++color)
       {
-         if (anatomy_.gid(icell) == rgid)
+         const Long64& rgid = gid[color];
+         Vector color_center =indexToVector_(rgid);
+         Vector rij = domain_center - color_center;
+         double r2 = dot(rij, rij);
+         
+         // consider only colors centered within domain radius
+         if( r2<=dr2)
          {
-            gidfound[color] = 1;
-            owned_colors_.insert(color);
-            break;
+            for (unsigned icell=0; icell<ncells; ++icell)
+            {
+               if (anatomy_.gid(icell) == rgid)
+               {
+                  gidfound[color] = 1;
+                  owned_colors_.insert(color);
+                  break;
+               }
+            }
          }
       }
    }
 
    MPI_Barrier(comm_);
-   if( myRank==0)cout<<"VoronoiCoarsening: Allreduce..."<<endl;
+   if( myRank==0)cout<<"VoronoiCoarsening: Allreduce found gids..."<<endl;
    reduceBytes(gidfound);
    vector<char>& gidsum(gidfound);
    //vector<char> gidsum(global_ncolors,0);
@@ -143,6 +178,7 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
    if( myRank==0)cout<<"VoronoiCoarsening: gidsum computed..."<<endl;
    
    std::map<Long64,int> included_ids;
+   centers_.clear();
    for (unsigned color=0; color<global_ncolors; ++color)
    {
       if ( (short)gidsum[color] == 0)
@@ -214,7 +250,7 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
    {
       if( myRank==0 )cout<<"VoronoiCoarsening: ncenters="<<centers_.size()<<endl;
 
-      Vector domain_center=getDomaincenter(); 
+      Vector domain_center( getDomaincenter() ); 
 
       // get sub-domain radius
       double domain_radius=getDomainRadius(domain_center);
@@ -247,20 +283,9 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
 
       // get centers closest to sub-domain to reduce cost of coloring later
       const double d2min=1.01*(extra_radius+domain_radius)*(extra_radius+domain_radius);
-      map<int,Vector> close_centers;
-      for(map<int,Vector>::const_iterator icenter =centers_.begin();
-                                          icenter!=centers_.end();
-                                        ++icenter)
-      {
-         Vector rij = domain_center - icenter->second;
-         double r2 = dot(rij, rij);
-         
-         if( r2<=d2min)close_centers.insert( *icenter );
-      }
-      const int nclosecenters=(int)close_centers.size();
-      assert( nclosecenters>0 );
-      //std::cout<<"nclosecenters="<<nclosecenters<<std::endl;
-      
+
+      map<int,Vector> close_centers( getCloseCenters(domain_center,d2min) );
+
       //std::cout<<"r2max="<<r2max<<std::endl;
       
       // color one cell at a time
