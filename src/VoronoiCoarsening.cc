@@ -11,6 +11,97 @@ using namespace std;
 
 //#define DEBUG
 
+void reduceBytes(vector<char>& val)
+{
+   assert( sizeof(char)==1 );
+   
+   const int nn=(int)val.size();
+   
+   // pack data into bits
+   int nc=nn/4;
+   if( nc*4<nn )nc++;
+   
+   vector<char> bb(nc,0);
+   for(int i=0;i<nn;i++)
+   {
+      if( val[i]==1 )
+      {
+         int ic=i>>2;
+         int ib=i-4*ic;
+         switch( ib )
+         {
+           case 0 : bb[ic]=bb[ic] | 1; // set bit 0
+             break;
+           case 1 : bb[ic]=bb[ic] | 2; // set bit 1
+             break;
+           case 2 : bb[ic]=bb[ic] | 4; // set bit 2
+             break;
+           case 3 : bb[ic]=bb[ic] | 8; // set bit 3
+             break;
+           default:
+             break;
+         }
+      }
+   }
+
+   // transfer data   
+   vector<char> bbsum(nc,0);
+   MPI_Allreduce(&bb[0], &bbsum[0], nc, MPI_CHAR, MPI_BOR, MPI_COMM_WORLD);
+   //cout<<"Allreduce terminated..."<<endl;
+   
+   // unpack data
+   int i=0;
+   int nn4=nn/4;
+   for(int ic=0;ic<nn4;ic++)
+   {
+      val[i++] = (char)((bbsum[ic] & 1)>0)  ;
+      val[i++] = (char)((bbsum[ic] & 2)>0)  ;
+      val[i++] = (char)((bbsum[ic] & 4)>0)  ;
+      val[i++] = (char)((bbsum[ic] & 8)>0)  ;
+   }
+   for(int ic=nn4;ic<nc;ic++)
+   {
+      if(i<nn)val[i++] = (char)((bbsum[ic] & 1)>0)  ;
+      if(i<nn)val[i++] = (char)((bbsum[ic] & 2)>0)  ;
+      if(i<nn)val[i++] = (char)((bbsum[ic] & 4)>0)  ;
+      if(i<nn)val[i++] = (char)((bbsum[ic] & 8)>0)  ;
+   }
+}
+
+Vector VoronoiCoarsening::getDomaincenter()const
+{
+   const int ncells=(int)anatomy_.nLocal();
+
+   // get sub-domain mass center
+   Vector domain_center(0.,0.,0.);
+   for (int icell=0; icell<ncells; ++icell)
+   {
+      Vector r = indexToVector_(anatomy_.gid(icell));
+      domain_center+=r;
+   }
+   domain_center/=(double)ncells;
+   
+   return domain_center;
+}      
+
+double VoronoiCoarsening::getDomainRadius(const Vector& domain_center)const
+{
+   const int ncells=(int)anatomy_.nLocal();
+
+   double domain_radius=0.;
+   for (int icell=0; icell<ncells; ++icell)
+   {
+      Vector r = indexToVector_(anatomy_.gid(icell));
+      Vector rij = r - domain_center;
+      double r2 = dot(rij, rij);
+      if( r2>domain_radius )domain_radius=r2;
+   }
+   domain_radius=sqrt(domain_radius);
+   //cout<<"Domain center: "<<domain_center<<", Domain radius: "<<domain_radius<<endl;
+
+   return domain_radius;
+}
+
 VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
                                      const vector<Long64>& gid,
                                      const CommTable* commtable)
@@ -24,8 +115,8 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
    assert( gid.size()>0 );
    if( myRank==0)cout<<"VoronoiCoarsening: number of gids = "<<gid.size()<<endl;
    
-   const unsigned global_ncolors = (int)gid.size();
-   vector<short> gidfound(global_ncolors,0);
+   const unsigned global_ncolors = (unsigned)gid.size();
+   vector<char> gidfound(global_ncolors,0);
    const int ncells=(int)anatomy_.nLocal();
    
    owned_colors_.clear();
@@ -38,17 +129,23 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
          {
             gidfound[color] = 1;
             owned_colors_.insert(color);
+            break;
          }
       }
    }
 
-   vector<short> gidsum(global_ncolors,0);
-   MPI_Allreduce(&gidfound[0], &gidsum[0], global_ncolors, MPI_SHORT, MPI_SUM, comm_);
+   MPI_Barrier(comm_);
+   if( myRank==0)cout<<"VoronoiCoarsening: Allreduce..."<<endl;
+   reduceBytes(gidfound);
+   vector<char>& gidsum(gidfound);
+   //vector<char> gidsum(global_ncolors,0);
+   //MPI_Allreduce(&gidfound[0], &gidsum[0], global_ncolors, MPI_CHAR, MPI_MAX, comm_);
+   if( myRank==0)cout<<"VoronoiCoarsening: gidsum computed..."<<endl;
    
    std::map<Long64,int> included_ids;
    for (unsigned color=0; color<global_ncolors; ++color)
    {
-      if (gidsum[color] == 0)
+      if ( (short)gidsum[color] == 0)
       {
          if (myRank == 0)
             cout << "WARNING: VoronoiCoarsening could not find non-zero cell type with gid "
@@ -116,28 +213,12 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
    if( ncells>0 )
    {
       if( myRank==0 )cout<<"VoronoiCoarsening: ncenters="<<centers_.size()<<endl;
-      
-      // get sub-domain mass center
-      Vector domain_center(0.,0.,0.);
-      for (int icell=0; icell<ncells; ++icell)
-      {
-         Vector r = indexToVector_(anatomy_.gid(icell));
-         domain_center+=r;
-      }
-      domain_center/=(double)ncells;
-      
-      // get sub-domain radius
-      double domain_radius=0.;
-      for (int icell=0; icell<ncells; ++icell)
-      {
-         Vector r = indexToVector_(anatomy_.gid(icell));
-         Vector rij = r - domain_center;
-         double r2 = dot(rij, rij);
-         if( r2>domain_radius )domain_radius=r2;
-      }
-      domain_radius=sqrt(domain_radius);
-      //cout<<"Domain center: "<<domain_center<<", Domain radius: "<<domain_radius<<endl;
 
+      Vector domain_center=getDomaincenter(); 
+
+      // get sub-domain radius
+      double domain_radius=getDomainRadius(domain_center);
+      
       const double r2max=3.*max_distance*max_distance/
                         (anatomy_.dx()*anatomy_.dx()
                         +anatomy_.dy()*anatomy_.dy()
