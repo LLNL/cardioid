@@ -276,8 +276,9 @@ void initializeSimulate(const string& name, Simulate& sim)
       sim.sensor_.push_back(sensorFactory(names[ii], sim));
 
    // let user specify a filename containing the list of cell gids they want in the snapshots
-   // (need to do this after data is distributed, so we can store just the local subset of points
-   // on each task)
+   // (need to do this after data is distributed, so we can store just the local subset of
+   // points on each task)
+   sim.snapshotSubset_ = false;
    string snapshotCLFile;
    objectGet(obj, "snapshotCellList", snapshotCLFile, "");
    if (snapshotCLFile != "")

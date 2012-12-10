@@ -45,6 +45,9 @@ bool readSnapshotCellList(string filename, Simulate& sim, OBJECT* obj)
    cellVec.resize(nSubset);
    MPI_Bcast(&cellVec[0], nSubset, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
 
+   if (nSubset > 0)
+      sim.snapshotSubset_ = true;
+   
    // now every task knows the full list of cells, want to populate sim.snapshotCellList
    // with the cells local to each task.  Copy local cell gids into an STL::Set for faster
    // searching
