@@ -300,6 +300,11 @@ void TT06Dev_Reaction::mkState_(TT06Dev_ReactionParms& parms)
 
    double c9=get_c9(); 
    for (unsigned ii=0; ii<nCells_; ++ii)
+   {
+      int cellType = cellTypeVector_[ii];
+      for (int j=0;j<nStateVar;j++) state_[j][ii]  = stateInitial_[cellType][j]; 
+      state_[dVK_i][ii] = state_[K_i][ii]/c9+initialVm_[cellType];
+   } 
    for (unsigned ii=nCells_; ii<nCellBuffer_;ii++) 
    for (int j=0;j<nStateVar;j++) state_[j][ii]  =  state_[j][ii-1];  
 }
