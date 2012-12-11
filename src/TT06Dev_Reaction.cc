@@ -264,6 +264,10 @@ void TT06Dev_Reaction::mkCellTypeVector_(Anatomy& anatomy, TT06Dev_ReactionParms
    cellTypeVector_.resize(nCells_); 
    nCellsOfType_.resize(nCellTypes_,0); 
    vector<AnatomyCell>& cells = anatomy.cellArray();
+
+   SortByRank_andTuple_factory sortFunc(tissueType2Rank_,anatomy);
+   sort(cells.begin(), cells.end(), sortFunc.emit_sorter());
+
    nCell_s0_=0; 
    for (unsigned ii=0; ii<nCells_; ++ii) 
    {
@@ -274,18 +278,11 @@ void TT06Dev_Reaction::mkCellTypeVector_(Anatomy& anatomy, TT06Dev_ReactionParms
       int s0 = cellTypeParms_[cellType].s_switch;
       if (s0 != 0) nCell_s0_++; 
    }
-   SortByRank_andTuple_factory sortFunc(tissueType2Rank_,anatomy);
-   sort(cells.begin(), cells.end(), sortFunc.emit_sorter());
 
    for (unsigned ii=nCells_; ii<nCellBuffer_;ii++) 
    {
      cellTypeVector_[ii] = cellTypeVector_[ii-1]; 
    }
-   PFILE *file= Popen("type","w",MPI_COMM_WORLD); 
-   PioSet(file,"ngroup",1); 
-   Pprintf(file,"%d ",getRank(0)); 
-   Pprintf(file,"\n"); 
-   Pclose(file); 
 }
 void TT06Dev_Reaction::mkState_(TT06Dev_ReactionParms& parms)
 {
@@ -303,11 +300,6 @@ void TT06Dev_Reaction::mkState_(TT06Dev_ReactionParms& parms)
 
    double c9=get_c9(); 
    for (unsigned ii=0; ii<nCells_; ++ii)
-   {
-      int cellType = cellTypeVector_[ii];
-      for (int j=0;j<nStateVar;j++) state_[j][ii]  = stateInitial_[cellType][j]; 
-      state_[dVK_i][ii] = state_[K_i][ii]/c9+initialVm_[cellType];
-   } 
    for (unsigned ii=nCells_; ii<nCellBuffer_;ii++) 
    for (int j=0;j<nStateVar;j++) state_[j][ii]  =  state_[j][ii-1];  
 }
