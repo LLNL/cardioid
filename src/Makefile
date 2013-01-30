@@ -68,7 +68,7 @@ HEARTSRC= \
    StateVariableSensor.cc
 
 SPISRC=	 spi_impl.c
-SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c 
+SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c
 
 DDCMD_FILES = \
 	codata.h \
@@ -80,8 +80,6 @@ DDCMD_FILES = \
 	external.h \
 	GridAssignmentObject.c \
 	GridAssignmentObject.h \
-	gsl.c \
-	gsl.h \
 	hardwareInfo.c \
 	hardwareInfo.h \
 	heap.c \

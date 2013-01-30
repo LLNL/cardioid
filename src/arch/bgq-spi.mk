@@ -25,12 +25,6 @@ CFLAGS_BASE =   -qsmp=omp -qhot=novector -qsimd=auto $(INCLUDE) $(DFLAGS) $(BGSY
 CFLAGS_BASE =   -qsmp=omp $(INCLUDE) $(DFLAGS) $(BGSYS_INC) $(SPI_INC)
 CXXFLAGS_BASE = -qsmp=omp $(INCLUDE) $(DFLAGS) $(BGSYS_INC) $(SPI_INC)
 
-HAVE_GSL = 1
-ifeq ($(HAVE_GSL),1) 
-   CFLAGS_BASE  += -DHAVE_GSL -I/usr/gapps/emhm/include 
-   CXXFLAGS_BASE  += -DHAVE_GSL -I/usr/gapps/emhm/include 
-   LDFLAGS_BASE += -L/usr/gapps/emhm/lib/gsl-1.15-bgq -lgsl -lgslcblas
-endif
 
 CFLAGS_OPT =   $(CFLAGS_BASE) -g -O3  
 #CFLAGS_DEBUG = $(CFLAGS_BASE) -g -O0 -fnoinline

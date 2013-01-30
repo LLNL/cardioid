@@ -9,8 +9,7 @@ DFLAGS = -DWITH_PIO -DWITH_MPI -DBGP \
 #DFLAGS = -DWITH_PIO -DWITH_MPI -DBGP \
 #	-DADD_ -DUSE_CSTDIO_LFS -DMPICH_IGNORE_CXX_SEEK -DDiff_Weight_Type_Single
 
-INCLUDE =  -I/bgsys/drivers/ppcfloor/arch/include \
-	-I/usr/local/tools/gsl/include/
+INCLUDE =  -I/bgsys/drivers/ppcfloor/arch/include 
 
 
 CFLAGS_BASE =   -qarch=450d $(INCLUDE) $(DFLAGS)
@@ -21,12 +20,6 @@ CFLAGS_BASE   += $(FPE_TRAP_FLAGS)
 CXXFLAGS_BASE += $(FPE_TRAP_FLAGS)
 OMP_FLAGS = -qsmp=omp 
 
-HAVE_GSL = 1
-ifeq ($(HAVE_GSL),1) 
-   CFLAGS_BASE  += -DHAVE_GSL
-   CXXFLAGS_BASE  += -DHAVE_GSL
-   LDFLAGS_BASE += -L/usr/local/tools/gsl/lib -lgsl -lgslcblas
-endif
 
 CFLAGS_OPT =   $(CFLAGS_BASE) $(OMP_FLAGS) -g -O3 -qtune=450 
 CFLAGS_DEBUG = $(CFLAGS_BASE) $(OMP_FLAGS) -g -O0

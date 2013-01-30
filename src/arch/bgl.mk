@@ -7,19 +7,12 @@ LD=$(CXX)
 DFLAGS = -DWITH_PIO -DWITH_MPI -DBGL \
 	-DADD_ -DUSE_CSTDIO_LFS -DMPICH_IGNORE_CXX_SEEK
 
-INCLUDE = -I/bgl/BlueLight/ppcfloor/bglsys/include \
-	-I/usr/local/tools/gsl/include/
+INCLUDE = -I/bgl/BlueLight/ppcfloor/bglsys/include
 
 CFLAGS_BASE =   -qlanglvl=stdc99 -qarch=440d $(INCLUDE) $(DFLAGS)
 CXXFLAGS_BASE = -qarch=440 $(INCLUDE) $(DFLAGS)
 LDFLAGS_BASE = -lc -lnss_files -lnss_dns -lresolv
 
-HAVE_GSL = 1
-ifeq ($(HAVE_GSL),1) 
-   CFLAGS_BASE  += -DHAVE_GSL
-   CXXFLAGS_BASE  += -DHAVE_GSL
-   LDFLAGS_BASE += -L/usr/local/tools/gsl/lib -lgsl -lgslcblas
-endif
 
 CFLAGS_OPT =   $(CFLAGS_BASE) -g -O3 -qtune=440 
 CFLAGS_DEBUG = $(CFLAGS_BASE) -g -O0

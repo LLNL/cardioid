@@ -2,18 +2,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <float.h>
 #include <string.h>
-#include "gsl.h"
-#define C(i) (gsl_vector_get(c,(i)))
+#include <assert.h>
+#include "svd.h"
 
 int costFunc(int l, int m)
 {
-    //if (l != m  ) -1; 
-  //if (l > 1 ) -1 ; 
    int cost = (m-1)+(l-1)+4;
    if ( l==1 ) cost = (m-1) ; 
-	return cost; 
+   return cost; 
 }
+
 double padeFunc(double x, PADE *pade) 
 {
    int l=pade->l; 
@@ -45,54 +45,33 @@ static void padeError(int l,int m,double *a,int n,double *x,double *y,double *er
    pade.coef=a; 
    for (int i = 0; i<n;i++) 
    {
-     double f = padeFunc(x[i],&pade); 
-     double err = fabs(f-y[i]); 
-     if (err > eMax) eMax = err; 
-     err2 += err*err; 
+      double f = padeFunc(x[i],&pade); 
+      double err = fabs(f-y[i]); 
+      if (err > eMax) eMax = err; 
+      err2 += err*err; 
    }
    *errMax = eMax; 
    *errRMS = sqrt(err2/n); 
 }
-void  findPadeApprox(int l, int m, int n, double *x, double *y, double *a )
+int  findRationalApprox(int l, int m, int n, double *x, double *y, double *a )
 {
-   gsl_matrix *XX=NULL, *cov=NULL;
-   gsl_vector *yy=NULL, *w=NULL, *cc=NULL;
    int k = m+l-1 ; 
-      
-   XX = gsl_matrix_alloc(n, k);
-   yy= gsl_vector_alloc(n);
-   w = gsl_vector_alloc(n);
-        
-   cc = gsl_vector_alloc(k);
-   cov = gsl_matrix_alloc(k, k);
-         
+   double Abuffer[(n+k)*k]; 
+   double  *A[n+k]; 
+   for(int i=0;i<n+k;i++) A[i] = Abuffer+i*k; 
    for (int i = 0; i < n; i++)
    {
-      double xj=1.0; 
       double xi = x[i]; 
-      for (int j=0;j<m;j++) { gsl_matrix_set(XX, i, j, xj); xj *= xi; }
-      xj=y[i]*xi; 
-      for (int j=m;j<k;j++) { gsl_matrix_set(XX, i, j, xj); xj *= xi; }
-      gsl_vector_set (yy, i, y[i]);
-      gsl_vector_set (w, i, 1.0);
+      double xj=1.0; 
+      for (int j=0;j<m;j++) { A[i][j] = xj; xj *= xi; }
+      xj=-y[i]*xi; 
+      for (int j=m;j<k;j++) { A[i][j] = xj; xj *= xi; }
    }
-   for (int i = 0; i < n; i++) gsl_vector_set(w, i, 1.0);
-   double chisq; 
-   {
-      gsl_multifit_linear_workspace *work = gsl_multifit_linear_alloc(n, k);
-      gsl_multifit_wlinear(XX, w, yy, cc, cov, &chisq, work);
-      gsl_multifit_linear_free (work);
-   }
-   //for (int j=0;j<m;j++) a[j] = C(j);
-   for (int j=0;j<m;j++) a[j] = gsl_vector_get(cc,(j));
+   double aa[k]; 
+   svdLinearLeastSquares(n, k, A, y, aa) ;
+   for (int i=0;i<m;i++) a[i] = aa[i]; 
    a[m]=1.0; 
-   //for (int j=m;j<k;j++) a[j+1] =-C(j);
-   for (int j=m;j<k;j++) a[j+1] =-1.0*gsl_vector_get(cc,(j));
-   gsl_matrix_free(XX);
-   gsl_vector_free(yy);
-   gsl_vector_free(w);
-   gsl_vector_free(cc);
-   gsl_matrix_free(cov);
+   for (int i=m;i<k;i++) a[i+1] = aa[i]; 
 }
 void makeFunctionTable(PADE *pade) 
 {
@@ -114,8 +93,9 @@ void makeFunctionTable(PADE *pade)
 }
 void padeErrorInfo(PADE pade,int index) 
 {
-   
+
    double dy = pade.ymax-pade.ymin; 
+   if (pade.errRMS == 0.0) dy = 1.0; 
    char filename[256]; 
    sprintf(filename,"func_tt06_%s",pade.name.c_str()); 
    FILE *file = fopen(filename,"w"); 
@@ -153,43 +133,57 @@ static void  minimizeCost(PADE *pade,int maxCost, int lMax, int mMax)
    double amin[lMax+mMax]; 
    double errMaxMin = -1.0; 
    double errRMSMin=0.0 ; 
-   
-   for (int kk=minCost;kk<=maxCost;kk++) 
+
+
+   if (dy >  0.0) 
    {
-        for (int l=lMin;l<=lMax;l+=1)
-        for (int m=mMin;m<=mMax;m+=1)
-        {
-           if (costFunc(l,m) != kk) continue; 
-           double a[l+m], errMax, errRMS; 
-           findPadeApprox(l,m,n,x,y,a);
-           padeError(l,m,a,n,x,y,&errMax,&errRMS);
-           if (errMax < errMaxMin || errMaxMin==-1.0) 
-           {
-              lmin=l;
-              mmin=m;
-              for (int j=0;j<l+m;j++) amin[j] = a[j];
-              errMaxMin = errMax; 
-              errRMSMin = errRMS; 
-           }
-       }
-       if (errMaxMin  < errTol && errMaxMin >= 0.0 ) break ; 
+      for (int kk=minCost;kk<=maxCost;kk++) 
+      {
+         for (int l=lMin;l<=lMax;l+=1)
+            for (int m=mMin;m<=mMax;m+=1)
+            {
+               if (costFunc(l,m) != kk) continue; 
+               double a[l+m], errMax, errRMS; 
+               double errMaxR; 
+               double b[l+m]; 
+               findRationalApprox(l,m,n,x,y,a);
+               padeError(l,m,a,n,x,y,&errMax,&errRMS);
+               if (errMax < errMaxMin || errMaxMin==-1.0) 
+               {
+                  lmin=l;
+                  mmin=m;
+                  for (int j=0;j<l+m;j++) amin[j] = a[j];
+                  errMaxMin = errMax; 
+                  errRMSMin = errRMS; 
+               }
+            }
+         if (errMaxMin  < errTol && errMaxMin >= 0.0 ) break ; 
+      }
+   }
+   else 
+   {
+      lmin=1; 
+      mmin=1; 
+      amin[0]=pade->ymax;
+      amin[1]=1.0;
+      errMaxMin = 0.0; 
+      errRMSMin = 0.0; 
    }
    length = lmin+mmin; 
    pade->l = lmin; 
    pade->m = mmin; 
    pade->errMax=errMaxMin; 
    pade->errRMS=errRMSMin; 
-   //pade->coef = (double *)malloc(length*sizeof(double)); 
    int rc = posix_memalign((void**)&pade->coef, 32, length*sizeof(double));
    for (int i =0;i<length;i++) pade->coef[i]=amin[i]; 
    pade->cost=costFunc(lmin,mmin); 
 }
 void padeWrite(FILE *file,PADE pade)
 {
-	fprintf(file,"%10s FIT { tol=%e; deltaX=%21.14e; x0= %21.14e; x1= %21.14e; l=%d;m=%d;",pade.name.c_str(),pade.tol, pade.deltaX, pade.x0,pade.x1,pade.l,pade.m);
-	fprintf(file, " coef="); 
-        for (int i=0;i<(pade.l+pade.m);i++) fprintf(file, "%23.16e ",pade.coef[i]); 
-	fprintf(file, ";}\n"); 
+   fprintf(file,"%10s FIT { tol=%e; deltaX=%21.14e; x0= %21.14e; x1= %21.14e; l=%d;m=%d;",pade.name.c_str(),pade.tol, pade.deltaX, pade.x0,pade.x1,pade.l,pade.m);
+   fprintf(file, " coef="); 
+   for (int i=0;i<(pade.l+pade.m);i++) fprintf(file, "%23.16e ",pade.coef[i]); 
+   fprintf(file, ";}\n"); 
 }
 void padeCalc(PADE *pade, int lMax, int mMax, int maxCost)
 {
@@ -213,22 +207,22 @@ void padeSet(PADE *pade, int lMax, int mMax, int maxCost)
    }
    else 
    { 
-       pade->afunc = pade->func ; 
-       pade->aparms= pade->parms; 
+      pade->afunc = pade->func ; 
+      pade->aparms= pade->parms; 
    }
 }
 void padeApprox(PADE &pade, std::string name, double (*func)(double x, void *parms), void *parms, int size_parms,
-                double deltaX, double x0, double x1,
-                double tol, int lMax,int mMax,int maxCost,
-                int l, int m, double *coef)
+      double deltaX, double x0, double x1,
+      double tol, int lMax,int mMax,int maxCost,
+      int l, int m, double *coef)
 {
    pade.name = name; 
    pade.func = func; 
    pade.parms = NULL ; 
    if (size_parms > 0 && parms != NULL) 
    {
-     pade.parms = malloc(size_parms); 
-     for (int i=0;i<size_parms;i++) ((char *)pade.parms)[i] = ((char*)parms)[i]; 
+      pade.parms = malloc(size_parms); 
+      for (int i=0;i<size_parms;i++) ((char *)pade.parms)[i] = ((char*)parms)[i]; 
    }
    pade.tol=tol; 
    pade.deltaX = deltaX; 
@@ -251,7 +245,7 @@ void padeApprox(PADE &pade, std::string name, double (*func)(double x, void *par
    {
       if (coef == NULL) 
       {
-          minimizeCost(&pade, maxCost, lMax, mMax);
+         minimizeCost(&pade, maxCost, lMax, mMax);
       }
       else
       {
@@ -267,8 +261,8 @@ void padeApprox(PADE &pade, std::string name, double (*func)(double x, void *par
    }
    else 
    { 
-       pade.afunc = pade.func ; 
-       pade.aparms= pade.parms; 
+      pade.afunc = pade.func ; 
+      pade.aparms= pade.parms; 
    }
 
 }

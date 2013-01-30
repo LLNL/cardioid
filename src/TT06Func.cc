@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <cassert>
-#include "gsl.h"
 #include "TT06Tau.hh"
 #include "pade.hh"
 #include "mpiUtils.h"

@@ -12,12 +12,6 @@ INCLUDE =
 CFLAGS_BASE = $(INCLUDE) $(DFLAGS)
 CXXFLAGS_BASE = $(INCLUDE) $(DFLAGS)
 
-HAVE_GSL = 0
-ifeq ($(HAVE_GSL),1) 
-   CFLAGS_BASE  += -DHAVE_GSL
-   CXXFLAGS_BASE  += -DHAVE_GSL
-   LDFLAGS_BASE += -lgsl -lgslcblas
-endif
 
 CFLAGS_OPT =   $(CFLAGS_BASE) -g -O3
 CFLAGS_DEBUG = $(CFLAGS_BASE) -g -ggdb -O0 -fno-inline
