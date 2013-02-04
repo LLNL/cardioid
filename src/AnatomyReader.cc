@@ -64,7 +64,6 @@ namespace
          BucketOfBits::Record rr = bucketP->getRecord(ii);
          rr.getValue(gidIndex, tmp.gid_);
          rr.getValue(typeIndex, tmp.cellType_);
-         
          if (typeSet.count(tmp.cellType_) != 0)
             cells.push_back(tmp);
       }

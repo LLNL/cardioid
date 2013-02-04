@@ -445,12 +445,12 @@ void diffusionLoop(Simulate& sim,
       if (globalSyncCnt >=0) globalSyncCnt--; 
       if (globalSyncCnt == 0 )
       {
-	 globalSyncCnt=globalSyncRate; 
+         globalSyncCnt=globalSyncRate; 
          if (tid == 0)
          {
-          startTimer(diffusionImbalanceTimer);
-          loopData.voltageExchange.barrier();
-          stopTimer(diffusionImbalanceTimer);
+            startTimer(diffusionImbalanceTimer);
+            loopData.voltageExchange.barrier();
+            stopTimer(diffusionImbalanceTimer);
          }
       }
       threadBarrier(timingBarrierTimer, loopData.timingBarrier, &timingHandle, nTotalThreads);
@@ -469,7 +469,7 @@ void diffusionLoop(Simulate& sim,
          stopTimer(haloLaunchTimer);
       }
       
-      // stimulus
+         // stimulus
       startTimer(initializeDVmDTimer);
       if (loopData.stimIsNonZero > 0)
 	{

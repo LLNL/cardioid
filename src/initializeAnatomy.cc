@@ -72,6 +72,20 @@ void initializeAnatomy(Anatomy& anatomy, const string& name, MPI_Comm comm)
    anatomy.nGlobal() = nGlobal;
    
    Tuple globalGridSize(anatomy.nx(), anatomy.ny(), anatomy.nz());
+
+   //ewd: check that there are no gids greater than or equal to nx*ny*nz, which
+   //ewd: will cause the load balancers to hang or crash.
+   Long64 nXYZ = anatomy.nx()*anatomy.ny()*anatomy.nz();
+   for (unsigned ii=0; ii<nLocal; ++ii)
+   {
+      Long64 gid = anatomy.gid(ii);
+      if (gid >= nXYZ || gid < 0)
+      {
+         cout << "Invalid gid " << gid << " for grid " << anatomy.nx() << " x " << anatomy.nx() << " x " << anatomy.nx() << " (" << nXYZ << " points total)" << endl;
+         assert(gid >= 0);
+         assert(gid < nXYZ);
+      }
+   }
    
    setConductivity(conductivityName, *data, globalGridSize, typeSet, anatomy.cellArray());
    delete data;
