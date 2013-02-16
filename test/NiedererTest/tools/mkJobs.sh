@@ -5,19 +5,14 @@
 # 1. Might want to add a loop over different numbers of tasks to check
 # that the results don't change with the decomposition.  
 
-exe=../../../../bin/cardioid-bgp
-pool=pdebug
-maxTime=1:30
-bank=dev
+exe=../../../../bin/cardioid-bgq-spi
 nNodes=64
-nTasks=256
-
+nTasks=64
+balancer=grid
 
 for dt in 0.050 0.010 0.005 0.001
 do
 for dx in 0.50 0.20 0.10 0.05
-do
-for balancer in koradi grid
 do
 
   dirname=run/${balancer}_dt${dt}_dx${dx}
@@ -39,23 +34,23 @@ do
       ;;
       0.20)
       stimBox=8
-      nTasks=128
+      nTasks=64
       nNodes=64
-      xGrid=4; yGrid=4; zGrid=8
+      xGrid=4; yGrid=4; zGrid=4
       tMax=60
       ;;
       0.10)
       stimBox=16
-      nTasks=256
+      nTasks=64
       nNodes=64
-      xGrid=4; yGrid=8; zGrid=8
+      xGrid=4; yGrid=4; zGrid=4
       tMax=50
       ;;
       0.05)
       stimBox=30
-      nTasks=1024
-      nNodes=256
-      xGrid=8; yGrid=8; zGrid=16
+      nTasks=64
+      nNodes=64
+      xGrid=4; yGrid=4; zGrid=4
       tMax=50
       ;;
       *)
@@ -65,16 +60,16 @@ do
 
   case $dt in
       0.050)
-      snapshotRate=20
+      snapshotRate=500000
       ;;
       0.010)
-      snapshotRate=100
+      snapshotRate=500000
       ;;
       0.005)
-      snapshotRate=200
+      snapshotRate=500000
       ;;
       0.001)
-      snapshotRate=1000
+      snapshotRate=500000
       ;;
       *)
       echo ERROR: undefined dt
@@ -95,15 +90,11 @@ do
       | sed s/XX_ZGRID_XX/$zGrid/ \
       > $dirname/object.data
         
-  cat tools/runMe.sh.proto \
+  cat tools/sbatch.bgq.proto \
       | sed s%XX_NNODES_XX%$nNodes% \
       | sed s%XX_NTASKS_XX%$nTasks% \
-      | sed s%XX_MAXTIME_XX%$maxTime% \
-      | sed s%XX_POOL_XX%$pool% \
-      | sed s%XX_BANK_XX%$bank% \
       | sed s%XX_EXE_XX%$exe% \
-      > $dirname/runMe.sh
+      > $dirname/sbatch.bgq
 
-done
 done
 done
