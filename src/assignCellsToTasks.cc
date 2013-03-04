@@ -184,7 +184,34 @@ namespace
       objectGet(obj, "ny", npey, "0");
       objectGet(obj, "nz", npez, "0");
       int npegrid = npex*npey*npez;
-      assert(npegrid > 0);
+      if (npegrid != nTasks)  // choose grid values automatically
+      {
+         if (myRank == 0)
+            cout << "GDLoadBalancer:  process grid does not match nTasks = " << nTasks << ", selecting automatically..." << endl;
+         int tx = 1;
+         int ty = 1;
+         int tz = 1;
+         int tTasks = nTasks;
+         int nPowTwo = 0;
+         while (tTasks%2==0)
+         {
+            nPowTwo++;
+            tTasks /= 2;
+         }
+         tx = tTasks;
+         while (nPowTwo > 0)
+         {
+            if (tx <= ty && tx <= tz) { tx *= 2; nPowTwo--; }
+            else if (tz <= ty && tz <= tx) { tz *= 2; nPowTwo--; }
+            else if (ty <= tz && ty <= tx) { ty *= 2; nPowTwo--; }
+         }
+
+         npex = tx;
+         npey = ty;
+         npez = tz;
+         npegrid = npex*npey*npez;
+      }
+      assert(npegrid == nTasks);
 
       // Move each cell of gid=(i,j,k) to corresponding rank k
       for (unsigned ii=0; ii<cells.size(); ++ii)
