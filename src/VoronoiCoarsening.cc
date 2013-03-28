@@ -106,14 +106,17 @@ map<int,Vector> VoronoiCoarsening::getCloseCenters(const Vector& domain_center,
                                                    const double d2min)const
 {
       map<int,Vector> close_centers;
-      for(map<int,Vector>::const_iterator icenter =centers_.begin();
-                                          icenter!=centers_.end();
-                                        ++icenter)
+      for(map<int, Long64>::const_iterator icenter =centers_.begin();
+                                           icenter!=centers_.end();
+                                         ++icenter)
       {
-         Vector rij = domain_center - icenter->second;
+         
+         Vector ri = indexToVector_(icenter->second);
+         Vector rij = domain_center - ri;
          double r2 = dot(rij, rij);
          
-         if( r2<=d2min)close_centers.insert( *icenter );
+         if (r2<=d2min)
+            close_centers.insert( make_pair(icenter->first, ri) );
       }
       const int nclosecenters=(int)close_centers.size();
       assert( nclosecenters>0 );
@@ -193,8 +196,10 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
             included_ids.insert(pair<Long64,int>(gid[color],color));
             multiplicities_.insert(make_pair(color, 1));
             
-            centers_.insert(pair<int,Vector>(color,indexToVector_(gid[color])));
-         }else{
+            centers_.insert(make_pair(color, gid[color]));
+         }
+         else
+         {
             int cc=is->second;
             if (myRank == 0)
                cout << "WARNING: VoronoiCoarsening, gid "
@@ -261,14 +266,15 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
                         +anatomy_.dz()*anatomy_.dz());
       // get distance from sub-domain center to closest center
       double extra_radius = sqrt(r2max);
-      if( extra_radius>domain_radius ){
+      if ( extra_radius>domain_radius )
+      {
          const double domain_radius2=domain_radius*domain_radius;
          double extra_radius2=extra_radius*extra_radius;
-         for(map<int,Vector>::const_iterator icenter =centers_.begin();
-                                             icenter!=centers_.end();
-                                           ++icenter)
+         for (map<int, Long64>::const_iterator icenter =centers_.begin();
+                                               icenter!=centers_.end();
+                                             ++icenter)
          {
-            Vector rij = domain_center - icenter->second;
+            Vector rij = domain_center - indexToVector_(icenter->second);
             double r2 = dot(rij, rij);
             if (r2 < extra_radius2)
             {
@@ -363,7 +369,7 @@ void VoronoiCoarsening::colorDisplacements(std::vector<double>& dx,
       if(color>=0)
       {
          Vector r = indexToVector_(anatomy_.gid(icell));
-         Vector rij = r - centers_[color];
+         Vector rij = r - indexToVector_(centers_[color]);
          dx[icell]=rij.x()*anatomy_.dx();
          dy[icell]=rij.y()*anatomy_.dy();
          dz[icell]=rij.z()*anatomy_.dz();

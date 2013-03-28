@@ -164,7 +164,7 @@ class VoronoiCoarsening
    const Anatomy& anatomy_;
 
    // shared globally
-   std::map<int,Vector> centers_; // color->position
+   std::map<int, Long64> centers_; // color->cell gid
    std::map<int,short>  multiplicities_; // color->multiplicity
 
    // local only
@@ -198,8 +198,9 @@ class VoronoiCoarsening
    
    const Vector center(const int color)const
    {
-      assert( centers_.find(color)!=centers_.end() );
-      return centers_.find(color)->second;
+      std::map<int, Long64>::const_iterator here = centers_.find(color);
+      assert( here!=centers_.end() );
+      return indexToVector_(here->second);
    }
    
    short multiplicity(const int color)const
