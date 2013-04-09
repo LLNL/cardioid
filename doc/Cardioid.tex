@@ -12,7 +12,7 @@
 Cardioid has been designed to be portable to a wide variety of systems.
 If you are building on a system that is recognized by the build system
 you should only have to enter the src directory and type make.  The next
-few paragraphs describe the proceedure to follow if your build host is
+few paragraphs describe the procedure to follow if your build host is
 not recognized.
 
 Cardioid's build system uses a hostname based configuration system
@@ -313,6 +313,9 @@ voltage = 1 kg*meter^2*A^-1*s^-3;
 
 \subsection{ANATOMY}
 
+\subsubsection{Coordinate system}
+
+
 Defines the anatomical structure to simulate.
 
 \begin{keywords}
@@ -600,6 +603,7 @@ protocols.
   {decomposition}
   \kw{diffusion}{The name of the DIFFUSION object for this simulation.}
   {diffusion}
+  \kw{heap}{Storage allocated for IO buffers}{500}
   \kw{dt}{The time step.}{0.01~msec}
   \kw{loop}{The initial loop count for the simulation.}{0}
   \kw{maxLoop}{The maximum value for the loop count.}{1000}
@@ -915,10 +919,97 @@ bn where bn is an unsigned integer stored in n bytes.
 
 Both fixed and variable length ascii records are supported.
 
+\section{Utility applications}
+\label{sec:utility}
+
+\subsection{read\_results}
+%\label{ssec:readresults}
+\verb|read_results| is a post-processing utility which allows the arbitrary
+resolution 'vtk' UnstructuredMesh (Polyhedral) files (see figure \ref{fig:grid_comparsion}). This may allow visualisations
+to be generated a a substantially lower cost that using the full checkpoint
+files.
+\begin{figure}
+  {\centering\includegraphics{graphics/pulseTrain.png}}
+  \caption{Periodic pulse train.}
+  \label{fig:grid_comparsion}
+\end{figure}
+
+\subsection{Producing data for read results with cardioid}
+The proceedure for producing the appropriate data is as follows. Given a cardioid regular
+finite element grid, an auxiliary mesh may be formed were a small sample (1:1000)
+points are seleted from the grid. As this mesh is for visualisation only, it is not
+constrained to the cubic geometry. However each nodal point on the polyhedral mesh
+will correspond to a evaluation point within the finite element grid. In order
+to use this auxiliary grid with cardioid we must extract information, from the cardioid
+finite element grid, at the relevant points to the auxiliary grid, followed by
+associating this data with the auxiliary grid in a vtk data file.
+
+To conduct this procedure first we must construct a 
+\verb|sensor.txt| file. This file is a whitespace separated lists of the mapping from the 'vtk datafile
+indices to the PIO GIDs. I.e. a list of PIO GIDs in order of increasing vtk point
+index.
+
+The sensor file is used generate output from cardioid. Two groups of methods are employed to output. The first
+based on the \verb|snapshotCellList|:
+\begin{verbatim}
+simulate SIMULATE
+{
+   snapshotRate = 400;
+   snapshotCellList = sensor.txt;
+}
+\end{verbatim}
+The \verb|object.data| snippet above will output membrane voltage, region (MPI rank)
+and cell type for each of the selected nodes every 400 timesteps. The data is stored
+in \verb|./snapshot.`timestep'/anatomy#*|. A second example for calculating membrane
+voltage spatial gradient follows where the data is stored within  \verb|./snapshot.`timestep'/coarsened_anatomy#*|.
+\begin{verbatim}
+simulate SIMULATE
+{
+   sensor = myGradient;
+}
+
+myGradient SENSOR
+{
+   method = gradientVoronoiCoarsening;
+   cellList = "sensor.txt";
+   maxDistance = 0.19 mm;
+   printRate = 400;
+   evalRate = 400;
+}
+\end{verbatim}
+
+\subsection{Employing \verb|read_results|}
+Given data produced as described in the previous section \verb|read_results| may
+be used in the case directory. In addition to the snapshot directory two files are
+needed in the case directory with fixed names: \verb|sensor.txt| as described above
+and \verb|wedge.vtk|, the corresponding VTK UnstructuredGrid.
+
+Two approaches may be taken calling read_results:
+\begin{verbatim}
+./read_results -n anatomy# 
+
+./read_results -j a_json_file.json
+\end{verbatim}
+The first approach (using the \verb|-n| flag), processes all of the snapshot
+directories in sequential order, reading the files within each snapshot directory
+prefixed with \verb|anatomy#|.
+
+The second approach uses a json file to selectively index the snapshot directories
+to process. The json block following describes which snapshot directories it will
+process based on timestep index.
+\begin{verbatim}
+{
+    "read_results": {
+    	"start_index" : 400,
+    	"stride_length": 400,
+    	"end_index": 1200,
+	"prefix": "anatomy#"
+    }
+}
+\end{verbatim}
+
+
 
 
 \end{document}
-%%% Local Variables: 
-%%% mode: latex
-%%% TeX-master: t
-%%% End: 
+
