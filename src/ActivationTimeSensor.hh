@@ -12,6 +12,7 @@ class PotentialData;
 
 struct ActivationTimeSensorParms
 {
+   unsigned nFiles;
    std::string filename;
 };
 
@@ -43,6 +44,7 @@ class ActivationTimeSensor : public Sensor
    int nx_;
    int ny_;
    int nz_;
+   unsigned nFiles_;
    double dx_;
    double dy_;
    double dz_;

@@ -101,7 +101,6 @@ class Simulate
    std::set<Long64> snapshotCellList_;
    int checkpointRate_;
    bool asciiCheckpoints_;
-   int nFiles_;
 
    ThreadTeam diffusionThreads_;
    ThreadTeam reactionThreads_;

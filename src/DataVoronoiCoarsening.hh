@@ -14,6 +14,8 @@ class DataVoronoiCoarsening : public Sensor
    VoronoiCoarsening coarsening_;
  
    std::string filename_;
+   unsigned nFiles_;
+   
    const Anatomy& anatomy_;
    const PotentialData& vdata_;
 
@@ -34,12 +36,13 @@ class DataVoronoiCoarsening : public Sensor
 
  public:
    DataVoronoiCoarsening(const SensorParms& sp,
-                     std::string filename,
-                     const Anatomy& anatomy,
-                     const std::vector<Long64>& gid,
-                     const PotentialData& vdata,
-                     const CommTable* commtable,
-                     const double max_distance);
+                         std::string filename,
+                         unsigned nFiles,
+                         const Anatomy& anatomy,
+                         const std::vector<Long64>& gid,
+                         const PotentialData& vdata,
+                         const CommTable* commtable,
+                         const double max_distance);
    void eval(double time, int loop);
    void print(double time, int loop);
 };

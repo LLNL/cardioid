@@ -162,7 +162,8 @@ namespace
                                     const PotentialData& vdata)
    {
       ActivationTimeSensorParms p;
-      objectGet(obj, "filename",  p.filename,  "activationTime");
+      objectGet(obj, "filename",  p.filename, "activationTime");
+      objectGet(obj, "nFiles",    p.nFiles,   "0");
       return new ActivationTimeSensor(sp, p, anatomy, vdata);
    }
 }
@@ -182,6 +183,8 @@ namespace
       string filename;
       objectGet(obj, "filename",  filename,  "coarsened_anatomy");
 
+      unsigned nFiles;  objectGet(obj, "nFiles", nFiles, "0");
+
       double maxdistance;
       objectGet(obj, "maxDistance",  maxdistance,  "100000.0");
 
@@ -189,14 +192,11 @@ namespace
       objectGet(obj, "format", format, "ascii");
       assert( format.compare("ascii")==0 || format.compare("bin")==0 );
 
-      int nFiles;
-      objectGet(obj, "nFiles", nFiles, "0");
-
       string method;
       objectGet(obj, "method", method, "undefined");
       if ( method == "voronoiCoarsening" ||
            method == "dataVoronoiCoarsening" )
-         return new DataVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, sim.commTable_, maxdistance);
+         return new DataVoronoiCoarsening(sp, filename, nFiles, anatomy, cellVec, vdata, sim.commTable_, maxdistance);
       else if( method == "gradientVoronoiCoarsening" )
       {
          string algo;
@@ -204,8 +204,8 @@ namespace
          assert( algo.compare("comm")==0 || algo.compare("nocomm")==0 );
          const bool use_communication_avoiding_algorithm = ( algo.compare("nocomm")==0 );
 
-         return new GradientVoronoiCoarsening(sp, filename, anatomy, cellVec, vdata, sim.commTable_, format, maxdistance,
-                                              use_communication_avoiding_algorithm, nFiles);
+         return new GradientVoronoiCoarsening(sp, filename, nFiles, anatomy, cellVec, vdata, sim.commTable_, format, maxdistance,
+                                              use_communication_avoiding_algorithm);
       }
       assert(false);
       return 0;
@@ -230,7 +230,9 @@ namespace
       string filename;
       objectGet(obj, "filename",  filename,  "coarsened_Ca");
 
-      return new CaAverageSensor(sp, filename, anatomy, cellVec, reaction, sim.commTable_);
+      unsigned nFiles; objectGet(obj, "nFiles", nFiles, "0");
+      
+      return new CaAverageSensor(sp, filename, nFiles, anatomy, cellVec, reaction, sim.commTable_);
    }
 }
 

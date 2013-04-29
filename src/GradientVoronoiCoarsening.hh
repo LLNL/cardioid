@@ -59,6 +59,7 @@ class GradientVoronoiCoarsening : public Sensor
    VoronoiCoarsening coarsening_;
  
    const std::string filename_;
+   const int nFiles_; // number of files for IO
    const Anatomy& anatomy_;
    const PotentialData& vdata_;
 
@@ -71,9 +72,6 @@ class GradientVoronoiCoarsening : public Sensor
    // to be consolidated with other tasks output
    const bool use_communication_avoiding_algorithm_;
    
-   // number of files for IO
-   const int nfiles_;
-
    std::vector<double> dx_;
    std::vector<double> dy_;
    std::vector<double> dz_;
@@ -123,15 +121,15 @@ class GradientVoronoiCoarsening : public Sensor
    
  public:
    GradientVoronoiCoarsening(const SensorParms& sp,
-                     std::string filename,
-                     const Anatomy& anatomy,
-                     const std::vector<Long64>& gid,
-                     const PotentialData& vdata_,
-                     const CommTable* commtable,
-                     const std::string format,
-                     const double max_distance,
-                     const bool use_communication_avoiding_algorithm=false,
-                     const int nfiles=0);
+                             std::string filename,
+                             unsigned nFiles, 
+                             const Anatomy& anatomy,
+                             const std::vector<Long64>& gid,
+                             const PotentialData& vdata_,
+                             const CommTable* commtable,
+                             const std::string format,
+                             const double max_distance,
+                             const bool use_communication_avoiding_algorithm=false);
    
    ~GradientVoronoiCoarsening()
    {

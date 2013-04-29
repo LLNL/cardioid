@@ -117,7 +117,6 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "printGid", sim.printGid_, "-1");
    objectGet(obj, "snapshotRate", sim.snapshotRate_, "100");
    objectGet(obj, "checkpointRate", sim.checkpointRate_, "-1");
-   objectGet(obj, "nFiles", sim.nFiles_, "0");
    {
       int tmp; objectGet(obj, "profileAllCounters", tmp, "0");
       if (tmp == 1)
@@ -138,7 +137,12 @@ void initializeSimulate(const string& name, Simulate& sim)
       else
          sim.asciiCheckpoints_ = true;
    }
-   
+   {
+      unsigned nFiles; objectGet(obj, "nFiles", nFiles, "0");
+      if (nFiles > 0)
+         Pio_setNumWriteFiles(nFiles);
+   }
+      
    timestampBarrier("initializing anatomy", MPI_COMM_WORLD);
    string nameTmp;
    objectGet(obj, "anatomy", nameTmp, "anatomy");

@@ -16,15 +16,17 @@ using namespace std;
 /////////////////////////////////////////////////////////////////////
 
 DataVoronoiCoarsening::DataVoronoiCoarsening(const SensorParms& sp,
-                                     string filename,
-                                     const Anatomy& anatomy,
-                                     const vector<Long64>& gid,
-                                     const PotentialData& vdata,
-                                     const CommTable* commtable,
-                                     const double max_distance)
+                                             string filename,
+                                             unsigned nFiles,
+                                             const Anatomy& anatomy,
+                                             const vector<Long64>& gid,
+                                             const PotentialData& vdata,
+                                             const CommTable* commtable,
+                                             const double max_distance)
    :Sensor(sp),
     coarsening_(anatomy,gid,commtable),
     filename_(filename),
+    nFiles_(nFiles),
     anatomy_(anatomy),
     vdata_(vdata),
     comm_(commtable->_comm)
@@ -52,6 +54,8 @@ void DataVoronoiCoarsening::writeAverages(const string& filename,
    MPI_Comm_rank(comm_, &myRank);
 
    PFILE* file = Popen(filename.c_str(), "w", comm_);
+   if (nFiles_ > 0)
+     PioSet(file, "ngroup", nFiles_);
 
    const int nfields = 4+(int)times_.size(); 
    const int lrec    = 25+13*(int)times_.size();

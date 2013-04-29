@@ -23,7 +23,8 @@ ActivationTimeSensor::ActivationTimeSensor(const SensorParms& sp,
   dy_(anatomy.dy()),
   dz_(anatomy.dz()),
   vdata_(vdata),
-  filename_(p.filename)
+  filename_(p.filename),
+  nFiles_(p.nFiles)
 {
    activationTime_.resize(nLocal_, 0.0);
    activated_.resize(nLocal_, false);
@@ -51,7 +52,10 @@ void ActivationTimeSensor::print(double time, int loop)
    MPI_Allreduce(&nLocal, &nGlobal, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
    
    PFILE* file = Popen(fullname.c_str(), "w", MPI_COMM_WORLD);
+   if (nFiles_ > 0)
+     PioSet(file, "ngroup", nFiles_);
 
+   
    char fmt[] = "%5d %5d %5d %18.12f";
    int lrec = 40;
    int nfields = 4; 

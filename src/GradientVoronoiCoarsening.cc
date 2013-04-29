@@ -61,16 +61,17 @@ int GradientVoronoiCoarsening::solve3x3(const double s[6], const double r[3], do
 
 /////////////////////////////////////////////////////////////////////
 
-GradientVoronoiCoarsening::GradientVoronoiCoarsening(const SensorParms& sp,
-                                     string filename,
-                                     const Anatomy& anatomy,
-                                     const vector<Long64>& gid,
-                                     const PotentialData& vdata,
-                                     const CommTable* commtable,
-                                     const string format,
-                                     const double max_distance,
-                                     const bool use_communication_avoiding_algorithm,
-                                     const int nfiles)
+GradientVoronoiCoarsening::GradientVoronoiCoarsening(
+   const SensorParms& sp,
+   string filename,
+   unsigned nFiles,
+   const Anatomy& anatomy,
+   const vector<Long64>& gid,
+   const PotentialData& vdata,
+   const CommTable* commtable,
+   const string format,
+   const double max_distance,
+   const bool use_communication_avoiding_algorithm)
    :Sensor(sp),
     coarsening_(anatomy,gid,commtable),
     filename_(filename),
@@ -80,7 +81,7 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(const SensorParms& sp,
     format_(format),
     max_distance_(max_distance),
     use_communication_avoiding_algorithm_(use_communication_avoiding_algorithm),
-    nfiles_(nfiles)
+    nFiles_(nFiles)
 {
    eval_count_=0;
    
@@ -549,8 +550,8 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
    MPI_Comm_rank(comm_, &myRank);
 
    PFILE* file = Popen(filename.c_str(), "w", comm_);
-   if (nfiles_ > 0)
-     PioSet(file, "ngroup", nfiles_);
+   if (nFiles_ > 0)
+     PioSet(file, "ngroup", nFiles_);
 
 
    if (myRank == 0)

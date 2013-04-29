@@ -8,23 +8,26 @@
 #include "CommTable.hh"
 #include "stringUtils.hh"
 
-using namespace PerformanceTimers;
-
 #include <vector>
 #include <iomanip>
 #include <sstream>
 
+using namespace std;
+using namespace PerformanceTimers;
+
 /////////////////////////////////////////////////////////////////////
 
 CaAverageSensor::CaAverageSensor(const SensorParms& sp,
-                   string filename,
-                   const Anatomy& anatomy,
-                   const vector<Long64>& gid,
-                   const Reaction& reaction,
-                   const CommTable* commtable)
+                                 string filename,
+                                 unsigned nFiles,
+                                 const Anatomy& anatomy,
+                                 const vector<Long64>& gid,
+                                 const Reaction& reaction,
+                                 const CommTable* commtable)
    :Sensor(sp),
     coarsening_(anatomy,gid,commtable),
     filename_(filename),
+    nFiles_(nFiles),
     reaction_(reaction),
     comm_(commtable->_comm),
     loop_buffer_(-1)
@@ -62,7 +65,9 @@ void CaAverageSensor::writeAverages(const string& filename,
    MPI_Comm_rank(comm_, &myRank);
 
    PFILE* file = Popen(filename.c_str(), "w", comm_);
-
+   if (nFiles_ > 0)
+     PioSet(file, "ngroup", nFiles_);
+   
    const int nfields = 4+(int)times_.size(); 
    const int lrec    = 25+13*(int)times_.size();
 

@@ -5,7 +5,6 @@
 #include "Sensor.hh"
 
 #include <string>
-using namespace std;
 
 class Reaction;
 class Anatomy;
@@ -16,6 +15,7 @@ private:
    VoronoiCoarsening coarsening_;
 
    std::string filename_;
+   unsigned nFiles_;
 
    const Reaction& reaction_;
 
@@ -40,16 +40,17 @@ private:
    std::map<int,std::vector<float> > averages_;
    
    void computeColorAverages(const VectorDouble32& val);
-   void writeAverages(const string& filename,
+   void writeAverages(const std::string& filename,
                       const double current_time,
                       const int current_loop)const;
 public:
    CaAverageSensor(const SensorParms& sp,
-            string filename,
-            const Anatomy& anatomy,
-            const vector<Long64>& gid,
-            const Reaction& reaction,
-            const CommTable* commtable);
+                   std::string filename,
+                   unsigned nFiles,
+                   const Anatomy& anatomy,
+                   const std::vector<Long64>& gid,
+                   const Reaction& reaction,
+                   const CommTable* commtable);
    ~CaAverageSensor(){};
    
    void print(double time, int loop);
