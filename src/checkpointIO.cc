@@ -5,6 +5,7 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <unistd.h>
 #include "pio.h"
 #include "ioUtils.h"
 #include "Simulate.hh"

@@ -69,6 +69,9 @@ endif
 ifeq ($(HOSTNAME),largo)
   ARCHGUESS = osx
 endif
+ifeq ($(HOSTNAME),silence)
+  ARCHGUESS = osx
+endif
 ifeq ($(HOSTNAME),blackcomb)
   ARCHGUESS = osx
 endif

@@ -191,7 +191,7 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
    T* getRecvBuf() {return recvBuf_;}
    void execute(vector<T>& data, int nLocal)
    {
-      fillSendBuffer(data);
+      this->fillSendBuffer(data);
       T* tmp = recvBuf_;
       data.resize(nLocal + commTable_->recvSize());
       recvBuf_ = (&data[nLocal]);

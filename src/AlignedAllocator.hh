@@ -4,6 +4,7 @@
 #include <new>
 #include <limits>
 #include <cstdlib>
+#include <cstddef>
 
 template <class T> class AlignedAllocator;
  
