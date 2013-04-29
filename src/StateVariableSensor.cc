@@ -16,7 +16,7 @@ using namespace std;
 
 StateVariableSensor::StateVariableSensor(const SensorParms& sp, const StateVariableSensorParms& p, 
                                          const Simulate& sim)
-    : Sensor(sp), startTime_(p.startTime), endTime_(p.endTime),
+    : Sensor(sp),
       gidCenter_(p.gidCenter), radius_(p.radius), sim_(sim)
 {
   int myRank;
@@ -100,18 +100,15 @@ void StateVariableSensor::print(double time, int /*loop*/)
 
 void StateVariableSensor::print(double time)
 {
-  if (time >= startTime_ && (endTime_ <= 0.0 || time <= endTime_))
-  {
-     for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
-     {
-        int kk = sensorind_[ii];
-        (*fout_loc_[ii]) << setprecision(10) << " " << time << "  " << sim_.vdata_.VmArray_[kk] << "  ";
-        vector<double> value(handles_.size(), 0.0);
-        sim_.reaction_->getValue(ii, handles_, value);
-        for (unsigned kk=0; kk<value.size(); ++kk)
-           (*fout_loc_[ii]) << setprecision(10) << value[kk] << "  ";
-        (*fout_loc_[ii]) << endl;
-     }
-  }
+   for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
+   {
+      int kk = sensorind_[ii];
+      (*fout_loc_[ii]) << setprecision(10) << " " << time << "  " << sim_.vdata_.VmArray_[kk] << "  ";
+      vector<double> value(handles_.size(), 0.0);
+      sim_.reaction_->getValue(ii, handles_, value);
+      for (unsigned kk=0; kk<value.size(); ++kk)
+         (*fout_loc_[ii]) << setprecision(10) << value[kk] << "  ";
+      (*fout_loc_[ii]) << endl;
+   }
 }
 

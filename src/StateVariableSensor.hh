@@ -17,8 +17,6 @@ struct StateVariableSensorParms
     Long64 gidCenter;
     double radius;
     vector<string> fieldList;
-    double startTime;
-    double endTime;
     string dirname;
     int printDerivs;
 };
@@ -44,8 +42,6 @@ class StateVariableSensor : public Sensor
     vector<Long64> localCells_;  // grid gids owned by this task
    vector<unsigned> sensorind_;      // corresponding local array index 
     vector<ofstream*> fout_loc_;
-    double startTime_;
-    double endTime_;
 };
 
 #endif

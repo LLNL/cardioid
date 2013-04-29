@@ -718,17 +718,21 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 
       if ( sim.checkIO(loopLocal) ) // every thread should return the same result
       {
-         // jlf: needed to have correct dVm in sensors.
-         // Already calculated in integrateLoop, so maybe we 
-         // should save it there and reuse it here...
-
+         // We're about to call loopIO to do sensors and checkpointing.
+         // But before we do we need to move the diffusion data out of
+         // the matrix representation and into the array.  This is an
+         // addition operation because were adding diffusion to stimulus
+         // that is already stored in dVmDiffusion.  It is true that we
+         // already traversed the matrix data in the integrator, but we
+         // didn't want to take the time to store it since it is only
+         // rare time steps that it is actually needed.  At least we get
+         // to use all of the reaction threads to copy the data.
          const unsigned* const blockIndex = sim.diffusion_->blockIndex();
          const double* const dVdMatrix = sim.diffusion_->dVmBlock();
          const double diffusionScale = sim.diffusion_->diffusionScale();
          for (unsigned ii=begin; ii<end; ++ii)
          {
             const int index = blockIndex[ii];
-            // add diffusion to stimulus (already stored in dVmDiffusion)
             dVmDiffusion[ii] += diffusionScale*dVdMatrix[index];
          }
 	 loopData.stimIsNonZero = 1;

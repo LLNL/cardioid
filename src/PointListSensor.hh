@@ -15,8 +15,6 @@ class PotentialData;
 struct PointListSensorParms
 {
    vector<Long64> pointList;
-   double startTime;
-   double endTime;
    string filename;
    string dirname;
    int printDerivs;
@@ -39,8 +37,6 @@ class PointListSensor : public Sensor
    vector<Long64> localCells_;  // grid gids owned by this task
    vector<unsigned> sensorind_;      // corresponding local array index 
    vector<ofstream*> fout_loc_;
-   double startTime_;
-   double endTime_;
    bool printDerivs_;
    
    const PotentialData& vdata_;

@@ -16,8 +16,6 @@ PointListSensor::PointListSensor(const SensorParms& sp, const PointListSensorPar
                                  const Anatomy& anatomy,
                                  const PotentialData& vdata)
 : Sensor(sp),
-  startTime_(p.startTime),
-  endTime_(p.endTime),
   printDerivs_(p.printDerivs),
   vdata_(vdata)
 {
@@ -107,26 +105,20 @@ void PointListSensor::print(double time, int /*loop*/)
 
 void PointListSensor::print(double time)
 {
-  if (time >= startTime_ && (endTime_ <= 0.0 || time <= endTime_))
-  {
-    for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
-    {
+   for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
+   {
       int ind = sensorind_[ii];
       (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << vdata_.VmArray_[ind] << endl;
-    }
-  }
+   }
 }
 
 void PointListSensor::printDerivs(double time)
 {
-  if (time >= startTime_ && (endTime_ <= 0.0 || time <= endTime_))
-  {
-    for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
-    {
+   for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
+   {
       int ind = sensorind_[ii];
       (*fout_loc_[ii]) << setprecision(10) << " " << time << "     " << vdata_.VmArray_[ind] 
-                                                          << "   " << vdata_.dVmReaction_[ind] 
-                                                          << "   " << vdata_.dVmDiffusion_[ind] << endl;
-    }
-  }
+                       << "   " << vdata_.dVmReaction_[ind] 
+                       << "   " << vdata_.dVmDiffusion_[ind] << endl;
+   }
 }

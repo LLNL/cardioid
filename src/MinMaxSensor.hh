@@ -14,8 +14,6 @@ class PotentialData;
 
 struct MinMaxSensorParms
 {
-   double startTime;
-   double endTime;
    string filename;
    string dirname;
 };
@@ -35,8 +33,6 @@ class MinMaxSensor : public Sensor
     int nLocal_;
     int myRank_;
     ofstream* fout_;
-    double startTime_;
-    double endTime_;
     bool printDerivs_;
    
     const PotentialData& vdata_;

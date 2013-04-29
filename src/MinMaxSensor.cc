@@ -16,8 +16,6 @@ MinMaxSensor::MinMaxSensor(const SensorParms& sp, const MinMaxSensorParms& p,
                                  const Anatomy& anatomy,
                                  const PotentialData& vdata)
 : Sensor(sp),
-  startTime_(p.startTime),
-  endTime_(p.endTime),
   vdata_(vdata),
   nLocal_(anatomy.nLocal())
 {
@@ -45,35 +43,25 @@ MinMaxSensor::~MinMaxSensor()
 
 void MinMaxSensor::print(double time, int /*loop*/)
 {
-    print(time);
+   // find local min/max voltages
+   double vmin_loc = vdata_.VmArray_[0];
+   double vmax_loc = vdata_.VmArray_[0];
+   for (unsigned ii=1; ii<nLocal_; ++ii)
+   {
+      if ( vdata_.VmArray_[ii] > vmax_loc )
+         vmax_loc = vdata_.VmArray_[ii];
+      if ( vdata_.VmArray_[ii] < vmin_loc )
+         vmin_loc = vdata_.VmArray_[ii];
+   }
+   
+   // MPI_Allreduce over all tasks to get global min/max
+   double vmin, vmax;
+   MPI_Allreduce(&vmin_loc, &vmin, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+   MPI_Allreduce(&vmax_loc, &vmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+   
+   if (myRank_ == 0)
+   {
+      (*fout_) << setprecision(10) << " " << time << "     " << vmin << "      " << vmax << "    " << vmax-vmin << endl;
+      //ewd DEBUG cout << setprecision(10) << " " << time << "     " << vmin << "      " << vmax << endl;
+   }
 }
-
-
-void MinMaxSensor::print(double time)
-{
-  if (time >= startTime_ && (endTime_ <= 0.0 || time <= endTime_))
-  {
-     // find local min/max voltages
-     double vmin_loc = vdata_.VmArray_[0];
-     double vmax_loc = vdata_.VmArray_[0];
-     for (unsigned ii=1; ii<nLocal_; ++ii)
-     {
-        if ( vdata_.VmArray_[ii] > vmax_loc )
-           vmax_loc = vdata_.VmArray_[ii];
-        if ( vdata_.VmArray_[ii] < vmin_loc )
-           vmin_loc = vdata_.VmArray_[ii];
-     }
-     
-     // MPI_Allreduce over all tasks to get global min/max
-     double vmin, vmax;
-     MPI_Allreduce(&vmin_loc, &vmin, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-     MPI_Allreduce(&vmax_loc, &vmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-
-     if (myRank_ == 0)
-     {
-        (*fout_) << setprecision(10) << " " << time << "     " << vmin << "      " << vmax << "    " << vmax-vmin << endl;
-        //ewd DEBUG cout << setprecision(10) << " " << time << "     " << vmin << "      " << vmax << endl;
-     }
-  }
-}
-

@@ -91,8 +91,8 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
   string method;
   objectGet(obj, "method", method, "undefined");
   SensorParms sp;
-  objectGet(obj, "startTime", sp.startTime, "-1e100");
-  objectGet(obj, "endTime",   sp.endTime,   "1e100");
+  objectGet(obj, "startTime", sp.startTime, "-1e100", "t"); //time units
+  objectGet(obj, "endTime",   sp.endTime,   "1e100", "t");
   objectGet(obj, "printRate", sp.printRate, "1");
   objectGet(obj, "evalRate",  sp.evalRate,  "-1");
   if(sp.evalRate == -1)sp.evalRate=sp.printRate;
@@ -135,8 +135,6 @@ namespace
    {
       PointListSensorParms p;
       objectGet(obj, "pointList",   p.pointList);
-      objectGet(obj, "startTime",   p.startTime,   "0.0",  "t");
-      objectGet(obj, "endTime",     p.endTime,     "-1.0", "t");
       objectGet(obj, "printDerivs", p.printDerivs, "0");
       objectGet(obj, "filename",    p.filename,    "cell");
       objectGet(obj, "dirname",     p.dirname,     "sensorData");
@@ -150,8 +148,6 @@ namespace
                                const PotentialData& vdata)
    {
       MinMaxSensorParms p;
-      objectGet(obj, "startTime",   p.startTime,   "0.0",  "t");
-      objectGet(obj, "endTime",     p.endTime,     "-1.0", "t");
       objectGet(obj, "filename",    p.filename,    "minmax");
       objectGet(obj, "dirname",     p.dirname,     "sensorData");
       return new MinMaxSensor(sp, p, anatomy, vdata);
@@ -258,8 +254,6 @@ namespace
       assert(p.gidCenter >= 0);
       objectGet(obj, "radius",   p.radius, "0.0");
       objectGet(obj, "fields",   p.fieldList);
-      objectGet(obj, "startTime",   p.startTime,   "0.0",  "t");
-      objectGet(obj, "endTime",     p.endTime,     "-1.0", "t");
       objectGet(obj, "dirname",     p.dirname,     "stateSensorData");
       return new StateVariableSensor(sp, p, sim);      
    }
