@@ -84,7 +84,7 @@ namespace
       Pprintf(file, "   nfiles = %d;\n", nFiles);
       Pprintf(file, "   nrecord = %d;\n", headerData.nRecord_);
       Pprintf(file, "   lrec = %d;\n", headerData.lRec_);
-      Pprintf(file, "   endidan_key = %d;\n", endianKey);
+      Pprintf(file, "   endian_key = %d;\n", endianKey);
       Pprintf(file, "   time = %f;\n", headerData.time_);
       Pprintf(file, "   loop = %d;\n", headerData.loop_);
       Pprintf(file, "   reactionMethod = %s;\n", headerData.reactionMethod_.c_str());
@@ -175,7 +175,16 @@ void writeCheckpoint(const Simulate& sim, MPI_Comm comm)
    headerData.nx_ = anatomy.nx();
    headerData.ny_ = anatomy.ny();
    headerData.nz_ = anatomy.nz();
-   
+
+   // header was just setup for ASCII checkpoints.  If user asked for
+   // BINARY we need a couple of tweaks
+   if (!sim.asciiCheckpoints_)
+   {
+      headerData.dataType_ = CheckpointHeaderData::BINARY;
+      lRec = 8 * (fieldNames.size() + 2);
+      headerData.lRec_ = lRec;
+      headerData.fieldTypes_ = "u8 f8 " + concat(vector<string>(fieldNames.size(), "f8"));
+   }
 
    Pio_setNumWriteFiles(sim.nFiles_);
    PFILE* file = Popen(headerData.stateFileName_.c_str(), "w", comm);
@@ -190,11 +199,23 @@ void writeCheckpoint(const Simulate& sim, MPI_Comm comm)
    const VectorDouble32& vmarray=(sim.vdata_.VmArray_);
    for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
    {
-      int bufPos = sprintf(buf, gidVmFormat, anatomy.gid(ii), vmarray[ii]);
-      sim.reaction_->getValue(ii, handle, value);
-      for (unsigned jj=0; jj<value.size(); ++jj)
-         bufPos += sprintf(buf+bufPos, itemFormat, value[jj]);
-      sprintf(buf+bufPos, "\n");
+      if (sim.asciiCheckpoints_)
+      {
+         int bufPos = sprintf(buf, gidVmFormat, anatomy.gid(ii), vmarray[ii]);
+         sim.reaction_->getValue(ii, handle, value);
+         for (unsigned jj=0; jj<value.size(); ++jj)
+            bufPos += sprintf(buf+bufPos, itemFormat, value[jj]);
+         sprintf(buf+bufPos, "\n");
+      }
+      else
+      {
+         Long64 gid = anatomy.gid(ii);
+         copyBytes(buf, &gid, 8);
+         copyBytes(buf+8, &vmarray[ii], 8);
+         sim.reaction_->getValue(ii, handle, value);
+         for (unsigned jj=0; jj<value.size(); ++jj)
+            copyBytes(buf+16+jj*8, &(value[0])+jj, 8);
+      }
       Pwrite(buf, lRec, 1, file);
    }
    int rc = Pclose(file);
@@ -241,9 +262,12 @@ void readCheckpoint(const string& filename, Simulate& sim, MPI_Comm comm)
          switch (data->dataType(iField))
          {
            case BucketOfBits::floatType:
+           case BucketOfBits::f8Type:
+           case BucketOfBits::f4Type:
             iRec.getValue(iField, value);
             break;
            case BucketOfBits::intType:
+           case BucketOfBits::u8Type:
             int tmp;
             iRec.getValue(iField, tmp);
             value = double(tmp);

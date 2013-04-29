@@ -10,6 +10,7 @@
 #include "IndexToVector.hh"
 #include "IndexToThreeVector.hh"
 #include "GridAssignmentObject.h"
+#include "readPioFile.hh"
 #include <algorithm>
 #include <map>
 //ddt #include <iostream>
@@ -81,7 +82,13 @@ void testDestinations(const vector<unsigned>& recordDest,
  *  with record ii starting at records[ii*lRec].  This routine does
  *  extract the gid data from the record and store it separately since
  *  the gid data is needed for other steps in the load and distribute
- *  process */
+ *  process.
+ *
+ *  It should be possible to support VARRECORDASCII files by looking
+ *  through the BucketOfBits created by reading the file to find the
+ *  maximum record length.  Then we just need to pad out shorter records
+ *  when they are copied from the BucketOfBits into the records vector
+ *  for further processing. */
 BucketOfBits* readStateData(const string& filename, MPI_Comm comm,
                             vector<unsigned char>& records,
                             vector<Long64>& gid,
@@ -92,58 +99,31 @@ BucketOfBits* readStateData(const string& filename, MPI_Comm comm,
 
    string recordType;
    objectGet(file->headerObject, "datatype", recordType, "unknown");
-   vector<string> fieldNames;
-   vector<string> fieldTypes;
-   vector<string> fieldUnits;
-   objectGet(file->headerObject, "field_names", fieldNames);
-   objectGet(file->headerObject, "field_types", fieldTypes);
-   if (object_testforkeyword(file->headerObject, "field_units"))
-      objectGet(file->headerObject, "field_units", fieldUnits);
-   else
-      fieldUnits.assign(fieldNames.size(), "1");
+   assert(recordType == "FIXRECORDASCII" || recordType == "FIXRECORDBINARY");
+   lRec = file->recordLength;
    
-   { // limit scope
-      // This block populates records and gid for fixed record length
-      // ascii files.  It shouldn't be too hard to generalize later.  What
-      // ever the data type, the reader must pack the data into a
-      // vector<unsigned char> in such a way that record ii starts at
-      // index ii*lRec.  lRec must be the same on all tasks.  The reader
-      // must also extract the gids from the record and populate the gid
-      // array.  The value of lRec must be set.
-      assert(recordType == "FIXRECORDASCII");
-      
-      lRec = file->recordLength;
-      unsigned nRecords = file->bufsize/lRec;
-      assert(file->bufsize%lRec == 0);
-      
-      records.resize(nRecords*lRec);
-      for (unsigned ii=0; ii<nRecords; ++ii)
-      {
-         char* buf = (char*)((&records[0]) + ii*lRec);
-         Pfgets(buf, lRec, file);
-      }
+   BucketOfBits* bucket = readPioFile(file);
 
-      vector<string>::const_iterator here =
-         find(fieldNames.begin(), fieldNames.end(), "gid");
-      assert(here != fieldNames.end());
-      unsigned gidIndex = here - fieldNames.begin();
-      string format;
-      for (unsigned ii=0; ii<gidIndex; ++ii)
-         format += "%*s ";
-      format += "%llu";
+   unsigned gidIndex = bucket->getIndex("gid");
+   assert(gidIndex < bucket->nFields());
+   unsigned nRecords = bucket->nRecords();
+   gid.resize(nRecords);
+   records.reserve(nRecords*lRec);
+   for (unsigned ii=0; ii<nRecords; ++ii)
+   {
+      BucketOfBits::Record rr = bucket->getRecord(ii);
+      rr.getValue(gidIndex, gid[ii]);
+      const char* src = rr.getRawData().data();
+      records.push_back('\0'); 
+      unsigned char* dest = &records.back();
+      records.resize(records.size()+lRec-1);
+      copyBytes(dest, src, lRec);
+   }
 
-      gid.resize(nRecords);
-      for (unsigned ii=0; ii<nRecords; ++ii)
-      {
-         char* buf = (char*)((&records[0]) + ii*lRec);
-         sscanf(buf, format.c_str(), &gid[ii]);
-      }
-   } // limit scope
-
-   
    Pclose(file);
 
-   return new BucketOfBits(fieldNames, fieldTypes, fieldUnits);
+   bucket->clearRecords();
+   return bucket;
 }
 
 /** There are two sets of destinations that we need to calculate.  Each

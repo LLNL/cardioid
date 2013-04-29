@@ -131,6 +131,13 @@ void initializeSimulate(const string& name, Simulate& sim)
       if (tmp == 1)
          writeTorusMap(MPI_COMM_WORLD, filename);
    }
+   {
+      string tmp; objectGet(obj, "checkpointType", tmp, "ascii");
+      if (tmp != "ascii")
+         sim.asciiCheckpoints_ = false;
+      else
+         sim.asciiCheckpoints_ = true;
+   }
    
    timestampBarrier("initializing anatomy", MPI_COMM_WORLD);
    string nameTmp;

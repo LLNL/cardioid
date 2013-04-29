@@ -9,7 +9,8 @@ class BucketOfBits
 {
  public:
 
-   enum DataType{floatType, intType, stringType};
+   enum DataType{floatType, intType, stringType,
+                 u8Type, f4Type, f8Type };
 
    class Record
    {
@@ -17,6 +18,7 @@ class BucketOfBits
       Record(const std::vector<DataType>& fieldTypes,
              const std::string& rawData);
    
+      const std::string& getRawData() const;
       void getValue(unsigned fieldIndex, double& value) const;
       void getValue(unsigned fieldIndex, int& value) const;
       void getValue(unsigned fieldIndex, uint64_t& value) const;
@@ -24,7 +26,8 @@ class BucketOfBits
       
     private:
       std::vector<DataType>    fieldTypes_;
-      std::vector<std::string> rawFields_;
+      std::vector<std::string::size_type>    offsets_;
+      const std::string&       rawRecord_;
    };
 
    BucketOfBits(const std::vector<std::string>& fieldNames,
@@ -40,6 +43,7 @@ class BucketOfBits
    Record getRecord(unsigned index) const;
 
    void addRecord(const std::string& rec);
+   void clearRecords();
    
  private:
    std::vector<DataType>    fieldTypes_;
