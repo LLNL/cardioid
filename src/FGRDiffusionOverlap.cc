@@ -626,7 +626,7 @@ void FGRDiffusionOverlap::buildTupleArray(const Anatomy& anatomy)
       if(localTuple_[ii].z()>BBze) BBze=localTuple_[ii].z();
       if(localTuple_[ii].z()<BBzb) BBzb=localTuple_[ii].z();
    }
-   printf("BBzb=%d BBze=%d\n",BBzb,BBze);
+   //printf("BBzb=%d BBze=%d\n",BBzb,BBze);
 }
 
 void FGRDiffusionOverlap::buildBlockIndex(const Anatomy& anatomy)

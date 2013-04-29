@@ -17,6 +17,7 @@
 #include "units.h"
 #include "Version.hh"
 #include "utilities.h"
+#include "stringUtils.hh"
 #include <cstring>
 
 using namespace std;
@@ -117,27 +118,6 @@ namespace
 }
 
 
-
-
-
-namespace
-{
-   /** Concatenates the strings in vv into a single string with a space
-    * separating each element.  No space is added to the beginning or
-    * end. */
-   string concat(const vector<string> vv)
-   {
-      if (vv.size() == 0)
-         return "";
-      string tmp = vv[0];
-      for (unsigned ii=1; ii<vv.size(); ++ii)
-         tmp += " " + vv[ii];
-      return tmp;
-   }
-}
-
-
-   
 void writeCheckpoint(const Simulate& sim, MPI_Comm comm)
 {
    int myRank;

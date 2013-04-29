@@ -18,6 +18,7 @@ BINDIR = ../bin
 HEARTSRC= \
 	ThreadServer.cc \
 	ThreadUtils.cc \
+	stringUtils.cc \
 	Vector.cc SymmetricTensor.cc ConstantModel.cc ConstantReaction.cc \
 	PerformanceTimers.cc unionOfStrings.cc getUserInfo.cc \
         GDLoadBalancer.cc BlockLoadBalancer.cc workBoundBalancer.cc \

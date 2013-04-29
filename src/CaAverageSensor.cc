@@ -6,27 +6,13 @@
 #include "ioUtils.h"
 #include "Reaction.hh"
 #include "CommTable.hh"
+#include "stringUtils.hh"
+
 using namespace PerformanceTimers;
 
 #include <vector>
 #include <iomanip>
 #include <sstream>
-
-namespace
-{
-   /** Concatenates the strings in vv into a single string with a space
-    * separating each element.  No space is added to the beginning or
-    * end. */
-   string concat(const vector<string> vv)
-   {
-      if (vv.size() == 0)
-         return "";
-      string tmp = vv[0];
-      for (unsigned ii=1; ii<vv.size(); ++ii)
-         tmp += " " + vv[ii];
-      return tmp;
-   }
-}
 
 /////////////////////////////////////////////////////////////////////
 

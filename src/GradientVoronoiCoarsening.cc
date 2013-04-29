@@ -4,13 +4,15 @@
 #include "ioUtils.h"
 #include "Simulate.hh"
 #include "CommTable.hh"
+#include "stringUtils.hh"
+
 using namespace PerformanceTimers;
 
 #include <iostream>
 #include <sstream>
 #include <iomanip>
 #include <list>
-#include <string.h>
+#include <cstring>
 using namespace std;
 
 // algorithm inspired by reference:
@@ -18,22 +20,6 @@ using namespace std;
 // "A comparison of gradient estimation methods for volume
 //  rendering on unstructured meshes"
 // (see section 3.2)
-
-namespace
-{
-   /** Concatenates the strings in vv into a single string with a space
-    * separating each element.  No space is added to the beginning or
-    * end. */
-   string concat(const vector<string> vv)
-   {
-      if (vv.size() == 0)
-         return "";
-      string tmp = vv[0];
-      for (unsigned ii=1; ii<vv.size(); ++ii)
-         tmp += " " + vv[ii];
-      return tmp;
-   }
-}
 
 /////////////////////////////////////////////////////////////////////
 
