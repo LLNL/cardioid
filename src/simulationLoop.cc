@@ -71,10 +71,14 @@ namespace
          const VectorDouble32& dVmReaction(sim.vdata_.dVmReaction_);
          const VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusion_);
          const unsigned* const blockIndex = sim.diffusion_->blockIndex();
-         const double* const dVdMatrix = sim.diffusion_->dVmBlock();
-         const double scale = sim.diffusion_->diffusionScale();
-         const int index = blockIndex[pi];
-         double dVd = dVmDiffusion[pi] + scale*dVdMatrix[index];
+         double dVd = dVmDiffusion[pi];
+         if (blockIndex)
+         {
+            const double* const dVdMatrix = sim.diffusion_->dVmBlock();
+            const double scale = sim.diffusion_->diffusionScale();
+            const int index = blockIndex[pi];
+            dVd += scale*dVdMatrix[index];
+         }
          printf("%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",
                 sim.loop_, sim.time_, sim.anatomy_.gid(pi),
                 VmArray[pi], dVmReaction[pi], dVd);  
