@@ -7,6 +7,8 @@ struct SensorParms
 {
    int evalRate;
    int printRate;
+   double startTime;
+   double endTime;
 };
 
 
@@ -15,12 +17,16 @@ class Sensor
  public:
    Sensor(const SensorParms& p)
    : evalRate_(p.evalRate),
-     printRate_(p.printRate)
+     printRate_(p.printRate),
+     startTime_(p.startTime),
+     endTime_(p.endTime)
    {}
    virtual ~Sensor() {};
 
    virtual void run(double time, int loop)
    {
+      if (time < startTime_ || time > endTime_)
+         return;
       if (loop % evalRate_ == 0)
       {
          eval( time, loop);
@@ -38,6 +44,8 @@ class Sensor
    // about reaction data
    virtual void bufferReactionData(const int loop)
    { return; };
+   // This version called in threaded regions where each thread buffers
+   // a portion of the cells from begin to end.
    virtual void bufferReactionData(const int begin, const int end, const int loop)
    { return; };
    
@@ -55,7 +63,9 @@ class Sensor
  private:
    int evalRate_;
    int printRate_;
-
+   double startTime_;
+   double endTime_;
+   
    virtual void print(double time, int loop) = 0;
    virtual void eval(double time, int loop) = 0;
 };

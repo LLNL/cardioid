@@ -91,6 +91,8 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
   string method;
   objectGet(obj, "method", method, "undefined");
   SensorParms sp;
+  objectGet(obj, "startTime", sp.startTime, "-1e100");
+  objectGet(obj, "endTime",   sp.endTime,   "1e100");
   objectGet(obj, "printRate", sp.printRate, "1");
   objectGet(obj, "evalRate",  sp.evalRate,  "-1");
   if(sp.evalRate == -1)sp.evalRate=sp.printRate;
