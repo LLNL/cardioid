@@ -16,7 +16,6 @@
 #include "Stimulus.hh"
 #include "Sensor.hh"
 #include "HaloExchange.hh"
-#include "GridRouter.hh"
 #include "ioUtils.h"
 #include "writeCells.hh"
 #include "checkpointIO.hh"

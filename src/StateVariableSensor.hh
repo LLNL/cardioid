@@ -4,44 +4,50 @@
 #include "Sensor.hh"
 #include <vector>
 #include <string>
-#include <fstream>
+#include <map>
 #include "Long64.hh"
+#include "PioHeaderData.hh"
 
-using namespace std;
 
 class Simulate;
 class PotentialData;
+class Reaction;
 
 struct StateVariableSensorParms
 {
-    Long64 gidCenter;
-    double radius;
-    vector<string> fieldList;
-    string dirname;
-    int printDerivs;
+   bool binaryOutput;
+   unsigned nFiles;
+   double radius;
+   std::string filename;
+   std::string cellListFilename;
+   std::vector<Long64> cells;
+   std::vector<std::string> fieldList;
 };
 
 class StateVariableSensor : public Sensor
 {
+   typedef std::map<Long64, unsigned> MapType; // gid to local array index
  public:
    StateVariableSensor(const SensorParms& sp, const StateVariableSensorParms& p, const Simulate& sim);
    ~StateVariableSensor();
-
+   
    void print(double time, int loop);
-   void eval(double time, int loop)
-   {} // no eval function.
-    
+   void eval(double time, int loop) {}; // no eval function.
+   
  private:
-    void print(double time);
 
-    const Simulate& sim_;
-    Long64 gidCenter_;
-    double radius_;
-    vector<string> fieldNames_;
-    vector<int> handles_;
-    vector<Long64> localCells_;  // grid gids owned by this task
-   vector<unsigned> sensorind_;      // corresponding local array index 
-    vector<ofstream*> fout_loc_;
+   double getSimValue(int iCell, int varHandle);
+   
+   bool binaryOutput_;
+   const Simulate& sim_;
+   std::string filename_;
+   std::string headerProlog_;
+   unsigned lRec_;
+   MapType localCells_;
+   std::vector<int> handles_;
+   PioHeaderData header_;
+   const char* gidFormat_;
+   const char* varFormat_;
 };
 
 #endif

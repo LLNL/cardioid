@@ -2,7 +2,6 @@
 #include <iostream>
 #include <cassert>
 #include <string>
-#include <sstream>
 
 #include "object_cc.hh"
 #include "Sensor.hh"
@@ -16,6 +15,7 @@
 #include "StateVariableSensor.hh"
 #include "ECGSensor.hh"
 #include "Simulate.hh"
+#include "readCellList.hh"
 
 using namespace std;
 
@@ -37,53 +37,6 @@ namespace
    Sensor* scanECGSensor(OBJECT* obj, const SensorParms& sp, const Simulate& sim);
 }
 
-// Initialize cellVec with gids listed in file filename
-int readCelllist(const string filename, vector<Long64>& cellVec)
-{
-   int myRank;
-   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-
-   // try to open file
-   int openfail;
-   ifstream input;
-   if (myRank == 0)
-   {
-      input.open(filename.c_str(),ifstream::in);
-      openfail = 0;
-      if (!input.is_open())
-         openfail = 1;
-   }
-   MPI_Bcast(&openfail, 1, MPI_INT, 0, MPI_COMM_WORLD);
-   if (openfail == 1)
-   {
-      if (myRank == 0)
-         cerr << "Could not open cell list file " << filename << endl;
-      return -1;
-   }
-
-   int nSubset;
-   if (myRank == 0)
-   {
-      while (!input.eof()) {
-         string query;
-         if ( !getline ( input, query ) ) {
-             break;
-         }
-         istringstream ss ( query );
-         Long64 igid;
-         while( ss >> igid ){
-            assert( igid>=0 );
-            cellVec.push_back(igid);
-         }
-      }
-      nSubset = cellVec.size();
-   }   
-   MPI_Bcast(&nSubset, 1, MPI_INT, 0, MPI_COMM_WORLD);
-   cellVec.resize(nSubset);
-   MPI_Bcast(&cellVec[0], nSubset, MPI_LONG_LONG, 0, MPI_COMM_WORLD);
-   
-   return 0;
-}
 
 Sensor* sensorFactory(const std::string& name, const Simulate& sim)
 {
@@ -113,7 +66,7 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
         || method == "dataVoronoiCoarsening" 
         || method == "gradientVoronoiCoarsening" )
      return scanVoronoiCoarseningSensor(obj, sp, sim.anatomy_,sim.vdata_, sim);
-  else if (method == "stateVariables")
+  else if (method == "stateVariable")
      return scanStateVariableSensor(obj, sp, sim);
   else if (method == "ECG")
      return scanECGSensor(obj, sp, sim);
@@ -176,7 +129,7 @@ namespace
       objectGet(obj, "cellList", cellListFilename, "");
 
       vector<Long64> cellVec;
-      readCelllist(cellListFilename, cellVec);
+      readCellList(cellListFilename, cellVec);
 
       string filename;
       objectGet(obj, "filename",  filename,  "coarsened_anatomy");
@@ -223,7 +176,7 @@ namespace
       objectGet(obj, "cellList", cellListFilename, "");
 
       vector<Long64> cellVec;
-      readCelllist(cellListFilename, cellVec);
+      readCellList(cellListFilename, cellVec);
 
       string filename;
       objectGet(obj, "filename",  filename,  "coarsened_Ca");
@@ -250,11 +203,16 @@ namespace
    Sensor* scanStateVariableSensor(OBJECT* obj, const SensorParms& sp, const Simulate& sim)
    {
       StateVariableSensorParms p;
-      objectGet(obj, "gid",   p.gidCenter, "-1");
-      assert(p.gidCenter >= 0);
-      objectGet(obj, "radius",   p.radius, "0.0");
+      assert(object_testforkeyword(obj, "gid") == 0);  // catch obsolete usage 
+      objectGet(obj, "nFiles",   p.nFiles,   "0");
+      objectGet(obj, "filename", p.filename, "variables");
+      objectGet(obj, "cellList", p.cellListFilename, "");
+      objectGet(obj, "radius",   p.radius,   "0.0");
       objectGet(obj, "fields",   p.fieldList);
-      objectGet(obj, "dirname",     p.dirname,     "stateSensorData");
+      objectGet(obj, "cells",    p.cells);
+      string outputType; objectGet(obj, "outputType", outputType, "ascii");
+      p.binaryOutput =  (outputType != "ascii");
+
       return new StateVariableSensor(sp, p, sim);      
    }
 }

@@ -19,6 +19,8 @@ HEARTSRC= \
 	ThreadServer.cc \
 	ThreadUtils.cc \
 	stringUtils.cc \
+	readCellList.cc \
+	PioHeaderData.cc \
 	Vector.cc SymmetricTensor.cc ConstantModel.cc ConstantReaction.cc \
 	PerformanceTimers.cc unionOfStrings.cc getUserInfo.cc \
         GDLoadBalancer.cc BlockLoadBalancer.cc workBoundBalancer.cc \
@@ -61,7 +63,7 @@ HEARTSRC= \
 	 TT06_RRG.cc \
 	 TestStimulus.cc PointStimulus.cc BoxStimulus.cc \
 	 PeriodicPulse.cc RandomPulse.cc \
-	 PointListSensor.cc ActivationTimeSensor.cc readSnapshotCellList.cc \
+	 PointListSensor.cc ActivationTimeSensor.cc \
 	VoronoiCoarsening.cc DataVoronoiCoarsening.cc GradientVoronoiCoarsening.cc \
 	CaAverageSensor.cc \
 	ECGSensor.cc \

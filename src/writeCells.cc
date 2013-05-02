@@ -39,8 +39,6 @@ void writeCells(const Simulate& sim,
    
 
    Long64 nLocalRecords = anatomy.nLocal();
-   if (sim.snapshotSubset_ )
-      nLocalRecords = sim.snapshotCellList_.size();
    Long64 nRecords;
    MPI_Allreduce(&nLocalRecords, &nRecords, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
    
@@ -74,10 +72,6 @@ void writeCells(const Simulate& sim,
    unsigned nLocal = anatomy.nLocal();
    for (unsigned ii=0; ii<nLocal; ++ii)
    {
-      if (sim.snapshotSubset_ &&
-          sim.snapshotCellList_.count(cells[ii].gid_) == 0)
-         continue;
-
       Vector v = indexToVector(cells[ii].gid_);
       int ix = int(v.x()) - halfNx;
       int iy = int(v.y()) - halfNy;

@@ -97,8 +97,6 @@ class Simulate
    int printIndex_;
    FILE *printFile_; 
    int snapshotRate_;
-   bool snapshotSubset_;
-   std::set<Long64> snapshotCellList_;
    int checkpointRate_;
    bool asciiCheckpoints_;
 

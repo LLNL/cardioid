@@ -17,7 +17,6 @@
 #include "Anatomy.hh"
 #include "mpiUtils.h"
 #include "PerformanceTimers.hh"
-#include "readSnapshotCellList.hh"
 #include "hardwareInfo.h"
 #include "pio.h"
 #include "heap.h"
@@ -25,71 +24,14 @@
 
 using namespace std;
 
-
 namespace
 {
-   /** Makes up a core list with one thread per core, except on BGQ
-    *  where we have four threads per core. */
-   void buildCoreList(unsigned& nCores, vector<unsigned>& cores)
-   {
-      int threadsPerCore = 1;
-      #ifdef BGQ
-      threadsPerCore = 4;
-      #endif
-      assert(cores.size() == 0);
-      int nThreads = nCores*threadsPerCore;
-      cores.resize(nThreads);
-      for (unsigned ii=0; ii<nThreads; ++ii)
-         cores[ii] = ii/threadsPerCore;
-   }
+   void checkForObsoleteKeywords(OBJECT* obj);
+   void buildCoreList(unsigned& nCores, vector<unsigned>& cores);
+   Long64 findGlobalMinGid(const Anatomy& anatomy);
+   void writeTorusMap(MPI_Comm comm, const string& filename);
 }
 
-Long64 findGlobalMinGid(const Anatomy& anatomy)
-{
-   Long64 minGid=anatomy.nx()*anatomy.ny()*anatomy.nz();
-   for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
-      if (anatomy.gid(ii) < minGid)
-         minGid = anatomy.gid(ii); 
-   Long64 globalMin;
-   MPI_Allreduce(&minGid, &globalMin, 1, MPI_LONG_LONG, MPI_MIN, MPI_COMM_WORLD);
-   return globalMin;
-}  
-
-namespace
-{
-   void writeTorusMap(MPI_Comm comm, const string& filename)
-   {
-      if ( hi_hasTorus() == 0)
-         return;
-
-      int myRank;
-      MPI_Comm_rank(comm, &myRank);
-
-      int nDims = hi_nTorusDim();
-      int coord[nDims];
-      hi_torusCoords(coord);
-      
-      PFILE* pfile = Popen(filename.c_str(), "w", comm);
-      PioSet(pfile, "ngroup", 1);
-      if (myRank == 0)
-      {
-         int size[nDims];
-         hi_torusSize(size);
-         Pprintf(pfile, "# mpiRank coords[%d]\n", nDims);
-         Pprintf(pfile, "# torus size:");
-         for (unsigned ii=0; ii<nDims; ++ii)
-            Pprintf(pfile, " %4d", size[ii]);
-         Pprintf(pfile, "\n");
-      }
-      
-      Pprintf(pfile, "%7d", myRank);
-      for (unsigned ii=0; ii<nDims; ++ii)
-         Pprintf(pfile, " %4d", coord[ii]);
-      Pprintf(pfile, "\n");
-
-      Pclose(pfile);      
-   }
-}
 
 
 void initializeSimulate(const string& name, Simulate& sim)
@@ -101,6 +43,8 @@ void initializeSimulate(const string& name, Simulate& sim)
 
    OBJECT* obj = objectFind(name, "SIMULATE");
 
+   checkForObsoleteKeywords(obj);
+   
    int heapSize;
    objectGet(obj, "heap", heapSize, "500");
    heap_start(heapSize);
@@ -286,12 +230,91 @@ void initializeSimulate(const string& name, Simulate& sim)
    for (unsigned ii=0; ii<names.size(); ++ii)
       sim.sensor_.push_back(sensorFactory(names[ii], sim));
 
-   // let user specify a filename containing the list of cell gids they want in the snapshots
-   // (need to do this after data is distributed, so we can store just the local subset of
-   // points on each task)
-   sim.snapshotSubset_ = false;
-   string snapshotCLFile;
-   objectGet(obj, "snapshotCellList", snapshotCLFile, "");
-   if (snapshotCLFile != "")
-      readSnapshotCellList(snapshotCLFile, sim,obj);
+}
+
+namespace
+{
+   void checkForObsoleteKeywords(OBJECT* obj)
+   {
+      int myRank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+      if (myRank != 0) return;
+
+      if (object_testforkeyword(obj, "snapshotCellList") != 0)
+      {
+         printf("Obsolete keyword snapshotCellList found in %s object.\n", obj->objclass);
+         printf("  Use State Variable Sensor instead\n");
+         exit(-1);
+      }
+      
+   }
+}
+
+namespace
+{
+   /** Makes up a core list with one thread per core, except on BGQ
+    *  where we have four threads per core. */
+   void buildCoreList(unsigned& nCores, vector<unsigned>& cores)
+   {
+      int threadsPerCore = 1;
+      #ifdef BGQ
+      threadsPerCore = 4;
+      #endif
+      assert(cores.size() == 0);
+      int nThreads = nCores*threadsPerCore;
+      cores.resize(nThreads);
+      for (unsigned ii=0; ii<nThreads; ++ii)
+         cores[ii] = ii/threadsPerCore;
+   }
+}
+
+namespace
+{
+   Long64 findGlobalMinGid(const Anatomy& anatomy)
+   {
+      Long64 minGid=anatomy.nx()*anatomy.ny()*anatomy.nz();
+      for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
+         if (anatomy.gid(ii) < minGid)
+            minGid = anatomy.gid(ii); 
+      Long64 globalMin;
+      MPI_Allreduce(&minGid, &globalMin, 1, MPI_LONG_LONG, MPI_MIN, MPI_COMM_WORLD);
+      return globalMin;
+   }
+}
+
+
+namespace
+{
+   void writeTorusMap(MPI_Comm comm, const string& filename)
+   {
+      if ( hi_hasTorus() == 0)
+         return;
+
+      int myRank;
+      MPI_Comm_rank(comm, &myRank);
+
+      int nDims = hi_nTorusDim();
+      int coord[nDims];
+      hi_torusCoords(coord);
+      
+      PFILE* pfile = Popen(filename.c_str(), "w", comm);
+      PioSet(pfile, "ngroup", 1);
+      if (myRank == 0)
+      {
+         int size[nDims];
+         hi_torusSize(size);
+         Pprintf(pfile, "# mpiRank coords[%d]\n", nDims);
+         Pprintf(pfile, "# torus size:");
+         for (unsigned ii=0; ii<nDims; ++ii)
+            Pprintf(pfile, " %4d", size[ii]);
+         Pprintf(pfile, "\n");
+      }
+      
+      Pprintf(pfile, "%7d", myRank);
+      for (unsigned ii=0; ii<nDims; ++ii)
+         Pprintf(pfile, " %4d", coord[ii]);
+      Pprintf(pfile, "\n");
+
+      Pclose(pfile);      
+   }
 }

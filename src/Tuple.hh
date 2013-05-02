@@ -16,18 +16,13 @@ class Tuple
 
    Tuple& operator-=(const Tuple& a);
    Tuple& operator+=(const Tuple& a);
+   bool operator<(const Tuple& b) const;
    
  private:
    int ix_;
    int iy_;
    int iz_;
 };
-
-Tuple operator-(const Tuple& a, const Tuple& b);
-Tuple operator+(const Tuple& a, const Tuple& b);
-bool operator==(const Tuple& a, const Tuple& b);
-
-
 
 inline Tuple& Tuple::operator-=(const Tuple& a)
 {
@@ -45,6 +40,16 @@ inline Tuple& Tuple::operator+=(const Tuple& a)
    return *this;
 }
 
+inline bool Tuple::operator<(const Tuple& b) const
+{
+   return
+      ix_<b.ix_ ||
+      (ix_==b.ix_ &&
+       (iy_<b.iy_ ||
+        ( iy_ == b.iy_ && iz_ < b.iz_ )));
+}
+
+
 inline Tuple operator-(const Tuple& a, const Tuple& b)
 {
    Tuple c(a);
@@ -60,6 +65,11 @@ inline Tuple operator+(const Tuple& a, const Tuple& b)
 inline bool operator==(const Tuple& a, const Tuple& b)
 {
    return (a.x() == b.x() && a.y() == b.y() && a.z() == b.z());
+}
+
+inline int dot(const Tuple& a, const Tuple& b)
+{
+   return a.x()*b.x() + a.y()*b.y() + a.z()*b.z();
 }
 
 #endif
