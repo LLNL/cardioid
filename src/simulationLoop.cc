@@ -136,7 +136,7 @@ void loopIO(const Simulate& sim,int firstCall)
 
    if (!firstCall) 
    { 
-      if (loop > 0 && loop % sim.snapshotRate_ == 0)
+      if (loop > 0 && sim.snapshotRate_ > 0 && loop % sim.snapshotRate_ == 0)
       {
          stringstream name;
          name << "snapshot."<<setfill('0')<<setw(12)<<loop;
