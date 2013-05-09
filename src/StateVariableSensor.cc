@@ -128,7 +128,8 @@ void StateVariableSensor::print(double time, int loop)
    MPI_Barrier(comm); // none shall pass before task 0 creates directory
    string pFilename = dirname + "/" + filename_;
    PFILE* file = Popen(pFilename.c_str(), "w", comm);
-   header_.writeHeader(file, loop, time);
+   if (myRank == 0)
+      header_.writeHeader(file, loop, time);
 
    vector<double> values(handles_.size());
    char buf[lRec_+1];
