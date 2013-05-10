@@ -1,6 +1,8 @@
 #include "PioHeaderData.hh"
 #include <cassert>
 #include <sstream>
+#include <cstring>
+
 #include "Version.hh"
 #include "utilities.h"
 #include "pio.h"
