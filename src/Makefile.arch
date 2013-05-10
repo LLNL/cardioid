@@ -12,6 +12,9 @@ endif
 ifeq ($(HOSTNAME),seqlac)  
   ARCHGUESS = bgq-spi
 endif
+ifeq ($(HOSTNAME),vulcanlac)  
+  ARCHGUESS = bgq-spi
+endif
 ifeq ($(HOSTNAME),dawn)  
   ARCHGUESS = bgp
 endif
