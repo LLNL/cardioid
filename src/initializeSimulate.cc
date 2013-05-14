@@ -109,10 +109,6 @@ void initializeSimulate(const string& name, Simulate& sim)
        sim.loopType_ = Simulate::omp;
    else if (tmp == "pdr")
       sim.loopType_ = Simulate::pdr;
-   else if (tmp == "allSkate")
-      sim.loopType_ = Simulate::allSkate;
-   else if (tmp == "lag")
-      sim.loopType_ = Simulate::lag;
    else
       assert(false);
    if (object_testforkeyword(obj, "parallelDiffusionReaction"))
@@ -146,7 +142,7 @@ void initializeSimulate(const string& name, Simulate& sim)
    vector<unsigned> diffusionCores;
    objectGet(obj, "diffusionThreads", diffusionCores);
 
-   if (sim.loopType_ == Simulate::pdr || sim.loopType_ == Simulate::lag)
+   if (sim.loopType_ == Simulate::pdr)
    {
       // diffusionThreads overrides nDiffusionCores, but when no thread
       // list is specified, we use 1 core.
@@ -159,17 +155,6 @@ void initializeSimulate(const string& name, Simulate& sim)
       sim.reactionThreads_ = threadServer.getThreadTeam(vector<unsigned>());
       if (getRank(0) == 0)
          cout << "Reaction Threads: " << sim.reactionThreads_ << endl;
-   }
-   if (sim.loopType_ == Simulate::allSkate)
-   {
-      ThreadServer& threadServer = ThreadServer::getInstance();
-      sim.reactionThreads_ = threadServer.getThreadTeam(vector<unsigned>());
-      sim.diffusionThreads_ = sim.reactionThreads_;
-      if (getRank(0) == 0)
-      {
-         cout << "Reaction Threads: " << sim.reactionThreads_ << endl;
-         cout << "Diffusion Threads: " << sim.diffusionThreads_ << endl;
-      }
    }
    
    
