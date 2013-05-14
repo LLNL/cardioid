@@ -135,16 +135,17 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
    if( first_time )
    {
       const int nLocal = anatomy_.nLocal();
-
+      
       for(int ic=0;ic<nLocal;++ic)
       {
          const int color=coarsening_.getColor(ic);
          if( color>=0 )
          {
             const double norm2=(dx_[ic]*dx_[ic]
-                               +dy_[ic]*dy_[ic]
-                               +dz_[ic]*dz_[ic]); 
-            if( norm2<1.e-6 ){
+                                +dy_[ic]*dy_[ic]
+                                +dz_[ic]*dz_[ic]); 
+            if( norm2<1.e-6 )
+            {
                center_indexes.push_back(ic);
             }
             ncellsofcolor[color]++;
@@ -220,17 +221,19 @@ void GradientVoronoiCoarsening::setupLSmatrix()
          valMat11_.add1value(color,dy_[ic]*dy_[ic]*norm2i);
          valMat12_.add1value(color,dy_[ic]*dz_[ic]*norm2i);
          valMat22_.add1value(color,dz_[ic]*dz_[ic]*norm2i);
-      }else{
+      }
+      else
+      {
          // need to add 0,otherwise datastructure may be empty
          // for local MPI task and exchangeAndSum() will fail
          if( coarsening_.getOwnedColors().find(color)
-                ==coarsening_.getOwnedColors().end() )
+             ==coarsening_.getOwnedColors().end() )
          {
             int myRank;
             MPI_Comm_rank(comm_, &myRank);
             cout<<"myRank="<<myRank<<", color="<<color<<", norm2="<<ccell->norm2()<<endl;
             assert( coarsening_.getOwnedColors().find(color)
-                   !=coarsening_.getOwnedColors().end() );
+                    !=coarsening_.getOwnedColors().end() );
          }
          valMat00_.add1value(color,0.);
          valMat01_.add1value(color,0.);
@@ -249,7 +252,7 @@ void GradientVoronoiCoarsening::setupLSmatrix()
    valcolors.push_back(&valMat11_);
    valcolors.push_back(&valMat12_);
    valcolors.push_back(&valMat22_);
-
+   
    coarsening_.exchangeAndSum(valcolors);
 }
    
@@ -285,7 +288,9 @@ void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
                valRHS0_.add1value(color,dx_[ic]*norm2i);
                valRHS1_.add1value(color,dy_[ic]*norm2i);
                valRHS2_.add1value(color,dz_[ic]*norm2i);
-            }else{
+            }
+            else
+            {
                //cout<<"add value 0 for color="<<color<<" on task "<<myRank<<endl;
                assert( coarsening_.getOwnedColors().find(color)
                       !=coarsening_.getOwnedColors().end() );
@@ -340,7 +345,9 @@ void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
             valRHS0_.add1value(color,dx_[ic]*v);
             valRHS1_.add1value(color,dy_[ic]*v);
             valRHS2_.add1value(color,dz_[ic]*v);
-         }else{
+         }
+         else
+         {
             valRHS0_.add1value(color,0.);
             valRHS1_.add1value(color,0.);
             valRHS2_.add1value(color,0.);
@@ -359,10 +366,12 @@ void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
          valRHS2_.increaseValue(color,v*bf0[color][2]);
       }
       
-   }else{
+   }
+   else
+   {
       for(std::vector<ColoredCell>::const_iterator ccell =colored_cells_.begin();
-                                                   ccell!=colored_cells_.end();
-                                                 ++ccell)
+          ccell!=colored_cells_.end();
+          ++ccell)
       {
          const int color=ccell->color();
       
@@ -373,7 +382,9 @@ void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
             valRHS0_.add1value(color,dx_[ic]*v);
             valRHS1_.add1value(color,dy_[ic]*v);
             valRHS2_.add1value(color,dz_[ic]*v);
-         }else{
+         }
+         else
+         {
             valRHS0_.add1value(color,0.);
             valRHS1_.add1value(color,0.);
             valRHS2_.add1value(color,0.);
@@ -425,7 +436,8 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
       assert( valMat00_.size()>0 );
       const int ncells=valMat00_.nValues(color);
    
-      if( ncells>3 ){
+      if( ncells>3 )
+      {
          double* a=new double[6];
          a[0]=valMat00_.value(color);
          a[1]=valMat01_.value(color);
@@ -444,15 +456,19 @@ void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
             included_eval_colors_.insert(color);
             
             gradients_[color].reserve(3*printRate()/evalRate());
-         }else{
+         }
+         else
+         {
             cout<<"WARNING: unable to compute gradient because of bad condition number of matrix: color "
                 <<color<<" will be skipped..."<<endl;
             delete[] a;
          }
          
-      }else{
+      }
+      else
+      {
          cout<<"GradientVoronoiCoarsening --- WARNING: exclude "
-               "point from coarsened data on task "<<myRank
+            "point from coarsened data on task "<<myRank
              <<" (surrounded by "<<ncells<<" cells only)"
              <<endl;
       }
@@ -523,7 +539,8 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
       double norm2b=b[0]*b[0]+b[1]*b[1]+b[2]*b[2];          
       
       double g[3]={0.,0.,0.};             
-      if( norm2b>1.e-15){
+      if( norm2b>1.e-15)
+      {
          assert( matLS_.find(color)!=matLS_.end() );
          solve3x3(matLS_[color],b,g,color);
       }
@@ -569,7 +586,9 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
          Pprintf(file, "  nrecords = %llu;\n", nb_sampling_pts_*(eval_count_+2));
          Pprintf(file, "  field_names = gx gy gz\n");
          Pprintf(file, "  field_types = f4 f4 f4;\n");
-      }else{
+      }
+      else
+      {
          Pprintf(file, "  datatype = FIXRECORDASCII;\n");
          const int lrec    = 25+13*3*eval_count_;
          const int nfields = 4+3*eval_count_; 
@@ -591,8 +610,8 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
       Pprintf(file, "}\n\n");
    }
    
-   if( format_.compare("ascii")!=0 )
-   {
+   if ( format_.compare("ascii")!=0 )
+   {  // binary output
       for(map< int, vector<float> >::const_iterator itn =gradients_.begin();
                                                     itn!=gradients_.end();
                                                   ++itn)
@@ -603,7 +622,9 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
          for(short ii=0;ii<m;ii++)
             Pwrite(&itn->second[0], sizeof(float), itn->second.size(), file);
       }
-   }else{
+   }
+   else // ascii format
+   {
       const int halfNx = anatomy_.nx()/2;
       const int halfNy = anatomy_.ny()/2;
       const int halfNz = anatomy_.nz()/2;
