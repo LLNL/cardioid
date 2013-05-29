@@ -39,7 +39,7 @@ class DataVoronoiCoarsening : public Sensor
                          std::string filename,
                          unsigned nFiles,
                          const Anatomy& anatomy,
-                         const std::vector<Long64>& gid,
+                         std::vector<Long64>& gid,
                          const PotentialData& vdata,
                          const CommTable* commtable,
                          const double max_distance);

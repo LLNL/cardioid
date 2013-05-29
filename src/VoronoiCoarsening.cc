@@ -8,65 +8,15 @@ using namespace std;
 #include "pio.h"
 #include "ioUtils.h"
 #include "CommTable.hh"
+#include "mpiTpl.hh"
 
 //#define DEBUG
 
-void reduceBytes(vector<char>& val)
-{
-   assert( sizeof(char)==1 );
-   
-   const int nn=(int)val.size();
-   
-   // pack data into bits
-   int nc=nn/4;
-   if( nc*4<nn )nc++;
-   
-   vector<char> bb(nc,0);
-   for(int i=0;i<nn;i++)
-   {
-      if( val[i]==1 )
-      {
-         int ic=i>>2;
-         int ib=i-4*ic;
-         switch( ib )
-         {
-           case 0 : bb[ic]=bb[ic] | 1; // set bit 0
-             break;
-           case 1 : bb[ic]=bb[ic] | 2; // set bit 1
-             break;
-           case 2 : bb[ic]=bb[ic] | 4; // set bit 2
-             break;
-           case 3 : bb[ic]=bb[ic] | 8; // set bit 3
-             break;
-           default:
-             break;
-         }
-      }
-   }
+static void preScreenSensorPoints(vector<Long64>& sensorPoints, const Anatomy& anatomy, MPI_Comm comm);
 
-   // transfer data   
-   vector<char> bbsum(nc,0);
-   MPI_Allreduce(&bb[0], &bbsum[0], nc, MPI_CHAR, MPI_BOR, MPI_COMM_WORLD);
-   //cout<<"Allreduce terminated..."<<endl;
-   
-   // unpack data
-   int i=0;
-   int nn4=nn/4;
-   for(int ic=0;ic<nn4;ic++)
-   {
-      val[i++] = (char)((bbsum[ic] & 1)>0)  ;
-      val[i++] = (char)((bbsum[ic] & 2)>0)  ;
-      val[i++] = (char)((bbsum[ic] & 4)>0)  ;
-      val[i++] = (char)((bbsum[ic] & 8)>0)  ;
-   }
-   for(int ic=nn4;ic<nc;ic++)
-   {
-      if(i<nn)val[i++] = (char)((bbsum[ic] & 1)>0)  ;
-      if(i<nn)val[i++] = (char)((bbsum[ic] & 2)>0)  ;
-      if(i<nn)val[i++] = (char)((bbsum[ic] & 4)>0)  ;
-      if(i<nn)val[i++] = (char)((bbsum[ic] & 8)>0)  ;
-   }
-}
+
+
+
 
 Vector VoronoiCoarsening::getDomaincenter()const
 {
@@ -126,7 +76,7 @@ map<int,Vector> VoronoiCoarsening::getCloseCenters(const Vector& domain_center,
 }
     
 VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
-                                     const vector<Long64>& gid,
+                                     vector<Long64>& gid,
                                      const CommTable* commtable)
    :anatomy_(anatomy),
     comm_(commtable->_comm),
@@ -136,104 +86,27 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
    int myRank;
    MPI_Comm_rank(comm_, &myRank);  
    assert( gid.size()>0 );
-   if( myRank==0)cout<<"VoronoiCoarsening: number of gids = "<<gid.size()<<endl;
-   
-   const unsigned global_ncolors = (unsigned)gid.size();
-   vector<char> gidfound(global_ncolors,0);
-   const int ncells=(int)anatomy_.nLocal();
-   owned_colors_.clear();
-   
-   if( ncells>0 )
-   {
-      const Vector domain_center( getDomaincenter() ); 
-      const double domain_radius=getDomainRadius(domain_center);
-      const double dr2=1.01*domain_radius*domain_radius;
 
-      for (unsigned color=0; color<global_ncolors; ++color)
-      {
-         const Long64& rgid = gid[color];
-         Vector color_center =indexToVector_(rgid);
-         Vector rij = domain_center - color_center;
-         double r2 = dot(rij, rij);
-         
-         // consider only colors centered within domain radius
-         if( r2<=dr2)
-         {
-            for (unsigned icell=0; icell<ncells; ++icell)
-            {
-               if (anatomy_.gid(icell) == rgid)
-               {
-                  gidfound[color] = 1;
-                  owned_colors_.insert(color);
-                  break;
-               }
-            }
-         }
-      }
-   }
+   preScreenSensorPoints(gid, anatomy, comm_);
 
+   if( myRank==0)
+      cout<<"VoronoiCoarsening: number of sensor points = "<<gid.size()<<endl;
+   
+   for (unsigned color=0; color<gid.size(); ++color)
+      centers_.insert(make_pair(color, gid[color]));
+
+   set<Long64> localCells;
+   for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
+      localCells.insert(anatomy.gid(ii));
+   for (map<int, Long64>::iterator iter=centers_.begin();
+        iter!=centers_.end(); ++iter)
+      if (localCells.count(iter->second) == 1)
+         owned_colors_.insert(iter->first);
+   
    MPI_Barrier(comm_);
-   if( myRank==0)cout<<"VoronoiCoarsening: Allreduce found gids..."<<endl;
-   reduceBytes(gidfound);
-   vector<char>& gidsum(gidfound);
-   //vector<char> gidsum(global_ncolors,0);
-   //MPI_Allreduce(&gidfound[0], &gidsum[0], global_ncolors, MPI_CHAR, MPI_MAX, comm_);
-   if( myRank==0)cout<<"VoronoiCoarsening: gidsum computed..."<<endl;
    
-   std::map<Long64,int> included_ids;
-   centers_.clear();
-   for (unsigned color=0; color<global_ncolors; ++color)
-   {
-      if ( (short)gidsum[color] == 0)
-      {
-         if (myRank == 0)
-            cout << "WARNING: VoronoiCoarsening could not find non-zero cell type with gid "
-                 << gid[color] << "!  Skipping sensor point. color="<<color << endl;
-      }else{
-         std::map<Long64,int>::iterator is=included_ids.find(gid[color]);
-         if( is==included_ids.end() )
-         {
-            included_ids.insert(pair<Long64,int>(gid[color],color));
-            multiplicities_.insert(make_pair(color, 1));
-            
-            centers_.insert(make_pair(color, gid[color]));
-         }
-         else
-         {
-            int cc=is->second;
-            if (myRank == 0)
-               cout << "WARNING: VoronoiCoarsening, gid "
-                    << gid[color] << " already found before... Remove color "<<cc<< endl;
-            assert( multiplicities_.find(is->second)!=multiplicities_.end() );
-            multiplicities_[cc]++;
-            owned_colors_.erase(color);
-         }
-         //if (myRank == 0)
-         //   cout << "gid "<< gid[color] << " is of color "<<color << endl;
-      }
-   }
-#if 0
-   for(set<int>::const_iterator  itp =owned_colors_.begin();
-                                 itp!=owned_colors_.end();
-                               ++itp)
-      cout<<"PE "<<myRank<<" owns color "<<*itp<<endl;
-   MPI_Barrier(comm_);
-   sleep(1);
-#endif   
-   cout<<"ECG sensors: PE "<<myRank<<" owns "
-       <<owned_colors_.size()<<" sensor points "<<endl;
-
-   if( myRank==0)cout<<"VoronoiCoarsening: number of colors = "<<centers_.size()<<endl;
-
    cell_colors_.resize(anatomy.nLocal(),-1); // color only local cells
    
-   if( centers_.size()!=multiplicities_.size() )
-   {
-      cout<<"centers_.size()="<<centers_.size()
-          <<", multiplicities_.size()="<<multiplicities_.size()<<endl;
-   }
-   
-   assert( centers_.size()==multiplicities_.size() );
 }
 
 // set values of color_ according to index of closest centers
@@ -796,3 +669,54 @@ void VoronoiCoarsening::accumulateValues(const VectorDouble32& val, LocalSums& v
          valcolors.add1value(cell_colors_[ic],val[ic]);
    }
 }
+
+/// Perform checks on the user supplied list of sensorPoints.
+/// - Remove any duplicates
+/// - Remove and points that do not correspond to tissue cells.
+/// On return, sensorPoints will be sorted and free of any duplicates or
+/// non-tissue cells.
+void preScreenSensorPoints(vector<Long64>& sensorPoints, const Anatomy& anatomy, MPI_Comm comm)
+{
+   int myRank;
+   MPI_Comm_rank(comm, &myRank);  
+
+   // Remove duplicate points.
+   sort(sensorPoints.begin(), sensorPoints.end());
+   vector<Long64>::iterator
+      uniqEnd = unique(sensorPoints.begin(), sensorPoints.end());
+   set<Long64> duplicatePoints(uniqEnd, sensorPoints.end());
+   sensorPoints.erase(uniqEnd, sensorPoints.end());
+
+   // count appearances of sensorPoints in Anatomy
+   set<Long64> localCells;
+   for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
+      localCells.insert(anatomy.gid(ii));
+   vector<int> count(sensorPoints.size());
+   for (unsigned ii=0; ii<sensorPoints.size(); ++ii)
+      count[ii] = localCells.count(sensorPoints[ii]);
+   allReduce(count, MPI_INT, MPI_SUM, comm);
+   
+   // erase sensorPoints not in the Anatomy
+   vector<Long64> nonTissuePoints;
+   for (vector<int>::iterator iter=count.begin(); iter!=count.end();)
+   {
+      assert(*iter <= 1);
+      if (*iter == 0)
+      {
+         int dist = distance(count.begin(), iter);
+         iter = count.erase(iter);
+         nonTissuePoints.push_back(*(sensorPoints.begin()+dist));
+         sensorPoints.erase(sensorPoints.begin()+dist);
+      }
+      else
+         ++iter;
+   }
+   
+   if (myRank != 0)
+      return;
+         
+   cout << "Duplicate points removed:  " << duplicatePoints.size() << endl;
+   cout << "Non-tissue points removed: " << nonTissuePoints.size() << endl;
+   
+}
+

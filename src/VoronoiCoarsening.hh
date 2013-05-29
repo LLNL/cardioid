@@ -21,7 +21,7 @@ class VoronoiCoarsening
 {
  public:
    VoronoiCoarsening(const Anatomy& anatomy,
-                     const std::vector<Long64>& gid,
+                     std::vector<Long64>& gid,
                      const CommTable* commtable);
    void computeRemoteTasks();
    void exchangeAndSum(LocalSums& valcolors);
@@ -37,10 +37,6 @@ class VoronoiCoarsening
       std::map<int, Long64>::const_iterator here = centers_.find(color);
       assert( here!=centers_.end() );
       return indexToVector_(here->second);
-   }
-   short multiplicity(const int color)const
-   {
-      return (*multiplicities_.find(color)).second;
    }
    const std::set<int>& getOwnedColors()const {return owned_colors_;}
    const std::set<int>& getLocalColors()const {return local_colors_;}
@@ -68,7 +64,6 @@ class VoronoiCoarsening
 
    // shared globally
    std::map<int, Long64> centers_; // color->cell gid
-   std::map<int,short>  multiplicities_; // color->multiplicity
 
    // local only
    std::vector<int> cell_colors_; // colors of local cells

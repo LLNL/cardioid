@@ -17,7 +17,7 @@ allGather(std::vector<T>& data, size_t nDataPerTask, MPI_Comm comm);
 
 template<typename T>
 inline void
-allReduce(std::vector<T>& data, MPI_Op op, MPI_Comm comm);
+allReduce(std::vector<T>& data, MPI_Datatype type, MPI_Op op, MPI_Comm comm);
 
 
 
@@ -52,13 +52,13 @@ allGather(std::vector<T>& data, size_t nDataPerTask, MPI_Comm comm)
 
 template<typename T>
 inline void
-allReduce(std::vector<T>& data, MPI_Op op, MPI_Comm comm)
+allReduce(std::vector<T>& data, MPI_Datatype type, MPI_Op op, MPI_Comm comm)
 {
    std::vector<T> tmp(data);
    void* sendBuf = (void*) &tmp[0];
    void* recvBuf = (void*) &data[0];
-   int nSend = data.size() * sizeof(T);
-   MPI_Allreduce(sendBuf, recvBuf, nSend, MPI_CHAR, op, comm);
+   int nSend = data.size();
+   MPI_Allreduce(sendBuf, recvBuf, nSend, type, op, comm);
 }
 
 

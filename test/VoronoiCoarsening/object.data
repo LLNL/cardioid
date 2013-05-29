@@ -44,6 +44,7 @@ grid1 DECOMPOSITION
 diff1 DIFFUSION
 {
    method = FGR;
+   variant = omp;
    diffusionScale = 1. mm^3/mF;
 }
 

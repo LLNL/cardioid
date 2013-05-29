@@ -124,7 +124,7 @@ class GradientVoronoiCoarsening : public Sensor
                              std::string filename,
                              unsigned nFiles, 
                              const Anatomy& anatomy,
-                             const std::vector<Long64>& gid,
+                             std::vector<Long64>& gid,
                              const PotentialData& vdata_,
                              const CommTable* commtable,
                              const std::string format,

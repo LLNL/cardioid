@@ -48,7 +48,7 @@ public:
                    std::string filename,
                    unsigned nFiles,
                    const Anatomy& anatomy,
-                   const std::vector<Long64>& gid,
+                   std::vector<Long64>& gid,
                    const Reaction& reaction,
                    const CommTable* commtable);
    ~CaAverageSensor(){};

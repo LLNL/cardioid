@@ -21,7 +21,7 @@ CaAverageSensor::CaAverageSensor(const SensorParms& sp,
                                  string filename,
                                  unsigned nFiles,
                                  const Anatomy& anatomy,
-                                 const vector<Long64>& gid,
+                                 vector<Long64>& gid,
                                  const Reaction& reaction,
                                  const CommTable* commtable)
    :Sensor(sp),
@@ -135,9 +135,7 @@ void CaAverageSensor::writeAverages(const string& filename,
       }
       ss << endl;
       string line(ss.str());
-      const short m=coarsening_.multiplicity(color);
-      for(short ii=0;ii<m;ii++)
-         Pwrite(line.c_str(), line.size(), 1, file);
+      Pwrite(line.c_str(), line.size(), 1, file);
    }
    
    Pclose(file);
