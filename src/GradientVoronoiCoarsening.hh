@@ -66,8 +66,6 @@ class GradientVoronoiCoarsening : public Sensor
    const MPI_Comm comm_;
    const std::string format_;
    
-   const double max_distance_;
-
    // flag telling us if values dumped for gradient are partial contribution and need
    // to be consolidated with other tasks output
    const bool use_communication_avoiding_algorithm_;

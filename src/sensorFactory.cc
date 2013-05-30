@@ -136,8 +136,8 @@ namespace
 
       unsigned nFiles;  objectGet(obj, "nFiles", nFiles, "0");
 
-      double maxdistance;
-      objectGet(obj, "maxDistance",  maxdistance,  "100000.0");
+      double maxDistance;
+      objectGet(obj, "maxDistance",  maxDistance,  "100000.0");
 
       string format;
       objectGet(obj, "format", format, "ascii");
@@ -147,7 +147,7 @@ namespace
       objectGet(obj, "method", method, "undefined");
       if ( method == "voronoiCoarsening" ||
            method == "dataVoronoiCoarsening" )
-         return new DataVoronoiCoarsening(sp, filename, nFiles, anatomy, cellVec, vdata, sim.commTable_, maxdistance);
+         return new DataVoronoiCoarsening(sp, filename, nFiles, anatomy, cellVec, vdata, sim.commTable_, maxDistance);
       else if( method == "gradientVoronoiCoarsening" )
       {
          string algo;
@@ -155,7 +155,7 @@ namespace
          assert( algo.compare("comm")==0 || algo.compare("nocomm")==0 );
          const bool use_communication_avoiding_algorithm = ( algo.compare("nocomm")==0 );
 
-         return new GradientVoronoiCoarsening(sp, filename, nFiles, anatomy, cellVec, vdata, sim.commTable_, format, maxdistance,
+         return new GradientVoronoiCoarsening(sp, filename, nFiles, anatomy, cellVec, vdata, sim.commTable_, format, maxDistance,
                                               use_communication_avoiding_algorithm);
       }
       assert(false);

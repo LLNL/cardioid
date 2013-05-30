@@ -22,11 +22,11 @@ class VoronoiCoarsening
  public:
    VoronoiCoarsening(const Anatomy& anatomy,
                      std::vector<Long64>& gid,
+                     const double maxDistance,
                      const CommTable* commtable);
    void computeRemoteTasks();
    void exchangeAndSum(LocalSums& valcolors);
    void exchangeAndSum(std::vector<LocalSums*> valcolors);
-   int bruteForceColoring(const double max_distance=100000.);
    void colorDisplacements(std::vector<double>& dx,
                            std::vector<double>& dy,
                            std::vector<double>& dz);
@@ -43,6 +43,20 @@ class VoronoiCoarsening
    int getColor(const int ic)const {return cell_colors_[ic]; }
 
  private:
+
+   int bruteForceColoring(const double maxDistance);
+   void computeColorAverages(const std::vector<double>& val);
+   void computeColorCenterValues(const std::vector<double>& val);
+   void setupComm(const std::map< int, int* >& nremote_colors_for_task, 
+                  const int size_nremote_colors_for_task);
+
+   Vector getDomaincenter()const;
+   double getDomainRadius(const Vector& domain_center)const;
+   std::map<int,Vector> getCloseCenters(const Vector& domain_center, 
+                                        const double)const;
+   
+
+
    std::map<int,int> ncolors_to_send_; // remote pe -> number of colors
    std::map<int,int> ncolors_to_recv_; // remote pe -> number of colors
 
@@ -51,9 +65,6 @@ class VoronoiCoarsening
    std::set<int> src_tasks_;
 
    std::set<int> local_colors_;
-
-   void computeColorAverages(const std::vector<double>& val);
-   void computeColorCenterValues(const std::vector<double>& val);
 
    std::map<int,int> ncolors_; // color -> number of local cells of that color
    
@@ -73,14 +84,6 @@ class VoronoiCoarsening
    
    IndexToVector indexToVector_;
 
-   void setupComm(const std::map< int, int* >& nremote_colors_for_task, 
-                const int size_nremote_colors_for_task);
-
-   Vector getDomaincenter()const;
-   double getDomainRadius(const Vector& domain_center)const;
-   std::map<int,Vector> getCloseCenters(const Vector& domain_center, 
-                                        const double)const;
-   
 };
 
 // packed format for communications

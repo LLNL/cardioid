@@ -25,16 +25,13 @@ CaAverageSensor::CaAverageSensor(const SensorParms& sp,
                                  const Reaction& reaction,
                                  const CommTable* commtable)
    :Sensor(sp),
-    coarsening_(anatomy,gid,commtable),
+    coarsening_(anatomy, gid, 10000.0, commtable),
     filename_(filename),
     nFiles_(nFiles),
     reaction_(reaction),
     comm_(commtable->_comm),
     loop_buffer_(-1)
 {
-   // color local cells
-   int ret=coarsening_.bruteForceColoring();
-   assert( ret>=0 );
    
    coarsening_.computeRemoteTasks();
    

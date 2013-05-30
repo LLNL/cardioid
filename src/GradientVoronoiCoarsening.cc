@@ -70,26 +70,21 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(
    const PotentialData& vdata,
    const CommTable* commtable,
    const string format,
-   const double max_distance,
+   const double maxDistance,
    const bool use_communication_avoiding_algorithm)
    :Sensor(sp),
-    coarsening_(anatomy,gid,commtable),
+    coarsening_(anatomy, gid, maxDistance, commtable),
     filename_(filename),
     anatomy_(anatomy),
     vdata_(vdata),
     comm_(commtable->_comm),
     format_(format),
-    max_distance_(max_distance),
     use_communication_avoiding_algorithm_(use_communication_avoiding_algorithm),
     nFiles_(nFiles)
 {
    eval_count_=0;
    
    const int nLocal = anatomy_.nLocal();
-   
-   // color local cells
-   int ret=coarsening_.bruteForceColoring(max_distance);
-   assert( ret>=0 );
    
    dx_.resize(nLocal);
    dy_.resize(nLocal);
@@ -99,7 +94,7 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(
 
    coarsening_.computeRemoteTasks();
    
-   const double maxd2=max_distance*max_distance;
+   const double maxd2=maxDistance*maxDistance;
    colored_cells_.reserve(27);
    
    //int count=0;
@@ -129,7 +124,7 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
 
    // calculate local sums
    
-   static list<int> center_indexes;
+   static vector<int> center_indexes;
    static map<int,int> ncellsofcolor;
    
    if( first_time )
@@ -168,7 +163,7 @@ void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& v
    
    // set sum of n values to val[ic] ( (n-1)*0. + val[ic] )
    // for all colors centered locally
-   list<int>::const_iterator pi=center_indexes.begin();
+   vector<int>::const_iterator pi=center_indexes.begin();
    while(pi!=center_indexes.end())
    {
       const int ic=*pi;

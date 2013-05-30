@@ -2,6 +2,7 @@
 #include <sstream>
 #include <iomanip>
 #include <map>
+#include <algorithm>
 using namespace std;
 
 #include "VoronoiCoarsening.hh"
@@ -77,6 +78,7 @@ map<int,Vector> VoronoiCoarsening::getCloseCenters(const Vector& domain_center,
     
 VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
                                      vector<Long64>& gid,
+                                     const double maxDistance,
                                      const CommTable* commtable)
    :anatomy_(anatomy),
     comm_(commtable->_comm),
@@ -106,12 +108,18 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
    MPI_Barrier(comm_);
    
    cell_colors_.resize(anatomy.nLocal(),-1); // color only local cells
+
+   bruteForceColoring(maxDistance);
+
    
 }
 
-// set values of color_ according to index of closest centers
-// (only for cells with max_distance from a center, other cells take color -1)
-int VoronoiCoarsening::bruteForceColoring(const double max_distance)
+// Initializes:
+// - cell_colors_
+// - ncolors_
+// - local_colors_
+// (only for cells with maxDistance from a center, other cells take color -1)
+int VoronoiCoarsening::bruteForceColoring(const double maxDistance)
 {
    assert( centers_.size()>0 );
    
@@ -133,7 +141,7 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
       // get sub-domain radius
       double domain_radius=getDomainRadius(domain_center);
       
-      const double r2max=3.*max_distance*max_distance/
+      const double r2max=3.*maxDistance*maxDistance/
                         (anatomy_.dx()*anatomy_.dx()
                         +anatomy_.dy()*anatomy_.dy()
                         +anatomy_.dz()*anatomy_.dz());
@@ -189,12 +197,17 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
             }
          }
          
-         if( r2Min>r2max ){
+         if ( r2Min>r2max )
+         {
             cell_colors_[icell]=-1;
-         }else if (color < 0 ){
+         }
+         else if (color < 0 )
+         {
             cerr << "Failed to assign color to cell "<<icell<<endl;
             return -1;
-         }else{
+         }
+         else
+         {
             cell_colors_[icell]=color;
             ncolors_[color]++;
             local_colors_.insert(color);
@@ -203,7 +216,7 @@ int VoronoiCoarsening::bruteForceColoring(const double max_distance)
    }
 
 #ifdef DEBUG
-   if( max_distance>99999. )
+   if( maxDistance>99999. )
    {
       int nlocal=0;
       for(map<int,int>::const_iterator itr =ncolors_.begin();

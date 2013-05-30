@@ -22,18 +22,15 @@ DataVoronoiCoarsening::DataVoronoiCoarsening(const SensorParms& sp,
                                              vector<Long64>& gid,
                                              const PotentialData& vdata,
                                              const CommTable* commtable,
-                                             const double max_distance)
+                                             const double maxDistance)
    :Sensor(sp),
-    coarsening_(anatomy,gid,commtable),
+    coarsening_(anatomy, gid, maxDistance, commtable),
     filename_(filename),
     nFiles_(nFiles),
     anatomy_(anatomy),
     vdata_(vdata),
     comm_(commtable->_comm)
 {
-   // color local cells
-   int ret=coarsening_.bruteForceColoring(max_distance);
-   assert( ret>=0 );
    
    coarsening_.computeRemoteTasks();
 }
