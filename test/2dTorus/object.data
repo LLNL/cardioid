@@ -11,6 +11,7 @@ simulate SIMULATE
    printRate = 1;
    snapshotRate = 100;
    stimulus = box;
+   sensor=stateVar;
 }
 
 pioAnatomy ANATOMY 
@@ -64,4 +65,14 @@ box STIMULUS
    tStart = 0;
    duration = 2;
    period = 1000;
+}
+
+stateVar SENSOR 
+{
+   method = stateVariable;
+   printRate = 100;
+   evalRate = 100;
+   cells = 43;
+   radius = 10;
+   fields = Vm Na_i;
 }

@@ -140,7 +140,7 @@ void StateVariableSensor::print(double time, int loop)
          if (handles_[ii] >= 0)
             values[ii] = sim_.reaction_->getValue(iter->second, handles_[ii]);
          else
-            values[ii] = getSimValue(ii, handles_[ii]);
+            values[ii] = getSimValue(iter->second, handles_[ii]);
 
       if (binaryOutput_)
       {
