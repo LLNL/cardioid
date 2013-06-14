@@ -66,7 +66,7 @@ StateVariableSensor::StateVariableSensor(
    set<Long64> requestedCells = mkCellSet(
       sim.anatomy_, p.cells, p.cellListFilename, p.radius);
 
-   for (unsigned ii=0; ii<sim.anatomy_.size(); ++ii)
+   for (unsigned ii=0; ii<sim.anatomy_.nLocal(); ++ii)
    {
       Long64 gid = sim.anatomy_.gid(ii) ;
       if (requestedCells.count(gid) > 0)
@@ -220,7 +220,7 @@ namespace
       // Form bounding box
       Tuple minCorner = anatomy.globalTuple(0);
       Tuple maxCorner = anatomy.globalTuple(0);
-      for (unsigned ii=1; ii<anatomy.size(); ++ii)
+      for (unsigned ii=1; ii<anatomy.nLocal(); ++ii)
       {
          Tuple tt = anatomy.globalTuple(ii);
          minCorner.x() = min(tt.x(), minCorner.x());
