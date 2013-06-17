@@ -24,7 +24,6 @@ class VoronoiCoarsening
                      std::vector<Long64>& gid,
                      const double maxDistance,
                      const CommTable* commtable);
-   void computeRemoteTasks();
    void exchangeAndSum(LocalSums& valcolors);
    void exchangeAndSum(std::vector<LocalSums*> valcolors);
    void colorDisplacements(std::vector<double>& dx,
@@ -45,6 +44,7 @@ class VoronoiCoarsening
  private:
 
    int bruteForceColoring(const double maxDistance);
+   void computeRemoteTasks();
    void computeColorAverages(const std::vector<double>& val);
    void computeColorCenterValues(const std::vector<double>& val);
    void setupComm(const std::map< int, int* >& nremote_colors_for_task, 

@@ -31,8 +31,6 @@ DataVoronoiCoarsening::DataVoronoiCoarsening(const SensorParms& sp,
     vdata_(vdata),
     comm_(commtable->_comm)
 {
-   
-   coarsening_.computeRemoteTasks();
 }
 
 void DataVoronoiCoarsening::computeColorAverages(const VectorDouble32& val)

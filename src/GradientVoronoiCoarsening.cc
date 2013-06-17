@@ -92,8 +92,6 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(
 
    coarsening_.colorDisplacements(dx_,dy_,dz_);
 
-   coarsening_.computeRemoteTasks();
-   
    const double maxd2=maxDistance*maxDistance;
    colored_cells_.reserve(27);
    

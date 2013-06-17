@@ -33,8 +33,6 @@ CaAverageSensor::CaAverageSensor(const SensorParms& sp,
     loop_buffer_(-1)
 {
    
-   coarsening_.computeRemoteTasks();
-   
    nx_=anatomy.nx();
    ny_=anatomy.ny();
    nz_=anatomy.nz();

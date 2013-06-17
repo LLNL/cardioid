@@ -107,11 +107,8 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
    
    MPI_Barrier(comm_);
    
-   cell_colors_.resize(anatomy.nLocal(),-1); // color only local cells
-
    bruteForceColoring(maxDistance);
-
-   
+   computeRemoteTasks();   
 }
 
 // Initializes:
@@ -130,6 +127,8 @@ int VoronoiCoarsening::bruteForceColoring(const double maxDistance)
 
    ncolors_.clear();
    local_colors_.clear();
+   cell_colors_.resize(anatomy_.nLocal(), -1); // color only local cells
+
    
    const int ncells=(int)anatomy_.nLocal();
    if( ncells>0 )
@@ -263,13 +262,6 @@ void VoronoiCoarsening::colorDisplacements(std::vector<double>& dx,
          const double norm2=(dx[icell]*dx[icell]+dy[icell]*dy[icell]+dz[icell]*dz[icell]); 
          if( norm2<1.e-8 )
          {
-            if( owned_colors_.size()==0 )
-            {
-               cout<<"colorDisplacements --- ERROR owned_colors_.size(), myRank="<<myRank
-                   <<", color="<<color
-                   <<", gid="<<anatomy_.gid(icell)<<endl;
-               cout<<"myRank="<<myRank<<", r="<<r<<", center="<<centers_[color]<<endl;
-            }
             assert( owned_colors_.size()>0 );
             
             if( owned_colors_.find(color)==owned_colors_.end() )
