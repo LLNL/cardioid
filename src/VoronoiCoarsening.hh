@@ -31,12 +31,19 @@ class VoronoiCoarsening
                            std::vector<double>& dz);
    void accumulateValues(const VectorDouble32& val, LocalSums& valcolors);
    
-   const Vector center(const int color)const
+//    const Vector center(const int color)const
+//    {
+//       std::map<int, Long64>::const_iterator here = centers_.find(color);
+//       assert( here!=centers_.end() );
+//       return indexToVector_(here->second);
+//    }
+   const Long64& getCenterGid(int color) const
    {
-      std::map<int, Long64>::const_iterator here = centers_.find(color);
-      assert( here!=centers_.end() );
-      return indexToVector_(here->second);
+      std::map<int, Long64>::const_iterator here = colorToGidMap_.find(color);
+      assert( here!=colorToGidMap_.end() );
+      return here->second;
    }
+   
    const std::set<int>& getOwnedColors()const {return owned_colors_;}
    const std::set<int>& getLocalColors()const {return local_colors_;}
    int getColor(const int ic)const {return cell_colors_[ic]; }
@@ -74,7 +81,7 @@ class VoronoiCoarsening
    const Anatomy& anatomy_;
 
    // shared globally
-   std::map<int, Long64> centers_; // color->cell gid
+   std::map<int, Long64> colorToGidMap_; // color->cell gid
 
    // local only
    std::vector<int> cell_colors_; // colors of local cells

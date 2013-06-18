@@ -57,8 +57,8 @@ map<int,Vector> VoronoiCoarsening::getCloseCenters(const Vector& domain_center,
                                                    const double d2min)const
 {
       map<int,Vector> close_centers;
-      for(map<int, Long64>::const_iterator icenter =centers_.begin();
-                                           icenter!=centers_.end();
+      for(map<int, Long64>::const_iterator icenter =colorToGidMap_.begin();
+                                           icenter!=colorToGidMap_.end();
                                          ++icenter)
       {
          
@@ -95,13 +95,13 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
       cout<<"VoronoiCoarsening: number of sensor points = "<<gid.size()<<endl;
    
    for (unsigned color=0; color<gid.size(); ++color)
-      centers_.insert(make_pair(color, gid[color]));
+      colorToGidMap_.insert(make_pair(color, gid[color]));
 
    set<Long64> localCells;
    for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
       localCells.insert(anatomy.gid(ii));
-   for (map<int, Long64>::iterator iter=centers_.begin();
-        iter!=centers_.end(); ++iter)
+   for (map<int, Long64>::iterator iter=colorToGidMap_.begin();
+        iter!=colorToGidMap_.end(); ++iter)
       if (localCells.count(iter->second) == 1)
          owned_colors_.insert(iter->first);
    
@@ -118,7 +118,7 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
 // (only for cells with maxDistance from a center, other cells take color -1)
 int VoronoiCoarsening::bruteForceColoring(const double maxDistance)
 {
-   assert( centers_.size()>0 );
+   assert( colorToGidMap_.size()>0 );
    
    int myRank;
    MPI_Comm_rank(comm_, &myRank);  
@@ -133,7 +133,7 @@ int VoronoiCoarsening::bruteForceColoring(const double maxDistance)
    const int ncells=(int)anatomy_.nLocal();
    if( ncells>0 )
    {
-      if( myRank==0 )cout<<"VoronoiCoarsening: ncenters="<<centers_.size()<<endl;
+      if( myRank==0 )cout<<"VoronoiCoarsening: ncenters="<<colorToGidMap_.size()<<endl;
 
       Vector domain_center( getDomaincenter() ); 
 
@@ -150,8 +150,8 @@ int VoronoiCoarsening::bruteForceColoring(const double maxDistance)
       {
          const double domain_radius2=domain_radius*domain_radius;
          double extra_radius2=extra_radius*extra_radius;
-         for (map<int, Long64>::const_iterator icenter =centers_.begin();
-                                               icenter!=centers_.end();
+         for (map<int, Long64>::const_iterator icenter =colorToGidMap_.begin();
+                                               icenter!=colorToGidMap_.end();
                                              ++icenter)
          {
             Vector rij = domain_center - indexToVector_(icenter->second);
@@ -254,7 +254,7 @@ void VoronoiCoarsening::colorDisplacements(std::vector<double>& dx,
       if(color>=0)
       {
          Vector r = indexToVector_(anatomy_.gid(icell));
-         Vector rij = r - indexToVector_(centers_[color]);
+         Vector rij = r - indexToVector_(colorToGidMap_[color]);
          dx[icell]=rij.x()*anatomy_.dx();
          dy[icell]=rij.y()*anatomy_.dy();
          dz[icell]=rij.z()*anatomy_.dz();
@@ -269,7 +269,7 @@ void VoronoiCoarsening::colorDisplacements(std::vector<double>& dx,
                cout<<"colorDisplacements --- ERROR, myRank="<<myRank
                    <<", color="<<color
                    <<", gid="<<anatomy_.gid(icell)
-                   <<", r="<<r<<", center="<<centers_[color]<<endl;
+                   <<", r="<<r<<", center="<<colorToGidMap_[color]<<endl;
                for(set<int>::const_iterator it =owned_colors_.begin();
                                             it!=owned_colors_.end();
                                           ++it)

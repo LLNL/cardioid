@@ -502,29 +502,17 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
       
       vector<float>& color_gradient(gradients_[color]);
       
-      // use first 2 records (6 fields) to store x,y,z and nb. values used for averaging
-      if( color_gradient.empty() )
-      if( format_.compare("ascii")!=0 )
-      {
-         const int halfNx = anatomy_.nx()/2;
-         const int halfNy = anatomy_.ny()/2;
-         const int halfNz = anatomy_.nz()/2;
-
-         const Vector& v = coarsening_.center(color);
-         float ix = float(v.x()) - float(halfNx);
-         float iy = float(v.y()) - float(halfNy);
-         float iz = float(v.z()) - float(halfNz);
-      
-         color_gradient.push_back(ix);
-         color_gradient.push_back(iy);
-         color_gradient.push_back(iz);
-         
-         color_gradient.push_back( float(valcolors_.nValues(color)) );
-         // fill with dummies to get a record of length 3
-         float dummy=0.;
-         color_gradient.push_back(dummy);
-         color_gradient.push_back(dummy);
-      }
+      // use first record (3 fields) to store gid and nb. Gid is mangled
+      // to fit into two floats in a rather arbitrary way.
+      if ( color_gradient.empty() )
+         if ( format_.compare("ascii")!=0 )
+         {
+            Long64 gid = coarsening_.getCenterGid(color);
+            
+            color_gradient.push_back(gid/65536);
+            color_gradient.push_back(gid%65536);
+            color_gradient.push_back( float(valcolors_.nValues(color)) );
+         }
       
       double b[3]={valRHS0_.value(color),
                    valRHS1_.value(color),
@@ -583,14 +571,14 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
       else
       {
          Pprintf(file, "  datatype = FIXRECORDASCII;\n");
-         const int lrec    = 25+13*3*eval_count_;
+         const int lrec    = 20+13*3*eval_count_;
          const int nfields = 4+3*eval_count_; 
          Pprintf(file, "  lrec = %d;\n", lrec);
          Pprintf(file, "  nfields = %d;\n", nfields);
          Pprintf(file, "  nrecords = %llu;\n", nb_sampling_pts_);
-         string fieldNames="rx ry rz nvals " + concat(vector<string>(eval_count_, "gx gy gz"));
+         string fieldNames="gid nvals " + concat(vector<string>(eval_count_, "gx gy gz"));
          Pprintf(file, "  field_names = %s;\n", fieldNames.c_str());
-         string fieldTypes="d d d d " + concat(vector<string>(eval_count_, "f"));
+         string fieldTypes="u d " + concat(vector<string>(eval_count_, "f"));
          Pprintf(file, "  field_types = %s;\n", fieldTypes.c_str());
       }
       Pprintf(file, "  nfiles = %u;\n", nfiles);
@@ -616,28 +604,17 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
    }
    else // ascii format
    {
-      const int halfNx = anatomy_.nx()/2;
-      const int halfNy = anatomy_.ny()/2;
-      const int halfNz = anatomy_.nz()/2;
-   
       for(set<int>::const_iterator it = included_eval_colors_.begin();
                                    it!= included_eval_colors_.end();
                                  ++it)
       {
          const int color=(*it);
 
-         const Vector& v = coarsening_.center(color);
-         int ix = int(v.x()) - halfNx;
-         int iy = int(v.y()) - halfNy;
-         int iz = int(v.z()) - halfNz;
-
          const map< int, vector<float> >::const_iterator itn=gradients_.find(color);
          const vector<float>& color_gradient(itn->second);
       
          stringstream ss;
-         ss << setw(5)<< right << ix<<" ";
-         ss << setw(5)<< right << iy<<" ";
-         ss << setw(5)<< right << iz<<" ";
+         ss << setw(12)<< right << coarsening_.getCenterGid(color) <<" ";
          ss << setw(7)<< right << valcolors_.nValues(color);
       
          ss << setprecision(8);

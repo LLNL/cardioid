@@ -64,7 +64,7 @@ void CaAverageSensor::writeAverages(const string& filename,
      PioSet(file, "ngroup", nFiles_);
    
    const int nfields = 4+(int)times_.size(); 
-   const int lrec    = 25+13*(int)times_.size();
+   const int lrec    = 20+13*(int)times_.size();
 
    const std::set<int>& owned_colors=coarsening_.getOwnedColors();
 
@@ -86,9 +86,9 @@ void CaAverageSensor::writeAverages(const string& filename,
       Pprintf(file, "  datatype = FIXRECORDASCII;\n");
       Pprintf(file, "  nrecords = %llu;\n", nSnapSub);
       Pprintf(file, "  nfields = %d;\n", nfields);
-      string fieldNames="rx ry rz nvals " + concat(vector<string>(times_.size(), "avgCa"));
+      string fieldNames="gid nvals " + concat(vector<string>(times_.size(), "avgCa"));
       Pprintf(file, "  field_names = %s;\n", fieldNames.c_str());
-      string fieldTypes="d d d d " + concat(vector<string>(times_.size(), "f"));
+      string fieldTypes="u d " + concat(vector<string>(times_.size(), "f"));
       Pprintf(file, "  field_types = %s;\n", fieldTypes.c_str());
       Pprintf(file, "  nfiles = %u;\n", nfiles);
       Pprintf(file, "  time = %f; loop = %u;\n",times_[0], current_loop);
@@ -100,27 +100,17 @@ void CaAverageSensor::writeAverages(const string& filename,
       Pprintf(file, "}\n\n");
    }
    
-   const int halfNx = nx_/2;
-   const int halfNy = ny_/2;
-   const int halfNz = nz_/2;
-   
    for(set<int>::const_iterator it = owned_colors.begin();
                                 it!= owned_colors.end();
                               ++it)
    {
       const int color=(*it);
-      const Vector& v = coarsening_.center(color);
-      int ix = int(v.x()) - halfNx;
-      int iy = int(v.y()) - halfNy;
-      int iz = int(v.z()) - halfNz;
       
       const map< int, vector<float> >::const_iterator itn=averages_.find(color);
       const vector<float>& color_avg(itn->second);
       
       stringstream ss;
-      ss << setw(5)<< right << ix<<" ";
-      ss << setw(5)<< right << iy<<" ";
-      ss << setw(5)<< right << iz<<" ";
+      ss << setw(12)<< right << coarsening_.getCenterGid(color) <<" ";
       ss << setw(7)<< right << avg_valcolors_.nValues(color);
       
       ss << setprecision(8);
