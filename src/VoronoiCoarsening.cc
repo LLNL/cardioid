@@ -77,7 +77,7 @@ map<int,Vector> VoronoiCoarsening::getCloseCenters(const Vector& domain_center,
 }
     
 VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
-                                     vector<Long64>& gid,
+                                     vector<Long64>& sensorPoint,
                                      const double maxDistance,
                                      const CommTable* commtable)
    :anatomy_(anatomy),
@@ -87,15 +87,15 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
 {
    int myRank;
    MPI_Comm_rank(comm_, &myRank);  
-   assert( gid.size()>0 );
+   assert( sensorPoint.size()>0 );
 
-   preScreenSensorPoints(gid, anatomy, comm_);
+   preScreenSensorPoints(sensorPoint, anatomy, comm_);
 
    if( myRank==0)
-      cout<<"VoronoiCoarsening: number of sensor points = "<<gid.size()<<endl;
+      cout<<"VoronoiCoarsening: number of sensor points = "<<sensorPoint.size()<<endl;
    
-   for (unsigned color=0; color<gid.size(); ++color)
-      colorToGidMap_.insert(make_pair(color, gid[color]));
+   for (unsigned color=0; color<sensorPoint.size(); ++color)
+      colorToGidMap_.insert(make_pair(color, sensorPoint[color]));
 
    set<Long64> localCells;
    for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
@@ -103,7 +103,7 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
    for (map<int, Long64>::iterator iter=colorToGidMap_.begin();
         iter!=colorToGidMap_.end(); ++iter)
       if (localCells.count(iter->second) == 1)
-         owned_colors_.insert(iter->first);
+         ownedColors_.insert(iter->first);
    
    MPI_Barrier(comm_);
    
@@ -114,7 +114,7 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
 // Initializes:
 // - cell_colors_
 // - ncolors_
-// - local_colors_
+// - localColors_
 // (only for cells with maxDistance from a center, other cells take color -1)
 int VoronoiCoarsening::bruteForceColoring(const double maxDistance)
 {
@@ -126,7 +126,7 @@ int VoronoiCoarsening::bruteForceColoring(const double maxDistance)
       cout<<"VoronoiCoarsening: brute force coloring..."<<endl;
 
    ncolors_.clear();
-   local_colors_.clear();
+   localColors_.clear();
    cell_colors_.resize(anatomy_.nLocal(), -1); // color only local cells
 
    
@@ -209,7 +209,7 @@ int VoronoiCoarsening::bruteForceColoring(const double maxDistance)
          {
             cell_colors_[icell]=color;
             ncolors_[color]++;
-            local_colors_.insert(color);
+            localColors_.insert(color);
          }
       }
    }
@@ -262,22 +262,22 @@ void VoronoiCoarsening::colorDisplacements(std::vector<double>& dx,
          const double norm2=(dx[icell]*dx[icell]+dy[icell]*dy[icell]+dz[icell]*dz[icell]); 
          if( norm2<1.e-8 )
          {
-            assert( owned_colors_.size()>0 );
+            assert( ownedColors_.size()>0 );
             
-            if( owned_colors_.find(color)==owned_colors_.end() )
+            if( ownedColors_.find(color)==ownedColors_.end() )
             {
                cout<<"colorDisplacements --- ERROR, myRank="<<myRank
                    <<", color="<<color
                    <<", gid="<<anatomy_.gid(icell)
                    <<", r="<<r<<", center="<<colorToGidMap_[color]<<endl;
-               for(set<int>::const_iterator it =owned_colors_.begin();
-                                            it!=owned_colors_.end();
+               for(set<int>::const_iterator it =ownedColors_.begin();
+                                            it!=ownedColors_.end();
                                           ++it)
                {
                   cout<<"rank="<<myRank<<" owns color "<<*it<<endl;
                } 
             }
-            assert( owned_colors_.find(color)!=owned_colors_.end() );
+            assert( ownedColors_.find(color)!=ownedColors_.end() );
          }
 #endif
       }
@@ -308,10 +308,10 @@ void VoronoiCoarsening::setupComm(const map< int, int* >& nremote_colors_from_ta
       {
          const int color=nremote_colors[2*i];
          const int nc   =nremote_colors[2*i+1];
-         set<int>::const_iterator iti=local_colors_.find(color);
+         set<int>::const_iterator iti=localColors_.find(color);
          
          // do something only if I know that color locally
-         //if( iti!=local_colors_.end() )
+         //if( iti!=localColors_.end() )
          if( color>=0 )
          {
             ncolors_to_recv_[*itp]++;
@@ -319,7 +319,7 @@ void VoronoiCoarsening::setupComm(const map< int, int* >& nremote_colors_from_ta
             break;
          }
       }
-      ncolors_to_send_[*itp]=(int)local_colors_.size();
+      ncolors_to_send_[*itp]=(int)localColors_.size();
    }
 }
 
@@ -334,18 +334,18 @@ void VoronoiCoarsening::computeRemoteTasks()
    for(map<int,int>::const_iterator itr =ncolors_.begin();
                                     itr!=ncolors_.end();
                                   ++itr)
-      assert( local_colors_.find(itr->first)!=local_colors_.end() );
+      assert( localColors_.find(itr->first)!=localColors_.end() );
 #endif
    
-   int nlocalcolors=(int)(local_colors_.size());
+   int nlocalcolors=(int)(localColors_.size());
    int max_nlocalcolors;
    MPI_Allreduce(&nlocalcolors, &max_nlocalcolors, 1, MPI_INT, MPI_MAX, comm_);
    if( myRank==0 )
       cout<<"VoronoiCoarsening: max_nlocalcolors/task="<<max_nlocalcolors<<endl;
    
-   // copy local_colors_ into vector
-   vector<int> local_colors(local_colors_.size());
-   copy(local_colors_.begin(),local_colors_.end(),local_colors.begin());
+   // copy localColors_ into vector
+   vector<int> local_colors(localColors_.size());
+   copy(localColors_.begin(),localColors_.end(),local_colors.begin());
    local_colors.resize(max_nlocalcolors,-1);
 
 #if 1
@@ -554,7 +554,7 @@ void VoronoiCoarsening::exchangeAndSum(LocalSums& valcolors)
       {
          int ii=offset+i;
          int color=remotepackeddata[ii].color;
-         if( local_colors_.find(color)!=local_colors_.end() )
+         if( localColors_.find(color)!=localColors_.end() )
          {
             valcolors.addnvalues(color,remotepackeddata[ii].value,
                                        remotepackeddata[ii].n);
@@ -649,7 +649,7 @@ void VoronoiCoarsening::exchangeAndSum(vector<LocalSums*> valcolors)
          {
             int ii=offset+i;
             int color=remotepackeddata[ii].color;
-            if( local_colors_.find(color)!=local_colors_.end() )
+            if( localColors_.find(color)!=localColors_.end() )
             {
                valcolors[j]->addnvalues(color,remotepackeddata[ii].value,
                                         remotepackeddata[ii].n);

@@ -21,7 +21,7 @@ class VoronoiCoarsening
 {
  public:
    VoronoiCoarsening(const Anatomy& anatomy,
-                     std::vector<Long64>& gid,
+                     std::vector<Long64>& sensorPoint,
                      const double maxDistance,
                      const CommTable* commtable);
    void exchangeAndSum(LocalSums& valcolors);
@@ -43,9 +43,8 @@ class VoronoiCoarsening
       assert( here!=colorToGidMap_.end() );
       return here->second;
    }
-   
-   const std::set<int>& getOwnedColors()const {return owned_colors_;}
-   const std::set<int>& getLocalColors()const {return local_colors_;}
+   const std::set<int>& getOwnedColors()const {return ownedColors_;}
+   const std::set<int>& getLocalColors()const {return localColors_;}
    int getColor(const int ic)const {return cell_colors_[ic]; }
 
  private:
@@ -71,7 +70,7 @@ class VoronoiCoarsening
    std::set<int> dst_tasks_;
    std::set<int> src_tasks_;
 
-   std::set<int> local_colors_;
+   std::set<int> localColors_;
 
    std::map<int,int> ncolors_; // color -> number of local cells of that color
    
@@ -87,7 +86,7 @@ class VoronoiCoarsening
    std::vector<int> cell_colors_; // colors of local cells
 
    // set of colors local task is responsible for
-   std::set<int> owned_colors_;
+   std::set<int> ownedColors_;
    
    IndexToVector indexToVector_;
 
