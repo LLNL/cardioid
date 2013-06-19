@@ -31,18 +31,13 @@ class VoronoiCoarsening
                            std::vector<double>& dz);
    void accumulateValues(const VectorDouble32& val, LocalSums& valcolors);
    
-//    const Vector center(const int color)const
-//    {
-//       std::map<int, Long64>::const_iterator here = centers_.find(color);
-//       assert( here!=centers_.end() );
-//       return indexToVector_(here->second);
-//    }
    const Long64& getCenterGid(int color) const
    {
       std::map<int, Long64>::const_iterator here = colorToGidMap_.find(color);
       assert( here!=colorToGidMap_.end() );
       return here->second;
    }
+   
    const std::set<int>& getOwnedColors()const {return ownedColors_;}
    const std::set<int>& getLocalColors()const {return localColors_;}
    int getColor(const int ic)const {return cell_colors_[ic]; }

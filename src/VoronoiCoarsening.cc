@@ -75,24 +75,42 @@ map<int,Vector> VoronoiCoarsening::getCloseCenters(const Vector& domain_center,
 
    return close_centers;
 }
-    
+
+
+// 1. Screens out any duplicate or non-tissue point in the vector of
+//    sensorPoints.
+// 2. Assigns a "color" to each sensor point.  Records the assignment in
+//    colorToGidMap_.
+// 3. Populates ownedColors_ as the set of all colors that correspond
+//    to centers that are local on this task.
+// 4. Calls bruteForceColoring to
+//    4.1 Assign a color to all cells on the task.  (cells that are
+//        farther than maxDistance from their center are assigned
+//        color = -1.
+//    4.2 Build the set localColors_ that contains all colors that
+//        are present on the local task (including those colors where
+//        the center is remote).
+//    4.3 Populate the nColors_ map that gives the number of local cells
+//        for each (local) color.
+// 5. Sets up comm.
 VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
                                      vector<Long64>& sensorPoint,
                                      const double maxDistance,
                                      const CommTable* commtable)
-   :anatomy_(anatomy),
-    comm_(commtable->_comm),
-    commTable_(commtable),
-    indexToVector_(anatomy.nx(), anatomy.ny(), anatomy.nz())
+: anatomy_(anatomy),
+  comm_(commtable->_comm),
+  commTable_(commtable),
+  indexToVector_(anatomy.nx(), anatomy.ny(), anatomy.nz())
 {
    int myRank;
    MPI_Comm_rank(comm_, &myRank);  
-   assert( sensorPoint.size()>0 );
+   assert( sensorPoint.size() > 0 );
 
    preScreenSensorPoints(sensorPoint, anatomy, comm_);
 
-   if( myRank==0)
-      cout<<"VoronoiCoarsening: number of sensor points = "<<sensorPoint.size()<<endl;
+   if (myRank==0)
+      cout << "VoronoiCoarsening: number of sensor points = "
+           << sensorPoint.size() << endl;
    
    for (unsigned color=0; color<sensorPoint.size(); ++color)
       colorToGidMap_.insert(make_pair(color, sensorPoint[color]));
@@ -115,7 +133,7 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
 // - cell_colors_
 // - ncolors_
 // - localColors_
-// (only for cells with maxDistance from a center, other cells take color -1)
+// (only for cells within maxDistance from a center, other cells take color -1)
 int VoronoiCoarsening::bruteForceColoring(const double maxDistance)
 {
    assert( colorToGidMap_.size()>0 );
@@ -238,6 +256,8 @@ int VoronoiCoarsening::bruteForceColoring(const double maxDistance)
    return 0;
 }
 
+// Compute the displacement between each colored cell and the
+// center cell for that color.
 void VoronoiCoarsening::colorDisplacements(std::vector<double>& dx,
                                            std::vector<double>& dy,
                                            std::vector<double>& dz)

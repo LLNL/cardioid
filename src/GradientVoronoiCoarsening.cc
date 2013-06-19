@@ -104,14 +104,11 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(
          const double norm2=dx_[ic]*dx_[ic]+dy_[ic]*dy_[ic]+dz_[ic]*dz_[ic];
          assert( norm2<maxd2 ); 
          
-         ColoredCell* ccell=new ColoredCell(ic,color,norm2);
-         
-         colored_cells_.push_back(*ccell);
-         //count++;
+         colored_cells_.push_back(ColoredCell(ic,color,norm2));
       }
    }
-   
-   //cout<<count<<" colored cells"<<endl;
+   setupLSmatrix(); // set up valMatXX_
+   prologComputeLeastSquareGradients();
 }
 
 void GradientVoronoiCoarsening::computeColorCenterValues(const VectorDouble32& val)
@@ -248,7 +245,7 @@ void GradientVoronoiCoarsening::setupLSmatrix()
    
    coarsening_.exchangeAndSum(valcolors);
 }
-   
+
 // setup r.h.s. of least square system dX^T W^2 dX grad V = dX^T W^2 dF
 void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
 {
@@ -259,8 +256,6 @@ void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
    static bool first_time = true;
    if( first_time )
    {
-      setupLSmatrix();
-      
       if( use_communication_avoiding_algorithm_ )
       {
          valRHS0_.clear();
@@ -394,7 +389,19 @@ void GradientVoronoiCoarsening::setupLSsystem(const VectorDouble32& val)
    }
    stopTimer(sensorSetupLSTimer);
 }
-
+// Initializes:
+// - nb_excluded_pts_
+// - matLS_
+// - invDetMat_
+// - included_eval_colors_
+//
+// Requires:
+// - valMat00_
+// - valMat01_
+// - valMat02_
+// - valMat11_
+// - valMat12_
+// - valMat22_
 void GradientVoronoiCoarsening::prologComputeLeastSquareGradients()
 {
    int myRank;
@@ -484,14 +491,6 @@ void GradientVoronoiCoarsening::computeLeastSquareGradients(const double current
                                                             const int current_loop)
 {
    startTimer(sensorComputeLSTimer);
-   static bool first_time = true;
-   
-   if( first_time )
-   {
-      prologComputeLeastSquareGradients();
-      
-      first_time = false;
-   }
 
    for(set<int>::const_iterator it = included_eval_colors_.begin();
                                 it!= included_eval_colors_.end();
