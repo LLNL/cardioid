@@ -5,8 +5,8 @@
 # written by Erik Draeger, LLNL, 8/27/2012
 
 
-$bgqExe = "../../../../../bin/compareSnapshots-bgq-spi";
-$pelotonExe = "../../../../../bin/compareSnapshots-peloton";
+$bgqExe = "../../../../bin/compareSnapshots-bgq-spi";
+$pelotonExe = "../../../../bin/compareSnapshots-peloton";
 
 $nBGQnodes = 32;
 $nPelnodes = 1;
@@ -28,6 +28,7 @@ foreach $dir1 (@ARGV[0..$#ARGV]) {
          open BGQ, ">$dirbase/$bgqbatch";
          print BGQ "\#!/bin/bash\n";
          print BGQ "\#SBATCH --nodes=$nBGQnodes\n";
+         print BGQ "\#SBATCH -p psmall\n";
          print BGQ "\n";
          print BGQ "export OMP_NUM_THREADS=64\n";
          print BGQ "export MUSPI_NUMBATIDS=203\n";

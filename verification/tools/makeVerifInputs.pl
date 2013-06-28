@@ -23,26 +23,27 @@ $strongTaskCount = 64;
 
 foreach $anatomy ("block247", "swiss247")
 {
-   foreach $celltype ("100", "101", "102", "random")
+   foreach $celltype ("random")
    {
       # these correspond to if blocks in printObject (below), not cardioid reaction types
       #foreach $reaction ("TT06RRG", "TT06RRGOpt", "TT06", "TT06Opt") 
-      foreach $reaction ("TT06RRG", "TT06RRGOpt") 
+      foreach $reaction ("TT06RRGOpt") 
       {
-         foreach $fastgates (1, 0)
+         foreach $fastgates (1)
          {
-            foreach $rationalfns (1, 0)
+            foreach $rationalfns (1)
             {
-               foreach $smoothing (1, 0)
+               $smoothing = 1;
+               foreach $setgkr (0, 1, 2)
                {
                   #foreach $ntasks (16, 32, 64)
-                  foreach $ntasks (512, 1024)
+                  foreach $ntasks (512)
                   {
                      #foreach $machine ("bgq", "peloton")
                      foreach $machine ("bgq")
                      {
                         printObject($anatomy,$celltype,$reaction,$fastgates,
-                                    $rationalfns,$smoothing,$ntasks,$machine);
+                                    $rationalfns,$smoothing,$ntasks,$machine,$setgkr);
                      }
                   }
                }
@@ -55,7 +56,7 @@ foreach $anatomy ("block247", "swiss247")
 # details of how to build object.data files for each set of parameters
 sub printObject
 {
-   my($anatomy,$celltype,$reaction,$fastgates,$rationalfns,$smoothing,$ntasks,$machine) = @_;
+   my($anatomy,$celltype,$reaction,$fastgates,$rationalfns,$smoothing,$ntasks,$machine,$setgkr) = @_;
 
    # skip file creation for conflicting parameter sets
    if ($reaction eq "TT06RRG" && !($fastgates == 0 && $smoothing == 0 && $rationalfns == 0)) { return; }
@@ -72,7 +73,7 @@ sub printObject
    $date = `date +%m%d%y`;  chomp $date;
    $maindir = join '','verif-runs-',$date;
    if ($weakScaling == 0) { $maindir = join '','verif-runs-strong-',$date; }
-   $dirname = join '',$anatomy,'-',$celltype,'-',$reaction,'-','fast',$fastgates,'mod',$smoothing,'rfns',$rationalfns,'-N',$nnodes,'t',$nthreads;
+   $dirname = join '',$anatomy,'-',$celltype,'-gkr',$setgkr,'-N',$nnodes,'t',$nthreads;
    system("mkdir -p $maindir/$machine/$dirname");
 
 # store different process grids in hashes
@@ -232,9 +233,24 @@ sub printObject
       print OBJECT "   fastNonGate =$fastgates;\n";
       print OBJECT "   cellTypes = endo mid epi;\n";
       print OBJECT "}\n\n";
-      print OBJECT "endo CELLTYPE { clone=endoRRG; }\n";
-      print OBJECT "mid CELLTYPE { clone=midRRG;  P_NaK=3.0; g_NaL=0.6; }\n";
-      print OBJECT "epi CELLTYPE { clone=epiRRG; }\n\n";
+      if ($setgkr == 1)
+      {
+         print OBJECT "endo CELLTYPE { clone=endoRRG; g_Kr = 0.153;}\n";
+         print OBJECT "mid CELLTYPE { clone=midRRG;  P_NaK=3.0; g_NaL=0.6; g_Kr = 0.153;}\n";
+         print OBJECT "epi CELLTYPE { clone=epiRRG; g_Kr = 0.153; }\n\n";
+      }
+      elsif ($setgkr == 2)
+      {
+         print OBJECT "endo CELLTYPE { clone=endoRRG; g_Kr = 0.6;}\n";
+         print OBJECT "mid CELLTYPE { clone=midRRG;  P_NaK=3.0; g_NaL=0.6; g_Kr = 0.4;}\n";
+         print OBJECT "epi CELLTYPE { clone=epiRRG; g_Kr = 0.5; }\n\n";
+      }
+      else
+      {
+         print OBJECT "endo CELLTYPE { clone=endoRRG; }\n";
+         print OBJECT "mid CELLTYPE { clone=midRRG;  P_NaK=3.0; g_NaL=0.6; }\n";
+         print OBJECT "epi CELLTYPE { clone=epiRRG; }\n\n";
+      }
    }
    elsif ($reaction eq "TT06RRG") 
    {
