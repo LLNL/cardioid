@@ -4,14 +4,15 @@
 
 using namespace std;
 
-#define HAS_GETPWUID
+
 #if defined (BGP)
-#undef HAS_GETPWUID 
+#define NO_GETPWUID
 #endif
-
-
 // getpwuid Not supported on all platforms
-#if defined(HAS_GETPWUID)
+// Make the default behavior to be has getpwuid independent of system arch.
+// Always do not have getpwuid on BGP
+
+#if not defined (NO_GETPWUID)
 string getUserName()
 {
    return getpwuid(getuid())->pw_name;
