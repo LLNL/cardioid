@@ -10,7 +10,7 @@ static struct nonGateCnst cnst;
 static  double f1,f2,f3,f4,f5,f6,f7,f7a,f9,f9a,f10,c12; 
 void initNonGateCnst()
 {
- double P_NaK,g_Ks[3],g_to[3]; 
+ double P_NaK,g_Ks[3],g_Kr[3],g_to[3]; 
  double g_NaL =0.0; 
  double c1,c2,c3,c4,c5,c6,c7,c8,c9;
  double c10,c11,c13,c14,c15,c16,c17,c18,c19;
@@ -157,6 +157,9 @@ void initNonGateCnst()
    g_Ks[0] =  g_Ks_Endo_Epi; 
    g_Ks[1] =  g_Ks_Mid; 
    g_Ks[2] =  g_Ks_Endo_Epi; 
+   g_Kr[0] = 0.153;
+   g_Kr[1] = 0.153;
+   g_Kr[2] = 0.153;
    
    //cB[0] =  c9*g_to_Endo; 
    //cB[1] =  c9*g_to_Mid_Epi; 
@@ -168,7 +171,8 @@ void initNonGateCnst()
    
    c10= 1/(0.5*c9);
    c7 =  (0.50*pcnst[19]);
-   c11= pcnst[14]*sqrt(pcnst[10]/5.4);
+   //c11= pcsnt[14]*sqrt(pcnst[10]/5.4);
+   c11= sqrt(pcnst[10]/5.4);
    c12= pcnst[13]*sqrt(pcnst[10]/5.4);
    c13= pcnst[3]/(2.0*pcnst[52]*pcnst[2]*c9);
    c14 = pcnst[51]*pcnst[40]/(pcnst[52]*c9); 
@@ -390,12 +394,13 @@ void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, i
  int cellType=-1; 
  for (int ii=0;ii<nCells;ii++) 
  {
-   double P_NaK,g_Ks,g_to,g_NaL,midK_i,midNa_i,alphaK_i,alphaNa_i,cK_i,cNa_i; 
+   double P_NaK,g_Ks,g_Kr,g_to,g_NaL,midK_i,midNa_i,alphaK_i,alphaNa_i,cK_i,cNa_i; 
    if (cellType != cellTypeVector[ii])
    {
    cellType = cellTypeVector[ii]; 
    P_NaK = cellTypeParms[cellType].P_NaK; 
    g_Ks  = cellTypeParms[cellType].g_Ks; 
+   g_Kr  = cellTypeParms[cellType].g_Kr; 
    g_to  = cellTypeParms[cellType].g_to; 
    g_NaL = cellTypeParms[cellType].g_NaL; 
    midK_i = cellTypeParms[cellType].midK_i; 
@@ -460,7 +465,7 @@ void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, i
      double fv6 = fv6Func(fit,dV0);
      double fd =  fv5  +  fv6; 
 
-     double tmp0 =  (fd +  g_to*rGate[ii]*sGate[ii]+ cnst.c11*Xr1Gate[ii]*Xr2Gate[ii] );
+     double tmp0 =  (fd +  g_to*rGate[ii]*sGate[ii]+ g_Kr*cnst.c11*Xr1Gate[ii]*Xr2Gate[ii] );
      double tmp1 =  (cnst.c20*CUBE(mGate[ii])*hGate[ii]*jGate[ii]+cnst.c21);
      double tmp2 =  g_Ks*SQ(XsGate[ii]);
      double itmpA = sigm0 * fv0;                          //Sigm0
@@ -468,7 +473,7 @@ void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, i
      double itmp3 = itmpA + tmp0*dV0 +tmp2*dV2; 
      double iNaL = g_NaL*CUBE(mGate[ii])*jLGate[ii]*dV1;
      //itmpB =  fv6 * dV0; 
-     //itmpC = cnst.c11*Xr1Gate[ii]*Xr2Gate[ii]*dV0; 
+     //itmpC = g_Kr*cnst.c11*Xr1Gate[ii]*Xr2Gate[ii]*dV0; 
      //itmpD = tmp2*dV2; 
      //itmpE = dV1*(cnst.c20*CUBE(mGate[ii])*hGate[ii]*jGate[ii]);
      //itmpI= g_to*rGate[ii]*sGate[ii]*dV0;
@@ -514,7 +519,6 @@ void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, i
    }
    __dVK_i[ii] = _dVK_i + dt*dVR ; 
     //FILE *file = fopen("/tmp/opt","w");
-    //fprintf(file,"%24.15f %24.15f %24.15f %24.15f\n",Vm,P_NaK,g_Ks,g_to,g_NaL); 
     //fprintf(file, "%24.15f r\n",dVR);
     //fprintf(file, "%24.15f B\n",itmpB);
     //fprintf(file, "%24.15f C\n",itmpC);

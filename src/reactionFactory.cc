@@ -204,6 +204,7 @@ namespace
          if (object_testforkeyword(cellobj, "P_NaK")          ) objectGet(cellobj,"P_NaK"         ,parms.cellTypeParms[name].P_NaK,"0.0"); 
          if (object_testforkeyword(cellobj, "g_NaL")          ) objectGet(cellobj,"g_NaL"         ,parms.cellTypeParms[name].g_NaL,"0.0"); 
          if (object_testforkeyword(cellobj, "g_Ks")           ) objectGet(cellobj,"g_Ks"        ,parms.cellTypeParms[name].g_Ks,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_Kr")           ) objectGet(cellobj,"g_Kr"        ,parms.cellTypeParms[name].g_Kr,"0.0"); 
          if (object_testforkeyword(cellobj, "g_to")           ) objectGet(cellobj,"g_to"        ,parms.cellTypeParms[name].g_to,"0.0"); 
          
       }

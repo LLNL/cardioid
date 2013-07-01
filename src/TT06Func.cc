@@ -437,6 +437,7 @@ map<string,CellTypeParmsFull>getStandardCellTypes()
       cellTypes[name].s_switch=0; 
       cellTypes[name].P_NaK=2.724;
       cellTypes[name].g_Ks = 0.392; 
+      cellTypes[name].g_Kr = 0.153; 
       cellTypes[name].g_to = 0.073; 
       cellTypes[name].g_NaL=0.0; 
       cellTypes[name].Vm = -86.709;
@@ -468,6 +469,7 @@ map<string,CellTypeParmsFull>getStandardCellTypes()
       cellTypes[name].s_switch=1; 
       cellTypes[name].P_NaK=2.724;
       cellTypes[name].g_Ks = 0.098; 
+      cellTypes[name].g_Kr = 0.153; 
       cellTypes[name].g_to = 0.294; 
       cellTypes[name].g_NaL=0.0; 
       cellTypes[name].Vm = -85.423;
@@ -499,6 +501,7 @@ map<string,CellTypeParmsFull>getStandardCellTypes()
       cellTypes[name].s_switch=1; 
       cellTypes[name].P_NaK=2.724;
       cellTypes[name].g_Ks = 0.392; 
+      cellTypes[name].g_Kr = 0.153; 
       cellTypes[name].g_to = 0.294; 
       cellTypes[name].g_NaL=0.0; 
       cellTypes[name].Vm  = -85.23;
@@ -530,6 +533,7 @@ map<string,CellTypeParmsFull>getStandardCellTypes()
       cellTypes[name].s_switch=0; 
       cellTypes[name].P_NaK=3.000;
       cellTypes[name].g_Ks = 0.392; 
+      cellTypes[name].g_Kr = 0.153; 
       cellTypes[name].g_to = 0.073; 
       cellTypes[name].g_NaL=0.15; 
       cellTypes[name].Vm = -86.709;
@@ -561,6 +565,7 @@ map<string,CellTypeParmsFull>getStandardCellTypes()
       cellTypes[name].s_switch=1; 
       cellTypes[name].P_NaK=3.100;
       cellTypes[name].g_Ks = 0.098; 
+      cellTypes[name].g_Kr = 0.153; 
       cellTypes[name].g_to = 0.294; 
       cellTypes[name].g_NaL=0.3; 
       cellTypes[name].Vm = -85.423;
@@ -592,6 +597,7 @@ map<string,CellTypeParmsFull>getStandardCellTypes()
       cellTypes[name].s_switch=1; 
       cellTypes[name].P_NaK=3.000;
       cellTypes[name].g_Ks = 0.392; 
+      cellTypes[name].g_Kr = 0.153; 
       cellTypes[name].g_to = 0.294; 
       cellTypes[name].g_NaL=0.15; 
       cellTypes[name].Vm  = -85.23;

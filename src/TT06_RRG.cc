@@ -60,6 +60,7 @@ void TT06_RRG::setValue(int varHandle, double value)
       break;
      case s_switch:   s_switch_ = int(value);  break;
      case g_Ks:       g_Ks_ = value;           break;
+     case g_Kr:       g_Kr_ = value;           break;
      case g_to:       g_to_ = value;           break;
      case P_NaK:      P_NaK_ = value;          break;
      case g_NaL:      g_NaL_ = value;          break;
@@ -98,6 +99,7 @@ double TT06_RRG::getValue(int handle) const
       break;
      case s_switch:   return s_switch_;       break;
      case g_Ks:       return g_Ks_;           break;
+     case g_Kr:       return g_Kr_;           break;
      case g_to:       return g_to_;           break;
      case P_NaK:      return P_NaK_;          break;
      case g_NaL:      return g_NaL_;          break;
@@ -152,6 +154,7 @@ HandleMap& TT06_RRG::getHandleMap()
    {
       handleMap["s_switch"]   = CheckpointVarInfo(s_switch,   true,  "1");
       handleMap["g_Ks"]       = CheckpointVarInfo(g_Ks,       true,  "nS/pF");
+      handleMap["g_Kr"]       = CheckpointVarInfo(g_Kr,       true,  "nS/pF");
       handleMap["g_to"]       = CheckpointVarInfo(g_to,       true,  "nS/pF");
       handleMap["P_NaK"]      = CheckpointVarInfo(P_NaK,      true,  "pA/pF");
       handleMap["g_NaL"]      = CheckpointVarInfo(g_NaL,      true,  "nS/pF");
@@ -194,7 +197,7 @@ HandleMap& TT06_RRG::getHandleMap()
  *  2.  computeRates was converted to a member function.  The argument
  *  list was simplified.  The rates and algebraics arrays are created in
  *  the scope of the function.  Constants 15, 20, and 21, are not taken
- *  from the constants_ arrary, but rather from cellwise values g_Ks_,
+ *  from the constants_ arrary, but rather from cellwise values g_Ks_,g_Kr_,
  *  g_to_, and P_NaK_, respectively.  The calculation of ALGEBRAIC[12]
  *  (stimulus current) is replaced by the value of iStim that is passed
  *  in.  This obsoletes constants 5-8
@@ -276,6 +279,7 @@ void TT06_RRG::initConsts(int cellType)
    {
      case 0: // Endo
       g_Ks_ = 0.392;
+      g_Kr_ = 0.153;
       g_to_ = 0.073;
       P_NaK_ = 3.0;
       g_NaL_ = 0.15;
@@ -283,6 +287,7 @@ void TT06_RRG::initConsts(int cellType)
       break;
      case 1: // Mid
       g_Ks_ = 0.098;
+      g_Kr_ = 0.153;
       g_to_ = 0.294;
       P_NaK_ = 3.0;
       g_NaL_ = 0.6;
@@ -290,6 +295,7 @@ void TT06_RRG::initConsts(int cellType)
       break;
      case 2: // Epi
       g_Ks_ = 0.392;
+      g_Kr_ = 0.153;
       g_to_ = 0.294;
       P_NaK_ = 3.0;
       g_NaL_ = 0.15;
@@ -464,7 +470,7 @@ double TT06_RRG::computeRates(double dt, double iStim)
    algebraic[46] = algebraic[44]/(algebraic[44]+algebraic[45]);
    algebraic[47] =  constants_[13]*algebraic[46]* pow((constants_[10]/5.40000), 1.0 / 2)*(states_[0] - algebraic[33]);
    algebraic[54] =  g_to_*states_[16]*states_[15]*(states_[0] - algebraic[33]);
-   algebraic[48] =  constants_[14]* pow((constants_[10]/5.40000), 1.0 / 2)*states_[4]*states_[5]*(states_[0] - algebraic[33]);
+   algebraic[48] =  g_Kr_* pow((constants_[10]/5.40000), 1.0 / 2)*states_[4]*states_[5]*(states_[0] - algebraic[33]);
    algebraic[41] =  (( constants_[0]*constants_[1])/constants_[2])*(log(((constants_[10]+ constants_[9]*constants_[11])/(states_[1]+ constants_[9]*states_[2]))));
    algebraic[49] =  g_Ks_*(pow(states_[6], 2.00000))*(states_[0] - algebraic[41]);
    algebraic[52] = ( (( constants_[18]*states_[11]*states_[12]*states_[13]*states_[14]*4.00000*(states_[0] - 15.0000)*(pow(constants_[2], 2.00000)))/( constants_[0]*constants_[1]))*( 0.250000*states_[10]*(exp((( 2.00000*(states_[0] - 15.0000)*constants_[2])/( constants_[0]*constants_[1])))) - constants_[12]))/((exp((( 2.00000*(states_[0] - 15.0000)*constants_[2])/( constants_[0]*constants_[1])))) - 1.00000);

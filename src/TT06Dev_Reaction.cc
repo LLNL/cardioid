@@ -242,6 +242,7 @@ void TT06Dev_Reaction::mkCellTypeParms_(Anatomy& anatomy,TT06Dev_ReactionParms& 
       cellTypeParms_[cellType].s_switch = parms.cellTypeParms[name].s_switch;  
       cellTypeParms_[cellType].P_NaK    = parms.cellTypeParms[name].P_NaK;  
       cellTypeParms_[cellType].g_Ks     = parms.cellTypeParms[name].g_Ks ;  
+      cellTypeParms_[cellType].g_Kr     = parms.cellTypeParms[name].g_Kr ;  
       cellTypeParms_[cellType].g_to     = parms.cellTypeParms[name].g_to ;  
       cellTypeParms_[cellType].g_NaL    = parms.cellTypeParms[name].g_NaL;  
       initialVm_[cellType] = parms.cellTypeParms[name].Vm; 

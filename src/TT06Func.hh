@@ -51,7 +51,7 @@ struct CellTypeParmsFull
    std::string name;
    std::vector<int> anatomyIndices;
    int s_switch;
-   double P_NaK, g_Ks, g_to, g_NaL, Vm;
+   double P_NaK, g_Ks, g_Kr, g_to, g_NaL, Vm;
    std::map<std::string,STATE> state;
 };
 

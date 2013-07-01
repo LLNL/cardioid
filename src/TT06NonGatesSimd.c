@@ -132,7 +132,7 @@ void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms
 
   typedef vector4double vdt;
 
-  //struct  {double P_NaK, g_Ks,g_to,g_NaL;} cellParms[4]={{2.724,0.392,0.073,0.0},{2.724,0.098,0.294,0.0},{ 2.724, 0.392, 0.294, 0.0 },{0.2724,0.098,0.294,0.0}}; 
+  //struct  {double P_NaK, g_Ks,g_Kr, g_to,g_NaL;} cellParms[4]={{2.724,0.392,0.153,0.073,0.0},{2.724,0.098,0.153,0.294,0.0},{ 2.724, 0.392, 0.153,0.294, 0.0 },{0.2724,0.098,0.153,0.294,0.0}}; 
   
 //  const double mySP[40]__attribute__((aligned(32))) = {
   double *_Na_i = state[Na_i]+offset;
@@ -253,7 +253,9 @@ too much information apparently ... slows code down */
    vdt v_P_NaK   = vec_splats(cellTypeParms[cellType].P_NaK);
    vdt v_g_to    = vec_splats(cellTypeParms[cellType].g_to); 
    vdt v_g_Ks    = vec_splats(cellTypeParms[cellType].g_Ks);
+   vdt v_g_Kr    = vec_splats(cellTypeParms[cellType].g_Kr);
    vdt v_g_NaL   = vec_splats(cellTypeParms[cellType].g_NaL);
+   printf("g_Kr=%f\n",cellTypeParms[cellType].g_Kr); 
 
    vdt v_ONE = vec_splats(1.0);
 
@@ -283,6 +285,7 @@ too much information apparently ... slows code down */
             v_P_NaK get [kk]  = cellTypeParms[t].P_NaK;
             v_g_to  get [kk]  = cellTypeParms[t].g_to;
             v_g_Ks  get [kk]  = cellTypeParms[t].g_Ks;
+            v_g_Kr  get [kk]  = cellTypeParms[t].g_Kr;
             v_g_NaL get [kk]  = cellTypeParms[t].g_NaL;
            }
         }
@@ -291,6 +294,7 @@ too much information apparently ... slows code down */
            v_P_NaK   = vec_splats(cellTypeParms[t0].P_NaK);
            v_g_to    = vec_splats(cellTypeParms[t0].g_to);
            v_g_Ks    = vec_splats(cellTypeParms[t0].g_Ks);
+           v_g_Kr    = vec_splats(cellTypeParms[t0].g_Kr);
            v_g_NaL   = vec_splats(cellTypeParms[t0].g_NaL);
         }
     }
@@ -535,12 +539,14 @@ too much information apparently ... slows code down */
 //     double fd =  fv5[ii]  +  fv6[ii];
    vdt v_fd = vec_add(v_fv5, v_fv6);
 
-//     double tmp0 =  (fd[ii] +  g_to*rGate[ii]*sGate[ii]+ c11*Xr1Gate[ii]*Xr2Gate[ii] );
+//     double tmp0 =  (fd[ii] +  g_to*rGate[ii]*sGate[ii]+ g_Kr*c11*Xr1Gate[ii]*Xr2Gate[ii] );
 
    vdt v_tmp0 = vec_mul(vec_ld(0, &rGate[ii]), vec_ld(0, &sGate[ii]));
        v_tmp0 = vec_madd(v_tmp0, v_g_to, v_fd);
    v_tmp   = vec_mul(vec_ld(0, &Xr1Gate[ii]), vec_ld(0, &Xr2Gate[ii]));
+   v_tmp   = vec_mul(v_tmp,v_g_Kr);                 //JNG g_Kr; 
    v_tmp0  = vec_madd(v_tmp, vec_splats(SP[19]), v_tmp0);
+//    printf("v_tmp0=%f\n",v_tmp0[0]); exit(0);
 
 //  double tmp1 =  (c20*CUBE(mGate[ii])*hGate[ii]*jGate[ii]+c21);
 

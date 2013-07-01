@@ -14,7 +14,7 @@ class TT06_RRG
    // must be -1 and nVars must be last in this enum.
    enum VarHandle{undefinedName = -1,
                   // These are the cell-wise parameters:
-                  s_switch, g_Ks, g_to, P_NaK, g_NaL,
+                  s_switch, g_Ks, g_Kr,g_to, P_NaK, g_NaL,
                   // These are the state variables:
                   Vm, K_i, Na_i, Ca_i, Xr1_gate, Xr2_gate, Xs_gate, m_gate,
                   h_gate, j_gate, Ca_ss, d_gate, f_gate, f2_gate, fCass_gate,
@@ -51,6 +51,7 @@ class TT06_RRG
    int s_switch_;
    double defaultVoltage_;
    double g_Ks_;  // formerly CONSTANTS[15]
+   double g_Kr_;  // formerly CONSTANTS[14]
    double g_to_;  // formerly CONSTANTS[20]
    double P_NaK_; // formerly CONSTANTS[21]
    double g_NaL_;

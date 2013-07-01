@@ -17,7 +17,7 @@ enum STATETYPE { nonGateVar, GateVar };
 struct CellTypeParms
 {
    int cellType, s_switch;
-   double P_NaK, g_Ks, g_to, g_NaL, minK_i, maxK_i, midK_i, minNa_i, maxNa_i, midNa_i;
+   double P_NaK, g_Ks, g_Kr, g_to, g_NaL, minK_i, maxK_i, midK_i, minNa_i, maxNa_i, midNa_i;
 };
 // int mapCell2Dev[]                  {1,2,3,10,17,18,14,7,8,9,4,5,6,16,11,12,13,15};
 
