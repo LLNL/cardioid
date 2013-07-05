@@ -255,7 +255,6 @@ too much information apparently ... slows code down */
    vdt v_g_Ks    = vec_splats(cellTypeParms[cellType].g_Ks);
    vdt v_g_Kr    = vec_splats(cellTypeParms[cellType].g_Kr);
    vdt v_g_NaL   = vec_splats(cellTypeParms[cellType].g_NaL);
-   printf("g_Kr=%f\n",cellTypeParms[cellType].g_Kr); 
 
    vdt v_ONE = vec_splats(1.0);
 
