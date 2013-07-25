@@ -25,7 +25,7 @@ struct PioHeaderData
    std::string objectName_;
    std::string className_;
    DataType dataType_;
-   Long64 nRecord_;
+   Long64 nRecords_;
    unsigned lRec_;
    unsigned nFields_;
    std::string fieldNames_;

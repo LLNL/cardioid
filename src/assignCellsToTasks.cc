@@ -299,7 +299,7 @@ namespace
         string fullname = name.str();
         if (myRank == 0)
            DirTestCreate(fullname.c_str());
-        fullname += "/anatomy";
+        fullname += "/domains";
         writeCells(sim.anatomy_.cellArray(), sim.nx_, sim.ny_, sim.nz_, fullname.c_str());
       }
       
@@ -649,7 +649,7 @@ namespace
         string fullname = name.str();
         if (myRank == 0)
            DirTestCreate(fullname.c_str());
-        fullname += "/anatomy";
+        fullname += "/domains";
         writeCells(sim.anatomy_.cellArray(), sim.nx_, sim.ny_, sim.nz_, fullname.c_str());
       }
       

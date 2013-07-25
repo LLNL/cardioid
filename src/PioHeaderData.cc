@@ -65,7 +65,7 @@ void PioHeaderData::writeHeader(PFILE* file, int loop, double time)
    Pprintf(file, "   compile_time = %s;\n", vv.compileTime().c_str());
    Pprintf(file, "   datatype = %s;\n", dataType.c_str());
    Pprintf(file, "   nfiles = %d;\n", nFiles);
-   Pprintf(file, "   nrecord = %d;\n", nRecord_);
+   Pprintf(file, "   nrecord = %d;\n", nRecords_);
    Pprintf(file, "   lrec = %d;\n", lRec_);
    Pprintf(file, "   endian_key = %d;\n", endianKey);
    Pprintf(file, "   time = %f;\n", time);

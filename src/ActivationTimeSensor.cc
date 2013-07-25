@@ -1,6 +1,7 @@
 #include "ActivationTimeSensor.hh"
 
 #include "Anatomy.hh"
+#include "PioHeaderData.hh"
 #include "pio.h"
 #include "ioUtils.h"
 #include "Simulate.hh"
@@ -31,7 +32,7 @@ ActivationTimeSensor::ActivationTimeSensor(const SensorParms& sp,
    clear();
    cells_.reserve(nLocal_);
    for (unsigned ii=0; ii<nLocal_; ++ii)
-      cells_.push_back(anatomy.globalTuple(ii));
+      cells_.push_back(anatomy.gid(ii));
 }
 
 
@@ -54,51 +55,43 @@ void ActivationTimeSensor::print(double time, int loop)
    PFILE* file = Popen(fullname.c_str(), "w", MPI_COMM_WORLD);
    if (nFiles_ > 0)
      PioSet(file, "ngroup", nFiles_);
-
    
-   char fmt[] = "%5d %5d %5d %18.12f";
-   int lrec = 40;
-   int nfields = 4; 
+   char fmt[] = "%12llu %18.12f";
+   int lRec = 32;
+   int nFields = 2; 
 
-
+   PioHeaderData header;
+   header.objectName_ = "activationTime";
+   header.className_  = "FILEHEADER";
+   header.dataType_   = PioHeaderData::ASCII;
+   header.nRecords_   = nGlobal;
+   header.lRec_       = lRec;
+   header.nFields_    = nFields;
+   header.fieldNames_ = "gid tActiv";
+   header.fieldTypes_ = "u f";
+   header.fieldUnits_ = "1 ms";
+   header.addItem("nx", nx_);
+   header.addItem("ny", ny_);
+   header.addItem("nz", nz_);
+   header.addItem("dx", dx_);
+   header.addItem("dy", dy_);
+   header.addItem("dz", dz_);
+   header.addItem("printRate", printRate());
+   header.addItem("evalRate", evalRate());
+   
    if (myRank == 0)
-   {
-      // write header
-      int nfiles;
-      Pget(file,"ngroup",&nfiles);
-      Pprintf(file, "activationTime FILEHEADER {\n");
-      Pprintf(file, "  lrec = %d;\n", lrec);
-      Pprintf(file, "  datatype = FIXRECORDASCII;\n");
-      Pprintf(file, "  nrecords = %llu;\n", nGlobal);
-      Pprintf(file, "  nfields = %d;\n", nfields);
-      Pprintf(file, "  field_names = rx ry rz tActiv;\n");
-      Pprintf(file, "  field_types = u u u f;\n" );
-      Pprintf(file, "  nfiles = %u;\n", nfiles);
-      Pprintf(file, "  dx = %f; dy = %f; dz = %f;\n", dx_, dy_, dz_);
-      Pprintf(file, "  printRate = %d; evalRate = %d;\n", printRate(), evalRate());
-      Pprintf(file, "  h = %4u  0    0\n", nx_);
-      Pprintf(file, "        0    %4u  0\n", ny_);
-      Pprintf(file, "        0    0    %4u;\n", nz_);
-      Pprintf(file, "}\n\n");
-   }
+      header.writeHeader(file, loop, time);
 
-   int halfNx = nx_/2;
-   int halfNy = ny_/2;
-   int halfNz = nz_/2;
-   char line[lrec+1];
+   char line[lRec+1];
    for (unsigned ii=0; ii<nLocal_; ++ii)
    {
-      int ix = cells_[ii].x() - halfNx;
-      int iy = cells_[ii].y() - halfNy;
-      int iz = cells_[ii].z() - halfNz;
-
-      int l = snprintf(line, lrec, fmt,
-                       ix, iy, iz, activationTime_[ii]);
+      int l = snprintf(line, lRec, fmt,
+                       cells_[ii], activationTime_[ii]);
       
-      for (; l < lrec - 1; l++) line[l] = (char)' ';
+      for (; l < lRec - 1; l++) line[l] = (char)' ';
       line[l++] = (char)'\n';
-      assert (l==lrec);
-      Pwrite(line, lrec, 1, file);
+      assert (l==lRec);
+      Pwrite(line, lRec, 1, file);
    }
    Pclose(file);
 }

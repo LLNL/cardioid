@@ -9,9 +9,8 @@ simulate SIMULATE
    dt = 0.01;
    time = 0;
    printRate = 1;
-   snapshotRate = 100;
    stimulus = box;
-   sensor=stateVar;
+   sensor=stateVar snapshot activationTime;
 }
 
 pioAnatomy ANATOMY 
@@ -75,4 +74,24 @@ stateVar SENSOR
    cells = 43;
    radius = 10;
    fields = Vm Na_i;
+}
+
+snapshot SENSOR 
+{
+   method = stateVariable;
+   filename = allCells;
+   printRate = 100;
+   evalRate = 100;
+   cells = 43;
+   radius = 10;
+   fields = Vm;
+   allCells = 1;
+}
+
+activationTime SENSOR
+{
+   method = activationTime;
+   filename = activationTime;
+   printRate = 500;
+   evalRate = 1;
 }

@@ -210,6 +210,7 @@ namespace
       objectGet(obj, "radius",   p.radius,   "0.0");
       objectGet(obj, "fields",   p.fieldList);
       objectGet(obj, "cells",    p.cells);
+      objectGet(obj, "allCells", p.allCells, "0");
       string outputType; objectGet(obj, "outputType", outputType, "ascii");
       p.binaryOutput =  (outputType != "ascii");
 

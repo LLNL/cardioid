@@ -73,7 +73,6 @@ bool Simulate::checkIO(int loop) const
    if ( loop<0 )loop=loop_;
    
    if (loop > 0 && checkpointRate_ > 0 && loop % checkpointRate_ == 0)return true;
-   if (loop > 0 && snapshotRate_ > 0   && loop % snapshotRate_ == 0)return true;
    
    for (unsigned ii=0; ii<sensor_.size(); ++ii)
    {

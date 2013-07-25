@@ -59,7 +59,6 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "printRate", sim.printRate_, "20");
    objectGet(obj, "globalSyncRate", sim.globalSyncRate_, "-1");
    objectGet(obj, "printGid", sim.printGid_, "-1");
-   objectGet(obj, "snapshotRate", sim.snapshotRate_, "-1");
    objectGet(obj, "checkpointRate", sim.checkpointRate_, "-1");
    {
       int tmp; objectGet(obj, "profileAllCounters", tmp, "0");
@@ -228,6 +227,12 @@ namespace
       if (object_testforkeyword(obj, "snapshotCellList") != 0)
       {
          printf("Obsolete keyword snapshotCellList found in %s object.\n", obj->objclass);
+         printf("  Use State Variable Sensor instead\n");
+         exit(-1);
+      }
+      if (object_testforkeyword(obj, "snapshotRate") != 0)
+      {
+         printf("Obsolete keyword snapshotRate found in %s object.\n", obj->objclass);
          printf("  Use State Variable Sensor instead\n");
          exit(-1);
       }

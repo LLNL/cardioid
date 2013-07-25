@@ -96,7 +96,6 @@ class Simulate
    int printRank_;
    int printIndex_;
    FILE *printFile_; 
-   int snapshotRate_;
    int checkpointRate_;
    bool asciiCheckpoints_;
 

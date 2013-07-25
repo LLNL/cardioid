@@ -2,6 +2,7 @@
 #define ACTIVATION_TIME_SENSOR
 
 #include "Sensor.hh"
+#include "Long64.hh"
 #include <string>
 #include <vector>
 
@@ -52,7 +53,7 @@ class ActivationTimeSensor : public Sensor
 
    std::vector<bool>   activated_;
    std::vector<double> activationTime_;
-   std::vector<Tuple>  cells_;
+   std::vector<Long64> cells_;
 
    const PotentialData& vdata_;
 };

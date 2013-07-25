@@ -109,7 +109,7 @@ void simulationProlog(Simulate& sim)
 
 void loopIO(const Simulate& sim,int firstCall)
 {
-  if (firstCall) return;
+   if (firstCall) return;
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
    const Anatomy& anatomy = sim.anatomy_;
@@ -134,19 +134,6 @@ void loopIO(const Simulate& sim,int firstCall)
    if (sim.loop_ > 0 && sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
       writeCheckpoint(sim, MPI_COMM_WORLD);
 
-   if (!firstCall) 
-   { 
-      if (loop > 0 && sim.snapshotRate_ > 0 && loop % sim.snapshotRate_ == 0)
-      {
-         stringstream name;
-         name << "snapshot."<<setfill('0')<<setw(12)<<loop;
-         string fullname = name.str();
-         if (myRank == 0) DirTestCreate(fullname.c_str());
-         fullname += "/anatomy";
-         writeCells(sim, fullname.c_str());
-      }
-   }
-   
    }// critical section
    firstCall=0; 
    stopTimer(loopIOTimer);

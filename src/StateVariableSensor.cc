@@ -69,7 +69,7 @@ StateVariableSensor::StateVariableSensor(
    for (unsigned ii=0; ii<sim.anatomy_.nLocal(); ++ii)
    {
       Long64 gid = sim.anatomy_.gid(ii) ;
-      if (requestedCells.count(gid) > 0)
+      if (requestedCells.count(gid) > 0 || p.allCells)
          localCells_[gid] = ii;
    }
 
@@ -84,7 +84,7 @@ StateVariableSensor::StateVariableSensor(
    header_.objectName_ = "stateVariable";
    header_.className_ = "FILEHEADER";
    header_.dataType_ = PioHeaderData::ASCII;
-   header_.nRecord_ = nRecords;
+   header_.nRecords_ = nRecords;
    header_.lRec_ = lRec_;
    header_.nFields_ = 1 + handles_.size();
    header_.fieldNames_ = "gid " + concat(fieldNames);

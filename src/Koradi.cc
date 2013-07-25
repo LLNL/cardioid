@@ -81,7 +81,7 @@ Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
          string fullname = name.str();
          if (myRank_ == 0)
             DirTestCreate(fullname.c_str());
-         fullname += "/anatomy";
+         fullname += "/domains";
          writeCells(cells_, anatomy.nx(), anatomy.ny(), anatomy.nz(),
                     fullname.c_str());
       }
@@ -100,7 +100,7 @@ Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
    string fullname = name.str();
    if (myRank_ == 0)
    DirTestCreate(fullname.c_str());
-   fullname += "/anatomy";
+   fullname += "/domains";
    writeCells(cells_, anatomy.nx(), anatomy.ny(), anatomy.nz(),
               fullname.c_str());
    */

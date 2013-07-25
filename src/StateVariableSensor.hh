@@ -16,6 +16,7 @@ class Reaction;
 struct StateVariableSensorParms
 {
    bool binaryOutput;
+   bool allCells;
    unsigned nFiles;
    double radius;
    std::string filename;
