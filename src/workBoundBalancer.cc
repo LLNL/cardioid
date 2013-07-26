@@ -33,7 +33,7 @@ LoadLevel workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, 
              "   Average cells/task = %d, block size = %d (%d, %d, %d)\n"
              "   Please select larger values for dx, dy, and dz\n",
              averageSize, blockSize, dx, dy, dz);
-      exit(-1);
+      exit(1);
    }
 
    unsigned int nn = 1024; 
@@ -107,7 +107,7 @@ LoadLevel workBoundBalancer(vector<AnatomyCell> &cells, int dx, int dy, int dz, 
       printf("workBoundBalancer: Error - too many cells on rank %u\n"
              "   basic block size = %d (%d, %d, %d), nCells = %llu\n",
              myRank, blockSize, dx, dy, dz, nLocal);
-      exit(-1);
+      exit(1);
    }
    
 

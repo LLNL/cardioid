@@ -48,7 +48,7 @@ int main(int argc, char** argv)
   {
     if (mype == 0)
       cout << "Usage:  bigHeart [input file]" << endl;
-    exit(-1);
+    exit(1);
   }
 
   // parse input file

@@ -23,7 +23,7 @@ void readCellList(const string filename, vector<Long64>& cellVec)
       if (!input.is_open())
       {
          cerr << "Could not open cell list file " << filename << endl;
-         exit(-1);
+         exit(1);
       }
       
    }

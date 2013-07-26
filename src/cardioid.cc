@@ -166,7 +166,7 @@ void parseCommandLineAndReadInputFile(int argc, char** argv, MPI_Comm comm)
    {
       if (myRank == 0)
          cout << "Usage:  cardioid [input file]" << endl;
-      exit(-1);
+      exit(1);
    }
 
    // parse input file

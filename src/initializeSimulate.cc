@@ -228,13 +228,13 @@ namespace
       {
          printf("Obsolete keyword snapshotCellList found in %s object.\n", obj->objclass);
          printf("  Use State Variable Sensor instead\n");
-         exit(-1);
+         exit(1);
       }
       if (object_testforkeyword(obj, "snapshotRate") != 0)
       {
          printf("Obsolete keyword snapshotRate found in %s object.\n", obj->objclass);
          printf("  Use State Variable Sensor instead\n");
-         exit(-1);
+         exit(1);
       }
       
    }
