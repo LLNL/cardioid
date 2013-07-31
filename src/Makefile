@@ -258,6 +258,8 @@ distclean: clean
 	rm -rf objs-*
 	rm -f .depend*
 	rm -rf $(BINDIR)
+	rm -rf html
+	rm -fr latex
 
 ifdef BUILD_SUFFIX
   -include .depend_$(BUILD_SUFFIX)

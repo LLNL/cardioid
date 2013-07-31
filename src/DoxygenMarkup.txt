@@ -1,0 +1,49 @@
+Cardiod Documentation Conventions, Instructions, and Style Guide.
+
+This is presently *very* incomplete.  I'll be filling in more details as
+we work on the docs.  For now, if you have specific questions, do your
+best to muddle through and drop me an email so that I can work out an
+answer.
+
+
+
+* The root of the html documentation tree is in mainpage.dox (this name
+  is requied by doxygen).  
+
+* Doxygen expects text to be in C or C++ comments.  So, each .dox file
+  starts with \*! (a C-style comment recognized by doxygen as the start
+  of a documentation comment) and ends with */.  That is, the entire
+  contents of the file is in one big C-style comment.
+
+* Place documentation in files named <name>.dox where <name> is the page
+  name.
+
+* Use the @ form of doxygen markup tags, not the \ form.
+
+* Page labels are pg_label_name.  Note use of undescrores between
+  multiple words.
+
+* Documentation of keywords goes in a block right above the function
+  that calls objectGet
+
+
+
+
+Custom doxygen markup for Cardioid (implemented using the ALIAS
+facility)
+
+* @beginkeywords, @endkeywords, @kw.  Note that @kw takes three
+  arguments, and that arguments are comma separted.  If an argument
+  contains a comma it must be escaped (\,)
+* @issue
+* @path
+
+
+ToDo:
+
+* Create a proper definition of the @issue macro
+* Figure out how to do examples (right now they are latex verbatim)
+* Find a way to control column width in latex tables.
+* Move all of the text from ANATOMY documentation into the source code.
+* Need a heading alias for examples.
+* What are the conventions for section headings at the top of a page?

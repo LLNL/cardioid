@@ -1,0 +1,24 @@
+/*!
+
+@mainpage Cardioid: High Performance Simulation of the Human Heart
+
+Lorem ipsum
+
+Table of Contents {#toc}
+=================
+
+Click on the links below to browse the Cardioid documentation.
+
+@subpage pg_building_cardioid
+
+@subpage pg_running_cardioid 
+
+@subpage pg_units
+
+@subpage pg_examples
+
+@subpage pg_whats_new
+
+@subpage pg_input_file_reference
+
+*/

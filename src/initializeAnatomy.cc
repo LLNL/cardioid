@@ -21,8 +21,24 @@ namespace
    BucketOfBits* generateTissueBrick(Anatomy& anatomy, OBJECT* obj, MPI_Comm comm);
 }
 
-   
+/*!
+  @page obj_ANATOMY ANATOMY object
+  Defines the anatomical structure to simulate.
 
+  @beginkeywords
+    @kw{conductivity, The name of the CONDUCTIVITY object which specifies
+      the method and parameters to determine cell conductivity., No Default}
+    @kw{dx, Cell size in the x-direction., 0.2 mm}
+    @kw{dy, Cell size in the y-direction., 0.2 mm}
+    @kw{dz, Cell size in the z-direction., 0.2 mm}
+    @kw{method, Choose from "brick" or "pio", pio}
+    @endkeywords
+
+  @subpage ANATOMY_brick
+
+  @subpage ANATOMY_pio
+
+*/
 void initializeAnatomy(Anatomy& anatomy, const string& name, MPI_Comm comm)
 {
    OBJECT* obj = object_find(name.c_str(), "ANATOMY");
@@ -92,8 +108,27 @@ void initializeAnatomy(Anatomy& anatomy, const string& name, MPI_Comm comm)
 }
 
 
+
+
+
+
 namespace
 {
+   /*!
+     @page ANATOMY_pio ANATOMY pio method
+     
+     Specifies that the anatomy should be read from a file.  The file
+     format for the anatomy file is described in
+     section @ref sec_anatomy_format.
+     
+     @issue{Why don't we store the cell size (or at least the default cell
+     size) in the anatomy file?}
+     
+     @beginkeywords
+     @kw{filename, Path to pio file to read.  Includes the #-sign\, but not
+        a six digit sequence number., snapshot.initial/anatomy#}
+     @endkeywords
+   */
    BucketOfBits* readUsingPio(Anatomy& anatomy, const set<int>& typeSet,
                               OBJECT* obj, MPI_Comm comm)
    {
@@ -111,8 +146,40 @@ namespace
    }
 }
 
+
 namespace
 {
+   /*!
+     @page ANATOMY_brick ANATOMY brick method
+     
+     Generates an orthorhombic "brick" of cells of a specified size.
+     All cells are of the same type.
+     
+     @issue{Something should be said about the layout of the
+     discretization with respect to the specfied box.}
+
+     @beginkeywords
+       @kw{cellType, The cell type in the brick, 102}
+       @kw{xSize, Size of the simulation in the x-direction in mm, 3 mm}
+       @kw{ySize, Size of the simulation in the y-direction in mm, 7 mm}
+       @kw{zSize, Size of the simulation in the z-direction in mm, 20 mm}
+     @endkeywords
+
+     ~~~~
+     niederer ANATOMY 
+     {
+       method = brick;
+       cellType = 102;
+       dx = 0.1;
+       dy = 0.1;
+       dz = 0.1;
+       xSize = 3; 
+       ySize = 7;
+       zSize = 20;
+     }
+     ~~~~
+
+   */
    BucketOfBits*  generateTissueBrick(Anatomy& anatomy, OBJECT* obj, MPI_Comm comm)
    {
       int myRank;
@@ -180,4 +247,3 @@ namespace
       return new BucketOfBits(vector<string>(), vector<string>(), vector<string>());
    }
 }
-

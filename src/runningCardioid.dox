@@ -1,0 +1,12 @@
+/*!
+
+@page pg_running_cardioid Running Cardioid
+
+@section sec_running_cardioid Running Cardioid
+
+@subsection sec_command_line_arguments Command Line Arguments
+
+Cardioid does not recognize any command line arguments.
+
+
+*/

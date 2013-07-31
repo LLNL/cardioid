@@ -34,6 +34,49 @@ namespace
 
 
 
+/*!
+   @page obj_SIMULATE SIMULATE object
+
+   The SIMULATE object is the master object of the simulation.  It
+   specifies simulation parameters such as the time step, maximum loop
+   count, etc, as well as the names of the other objects that define the
+   reaction and diffusion models, and the stimulus and sensor
+   protocols.
+   
+   @beginkeywords
+   @kw{anatomy, The name of the ANATOMY object for this simulation., anatomy}
+   @kw{checkpointRate, The rate (in time steps) at which
+     checkpoint/restart files are created., -1 (no checkpointing)}
+   @kw{checkRanges, Enables run-tim checking for membrane voltages that
+     are outside of a defined range.  The range is currently hardcoded to
+     -110 mV to 60 mV.  A warning will be printed for each cell that has
+     voltage outside that range.  Range checking is on by default for
+     both the serial and parallel simulation loops.  Set to zero to
+     disable the checks., 1}
+   @kw{decomposition, The name of the DECOMPOSITION object for this
+     simulation., decomposition}
+   @kw{diffusion, The name of the DIFFUSION object for this simulation.,
+     diffusion}
+   @kw{heap, Storage allocated for IO buffers, 500}
+   @kw{dt, The time step., 0.01 msec}
+   @kw{loop, The initial loop count for the simulation., 0}
+   @kw{maxLoop, The maximum value for the loop count., 1000}
+   @kw{printRate, , }
+   @kw{reaction, The name of the REACTION object for this simulation., reaction}
+   @kw{sensor, The name of the sensor object(s) for this simulation.
+     Multiple sensors may be specified., No sensors}
+   @kw{stateFile, The name of the file(s) from which to load cell model
+     state data.  Multiple files may be specified.  They are loaded in
+     the order specified.  If the same field is present in multiple
+     files\, each load will overwrite previous values., No default.} 
+   @kw{stimulus, The name of the STIMULUS object(s) to use in this
+     simulation. Multiple stimuli may be specified.  If this keyword is
+     not specified there will be no external stimulus in the simulation.}
+     {No Stimulus}
+   @kw{time, The initial simulation time., 0 msec}
+   @endkeywords
+*/
+
 void initializeSimulate(const string& name, Simulate& sim)
 {
    int myRank;
@@ -215,6 +258,7 @@ void initializeSimulate(const string& name, Simulate& sim)
       sim.sensor_.push_back(sensorFactory(names[ii], sim));
 
 }
+
 
 namespace
 {
