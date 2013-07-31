@@ -924,7 +924,7 @@ Both fixed and variable length ascii records are supported.
 
 \subsection{read\_results}
 %\label{ssec:readresults}
-\verb|read_results| is a post-processing utility which allows the arbitrary
+\verb|read\_results| is a post-processing utility which allows the arbitrary
 resolution 'vtk' UnstructuredMesh (Polyhedral) files (see figure \ref{fig:grid_comparsion}). This may allow visualisations
 to be generated a a substantially lower cost that using the full checkpoint
 files.
@@ -978,17 +978,17 @@ myGradient SENSOR
 }
 \end{verbatim}
 
-\subsection{Employing \verb|read_results|}
-Given data produced as described in the previous section \verb|read_results| may
+\subsection{Employing |read\_results|}
+Given data produced as described in the previous section \verb|read\_results| may
 be used in the case directory. In addition to the snapshot directory two files are
 needed in the case directory with fixed names: \verb|sensor.txt| as described above
 and \verb|wedge.vtk|, the corresponding VTK UnstructuredGrid.
 
-Two approaches may be taken calling read_results:
+Two approaches may be taken calling read\_results:
 \begin{verbatim}
-./read_results -n anatomy# 
+./read\_results -n anatomy# 
 
-./read_results -j a_json_file.json
+./read\_results -j a_json_file.json
 \end{verbatim}
 The first approach (using the \verb|-n| flag), processes all of the snapshot
 directories in sequential order, reading the files within each snapshot directory
@@ -1012,4 +1012,3 @@ process based on timestep index.
 
 
 \end{document}
-
