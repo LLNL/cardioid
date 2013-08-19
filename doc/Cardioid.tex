@@ -406,25 +406,7 @@ The evalRate is ignored for this sensor.
 \end{keywords}
 
 \subsubsection{gradientVoronoiCoarsening Sensor}
-Prints $\nabla V_m$ at points specified by grid indexes. 
-The values of $\nabla V_m$ at a point $x_0$ is
-obtained by solving a linear least squares system
-$$
-X^TW^2 X \nabla V_m=W {\bf b}
-$$
-where $X$ is a $k\times 3$ matrix whose rows are the positions vectors 
-for each of the $k$ points in the Voronoi cell with respect to the point where
-$\nabla V_M$ is to be evaluated, that is $(x_k-x_0)^T$,
-${\bf b}$ is the k-dimensional vector made of the differences $V_m(x_k)-V_m(x_0)$,
-and $W$ is a $k\times k$ diagonal matrix with diagonal elements given by $w_i=1/\|x_i-x_0\|$.
-
-The evalRate is ignored for this sensor.
-
-\begin{keywords}
-  \kw{cellList}{Name of file containing list of grid coordinates of cells to print values}{No
-    Default}
-  \kw{filename}{Base name for output file.}{``coarsened\_anatomy''}
-\end{keywords}
+moved to doxygen
 
 \subsubsection{maxDV Sensor}
 Prints the minimum and maximum value of $dV_m/dt$ over all active cells.

@@ -15,11 +15,33 @@ using namespace PerformanceTimers;
 #include <cstring>
 using namespace std;
 
-// algorithm inspired by reference:
-// C.D. Correa, R. Hero, K.-W. Ma, 
-// "A comparison of gradient estimation methods for volume
-//  rendering on unstructured meshes"
-// (see section 3.2)
+/*!
+  @page obj_GRADIENT_SENSOR GRADIENT_SENSOR object
+  Prints \f$\nabla V_m\f$ at points specified by grid indexes. 
+  The values of \f$\nabla V_m\f$ at a point \f$x_0\f$ is
+  obtained by solving a linear least squares system
+  \f$X^TW^2 X \nabla V_m=W {\bf b}\f$
+  where \f$X\f$ is a \f$k\times 3\f$ matrix whose rows are the positions 
+  vectors 
+  for each of the \f$k\f$ points in the Voronoi cell with respect to the point 
+  where
+  \f$\nabla V_M\f$ is to be evaluated, that is \f$(x_k-x_0)^T\f$,
+  \f${\bf b}\f$ is the k-dimensional vector made of the differences 
+  \f$V_m(x_k)-V_m(x_0)\f$,
+  and \f$W\f$ is a \f$k\times k\f$ diagonal matrix with diagonal elements 
+  given by \f$w_i=1/\|x_i-x_0\|\f$.
+  
+  Reference: C.D. Correa, R. Hero, K.-W. Ma, 
+  "A comparison of gradient estimation methods for volume
+  rendering on unstructured meshes"
+  (see section 3.2).
+
+  @beginkeywords
+    @kw{cellList, Name of file containing list of grid coordinates of cells 
+      to print values., No Default}
+    @kw{filename, Base name for output file., coarsened_anatomy}
+    @endkeywords
+*/
 
 /////////////////////////////////////////////////////////////////////
 
