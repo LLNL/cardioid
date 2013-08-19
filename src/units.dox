@@ -24,12 +24,12 @@ In this system the seven fundamental units are:
 Derived units follow from these seven fundamentals.  For example, the
 dimensionality of voltage is 
 
-voltage = [mass * length^2] / [current * time^3]
+\f$\mbox{voltage} = \frac{\mbox{mass} * \mbox{length}^2}{\mbox{current} * \mbox{time}^3}\f$
 
 Substituting our base units we obtain
 
-[ug*mm^2] / [mA*ms^3] = [10^{-15}]/[10^{-12}] [kg*m^2]/[A*sec^3] =
-10^{-3}volts
+\f$\frac{\mbox{ug}*\mbox{mm}^2}{\mbox{mA}*\mbox{ms}^3} = \frac{10^{-15}}{10^{-12}}\frac{\mbox{kg}*\mbox{m}^2}{\mbox{A}*\mbox{sec}^3} =
+10^{-3}\;\mbox{volts}\f$
 
 Hence the unit for voltage is millivolts.  The default units for typical
 quantities of interest include
