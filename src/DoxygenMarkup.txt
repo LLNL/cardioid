@@ -11,20 +11,25 @@ answer.
   is requied by doxygen).  
 
 * Doxygen expects text to be in C or C++ comments.  So, each .dox file
-  starts with \*! (a C-style comment recognized by doxygen as the start
+  starts with /*! (a C-style comment recognized by doxygen as the start
   of a documentation comment) and ends with */.  That is, the entire
   contents of the file is in one big C-style comment.
 
-* Place documentation in files named <name>.dox where <name> is the page
-  name.
+* Place documentation for material other than objects and keywords in
+  files named <name>.dox where <name> is the page name.
+
+* Documentation of objects and keywords should all be located in a tree
+  underneath the Input File Reference page (inputFileReference.doc)
+
+* Documentation of keywords goes in a block right above the function
+  that calls objectGet.  Look at sensorFactory.cc for an example of how
+  to handle objects that support polymorphic methods.
 
 * Use the @ form of doxygen markup tags, not the \ form.
 
 * Page labels are pg_label_name.  Note use of undescrores between
   multiple words.
 
-* Documentation of keywords goes in a block right above the function
-  that calls objectGet
 
 
 

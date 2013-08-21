@@ -266,21 +266,8 @@ A variety of tissue models are available to calcuate the reaction terms:
 
 \subsection{SENSOR}
 
-Used to write values of interest to a file.
+moved to doxygen
 
-\issue{At present the sensors are limited to quantities related to
-  membrane voltage.  A significant limitation is they cannot print any
-  of the internal state variables of the reaction model.  This will be
-  fixed in a future version.}
-
-\begin{keywords}
-  \kw{evalRate}{Rate in time steps at which the sensor eval function is called.}{1}
-  \kw{method}{Choose from ``pointList'', ``activationTime'', ``maxDV''
-    ``dataVoronoiCoarsening'' and ``gradientVoronoiCoarsening''.}{No
-    default}
-  \kw{printRate}{Rate in time steps at which the sensor print
-    function is called.}{1}
-\end{keywords}
 
 \subsubsection{PointList Sensor}
 Prints information at points specified by grid index.  The evalRate is
@@ -315,12 +302,7 @@ The evalRate is ignored for this sensor.
 moved to doxygen
 
 \subsubsection{maxDV Sensor}
-Prints the minimum and maximum value of $dV_m/dt$ over all active cells.
-The evalRate is ignored for this sensor.
-
-\begin{keywords}
-  \kw{filename}{Name for output file.}{``stdout''}
-\end{keywords}
+moved to doxygen
 
 \subsection{SIMULATE}
 

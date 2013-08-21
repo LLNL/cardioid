@@ -38,6 +38,63 @@ namespace
 }
 
 
+/*!
+  @page obj_SENSOR SENSOR object
+
+  Used to write values of interest to a file.
+
+  The following keywords are recognized by all SENSORS.  Additional
+  information about each SENSOR, including method specific keywords, can
+  be found in the corresponding method subsection.
+
+  @beginkeywords
+
+    @kw{endTime, Time at which the SENSOR stops providing data.
+      The eval and print functions will not be called after the end
+      time., 1e100 milliseconds}
+    @kw{evalRate, Rate in time steps at which the sensor eval function is
+      called, 1}
+    @kw{method, Choose from
+      "activationTime"\,
+      "averageCa"\,
+      "dataVoronoiCoarsening"\,
+      "ECG"\,
+      "gradientVoronoiCoarsening"\.
+      "maxDV"\,
+      "MinMax"\,
+      "pointList"\,
+      "stateVariable"\,
+      and
+      "voronoiCoarsening"
+      ,
+      No default}
+    @kw{printRate}{Rate in time steps at which the sensor print
+    function is called.}{1}
+    @kw{startTime, Time at which the SENSOR starts providing data.
+    The eval and print functions will not be called before the start
+    time., -1e100 milliseconds}
+    @endkeywords
+
+    @subpage SENSOR_activationTime
+
+    @subpage SENSOR_averageCa
+
+    @subpage SENSOR_dataVoronoiCoarsening
+    
+    @subpage SENSOR_ECG
+    
+    @subpage SENSOR_gradientVoronoiCoarsening
+    
+    @subpage SENSOR_maxDV
+    
+    @subpage SENSOR_MinMax
+    
+    @subpage SENSOR_pointList
+    
+    @subpage SENSOR_stateVariable
+    
+    @subpage SENSOR_voronoiCoarsening
+*/
 Sensor* sensorFactory(const std::string& name, const Simulate& sim)
 {
   OBJECT* obj = objectFind(name, "SENSOR");
@@ -52,24 +109,24 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
 
   if (method == "undefined")
     assert(false);
-  else if (method == "pointList")
-     return scanPointListSensor(obj, sp, sim.anatomy_,sim.vdata_);
-  else if (method == "minmax" || method == "MinMax")
-     return scanMinMaxSensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "activationTime")
      return scanActivationTimeSensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "averageCa")
      return scanCaSensor(obj, sp, sim.anatomy_,*sim.reaction_, sim);
+  else if (method == "ECG")
+     return scanECGSensor(obj, sp, sim);
   else if (method == "maxDV")
      return scanMaxDvSensor(obj, sp, sim.anatomy_,sim.vdata_);
+  else if (method == "minmax" || method == "MinMax")
+     return scanMinMaxSensor(obj, sp, sim.anatomy_,sim.vdata_);
+  else if (method == "pointList")
+     return scanPointListSensor(obj, sp, sim.anatomy_,sim.vdata_);
+  else if (method == "stateVariable")
+     return scanStateVariableSensor(obj, sp, sim);
   else if (method == "voronoiCoarsening" 
         || method == "dataVoronoiCoarsening" 
         || method == "gradientVoronoiCoarsening" )
      return scanVoronoiCoarseningSensor(obj, sp, sim.anatomy_,sim.vdata_, sim);
-  else if (method == "stateVariable")
-     return scanStateVariableSensor(obj, sp, sim);
-  else if (method == "ECG")
-     return scanECGSensor(obj, sp, sim);
 
 
    int myRank;
@@ -109,6 +166,23 @@ namespace
 
 namespace
 {
+   /*!
+     @page SENSOR_activationTime SENSOR activationTime method
+
+     Writes a file containing the time at which each cell is first
+     activated.  A cell is considered activated when the membrane
+     voltage is greater than zero.  Cells that have not been activated
+     have an activation time of zero.
+
+     @beginkeywords
+     @kw{filename, Name of the pio file into which data is written,
+         activationTime}
+     @kw{nFiles, The number of physical files for each pio file.
+         If nFiles is set to zero cardioid will choose a default value
+         that is scaled to the number of MPI ranks in the job.,
+         0}
+     @endkeywords
+    */
    Sensor* scanActivationTimeSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                                     const PotentialData& vdata)
    {
@@ -189,6 +263,17 @@ namespace
 
 namespace
 {
+   /*!
+     @page SENSOR_maxDV SENSOR maxDV method
+
+     Prints the minimum and maximum value of $dV_m/dt$ over all active
+     cells.  The evalRate is ignored for this sensor.
+
+     @beginkeywords
+     @kw(filename, Name for output file., stdout}
+     @endkeywords
+     
+    */
    Sensor* scanMaxDvSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                            const PotentialData& vdata)
    {
