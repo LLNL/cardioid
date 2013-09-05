@@ -1,15 +1,18 @@
-#include <iostream>
+#include "VoronoiCoarsening.hh"
+
 #include <sstream>
 #include <iomanip>
-#include <map>
 #include <algorithm>
-using namespace std;
 
-#include "VoronoiCoarsening.hh"
 #include "pio.h"
 #include "ioUtils.h"
 #include "CommTable.hh"
 #include "mpiTpl.hh"
+#include "GridAssignmentObject.h"
+#include "mpiUtils.h"
+#include "IndexToThreeVector.hh"
+
+using namespace std;
 
 //#define DEBUG
 
@@ -83,7 +86,7 @@ map<int,Vector> VoronoiCoarsening::getCloseCenters(const Vector& domain_center,
 //    colorToGidMap_.
 // 3. Populates ownedColors_ as the set of all colors that correspond
 //    to centers that are local on this task.
-// 4. Calls bruteForceColoring to
+// 4. Calls gaoForceColoring to
 //    4.1 Assign a color to all cells on the task.  (cells that are
 //        farther than maxDistance from their center are assigned
 //        color = -1.
@@ -112,9 +115,13 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
       cout << "VoronoiCoarsening: number of sensor points = "
            << sensorPoint.size() << endl;
    
+   // Because the sensor points are now pre-screened, the color to
+   // sensor point mapping is now trivial.  I.e., the color of
+   // sensorPoint[iColor] is iColor.
    for (unsigned color=0; color<sensorPoint.size(); ++color)
       colorToGidMap_.insert(make_pair(color, sensorPoint[color]));
 
+   
    set<Long64> localCells;
    for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
       localCells.insert(anatomy.gid(ii));
@@ -125,7 +132,7 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
    
    MPI_Barrier(comm_);
    
-   bruteForceColoring(maxDistance);
+   gaoColoring(maxDistance, sensorPoint);
    computeRemoteTasks();   
 }
 
@@ -134,127 +141,69 @@ VoronoiCoarsening::VoronoiCoarsening(const Anatomy& anatomy,
 // - ncolors_
 // - localColors_
 // (only for cells within maxDistance from a center, other cells take color -1)
-int VoronoiCoarsening::bruteForceColoring(const double maxDistance)
+int VoronoiCoarsening::gaoColoring(const double maxDistance,
+                                   const vector<Long64>& sensorPoint)
 {
+   timestampBarrier("Starting VoronoiCoarsening::gaoColoring", comm_);
+
    assert( colorToGidMap_.size()>0 );
-   
+   // Check that the mapping from colors to sensorPoint is in fact
+   // trivial since we will exploit that fact in gaoColoring.  I think
+   // I'd like to get to a day where we don't need colorToGidMap_ and
+   // just take advantage of the implicit mapping.  That is a job for
+   // another day.
+   for (map<int, Long64>::const_iterator iter=colorToGidMap_.begin();
+        iter!=colorToGidMap_.end(); ++iter)
+      assert(iter->second == sensorPoint[iter->first]);
+
    int myRank;
    MPI_Comm_rank(comm_, &myRank);  
-   if( myRank==0 )
-      cout<<"VoronoiCoarsening: brute force coloring..."<<endl;
+   IndexToThreeVector indexTo3Vector(anatomy_.nx(), anatomy_.ny(), anatomy_.nz());
 
    ncolors_.clear();
    localColors_.clear();
    cell_colors_.resize(anatomy_.nLocal(), -1); // color only local cells
 
+   const double r2Max=3.*maxDistance*maxDistance/
+      (anatomy_.dx()*anatomy_.dx()
+       +anatomy_.dy()*anatomy_.dy()
+       +anatomy_.dz()*anatomy_.dz());
+
+   vector<THREE_VECTOR> sensorLocation(sensorPoint.size());
+   for (unsigned ii=0; ii<sensorPoint.size(); ++ii)
+      sensorLocation[ii] = indexTo3Vector(sensorPoint[ii]);
+
+   GRID_ASSIGNMENT_OBJECT* gao = gao_init(sensorLocation.size(),
+                                          (const void*) &sensorLocation[0],
+                                          sizeof(THREE_VECTOR));
    
-   const int ncells=(int)anatomy_.nLocal();
-   if( ncells>0 )
+   const int nLocal = anatomy_.nLocal();
+   for (unsigned iCell=0; iCell<nLocal; ++iCell)
    {
-      if( myRank==0 )cout<<"VoronoiCoarsening: ncenters="<<colorToGidMap_.size()<<endl;
-
-      Vector domain_center( getDomaincenter() ); 
-
-      // get sub-domain radius
-      double domain_radius=getDomainRadius(domain_center);
+      THREE_VECTOR rCell = indexTo3Vector(anatomy_.gid(iCell));
+      int nearestSensor = gao_nearestCenter(gao, rCell);
+      THREE_VECTOR rSensor = sensorLocation[nearestSensor];
       
-      const double r2max=3.*maxDistance*maxDistance/
-                        (anatomy_.dx()*anatomy_.dx()
-                        +anatomy_.dy()*anatomy_.dy()
-                        +anatomy_.dz()*anatomy_.dz());
-      // get distance from sub-domain center to closest center
-      double extra_radius = sqrt(r2max);
-      if ( extra_radius>domain_radius )
+      double rr = DIFFSQ(rCell, rSensor);
+      if (rr > r2Max)
+         cell_colors_[iCell] = -1;
+      else
       {
-         const double domain_radius2=domain_radius*domain_radius;
-         double extra_radius2=extra_radius*extra_radius;
-         for (map<int, Long64>::const_iterator icenter =colorToGidMap_.begin();
-                                               icenter!=colorToGidMap_.end();
-                                             ++icenter)
-         {
-            Vector rij = domain_center - indexToVector_(icenter->second);
-            double r2 = dot(rij, rij);
-            if (r2 < extra_radius2)
-            {
-               extra_radius2 = r2;
-            }
-            if( extra_radius2<domain_radius2 )break;
-         }
-         extra_radius=sqrt(extra_radius2);
-         if(extra_radius<domain_radius)extra_radius=domain_radius;
-         //std::cout<<"extra_radius="<<extra_radius<<std::endl;
-      }
-
-      // get centers closest to sub-domain to reduce cost of coloring later
-      const double d2min=1.01*(extra_radius+domain_radius)*(extra_radius+domain_radius);
-
-      map<int,Vector> close_centers( getCloseCenters(domain_center,d2min) );
-
-      //std::cout<<"r2max="<<r2max<<std::endl;
-      
-      // color one cell at a time
-      // color = index of closest sensor point (center)
-      for (int icell=0; icell<ncells; ++icell)
-      {
-         double r2Min = 1e30;
-         int color = -1;
-         Vector r = indexToVector_(anatomy_.gid(icell));
-         
-         // loop over closest centers only
-         for(map<int,Vector>::const_iterator itr =close_centers.begin();
-                                             itr!=close_centers.end();
-                                           ++itr)
-         {
-            Vector rij = r - itr->second;
-            double r2 = dot(rij, rij);
-            if (r2 < r2Min)
-            {
-               r2Min = r2;
-               color = itr->first;
-            }
-         }
-         
-         if ( r2Min>r2max )
-         {
-            cell_colors_[icell]=-1;
-         }
-         else if (color < 0 )
-         {
-            cerr << "Failed to assign color to cell "<<icell<<endl;
-            return -1;
-         }
-         else
-         {
-            cell_colors_[icell]=color;
-            ncolors_[color]++;
-            localColors_.insert(color);
-         }
+         cell_colors_[iCell] = nearestSensor;
+         ncolors_[nearestSensor]++;
+         localColors_.insert(nearestSensor);
       }
    }
 
-#ifdef DEBUG
-   if( maxDistance>99999. )
-   {
-      int nlocal=0;
-      for(map<int,int>::const_iterator itr =ncolors_.begin();
-                                       itr!=ncolors_.end();
-                                     ++itr)
-         nlocal+=itr->second;
-      
-      int ntotal;
-      MPI_Allreduce(&nlocal, &ntotal, 1, MPI_INT, MPI_SUM, comm_);
-      if( ntotal!=anatomy_.nGlobal() )
-      {
-         cerr<<"ERROR in VoronoiCoarsening::bruteForceColoring(): ntotal colors="<<ntotal<<", anatomy_.nGlobal()="<<anatomy_.nGlobal()<<endl;
-      }
-      assert( ntotal==anatomy_.nGlobal() );
-   }
-#endif
-   if( myRank==0 )
-      cout<<"VoronoiCoarsening: brute force coloring done..."<<endl;
+   gao_destroy(gao);
+   timestampBarrier("Finished VoronoiCoarsening::gaoColoring", comm_);
 
    return 0;
 }
+
+
+
+
 
 // Compute the displacement between each colored cell and the
 // center cell for that color.
@@ -347,8 +296,7 @@ void VoronoiCoarsening::computeRemoteTasks()
 {
    int myRank;
    MPI_Comm_rank(comm_, &myRank);  
-   if( myRank==0 )
-      cout<<"VoronoiCoarsening: compute remote tasks..."<<endl;
+   timestampBarrier("Starting VoronoiCoarsening:computeRemoteTasks", comm_);
 
 #if 0
    for(map<int,int>::const_iterator itr =ncolors_.begin();
@@ -494,8 +442,7 @@ void VoronoiCoarsening::computeRemoteTasks()
       assert( itn!=nremote_colors_from_task.end() );
       delete[] itn->second;
    }
-   if( myRank==0 )
-      cout<<"VoronoiCoarsening: compute remote tasks done..."<<endl;
+   timestampBarrier("Finished VoronoiCoarsening:computeRemoteTasks", comm_);
 
    //cout<<"Task "<<myRank<<" receives data from "<<src_tasks_.size()
    //                     <<" tasks and sends data to "<<dst_tasks_.size()<<endl;

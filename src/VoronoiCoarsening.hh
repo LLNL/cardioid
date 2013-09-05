@@ -44,7 +44,8 @@ class VoronoiCoarsening
 
  private:
 
-   int bruteForceColoring(const double maxDistance);
+   int gaoColoring(const double maxDistance,
+                   const std::vector<Long64>& sensorPoint);   
    void computeRemoteTasks();
    void computeColorAverages(const std::vector<double>& val);
    void computeColorCenterValues(const std::vector<double>& val);
