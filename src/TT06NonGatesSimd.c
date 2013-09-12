@@ -68,16 +68,16 @@ double SP[40]__attribute__((aligned(32)));
 void set_SP(struct nonGateCnst cnst)
 {
 
- SP[0] = cnst.c26 ;
- SP[1] = cnst.c27 ;
- SP[2] = cnst.c28 ;
- SP[3] = cnst.c29 ;
- SP[4] = cnst.c8 ;
- SP[5] = cnst.c7 ;
- SP[6] = cnst.c24 ;
- SP[7] = cnst.c43 ;
- SP[8] = cnst.c44 ;
- SP[9] = cnst.c23 ;
+ SP[0] =  cnst.c26 ;
+ SP[1] =  cnst.c27 ;
+ SP[2] =  cnst.c28 ;
+ SP[3] =  cnst.c29 ;
+ SP[4] =  cnst.c8 ;
+ SP[5] =  cnst.c7 ;
+ SP[6] =  cnst.c24 ;
+ SP[7] =  cnst.c43 ;
+ SP[8] =  cnst.c44 ;
+ SP[9] =  cnst.c23 ;
  SP[10] = cnst.c15 ;
  SP[11] = cnst.c16 ;
  SP[12] = cnst.c9 ;
@@ -127,7 +127,7 @@ double fvX_a[75]__attribute__((aligned(32))) = {
   1.89136344887477e-15, 4.55066993718199e-13, 1.18578052624143e-11, -5.22361846923760e-09, -3.79918615957248e-07, 3.41107297247441e-05, 6.31701538469039e-03, -7.81445921919197e-01, 2.55684105370893e+01};
 
 
-void update_nonGate_v1(void *fit, double dt, struct CellTypeParms *cellTypeParms,int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt)
+void update_nonGate_v1(void *fit, CURRENT_SCALES *currentScales, double dt, struct CellTypeParms *cellTypeParms,int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt)
 {
 
   typedef vector4double vdt;
@@ -536,7 +536,7 @@ too much information apparently ... slows code down */
    vdt v_fv6 = vec_swdiv_nochk(v_sum6,v_sum6d); 
 
 //     double fd =  fv5[ii]  +  fv6[ii];
-   vdt v_fd = vec_add(v_fv5, v_fv6);
+   vdt v_fd = vec_add(v_fv5, v_fv6);   // s_K1  scale v_fv6 change vec_add to fused mult add.  
 
 //     double tmp0 =  (fd[ii] +  g_to*rGate[ii]*sGate[ii]+ g_Kr*c11*Xr1Gate[ii]*Xr2Gate[ii] );
 

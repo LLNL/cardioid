@@ -20,6 +20,7 @@ struct TT06Dev_ReactionParms
 {
    std::map<std::string, TT06Func::CellTypeParmsFull> cellTypeParms;
    std::vector<std::string> cellTypeNames;
+   std::vector<std::string> currentNames;
    std::string fitFile; 
    double tolerance;
    std::vector<int> gateThreadMap; 
@@ -46,6 +47,7 @@ class TT06Dev_Reaction : public Reaction
    void calc(double dt, const VectorDouble32& Vm, const std::vector<double>& iStim, VectorDouble32& dVm);
    void initializeMembraneVoltage(VectorDouble32& Vm);
    void writeStateDev(int loop);
+   void scaleCurrents(std::vector<double>);
 
    /** Support for checkpoint/restart */
    void getCheckpointInfo(std::vector<std::string>& fieldNames,
@@ -70,11 +72,13 @@ class TT06Dev_Reaction : public Reaction
    unsigned nCells_;
    std::vector<int> tissueType2Rank_;
    std::vector<unsigned> nCellsOfType_; 
+   CURRENT_SCALES currentScales_; 
+   std::vector<int> currentMap_; 
    std::vector<    std::vector<double> > stateInitial_;
    int nCell_s0_; 
 
    void (*update_gate_)   (double dt,                                      int nCells, int *cellType, double *Vm, int offset, double **state, PADE* xfit, TT06Func::WORK& work);
-   void (*update_nonGate_)(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellType, double *Vm, int offset, double **state, double *dVdt);
+   void (*update_nonGate_)(void *fit, CURRENT_SCALES *, double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellType, double *Vm, int offset, double **state, double *dVdt);
    int nonGateWorkPartition_(int& offset);
    void mkCellTypeParms_(Anatomy& anatomy,TT06Dev_ReactionParms& parms);
    void mkCellTypeVector_(Anatomy& anatomy, TT06Dev_ReactionParms& parms);

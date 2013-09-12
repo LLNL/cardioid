@@ -360,7 +360,7 @@ double fv6(double dV0, void *p)
 
 #define logSeries(x)    (log(1+(x)) )
 
-void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt)
+void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt)
 {
   double *f2Gate = state[f2_gate]+offset; 
   double *fGate = state[f_gate]+offset; 
@@ -392,23 +392,29 @@ void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, i
   fv6Func  = fv6General; 
   double fv[6];
  int cellType=-1; 
+ double  c_Na  =  currentScales->Na *cnst.c20; 
+ double  c_bNa =  currentScales->bNa*cnst.c21; 
+ double  c_bCa =  currentScales->bCa*cnst.c7; 
+ double  c_pCa =  currentScales->pCa*cnst.c24; 
  for (int ii=0;ii<nCells;ii++) 
  {
    double P_NaK,g_Ks,g_Kr,g_to,g_NaL,midK_i,midNa_i,alphaK_i,alphaNa_i,cK_i,cNa_i; 
    if (cellType != cellTypeVector[ii])
    {
    cellType = cellTypeVector[ii]; 
-   P_NaK = cellTypeParms[cellType].P_NaK; 
-   g_Ks  = cellTypeParms[cellType].g_Ks; 
-   g_Kr  = cellTypeParms[cellType].g_Kr; 
-   g_to  = cellTypeParms[cellType].g_to; 
-   g_NaL = cellTypeParms[cellType].g_NaL; 
+   P_NaK = currentScales->NaK*cellTypeParms[cellType].P_NaK; 
+   g_Ks  = currentScales->Ks *cellTypeParms[cellType].g_Ks; 
+   g_Kr  = currentScales->Kr *cellTypeParms[cellType].g_Kr; 
+   g_to  = currentScales->to *cellTypeParms[cellType].g_to; 
+   g_NaL = currentScales->NaL*cellTypeParms[cellType].g_NaL; 
+
    midK_i = cellTypeParms[cellType].midK_i; 
    midNa_i = cellTypeParms[cellType].midNa_i; 
    alphaK_i = 1.0/midK_i; 
    alphaNa_i = 1.0/midNa_i; 
    cK_i=  +cnst.c3*log(alphaK_i) -cnst.c5;
    cNa_i= +cnst.c3*log(alphaNa_i)-cnst.c4;
+
    }
 
    double Vm = VM[ii]; 
@@ -440,7 +446,7 @@ void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, i
      double dV3 = Vm- 0.5*cnst.c3*log(_Ca_i) - cnst.c8;
 
      itmp0 = (CUBE(_Na_i)*fv1-_Ca_i*fv2); 
-     double itmp4 = (cnst.c7*dV3+cnst.c24*sigm1); 
+     double itmp4 = (c_bCa*dV3+c_pCa*sigm1); 
      itmp5=  (cnst.c43*(_Ca_i -  _Ca_SR)+cnst.c44*sigm2);      
      itmp6 = (cnst.c23*(_Ca_ss - _Ca_i));
      __Ca_i[ii]   = _Ca_i + (dt*cnst.c9)*(sigm3*(itmp4-itmp0+itmp6*cnst.c15-itmp5*cnst.c16));
@@ -466,7 +472,7 @@ void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, i
      double fd =  fv5  +  fv6; 
 
      double tmp0 =  (fd +  g_to*rGate[ii]*sGate[ii]+ g_Kr*cnst.c11*Xr1Gate[ii]*Xr2Gate[ii] );
-     double tmp1 =  (cnst.c20*CUBE(mGate[ii])*hGate[ii]*jGate[ii]+cnst.c21);
+     double tmp1 =  (c_Na*CUBE(mGate[ii])*hGate[ii]*jGate[ii]+c_bNa);
      double tmp2 =  g_Ks*SQ(XsGate[ii]);
      double itmpA = sigm0 * fv0;                          //Sigm0
      double itmp2 = itmp0 - 1.5*itmpA+tmp1*dV1; 

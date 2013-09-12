@@ -174,6 +174,24 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
    mkCellTypeParms_(anatomy,parms);
    mkCellTypeVector_(anatomy,parms);
    mkState_(parms);
+   currentMap_.resize(parms.currentNames.size()); 
+   int nCurrents=0; 
+   while (currentNames[nCurrents] != "") {nCurrents++;}
+   printf("current sizes: %d %d %d\n",nCurrents,sizeof(double),sizeof(currentScales_)); 
+   assert(nCurrents*sizeof(double) == sizeof(currentScales_)); 
+   currentScales_=currentScalesDefault; 
+   
+   for (int i=0;i<parms.currentNames.size();i++)
+   {
+      int j = 0; 
+      for (;j<nCurrents;j++) 
+      {
+         if ( string(currentNames[j]) == parms.currentNames[i]) break; 
+         j++;
+      }
+      assert(j<nCurrents); 
+      currentMap_[i]   = j;
+   }
 
 
    fastReaction_ = 0; 
@@ -189,13 +207,13 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
    //const int tid = group_.teamRank();
 
    mkFitParms_(parms);
-   
+
    PADE *gateFit = fit_+gateFitOffset; 
    for (int eq=0;eq<13;eq++) 
    {
-        double *tauR  = gateFit[2*eq+1].coef; 
-        int m         = gateFit[2*eq+1].m; 
-        for (int j=0;j<m;j++)    tauR[j] *= dt;
+      double *tauR  = gateFit[2*eq+1].coef; 
+      int m         = gateFit[2*eq+1].m; 
+      for (int j=0;j<m;j++)    tauR[j] *= dt;
    }
 
    double **gate = &state_[gateOffset]; 
@@ -209,6 +227,16 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
       tauRX[eq]    = gateFit[2*eq+1].coef; 
    }
    mkWorkBundles_(parms);
+}
+void TT06Dev_Reaction::scaleCurrents(vector <double> currentScales)
+{
+   assert(currentScales.size() == currentMap_.size()); 
+   currentScales_=currentScalesDefault; 
+   for (int i=0;i<currentScales.size();i++) 
+   {
+      int j = currentMap_[i];
+      ((double *)&currentScales_)[j]=currentScales[i]; 
+   }
 }
 void TT06Dev_Reaction::mkCellTypeParms_(Anatomy& anatomy,TT06Dev_ReactionParms& parms)
 {
@@ -227,15 +255,15 @@ void TT06Dev_Reaction::mkCellTypeParms_(Anatomy& anatomy,TT06Dev_ReactionParms& 
       string name = parms.cellTypeNames[i];   
       int cellType = i; 
       int cellRank = i + nCellTypes_ * parms.cellTypeParms[name].s_switch; 
-      
+
       vector<int> indices=parms.cellTypeParms[name].anatomyIndices; 
       for (int j=0;j<indices.size();j++)
       {
-          int k=indices[j];
-          assert(0<=k && k < 256);
-          assert(tissueType2Rank_[ k] == -1);
-          tissueType2Rank_[ k] = cellRank;
-          ttType_[k]=cellType; 
+         int k=indices[j];
+         assert(0<=k && k < 256);
+         assert(tissueType2Rank_[ k] == -1);
+         tissueType2Rank_[ k] = cellRank;
+         ttType_[k]=cellType; 
       }
 
       cellTypeParms_[cellType].cellType = cellType;  
@@ -250,11 +278,11 @@ void TT06Dev_Reaction::mkCellTypeParms_(Anatomy& anatomy,TT06Dev_ReactionParms& 
       map<string,STATE>stateMap = parms.cellTypeParms[name].state; 
       for (map<string,STATE>::iterator it=stateMap.begin();it!=stateMap.end();it++)
       {
-        STATE stateDefault = it->second; 
-        double value = stateDefault.value; 
-        int type = stateDefault.type; 
-        int index = stateDefault.index; 
-        stateInitial_[cellType][index]=value; stateCnt++;
+         STATE stateDefault = it->second; 
+         double value = stateDefault.value; 
+         int type = stateDefault.type; 
+         int index = stateDefault.index; 
+         stateInitial_[cellType][index]=value; stateCnt++;
       }
       assert(stateCnt==nStateVar); 
    }
@@ -282,7 +310,7 @@ void TT06Dev_Reaction::mkCellTypeVector_(Anatomy& anatomy, TT06Dev_ReactionParms
 
    for (unsigned ii=nCells_; ii<nCellBuffer_;ii++) 
    {
-     cellTypeVector_[ii] = cellTypeVector_[ii-1]; 
+      cellTypeVector_[ii] = cellTypeVector_[ii-1]; 
    }
 }
 void TT06Dev_Reaction::mkState_(TT06Dev_ReactionParms& parms)
@@ -290,7 +318,7 @@ void TT06Dev_Reaction::mkState_(TT06Dev_ReactionParms& parms)
    unsigned bufSize = sizeof(double)*nStateVar*nCellBuffer_;
    int rc = posix_memalign((void**)&stateBuffer_, 32, bufSize);
    assert((size_t)stateBuffer_ % 32 == 0);
-   
+
 
    state_.resize(nStateVar); 
    for (unsigned jj=0; jj<nStateVar; ++jj)
@@ -307,34 +335,34 @@ void TT06Dev_Reaction::mkState_(TT06Dev_ReactionParms& parms)
       state_[dVK_i][ii] = state_[K_i][ii]/c9+initialVm_[cellType];
    } 
    for (unsigned ii=nCells_; ii<nCellBuffer_;ii++) 
-   for (int j=0;j<nStateVar;j++) state_[j][ii]  =  state_[j][ii-1];  
+      for (int j=0;j<nStateVar;j++) state_[j][ii]  =  state_[j][ii-1];  
 }
 void TT06Dev_Reaction::mkFitParms_(TT06Dev_ReactionParms& parms)
 {
-     fit_ = parms.fit; 
-     if (fit_ == NULL ) 
-     {
-        const char *fitName[] ={ "fv0", "fv1", "fv2", "fv3", "fv4", "fv5", "fv6", "mMhu", "mTauR", "hMhu", "hTauR",  "jMhu", "jTauR", "Xr1Mhu", "Xr1TauR", "Xr2Mhu", "Xr2TauR", 
-                          "XsMhu", "XsTauR", "rMhu", "rTauR", "dMhu", "dTauR", "fMhu", "fTauR", "f2Mhu", "f2TauR", "jLMhu", "jLTauR", "sMhu0", "sTauR0", "sMhu1", "sTauR1" ,NULL}; 
-        int cnt=0; 
-        for ( int i=0; fitName[i] != NULL;i++) cnt++; 
-        fit_ =  new PADE  [cnt] ;
-        int maxCost=128; 
-        int maxTerms=64; 
-        double tol = parms.tolerance; 
-        double deltaV = 0.1; 
-        for ( int i=0; i < cnt; i++) 
-        {
-          string name = fitName[i]; 
-          if (parms.jhTauSmooth  && i == 10) name = "hTauRMod";
-          if (parms.jhTauSmooth  && i == 12) name = "jTauRMod";
-          double V0 = (i == 6) ?   0 : -100.0; 
-          double V1 = (i == 6) ? 130 :   50.0; 
-          padeApprox(fit_[i],name,fitFuncMap(name),NULL,0,deltaV,V0,V1,tol,maxTerms,maxTerms,maxCost,0,0,NULL); 
+   fit_ = parms.fit; 
+   if (fit_ == NULL ) 
+   {
+      const char *fitName[] ={ "fv0", "fv1", "fv2", "fv3", "fv4", "fv5", "fv6", "mMhu", "mTauR", "hMhu", "hTauR",  "jMhu", "jTauR", "Xr1Mhu", "Xr1TauR", "Xr2Mhu", "Xr2TauR", 
+         "XsMhu", "XsTauR", "rMhu", "rTauR", "dMhu", "dTauR", "fMhu", "fTauR", "f2Mhu", "f2TauR", "jLMhu", "jLTauR", "sMhu0", "sTauR0", "sMhu1", "sTauR1" ,NULL}; 
+      int cnt=0; 
+      for ( int i=0; fitName[i] != NULL;i++) cnt++; 
+      fit_ =  new PADE  [cnt] ;
+      int maxCost=128; 
+      int maxTerms=64; 
+      double tol = parms.tolerance; 
+      double deltaV = 0.1; 
+      for ( int i=0; i < cnt; i++) 
+      {
+         string name = fitName[i]; 
+         if (parms.jhTauSmooth  && i == 10) name = "hTauRMod";
+         if (parms.jhTauSmooth  && i == 12) name = "jTauRMod";
+         double V0 = (i == 6) ?   0 : -100.0; 
+         double V1 = (i == 6) ? 130 :   50.0; 
+         padeApprox(fit_[i],name,fitFuncMap(name),NULL,0,deltaV,V0,V1,tol,maxTerms,maxTerms,maxCost,0,0,NULL); 
          //padeSet(fit_+i,maxTerms,maxTerms,maxCost); 
-       }
-       writeFit(parms.fitFile,fit_,cnt); 
-    }
+      }
+      writeFit(parms.fitFile,fit_,cnt); 
+   }
 }
 void TT06Dev_Reaction::mkWorkBundles_(TT06Dev_ReactionParms& parms)
 {
@@ -358,9 +386,9 @@ void TT06Dev_Reaction::mkWorkBundles_(TT06Dev_ReactionParms& parms)
          gateThreadMapS [ii]  = m; 
          if ( m == 11) 
          {
-           gateThreadMapS1[ii]  = 12; 
-           gateThreadMapS[ii]   = 13; 
-           sGateIndex = ii; 
+            gateThreadMapS1[ii]  = 12; 
+            gateThreadMapS[ii]   = 13; 
+            sGateIndex = ii; 
          }
       }
    }
@@ -370,7 +398,7 @@ void TT06Dev_Reaction::mkWorkBundles_(TT06Dev_ReactionParms& parms)
    int nOmpThreads =  omp_get_max_threads();
    for (int id=0;id<nOmpThreads;id++) 
    {
-      
+
       const ThreadRankInfo& rankInfo = group_.rankInfo(id);
       int teamRank = rankInfo.teamRank_; 
       if (teamRank == -1) continue; 
@@ -385,21 +413,21 @@ void TT06Dev_Reaction::mkWorkBundles_(TT06Dev_ReactionParms& parms)
       else if (  offset <= nCell_s0_ ) gateThreadMap = gateThreadMapS1; 
       else  
       {
-          if (  offsetEq <=  sGateIndex && sGateIndex < offsetEq +nEq) 
-          {
-             assert(splitRank == -1);   //At most  one thread/rank can gave both s0 and s1 cells 
-             int nCell0 = nCell_s0_ - offset; 
-             int nCell1 = nCell - nCell0; 
-             int eq = 12; 
-             PADE *gateFit = fit_+gateFitOffset; 
-             double *s1Mhu     = gateFit[2*eq+0].coef; 
-             double *s1TauR    = gateFit[2*eq+1].coef; 
-             sGateInit(s1Mhu, s1TauR, nCell0, nCell1);
-             gateThreadMap = gateThreadMapS; 
-             splitRank == teamRank; 
-          }
+         if (  offsetEq <=  sGateIndex && sGateIndex < offsetEq +nEq) 
+         {
+            assert(splitRank == -1);   //At most  one thread/rank can gave both s0 and s1 cells 
+            int nCell0 = nCell_s0_ - offset; 
+            int nCell1 = nCell - nCell0; 
+            int eq = 12; 
+            PADE *gateFit = fit_+gateFitOffset; 
+            double *s1Mhu     = gateFit[2*eq+0].coef; 
+            double *s1TauR    = gateFit[2*eq+1].coef; 
+            sGateInit(s1Mhu, s1TauR, nCell0, nCell1);
+            gateThreadMap = gateThreadMapS; 
+            splitRank == teamRank; 
+         }
       }
-      
+
       gateWork_[teamRank].offsetCell =  offset; 
       gateWork_[teamRank].nCell    =  nCell; 
       gateWork_[teamRank].nEq      = nEq; 
@@ -410,23 +438,23 @@ void TT06Dev_Reaction::mkWorkBundles_(TT06Dev_ReactionParms& parms)
       int q = nv/squadSize; 
       int r = nv%squadSize;
       int i0,i1;
-	
+
       i0 = q*squadRank;
       if(squadRank < r) 
       {
-        i0 = i0 + squadRank;
-        i1 = i0 + q + 1;
+         i0 = i0 + squadRank;
+         i1 = i0 + q + 1;
       }       
       else 
       {
-        i0 = i0 + r;
-        i1 = i0 + q;
+         i0 = i0 + r;
+         i1 = i0 + q;
       }
-     i0 = i0*4;
-     i1 = i1*4;
-     if(i1 > nCell) i1 = nCell;
-     nonGateWork_[teamRank].offsetCell = offset + i0;
-     nonGateWork_[teamRank].nCell = i1 - i0;
+      i0 = i0*4;
+      i1 = i1*4;
+      if(i1 > nCell) i1 = nCell;
+      nonGateWork_[teamRank].offsetCell = offset + i0;
+      nonGateWork_[teamRank].nCell = i1 - i0;
    }
 }
 TT06Dev_Reaction::~TT06Dev_Reaction()
@@ -471,7 +499,7 @@ int workBundle(int index, int nItems, int nGroups, int mod, int& offset)
    if ( index == nGroups -1) n = ((nItems-offset));
 
    assert (offset%4 == 0);
-   
+
    return n;
 }
 
@@ -530,13 +558,13 @@ void TT06Dev_Reaction::calc(double dt, const VectorDouble32& Vm, const vector<do
    WORK work ={ 0,nCells_,0,12}; 
    if (nCells_ > 0) 
    {
-   update_nonGate_((void*)fit_,dt, &(cellTypeParms_[0]), nCells_, &(cellTypeVector_[0]),const_cast<double *>(&Vm[0]),  0, &state_[0], &dVm[0]);
-   update_gate_(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],fit_,work);
+      update_nonGate_((void*)fit_, &currentScales_,dt,&(cellTypeParms_[0]), nCells_, &(cellTypeVector_[0]),const_cast<double *>(&Vm[0]),  0, &state_[0], &dVm[0]);
+      update_gate_(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],fit_,work);
    }
 }
 void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR)
 {
-  int offset,nCells; 
+   int offset,nCells; 
 
 #ifdef LEGACY_NG_WORKPARTITION
    nCells = nonGateWorkPartition(offset);
@@ -547,51 +575,51 @@ void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, Vector
    nCells = nonGateWork_[tid].nCell;
 #endif
 
-      if(PRINT_WP) {
-	static int inited[64] = {0};
-	const int tid = group_.teamRank();
+   if(PRINT_WP) {
+      static int inited[64] = {0};
+      const int tid = group_.teamRank();
 
-	if(inited[tid] == 0) {
-	  int pid,np;
-	  const int nt = group_.nThreads();
-	  static volatile int tag[64] = {0};
+      if(inited[tid] == 0) {
+         int pid,np;
+         const int nt = group_.nThreads();
+         static volatile int tag[64] = {0};
 
-	  MPI_Comm_size(MPI_COMM_WORLD,&np);
-	  MPI_Comm_rank(MPI_COMM_WORLD,&pid);	  
-	  
-	  if(tid == 0) {
-	    int i;
+         MPI_Comm_size(MPI_COMM_WORLD,&np);
+         MPI_Comm_rank(MPI_COMM_WORLD,&pid);	  
 
-	    MPI_Barrier(MPI_COMM_WORLD);
-	    for(i = 0; i<np; i++) {
-	      if(i == pid) {
-		int j;
-		printf("@pid=%03d,tid=%02d :NGWP: offset = %6d  nCells = %6d  end = %6d\n",
-		       pid,tid,offset,nCells,offset+nCells);
+         if(tid == 0) {
+            int i;
 
-		tag[tid] = 1;
-		while(tag[nt-1] == 0) {}
-		for(j = 0; j<nt; j++) tag[j] = 0;
-	      }
-	      MPI_Barrier(MPI_COMM_WORLD);
-	    }
-	  } else {
-	    while(tag[tid-1] == 0) {}
+            MPI_Barrier(MPI_COMM_WORLD);
+            for(i = 0; i<np; i++) {
+               if(i == pid) {
+                  int j;
+                  printf("@pid=%03d,tid=%02d :NGWP: offset = %6d  nCells = %6d  end = %6d\n",
+                        pid,tid,offset,nCells,offset+nCells);
 
-	    printf("@pid=%03d,tid=%02d :NGWP: offset = %6d  nCells = %6d  end = %6d\n",
-		   pid,tid,offset,nCells,offset+nCells);
+                  tag[tid] = 1;
+                  while(tag[nt-1] == 0) {}
+                  for(j = 0; j<nt; j++) tag[j] = 0;
+               }
+               MPI_Barrier(MPI_COMM_WORLD);
+            }
+         } else {
+            while(tag[tid-1] == 0) {}
 
-	    tag[tid] = 1;
-	    while(tag[0] > 0) {}
-	  }
-	  
-	  inited[tid] = 1;
-	}
+            printf("@pid=%03d,tid=%02d :NGWP: offset = %6d  nCells = %6d  end = %6d\n",
+                  pid,tid,offset,nCells,offset+nCells);
+
+            tag[tid] = 1;
+            while(tag[0] > 0) {}
+         }
+
+         inited[tid] = 1;
       }
+   }
    if (nCells > 0) 
    {
       startTimer(nonGateTimer);
-      update_nonGate_(fit_,dt, &cellTypeParms_[0], nCells, &cellTypeVector_[offset], const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
+      update_nonGate_(fit_,&currentScales_,dt,&cellTypeParms_[0], nCells, &cellTypeVector_[offset], const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
       stopTimer(nonGateTimer);
    }
 }
@@ -611,8 +639,8 @@ void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)
    startTimer(gateTimer);
    for (int ii=0;ii<nEq;ii++)
    {
-         int eq = map[ii]; 
-         gateEqX[eq](dt, nCell , vm , gateX[eq]+offsetCell, mhuX[eq], tauRX[eq]);
+      int eq = map[ii]; 
+      gateEqX[eq](dt, nCell , vm , gateX[eq]+offsetCell, mhuX[eq], tauRX[eq]);
    }
    stopTimer(gateTimer);
 }
@@ -624,11 +652,11 @@ void TT06Dev_Reaction::initializeMembraneVoltage(VectorDouble32& Vm)
 }
 
 void TT06Dev_Reaction::getCheckpointInfo(vector<string>& name,
-                                         vector<string>& unit) const
+      vector<string>& unit) const
 {
    const HandleMap& handleMap = getHandleMap();
    for (HandleMap::const_iterator
-           iter=handleMap.begin(); iter!=handleMap.end(); ++iter)
+         iter=handleMap.begin(); iter!=handleMap.end(); ++iter)
    {
       if (iter->second.checkpoint_)
       {
@@ -649,31 +677,31 @@ int TT06Dev_Reaction::getVarHandle(const string& varName) const
 void TT06Dev_Reaction::setValue(int iCell, int varHandle, double value)
 {
    assert(varHandle >= 0);
-   
+
    if (varHandle < nStateVar)
       state_[varHandle][iCell] = value;
 
    // no support for variables other than state variables at present.
    assert(varHandle < nStateVar);
-   
+
 }
 
 double TT06Dev_Reaction::getValue(int iCell, int handle) const
 {
    assert(handle >= 0);
-   
+
    if (handle < nStateVar)
       return state_[handle][iCell];
 
    // no support for variables other than state variables at present.
    assert(handle < nStateVar);
-   
+
    return 0.;
 }
 
 void TT06Dev_Reaction::getValue(int iCell,
-                                const vector<int>& handle,
-                                vector<double>& value) const
+      const vector<int>& handle,
+      vector<double>& value) const
 {
    for (unsigned ii=0; ii<handle.size(); ++ii)
       value[ii] = getValue(iCell, handle[ii]);
