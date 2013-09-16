@@ -22,7 +22,7 @@ using namespace std;
 
     @kw{compound, Name of COMPOUND block in object.data that specifies detailed information on
       how the compound changes the channel currents., No default}
-    @kw{concentration, Effective free therapeutic plasma concentration (EFTPC), in micromols.,0.0}
+    @kw{concentration, Effective free therapeutic plasma concentration (EFTPC) in micromols.,0.0}
     @endkeywords
 
     @subpage DRUG_compound
@@ -30,8 +30,28 @@ using namespace std;
     @page DRUG_compound COMPOUND object
 
     Sets the four parameters that define how the drug compound changes a given channel
-    current as a function of concentration, for some or all of the currents.
+    current as a function of concentration, for some or all of the currents.  The syntax is
 
+    [current] = [low] [high] [NH] [XC50 (micromol)]
+
+    Low sets the rescaling factor when the drug concentration is zero,
+    high sets the rescaling factor when the drug concentration is
+    effectively infinite.  NH is the Hill coefficient and XC50 sets
+    the concentration of the rescaling midpoint (50\% rescaling).  The formula
+    is:
+
+    \f$\mbox{rescaling} = \mbox{low} + \frac{high-low}{1+(\frac{XC50}{concentration})^{NH}} \f$
+    
+    The most common cases will be inhibitory compounds (IC50):
+    
+      low = 1.0 and high = 0.0.
+
+      and compounds that enhance current function (EC50):
+
+      low = 1.0 and high = max rescaling.
+
+    The full list of currents that can be rescaled is listed here:
+      
     @beginkeywords
     @kw{I_K1, Parameters for K1 current,No default}
     @kw{I_Kr, Parameters for Kr current,No default}
