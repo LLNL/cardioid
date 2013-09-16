@@ -1,5 +1,6 @@
 #include "TT06Dev_Reaction.hh"
 #include <cmath>
+#include <iostream>
 #include "Anatomy.hh"
 #include "TT06Func.hh"
 #include "TT06Gates.h"
@@ -177,18 +178,15 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
    currentMap_.resize(parms.currentNames.size()); 
    int nCurrents=0; 
    while (currentNames[nCurrents] != "") {nCurrents++;}
-   printf("current sizes: %d %d %d\n",nCurrents,sizeof(double),sizeof(currentScales_)); 
+   //printf("current sizes: %d %d %d\n",nCurrents,sizeof(double),sizeof(currentScales_)); 
    assert(nCurrents*sizeof(double) == sizeof(currentScales_)); 
    currentScales_=currentScalesDefault; 
    
    for (int i=0;i<parms.currentNames.size();i++)
    {
-      int j = 0; 
+      int j = 0;
       for (;j<nCurrents;j++) 
-      {
-         if ( string(currentNames[j]) == parms.currentNames[i]) break; 
-         j++;
-      }
+         if ( std::string(currentNames[j]) == parms.currentNames[i]) break; 
       assert(j<nCurrents); 
       currentMap_[i]   = j;
    }

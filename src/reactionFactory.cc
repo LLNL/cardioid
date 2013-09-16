@@ -26,7 +26,7 @@ namespace
 {
    Reaction* scanTT04_CellML(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanTT06_CellML(OBJECT* obj, const Anatomy& anatomy);
-   Reaction* scanTT06Dev(OBJECT* obj, double dt, Anatomy& anatomy, const ThreadTeam& group);
+   Reaction* scanTT06Dev(OBJECT* obj, double dt, Anatomy& anatomy, const ThreadTeam& group, const vector<string>& scaleCurrents);
    Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanFHN(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanNull(OBJECT* obj);
@@ -36,8 +36,11 @@ namespace
 
 
 Reaction* reactionFactory(const string& name, double dt, Anatomy& anatomy,
-                          const ThreadTeam& group)
+                          const ThreadTeam& group, const vector<string>& scaleCurrents)
 {
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+   
    OBJECT* obj = objectFind(name, "REACTION");
    string method; objectGet(obj, "method", method, "undefined");
 
@@ -46,9 +49,9 @@ Reaction* reactionFactory(const string& name, double dt, Anatomy& anatomy,
    else if (method == "TT06_CellML" || method == "tenTusscher06_CellML")
       return scanTT06_CellML(obj, anatomy);
    else if (method == "TT06Dev" )
-      return scanTT06Dev(obj, dt, anatomy, group);
+      return scanTT06Dev(obj, dt, anatomy, group, scaleCurrents);
    else if (method == "TT06Opt" )
-      return scanTT06Dev(obj, dt, anatomy, group);
+      return scanTT06Dev(obj, dt, anatomy, group, scaleCurrents);
    else if (method == "TT06_RRG" )
       return scanTT06_RRG(obj, anatomy);
    else if (method == "FHN" || method == "FitzhughNagumo")
@@ -60,7 +63,8 @@ Reaction* reactionFactory(const string& name, double dt, Anatomy& anatomy,
    else if (method == "constant")
       return scanConstant(obj, anatomy);
    
-   cerr<<"ERROR: Undefined reaction model in reactionFactory"<<endl;
+   if (myRank == 0)
+      cerr<<"ERROR: Undefined reaction model in reactionFactory"<<endl;
    assert(false); // reachable only due to bad input
    return 0;
 }
@@ -123,7 +127,7 @@ namespace
       }
       return fit; 
    }
-   Reaction* scanTT06Dev(OBJECT* obj, double dt, Anatomy& anatomy, const ThreadTeam& group)
+    Reaction* scanTT06Dev(OBJECT* obj, double dt, Anatomy& anatomy, const ThreadTeam& group, const vector<string>& scaleCurrents)
    {
       TT06Dev_ReactionParms parms;
       parms.cellTypeParms=TT06Func::getStandardCellTypes(); 
@@ -208,6 +212,7 @@ namespace
          if (object_testforkeyword(cellobj, "g_to")           ) objectGet(cellobj,"g_to"        ,parms.cellTypeParms[name].g_to,"0.0"); 
          
       }
+      parms.currentNames = scaleCurrents;
       
       Reaction *reaction = new TT06Dev_Reaction(dt, anatomy, parms, group);
       return  reaction; 

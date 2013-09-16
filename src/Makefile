@@ -40,7 +40,8 @@ HEARTSRC= \
 	getRemoteCells.cc \
 	simulationLoop.cc \
 	diffusionFactory.cc reactionFactory.cc \
-	stimulusFactory.cc sensorFactory.cc \
+	stimulusFactory.cc sensorFactory.cc drugFactory.cc \
+   Drug.cc DrugChannel.cc \
 	FibreConductivity.cc JHUConductivity.cc\
 	DiffusionUtils.cc \
 	FGRDiffusion.cc \

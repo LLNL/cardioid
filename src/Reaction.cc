@@ -58,3 +58,8 @@ const string Reaction::getUnit(const string& varName) const
    return string();
 }
 
+void Reaction::scaleCurrents(std::vector<double>)
+{
+   assert(false);
+   return;
+}

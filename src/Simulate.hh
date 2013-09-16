@@ -16,6 +16,7 @@ class Diffusion;
 class Reaction;
 class Stimulus;
 class Sensor;
+class Drug;
 class CommTable;
 using std::isnan;
 
@@ -120,7 +121,9 @@ class Simulate
    Reaction* reaction_; 
    std::vector<Stimulus*> stimulus_;
    std::vector<Sensor*> sensor_;
-   
+   std::vector<Drug*> drug_;
+   std::vector<double> drugRescale_;
+    
    void initSensors(const std::vector<std::string>& names);
 
  private:

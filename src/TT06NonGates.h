@@ -2,7 +2,7 @@
 #define TT06NONGATE_H
 #include <stdio.h>
 typedef struct currentScales_st        { double   K1,    Kr,    Ks,    Na,    bNa,    CaL,    bCa,    to,    NaK,    NaCa,    pCa,    pK,    NaL;} CURRENT_SCALES;    
-static const char * currentNames[14] =      { "I_K1","I_Kr","I_Ks","I_Na","I_bNa","I_CaL","I_bCa","I_to","I_NaK","I_NaCa","I_pCa","I_pK","I,NaL",""}; 
+static const char * currentNames[14] =      { "I_K1","I_Kr","I_Ks","I_Na","I_bNa","I_CaL","I_bCa","I_to","I_NaK","I_NaCa","I_pCa","I_pK","I_NaL",""}; 
 static CURRENT_SCALES currentScalesDefault = {    1.0,   1.0,   1.0,   1.0,    1.0,    1.0,     1.0,  1.0,    1.0,     1.0,    1.0,   1.0,    1.0  }; 
 struct LogParms     { FILE *file; int loop, cellType, minK_i,maxK_i,midK_i,minNa_i,maxNa_i,midNa_i;}  ;
 struct nonGateCnst { double c2,  c3,  c4,  c5,  c6,  c7,  c8,  c9,

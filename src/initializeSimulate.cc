@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <map>
 
 #include "object_cc.hh"
 #include "Simulate.hh"
@@ -11,6 +12,9 @@
 #include "diffusionFactory.hh"
 #include "reactionFactory.hh"
 #include "stimulusFactory.hh"
+#include "drugFactory.hh"
+#include "Drug.hh"
+#include "DrugChannel.hh"
 #include "Stimulus.hh"
 #include "sensorFactory.hh"
 #include "getRemoteCells.hh"
@@ -199,10 +203,41 @@ void initializeSimulate(const string& name, Simulate& sim)
          cout << "Reaction Threads: " << sim.reactionThreads_ << endl;
    }
    
-   
+   timestampBarrier("building drug objects", MPI_COMM_WORLD);
+   vector<string> drugNames;
+   objectGet(obj, "drug", drugNames);
+   for (unsigned ii=0; ii<drugNames.size(); ++ii)
+      sim.drug_.push_back(drugFactory(drugNames[ii], sim));
+
+   // if drugs are defined, get a list of all channels they affect to
+   // pass to reaction constructor
+   map<std::string,double> cMap;
+   for (int idrug=0; idrug<sim.drug_.size(); idrug++)
+   {
+      for (int jj=0; jj<sim.drug_[idrug]->nChannels(); jj++)
+      {
+         string current = sim.drug_[idrug]->current(jj);
+         double scaleFactor = sim.drug_[idrug]->scaleFactor(jj);
+         if (cMap.find(current) != cMap.end())
+            cMap[current] *= scaleFactor;
+         else
+            cMap[current] = scaleFactor;
+      }
+   }
+
+   vector<string> scaleCurrents;
+   for (map<std::string,double>::iterator mapit = cMap.begin(); mapit != cMap.end(); mapit++)
+   {
+      scaleCurrents.push_back((*mapit).first);
+      sim.drugRescale_.push_back((*mapit).second);
+      if (myRank == 0)
+         cout << "initializeSimulate:  current channel " << (*mapit).first << " will be rescaled by " << (*mapit).second << endl;
+   }
+   timestampBarrier("finished building drug objects", MPI_COMM_WORLD);
+
    timestampBarrier("building reaction object", MPI_COMM_WORLD);
    objectGet(obj, "reaction", nameTmp, "reaction");
-   sim.reaction_ = reactionFactory(nameTmp, sim.dt_, sim.anatomy_, sim.reactionThreads_);
+   sim.reaction_ = reactionFactory(nameTmp, sim.dt_, sim.anatomy_, sim.reactionThreads_, scaleCurrents);
    timestampBarrier("finished building reaction object", MPI_COMM_WORLD);
 
    sim.printIndex_ = -1;

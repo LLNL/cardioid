@@ -192,7 +192,10 @@ void simulationLoop(Simulate& sim)
       
       // REACTION
       startTimer(reactionTimer);
-/*   call scaleCurrents here */
+      /*   call scaleCurrents here */
+      if (sim.drugRescale_.size() > 0)
+         sim.reaction_->scaleCurrents(sim.drugRescale_);
+      
       sim.reaction_->calc(sim.dt_, vmarray, iStim, dVmReaction);
       stopTimer(reactionTimer);
 
@@ -511,6 +514,9 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       startTimer(reactionTimer);
       startTimer(nonGateRLTimer);
 /*   call scaleCurrents here */
+      if (sim.drugRescale_.size() > 0)
+         sim.reaction_->scaleCurrents(sim.drugRescale_);
+      
       sim.reaction_->updateNonGate(sim.dt_, VmArray, dVmReaction);
       stopTimer(nonGateRLTimer);
 
