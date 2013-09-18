@@ -204,10 +204,10 @@ void initializeSimulate(const string& name, Simulate& sim)
    }
    
    timestampBarrier("building drug objects", MPI_COMM_WORLD);
-   vector<string> drugNames;
-   objectGet(obj, "drug", drugNames);
-   for (unsigned ii=0; ii<drugNames.size(); ++ii)
-      sim.drug_.push_back(drugFactory(drugNames[ii], sim));
+   vector<string> doseNames;
+   objectGet(obj, "dose", doseNames);
+   for (unsigned ii=0; ii<doseNames.size(); ++ii)
+      sim.drug_.push_back(drugFactory(doseNames[ii], sim));
 
    // if drugs are defined, get a list of all channels they affect to
    // pass to reaction constructor

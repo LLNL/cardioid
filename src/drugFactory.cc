@@ -11,25 +11,25 @@
 using namespace std;
 
 /*!
-  @page obj_DRUG DRUG object
+  @page obj_DOSE DOSE object
 
   Used to model drug effects by rescaling currents.
 
-  The following keywords are used to define the dosage of a given compound.  Details on how a
-  given compound rescales the currents are given in the compound section.
+  The following keywords are used to define the dosage of a given drug.  Details on how a
+  given drug rescales the currents are given in the drug section.
 
   @beginkeywords
 
-    @kw{compound, Name of COMPOUND block in object.data that specifies detailed information on
-      how the compound changes the channel currents., No default}
+    @kw{drug, Name of DRUG block in object.data that specifies detailed information on
+      how the drug changes the channel currents., No default}
     @kw{concentration, Effective free therapeutic plasma concentration (EFTPC) in micromols.,0.0}
     @endkeywords
 
-    @subpage DRUG_compound
+    @subpage DOSE_drug
 
-    @page DRUG_compound COMPOUND object
+    @page DOSE_drug DRUG object
 
-    Sets the four parameters that define how the drug compound changes a given channel
+    Sets the four parameters that define how the given drug changes a given channel
     current as a function of concentration, for some or all of the currents.  The syntax is
 
     [current] = [low] [high] [NH] [XC50 (micromol)]
@@ -46,7 +46,7 @@ using namespace std;
     
       low = 1.0 and high = 0.0.
 
-      and compounds that enhance current function (EC50):
+      and drugs that enhance current function (EC50):
 
       low = 1.0 and high = max rescaling.
 
@@ -69,22 +69,22 @@ using namespace std;
     @endkeywords
 */
 
-Drug* drugFactory(const std::string& name, const Simulate& sim)
+Drug* drugFactory(const std::string& dosename, const Simulate& sim)
 {
   int myRank;
   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
-  OBJECT* obj = objectFind(name, "DRUG");
-  string compound;
-  objectGet(obj, "compound", compound, "undefined");
-  if (compound == "undefined")
+  OBJECT* obj = objectFind(dosename, "DOSE");
+  string drugobj;
+  objectGet(obj, "drug", drugobj, "undefined");
+  if (drugobj == "undefined")
     assert(false);
   double concentration;
   objectGet(obj, "concentration", concentration, "-1.0");
   if (concentration < 0.0)
      assert(false);
 
-  Drug* drug = new Drug(name,concentration);
+  Drug* drug = new Drug(dosename,concentration);
 
   // vector currentNames contains all possible currents allowed by
   // any reaction model.  Not all currents may be supported by
@@ -97,7 +97,7 @@ Drug* drugFactory(const std::string& name, const Simulate& sim)
   currentNames.push_back("I_NaCa"); currentNames.push_back("I_pCa"); currentNames.push_back("I_pK");
   currentNames.push_back("I_NaL"); currentNames.push_back("I_NaL"); currentNames.push_back("I_NaL"); 
   
-  obj = objectFind(compound, "COMPOUND");
+  obj = objectFind(drugobj, "DRUG");
   for (int ii=0; ii<currentNames.size(); ++ii)
   {
      vector<string> currentArgs;

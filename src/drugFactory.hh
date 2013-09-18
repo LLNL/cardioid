@@ -5,6 +5,6 @@
 class Drug;
 class Simulate;
 
-Drug* drugFactory(const std::string& name, const Simulate& sim);
+Drug* drugFactory(const std::string& dosename, const Simulate& sim);
 
 #endif
