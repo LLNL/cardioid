@@ -10,8 +10,7 @@ static struct nonGateCnst cnst;
 static  double f1,f2,f3,f4,f5,f6,f7,f7a,f9,f9a,f10,c12; 
 void initNonGateCnst()
 {
- double P_NaK,g_Ks[3],g_Kr[3],g_to[3]; 
- double g_NaL =0.0; 
+ double g_Ks[3],g_Kr[3],g_to[3]; 
  double c1,c2,c3,c4,c5,c6,c7,c8,c9;
  double c10,c11,c13,c14,c15,c16,c17,c18,c19;
  double c20,c21,c22,c23,c24,c25,c26,c27,c28,c29;
@@ -150,9 +149,6 @@ void initNonGateCnst()
    double g_to_Endo = 0.073;
    double g_to_Mid_Epi = 0.294;
    
-   //cA[0] =  c9*g_Ks_Endo_Epi; 
-   //cA[1] =  c9*g_Ks_Mid; 
-   //cA[2] =  c9*g_Ks_Endo_Epi; 
 
    g_Ks[0] =  g_Ks_Endo_Epi; 
    g_Ks[1] =  g_Ks_Mid; 
@@ -161,21 +157,17 @@ void initNonGateCnst()
    g_Kr[1] = 0.153;
    g_Kr[2] = 0.153;
    
-   //cB[0] =  c9*g_to_Endo; 
-   //cB[1] =  c9*g_to_Mid_Epi; 
-   //cB[2] =  c9*g_to_Mid_Epi; 
 
    g_to[0] =  g_to_Endo; 
    g_to[1] =  g_to_Mid_Epi; 
    g_to[2] =  g_to_Mid_Epi; 
    
-   c10= 1/(0.5*c9);
-   c7 =  (0.50*pcnst[19]);
+   c7 =  pcnst[19];
    //c11= pcsnt[14]*sqrt(pcnst[10]/5.4);
    c11= sqrt(pcnst[10]/5.4);
    c12= pcnst[13]*sqrt(pcnst[10]/5.4);
    c13= pcnst[3]/(2.0*pcnst[52]*pcnst[2]*c9);
-   c14 = pcnst[51]*pcnst[40]/(pcnst[52]*c9); 
+   c14 = pcnst[51]/pcnst[52]; 
    c15 = -pcnst[52]/pcnst[4]; 
    c16 = pcnst[51]/pcnst[4];
    c17 = pcnst[35]/(pcnst[33]*pcnst[34])*c9;
@@ -185,8 +177,7 @@ void initNonGateCnst()
    c21  = pcnst[17]; 
    c22  = 1/c9; 
    c23  = pcnst[41]/(c15*c9); 
-   //c24  = pcnst[30]/c10; 
-   c24  =  0.5*pcnst[30]; 
+   c24  =  pcnst[30]; 
    c25  =  1.0/pcnst[23]; 
    c26  =  1.0/pcnst[31]; 
    c27  =  1.0/pcnst[42]; 
@@ -203,8 +194,6 @@ void initNonGateCnst()
    c44  =  pcnst[44]/c9; 
    
    
-   P_NaK= pcnst[21]; 
-   g_NaL =0.0; 
    
    f1 = c1; 
    f2 =  -2.0*pcnst[10]/(pcnst[10]+pcnst[22]);
@@ -392,21 +381,27 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
   fv6Func  = fv6General; 
   double fv[6];
  int cellType=-1; 
+ double  c_K1  =  currentScales->K1; 
  double  c_Na  =  currentScales->Na *cnst.c20; 
  double  c_bNa =  currentScales->bNa*cnst.c21; 
+ double  c_CaL =  currentScales->CaL; 
  double  c_bCa =  currentScales->bCa*cnst.c7; 
+ double  c_NaCa=  currentScales->NaCa; 
  double  c_pCa =  currentScales->pCa*cnst.c24; 
+ double  c_pK  =  currentScales->pK; 
  for (int ii=0;ii<nCells;ii++) 
  {
-   double P_NaK,g_Ks,g_Kr,g_to,g_NaL,midK_i,midNa_i,alphaK_i,alphaNa_i,cK_i,cNa_i; 
+   double c_NaK,c_Ks,c_Kr,c_to,c_NaL;
+
+   double midK_i,midNa_i,alphaK_i,alphaNa_i,cK_i,cNa_i; 
    if (cellType != cellTypeVector[ii])
    {
    cellType = cellTypeVector[ii]; 
-   P_NaK = currentScales->NaK*cellTypeParms[cellType].P_NaK; 
-   g_Ks  = currentScales->Ks *cellTypeParms[cellType].g_Ks; 
-   g_Kr  = currentScales->Kr *cellTypeParms[cellType].g_Kr; 
-   g_to  = currentScales->to *cellTypeParms[cellType].g_to; 
-   g_NaL = currentScales->NaL*cellTypeParms[cellType].g_NaL; 
+   c_NaK = currentScales->NaK*cellTypeParms[cellType].P_NaK; 
+   c_Ks  = currentScales->Ks *cellTypeParms[cellType].g_Ks; 
+   c_Kr  = currentScales->Kr *cellTypeParms[cellType].g_Kr; 
+   c_to  = currentScales->to *cellTypeParms[cellType].g_to; 
+   c_NaL = currentScales->NaL*cellTypeParms[cellType].g_NaL; 
 
    midK_i = cellTypeParms[cellType].midK_i; 
    midNa_i = cellTypeParms[cellType].midNa_i; 
@@ -431,9 +426,10 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
    //double *states = cell[ii].state; 
 
    double dVR = 0.0; 
-   double itmp0,itmp5,itmp6 ; 
-   double sum=0.0; 
-   //double itmpB,itmpC,itmpD,itmpE,itmpF,itmpG,itmpH,itmpI,itmpJ,itmpK,itmpL,itmpM, iNaL;  //
+   //double itmp0,itmp5,itmp6 ; 
+   double I_K1,I_Kr,I_Ks,I_Na,I_bNa,I_CaL,I_bCa,I_to,I_NaK,I_NaCa,I_pCa,I_pK,I_NaL,I_leak,I_up,I_rel,I_xfer; 
+   double I_sum,I_delta;   
+//  Update Ca concentration; 
    {
      double fv1 = fv[1]; 
      double fv2 = fv[2]; 
@@ -445,22 +441,24 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
      double sigm3 = sigm(x3); 
      double dV3 = Vm- 0.5*cnst.c3*log(_Ca_i) - cnst.c8;
 
-     itmp0 = (CUBE(_Na_i)*fv1-_Ca_i*fv2); 
-     double itmp4 = (c_bCa*dV3+c_pCa*sigm1); 
-     itmp5=  (cnst.c43*(_Ca_i -  _Ca_SR)+cnst.c44*sigm2);      
-     itmp6 = (cnst.c23*(_Ca_ss - _Ca_i));
-     __Ca_i[ii]   = _Ca_i + (dt*cnst.c9)*(sigm3*(itmp4-itmp0+itmp6*cnst.c15-itmp5*cnst.c16));
-     dVR  -= 2*itmp4;
-     //itmpH= 2.0*cnst.c7*dV3;
-     //itmpL= 2.0*cnst.c24*sigm1;
-     //sum -= (itmpH+itmpL); 
-     //printf("sum=%24.15f %24.15f\n",sum,dVR); 
+     I_NaCa = c_NaCa*(CUBE(_Na_i)*fv1-_Ca_i*fv2); 
+
+     I_bCa = c_bCa*dV3;
+     I_pCa = c_pCa*sigm1;    
+     I_up  =  cnst.c44*sigm2;        
+     I_leak=  cnst.c43*(_Ca_SR - _Ca_i);
+     I_xfer = cnst.c23*(_Ca_ss - _Ca_i);
+     I_delta = I_leak-I_up;    // I_detal = -itmp5  
+     I_sum =   I_bCa+I_pCa; // itmp4 =I_bCa+I_pCa; 
+     __Ca_i[ii]   = _Ca_i + (dt*cnst.c9)*(sigm3*(0.5*I_sum-I_NaCa+I_xfer*cnst.c15+I_delta*cnst.c16));
+     dVR  -= I_sum;
     }
 
+   double iK; 
+//  Update K and Na concentrations; 
    {
      double _K_i  = cnst.c9*(_dVK_i-Vm);
      double x0 = _Na_i*cnst.c25; 
-     double sigm0 = P_NaK*sigm(x0); 
 
      double dV0 = Vm -cnst.c3*log(_K_i) -cnst.c5;
      double dV1 = Vm -cnst.c3*log(_Na_i)-cnst.c4;
@@ -469,32 +467,27 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
      double fv0 = fv[0]; 
      double fv5 = fv[5]; 
      double fv6 = fv6Func(fit,dV0);
-     double fd =  fv5  +  fv6; 
 
-     double tmp0 =  (fd +  g_to*rGate[ii]*sGate[ii]+ g_Kr*cnst.c11*Xr1Gate[ii]*Xr2Gate[ii] );
-     double tmp1 =  (c_Na*CUBE(mGate[ii])*hGate[ii]*jGate[ii]+c_bNa);
-     double tmp2 =  g_Ks*SQ(XsGate[ii]);
-     double itmpA = sigm0 * fv0;                          //Sigm0
-     double itmp2 = itmp0 - 1.5*itmpA+tmp1*dV1; 
-     double itmp3 = itmpA + tmp0*dV0 +tmp2*dV2; 
-     double iNaL = g_NaL*CUBE(mGate[ii])*jLGate[ii]*dV1;
-     //itmpB =  fv6 * dV0; 
-     //itmpC = g_Kr*cnst.c11*Xr1Gate[ii]*Xr2Gate[ii]*dV0; 
-     //itmpD = tmp2*dV2; 
-     //itmpE = dV1*(cnst.c20*CUBE(mGate[ii])*hGate[ii]*jGate[ii]);
-     //itmpI= g_to*rGate[ii]*sGate[ii]*dV0;
-     //itmpK = itmp0 ; 
-     //itmpJ = -0.5*itmpA; 
-     //itmpF = cnst.c21*dV1; 
-     //itmpM = fv5*dV0; 
+     I_NaK = c_NaK*sigm(x0) * fv0;                          // renamed itmpA to I_NaK
+     I_pK  = c_pK*fv5*dV0;  
+     I_K1  = c_K1*fv6*dV0; 
+     I_to  = c_to*rGate[ii]*sGate[ii]*dV0 ;
+     I_Kr  = c_Kr*Xr1Gate[ii]*Xr2Gate[ii]*dV0;
+     I_Na  = c_Na*CUBE(mGate[ii])*hGate[ii]*jGate[ii]*dV1; 
+     I_NaL = c_NaL*CUBE(mGate[ii])*jLGate[ii]*dV1;
+     I_bNa = c_bNa*dV1;
+     I_Ks  = c_Ks*SQ(XsGate[ii])*dV2;
 
-     _dVK_i += dt*itmp3;
-     dVR    -=  iNaL +itmp2+itmp3;
-     //sum-= itmpB+itmpC+itmpD+itmpE+itmpF+itmpI+itmpJ+itmpK+itmpM+iNaL;
-     //printf("sum=%24.15f %24.15f\n",sum,dVR); 
-     __Na_i[ii]  =   _Na_i  +  (dt*cnst.c9)*(iNaL+itmp2+2.0*itmp0);
+     double iNa =  3*I_NaCa - 1.5*I_NaK + I_Na + I_bNa + I_NaL;
+     iK =   I_Ks   +     I_NaK + I_pK + I_K1  +  I_to + I_Kr; 
+
+
+     _dVK_i += dt*iK;
+     dVR    -=  iNa + iK - 2.0*I_NaCa;
+     __Na_i[ii]  =   _Na_i  +  (dt*cnst.c9)*iNa;
    }
 
+//  Update Ca_SS, Ca_SR, R_prime concentrations and fCass gate; 
    {
      double fv3 = fv[3]; 
      double fv4 = fv[4]; 
@@ -506,40 +499,22 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
      double sigm6 = sigm(x6); 
      double tmp8  = (cnst.c18+cnst.c19*sigm4); //Sigm4
      double tmp9  = tmp8*_Ca_ss+cnst.c36; 
-     double itmp1 = dGate[ii]*fGate[ii]*f2Gate[ii]*_fCass*(fv4-_Ca_ss*fv3);
-     double sigmCa_ss =   SQ(_Ca_ss)/(tmp8*cnst.c17 + SQ(_Ca_ss));
-     double itmp7 = sigmCa_ss*_R_prime*(_Ca_SR - _Ca_ss);
+     I_CaL = c_CaL*dGate[ii]*fGate[ii]*f2Gate[ii]*_fCass*(fv4-_Ca_ss*fv3);  // renamed itmp1 to I_CaL
+     double O =   SQ(_Ca_ss)*_R_prime/(tmp8*cnst.c17 + SQ(_Ca_ss));
+     I_rel =cnst.c40* O*(_Ca_SR - _Ca_ss);
 
      double t1 = 1.0/(1.0+SQ(20*_Ca_ss)); 
      double mhu = 0.600000*t1+0.4000000;
      double tauR =    1.0/(80.0*t1+2.0);
 
-     __Ca_ss[ii]   = _Ca_ss   + (dt*cnst.c9)*sigm6*(itmp6+itmp7*cnst.c14+itmp1*cnst.c13);    
-     __Ca_SR[ii]   = _Ca_SR   + (dt*cnst.c9)*sigm5*(itmp5-cnst.c40*itmp7);
+     __Ca_ss[ii]   = _Ca_ss   + (dt*cnst.c9)*sigm6*(I_xfer+I_rel*cnst.c14+I_CaL*cnst.c13);    
+     __Ca_SR[ii]   = _Ca_SR   - (dt*cnst.c9)*sigm5*(I_delta+I_rel);
      __R_prime[ii] = _R_prime + (dt*cnst.c9)*(cnst.c36 - tmp9*_R_prime);
      __fCass[ii]   = _fCass   + dt*(mhu - _fCass)*tauR; 
-     dVR += itmp1; 
-     //itmpG =-itmp1;
-     //sum-= itmpG;
-     //printf("sum=%24.15f %24.15f\n",sum,dVR); 
+     dVR += I_CaL; 
    }
+//  update voltages 
    __dVK_i[ii] = _dVK_i + dt*dVR ; 
-    //FILE *file = fopen("/tmp/opt","w");
-    //fprintf(file, "%24.15f r\n",dVR);
-    //fprintf(file, "%24.15f B\n",itmpB);
-    //fprintf(file, "%24.15f C\n",itmpC);
-    //fprintf(file, "%24.15f D\n",itmpD);
-    //fprintf(file, "%24.15f E\n",itmpE);
-    //fprintf(file, "%24.15f F\n",itmpF);
-    //fprintf(file, "%24.15f G\n",itmpG);
-    //fprintf(file, "%24.15f H\n",itmpH);
-    //fprintf(file, "%24.15f I\n",itmpI);
-    //fprintf(file, "%24.15f J\n",itmpJ);
-    //fprintf(file, "%24.15f K\n",itmpK);
-    //fprintf(file, "%24.15f L\n",itmpL);
-    //fprintf(file, "%24.15f M\n",itmpM);
-    //fprintf(file, "%24.15f iNaL,\n",iNaL);
-    //exit(0); 
    dVdt[ii]  = dVR;
    }
 }

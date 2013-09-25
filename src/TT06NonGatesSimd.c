@@ -73,8 +73,8 @@ void set_SP(struct nonGateCnst cnst)
  SP[2] =  cnst.c28 ;
  SP[3] =  cnst.c29 ;
  SP[4] =  cnst.c8 ;
- SP[5] =  cnst.c7 ;
- SP[6] =  cnst.c24 ;
+ SP[5] =  0.5*cnst.c7 ;
+ SP[6] =  0.5*cnst.c24 ;
  SP[7] =  cnst.c43 ;
  SP[8] =  cnst.c44 ;
  SP[9] =  cnst.c23 ;
@@ -104,10 +104,11 @@ void set_SP(struct nonGateCnst cnst)
  SP[33] = 0.6 ;
  SP[34] = 0.4 ;
  SP[35] = 80.0 ;
- SP[36] = cnst.c14 ;
+ SP[36] = cnst.c14 * cnst.c40; 
  SP[37] = cnst.c13 ;
  SP[38] = cnst.c40 ;
  SP[39] = cnst.c36 ;
+ //for (int i=0;i<40;i++) printf("SP %2d %18.14f\n",i,SP[i]); 
 }
 
 
