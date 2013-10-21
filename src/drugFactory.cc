@@ -95,8 +95,8 @@ Drug* drugFactory(const std::string& dosename, const Simulate& sim)
   currentNames.push_back("I_Na"); currentNames.push_back("I_bNa"); currentNames.push_back("I_CaL");
   currentNames.push_back("I_bCa"); currentNames.push_back("I_to"); currentNames.push_back("I_NaK");
   currentNames.push_back("I_NaCa"); currentNames.push_back("I_pCa"); currentNames.push_back("I_pK");
-  currentNames.push_back("I_NaL"); currentNames.push_back("I_NaL"); currentNames.push_back("I_NaL"); 
-  
+  currentNames.push_back("I_NaL"); currentNames.push_back("I_leak"); currentNames.push_back("I_up"); 
+  currentNames.push_back("I_rel"); currentNames.push_back("I_xfer");
   obj = objectFind(drugobj, "DRUG");
   for (int ii=0; ii<currentNames.size(); ++ii)
   {
