@@ -24,16 +24,16 @@
 #include "mpiUtils.h"
 
 /*
-  This follwing header, fastBarrier_nosync.hh, contains barrier code
-  stolen from fastBarrierBGQ.hh, but with memory synchronization
-  turned off. It is acceptable to use that when a barrier executes
-  entirely within one core. It is necessary that a squad runs within
-  one core.
-  
-  fastBarrier_nosync also sets the PER_SQUAD_BARRIER macro. By not
-  including it, the original code with a barrier accross all reaction
-  threads is used.
-*/
+   This follwing header, fastBarrier_nosync.hh, contains barrier code
+   stolen from fastBarrierBGQ.hh, but with memory synchronization
+   turned off. It is acceptable to use that when a barrier executes
+   entirely within one core. It is necessary that a squad runs within
+   one core.
+
+   fastBarrier_nosync also sets the PER_SQUAD_BARRIER macro. By not
+   including it, the original code with a barrier accross all reaction
+   threads is used.
+ */
 #include "slow_fix.hh"
 #ifndef LEGACY_NG_WORKPARTITION
 #include "fastBarrier_nosync.hh"
@@ -79,12 +79,12 @@ namespace
             dVd += scale*dVdMatrix[index];
          }
          printf("%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",
-                sim.loop_, sim.time_, sim.anatomy_.gid(pi),
-                VmArray[pi], dVmReaction[pi], dVd);  
+               sim.loop_, sim.time_, sim.anatomy_.gid(pi),
+               VmArray[pi], dVmReaction[pi], dVd);  
          fprintf(sim.printFile_,
-                 "%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",
-                 sim.loop_, sim.time_, sim.anatomy_.gid(pi),
-                 VmArray[pi], dVmReaction[pi], dVd);  
+               "%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",
+               sim.loop_, sim.time_, sim.anatomy_.gid(pi),
+               VmArray[pi], dVmReaction[pi], dVd);  
       }
       stopTimer(printDataTimer);
    }
@@ -113,7 +113,7 @@ void loopIO(const Simulate& sim,int firstCall)
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
    const Anatomy& anatomy = sim.anatomy_;
-      
+
    int loop = sim.loop_; 
 
    const VectorDouble32& VmArray(sim.vdata_.VmArray_);
@@ -123,16 +123,16 @@ void loopIO(const Simulate& sim,int firstCall)
    // SENSORS
 #pragma omp critical 
    {
-   startTimer(sensorTimer);
-   for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
-   {
-      sim.sensor_[ii]->run(sim.time_, loop);
-   }
-   stopTimer(sensorTimer);
-      
-   startTimer(loopIOTimer);
-   if (sim.loop_ > 0 && sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
-      writeCheckpoint(sim, MPI_COMM_WORLD);
+      startTimer(sensorTimer);
+      for (unsigned ii=0; ii<sim.sensor_.size(); ++ii)
+      {
+         sim.sensor_[ii]->run(sim.time_, loop);
+      }
+      stopTimer(sensorTimer);
+
+      startTimer(loopIOTimer);
+      if (sim.loop_ > 0 && sim.checkpointRate_ > 0 && sim.loop_ % sim.checkpointRate_ == 0)
+         writeCheckpoint(sim, MPI_COMM_WORLD);
 
    }// critical section
    firstCall=0; 
@@ -163,11 +163,12 @@ void simulationLoop(Simulate& sim)
    while ( sim.loop_<sim.maxLoop_ )
    {
       int nLocal = sim.anatomy_.nLocal();
-    
+
+      if (sim.drugRescale_.size() > 0) sim.reaction_->scaleCurrents(sim.drugRescale_); /*   call scaleCurrents here */
       startTimer(imbalanceTimer);
       voltageExchange.barrier();
       stopTimer(imbalanceTimer);
-      
+
       startTimer(haloTimer);
       voltageExchange.fillSendBuffer(vmarray);
       voltageExchange.startComm();
@@ -189,13 +190,10 @@ void simulationLoop(Simulate& sim)
          iStim[ii] = -(dVmDiffusion[ii]);
       stopTimer(stimulusTimer);
 
-      
+
       // REACTION
       startTimer(reactionTimer);
-      /*   call scaleCurrents here */
-      if (sim.drugRescale_.size() > 0)
-         sim.reaction_->scaleCurrents(sim.drugRescale_);
-      
+
       sim.reaction_->calc(sim.dt_, vmarray, iStim, dVmReaction);
       stopTimer(reactionTimer);
 
@@ -204,7 +202,7 @@ void simulationLoop(Simulate& sim)
       // from OMP threading.
       if (sim.checkRange_.on)
          sim.checkRanges(dVmReaction, dVmDiffusion);
-      #pragma omp parallel for
+#pragma omp parallel for
       for (int ii=0; ii<nLocal; ++ii)
       {
          double dVm = dVmReaction[ii] + dVmDiffusion[ii];
@@ -214,9 +212,9 @@ void simulationLoop(Simulate& sim)
       sim.time_ += sim.dt_;
       ++sim.loop_;
       stopTimer(integratorTimer);
-      
+
       if( sim.checkIO() )sim.bufferReactionData();
-      
+
       printData(sim);
       loopIO(sim,0);
    }
@@ -241,7 +239,7 @@ void simulationLoop(Simulate& sim)
 struct SimLoopData
 {
    SimLoopData(const Simulate& sim)
-   : voltageExchange(sim.sendMap_, (sim.commTable_))
+      : voltageExchange(sim.sendMap_, (sim.commTable_))
    {
       stimIsNonZero = 1;
       diffMiscBarrier = L2_BarrierWithSync_InitShared();
@@ -252,42 +250,42 @@ struct SimLoopData
 
 #ifdef PER_SQUAD_BARRIER
       {
-	const int
-	  nsq  = sim.reactionThreads_.nSquads(),
-	  sqsz = sim.reactionThreads_.nThreads()/nsq /*sim.reactionThreads_.squadSize()*/;
-	core_barrier = (L2_Barrier_t **) malloc(sizeof(L2_Barrier_t *) * nsq);
-	for(int i = 0; i<nsq; i++)
-	  core_barrier[i] = L2_BarrierWithSync_InitShared();
-	integratorOffset_psb.resize(sim.reactionThreads_.nThreads() + 1);
-	
-	/*
-	  This is an ugly import of the workBundle() function from
-	   TT06Dev_Reaction.cc
-	*/
-	int workBundle(int index, int nItems, int nGroups , int mod, int& offset);
-	integratorOffset_psb[0] = 0;
-	for(int i = 0; i<nsq; i++) {
-	  const int vlen = 4;
-	  int ic,nc,nv,nv_div,nv_mod;
+         const int
+            nsq  = sim.reactionThreads_.nSquads(),
+                 sqsz = sim.reactionThreads_.nThreads()/nsq /*sim.reactionThreads_.squadSize()*/;
+         core_barrier = (L2_Barrier_t **) malloc(sizeof(L2_Barrier_t *) * nsq);
+         for(int i = 0; i<nsq; i++)
+            core_barrier[i] = L2_BarrierWithSync_InitShared();
+         integratorOffset_psb.resize(sim.reactionThreads_.nThreads() + 1);
 
-	  nc = workBundle(i,sim.anatomy_.nLocal(),nsq,vlen,ic);
-	  nv = (nc+3)/4;
-	  nv_div = nv / sqsz;
-	  nv_mod = nv % sqsz;
+         /*
+            This is an ugly import of the workBundle() function from
+            TT06Dev_Reaction.cc
+          */
+         int workBundle(int index, int nItems, int nGroups , int mod, int& offset);
+         integratorOffset_psb[0] = 0;
+         for(int i = 0; i<nsq; i++) {
+            const int vlen = 4;
+            int ic,nc,nv,nv_div,nv_mod;
 
-	  if(integratorOffset_psb[i*sqsz] != ic) {
-	    printf("%s:%d: Offset error, nsq=%d i=%d sqsz=%d nc=%d iOff[]=%d ic=%d\n",
-		   __FILE__,__LINE__,nsq,i,sqsz,nc,integratorOffset_psb[i*sqsz],ic);
-	    exit(1);
-	  }
+            nc = workBundle(i,sim.anatomy_.nLocal(),nsq,vlen,ic);
+            nv = (nc+3)/4;
+            nv_div = nv / sqsz;
+            nv_mod = nv % sqsz;
 
-	  for(int j = 0; j<sqsz; j++) {
-	    integratorOffset_psb[i*sqsz + j + 1] = 
-	      integratorOffset_psb[i*sqsz + j] + 4*(nv_div + (j < nv_mod));
-	    if(integratorOffset_psb[i*sqsz + j + 1] > integratorOffset_psb[i*sqsz]+nc)
-	      integratorOffset_psb[i*sqsz + j + 1] = integratorOffset_psb[i*sqsz]+nc;
-	  }
-	}	  
+            if(integratorOffset_psb[i*sqsz] != ic) {
+               printf("%s:%d: Offset error, nsq=%d i=%d sqsz=%d nc=%d iOff[]=%d ic=%d\n",
+                     __FILE__,__LINE__,nsq,i,sqsz,nc,integratorOffset_psb[i*sqsz],ic);
+               exit(1);
+            }
+
+            for(int j = 0; j<sqsz; j++) {
+               integratorOffset_psb[i*sqsz + j + 1] = 
+                  integratorOffset_psb[i*sqsz + j] + 4*(nv_div + (j < nv_mod));
+               if(integratorOffset_psb[i*sqsz + j + 1] > integratorOffset_psb[i*sqsz]+nc)
+                  integratorOffset_psb[i*sqsz + j + 1] = integratorOffset_psb[i*sqsz]+nc;
+            }
+         }	  
       }
 #endif
 
@@ -306,8 +304,8 @@ struct SimLoopData
       free(reactionBarrier);
       free(timingBarrier);
    }
-   
-   
+
+
    int stimIsNonZero;
    L2_Barrier_t* diffMiscBarrier;
    L2_Barrier_t* reactionBarrier;
@@ -320,8 +318,8 @@ struct SimLoopData
    L2_Barrier_t* timingBarrier;
 
 #ifdef PER_SQUAD_BARRIER   
-    L2_Barrier_t **core_barrier;
-    vector<int> integratorOffset_psb;
+   L2_Barrier_t **core_barrier;
+   vector<int> integratorOffset_psb;
 #endif
 
 #ifndef PER_SQUAD_BARRIER
@@ -334,9 +332,9 @@ struct SimLoopData
 
 
 void diffusionLoop(Simulate& sim,
-                   SimLoopData& loopData,
-                   L2_BarrierHandle_t& reactionHandle,
-                   L2_BarrierHandle_t& diffusionHandle)
+      SimLoopData& loopData,
+      L2_BarrierHandle_t& reactionHandle,
+      L2_BarrierHandle_t& diffusionHandle)
 {
    profileStart(diffusionLoopTimer);
    int tid = sim.diffusionThreads_.teamRank();
@@ -354,14 +352,14 @@ void diffusionLoop(Simulate& sim,
    int zdoBegin = zeroDiffusionOffset[tid];
    int zdoEnd =   zeroDiffusionOffset[tid+1];
 
-   
-    //sim.diffusion_->test();
+
+   //sim.diffusion_->test();
 
    uint64_t loopLocal = sim.loop_;
    int globalSyncRate=sim.globalSyncRate_;
-//  if globalSyncCnt == -1 never sync
-//  if globalSyncCnt ==  0  sync only once at start of loop
-//  if globalSyncCnt >   0  sync at start of loop and then every globalSyncCnt timestep; 
+   //  if globalSyncCnt == -1 never sync
+   //  if globalSyncCnt ==  0  sync only once at start of loop
+   //  if globalSyncCnt >   0  sync at start of loop and then every globalSyncCnt timestep; 
    int globalSyncCnt = 1; 
    if (globalSyncRate == -1 ) globalSyncCnt=-1;
    while ( loopLocal < sim.maxLoop_ )
@@ -378,34 +376,34 @@ void diffusionLoop(Simulate& sim,
          }
       }
       threadBarrier(timingBarrierTimer, loopData.timingBarrier, &timingHandle, nTotalThreads);
-     
+
       // Halo Exchange
       if (tid == 0)
       {
-//         startTimer(diffusionImbalanceTimer);
-//         loopData.voltageExchange.barrier();
-//         stopTimer(diffusionImbalanceTimer);
+         //         startTimer(diffusionImbalanceTimer);
+         //         loopData.voltageExchange.barrier();
+         //         stopTimer(diffusionImbalanceTimer);
 
          startTimer(haloTimer);
-         
+
          startTimer(haloLaunchTimer);
          loopData.voltageExchange.startComm();
          stopTimer(haloLaunchTimer);
       }
-      
-         // stimulus
+
+      // stimulus
       startTimer(initializeDVmDTimer);
       if (loopData.stimIsNonZero > 0)
-	{
-	  // we has a non-zero stimulus in the last time step so we
-	  // need to zero out the storage.
-	  for (unsigned ii=zdoBegin; ii<zdoEnd; ++ii)
-	    dVmDiffusion[ii] = 0;
-	  L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle,
-				     sim.diffusionThreads_.nThreads());
-	  if (tid == 0)
+      {
+         // we has a non-zero stimulus in the last time step so we
+         // need to zero out the storage.
+         for (unsigned ii=zdoBegin; ii<zdoEnd; ++ii)
+            dVmDiffusion[ii] = 0;
+         L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle,
+               sim.diffusionThreads_.nThreads());
+         if (tid == 0)
             loopData.stimIsNonZero = 0;
-	}
+      }
       stopTimer(initializeDVmDTimer);
       if (sim.stimulus_.size() > 0)
       {
@@ -417,14 +415,14 @@ void diffusionLoop(Simulate& sim,
             stopTimer(stimulusTimer);
          }
       }
-      
+
 
 
       //L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle, sim.diffusionThreads_.nThreads());
       startTimer(stencilOverlapTimer);
       sim.diffusion_->calc_overlap(dVmDiffusion); //DelayTimeBase(160000);
       stopTimer(stencilOverlapTimer);
-      
+
       if (tid ==0)
       {
          startTimer(haloWaitTimer);
@@ -433,53 +431,53 @@ void diffusionLoop(Simulate& sim,
 
          stopTimer(haloTimer);
       }
-      
+
       // Need a barrier for the completion of the halo exchange.
       startTimer(diffusionL2BarrierHalo1Timer);
       L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle,
-                                 sim.diffusionThreads_.nThreads());
+            sim.diffusionThreads_.nThreads());
       stopTimer(diffusionL2BarrierHalo1Timer);
-      
+
       startTimer(diffusionCalcTimer);
       // copy remote
       sim.diffusion_->updateRemoteVoltage(loopData.voltageExchange.getRecvBuf());
       // temporary barrier
       L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle,
-                                 sim.diffusionThreads_.nThreads());
+            sim.diffusionThreads_.nThreads());
       //stencil
       sim.diffusion_->calc(dVmDiffusion);
       stopTimer(diffusionCalcTimer);
-      
+
       //barrier
       startTimer(diffusionL2BarrierHalo2Timer);
       L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle,
-                                 sim.diffusionThreads_.nThreads());
+            sim.diffusionThreads_.nThreads());
       stopTimer(diffusionL2BarrierHalo2Timer);
 
 
       // announce that diffusion derivatives are ready.
       L2_BarrierWithSync_Arrive(loopData.diffusionBarrier, &diffusionHandle,
-                                sim.diffusionThreads_.nThreads());
+            sim.diffusionThreads_.nThreads());
       L2_BarrierWithSync_Reset(loopData.diffusionBarrier,
-                               &diffusionHandle,
-                               sim.diffusionThreads_.nThreads());
+            &diffusionHandle,
+            sim.diffusionThreads_.nThreads());
 
-      
+
       // wait for reaction (integration) to finish
       startTimer(diffusionWaitTimer); 
       L2_BarrierWithSync_WaitAndReset(loopData.reactionBarrier,
-                                      &reactionHandle,
-                                      sim.reactionThreads_.nThreads());
+            &reactionHandle,
+            sim.reactionThreads_.nThreads());
       stopTimer(diffusionWaitTimer); 
       ++loopLocal;
-//      startTimer(dummyTimer);
-//      stopTimer(dummyTimer);
+      //      startTimer(dummyTimer);
+      //      stopTimer(dummyTimer);
 
    }
    profileStop(diffusionLoopTimer);
 }
 void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reactionHandle, L2_BarrierHandle_t& diffusionHandle, 
-                  void (*integrate)(const int, const int, const double, double*, double*, unsigned*, double*, double*k, double*, double))
+      void (*integrate)(const int, const int, const double, double*, double*, unsigned*, double*, double*k, double*, double))
 {
    profileStart(reactionLoopTimer);
    int tid = sim.reactionThreads_.teamRank();
@@ -509,31 +507,26 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
    uint64_t loopLocal = sim.loop_;
    while ( loopLocal < sim.maxLoop_ )
    {
+      /*   call scaleCurrents here  Need to make sure all nonGate calculation are done*/
+      if (tid == 0 && sim.drugRescale_.size() > 0) 
+         sim.reaction_->scaleCurrents(sim.drugRescale_); 
       threadBarrier(timingBarrierTimer, loopData.timingBarrier, &timingHandle, nTotalThreads);
-           
+
       startTimer(reactionTimer);
       startTimer(nonGateRLTimer);
-/*   call scaleCurrents here */
-      if (sim.drugRescale_.size() > 0)
-         sim.reaction_->scaleCurrents(sim.drugRescale_);
-      
+
       sim.reaction_->updateNonGate(sim.dt_, VmArray, dVmReaction);
       stopTimer(nonGateRLTimer);
 
       startTimer(GateNonGateTimer); 
 #ifdef PER_SQUAD_BARRIER
       {
-	L2_Barrier_nosync_Arrive(      cb_ptr,
-				       &core_barrier_h,
-				       sqsz);
-	L2_Barrier_nosync_WaitAndReset(cb_ptr,
-				       &core_barrier_h,
-				       sqsz);
+         L2_Barrier_nosync_Arrive(      cb_ptr, &core_barrier_h, sqsz);
+         L2_Barrier_nosync_WaitAndReset(cb_ptr, &core_barrier_h, sqsz);
       }
 #else
       L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier,
-				 &reactionWaitOnNonGateHandle,
-				 sim.reactionThreads_.nThreads());
+            &reactionWaitOnNonGateHandle, sim.reactionThreads_.nThreads());
 #endif
       stopTimer(GateNonGateTimer); 
       startTimer(gateRLTimer);
@@ -543,20 +536,19 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 
       startTimer(reactionWaitTimer);
       /*
-	    The following barrier makes sure the integrator does not write to data still being read by some
-	    threads still in updateGate(). With the modified loop order in integratorOffset_psb[], only per
-	    squad (per core) barriers are needed. With the original loop order in integratorOffset[], a full
-	    barrier over the reaction cores is necessary.  
-      */
+         The following barrier makes sure the integrator does not write to data still being read by some
+         threads still in updateGate(). With the modified loop order in integratorOffset_psb[], only per
+         squad (per core) barriers are needed. With the original loop order in integratorOffset[], a full
+         barrier over the reaction cores is necessary.  
+       */
 #ifdef PER_SQUAD_BARRIER
       {
-	      L2_Barrier_nosync_Arrive(      cb_ptr, &core_barrier_h, sqsz);
-	      L2_Barrier_nosync_WaitAndReset(cb_ptr, &core_barrier_h, sqsz);
+         L2_Barrier_nosync_Arrive(      cb_ptr, &core_barrier_h, sqsz);
+         L2_Barrier_nosync_WaitAndReset(cb_ptr, &core_barrier_h, sqsz);
       }
 #else
       L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier,
-				 &reactionWaitOnNonGateHandle,
-				 sim.reactionThreads_.nThreads());
+            &reactionWaitOnNonGateHandle, sim.reactionThreads_.nThreads());
 #endif
 
       L2_BarrierWithSync_WaitAndReset(loopData.diffusionBarrier, &diffusionHandle, sim.diffusionThreads_.nThreads());
@@ -575,59 +567,59 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 #endif
 
       if(PRINT_WP) {
-	static int inited[64] = {0};
+         static int inited[64] = {0};
 
-	if(inited[tid] == 0) {
-	  int pid,np;
-	  const int nt = sim.reactionThreads_.nThreads();
-	  static volatile int tag[64] = {0};
+         if(inited[tid] == 0) {
+            int pid,np;
+            const int nt = sim.reactionThreads_.nThreads();
+            static volatile int tag[64] = {0};
 
-	  MPI_Comm_size(MPI_COMM_WORLD,&np);
-	  MPI_Comm_rank(MPI_COMM_WORLD,&pid);	  
-	  
-	  if(tid == 0) {
-	    int i;
+            MPI_Comm_size(MPI_COMM_WORLD,&np);
+            MPI_Comm_rank(MPI_COMM_WORLD,&pid);	  
 
-	    MPI_Barrier(MPI_COMM_WORLD);
-	    for(i = 0; i<np; i++) {
-	      if(i == pid) {
-		int j;
-		printf("@pid=%03d,tid=%02d :I WP: offset = %6d  nCells = %6d  end = %6d\n",
-		       pid,tid,begin,end-begin,end);
+            if(tid == 0) {
+               int i;
 
-		tag[tid] = 1;
-		while(tag[nt-1] == 0) {}
-		for(j = 0; j<nt; j++) tag[j] = 0;
-	      }
-	      MPI_Barrier(MPI_COMM_WORLD);
-	    }
-	  } else {
-	    while(tag[tid-1] == 0) {}
+               MPI_Barrier(MPI_COMM_WORLD);
+               for(i = 0; i<np; i++) {
+                  if(i == pid) {
+                     int j;
+                     printf("@pid=%03d,tid=%02d :I WP: offset = %6d  nCells = %6d  end = %6d\n",
+                           pid,tid,begin,end-begin,end);
 
-	    printf("@pid=%03d,tid=%02d :I WP: offset = %6d  nCells = %6d  end = %6d\n",
-		   pid,tid,begin,end-begin,end);
+                     tag[tid] = 1;
+                     while(tag[nt-1] == 0) {}
+                     for(j = 0; j<nt; j++) tag[j] = 0;
+                  }
+                  MPI_Barrier(MPI_COMM_WORLD);
+               }
+            } else {
+               while(tag[tid-1] == 0) {}
 
-	    tag[tid] = 1;
-	    while(tag[0] > 0) {}
-	  }
-	  
-	  inited[tid] = 1;
-	}
+               printf("@pid=%03d,tid=%02d :I WP: offset = %6d  nCells = %6d  end = %6d\n",
+                     pid,tid,begin,end-begin,end);
+
+               tag[tid] = 1;
+               while(tag[0] > 0) {}
+            }
+
+            inited[tid] = 1;
+         }
       }
 
 
       integrate(begin, end, sim.dt_, &dVmReaction[0], &dVmDiffusion[0],
-		    sim.diffusion_->blockIndex(),
-		    sim.diffusion_->dVmBlock(),
-		    sim.diffusion_->VmBlock(),
-		    &VmArray[0],
-		    sim.diffusion_->diffusionScale());
+            sim.diffusion_->blockIndex(),
+            sim.diffusion_->dVmBlock(),
+            sim.diffusion_->VmBlock(),
+            &VmArray[0],
+            sim.diffusion_->diffusionScale());
       stopTimer(integratorTimer);
 
       startTimer(rangeCheckTimer); 
-      #ifndef NTIMING
+#ifndef NTIMING
       if (sim.checkRange_.on) sim.checkRanges(begin, end, dVmReaction, dVmDiffusion);
-      #endif
+#endif
       stopTimer(rangeCheckTimer); 
       startTimer(reactionMiscTimer); 
       ++loopLocal;
@@ -636,7 +628,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
          sim.time_ += sim.dt_;
          ++sim.loop_;
       }
-      
+
       if ( tid == 0 && sim.loop_ % sim.printRate_ == 0) 
          printData(sim);
 
@@ -659,22 +651,21 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
             const int index = blockIndex[ii];
             dVmDiffusion[ii] += diffusionScale*dVdMatrix[index];
          }
-	 loopData.stimIsNonZero = 1;
+         loopData.stimIsNonZero = 1;
          sim.bufferReactionData(begin, end);
          L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier,
-                                    &reactionWaitOnNonGateHandle,
-                                    sim.reactionThreads_.nThreads());
+               &reactionWaitOnNonGateHandle,
+               sim.reactionThreads_.nThreads());
          if (tid == 0) loopIO(sim,0);
       }
-         
+
       L2_BarrierWithSync_Barrier(loopData.reactionWaitOnNonGateBarrier,
-                                 &reactionWaitOnNonGateHandle,
-                                 sim.reactionThreads_.nThreads());
+            &reactionWaitOnNonGateHandle, sim.reactionThreads_.nThreads());
       stopTimer(reactionMiscTimer); 
-         
+
       startTimer(haloMove2BufTimer);
       {
-	const vector<int>& haloSendMap = loopData.voltageExchange.getSendMap();
+         const vector<int>& haloSendMap = loopData.voltageExchange.getSendMap();
          unsigned begin = loopData.fillSendBufOffset[tid];
          unsigned end   = loopData.fillSendBufOffset[tid+1];
          double* sendBuf = loopData.voltageExchange.getSendBuf();
@@ -682,11 +673,11 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
             sendBuf[ii] = VmArray[haloSendMap[ii]];
       }
       stopTimer(haloMove2BufTimer);
-      
+
       startTimer(reactionL2ArriveTimer);
       L2_BarrierWithSync_Arrive(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
       stopTimer(reactionL2ArriveTimer);
-      
+
       startTimer(reactionL2ResetTimer);
       L2_BarrierWithSync_Reset(loopData.reactionBarrier, &reactionHandle, sim.reactionThreads_.nThreads());
       stopTimer(reactionL2ResetTimer);
@@ -710,21 +701,21 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
 
    timestampBarrier("Entering threaded region", MPI_COMM_WORLD);
 
-   #pragma omp parallel
+#pragma omp parallel
    {
       int ompTid = omp_get_thread_num();
-      
+
       L2_BarrierHandle_t reactionHandle;
       L2_BarrierHandle_t diffusionHandle;
       L2_BarrierWithSync_InitInThread(loopData.reactionBarrier, &reactionHandle);
       L2_BarrierWithSync_InitInThread(loopData.diffusionBarrier, &diffusionHandle);
-      
+
       // setup matrix voltages for first timestep.
       if (sim.reactionThreads_.teamRank() >= 0) 
          sim.diffusion_->updateLocalVoltage(&VmArray[0]);
       if (sim.reactionThreads_.teamRank() == 0) 
          loopData.voltageExchange.fillSendBuffer(VmArray);
-      #pragma omp barrier
+#pragma omp barrier
       profileStart(simulationLoopTimer);
       if ( sim.diffusionThreads_.teamRank() >= 0) 
       {
@@ -732,7 +723,7 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
       }
       if ( sim.reactionThreads_.teamRank() >= 0) 
       {
-          reactionLoop(sim, loopData, reactionHandle, diffusionHandle,integrateLoop);
+         reactionLoop(sim, loopData, reactionHandle, diffusionHandle,integrateLoop);
       } 
       profileStop(simulationLoopTimer);
    }

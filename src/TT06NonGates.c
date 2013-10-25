@@ -381,14 +381,20 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
   fv6Func  = fv6General; 
   double fv[6];
  int cellType=-1; 
- double  c_K1  =  currentScales->K1; 
- double  c_Na  =  currentScales->Na *cnst.c20; 
- double  c_bNa =  currentScales->bNa*cnst.c21; 
- double  c_CaL =  currentScales->CaL; 
- double  c_bCa =  currentScales->bCa*cnst.c7; 
- double  c_NaCa=  currentScales->NaCa; 
- double  c_pCa =  currentScales->pCa*cnst.c24; 
- double  c_pK  =  currentScales->pK; 
+ double  c_K1   =  currentScales->K1; 
+ double  c_Na   =  currentScales->Na *cnst.c20; 
+ double  c_bNa  =  currentScales->bNa*cnst.c21; 
+ double  c_CaL  =  currentScales->CaL; 
+ double  c_bCa  =  currentScales->bCa*cnst.c7; 
+ double  c_NaCa =  currentScales->NaCa; 
+ double  c_pCa  =  currentScales->pCa*cnst.c24; 
+ double  c_pK   =  currentScales->pK; 
+ double  c_up   = currentScales->leak*cnst.c44;
+ double  c_leak = currentScales->leak*cnst.c43;
+ double  c_xfer = currentScales->xfer *cnst.c23;
+ double  c_rel  = currentScales->rel  *cnst.c40;
+ //CURRENT_SCALES *cS = currentScales; 
+ //printf("%e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n",cS->K1,cS->Na,cS->bNa,cS->CaL,cS->bCa,cS->NaCa,cS->pCa,cS->pK,cS->NaK,cS->Ks,cS->Kr,cS->to,cS->NaL,cS->up,cS->leak,cS->xfer,cS->rel); 
  for (int ii=0;ii<nCells;ii++) 
  {
    double c_NaK,c_Ks,c_Kr,c_to,c_NaL;
@@ -516,5 +522,6 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
 //  update voltages 
    __dVK_i[ii] = _dVK_i + dt*dVR ; 
    dVdt[ii]  = dVR;
+   //printf("%d %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n",ii,I_K1,I_Na,I_bNa,I_CaL,I_bCa,I_NaCa,I_pCa,I_pK,I_NaK,I_Ks,I_Kr,I_to,I_NaL,I_leak,I_up,I_rel,I_xfer); 
    }
 }
