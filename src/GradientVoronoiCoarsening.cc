@@ -639,12 +639,12 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
          ss << setw(7)<< right << valcolors_.nValues(color);
       
          ss << setprecision(8);
-         for(int it=0;it<eval_count_;++it)
+         for (int ii=0; ii<eval_count_; ++ii)
          {
-            ss <<" "<< setw(12)<< right << color_gradient[3*it+0];
-            ss <<" "<< setw(12)<< right << color_gradient[3*it+1];
-            ss <<" "<< setw(12)<< right << color_gradient[3*it+2];
-
+            ss <<" "<< setw(12)<< right << color_gradient[3*ii+0];
+            ss <<" "<< setw(12)<< right << color_gradient[3*ii+1];
+            ss <<" "<< setw(12)<< right << color_gradient[3*ii+2];
+            
          }
          ss << endl;
          string line(ss.str());
