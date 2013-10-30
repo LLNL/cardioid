@@ -197,10 +197,16 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
    {
       if ( (fabs(parms.tolerance/1e-4 - 1.0) < 1e-12) && parms.jhTauSmooth == 1 )fastReaction_ = parms.fastReaction; 
    }
-   update_gate_=TT06Func::updateGate;
-   update_nonGate_=update_nonGate;
-   if ((fastReaction_&0x00ff)   > 0) update_gate_   =TT06Func::updateGateFast;
-   if ((fastReaction_&0xff00)   > 0) update_nonGate_=update_nonGate_v1;
+   int fastGates =          fastReaction_&0x00ff; 
+   if ( fastGates   == 0) update_gate_   =TT06Func::updateGate;
+   if ( fastGates   >= 1) update_gate_   =TT06Func::updateGateFast;
+
+   int fastNonGates = fastReaction_/256 & 0x00ff; 
+   if (fastNonGates  == 0) update_nonGate_=update_nonGate;
+   if (fastNonGates  == 1) update_nonGate_=update_nonGateSimdM;
+   if (fastNonGates  == 2) update_nonGate_=update_nonGateSimdF;
+   if (fastNonGates  >= 3) update_nonGate_=update_nonGateSimdFA;
+
    int ompId =  omp_get_thread_num(); 
    //const int tid = group_.teamRank();
 

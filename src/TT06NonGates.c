@@ -458,6 +458,8 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
      I_sum =   I_bCa+I_pCa; // itmp4 =I_bCa+I_pCa; 
      __Ca_i[ii]   = _Ca_i + (dt*cnst.c9)*(sigm3*(0.5*I_sum-I_NaCa+I_xfer*cnst.c15+I_delta*cnst.c16));
      dVR  -= I_sum;
+     //if (ii %4 ==0) printf("\n%d dVR=%14.12f ", ii,dVR); 
+     //else printf("%14.12f ", ii,I_sum); 
     }
 
    double iK; 
@@ -483,6 +485,7 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
      I_NaL = c_NaL*CUBE(mGate[ii])*jLGate[ii]*dV1;
      I_bNa = c_bNa*dV1;
      I_Ks  = c_Ks*SQ(XsGate[ii])*dV2;
+     //if (ii == 0) printf("c_Ks = %15.12f %15.12f %15.12f %15.12f\n",c_Ks,SQ(XsGate[ii]),dV2, I_Ks); 
 
      double iNa =  3*I_NaCa - 1.5*I_NaK + I_Na + I_bNa + I_NaL;
      iK =   I_Ks   +     I_NaK + I_pK + I_K1  +  I_to + I_Kr; 
@@ -492,6 +495,9 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
      dVR    -=  iNa + iK - 2.0*I_NaCa;
      __Na_i[ii]  =   _Na_i  +  (dt*cnst.c9)*iNa;
    }
+     //if (ii %4 ==0) printf("\n%d dVR=%14.12f ", ii,dVR); else printf("%14.12f ", ii,dVR); 
+//if (ii == 0) printf("nonSIMD: dVR= %15.12f I= %15.12f %15.12f %15.12f %15.12f %15.12f %15.12f %15.12f %15.12f %15.12f %15.12f\n", 
+            //dVR, I_NaL, I_NaK, I_NaCa, I_Na, I_bNa, I_pK, I_K1, I_to, I_Kr, I_Ks);
 
 //  Update Ca_SS, Ca_SR, R_prime concentrations and fCass gate; 
    {
@@ -524,4 +530,5 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
    dVdt[ii]  = dVR;
    //printf("%d %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n",ii,I_K1,I_Na,I_bNa,I_CaL,I_bCa,I_NaCa,I_pCa,I_pK,I_NaK,I_Ks,I_Kr,I_to,I_NaL,I_leak,I_up,I_rel,I_xfer); 
    }
+   //printf("\n"); 
 }
