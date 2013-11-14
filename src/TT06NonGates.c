@@ -543,7 +543,7 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
      __Ca_SR[ii]   = _Ca_SR   - (dt*cnst.c9)*sigm5*(I_delta+I_rel);
      __R_prime[ii] = _R_prime + (dt*cnst.c9)*(cnst.c36 - tmp9*_R_prime);
 
-#ifdef fCassForm == TT06
+#if fCassForm == TT06
      double t1 = 1.0/(1.0+SQ(20*_Ca_ss)); 
      double mhu = 0.600000*t1+0.4000000;
      double tauR =    1.0/(80.0*t1+2.0);
