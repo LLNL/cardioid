@@ -49,6 +49,7 @@ void updateFunction(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
 
   vdt v_5_c3  =  vec_splats(0.5*SP[14]);
   vdt v_dt_c9 =  vec_mul(vec_splats(dt), vec_splats(SP[12]));
+  vdt v_dt =  vec_splats(dt);
 
 
    int cellType = cellTypeVector[0];
@@ -189,16 +190,15 @@ void updateFunction(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
 
    v_tmp = vec_msub(v_I_xfer, vec_splats(SP[10]), vec_mul(v_itmp5, vec_splats(SP[11])));
    v_tmp = vec_sub(vec_mul(v_I_sum,vec_splats(0.5)), vec_sub(v_I_NaCa, v_tmp));
-   v_tmp = vec_mul(vec_mul(v_tmp, v_sigm3), v_dt_c9);
+   v_tmp = vec_mul(v_tmp, v_sigm3);
 
-   v_states_Ca_i     = vec_add(v_states_Ca_i, v_tmp);
-   vec_st(v_states_Ca_i, 0, &_Ca_i[ii]);
+   vec_st(vec_madd(v_dt_c9,v_tmp,v_states_Ca_i), 0, &_Ca_i[ii]);
 
    v_dVR = vec_neg(v_I_sum);
    //printf("%d dVR=%14.12f %14.12f %14.12f %14.12f\n",ii+0,v_dVR get [0],v_dVR get [1],v_dVR get [2],v_dVR get [3] ); 
 
 
-   vdt v_tmp_dVK_i;
+   vdt v_dVK_i;
 //------------------------------------------
    vdt v_fv0 =  vec_madd(v_v, vec_splats(fvX_a[14]), vec_splats(fvX_a[15]));
    CSX = vec_ld(0, &fvX_a[20]);
@@ -372,23 +372,19 @@ void updateFunction(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
        v_iNaL = vec_mul(v_dV1,                      v_iNaL);
 
 //  states[dVK_i]     += dt*itmp3[ii];
-   vdt v_dt = vec_splats(dt);
-   v_tmp = vec_mul(v_dt, v_itmp3);
 
-   v_tmp_dVK_i = vec_ld(0, &_dVK_i[ii]);
-   v_tmp_dVK_i = vec_add(v_tmp_dVK_i, v_tmp);
+   v_dVK_i = vec_ld(0, &_dVK_i[ii]);
+   v_dVK_i = vec_madd(v_dt,v_itmp3,v_dVK_i);
 
 
 // states[Na_i]    += (dt*c9)*(iNaL[ii]*c22+itmp2[ii]+2.0*I_NaCa[ii]); 
 // states[Na_i]    += (dt*c9)*(iNaL[ii]+itmp2[ii]+2.0*I_NaCa[ii]);    //JNG
 
-   //v_tmp = vec_madd(v_iNaL, vec_splats(SP[22]), v_itmp2);
    v_tmp = vec_add(v_iNaL, v_itmp2);
    v_tmp = vec_madd(vec_splats(2.0),    v_I_NaCa,         v_tmp);
-   v_tmp = vec_mul(v_tmp,   vec_mul(v_dt,   vec_splats(SP[12])));
+   v_tmp = vec_mul(v_tmp,   vec_splats(SP[12]));
 
-   v_states_Na_i = vec_add(v_states_Na_i, v_tmp);
-   vec_st(v_states_Na_i, 0, &_Na_i[ii]); 
+   vec_st(vec_madd(v_dt,v_tmp,v_states_Na_i), 0, &_Na_i[ii]); 
 
 //  dVR[ii] -=  iNaL[ii] + itmp2[ii]+itmp3[ii];
 
@@ -475,8 +471,9 @@ void updateFunction(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
 
 //    double I_CaL = dGate[ii]*fGate[ii]*f2Gate[ii]*states[fCass_gate]*(fv4-states[Ca_ss]*fv3);
 
+   vdt v_fCass = vec_ld(0,_fCass+ii); 
    vdt v_I_CaL = vec_nmsub(v_fv3, v_states_Ca_ss, v_fv4);
-       v_I_CaL = vec_mul(v_I_CaL, vec_ld(0, &_fCass[ii]));
+       v_I_CaL = vec_mul(v_I_CaL, v_fCass);
        v_I_CaL = vec_mul(v_I_CaL, vec_ld(0, &f2Gate[ii]));
        v_I_CaL = vec_mul(v_I_CaL, vec_ld(0, &fGate[ii]));
        v_I_CaL = vec_mul(v_I_CaL, vec_ld(0, &dGate[ii]));
@@ -491,62 +488,61 @@ void updateFunction(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
        v_itmp7 = vec_mul(v_itmp7, vec_ld(0, &_R_prime[ii]));
        v_itmp7 = vec_mul(v_itmp7, v_sigmCa_ss);
 
-//     double t1 = 1.0/(1.0+SQ(20*states[Ca_ss])); 
-  vdt v_t1 = vec_mul(vec_splats(SP[32]), v_states_Ca_ss);
-      v_t1 = vec_madd(v_t1, v_t1, v_ONE);
-   //   v_t1 = vec_re(v_t1);  too much error
-   v_t1 = vec_swdiv_nochk(v_ONE, v_t1);
 
-//     double mhu = 0.600000*t1[ii]+0.4000000;
-   vdt v_mhu = vec_madd(vec_splats(SP[33]), v_t1, vec_splats(SP[34]));
-
-//     double tauR =    1.0/(80.0*t1[ii]+2.0);
-   vdt v_tauR = vec_swdiv_nochk(v_ONE, vec_madd(v_t1, vec_splats(SP[35]), vec_splats(2.0))); 
 
 //     states[Ca_ss]   += (dt*c9)*sigm6[ii]*(I_xfer[ii]+itmp7[ii]*c14+I_CaL[ii]*c13);   
+
    v_tmp = vec_madd(v_itmp7, vec_splats(SP[36]), v_I_xfer);
    v_tmp = vec_madd(v_I_CaL, vec_splats(SP[37]), v_tmp);
    v_tmp = vec_mul(v_tmp, v_sigm6);
-   v_tmp = vec_mul(v_tmp, v_dt_c9);
 
-   v_states_Ca_ss = vec_add(v_states_Ca_ss, v_tmp);
-   vec_st(v_states_Ca_ss, 0, &_Ca_ss[ii]);
+   vec_st(vec_madd(v_dt_c9,v_tmp,v_states_Ca_ss), 0, &_Ca_ss[ii]);
 
 //     states[Ca_SR]   += (dt*c9)*sigm5[ii]*(itmp5[ii]-c40*itmp7[ii]);
    v_tmp = vec_nmsub(v_itmp7, vec_splats(SP[38]), v_itmp5);
    v_tmp = vec_mul(v_tmp, v_sigm5);
-   v_tmp = vec_mul(v_tmp, v_dt_c9);
 
-   v_states_Ca_SR = vec_add(v_states_Ca_SR, v_tmp);
-   vec_st(v_states_Ca_SR, 0, &_Ca_SR[ii]); 
+   vec_st(vec_madd(v_dt_c9,v_tmp,v_states_Ca_SR), 0, &_Ca_SR[ii]); 
   
 //     states[R_prime] += (dt*c9)*(c36 - tmp9[ii]*states[R_prime]);
-   v_tmp = vec_nmsub(v_tmp9, vec_ld(0, &_R_prime[ii]), vec_splats(SP[30]) );
-   v_tmp = vec_mul(v_tmp, v_dt_c9);
+   vdt v_R_prime = vec_ld(0, &_R_prime[ii]);
+   v_tmp = vec_nmsub(v_tmp9, v_R_prime, vec_splats(SP[30]) );
 
-   vdt v_tmp_R_prime = vec_ld(0, &_R_prime[ii]);
-       v_tmp_R_prime = vec_add(v_tmp_R_prime, v_tmp);
-   vec_st(v_tmp_R_prime, 0, &_R_prime[ii]); 
+   vec_st(vec_madd(v_dt_c9,v_tmp,v_R_prime), 0, &_R_prime[ii]); 
 
+//     double t1 = 1.0/(1.0+SQ(20*states[Ca_ss])); 
+//     double mhu = 0.600000*t1[ii]+0.4000000;
+//     double tauR =    1.0/(80.0*t1[ii]+2.0);
 //     states[fCass_gate] +=  dt*(mhu[ii] - states[fCass_gate])*tauR[ii]; 
-   v_tmp = vec_sub(v_mhu, vec_ld(0, &_fCass[ii]));
-   v_tmp = vec_mul(v_tmp, v_tauR);
-   v_dt = vec_splats(dt);
-   v_tmp = vec_mul(v_tmp, v_dt);
 
-   vdt v_tmp_fCass_gate = vec_ld(0, &_fCass[ii]);
-       v_tmp_fCass_gate = vec_add(v_tmp_fCass_gate, v_tmp);
-   vec_st(v_tmp_fCass_gate, 0, &_fCass[ii]);
+#if fCassForm == TT06 
+   vdt v_t1 = vec_mul(vec_splats(SP[32]), v_states_Ca_ss);
+   v_t1 = vec_madd(v_t1, v_t1, v_ONE);
+   v_t1 = vec_swdiv_nochk(v_ONE, v_t1);
+   vdt v_mhu = vec_madd(vec_splats(SP[33]), v_t1, vec_splats(SP[34]));
+   vdt v_tauR = vec_swdiv_nochk(v_ONE, vec_madd(v_t1, vec_splats(SP[35]), vec_splats(2.0))); 
+#endif 
+
+#if fCassForm == RICE
+   vdt xCa_ss = vec_mul(vec_splats(1000.0),v_states_Ca_ss); 
+   vdt xCa_i  = vec_mul(vec_splats(1000.0),v_states_Ca_i ); 
+   vdt v_mhu = vec_madd(vec_swsqrt(xCa_i),xCa_i,v_ONE); 
+       v_mhu = vec_madd(vec_swsqrt(xCa_ss),xCa_ss,v_mhu); 
+   v_mhu = vec_swdiv(vec_splats(SP[33]),v_mhu); 
+   v_mhu =   vec_add(vec_splats(SP[34]),v_mhu); 
+   vdt v_tauR =   vec_swdiv(vec_splats(0.005),v_mhu); 
+#endif
+   
+   v_tmp = vec_sub(v_mhu, v_fCass);
+   v_tmp = vec_mul(v_tmp, v_tauR);
+   vec_st(vec_madd(v_dt,v_tmp,v_fCass), 0, &_fCass[ii]);
 
 //     dVR[ii] += I_CaL[ii]; 
    v_dVR = vec_add(v_dVR, v_I_CaL);
 
 //    states[dVK_i] +=  dt*dVR[ii] ; 
 
-   v_tmp = vec_mul(v_dVR, vec_splats(dt));
-
-   v_tmp_dVK_i = vec_add(v_tmp_dVK_i, v_tmp);
-   vec_st(v_tmp_dVK_i, 0, &_dVK_i[ii]);
+   vec_st(vec_madd(v_dt,v_dVR,v_dVK_i), 0, &_dVK_i[ii]);
 
 //    dVdt[ii]  = dVR[ii];
    vec_st(v_dVR,    0, &dVdt[ii]);

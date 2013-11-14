@@ -18,6 +18,7 @@
 extern "C" {
 #endif
 
+#include <math.h>
 #include <inttypes.h>
 
 /*
@@ -143,6 +144,15 @@ static inline vector4double vec_swdiv_nochk(vector4double op1, vector4double op2
   target.v[1]= op1.v[1]/op2.v[1];
   target.v[2]= op1.v[2]/op2.v[2];
   target.v[3]= op1.v[3]/op2.v[3];
+  return target;
+}
+static inline vector4double vec_swsqrt(vector4double op1)
+{
+  vector4double target;
+  target.v[0]= sqrt(op1.v[0]);
+  target.v[1]= sqrt(op1.v[1]);
+  target.v[2]= sqrt(op1.v[2]);
+  target.v[3]= sqrt(op1.v[3]);
   return target;
 }
 

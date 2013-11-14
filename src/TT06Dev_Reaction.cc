@@ -166,6 +166,10 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
       initialized = true;
       TT06Func::initCnst();
       initExp(); 
+      int pid;
+      MPI_Comm_rank(MPI_COMM_WORLD,&pid);	  
+      string fCassFormName[] = { "TT06", "RICE"}; 
+      printf("fCassForm = %s\n",fCassFormName[fCassForm].c_str()); 
    }
    nCellBuffer_ =  4*((nCells_+3)/4); 
    int nFourVecs = nCellBuffer_ >> 2;     // Number of full four vectors. 
@@ -373,6 +377,7 @@ void TT06Dev_Reaction::mkWorkBundles_(TT06Dev_ReactionParms& parms)
 
    int nThreads = group_.nThreads();
    int nSquads =  group_.nSquads();
+ if (nThreads ==0 && nSquads ==0) return;
    assert(nThreads%nSquads==0) ;
    int squadSize=1; 
    if (nSquads >0) squadSize= nThreads/nSquads;

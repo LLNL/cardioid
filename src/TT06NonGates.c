@@ -249,6 +249,28 @@ void initNonGateCnst()
    set_SP(cnst); 
 
 }
+void  update_fCassGate(double dt, int nCells, double *Ca_ss, double *Ca_i, double *g, double *mhu_a, double *tauR_a)
+{
+
+   for (int ii=0;ii<nCells;ii++)
+   {
+      double t1 = 1.0/(1.0+SQ(20*Ca_ss[ii]));
+      double mhu = 0.600000*t1+0.4000000;
+      double tauR =    1.0/(80.0*t1+2.0);
+      g[ii] +=  (mhu - g[ii])*tauR*dt;
+   }
+}
+void  update_fCassGateRice(double dt, int nCells, double *Ca_ss, double *Ca_i, double *g, double *mhu_a, double *tauR_a)
+{
+   for (int ii=0;ii<nCells;ii++)
+   {
+      double xCa_ss = 1000*Ca_ss[ii];
+      double xCa_i  = 1000*Ca_i[ii] ;
+      double mhu    = 0.6/(1.0 + SQ(xCa_ss)/sqrt(xCa_ss) + SQ(xCa_i)/sqrt(xCa_i)) + 0.4;
+      double tauR   = 0.005/mhu;
+      g[ii] +=  (mhu - g[ii])*tauR*dt;
+   }
+}
 void sampleLog(struct LogParms *logParms, int nCells, int offset, int *cellTypeVector, double *VM, double **state)
 {
 
@@ -511,18 +533,30 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
      double sigm6 = sigm(x6); 
      double tmp8  = (cnst.c18+cnst.c19*sigm4); //Sigm4
      double tmp9  = tmp8*_Ca_ss+cnst.c36; 
+
      I_CaL = c_CaL*dGate[ii]*fGate[ii]*f2Gate[ii]*_fCass*(fv4-_Ca_ss*fv3);  // renamed itmp1 to I_CaL
+
      double O =   SQ(_Ca_ss)*_R_prime/(tmp8*cnst.c17 + SQ(_Ca_ss));
      I_rel =cnst.c40* O*(_Ca_SR - _Ca_ss);
-
-     double t1 = 1.0/(1.0+SQ(20*_Ca_ss)); 
-     double mhu = 0.600000*t1+0.4000000;
-     double tauR =    1.0/(80.0*t1+2.0);
 
      __Ca_ss[ii]   = _Ca_ss   + (dt*cnst.c9)*sigm6*(I_xfer+I_rel*cnst.c14+I_CaL*cnst.c13);    
      __Ca_SR[ii]   = _Ca_SR   - (dt*cnst.c9)*sigm5*(I_delta+I_rel);
      __R_prime[ii] = _R_prime + (dt*cnst.c9)*(cnst.c36 - tmp9*_R_prime);
+
+#ifdef fCassForm == TT06
+     double t1 = 1.0/(1.0+SQ(20*_Ca_ss)); 
+     double mhu = 0.600000*t1+0.4000000;
+     double tauR =    1.0/(80.0*t1+2.0);
+#endif
+
+#if  fCassForm == RICE 
+      double xCa_ss = 1000*_Ca_ss;
+      double xCa_i  = 1000*_Ca_i ;
+      double mhu    = 0.6/(1.0 + xCa_ss*sqrt(xCa_ss) + xCa_i*sqrt(xCa_i)) + 0.4;
+      double tauR   = 0.005/mhu;
+#endif
      __fCass[ii]   = _fCass   + dt*(mhu - _fCass)*tauR; 
+
      dVR += I_CaL; 
    }
 //  update voltages 
@@ -532,3 +566,4 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
    }
    //printf("\n"); 
 }
+
