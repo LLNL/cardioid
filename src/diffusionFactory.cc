@@ -67,15 +67,15 @@ namespace
          defaultVariant = variantHint;
       string variant;
       objectGet(obj, "variant", variant, defaultVariant);
-      if (variant == "omp")
+      if (variant == "omp" || simLoopType == Simulate::omp)
          return new FGRDiffusionOMP(p, anatomy);
-      if (variant == "threads")
+      else if (variant == "threads")
          return new FGRDiffusionThreads(p, anatomy, threadInfo, reactionThreadInfo);
-      if (variant == "simd")
+      else if (variant == "simd")
          return new FGRDiffusion(p, anatomy, threadInfo, reactionThreadInfo);
-      if (variant == "strip" )
+      else if (variant == "strip" )
          return new FGRDiffusionStrip(p, anatomy, threadInfo, reactionThreadInfo);
-      if (variant == "overlap" )
+      else if (variant == "overlap" )
          return new FGRDiffusionOverlap(p, anatomy, threadInfo, reactionThreadInfo);
 
 
