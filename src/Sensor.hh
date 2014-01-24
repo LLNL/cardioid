@@ -9,6 +9,7 @@ struct SensorParms
    int printRate;
    double startTime;
    double endTime;
+   double value;
 };
 
 
@@ -19,7 +20,8 @@ class Sensor
    : evalRate_(p.evalRate),
      printRate_(p.printRate),
      startTime_(p.startTime),
-     endTime_(p.endTime)
+     endTime_(p.endTime),
+     value_(p.value)
    {}
    virtual ~Sensor() {};
 
@@ -65,7 +67,8 @@ class Sensor
    int printRate_;
    double startTime_;
    double endTime_;
-   
+   double value_;
+    
    virtual void print(double time, int loop) = 0;
    virtual void eval(double time, int loop) = 0;
 };

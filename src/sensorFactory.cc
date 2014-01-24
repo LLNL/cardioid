@@ -12,6 +12,7 @@
 #include "GradientVoronoiCoarsening.hh"
 #include "CaAverageSensor.hh"
 #include "MaxDVSensor.hh"
+#include "DVThreshSensor.hh"
 #include "StateVariableSensor.hh"
 #include "ECGSensor.hh"
 #include "Simulate.hh"
@@ -32,6 +33,8 @@ namespace
    Sensor* scanCaSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                         const Reaction&, const Simulate& sim);
    Sensor* scanMaxDvSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
+                           const PotentialData& vdata);
+   Sensor* scanDVThreshSensor(OBJECT* obj, SensorParms& sp, const Anatomy& anatomy,
                            const PotentialData& vdata);
    Sensor* scanStateVariableSensor(OBJECT* obj, const SensorParms& sp, const Simulate& sim);
    Sensor* scanECGSensor(OBJECT* obj, const SensorParms& sp, const Simulate& sim);
@@ -61,6 +64,7 @@ namespace
       "ECG"\,
       "gradientVoronoiCoarsening"\.
       "maxDV"\,
+      "DVThresh"\,
       "MinMax"\,
       "pointList"\,
       "stateVariable"\,
@@ -86,6 +90,8 @@ namespace
     @subpage SENSOR_gradientVoronoiCoarsening
     
     @subpage SENSOR_maxDV
+    
+    @subpage SENSOR_DVThresh
     
     @subpage SENSOR_MinMax
     
@@ -117,6 +123,8 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
      return scanECGSensor(obj, sp, sim);
   else if (method == "maxDV")
      return scanMaxDvSensor(obj, sp, sim.anatomy_,sim.vdata_);
+  else if (method == "DVThresh")
+     return scanDVThreshSensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "minmax" || method == "MinMax")
      return scanMinMaxSensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "pointList")
@@ -281,6 +289,29 @@ namespace
       objectGet(obj, "filename",  filename,  "cout");
 
       return new MaxDVSensor(sp, anatomy, vdata, MPI_COMM_WORLD, filename);
+   }
+}
+namespace
+{
+   /*!
+     @page SENSOR_DVThresh SENSOR DVThresh method
+
+     Stops the simulation if the absolute value of both the minimum and maximum 
+     of $dV_m/dt$ over all active cells is less than the given threshold.
+
+     @beginkeywords
+     @kw(filename, Name for output file., stdout}
+     @endkeywords
+     
+    */
+   Sensor* scanDVThreshSensor(OBJECT* obj, SensorParms& sp, const Anatomy& anatomy,
+                           const PotentialData& vdata)
+   {
+      //get threshold value from object.data
+      double val;
+      objectGet(obj, "threshold",  val,  "-1.0");
+      sp.value = val;
+      return new DVThreshSensor(sp, anatomy, vdata, MPI_COMM_WORLD);
    }
 }
 namespace

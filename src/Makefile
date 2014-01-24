@@ -68,7 +68,7 @@ HEARTSRC= \
 	VoronoiCoarsening.cc DataVoronoiCoarsening.cc GradientVoronoiCoarsening.cc \
 	CaAverageSensor.cc \
 	ECGSensor.cc \
-	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc \
+	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc DVThreshSensor.cc \
    StateVariableSensor.cc
 
 SPISRC=	 spi_impl.c
