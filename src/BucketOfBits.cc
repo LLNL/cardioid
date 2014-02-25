@@ -39,6 +39,8 @@ BucketOfBits::BucketOfBits(const vector<string>& fieldNames,
          fieldTypes_.push_back(floatType);
       else if (fieldTypes[ii] == "u")
          fieldTypes_.push_back(intType);
+      else if (fieldTypes[ii] == "d")   // ewd: d used by GradientVoronoiSensor, needs to be supported
+         fieldTypes_.push_back(intType);
       else if (fieldTypes[ii] == "f4")
          fieldTypes_.push_back(f4Type);
       else if (fieldTypes[ii] == "f8")

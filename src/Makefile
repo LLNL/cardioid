@@ -221,6 +221,15 @@ compareSnapshots:
 compareSnapshots-target: $(HEARTOBJS) $(OBJDIR)/compareSnapshots.o Version.cc
 	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(OBJDIR)/compareSnapshots.o $(LDFLAGS)
 
+collectGradientTraces: 
+	@$(MAKE) --no-print-directory makedirs collectGradientTraces-target \
+	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH) \
+	CFLAGS="$(CFLAGS_OPT)" CXXFLAGS="$(CXXFLAGS_OPT)" \
+	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=collectGradientTraces-$(ARCH)
+
+collectGradientTraces-target: $(HEARTOBJS) $(OBJDIR)/collectGradientTraces.o Version.cc
+	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(OBJDIR)/collectGradientTraces.o $(LDFLAGS)
+
 $(DDCMD_FILES):
 	./mkLinks_ddcMD.sh $@
 
@@ -251,6 +260,7 @@ clean :
 	rm -f .depend_$(ARCH)*
 	rm -f $(BINDIR)/testLoadBalancer-$(ARCH)
 	rm -f $(BINDIR)/compareSnapshots-$(ARCH)
+	rm -f $(BINDIR)/collectGradientTraces-$(ARCH)
 	rm -f testGridRouter
 
 distclean: clean

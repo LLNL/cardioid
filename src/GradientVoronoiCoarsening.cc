@@ -591,7 +591,8 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
       }
       else
       {
-         Pprintf(file, "  datatype = FIXRECORDASCII;\n");
+         //Pprintf(file, "  datatype = FIXRECORDASCII;\n");
+         Pprintf(file, "  datatype = VARRECORDASCII;\n");
          const int lrec    = 20+13*3*eval_count_;
          const int nfields = 2+3*eval_count_; 
          Pprintf(file, "  lrec = %d;\n", lrec);
@@ -599,7 +600,8 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
          Pprintf(file, "  nrecords = %llu;\n", nb_sampling_pts_);
          string fieldNames="gid nvals " + concat(vector<string>(eval_count_, "gx gy gz"));
          Pprintf(file, "  field_names = %s;\n", fieldNames.c_str());
-         string fieldTypes="u d " + concat(vector<string>(eval_count_, "f f f"));
+         //string fieldTypes="u d " + concat(vector<string>(eval_count_, "f f f"));
+         string fieldTypes="u u " + concat(vector<string>(eval_count_, "f f f"));
          Pprintf(file, "  field_types = %s;\n", fieldTypes.c_str());
       }
       Pprintf(file, "  nfiles = %u;\n", nfiles);
