@@ -110,7 +110,7 @@ int main(int argc, char** argv)
          double grady = gradientData[jj][3*ii+1];
          double gradz = gradientData[jj][3*ii+2];
          double gradLen = sqrt(gradx*gradx + grady*grady + gradz*gradz);
-         double deltaGrad = gradLen-lastVal;
+         double deltaGrad = abs(gradLen-lastVal);
          if (jj == 0)
             deltaGrad = 0.0;
          lastVal = gradLen;
@@ -170,7 +170,7 @@ int main(int argc, char** argv)
             double grady = gradientData[jj][3*ii+1];
             double gradz = gradientData[jj][3*ii+2];
             double gradLen = sqrt(gradx*gradx + grady*grady + gradz*gradz);
-            double deltaGrad = gradLen-lastVal;
+            double deltaGrad = abs(gradLen-lastVal);
             if (jj == 0)
                deltaGrad = 0.0;
             lastVal = gradLen;
