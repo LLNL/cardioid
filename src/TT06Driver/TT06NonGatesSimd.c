@@ -1,1 +1,0 @@
-../TT06NonGatesSimd.c
