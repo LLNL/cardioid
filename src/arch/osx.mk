@@ -1,6 +1,6 @@
 #------------------------------------------------------------------------
 
-CXX=mpic++ -fopenmp
+CXX=mpicxx -fopenmp
 CC =mpicc --std=gnu99
 LD=$(CXX)
 

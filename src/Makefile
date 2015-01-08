@@ -56,15 +56,17 @@ HEARTSRC= \
 	TT06_CellML_Reaction.cc  \
 	TT06Dev_Reaction.cc \
 	TT06_RRG_Reaction.cc \
+	OHaraRudy_Reaction.cc \
 	TT06Tau.cc \
 	TT06Func.cc \
 	pade.cc \
-	 TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc \
-	 TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc \
-	 TT06_RRG.cc \
-	 TestStimulus.cc PointStimulus.cc BoxStimulus.cc \
-	 PeriodicPulse.cc RandomPulse.cc \
-	 PointListSensor.cc ActivationTimeSensor.cc \
+   TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc \
+   TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc \
+	TT06_RRG.cc \
+   OHaraRudy.cc \
+	TestStimulus.cc PointStimulus.cc BoxStimulus.cc \
+	PeriodicPulse.cc RandomPulse.cc \
+	PointListSensor.cc ActivationTimeSensor.cc \
 	VoronoiCoarsening.cc DataVoronoiCoarsening.cc GradientVoronoiCoarsening.cc \
 	CaAverageSensor.cc \
 	ECGSensor.cc \
@@ -72,7 +74,7 @@ HEARTSRC= \
    StateVariableSensor.cc
 
 SPISRC=	 spi_impl.c
-SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c
+SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c OHaraRudy_c.c 
 
 DDCMD_FILES = \
 	codata.h \
@@ -199,6 +201,9 @@ $(BINDIR)/$(EXENAME): $(CARDIOIDOBJS) Version.cc
 	-DTARGET=$(EXENAME) \
 	-DARCH=$(ARCH) 
 
+OHaraRudy.cc : OHaraRudy.h
+	awk -f OHaraRudyMkInclude.awk OHaraRudy.h
+	touch OHaraRudy.cc
 
 testLoadBalancer:
 	@$(MAKE) --no-print-directory makedirs testLoadBalancer-target \

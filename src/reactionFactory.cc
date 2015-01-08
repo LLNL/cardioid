@@ -12,7 +12,8 @@
 #include "TT06Dev_Reaction.hh"
 #include "pade.hh"
 #include "TT06_RRG_Reaction.hh"    // TT06 with modifications from Rice et al.
-#include "TT06Func.hh"
+#include "OHaraRudy_Reaction.hh"    // TT06 with modifications from Rice et al.
+//#include "TT06Func.hh"
 #include "ReactionFHN.hh"
 #include "NullReaction.hh"
 #include "TestReaction.hh"
@@ -28,6 +29,7 @@ namespace
    Reaction* scanTT06_CellML(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanTT06Dev(OBJECT* obj, double dt, Anatomy& anatomy, const ThreadTeam& group, const vector<string>& scaleCurrents);
    Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy);
+   Reaction* scanOHaraRudy(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanFHN(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanNull(OBJECT* obj);
    Reaction* scanTest(OBJECT* obj);
@@ -54,6 +56,8 @@ Reaction* reactionFactory(const string& name, double dt, Anatomy& anatomy,
       return scanTT06Dev(obj, dt, anatomy, group, scaleCurrents);
    else if (method == "TT06_RRG" )
       return scanTT06_RRG(obj, anatomy);
+   else if (method == "OHaraRudy" )
+      return scanOHaraRudy(obj, anatomy);
    else if (method == "FHN" || method == "FitzhughNagumo")
       return scanFHN(obj, anatomy);
    else if (method == "null")
@@ -224,6 +228,15 @@ namespace
    Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy)
    {
       Reaction *reaction = new TT06_RRG_Reaction(anatomy);
+      return  reaction; 
+   }
+}
+
+namespace
+{
+   Reaction* scanOHaraRudy(OBJECT* obj, const Anatomy& anatomy)
+   {
+      Reaction *reaction = new OHaraRudy_Reaction(anatomy);
       return  reaction; 
    }
 }
