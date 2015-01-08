@@ -33,8 +33,8 @@ OHaraRudy::OHaraRudy(CELLPARMS cell, STATE state)
 double OHaraRudy::calc(double dt, double Vm, double iStim)
 {
    STATE D; 
-   OHaraRudy::state_.Vm = Vm;
-   double dVm = OHaraRudyIntegrate(dt, iStim, &(OHaraRudy::state_),(OHaraRudy::cellParms_),&D); 
+   state_.Vm = Vm;
+   double dVm = OHaraRudyIntegrate(dt, iStim, &state_,cellParms_,&D); 
    //printf("dVm=%e\n",dVm); 
    return dVm;  
 }
