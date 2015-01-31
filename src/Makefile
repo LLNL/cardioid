@@ -67,6 +67,7 @@ HEARTSRC= \
 	TestStimulus.cc PointStimulus.cc BoxStimulus.cc \
 	PeriodicPulse.cc RandomPulse.cc \
 	PointListSensor.cc ActivationTimeSensor.cc \
+	ActivationAndRecoverySensor.cc \
 	VoronoiCoarsening.cc DataVoronoiCoarsening.cc GradientVoronoiCoarsening.cc \
 	CaAverageSensor.cc \
 	ECGSensor.cc \

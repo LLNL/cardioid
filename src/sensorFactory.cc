@@ -7,6 +7,7 @@
 #include "Sensor.hh"
 #include "PointListSensor.hh"
 #include "ActivationTimeSensor.hh"
+#include "ActivationAndRecoverySensor.hh"
 #include "MinMaxSensor.hh"
 #include "DataVoronoiCoarsening.hh"
 #include "GradientVoronoiCoarsening.hh"
@@ -59,6 +60,7 @@ namespace
       called, 1}
     @kw{method, Choose from
       "activationTime"\,
+      "activationAndRecovery"\,
       "averageCa"\,
       "dataVoronoiCoarsening"\,
       "ECG"\,
@@ -201,6 +203,53 @@ namespace
    }
 }
 
+namespace
+{
+   /*!
+     @page SENSOR_activationAndRecovery SENSOR activationandRecovery method
+
+     Writes a file containing the times at which each cell activates and
+     recovers.  Unlike the activation time sensor that only writes the
+     first activation, this sensor writes all activation and all
+     recovery times since the last time the print function was called.
+
+     A cell is considered activated when the membrane voltage crosses
+     the threshhold with positive slope.  Recovery is crossing the
+     threshhold with a negative slope.  This sensor is intended to
+     satisfy the requirements of the Second N-version Cardiac
+     Electrophysiology Benchmark Specification.
+
+     Note that this senor does not write a file with the header usually
+     associated with pio files.  The file is formatted to satisfy the
+     benchmark spec.  Namely, each record lists the x, y, and z
+     coordinates of a cell and all of the activation and recovery times
+     for that cell.
+     x0 y0 z0 tA1 tR1 tA2 tR2 ...
+     x1 y1 z1 tA1 tR1 tA2 tR2 ...
+     
+
+     @beginkeywords
+     @kw{filename, Name of the pio file into which data is written,
+         activationTime}
+     @kw{nFiles, The number of physical files for each pio file.
+         If nFiles is set to zero cardioid will choose a default value
+         that is scaled to the number of MPI ranks in the job.,
+         0}
+     @kw{threshhold, The voltage above which a cell is considered
+     activated., -40 mV}
+     @endkeywords
+    */
+   Sensor* scanActivationAndRecoverySensor(
+      OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
+      const PotentialData& vdata)
+   {
+      ActivationAndRecoverySensorParms p;
+      objectGet(obj, "filename",   p.filename,   "activationTime");
+      objectGet(obj, "nFiles",     p.nFiles,     "0");
+      objectGet(obj, "threshhold", p.threshhold, "-40", "voltage");
+      return new ActivationAndRecoverySensor(sp, p, anatomy, vdata);
+   }
+}
 namespace
 {
    Sensor* scanVoronoiCoarseningSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
