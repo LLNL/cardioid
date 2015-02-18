@@ -215,7 +215,8 @@ void simulationLoop(Simulate& sim)
 
       if( sim.checkIO() )sim.bufferReactionData();
 
-      printData(sim);
+      if ( sim.loop_ % sim.printRate_ == 0) 
+         printData(sim);
       loopIO(sim,0);
    }
    profileStop(simulationLoopTimer);
@@ -628,7 +629,6 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
          sim.time_ += sim.dt_;
          ++sim.loop_;
       }
-
       if ( tid == 0 && sim.loop_ % sim.printRate_ == 0) 
          printData(sim);
 

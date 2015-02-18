@@ -247,7 +247,8 @@ void INaFunc(CELLPARMS *cP, STATE *state, DERIVED *derived, CURRENTS *I, STATE *
 
       I->NaFast = cP->GNaFast*(V-ENa)*m*m*m*((1-phiCaMK)*h*j+phiCaMK*hCaMK*jCaMK); 
 
-      double mMhu = sige(-(V + 39.57)/9.871); 
+      //double mMhu =  sige(-(V + 39.57)/9.871);  //OHR orginal  mMhu
+      double mMhu = SQ(sige(-(V + 56.86)/9.030)); //TT06  mMhu
       mTauR = 6.765*exp((V + 11.64)/34.77)+8.552*exp(-(V + 77.42)/5.955); 
       double  dm = (mMhu-m)*mTauR;  // gate
 
@@ -275,7 +276,9 @@ void INaFunc(CELLPARMS *cP, STATE *state, DERIVED *derived, CURRENTS *I, STATE *
       D->j = dj;
       D->jCaMK = djCaMK; 
       D->hCaMKSlow=dhCaMKSlow; 
-      state->m += dt*dm;
+      //state->m += dt*dm;    //Forward Euler for original OR mGate 
+      double tauRdt = 1-exp(-dt*mTauR); //Rush Larsen needed with TT06 mMhu; 
+      state->m += (mMhu-m)*tauRdt;     // Rush Larsen needed with TT06 mMhu; 
       state->hFast += dt*dhFast; 
       state->hSlow += dt*dhSlow; 
       state->j     += dt*dj; 
