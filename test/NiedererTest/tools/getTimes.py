@@ -4,6 +4,26 @@ import sys
 
 def main():
     
+    nx=0
+    ny=0
+    nz=0
+    
+    for line in sys.stdin:
+#        print line
+        if line.find("nx") != -1:
+            nx = long(line.split()[2][:-1])
+        if line.find("ny") != -1:
+            ny = long(line.split()[2][:-1])
+        if line.find("nz") != -1:
+            nz = long(line.split()[2][:-1])
+        if line.find("}") != -1: 
+            break
+
+
+    if nx==0 or ny==0 or nz==0 :
+        print "Error finding nx, ny or nz"
+        exit(-1)
+
     xMax = 0
     xMin = 0
     yMax = 0
@@ -22,12 +42,15 @@ def main():
     
     for line in sys.stdin:
         cols = line.split()
-        if len(cols) != 4 : continue
+        if len(cols) != 2 : continue
 
-        x = float(cols[0])
-        y = float(cols[1])
-        z = float(cols[2])
-        t = float(cols[3])
+        gid = long(cols[0])
+        t = float(cols[1])
+
+        x = gid % nx
+        gid /= nx
+        y = gid % ny
+        z = gid / ny
 
         if x < xMin : xMin = x
         if x > xMax : xMax = x
