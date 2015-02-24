@@ -6,11 +6,17 @@ class Anatomy;
 class TT06_RRG;
 class BucketOfBits;
 
+struct TT06_RRG_ReactionParms
+{
+   double Ko;
+};
+
+
 class TT06_RRG_Reaction : public Reaction
 {
  public:
    
-   TT06_RRG_Reaction(const Anatomy& anatomy);
+   TT06_RRG_Reaction(const Anatomy& anatomy, const TT06_RRG_ReactionParms &parms);
    std::string methodName() const {return "TT06_RRG";}
 
    void calc(double dt,
@@ -33,6 +39,8 @@ class TT06_RRG_Reaction : public Reaction
    
  private:
 
+   void initConst(const TT06_RRG_ReactionParms &parms); 
+   double constants_[54]; 
    std::vector<int>      ttType_; // maps cellType to ttType
    std::vector<TT06_RRG> cells_;
 };

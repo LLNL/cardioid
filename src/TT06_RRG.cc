@@ -5,11 +5,19 @@
 
 using namespace std;
 
-double TT06_RRG::constants_[53];
+double *TT06_RRG::constants_=NULL;
 
 TT06_RRG::TT06_RRG(int cellType)
 {
-   initConsts(cellType);
+   assert(constants_ != NULL); 
+   initCellParms(cellType);
+   initStates(cellType);
+   defaultVoltage_ = states_[0];
+}
+TT06_RRG::TT06_RRG(int cellType, double *constants)
+{
+   constants_=constants; 
+   initCellParms(cellType);
    initStates(cellType);
    defaultVoltage_ = states_[0];
 }
@@ -27,11 +35,11 @@ double TT06_RRG::defaultVoltage()
 }
 
 void TT06_RRG::getCheckpointInfo(vector<string>& name,
-                                 vector<string>& unit)
+      vector<string>& unit)
 {
    const HandleMap& handleMap = getHandleMap();
    for (HandleMap::const_iterator
-           iter=handleMap.begin(); iter!=handleMap.end(); ++iter)
+         iter=handleMap.begin(); iter!=handleMap.end(); ++iter)
    {
       if (iter->second.checkpoint_)
       {
@@ -51,42 +59,42 @@ int TT06_RRG::getVarHandle(const string& varName)
 
 void TT06_RRG::setValue(int varHandle, double value)
 {
-//ddt   cout << "Setting var "<< varHandle << "=" << value<<endl;
-   
+   //ddt   cout << "Setting var "<< varHandle << "=" << value<<endl;
+
    switch (varHandle)
    {
-     case undefinedName:
-      assert(false);
-      break;
-     case s_switch:   s_switch_ = int(value);  break;
-     case g_Ks:       g_Ks_ = value;           break;
-     case g_Kr:       g_Kr_ = value;           break;
-     case g_to:       g_to_ = value;           break;
-     case P_NaK:      P_NaK_ = value;          break;
-     case g_NaL:      g_NaL_ = value;          break;
-     case Vm:         states_[0] = value;      break;
-     case K_i:        states_[1] = value;      break;
-     case Na_i:       states_[2] = value;      break;
-     case Ca_i:       states_[3] = value;      break;
-     case Xr1_gate:   states_[4] = value;      break;
-     case Xr2_gate:   states_[5] = value;      break;
-     case Xs_gate:    states_[6] = value;      break;
-     case m_gate:     states_[7] = value;      break;
-     case h_gate:     states_[8] = value;      break;
-     case j_gate:     states_[9] = value;      break;
-     case Ca_ss:      states_[10] = value;     break;
-     case d_gate:     states_[11] = value;     break;
-     case f_gate:     states_[12] = value;     break;
-     case f2_gate:    states_[13] = value;     break;
-     case fCass_gate: states_[14] = value;     break;
-     case s_gate:     states_[15] = value;     break;
-     case r_gate:     states_[16] = value;     break;
-     case Ca_SR:      states_[17] = value;     break;
-     case R_prime:    states_[18] = value;     break;
-     case jL_gate:    states_[19] = value;     break;
-     case nVars:
-      assert(false);
-      break;
+      case undefinedName:
+         assert(false);
+         break;
+      case s_switch:   s_switch_ = int(value);  break;
+      case g_Ks:       g_Ks_ = value;           break;
+      case g_Kr:       g_Kr_ = value;           break;
+      case g_to:       g_to_ = value;           break;
+      case P_NaK:      P_NaK_ = value;          break;
+      case g_NaL:      g_NaL_ = value;          break;
+      case Vm:         states_[0] = value;      break;
+      case K_i:        states_[1] = value;      break;
+      case Na_i:       states_[2] = value;      break;
+      case Ca_i:       states_[3] = value;      break;
+      case Xr1_gate:   states_[4] = value;      break;
+      case Xr2_gate:   states_[5] = value;      break;
+      case Xs_gate:    states_[6] = value;      break;
+      case m_gate:     states_[7] = value;      break;
+      case h_gate:     states_[8] = value;      break;
+      case j_gate:     states_[9] = value;      break;
+      case Ca_ss:      states_[10] = value;     break;
+      case d_gate:     states_[11] = value;     break;
+      case f_gate:     states_[12] = value;     break;
+      case f2_gate:    states_[13] = value;     break;
+      case fCass_gate: states_[14] = value;     break;
+      case s_gate:     states_[15] = value;     break;
+      case r_gate:     states_[16] = value;     break;
+      case Ca_SR:      states_[17] = value;     break;
+      case R_prime:    states_[18] = value;     break;
+      case jL_gate:    states_[19] = value;     break;
+      case nVars:
+                       assert(false);
+                       break;
    }
 }
 
@@ -94,44 +102,44 @@ double TT06_RRG::getValue(int handle) const
 {
    switch (handle)
    {
-     case undefinedName:
-      assert(false);
-      break;
-     case s_switch:   return s_switch_;       break;
-     case g_Ks:       return g_Ks_;           break;
-     case g_Kr:       return g_Kr_;           break;
-     case g_to:       return g_to_;           break;
-     case P_NaK:      return P_NaK_;          break;
-     case g_NaL:      return g_NaL_;          break;
-     case Vm:         return states_[0];      break;
-     case K_i:        return states_[1];      break;
-     case Na_i:       return states_[2];      break;
-     case Ca_i:       return states_[3];      break;
-     case Xr1_gate:   return states_[4];      break;
-     case Xr2_gate:   return states_[5];      break;
-     case Xs_gate:    return states_[6];      break;
-     case m_gate:     return states_[7];      break;
-     case h_gate:     return states_[8];      break;
-     case j_gate:     return states_[9];      break;
-     case Ca_ss:      return states_[10];     break;
-     case d_gate:     return states_[11];     break;
-     case f_gate:     return states_[12];     break;
-     case f2_gate:    return states_[13];     break;
-     case fCass_gate: return states_[14];     break;
-     case s_gate:     return states_[15];     break;
-     case r_gate:     return states_[16];     break;
-     case Ca_SR:      return states_[17];     break;
-     case R_prime:    return states_[18];     break;
-     case jL_gate:    return states_[19];     break;
-     case nVars:
-      assert(false);
-      break;
+      case undefinedName:
+         assert(false);
+         break;
+      case s_switch:   return s_switch_;       break;
+      case g_Ks:       return g_Ks_;           break;
+      case g_Kr:       return g_Kr_;           break;
+      case g_to:       return g_to_;           break;
+      case P_NaK:      return P_NaK_;          break;
+      case g_NaL:      return g_NaL_;          break;
+      case Vm:         return states_[0];      break;
+      case K_i:        return states_[1];      break;
+      case Na_i:       return states_[2];      break;
+      case Ca_i:       return states_[3];      break;
+      case Xr1_gate:   return states_[4];      break;
+      case Xr2_gate:   return states_[5];      break;
+      case Xs_gate:    return states_[6];      break;
+      case m_gate:     return states_[7];      break;
+      case h_gate:     return states_[8];      break;
+      case j_gate:     return states_[9];      break;
+      case Ca_ss:      return states_[10];     break;
+      case d_gate:     return states_[11];     break;
+      case f_gate:     return states_[12];     break;
+      case f2_gate:    return states_[13];     break;
+      case fCass_gate: return states_[14];     break;
+      case s_gate:     return states_[15];     break;
+      case r_gate:     return states_[16];     break;
+      case Ca_SR:      return states_[17];     break;
+      case R_prime:    return states_[18];     break;
+      case jL_gate:    return states_[19];     break;
+      case nVars:
+                       assert(false);
+                       break;
    }
    return 0.;
 }
 
 void TT06_RRG::getValue(const vector<int>& handle,
-                        vector<double>& value) const
+      vector<double>& value) const
 {
    for (unsigned ii=0; ii<handle.size(); ++ii)
       value[ii] = getValue((VarHandle)handle[ii]);
@@ -188,11 +196,11 @@ HandleMap& TT06_RRG::getHandleMap()
  *  generated code from the CellML web site (retrieved 8-Nov-2011).
  *  This code has been altered as follows:
  *
- *  1.  initConsts was split into two functions, initConsts and
- *  initStates.  Both are member functions, depend on cell type and
- *  initialize the appropriate class members directly.  initConsts 
- *  initializes the constants that vary from cell to cell as well as the
- *  static constants_ array.
+ *  1.  initConsts was split into three functions, initConst, initCellParms 
+ *  and initStates.  All three  are member functions and initialize the 
+ *  appropriate class members directly.  initConsts initializes the static 
+ *  constants_ array, initCellParms initializes the parameters that vary 
+ *  from cell to cell and initState initializes the state_ variables. 
  *
  *  2.  computeRates was converted to a member function.  The argument
  *  list was simplified.  The rates and algebraics arrays are created in
@@ -214,95 +222,36 @@ HandleMap& TT06_RRG::getHandleMap()
  */ 
 
 
-void TT06_RRG::initConsts(int cellType)
+void TT06_RRG::initCellParms(int cellType)
 {
-   static bool initialized = false;
-   if (! initialized)
-   {
-      initialized = true;
-      constants_[0] = 8314.472;
-      constants_[1] = 310;
-      constants_[2] = 96485.3415;
-      constants_[3] = 0.185;
-      constants_[4] = 0.016404;
-//unused      constants_[5] = 10;
-//unused      constants_[6] = 1000;
-//unused      constants_[7] = 1;
-//unused      constants_[8] = 52;
-      constants_[9] = 0.03;
-      constants_[10] = 5.4;
-      constants_[11] = 140;
-      constants_[12] = 2;
-      constants_[13] = 5.405;
-      constants_[14] = 0.153;
-// unused      constants_[15] = 0.098;
-      constants_[16] = 14.838;
-      constants_[17] = 0.00029;
-      constants_[18] = 0.0000398;
-      constants_[19] = 0.000592;
-//unused      constants_[20] = 0.294;
-//unused      constants_[21] = 2.724;
-      constants_[22] = 1;
-      constants_[23] = 40;
-      constants_[24] = 1000;
-      constants_[25] = 0.1;
-      constants_[26] = 2.5;
-      constants_[27] = 0.35;
-      constants_[28] = 1.38;
-      constants_[29] = 87.5;
-      constants_[30] = 0.1238;
-      constants_[31] = 0.0005;
-      constants_[32] = 0.0146;
-      constants_[33] = 0.15;
-      constants_[34] = 0.045;
-      constants_[35] = 0.06;
-      constants_[36] = 0.005;
-      constants_[37] = 1.5;
-      constants_[38] = 2.5;
-      constants_[39] = 1;
-      constants_[40] = 0.102;
-      constants_[41] = 0.0038;
-      constants_[42] = 0.00025;
-      constants_[43] = 0.00036;
-      constants_[44] = 0.006375;
-      constants_[45] = 0.2;
-      constants_[46] = 0.001;
-      constants_[47] = 10;
-      constants_[48] = 0.3;
-      constants_[49] = 0.4;
-      constants_[50] = 0.00025;
-      constants_[51] = 0.001094;
-      constants_[52] = 0.00005468;
-   }
-
    switch (cellType)
    {
-     case 0: // Endo
-      g_Ks_ = 0.392;
-      g_Kr_ = 0.153;
-      g_to_ = 0.073;
-      P_NaK_ = 3.0;
-      g_NaL_ = 0.15;
-      s_switch_ = 0;
-      break;
-     case 1: // Mid
-      g_Ks_ = 0.098;
-      g_Kr_ = 0.153;
-      g_to_ = 0.294;
-      P_NaK_ = 3.0;
-      g_NaL_ = 0.6;
-      s_switch_ = 1;
-      break;
-     case 2: // Epi
-      g_Ks_ = 0.392;
-      g_Kr_ = 0.153;
-      g_to_ = 0.294;
-      P_NaK_ = 3.0;
-      g_NaL_ = 0.15;
-      s_switch_ = 1;
-      break;
-     default:
-      assert(false);
+      case 0: // Endo
+         g_Ks_ = 0.392;
+         g_Kr_ = 0.153;
+         g_to_ = 0.073;
+         P_NaK_ = 3.0;
+         g_NaL_ = 0.15;
+         s_switch_ = 0;
+         break;
+      case 1: // Mid
+         g_Ks_ = 0.098;
+         g_Kr_ = 0.153;
+         g_to_ = 0.294;
+         P_NaK_ = 3.0;
+         g_NaL_ = 0.6;
+         s_switch_ = 1;
+         break;
+      case 2: // Epi
+         g_Ks_ = 0.392;
+         g_Kr_ = 0.153;
+         g_to_ = 0.294;
+         P_NaK_ = 3.0;
+         g_NaL_ = 0.15;
+         s_switch_ = 1;
+         break;
+      default:
+         assert(false);
    }
 }
 
@@ -310,83 +259,83 @@ void TT06_RRG::initStates(int cellType)
 {
    switch (cellType)
    {
-     case 0: // endo
-      states_[0] = -86.709;
-      states_[1] = 138.4;
-      states_[2] = 10.355;
-      states_[3] = 0.00013;
-      states_[4] = 0.00448;
-      states_[5] = 0.476;
-      states_[6] = 0.0087;
-      states_[7] = 0.00155;
-      states_[8] = 0.7573;
-      states_[9] = 0.7225;
-      states_[10] = 0.00036;
-      states_[11] = 3.164e-5;
-      states_[12] = 0.8009;
-      states_[13] = 0.9778;
-      states_[14] = 0.9953;
-      states_[15] = 0.3212;
-      states_[16] = 2.235e-8;
-      states_[17] = 3.715;
-      states_[18] = 0.9068;
-      states_[19] = 0.066;
-      break;
-     case 1: // mid
-      states_[0] = -85.423;
-      states_[1] = 138.52;
-      states_[2] = 10.132;
-      states_[3] = 0.000153;
-      states_[4] = 0.0165;
-      states_[5] = 0.473;
-      states_[6] = 0.0174;
-      states_[7] = 0.00165;
-      states_[8] = 0.749;
-      states_[9] = 0.6788;
-      states_[10] = 0.00042;
-      states_[11] = 3.288e-5;
-      states_[12] = 0.7026;
-      states_[13] = 0.9526;
-      states_[14] = 0.9942;
-      states_[15] = 0.999998;
-      states_[16] = 2.347e-8;
-      states_[17] = 4.272;
-      states_[18] = 0.8978;
-      states_[19] = 0.066;
-      break;
-     case 2: // epi
-      states_[0] = -85.23;
-      states_[1] = 136.89;
-      states_[2] = 8.604;
-      states_[3] = 0.000126;
-      states_[4] = 0.00621;
-      states_[5] = 0.4712;
-      states_[6] = 0.0095;
-      states_[7] = 0.00172;
-      states_[8] = 0.7444;
-      states_[9] = 0.7045;
-      states_[10] = 0.00036;
-      states_[11] = 3.373e-5;
-      states_[12] = 0.7888;
-      states_[13] = 0.9755;
-      states_[14] = 0.9953;
-      states_[15] = 0.999998;
-      states_[16] = 2.42e-8;
-      states_[17] = 3.64;
-      states_[18] = 0.9073;
-      states_[19] = 0.066;
-      break;
-     default:
-      assert(false);
+      case 0: // endo
+         states_[0] = -86.709;
+         states_[1] = 138.4;
+         states_[2] = 10.355;
+         states_[3] = 0.00013;
+         states_[4] = 0.00448;
+         states_[5] = 0.476;
+         states_[6] = 0.0087;
+         states_[7] = 0.00155;
+         states_[8] = 0.7573;
+         states_[9] = 0.7225;
+         states_[10] = 0.00036;
+         states_[11] = 3.164e-5;
+         states_[12] = 0.8009;
+         states_[13] = 0.9778;
+         states_[14] = 0.9953;
+         states_[15] = 0.3212;
+         states_[16] = 2.235e-8;
+         states_[17] = 3.715;
+         states_[18] = 0.9068;
+         states_[19] = 0.066;
+         break;
+      case 1: // mid
+         states_[0] = -85.423;
+         states_[1] = 138.52;
+         states_[2] = 10.132;
+         states_[3] = 0.000153;
+         states_[4] = 0.0165;
+         states_[5] = 0.473;
+         states_[6] = 0.0174;
+         states_[7] = 0.00165;
+         states_[8] = 0.749;
+         states_[9] = 0.6788;
+         states_[10] = 0.00042;
+         states_[11] = 3.288e-5;
+         states_[12] = 0.7026;
+         states_[13] = 0.9526;
+         states_[14] = 0.9942;
+         states_[15] = 0.999998;
+         states_[16] = 2.347e-8;
+         states_[17] = 4.272;
+         states_[18] = 0.8978;
+         states_[19] = 0.066;
+         break;
+      case 2: // epi
+         states_[0] = -85.23;
+         states_[1] = 136.89;
+         states_[2] = 8.604;
+         states_[3] = 0.000126;
+         states_[4] = 0.00621;
+         states_[5] = 0.4712;
+         states_[6] = 0.0095;
+         states_[7] = 0.00172;
+         states_[8] = 0.7444;
+         states_[9] = 0.7045;
+         states_[10] = 0.00036;
+         states_[11] = 3.373e-5;
+         states_[12] = 0.7888;
+         states_[13] = 0.9755;
+         states_[14] = 0.9953;
+         states_[15] = 0.999998;
+         states_[16] = 2.42e-8;
+         states_[17] = 3.64;
+         states_[18] = 0.9073;
+         states_[19] = 0.066;
+         break;
+      default:
+         assert(false);
    }
-   
+
 }
 
 double TT06_RRG::computeRates(double dt, double iStim)
 {
    double algebraic[70];
    double rates[20];
-   
+
    algebraic[12] = iStim;
    algebraic[7] = 1.00000/(1.00000+(exp(((states_[0]+20.0000)/7.00000))));
    algebraic[20] =  1102.50*(exp((- (pow((states_[0]+27.0000), 2.00000))/225.000)))+200.000/(1.00000+(exp(((13.0000 - states_[0])/10.0000))))+180.000/(1.00000+(exp(((states_[0]+30.0000)/10.0000))))+20.0000;
@@ -399,16 +348,16 @@ double TT06_RRG::computeRates(double dt, double iStim)
    rates[14] = (algebraic[9] - states_[14])/algebraic[22];
    switch (s_switch_)
    {
-     case 0:
-      algebraic[10] = 1.00000/(1.00000+(exp(((states_[0]+28.0000)/5.00000))));
-      algebraic[23] =  1000.00*(exp((- (pow((states_[0]+67.0000), 2.00000))/1000.00)))+8.00000;
-      break;
-     case 1:
-      algebraic[10] = 1.00000/(1.00000+(exp(((states_[0]+20.0000)/5.00000))));
-      algebraic[23] =  85.0000*(exp((- (pow((states_[0]+45.0000), 2.00000))/320.000)))+5.00000/(1.00000+(exp(((states_[0] - 20.0000)/5.00000))))+3.00000;
-      break;
-     default:
-      assert(false);
+      case 0:
+         algebraic[10] = 1.00000/(1.00000+(exp(((states_[0]+28.0000)/5.00000))));
+         algebraic[23] =  1000.00*(exp((- (pow((states_[0]+67.0000), 2.00000))/1000.00)))+8.00000;
+         break;
+      case 1:
+         algebraic[10] = 1.00000/(1.00000+(exp(((states_[0]+20.0000)/5.00000))));
+         algebraic[23] =  85.0000*(exp((- (pow((states_[0]+45.0000), 2.00000))/320.000)))+5.00000/(1.00000+(exp(((states_[0] - 20.0000)/5.00000))))+3.00000;
+         break;
+      default:
+         assert(false);
    }
 
    rates[15] = (algebraic[10] - states_[15])/algebraic[23];
@@ -462,7 +411,7 @@ double TT06_RRG::computeRates(double dt, double iStim)
    rates[19] = (jLinf - states_[19])/670.0;
 
    double iNaL = g_NaL_*states_[7]*states_[7]*states_[7]*states_[19]*(states_[0]-algebraic[25]);
-   
+
    rates[2] =  (( - 1.00000*(algebraic[50]+iNaL+algebraic[51]+ 3.00000*algebraic[55]+ 3.00000*algebraic[56]))/( 1.00000*constants_[4]*constants_[2]))*constants_[3];
    algebraic[33] =  (( constants_[0]*constants_[1])/constants_[2])*(log((constants_[10]/states_[1])));
    algebraic[44] = 0.100000/(1.00000+(exp(( 0.0600000*((states_[0] - algebraic[33]) - 200.000)))));
@@ -586,97 +535,97 @@ double TT06_RRG::computeRates(double dt, double iStim)
  * ALGEBRAIC[38] is tau_h in component fast_sodium_current_h_gate (millisecond).
  * ALGEBRAIC[5] is j_inf in component fast_sodium_current_j_gate (dimensionless).
  * ALGEBRAIC[18] is alpha_j in component fast_sodium_current_j_gate (per_millisecond).
- * ALGEBRAIC[31] is beta_j in component fast_sodium_current_j_gate (per_millisecond).
- * ALGEBRAIC[39] is tau_j in component fast_sodium_current_j_gate (millisecond).
- * CONSTANTS[17] is g_bna in component sodium_background_current (nanoS_per_picoF).
- * CONSTANTS[18] is g_CaL in component L_type_Ca_current (litre_per_farad_second).
- * STATES[10] is Ca_ss in component calcium_dynamics (millimolar).
- * STATES[11] is d in component L_type_Ca_current_d_gate (dimensionless).
- * STATES[12] is f in component L_type_Ca_current_f_gate (dimensionless).
- * STATES[13] is f2 in component L_type_Ca_current_f2_gate (dimensionless).
- * STATES[14] is fCass in component L_type_Ca_current_fCass_gate (dimensionless).
- * ALGEBRAIC[6] is d_inf in component L_type_Ca_current_d_gate (dimensionless).
- * ALGEBRAIC[19] is alpha_d in component L_type_Ca_current_d_gate (dimensionless).
- * ALGEBRAIC[32] is beta_d in component L_type_Ca_current_d_gate (dimensionless).
- * ALGEBRAIC[40] is gamma_d in component L_type_Ca_current_d_gate (millisecond).
- * ALGEBRAIC[42] is tau_d in component L_type_Ca_current_d_gate (millisecond).
- * ALGEBRAIC[7] is f_inf in component L_type_Ca_current_f_gate (dimensionless).
- * ALGEBRAIC[20] is tau_f in component L_type_Ca_current_f_gate (millisecond).
- * ALGEBRAIC[8] is f2_inf in component L_type_Ca_current_f2_gate (dimensionless).
- * ALGEBRAIC[21] is tau_f2 in component L_type_Ca_current_f2_gate (millisecond).
- * ALGEBRAIC[9] is fCass_inf in component L_type_Ca_current_fCass_gate (dimensionless).
- * ALGEBRAIC[22] is tau_fCass in component L_type_Ca_current_fCass_gate (millisecond).
- * CONSTANTS[19] is g_bca in component calcium_background_current (nanoS_per_picoF).
- * CONSTANTS[20] is g_to in component transient_outward_current (nanoS_per_picoF).
- * STATES[15] is s in component transient_outward_current_s_gate (dimensionless).
- * STATES[16] is r in component transient_outward_current_r_gate (dimensionless).
- * ALGEBRAIC[10] is s_inf in component transient_outward_current_s_gate (dimensionless).
- * ALGEBRAIC[23] is tau_s in component transient_outward_current_s_gate (millisecond).
- * ALGEBRAIC[11] is r_inf in component transient_outward_current_r_gate (dimensionless).
- * ALGEBRAIC[24] is tau_r in component transient_outward_current_r_gate (millisecond).
- * CONSTANTS[21] is P_NaK in component sodium_potassium_pump_current (picoA_per_picoF).
- * CONSTANTS[22] is K_mk in component sodium_potassium_pump_current (millimolar).
- * CONSTANTS[23] is K_mNa in component sodium_potassium_pump_current (millimolar).
- * CONSTANTS[24] is K_NaCa in component sodium_calcium_exchanger_current (picoA_per_picoF).
- * CONSTANTS[25] is K_sat in component sodium_calcium_exchanger_current (dimensionless).
- * CONSTANTS[26] is alpha in component sodium_calcium_exchanger_current (dimensionless).
- * CONSTANTS[27] is gamma in component sodium_calcium_exchanger_current (dimensionless).
- * CONSTANTS[28] is Km_Ca in component sodium_calcium_exchanger_current (millimolar).
- * CONSTANTS[29] is Km_Nai in component sodium_calcium_exchanger_current (millimolar).
- * CONSTANTS[30] is g_pCa in component calcium_pump_current (picoA_per_picoF).
- * CONSTANTS[31] is K_pCa in component calcium_pump_current (millimolar).
- * CONSTANTS[32] is g_pK in component potassium_pump_current (nanoS_per_picoF).
- * STATES[17] is Ca_SR in component calcium_dynamics (millimolar).
- * ALGEBRAIC[67] is i_rel in component calcium_dynamics (millimolar_per_millisecond).
- * ALGEBRAIC[59] is i_up in component calcium_dynamics (millimolar_per_millisecond).
- * ALGEBRAIC[60] is i_leak in component calcium_dynamics (millimolar_per_millisecond).
- * ALGEBRAIC[61] is i_xfer in component calcium_dynamics (millimolar_per_millisecond).
- * ALGEBRAIC[66] is O in component calcium_dynamics (dimensionless).
- * STATES[18] is R_prime in component calcium_dynamics (dimensionless).
- * ALGEBRAIC[64] is k1 in component calcium_dynamics (per_millimolar2_per_millisecond).
- * ALGEBRAIC[65] is k2 in component calcium_dynamics (per_millimolar_per_millisecond).
- * CONSTANTS[33] is k1_prime in component calcium_dynamics (per_millimolar2_per_millisecond).
- * CONSTANTS[34] is k2_prime in component calcium_dynamics (per_millimolar_per_millisecond).
- * CONSTANTS[35] is k3 in component calcium_dynamics (per_millisecond).
- * CONSTANTS[36] is k4 in component calcium_dynamics (per_millisecond).
- * CONSTANTS[37] is EC in component calcium_dynamics (millimolar).
- * CONSTANTS[38] is max_sr in component calcium_dynamics (dimensionless).
- * CONSTANTS[39] is min_sr in component calcium_dynamics (dimensionless).
- * ALGEBRAIC[62] is kcasr in component calcium_dynamics (dimensionless).
- * CONSTANTS[40] is V_rel in component calcium_dynamics (per_millisecond).
- * CONSTANTS[41] is V_xfer in component calcium_dynamics (per_millisecond).
- * CONSTANTS[42] is K_up in component calcium_dynamics (millimolar).
- * CONSTANTS[43] is V_leak in component calcium_dynamics (per_millisecond).
- * CONSTANTS[44] is Vmax_up in component calcium_dynamics (millimolar_per_millisecond).
- * ALGEBRAIC[63] is Ca_i_bufc in component calcium_dynamics (dimensionless).
- * ALGEBRAIC[68] is Ca_sr_bufsr in component calcium_dynamics (dimensionless).
- * ALGEBRAIC[69] is Ca_ss_bufss in component calcium_dynamics (dimensionless).
- * CONSTANTS[45] is Buf_c in component calcium_dynamics (millimolar).
- * CONSTANTS[46] is K_buf_c in component calcium_dynamics (millimolar).
- * CONSTANTS[47] is Buf_sr in component calcium_dynamics (millimolar).
- * CONSTANTS[48] is K_buf_sr in component calcium_dynamics (millimolar).
- * CONSTANTS[49] is Buf_ss in component calcium_dynamics (millimolar).
- * CONSTANTS[50] is K_buf_ss in component calcium_dynamics (millimolar).
- * CONSTANTS[51] is V_sr in component calcium_dynamics (micrometre3).
- * CONSTANTS[52] is V_ss in component calcium_dynamics (micrometre3).
- * RATES[0] is d/dt V in component membrane (millivolt).
- * RATES[1] is d/dt K_i in component potassium_dynamics (millimolar).
- * RATES[2] is d/dt Na_i in component sodium_dynamics (millimolar).
- * RATES[3] is d/dt Ca_i in component calcium_dynamics (millimolar).
- * RATES[4] is d/dt Xr1 in component rapid_time_dependent_potassium_current_Xr1_gate (dimensionless).
- * RATES[5] is d/dt Xr2 in component rapid_time_dependent_potassium_current_Xr2_gate (dimensionless).
- * RATES[6] is d/dt Xs in component slow_time_dependent_potassium_current_Xs_gate (dimensionless).
- * RATES[7] is d/dt m in component fast_sodium_current_m_gate (dimensionless).
- * RATES[8] is d/dt h in component fast_sodium_current_h_gate (dimensionless).
- * RATES[9] is d/dt j in component fast_sodium_current_j_gate (dimensionless).
- * RATES[10] is d/dt Ca_ss in component calcium_dynamics (millimolar).
- * RATES[11] is d/dt d in component L_type_Ca_current_d_gate (dimensionless).
- * RATES[12] is d/dt f in component L_type_Ca_current_f_gate (dimensionless).
- * RATES[13] is d/dt f2 in component L_type_Ca_current_f2_gate (dimensionless).
- * RATES[14] is d/dt fCass in component L_type_Ca_current_fCass_gate (dimensionless).
- * RATES[15] is d/dt s in component transient_outward_current_s_gate (dimensionless).
- * RATES[16] is d/dt r in component transient_outward_current_r_gate (dimensionless).
- * RATES[17] is d/dt Ca_SR in component calcium_dynamics (millimolar).
- * RATES[18] is d/dt R_prime in component calcium_dynamics (dimensionless).
- */
+* ALGEBRAIC[31] is beta_j in component fast_sodium_current_j_gate (per_millisecond).
+* ALGEBRAIC[39] is tau_j in component fast_sodium_current_j_gate (millisecond).
+* CONSTANTS[17] is g_bna in component sodium_background_current (nanoS_per_picoF).
+* CONSTANTS[18] is g_CaL in component L_type_Ca_current (litre_per_farad_second).
+* STATES[10] is Ca_ss in component calcium_dynamics (millimolar).
+* STATES[11] is d in component L_type_Ca_current_d_gate (dimensionless).
+* STATES[12] is f in component L_type_Ca_current_f_gate (dimensionless).
+* STATES[13] is f2 in component L_type_Ca_current_f2_gate (dimensionless).
+* STATES[14] is fCass in component L_type_Ca_current_fCass_gate (dimensionless).
+* ALGEBRAIC[6] is d_inf in component L_type_Ca_current_d_gate (dimensionless).
+* ALGEBRAIC[19] is alpha_d in component L_type_Ca_current_d_gate (dimensionless).
+* ALGEBRAIC[32] is beta_d in component L_type_Ca_current_d_gate (dimensionless).
+* ALGEBRAIC[40] is gamma_d in component L_type_Ca_current_d_gate (millisecond).
+* ALGEBRAIC[42] is tau_d in component L_type_Ca_current_d_gate (millisecond).
+* ALGEBRAIC[7] is f_inf in component L_type_Ca_current_f_gate (dimensionless).
+* ALGEBRAIC[20] is tau_f in component L_type_Ca_current_f_gate (millisecond).
+* ALGEBRAIC[8] is f2_inf in component L_type_Ca_current_f2_gate (dimensionless).
+* ALGEBRAIC[21] is tau_f2 in component L_type_Ca_current_f2_gate (millisecond).
+* ALGEBRAIC[9] is fCass_inf in component L_type_Ca_current_fCass_gate (dimensionless).
+* ALGEBRAIC[22] is tau_fCass in component L_type_Ca_current_fCass_gate (millisecond).
+* CONSTANTS[19] is g_bca in component calcium_background_current (nanoS_per_picoF).
+* CONSTANTS[20] is g_to in component transient_outward_current (nanoS_per_picoF).
+* STATES[15] is s in component transient_outward_current_s_gate (dimensionless).
+* STATES[16] is r in component transient_outward_current_r_gate (dimensionless).
+* ALGEBRAIC[10] is s_inf in component transient_outward_current_s_gate (dimensionless).
+* ALGEBRAIC[23] is tau_s in component transient_outward_current_s_gate (millisecond).
+* ALGEBRAIC[11] is r_inf in component transient_outward_current_r_gate (dimensionless).
+* ALGEBRAIC[24] is tau_r in component transient_outward_current_r_gate (millisecond).
+* CONSTANTS[21] is P_NaK in component sodium_potassium_pump_current (picoA_per_picoF).
+* CONSTANTS[22] is K_mk in component sodium_potassium_pump_current (millimolar).
+* CONSTANTS[23] is K_mNa in component sodium_potassium_pump_current (millimolar).
+* CONSTANTS[24] is K_NaCa in component sodium_calcium_exchanger_current (picoA_per_picoF).
+* CONSTANTS[25] is K_sat in component sodium_calcium_exchanger_current (dimensionless).
+* CONSTANTS[26] is alpha in component sodium_calcium_exchanger_current (dimensionless).
+* CONSTANTS[27] is gamma in component sodium_calcium_exchanger_current (dimensionless).
+* CONSTANTS[28] is Km_Ca in component sodium_calcium_exchanger_current (millimolar).
+* CONSTANTS[29] is Km_Nai in component sodium_calcium_exchanger_current (millimolar).
+* CONSTANTS[30] is g_pCa in component calcium_pump_current (picoA_per_picoF).
+* CONSTANTS[31] is K_pCa in component calcium_pump_current (millimolar).
+* CONSTANTS[32] is g_pK in component potassium_pump_current (nanoS_per_picoF).
+* STATES[17] is Ca_SR in component calcium_dynamics (millimolar).
+* ALGEBRAIC[67] is i_rel in component calcium_dynamics (millimolar_per_millisecond).
+* ALGEBRAIC[59] is i_up in component calcium_dynamics (millimolar_per_millisecond).
+* ALGEBRAIC[60] is i_leak in component calcium_dynamics (millimolar_per_millisecond).
+* ALGEBRAIC[61] is i_xfer in component calcium_dynamics (millimolar_per_millisecond).
+* ALGEBRAIC[66] is O in component calcium_dynamics (dimensionless).
+* STATES[18] is R_prime in component calcium_dynamics (dimensionless).
+* ALGEBRAIC[64] is k1 in component calcium_dynamics (per_millimolar2_per_millisecond).
+* ALGEBRAIC[65] is k2 in component calcium_dynamics (per_millimolar_per_millisecond).
+* CONSTANTS[33] is k1_prime in component calcium_dynamics (per_millimolar2_per_millisecond).
+* CONSTANTS[34] is k2_prime in component calcium_dynamics (per_millimolar_per_millisecond).
+* CONSTANTS[35] is k3 in component calcium_dynamics (per_millisecond).
+* CONSTANTS[36] is k4 in component calcium_dynamics (per_millisecond).
+* CONSTANTS[37] is EC in component calcium_dynamics (millimolar).
+* CONSTANTS[38] is max_sr in component calcium_dynamics (dimensionless).
+* CONSTANTS[39] is min_sr in component calcium_dynamics (dimensionless).
+* ALGEBRAIC[62] is kcasr in component calcium_dynamics (dimensionless).
+* CONSTANTS[40] is V_rel in component calcium_dynamics (per_millisecond).
+* CONSTANTS[41] is V_xfer in component calcium_dynamics (per_millisecond).
+* CONSTANTS[42] is K_up in component calcium_dynamics (millimolar).
+* CONSTANTS[43] is V_leak in component calcium_dynamics (per_millisecond).
+* CONSTANTS[44] is Vmax_up in component calcium_dynamics (millimolar_per_millisecond).
+* ALGEBRAIC[63] is Ca_i_bufc in component calcium_dynamics (dimensionless).
+* ALGEBRAIC[68] is Ca_sr_bufsr in component calcium_dynamics (dimensionless).
+* ALGEBRAIC[69] is Ca_ss_bufss in component calcium_dynamics (dimensionless).
+* CONSTANTS[45] is Buf_c in component calcium_dynamics (millimolar).
+* CONSTANTS[46] is K_buf_c in component calcium_dynamics (millimolar).
+* CONSTANTS[47] is Buf_sr in component calcium_dynamics (millimolar).
+* CONSTANTS[48] is K_buf_sr in component calcium_dynamics (millimolar).
+* CONSTANTS[49] is Buf_ss in component calcium_dynamics (millimolar).
+* CONSTANTS[50] is K_buf_ss in component calcium_dynamics (millimolar).
+* CONSTANTS[51] is V_sr in component calcium_dynamics (micrometre3).
+* CONSTANTS[52] is V_ss in component calcium_dynamics (micrometre3).
+* RATES[0] is d/dt V in component membrane (millivolt).
+* RATES[1] is d/dt K_i in component potassium_dynamics (millimolar).
+* RATES[2] is d/dt Na_i in component sodium_dynamics (millimolar).
+* RATES[3] is d/dt Ca_i in component calcium_dynamics (millimolar).
+* RATES[4] is d/dt Xr1 in component rapid_time_dependent_potassium_current_Xr1_gate (dimensionless).
+* RATES[5] is d/dt Xr2 in component rapid_time_dependent_potassium_current_Xr2_gate (dimensionless).
+* RATES[6] is d/dt Xs in component slow_time_dependent_potassium_current_Xs_gate (dimensionless).
+* RATES[7] is d/dt m in component fast_sodium_current_m_gate (dimensionless).
+* RATES[8] is d/dt h in component fast_sodium_current_h_gate (dimensionless).
+* RATES[9] is d/dt j in component fast_sodium_current_j_gate (dimensionless).
+* RATES[10] is d/dt Ca_ss in component calcium_dynamics (millimolar).
+* RATES[11] is d/dt d in component L_type_Ca_current_d_gate (dimensionless).
+* RATES[12] is d/dt f in component L_type_Ca_current_f_gate (dimensionless).
+* RATES[13] is d/dt f2 in component L_type_Ca_current_f2_gate (dimensionless).
+* RATES[14] is d/dt fCass in component L_type_Ca_current_fCass_gate (dimensionless).
+* RATES[15] is d/dt s in component transient_outward_current_s_gate (dimensionless).
+* RATES[16] is d/dt r in component transient_outward_current_r_gate (dimensionless).
+* RATES[17] is d/dt Ca_SR in component calcium_dynamics (millimolar).
+* RATES[18] is d/dt R_prime in component calcium_dynamics (dimensionless).
+*/
 

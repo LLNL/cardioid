@@ -12,7 +12,7 @@
 #include "TT06Dev_Reaction.hh"
 #include "pade.hh"
 #include "TT06_RRG_Reaction.hh"    // TT06 with modifications from Rice et al.
-#include "OHaraRudy_Reaction.hh"    // TT06 with modifications from Rice et al.
+#include "OHaraRudy_Reaction.hh"    // OHara Rudy .
 //#include "TT06Func.hh"
 #include "ReactionFHN.hh"
 #include "NullReaction.hh"
@@ -227,7 +227,9 @@ namespace
 {
    Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy)
    {
-      Reaction *reaction = new TT06_RRG_Reaction(anatomy);
+      TT06_RRG_ReactionParms parms;
+      objectGet(obj, "Ko",    parms.Ko, "-1") ;
+      Reaction *reaction = new TT06_RRG_Reaction(anatomy,parms);
       return  reaction; 
    }
 }

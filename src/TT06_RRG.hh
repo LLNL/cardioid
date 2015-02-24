@@ -24,6 +24,7 @@ class TT06_RRG
       
 
    TT06_RRG(int cellType);
+   TT06_RRG(int cellType, double *constants);
    double calc(double dt, double Vm, double iStim);
    double defaultVoltage();
    static void getCheckpointInfo(std::vector<std::string>& fieldNames,
@@ -42,12 +43,12 @@ class TT06_RRG
  private:
 
    static HandleMap& getHandleMap();
-   void initConsts(int cellType);
+   void initCellParms(int cellType);
    void initStates(int cellType);
 
    double  computeRates(double dt, double iStim);
 
-   static double constants_[53];
+   static double *constants_;
    int s_switch_;
    double defaultVoltage_;
    double g_Ks_;  // formerly CONSTANTS[15]
