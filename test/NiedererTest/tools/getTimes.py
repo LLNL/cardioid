@@ -69,7 +69,7 @@ def main():
         if (x == xMin and y == yMax and z == zMax): P6 = t
         if (x == xMax and y == yMax and z == zMin): P7 = t
         if (x == xMax and y == yMax and z == zMax): P8 = t
-        if (x == 0    and y == 0    and z == 0):     C = t
+        if (x == nx//2    and y == ny//2    and z == nz//2):     C = t
 
     print "%6.2f & %6.2f & %6.2f & %6.2f & %6.2f & %6.2f & %6.2f & %6.2f & %6.2f\\\\"%(P1, P2, P3, P4, P5, P6, P7, P8, C)
 
