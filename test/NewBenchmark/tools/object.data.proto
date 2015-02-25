@@ -1,0 +1,91 @@
+simulate SIMULATE 
+{
+   anatomy = niederer;
+   decomposition = XX_BALANCER_XX;
+   diffusion = fgr;
+   reaction = tt06;
+   stimulus = s1 s2;
+   sensor = arTime;
+   loop = 0;            // in timesteps
+   maxLoop = XX_MAXLOOP_XX;     // in timesteps
+   dt = XX_DT_XX;       // msec
+   time = 0;            // msec
+   printRate = 50;      // in timesteps
+   parallelDiffusionReaction = 0;
+}
+
+niederer ANATOMY 
+{
+   method = brick;
+   cellType = 102;
+   dx = XX_DX_XX;   // in mm
+   dy = XX_DX_XX;   // in mm
+   dz = XX_DX_XX;   // in mm
+   xSize = 20; 
+   ySize = 7;
+   zSize = 3;
+   conductivity = conductivity;
+}
+
+grid DECOMPOSITION 
+{
+    method = grid;
+    nx = XX_XGRID_XX;
+    ny = XX_YGRID_XX;
+    nz = XX_ZGRID_XX;
+}
+
+fgr DIFFUSION
+{
+   method = FGR;
+   diffusionScale = 714.2857143;      // mm^3/mF
+}
+
+conductivity CONDUCTIVITY
+{
+    method = uniform;
+    sigma11 = 0.0001334177;   // units S/mm
+    sigma22 = 0.0000176062;   // units S/mm
+    sigma33 = 0.0000176062;   // units S/mm
+    sigma13 = 0;
+    sigma23 = 0;
+}
+
+tt06 REACTION
+{
+    method = TT06_CellML;
+    integrator = rushLarsen;
+}
+
+s1 STIMULUS
+{
+   method = box;
+   xMax = XX_S1BOX_XX;
+   yMax = XX_S1BOX_XX;
+   zMax = XX_S1BOX_XX;
+   vStim = -35.71429;
+   tStart = 0;
+   duration = 2;
+   period = 10000;
+}
+
+s2 STIMULUS
+{
+   method = box;
+   xMin = XX_S2BOX_X_XX;
+   yMin = XX_S2BOX_Y_XX;
+   zMin = XX_S2BOX_Z_XX;
+   vStim = -35.71429;
+   tStart = 565;
+   duration = 2;
+   period = 10000;
+}
+
+arTime SENSOR
+{
+   method = activationAndRecovery;
+   filename = arTime;
+   printRate = XX_MAXLOOP_XX;
+   evalRate = 1;
+   nFiles = 1;
+}

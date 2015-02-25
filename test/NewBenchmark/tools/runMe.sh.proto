@@ -1,0 +1,14 @@
+#!/bin/sh
+
+#PSUB -ln XX_NNODES_XX
+#PSUB -tM XX_MAXTIME_XX
+#PSUB -pool XX_POOL_XX
+#PSUB -b XX_BANK_XX
+#PSUB -np XX_NTASKS_XX
+
+cd $PSUB_SUBDIR
+
+exe=XX_EXE_XX
+
+#srun --ntasks=XX_NTASKS_XX $exe
+mpirun -mode VN -np XX_NTASKS_XX -exe $exe -env OMP_NUM_THREADS=1
