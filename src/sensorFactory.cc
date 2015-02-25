@@ -29,6 +29,8 @@ namespace
                                const PotentialData&);
    Sensor* scanActivationTimeSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                                     const PotentialData&);
+   Sensor* scanActivationAndRecoverySensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
+                                           const PotentialData&);
    Sensor* scanVoronoiCoarseningSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                                        const PotentialData&, const Simulate& sim);
    Sensor* scanCaSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
@@ -119,6 +121,8 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
     assert(false);
   else if (method == "activationTime")
      return scanActivationTimeSensor(obj, sp, sim.anatomy_,sim.vdata_);
+  else if (method == "activationAndRecovery")
+     return scanActivationAndRecoverySensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "averageCa")
      return scanCaSensor(obj, sp, sim.anatomy_,*sim.reaction_, sim);
   else if (method == "ECG")
@@ -244,7 +248,7 @@ namespace
       const PotentialData& vdata)
    {
       ActivationAndRecoverySensorParms p;
-      objectGet(obj, "filename",   p.filename,   "activationTime");
+      objectGet(obj, "filename",   p.filename,   "arTime");
       objectGet(obj, "nFiles",     p.nFiles,     "0");
       objectGet(obj, "threshhold", p.threshhold, "-40", "voltage");
       return new ActivationAndRecoverySensor(sp, p, anatomy, vdata);

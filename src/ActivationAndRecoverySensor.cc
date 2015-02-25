@@ -33,9 +33,9 @@ ActivationAndRecoverySensor::ActivationAndRecoverySensor(
    for (unsigned ii=0; ii<nLocal_; ++ii)
    {
       Tuple tmp = indexToTuple(anatomy.gid(ii));
-      coords_.push_back(Vector(tmp.x()*anatomy.dx(),
-                               tmp.y()*anatomy.dy(),
-                               tmp.z()*anatomy.dz())); 
+      coords_.push_back(Vector(tmp.x()*anatomy.dx() + anatomy.dx()/2.0,
+                               tmp.y()*anatomy.dy() + anatomy.dy()/2.0,
+                               tmp.z()*anatomy.dz() + anatomy.dz()/2.0)); 
    }
 }
 
@@ -58,13 +58,13 @@ void ActivationAndRecoverySensor::print(double time, int loop)
 
    for (unsigned ii=0; ii<nLocal_; ++ii)
    {
-      assert( recoveryTime_[ii].size() - activationTime_[ii].size() <= 1);
-      Pprintf(file, "%f8.4 %f8.4 %f8.4", coords_[ii].x(), coords_[ii].y(), coords_[ii].z());
+      assert( activationTime_[ii].size() - recoveryTime_[ii].size() <= 1);
+      Pprintf(file, "%6.4f %6.4f %6.4f", coords_[ii].x(), coords_[ii].y(), coords_[ii].z());
       for (unsigned jj=0; jj<activationTime_[ii].size(); ++jj)
       {
-         Pprintf(file, " %f7.4", activationTime_[ii][jj]);
+         Pprintf(file, " %8.3f", activationTime_[ii][jj]);
          if (recoveryTime_[ii].size() > jj)
-            Pprintf(file, " %f7.4", recoveryTime_[ii][jj]);
+            Pprintf(file, " %8.3f", recoveryTime_[ii][jj]);
       }
       Pprintf(file, "\n");
    }
@@ -96,8 +96,8 @@ void ActivationAndRecoverySensor::clear()
    for (unsigned ii=0; ii<nLocal_; ++ii)
    {
       active_[ii] = false;
-      if (vdata_.VmArray_[ii] > threshhold_)
-         active_[ii] = true;
+//       if (vdata_.VmArray_[ii] > threshhold_)
+//          active_[ii] = true;
       activationTime_[ii].clear();
       activationTime_[ii].reserve(10);
       recoveryTime_[ii].clear();
