@@ -49,20 +49,33 @@ StateVariableSensor::StateVariableSensor(
    
    //    processFieldList(p.fieldList);
 
-   assert(p.fieldList.size() > 0);
    FieldMap availableFields = mkFieldMap(sim_.reaction_);
    vector<string> fieldNames;
    vector<string> fieldUnits;
-   for (unsigned ii=0; ii<p.fieldList.size(); ++ii)
+
+   if (p.allFields)
    {
-      FieldMap::iterator iter = availableFields.find(p.fieldList[ii]);
-      if (iter == availableFields.end())
-         continue; // silently ignore typos.
-      fieldNames.push_back(iter->first);
-      handles_.push_back(iter->second.first);
-      fieldUnits.push_back(iter->second.second);
+      for (FieldMap::iterator iter = availableFields.begin(); iter != availableFields.end(); iter++)
+      {
+         fieldNames.push_back(iter->first);
+         handles_.push_back(iter->second.first);
+         fieldUnits.push_back(iter->second.second);
+      }         
    }
-   
+   else
+   {
+      assert(p.fieldList.size() > 0);
+      for (unsigned ii=0; ii<p.fieldList.size(); ++ii)
+      {
+         FieldMap::iterator iter = availableFields.find(p.fieldList[ii]);
+         if (iter == availableFields.end())
+            continue; // silently ignore typos.
+         fieldNames.push_back(iter->first);
+         handles_.push_back(iter->second.first);
+         fieldUnits.push_back(iter->second.second);
+      }
+   }
+      
    set<Long64> requestedCells = mkCellSet(
       sim.anatomy_, p.cells, p.cellListFilename, p.radius);
 

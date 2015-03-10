@@ -378,6 +378,7 @@ namespace
       objectGet(obj, "cellList", p.cellListFilename, "");
       objectGet(obj, "radius",   p.radius,   "0.0");
       objectGet(obj, "fields",   p.fieldList);
+      objectGet(obj, "allFields", p.allFields, "0");
       objectGet(obj, "cells",    p.cells);
       objectGet(obj, "allCells", p.allCells, "0");
       string outputType; objectGet(obj, "outputType", outputType, "ascii");

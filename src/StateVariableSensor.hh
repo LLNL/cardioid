@@ -17,6 +17,7 @@ struct StateVariableSensorParms
 {
    bool binaryOutput;
    bool allCells;
+   bool allFields;
    unsigned nFiles;
    double radius;
    std::string filename;
