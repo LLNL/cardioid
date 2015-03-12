@@ -81,6 +81,7 @@ extern "C"
 #endif 
 void OHaraRudySetup();
 double OHaraRudyIntegrate(double dt, double Istim, STATE *state, CELLPARMS *cP, STATE *D);
+double OHaraRudyIntegrateS(double dt, double Istim, STATE *state, CELLPARMS *cP, STATE *D);
 void OHaraRudyInitialState(int cellType, STATE *state);
 CELLPARMS *OHaraRudyCellParms(int cellType);
 #ifdef __cplusplus

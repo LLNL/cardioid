@@ -1,7 +1,6 @@
 #include "OHaraRudy.h"
 #include <math.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include "OHaraRudyNameArray.h"
 typedef struct derived_st 
 { 
@@ -568,6 +567,28 @@ void IKsFunc(CELLPARMS *cP, STATE *state, DERIVED *derived, CURRENTS *I, STATE *
    state->Xs1 += dt*dXs1; 
    state->Xs2 += dt*dXs2; 
 }
+void IKsFuncS(CELLPARMS *cP, STATE *state, DERIVED *derived, CURRENTS *I, STATE *D, double dt)
+{
+   double V = state->Vm; 
+   double EKs = derived->EKs; 
+   double Xs1 = state->Xs1; 
+   double Xs2 = state->Xs2; 
+   double Cai = state->Cai; 
+
+   double phi =  1 + 0.6*sigm(pow(3.8e-5/Cai,1.4)); 
+   I->Ks = cP->GKs *(V-EKs) * phi * Xs1*Xs2;
+
+   double XsMhu = sige(-(V+11.60)/8.932); 
+   double Xs1Tau =  817.3 + 1/(2.326e-4*exp((V+48.28)/17.80) + 1.292e-3*exp(-(V+210.0)/230));
+   double Xs1TauR =  1/Xs1Tau;
+   double Xs2TauR = 1e-2*exp((V-50.0)/20.0) + 1.93e-2*exp(-(V+66.54)/31);
+   double dXs1 = (XsMhu-Xs1)*Xs1TauR;  // gate
+   double dXs2 = (XsMhu-Xs2)*Xs2TauR;  // gate
+   D->Xs1 = dXs1; 
+   D->Xs2 = dXs2; 
+   state->Xs1 += dt*dXs1; 
+   state->Xs2 += dt*dXs2; 
+}
 void IK1Func(CELLPARMS *cP, STATE *state, DERIVED *derived, CURRENTS *I, STATE *D, double dt)
 {
    double V = state->Vm; 
@@ -739,8 +760,12 @@ void integrateNonGates(CELLPARMS *cP, STATE *state, DERIVED *derived, CURRENTS *
    double JdiffCa = (Cass-Cai)/tauDiffCa;
    double JdiffK  = (Kss-Ki)/tauDiffK;
 
-   double alpha0   = (-I->CaL) /(1.0+SQ(SQ(SQ(1.5/state->Cajsr))));
-   double beta0    = 1.0/(1+0.0123/state->Cajsr); 
+   double x = SQ(SQ(SQ(Cajsr/1.5))); 
+   double y = (Cajsr/0.123); 
+   double alpha0   = (-I->CaL)*x/(1.0+x);
+   double beta0    = y/(1+y); 
+   //double alpha0   = (-I->CaL) /(1.0+SQ(SQ(SQ(1.5/state->Cajsr))));
+   //double beta0    = 1.0/(1+0.0123/state->Cajsr); 
    double mhuJrelNP  = cP->alphaJrelNP * alpha0 ;
    double mhuJrelCaMK= cP->alphaJrelCaMK*alpha0;
    double tauJrelNP  = cP->betaJrelNP * beta0;
@@ -814,18 +839,154 @@ void integrateNonGates(CELLPARMS *cP, STATE *state, DERIVED *derived, CURRENTS *
    D->Cass = dCass; 
    D->Cansr= dCansr; 
    D->Cajsr= dCajsr; 
+
    D->JrelNP= dJrelNP; 
    D->JrelCaMK= dJrelCaMK; 
    D->CaMKtrap=derived->dCaMKtrap; 
    D->Vm = dV; 
-   state->Nai  += dt*dNai; 
-   state->Nass += dt*dNass; 
-   state->Ki   += dt*dKi; 
-   state->Kss  += dt*dKss; 
-   state->Cai  += dt*dCai; 
-   state->Cass += dt*dCass; 
-   state->Cansr+= dt*dCansr; 
-   state->Cajsr+= dt*dCajsr; 
+   //state->Nai  += dt*dNai; 
+   //state->Nass += dt*dNass; 
+   //state->Ki   += dt*dKi; 
+   //state->Kss  += dt*dKss; 
+   //state->Cai  += dt*dCai; 
+   //state->Cass += dt*dCass; 
+   //state->Cansr+= dt*dCansr; 
+   //state->Cajsr+= dt*dCajsr; 
+
+   state->Nai  *= exp(dt*dNai/Nai); 
+   state->Nass *= exp(dt*dNass/Nass); 
+   state->Ki   *= exp(dt*dKi/Ki); 
+   state->Kss  *= exp(dt*dKss/Kss); 
+   state->Cai  *= exp(dt*dCai/Cai); 
+   state->Cass *= exp(dt*dCass/Cass); 
+   state->Cansr*= exp(dt*dCansr/state->Cansr); 
+   state->Cajsr*= exp(dt*dCajsr/state->Cajsr); 
+
+   state->JrelNP+= dt*dJrelNP; 
+   state->JrelCaMK+= dt*dJrelCaMK; 
+   state->CaMKtrap+=dt*derived->dCaMKtrap; 
+
+}
+void integrateNonGatesS(CELLPARMS *cP, STATE *state, DERIVED *derived, CURRENTS *I, STATE *D, double Istim, double dt)
+{
+
+   double V = state->Vm; 
+   double Nass = state->Nass; 
+   double Nai  = state->Nai; 
+   double Cass = state->Cass; 
+   double Cajsr = state->Cajsr; 
+   double Cai  = state->Cai; 
+   double Kss  = state->Kss; 
+   double Ki   = state->Ki; 
+
+   double tauDiffNa=2.0; // ms
+   double tauDiffK=2.0; // ms
+   double tauDiffCa=0.2;// ms
+   double JdiffNa = (Nass-Nai)/tauDiffNa;
+   double JdiffCa = (Cass-Cai)/tauDiffCa;
+   double JdiffK  = (Kss-Ki)/tauDiffK;
+   double x = SQ(SQ(SQ(Cajsr/1.5))); 
+   double y = (Cajsr/0.123); 
+   double alpha0   = (-I->CaL)*x/(1.0+x);
+   double beta0    = y/(1+y); 
+   //double alpha0   = (-I->CaL) /(1.0+SQ(SQ(SQ(1.5/state->Cajsr))));
+   //double beta0    = 1.0/(1+0.0123/state->Cajsr); 
+   double mhuJrelNP  = cP->alphaJrelNP * alpha0 ;
+   double mhuJrelCaMK= cP->alphaJrelCaMK*alpha0;
+   double tauJrelNP  = cP->betaJrelNP * beta0;
+   double tauJrelCaMK= cP->betaJrelCaMK*beta0; 
+   tauJrelNP = MAX(tauJrelNP,0.001); 
+   tauJrelCaMK = MAX(tauJrelCaMK,0.001); 
+
+   //cP->relABRatio = 0.5; 
+   //double bRelRatio = 1.25; 
+   //double aRelRatio = bRelRatio; 
+   //double bTau = 4.75; // ms
+   //double aRel = cP->JrelABRatio*bTau;
+   //double aRel = 0.5*bTau;
+   //double bTauCaMK = bRelRatio*bTau; 
+   //double aRelCaMK = relRatio*bTauCaMK;
+   //double aRelCaMK = 0.5*bTauCaMK;
+   //double mhuJrelCaMK = (aRelCaMK/aRel)*mhuJrelNP;
+   //double tauRelCaMK = (bTauCaMK/bTau)*tauRelNP; 
+
+   //double mhuJrelNP=aRel * (-I->CaL) /(1.0+SQ(SQ(SQ(1.5/state->Cajsr))));
+   //double mhuJrelCaMK= aRelRatio*mhuJrelNP;
+   //double tauRelNP   = bTau/(1+0.0123/state->Cajsr); 
+   //double tauRelCaMK = bRelRatio*tauRelNP; 
+   //tauRelNP = MAX(tauRelNP,0.001); 
+   //tauRelCaMK = MAX(tauRelCaMK,0.001); 
+
+   double phiRelCaMK=derived->phiCaMK;
+   double Jrel = (1-phiRelCaMK)*state->JrelNP + phiRelCaMK*state->JrelCaMK; 
+
+
+   double JupNP = cP->cJup*Cai/(0.00092 + Cai) ; 
+   double deltaKmPLB = 0.00017 ; // mM
+   double deltaJupCaMK=1.75; 
+   double JupCaMK = cP->cJup*(1 + deltaJupCaMK)*Cai/(0.00092 -deltaKmPLB + Cai) ;
+
+   double phiUpCaMK=phiRelCaMK;
+   double Jleak = 0.0039375*state->Cansr/15.0;
+   double Jup = (1-phiUpCaMK)*JupNP + phiUpCaMK*JupCaMK - Jleak; 
+   double tautr = 100 ;// ms
+   double Jtr = (state->Cansr-state->Cajsr)/tautr; 
+
+   //double CMDN =  0.05 ;  // mM
+   double TRPN =  0.07 ;  // mM
+   double BSR  =  0.047;  // mM
+   double BSL  =  1.124;  // mM
+   double CSQN = 10.0  ;  // mM
+   double KmCMDN = 0.00238; // mM
+   double KmTRPN = 0.0005 ; // mM
+   double KmBSR  = 0.00087; // mM
+   double KmBSL  = 0.0087 ; // mM
+   double KmCSQN = 0.8    ; // mM
+
+   double dNai = -(I->NaFast + I->NaL + 3*I->NaCai + 3*I->NaK + I->Nab)*AFV + JdiffNa*VssVmyo;
+   double dNass= -(I->CaNa + 3*I->NaCass)*AFVss - JdiffNa; 
+   double dKi =  -(I->to + I->Kr + I->Ks + I->K1 + I->Kb + Istim - 2*I->NaK )*AFV + JdiffK*VssVmyo;
+   double dKss = -I->CaK * AFVss - JdiffK; 
+   double bCai = 1/(1 + (cP->CMDN/KmCMDN)*sigm2(Cai/KmCMDN)+(TRPN/KmTRPN)*sigm2(Cai/KmTRPN));
+   double dCai= bCai*(-0.5*(I->pCa + I->Cab - 2*I->NaCai)*AFV - Jup*VnsrVmyo + JdiffCa*VssVmyo); 
+   double bCass= 1/(1 + (BSR /KmBSR )*sigm2(Cass/KmBSR)+(BSL/KmBSL)*sigm2(Cass/KmBSL));
+   double dCass=bCass*(-0.5*(I->CaL - 2*I->NaCass)*AFVss + Jrel*VjsrVss - JdiffCa); 
+   double dCansr = Jup-Jtr*VjsrVnsr; 
+   double bCajsr = 1/(1+(CSQN/KmCSQN)*sigm2(Cajsr/KmCSQN)); 
+   double dCajsr =bCajsr*(Jtr-Jrel); 
+   double dJrelNP   = (mhuJrelNP  -state->JrelNP)/tauJrelNP; 
+   double dJrelCaMK = (mhuJrelCaMK-state->JrelCaMK)/tauJrelCaMK; 
+   double dV = -(I->NaFast + I->NaL + I->to + I->CaL + I->CaNa + I->CaK + I->Kr + I->Ks + I->K1 + I->NaCai + I->NaCass + I->NaK + I->Nab + I->Cab + I->Kb + I->pCa )/Cm;
+   D->Nai  = dNai; 
+   D->Nass = dNass; 
+   D->Ki   = dKi; 
+   D->Kss  = dKss; 
+   D->Cai  = dCai; 
+   D->Cass = dCass; 
+   D->Cansr= dCansr; 
+   D->Cajsr= dCajsr; 
+   D->JrelNP= dJrelNP; 
+   D->JrelCaMK= dJrelCaMK; 
+   D->CaMKtrap=derived->dCaMKtrap; 
+   D->Vm = dV; 
+
+   //state->Nai  += dt*dNai; 
+   //state->Nass += dt*dNass; 
+   //state->Ki   += dt*dKi; 
+   //state->Kss  += dt*dKss; 
+   //state->Cai  += dt*dCai; 
+   //state->Cass += dt*dCass; 
+   //state->Cansr+= dt*dCansr; 
+   //state->Cajsr+= dt*dCajsr; 
+
+   state->Nai  *= exp(dt*dNai/Nai); 
+   state->Nass *= exp(dt*dNass/Nass); 
+   state->Ki   *= exp(dt*dKi/Ki); 
+   state->Kss  *= exp(dt*dKss/Kss); 
+   state->Cai  *= exp(dt*dCai/Cai); 
+   state->Cass *= exp(dt*dCass/Cass); 
+   state->Cansr*= exp(dt*dCansr/state->Cansr); 
+   state->Cajsr*= exp(dt*dCajsr/state->Cajsr); 
 
    state->JrelNP+= dt*dJrelNP; 
    state->JrelCaMK+= dt*dJrelCaMK; 
@@ -910,8 +1071,35 @@ double OHaraRudyIntegrate(double dt, double Istim, STATE *state, CELLPARMS *cP, 
    INaKFunc(cP, state, &derived, &I );
    INab_ICab_IKb_IpCaFunc(cP, state, &derived, &I );
    integrateNonGates(cP, state, &derived, &I, D, Istim, dt );
+   //printf("%f %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n",t,I.NaFast, I.NaL, I.to, I.CaL, I.CaNa, I.CaK, I.Kr, I.Ks, I.K1, I.NaCai, I.NaCass, I.NaK, I.Nab, I.Cab, I.Kb, I.pCa); 
+   //if (isfinite(D->Vm)==0)MPI_Abort(MPI_COMM_WORLD,1); 
    t += dt; 
-    //printf("%f %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n",t,I.NaFast, I.NaL, I.to, I.CaL, I.CaNa, I.CaK, I.Kr, I.Ks, I.K1, I.NaCai, I.NaCass, I.NaK, I.Nab, I.Cab, I.Kb, I.pCa); 
+   return D->Vm; 
+} 
+double OHaraRudyIntegrateS(double dt, double Istim, STATE *state, CELLPARMS *cP, STATE *D)
+{
+   CURRENTS I; 
+   //STATE Dlocal;  STATE *D = Dlocal; 
+
+   DERIVED derived; 
+   static double t=0; 
+
+
+   reversalPotentials(cP,state,&derived); 
+   CaMK(cP,state,&derived); 
+   INaFunc(cP,state, &derived, &I, D, dt);
+   ItoFunc(cP,state, &derived, &I, D, dt);
+   ICaL_ICaNa_ICaK_Func(cP, state, &derived, &I, D, dt);
+   IKrFunc(cP, state, &derived, &I, D, dt );
+   IKsFuncS(cP, state, &derived, &I, D, dt);
+   IK1Func(cP, state, &derived, &I, D, dt);
+
+   INaCaFunc(cP, state, &derived, &I );
+   INaKFunc(cP, state, &derived, &I );
+   INab_ICab_IKb_IpCaFunc(cP, state, &derived, &I );
+   integrateNonGatesS(cP, state, &derived, &I, D, Istim, dt );
+   //printf("%f %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n",t,I.NaFast, I.NaL, I.to, I.CaL, I.CaNa, I.CaK, I.Kr, I.Ks, I.K1, I.NaCai, I.NaCass, I.NaK, I.Nab, I.Cab, I.Kb, I.pCa); 
+   t += dt; 
    return D->Vm; 
 } 
 

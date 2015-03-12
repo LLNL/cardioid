@@ -33,6 +33,7 @@ class OHaraRudy_Reaction : public Reaction
    
  private:
 
+   int indexS_;
    std::vector<int>      ttType_; // maps cellType to ttType
    std::vector<OHaraRudy> cells_;
 };

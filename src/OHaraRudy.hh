@@ -6,6 +6,7 @@
 #include <map>
 #include "CheckpointVarInfo.hh"
 #include "OHaraRudy.h" 
+#include "Long64.hh" 
 
 
 class OHaraRudy
@@ -17,8 +18,9 @@ class OHaraRudy
    // must be -1 and nVars must be last in this enum.
 #include "OHaraRudyEnum.hh"
 
-   OHaraRudy(int cellType);
+   OHaraRudy(int cellType, Long64 gid);
    double calc(double dt, double Vm, double iStim);
+   double calcS(double dt, double Vm, double iStim);
    double defaultVoltage();
    static void getCheckpointInfo(std::vector<std::string>& fieldNames,
                                  std::vector<std::string>& fieldUnits);
@@ -30,6 +32,7 @@ class OHaraRudy
    void getValue(const std::vector<int>& handle,
                  std::vector<double>& value) const;
    static const std::string getUnit(const std::string& varName);
+   Long64 gid_; 
 
 
    
