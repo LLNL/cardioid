@@ -8,7 +8,7 @@ using namespace std;
 #include "OHaraRudyGetValue.hh" 
 #include "OHaraRudyGetHandleMap.hh"
 
-OHaraRudy::OHaraRudy(int cellType, Long64 gid)
+OHaraRudy::OHaraRudy(int cellType)
 {
    
    static int setup =0; 
@@ -16,7 +16,6 @@ OHaraRudy::OHaraRudy(int cellType, Long64 gid)
    setup=1; 
    cellParms_= OHaraRudyCellParms(cellType);
    OHaraRudyInitialState(cellType,&state_);
-   gid_= gid; 
    defaultVoltage_ = state_.Vm;
 }
 /*
@@ -38,7 +37,7 @@ double OHaraRudy::calc(double dt, double Vm, double iStim)
    double dVm = OHaraRudyIntegrate(dt, iStim, &state_,cellParms_,&D); 
    return dVm;  
 }
-double OHaraRudy::calcS(double dt, double Vm, double iStim)
+double OHaraRudyDebug::calc(double dt, double Vm, double iStim)
 {
    STATE D; 
    state_.Vm = Vm;

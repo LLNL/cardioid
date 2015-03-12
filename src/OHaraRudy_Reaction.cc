@@ -29,7 +29,10 @@ OHaraRudy_Reaction::OHaraRudy_Reaction(const Anatomy& anatomy)
       assert(anatomy.cellType(ii) >= 0 && anatomy.cellType(ii) < 256);
       int ttType = ttType_[anatomy.cellType(ii)];
       Long64 gid = anatomy.gid(ii);
-      cells_.push_back(OHaraRudy(ttType,gid));
+      if ( gid ==  (Long64)(-1)) 
+         cells_.push_back(OHaraRudyDebug(ttType));
+      else
+         cells_.push_back(OHaraRudy(ttType));
    }
 }
 
@@ -41,47 +44,9 @@ void OHaraRudy_Reaction::calc(double dt,
    assert(cells_.size() == dVm.size());
 
    int nCells = cells_.size();
-#ifndef CellDebug
 #pragma omp parallel for
    for (int ii=0; ii<nCells; ++ii)
       dVm[ii] = cells_[ii].calc(dt, Vm[ii], iStim[ii]);
-#else
-   if (indexS_ == -2) 
-   {
-      indexS_ = -1; 
-
-      for (int ii=0; ii<nCells; ++ii)
-      {
-         Long64 gid = cells_[ii].gid_;
-         if ( gid ==  864161933) 
-         {  
-            indexS_ = ii; 
-         }
-      }
-   }
-   assert(indexS_ != -2); 
-   if (indexS_ == -1) 
-   {
-#pragma omp parallel for
-      for (int ii=0; ii<nCells; ++ii)
-         dVm[ii] = cells_[ii].calc(dt, Vm[ii], iStim[ii]);
-   }
-   else 
-   {
-      //assert(cells_[indexS_].gid_ ==  875346900); 
-      int ii=0; 
-#pragma omp parallel for
-      for (ii=0; ii<nCells; ++ii) 
-      {
-         if (indexS_ != ii)  dVm[ii] = cells_[ii].calc(dt, Vm[ii], iStim[ii]);
-         else
-         {
-            printf("index = %d gid = %llu\n",indexS_,cells_[ii].gid_); 
-            dVm[ii] = cells_[ii].calcS(dt, Vm[ii], iStim[ii]);
-         }
-      }
-   }
-#endif
 }
 
 void OHaraRudy_Reaction::initializeMembraneVoltage(VectorDouble32& Vm)

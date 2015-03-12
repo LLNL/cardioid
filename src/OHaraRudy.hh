@@ -18,9 +18,8 @@ class OHaraRudy
    // must be -1 and nVars must be last in this enum.
 #include "OHaraRudyEnum.hh"
 
-   OHaraRudy(int cellType, Long64 gid);
-   double calc(double dt, double Vm, double iStim);
-   double calcS(double dt, double Vm, double iStim);
+   OHaraRudy(int cellType);
+   virtual double calc(double dt, double Vm, double iStim);
    double defaultVoltage();
    static void getCheckpointInfo(std::vector<std::string>& fieldNames,
                                  std::vector<std::string>& fieldUnits);
@@ -32,11 +31,11 @@ class OHaraRudy
    void getValue(const std::vector<int>& handle,
                  std::vector<double>& value) const;
    static const std::string getUnit(const std::string& varName);
-   Long64 gid_; 
+   virtual ~OHaraRudy(){}
 
 
    
- private:
+ protected:
 
    static HandleMap& getHandleMap();
    void initConsts(int cellType);
@@ -46,6 +45,12 @@ class OHaraRudy
    double defaultVoltage_;
    CELLPARMS *cellParms_;  
    STATE state_;
+};
+class OHaraRudyDebug : public OHaraRudy
+{
+   public:
+   OHaraRudyDebug(int cellType) : OHaraRudy(cellType){};
+   virtual double calc(double dt, double Vm, double iStim);
 };
 
 #endif
