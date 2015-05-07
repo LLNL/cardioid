@@ -13,6 +13,7 @@
 #include "pade.hh"
 #include "TT06_RRG_Reaction.hh"    // TT06 with modifications from Rice et al.
 #include "OHaraRudy_Reaction.hh"    // OHara Rudy .
+#include "OHaraRudy.hh"    // OHara Rudy .
 //#include "TT06Func.hh"
 #include "ReactionFHN.hh"
 #include "NullReaction.hh"
@@ -238,7 +239,19 @@ namespace
 {
    Reaction* scanOHaraRudy(OBJECT* obj, const Anatomy& anatomy)
    {
-      Reaction *reaction = new OHaraRudy_Reaction(anatomy);
+      OHaraRudy_Parms parms; 
+      int nCurrent=0; 
+      std::string name=OHaraRudyCurrentNames[nCurrent];
+      while(name != "")
+      {
+         string value; 
+         objectGet(obj,name,value,"OHaraRudy"); 
+         printf("%s %s\n",name.c_str(),value.c_str()); 
+         parms.currentNames.push_back(name); 
+         parms.currentModels.push_back(value); 
+         name = OHaraRudyCurrentNames[++nCurrent]; 
+      }
+      Reaction *reaction = new OHaraRudy_Reaction(anatomy,parms);
       return  reaction; 
    }
 }

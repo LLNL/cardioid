@@ -2,6 +2,7 @@
 #include <cmath>
 #include <string>
 #include <map>
+#include <cstdio>
 #include "Anatomy.hh"
 #include "OHaraRudy.hh"
 #include "OHaraRudy.h"
@@ -10,7 +11,7 @@
 
 using namespace std;
 
-OHaraRudy_Reaction::OHaraRudy_Reaction(const Anatomy& anatomy)
+OHaraRudy_Reaction::OHaraRudy_Reaction(const Anatomy& anatomy,OHaraRudy_Parms &parms)
 {
    ttType_.resize(256, -1); 
    ttType_[30] = ENDO_CELL;
@@ -24,15 +25,16 @@ OHaraRudy_Reaction::OHaraRudy_Reaction(const Anatomy& anatomy)
    indexS_=-2; 
 
    cells_.reserve(anatomy.nLocal());
+   int ttType0 = ttType_[anatomy.cellType(0)];
    for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
    {
       assert(anatomy.cellType(ii) >= 0 && anatomy.cellType(ii) < 256);
       int ttType = ttType_[anatomy.cellType(ii)];
       Long64 gid = anatomy.gid(ii);
       if ( gid ==  (Long64)(-1)) 
-         cells_.push_back(OHaraRudyDebug(ttType));
+         cells_.push_back(OHaraRudyDebug(ttType,parms));
       else
-         cells_.push_back(OHaraRudy(ttType));
+         cells_.push_back(OHaraRudy(ttType,parms));
    }
 }
 
@@ -77,10 +79,9 @@ double OHaraRudy_Reaction::getValue(int iCell, int varHandle) const
    return cells_[iCell].getValue(varHandle);
 }
 
-void OHaraRudy_Reaction::getValue(int iCell,
-      const vector<int>& handle,
-      vector<double>& value) const
+void OHaraRudy_Reaction::getValue(int iCell, const vector<int>& handle, vector<double>& value) const
 {
+
    cells_[iCell].getValue(handle, value);
 }
 

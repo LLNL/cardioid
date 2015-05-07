@@ -74,8 +74,16 @@ HEARTSRC= \
 	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc DVThreshSensor.cc \
    StateVariableSensor.cc
 
+OHaraRudySRC= OHaraRudy_Concent.c OHaraRudy_INaCai.c OHaraRudy_INaCass.c  \
+              OHaraRudy_INaK.c OHaraRudy_INab.c OHaraRudy_ICab.c OHaraRudy_IKb.c \
+              OHaraRudy_IpCa.c OHaraRudy_INaFast.c OHaraRudy_INaL.c OHaraRudy_Ito.c \
+              OHaraRudy_IKr.c OHaraRudy_IKs.c OHaraRudy_IK1.c OHaraRudy_ICa.c \
+              OHaraRudy_Fluxes.c OHaraRudy_CaMKtrap.c reversalPotentials.c
+RTYSC14ASRC = RTYSC14A_IKr.c
+
 SPISRC=	 spi_impl.c
-SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c OHaraRudy_c.c 
+SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c $(OHaraRudySRC) $(RTYSC14ASRC)
+
 
 DDCMD_FILES = \
 	codata.h \
@@ -203,8 +211,8 @@ $(BINDIR)/$(EXENAME): $(CARDIOIDOBJS) Version.cc
 	-DARCH=$(ARCH) 
 
 OHaraRudy.cc : OHaraRudy.h
-	awk -f OHaraRudyMkInclude.awk OHaraRudy.h
-	touch OHaraRudy.cc
+#	awk -f OHaraRudyMkInclude.awk OHaraRudy.h
+#	touch OHaraRudy.cc
 
 testLoadBalancer:
 	@$(MAKE) --no-print-directory makedirs testLoadBalancer-target \

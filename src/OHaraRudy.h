@@ -1,7 +1,44 @@
 #ifndef OHARARUDY_H
 #define OHARARUDY_H
+#include <stdio.h>
+
+#define MAX(A, B) ((A) > (B) ? (A) : (B))
+#define sigm(x)   (1.0/(1.0 + (x)))
+#define sigm2(x)  (1.0/SQ(1.0 + (x)))
+#define sige(x)   (1.0/(1.0 + exp((x))))
+#define SQ(x)   ((x)*(x))
+#define CUBE(x)   ((x)*(x)*(x))
+
+//Physical Constants 
+//
+static double R   = 8314.0;  //J/kmol/K
+static double F   = 96485; //Coulomb/mol
+
+static double T   = 310; //K
+static double Cm     = 1.0    ; // uF; 
+
+static double PRNaK = 0.01833; 
+static double Nao =  140; //mM;
+static double Cao =  1.8; // mM
+static double Ko  =  5.4; // mM
+
+static double gammaCai= 1.0 ;
+static double gammaCao= 0.341; 
+static double zCa = 2;
+static double gammaNai= 0.75;
+static double gammaNao= 0.75; 
+static double zNa = 1;
+static double gammaKi= 0.75;
+static double gammaKo= 0.75; 
+static double zK = 1;
+static double AfFast=0.6; 
+
+#define CELLPARMS double
+
 enum CELLTYPES {ENDO_CELL, EPI_CELL, M_CELL};
-typedef struct state_st 
+enum varTypes { PARAMETER_TYPE,PSTATE_TYPE,END_VARINFO}; 
+enum accessTypes { READ, WRITE}; 
+typedef struct commonState_st 
 { 
 //        name         units checkpoint
    double Vm;          // mV false
@@ -13,78 +50,59 @@ typedef struct state_st
    double Cass;        // mM true
    double Cansr;       // mM true
    double Cajsr;       // mM true
-   double m;           // 1 true
-   double hFast;       // 1 true
-   double hSlow;       // 1 true
-   double j;           // 1 true
-   double hCaMKSlow;   // 1 true
-   double jCaMK;       // 1 true
-   double mL;          // 1 true
-   double hL;          // 1 true
-   double hLCaMK;      // 1 true
-   double a;           // 1 true
-   double iFast;       // 1 true
-   double iSlow;       // 1 true
-   double aCaMK;       // 1 true
-   double iCaMKFast;   // 1 true
-   double iCaMKSlow;   // 1 true
-   double d;           // 1 true
-   double fFast;       // 1 true
-   double fSlow;       // 1 true
-   double fCaFast;     // 1 true
-   double fCaSlow;     // 1 true
-   double jCa;         // 1 true
-   double n;           // 1 true
-   double fCaMKFast;   // 1 true
-   double fCaCaMKFast; // 1 true
-   double XrFast;      // 1 true
-   double XrSlow;      // 1 true
-   double Xs1;         // 1 true
-   double Xs2;         // 1 true
-   double XK1;         // 1 true
-   double JrelNP;      // mM/ms true
-   double JrelCaMK;    // mM/ms true
-   double CaMKtrap;    // 1 true
-} STATE; 
+}  STATE; 
 
-typedef struct cellParms_st 
-{
-//        name        units checkpoint
-   double GNaFast;       // mS/uF false
-   double GNaL;          // mS/uF false
-   double Gto;           // mS/uF false
-   double PCaL;          // cm/s  false  PCaCaMK  = 1.1*PCaL; 
-   double PCaNa;         // cm/s  false  PCaNaCaMK=1.1*PCaNa; 
-   double PCaK;          // cm/s  false  PCaKCaMK =1.1*PCaK 
-   double GKr ;          // mS/uF false
-   double GK1 ;          // mS/uF false
-   double GKs ;          // mS/uF false
-   double GNaCai;        // uA/uF false
-   double GNaCass;       // uA/uF false
-   double PNaK;          // mV/mM  false
-   double PNab;          // cm/s  false
-   double PCab;          // cm/s  false
-   double GKb;           // mS/uF false
-   double GpCa;          // mS/uF false
-   double alphaJrelNP;   // mM/mV false
-   double betaJrelNP;    // mM/mS false
-   double alphaJrelCaMK; // mM/mV false
-   double betaJrelCaMK;  // mM/mS false
-   double cJup;          // mM/ms false
-   double CMDN;          // mM    false
-   double aDelta;        //  1    false
-} CELLPARMS;
+typedef struct flux_st    { double diffNa, diffK, diffCa, rel, up, tr;} FLUXES; 
+typedef struct current_st 
+{ 
+   double stimulus; 
+   double NaCai;
+   double NaCass;
+   double NaK;
+   double Nab;
+   double Cab;
+   double Kb;
+   double pCa;
 
-#ifdef __cplusplus
-extern "C" 
+   double NaFast; 
+   double NaL; 
+   double to;
+   double Kr;
+   double Ks;
+   double K1;
+   double CaL;
+   double CaNa;
+   double CaK;
+
+} CURRENTS;
+
+typedef struct derived_st 
+{ 
+  double dVm; 
+  double ENa, EK, EKs; 
+  double phiCaMK; 
+  CURRENTS I; 
+  FLUXES J;
+} DERIVED; 
+
+typedef struct varInfo_str 
 {
-#endif 
-void OHaraRudySetup();
-double OHaraRudyIntegrate(double dt, double Istim, STATE *state, CELLPARMS *cP, STATE *D);
-double OHaraRudyIntegrateS(double dt, double Istim, STATE *state, CELLPARMS *cP, STATE *D);
-void OHaraRudyInitialState(int cellType, STATE *state);
-CELLPARMS *OHaraRudyCellParms(int cellType);
-#ifdef __cplusplus
-}
-#endif 
+   char *name; 
+   int type;
+   int index;
+   double defaultValueENDO;
+   double defaultValueEPI;
+   double defaultValueM;
+   char *units;
+} VARINFO; 
+
+typedef struct componentInfo_st
+{
+   int pStateSize; 
+   int parmsSize; 
+   int nVar; 
+   VARINFO *varInfo;
+   void (*func)(CELLPARMS *, STATE *, int, DERIVED *, double); 
+   void (*access)(int, int, double *, double *, double *); 
+} COMPONENTINFO;
 #endif

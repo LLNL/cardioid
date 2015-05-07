@@ -2,6 +2,7 @@
 #define OHaraRudy_REACTION_HH
 
 #include "Reaction.hh"
+#include "OHaraRudy.hh"
 class Anatomy;
 class OHaraRudy;
 class BucketOfBits;
@@ -10,7 +11,7 @@ class OHaraRudy_Reaction : public Reaction
 {
  public:
    
-   OHaraRudy_Reaction(const Anatomy& anatomy);
+   OHaraRudy_Reaction(const Anatomy& anatomy, OHaraRudy_Parms &parms);
    std::string methodName() const {return "OHaraRudy";}
 
    void calc(double dt,

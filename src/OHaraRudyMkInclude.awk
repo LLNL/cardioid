@@ -2,7 +2,7 @@ BEGIN {
 setValuehh     = "OHaraRudySetValue.hh"
 getValuehh     = "OHaraRudyGetValue.hh"
 enumhh         = "OHaraRudyEnum.hh"
-nameArrayh        = "OHaraRudyNameArray.h"
+nameArrayh     = "OHaraRudyNameArray.h"
 getHandleMaphh = "OHaraRudyGetHandleMap.hh"
 flag=0;
 units = 2

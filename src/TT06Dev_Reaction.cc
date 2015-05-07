@@ -181,7 +181,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
    mkState_(parms);
    currentMap_.resize(parms.currentNames.size()); 
    int nCurrents=0; 
-   while (currentNames[nCurrents] != "") {nCurrents++;}
+   while (TT06currentNames[nCurrents] != "") {nCurrents++;}
    //printf("current sizes: %d %d %d\n",nCurrents,sizeof(double),sizeof(currentScales_)); 
    assert(nCurrents*sizeof(double) == sizeof(currentScales_)); 
    currentScales_=currentScalesDefault; 
@@ -190,7 +190,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
    {
       int j = 0;
       for (;j<nCurrents;j++) 
-         if ( std::string(currentNames[j]) == parms.currentNames[i]) break; 
+         if ( std::string(TT06currentNames[j]) == parms.currentNames[i]) break; 
       assert(j<nCurrents); 
       currentMap_[i]   = j;
    }

@@ -1,0 +1,7 @@
+#!/bin/csh
+foreach root ( Concent Fluxes CaMKtrap INaCai INaCass INaK INab ICab IKb IpCa INaFast INaL Ito IKr IKs IK1 ICa )
+fgrep OHaraRudy OHaraRudy_symbols.txt | fgrep $root' '  | awk -f mkCompInclude.awk  > OHaraRudy_$root.h
+end
+set root = "IKr"
+fgrep  RTYSC14A  symbols.txt | fgrep $root' '  | awk -f mkCompInclude.awk  > RTYSC14A_$root.h
+
