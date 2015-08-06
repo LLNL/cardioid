@@ -4,12 +4,12 @@
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
+#include <string.h>
 #include "OHaraRudy.h"
 #include "OHaraRudyInit.h"
 
 using namespace std;
 
-static int shift = 0x00010000; 
 int OHaraRudy::parmsSize_=0; 
 int OHaraRudy::stateSize_=0; 
 int * OHaraRudy::privateStateOffset_=0;; 
@@ -132,6 +132,7 @@ void OHaraRudy::initConsts(int cellType,OHaraRudy_Parms &parms)
          if ( name == "OHaraRudy_IK1")     cInit[k++] = OHaraRudy_IK1Init; 
          if ( name == "OHaraRudy_ICa")     cInit[k++] = OHaraRudy_ICaInit; 
 
+         if ( name == "OHaraRudyMod_INaFast") cInit[k++] = OHaraRudyMod_INaFastInit; 
          if ( name == "RTYSC14A_IKr")      cInit[k++] = RTYSC14A_IKrInit; 
       }
       cInit[k++] = OHaraRudy_FluxesInit;      // must be initialize after ICa
@@ -155,7 +156,7 @@ void OHaraRudy::initConsts(int cellType,OHaraRudy_Parms &parms)
          {
             string name = varInfo[j].name ;
             string units = varInfo[j].units;
-            unsigned int index = i*shift + varInfo[j].index;
+            unsigned int index = (i << 16) + varInfo[j].index;
             bool  checkpoint = false;
             if (varInfo[j].type == PSTATE_TYPE)
             {
@@ -175,13 +176,16 @@ void OHaraRudy::initConsts(int cellType,OHaraRudy_Parms &parms)
             handleMap_[name] = CheckpointVarInfo(index, checkpoint, units );
          }
       } 
+      printf("size = %d %d\n",stateOffset,parmsOffset); 
       stateSize_ = stateOffset*sizeof(double); 
       parmsSize_ = parmsOffset*sizeof(double); 
 
+      char **nameState = (char **)malloc(stateSize_/8*sizeof(char *)); 
       defaultStateENDO_ = (double *)malloc(stateSize_); 
       defaultStateEPI_ = (double *)malloc(stateSize_); 
       defaultStateM_ = (double *)malloc(stateSize_); 
 
+      char **nameParms = (char **)malloc(parmsSize_/8*sizeof(char *)); 
       defaultParmsENDO_ = (double *)malloc(parmsSize_); 
       defaultParmsEPI_  = (double *)malloc(parmsSize_); 
       defaultParmsM_    = (double *)malloc(parmsSize_); 
@@ -199,6 +203,7 @@ void OHaraRudy::initConsts(int cellType,OHaraRudy_Parms &parms)
             double defaultValueM  = varInfo[j].defaultValueM;
             if (varInfo[j].type == PSTATE_TYPE)
             {
+               nameState[nState] = strdup(name.c_str()); 
                defaultStateENDO_[nState] = defaultValueENDO; 
                defaultStateEPI_[nState] = defaultValueEPI; 
                defaultStateM_[nState] = defaultValueM; 
@@ -206,6 +211,7 @@ void OHaraRudy::initConsts(int cellType,OHaraRudy_Parms &parms)
             }
             if (varInfo[j].type == PARAMETER_TYPE)
             {
+               nameParms[nParms] = strdup(name.c_str()); 
                defaultParmsENDO_[nParms] = defaultValueENDO; 
                defaultParmsEPI_[nParms] = defaultValueEPI; 
                defaultParmsM_[nParms] = defaultValueM; 
@@ -215,6 +221,8 @@ void OHaraRudy::initConsts(int cellType,OHaraRudy_Parms &parms)
       }
       assert(nState*sizeof(double) == stateSize_); 
       initialized = true; 
+   for (int i=0;i<nState;i++) printf("OHaraRudy %2d %16s %16.8e %16.8e %16.8e\n",i,nameState[i],defaultStateENDO_[i],defaultStateEPI_[i],defaultStateM_[i]); 
+   for (int i=0;i<nParms;i++) printf("OHaraRudy %2d %16s %16.8e %16.8e %16.8e\n",i,nameParms[i],defaultParmsENDO_[i],defaultParmsEPI_[i],defaultParmsM_[i]); 
    }
 }
 
@@ -243,16 +251,18 @@ void OHaraRudy::initParms(int cellType)
 void OHaraRudy::setValue(int varHandle, double value) 
 {
    int iComp = varHandle >> 16; 
-   int index = varHandle % shift; 
+   int index = varHandle &  0xffff; 
    double *pstate = state_ + privateStateOffset_[iComp]; 
-   info_[iComp].access(WRITE,index,&value,(double *)cellParms_,pstate); 
+   double *cellParms = cellParms_ + privateParmsOffset_[iComp]; 
+   info_[iComp].access(WRITE,index,&value,cellParms,pstate); 
 }
 double OHaraRudy::getValue(int varHandle)  const
 {
    double value; 
    int iComp = varHandle >> 16; 
-   int index = varHandle % shift; 
+   int index = varHandle  & 0xffff; 
    double *pstate = state_ + privateStateOffset_[iComp]; 
-   info_[iComp].access(READ,index,&value,(double *)cellParms_,pstate); 
+   double *cellParms = cellParms_ + privateParmsOffset_[iComp]; 
+   info_[iComp].access(READ,index,&value,cellParms,pstate); 
    return value; 
 }

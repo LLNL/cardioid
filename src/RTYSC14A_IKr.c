@@ -5,6 +5,7 @@
 static double a[8]; 
 static double b[8]; 
 static double TBase = 310.0; // Kelvin
+static double cc; 
 
 void RTYSC14A_IKrFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt)
 {
@@ -12,13 +13,29 @@ void RTYSC14A_IKrFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *d
    double *S = ((double *)state)+pOffset ; 
    PSTATE *pState = (PSTATE *)S ; 
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
+/*
+   cP->rC = 0.00;  
+   cP->kC = 0.00;  
+   cP->rO = 16.227;
+   cP->kO =  0.511;
+   cP->rI =  0.2318;
+   cP->kI =  0.511;
+// cP->D = 48e-6; 
+   cP->D = 0.0;    
+   cP->D = 0.0;; 
+   cP->rO = 0.0;    
+   cP->kO =  0.0;    
+   cP->rI =  0.0;    
+   cP->kI =  0.0;    
+   cP->D = 0.0;    
+*/
    double Vm = state->Vm; 
-   derived->I.Kr = cP->GKr * (Vm-derived->EK)*pState->O; 
+   derived->I.Kr = cP->GKr * cc* (Vm-derived->EK)*pState->O; 
 
    double rate[8]; 
-   for (int i=1;i<8;i++) rate[i] = a[i]*exp(b[i]*Vm); 
+   for (int i=0;i<8;i++) rate[i] = a[i]*exp(b[i]*Vm); 
 
-   double  dSdt[5]; 
+   double  dSdt[10]; 
    dSdt[0] = rate[1]*S[1] - rate[0]*S[0]; 
    for (int i=1;i<4;i++) 
    {
@@ -26,7 +43,36 @@ void RTYSC14A_IKrFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *d
    } 
    dSdt[4] = rate[6]*S[3] - rate[7]*S[4]; 
 
-   for (int i=0;i<5;i++) S[i] += dt*dSdt[i]; 
+   dSdt[0+5] = rate[1]*S[1+5] - rate[0]*S[0+5]; 
+   for (int i=1;i<4;i++) 
+   {
+      dSdt[i+5] = rate[2*i-2]*S[i-1+5] + rate[2*i+1]*S[i+1+5] - (rate[2*i-1]+rate[2*i])*S[i+5]; 
+   } 
+   dSdt[4+5] = rate[6]*S[3+5] - rate[7]*S[4+5]; 
+
+   double D = cP->D; 
+   dSdt[0] -= cP->kC*D*S[0] ; dSdt[5] += cP->kC*D*S[0]; 
+   dSdt[1] -= cP->kC*D*S[1] ; dSdt[6] += cP->kC*D*S[1]; 
+   dSdt[2] -= cP->kC*D*S[2] ; dSdt[7] += cP->kC*D*S[2]; 
+   dSdt[3] -= cP->kO*D*S[3] ; dSdt[8] += cP->kO*D*S[3]; 
+   dSdt[4] -= cP->kI*D*S[4] ; dSdt[9] += cP->kI*D*S[4]; 
+   dSdt[0] += cP->rC*S[5]   ; dSdt[5] -= cP->rC*S[5]; 
+   dSdt[1] += cP->rC*S[6]   ; dSdt[6] -= cP->rC*S[6]; 
+   dSdt[2] += cP->rC*S[7]   ; dSdt[7] -= cP->rC*S[7]; 
+   dSdt[3] += cP->rC*S[8]   ; dSdt[8] -= cP->rC*S[8]; 
+   dSdt[4] += cP->rC*S[9]   ; dSdt[9] -= cP->rC*S[9]; 
+/*
+*/
+
+   static loop=0; 
+   if (loop %10 == 0) 
+   {
+   printf("STATE %8d %16.8e",loop,Vm); 
+   for (int i=0;i<10;i++) printf("%16.8e",S[i]); printf("\n"); 
+   }
+   loop++; 
+   for (int i=0;i<10;i++) S[i] += dt*dSdt[i]; 
+
 }
 void RTYSC14A_Rates(double V, double *rate)
 {
@@ -51,6 +97,7 @@ COMPONENTINFO RTYSC14A_IKrInit()
       a[i] = rate0[i];
       b[i] = 0.1*log(rate10[i]/rate0[i]);
    }
+   cc = sqrt(Ko/5.4); 
    
    COMPONENTINFO info;
    info.nVar = nVar; 

@@ -64,6 +64,7 @@ HEARTSRC= \
    TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc \
 	TT06_RRG.cc \
    OHaraRudy.cc \
+   OHaraRudyScan.cc \
 	TestStimulus.cc PointStimulus.cc BoxStimulus.cc \
 	PeriodicPulse.cc RandomPulse.cc \
 	PointListSensor.cc ActivationTimeSensor.cc \
@@ -79,7 +80,7 @@ OHaraRudySRC= OHaraRudy_Concent.c OHaraRudy_INaCai.c OHaraRudy_INaCass.c  \
               OHaraRudy_IpCa.c OHaraRudy_INaFast.c OHaraRudy_INaL.c OHaraRudy_Ito.c \
               OHaraRudy_IKr.c OHaraRudy_IKs.c OHaraRudy_IK1.c OHaraRudy_ICa.c \
               OHaraRudy_Fluxes.c OHaraRudy_CaMKtrap.c reversalPotentials.c
-RTYSC14ASRC = RTYSC14A_IKr.c
+RTYSC14ASRC = OHaraRudyMod_INaFast.c RTYSC14A_IKr.c
 
 SPISRC=	 spi_impl.c
 SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c $(OHaraRudySRC) $(RTYSC14ASRC)

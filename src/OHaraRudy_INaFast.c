@@ -31,8 +31,8 @@ void OHaraRudy_INaFastFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIV
 
       derived->I.NaFast = cP->GNaFast*(V-ENa)*m*m*m*((1-phiCaMK)*h*j+phiCaMK*hCaMK*jCaMK); 
 
-      //double mMhu =  sige(-(V + 39.57)/9.871);  //OHR orginal  mMhu
-      double mMhu = SQ(sige(-(V + 56.86)/9.030)); //TT06  mMhu
+      double mMhu =  sige(-(V + 39.57)/9.871);  //OHR orginal  mMhu
+//    double mMhu = SQ(sige(-(V + 56.86)/9.030)); //TT06  mMhu
       double mTauR = 6.765*exp((V + 11.64)/34.77)+8.552*exp(-(V + 77.42)/5.955); 
       double  dm = (mMhu-m)*mTauR;  // gate
 
@@ -54,9 +54,9 @@ void OHaraRudy_INaFastFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIV
       double hCaMKMhu = sige((V+89.1)/6.086);
       double hCaMKSlowTauR = hSlowTauR/3.0; 
       double dhCaMKSlow = (hCaMKMhu-hCaMKSlow)*hCaMKSlowTauR;  // gate
-      //state->m += dt*dm;    //Forward Euler for original OR mGate 
-      double tauRdt = 1-exp(-dt*mTauR); //Rush Larsen needed with TT06 mMhu; 
-      pState->m += (mMhu-m)*tauRdt;     // Rush Larsen needed with TT06 mMhu; 
+      pState->m += dt*dm;    //Forward Euler for original OR mGate 
+//    double tauRdt = 1-exp(-dt*mTauR); //Rush Larsen needed with TT06 mMhu; 
+//    pState->m += (mMhu-m)*tauRdt;     // Rush Larsen needed with TT06 mMhu; 
       pState->hFast += dt*dhFast; 
       pState->hSlow += dt*dhSlow; 
       pState->j     += dt*dj; 

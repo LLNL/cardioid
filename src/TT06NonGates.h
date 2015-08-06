@@ -4,7 +4,7 @@
 
 #define TT06  0 
 #define RICE  1
-#define fCassForm RICE
+#define fCassForm TT06
 typedef struct currentScales_st        { double   K1,    Kr,    Ks,    Na,    bNa,    CaL,    bCa,    to,    NaK,    NaCa,    pCa,    pK,    NaL, leak, up, rel,xfer;} CURRENT_SCALES;    
 static const char * TT06currentNames[18] =      { "I_K1","I_Kr","I_Ks","I_Na","I_bNa","I_CaL","I_bCa","I_to","I_NaK","I_NaCa","I_pCa","I_pK","I_NaL","I_leak","I_up","I_rel","I_xfer",""}; 
 // Note all currents are in picoA/picoF except for I_leak,I_up,I_rel,I_xfer which are millimolar/millisecond

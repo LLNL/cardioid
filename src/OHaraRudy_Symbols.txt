@@ -97,10 +97,30 @@
  OHaraRudy     PSTATE        ICa      fCaMKFast          1.0 1
  OHaraRudy     PSTATE        ICa    fCaCaMKFast          1.0 1
 // IKr Vm::GKr 
- RTYSC14A   PARAMETER        IKr            GKr       0.0460*1.3*0.8 mS/uF
+ RTYSC14A   PARAMETER        IKr            GKr       0.04218*1.3*0.8 mS/uF
+ RTYSC14A   PARAMETER        IKr            D         0.0*0.0*0.0 mM
+ RTYSC14A   PARAMETER        IKr            kC        0.0*0.0*0.0 1/(mM*ms)
+ RTYSC14A   PARAMETER        IKr            kO        0.0*0.0*0.0 1/(mM*ms)
+ RTYSC14A   PARAMETER        IKr            kI        0.0*0.0*0.0 1/(mM*ms)
+ RTYSC14A   PARAMETER        IKr            rC        0.0*0.0*0.0 1/ms
+ RTYSC14A   PARAMETER        IKr            rO        0.0*0.0*0.0 1/ms
+ RTYSC14A   PARAMETER        IKr            rI        0.0*0.0*0.0 1/ms
  RTYSC14A      PSTATE        IKr            C3             1 1     
  RTYSC14A      PSTATE        IKr            C2             0 1     
  RTYSC14A      PSTATE        IKr            C1             0 1     
  RTYSC14A      PSTATE        IKr             O             0 1     
  RTYSC14A      PSTATE        IKr             I             0 1     
+ RTYSC14A      PSTATE        IKr            C3d            0 1     
+ RTYSC14A      PSTATE        IKr            C2d            0 1     
+ RTYSC14A      PSTATE        IKr            C1d            0 1     
+ RTYSC14A      PSTATE        IKr             Od            0 1     
+ RTYSC14A      PSTATE        IKr             Id            0 1     
 
+// INaFast Vm:ENa,phiCaMK:GNaFast
+ OHaraRudyMod PARAMETER    INaFast        GNaFast          75. mS/uF
+ OHaraRudyMod PSTATE    INaFast              m    0.0074621 1
+ OHaraRudyMod PSTATE    INaFast          hFast     0.692591 1
+ OHaraRudyMod PSTATE    INaFast          hSlow     0.692574 1
+ OHaraRudyMod PSTATE    INaFast              j     0.692477 1
+ OHaraRudyMod PSTATE    INaFast      hCaMKSlow     0.448501 1
+ OHaraRudyMod PSTATE    INaFast          jCaMK     0.692413 1

@@ -1,16 +1,28 @@
 #include <assert.h>
-enum enumIndex{ GKrIndex, C3Index, C2Index, C1Index, OIndex, IIndex, nVar};
+enum enumIndex{ GKrIndex, DIndex, kCIndex, kOIndex, kIIndex, rCIndex, rOIndex, rIIndex, C3Index, C2Index, C1Index, OIndex, IIndex, C3dIndex, C2dIndex, C1dIndex, OdIndex, IdIndex, nVar};
 static VARINFO varInfo[] =
 {
-   {"GKr",PARAMETER_TYPE,GKrIndex,0.046,0.0598,0.0368,"mS/uF"},
+   {"GKr",PARAMETER_TYPE,GKrIndex,0.04218,0.054834,0.033744,"mS/uF"},
+   {"D",PARAMETER_TYPE,DIndex,0,0,0,"mM"},
+   {"kC",PARAMETER_TYPE,kCIndex,0,0,0,"1/(mM*ms)"},
+   {"kO",PARAMETER_TYPE,kOIndex,0,0,0,"1/(mM*ms)"},
+   {"kI",PARAMETER_TYPE,kIIndex,0,0,0,"1/(mM*ms)"},
+   {"rC",PARAMETER_TYPE,rCIndex,0,0,0,"1/ms"},
+   {"rO",PARAMETER_TYPE,rOIndex,0,0,0,"1/ms"},
+   {"rI",PARAMETER_TYPE,rIIndex,0,0,0,"1/ms"},
    {"C3",PSTATE_TYPE,C3Index,1,1,1,"1"},
    {"C2",PSTATE_TYPE,C2Index,0,0,0,"1"},
    {"C1",PSTATE_TYPE,C1Index,0,0,0,"1"},
    {"O",PSTATE_TYPE,OIndex,0,0,0,"1"},
-   {"I",PSTATE_TYPE,IIndex,0,0,0,"1"}
+   {"I",PSTATE_TYPE,IIndex,0,0,0,"1"},
+   {"C3d",PSTATE_TYPE,C3dIndex,0,0,0,"1"},
+   {"C2d",PSTATE_TYPE,C2dIndex,0,0,0,"1"},
+   {"C1d",PSTATE_TYPE,C1dIndex,0,0,0,"1"},
+   {"Od",PSTATE_TYPE,OdIndex,0,0,0,"1"},
+   {"Id",PSTATE_TYPE,IdIndex,0,0,0,"1"}
 };
-typedef struct parameters_str { double  GKr;} PARAMETERS;
-typedef struct pstate_str { double  C3, C2, C1, O, I;} PSTATE;
+typedef struct parameters_str { double  GKr, D, kC, kO, kI, rC, rO, rI;} PARAMETERS;
+typedef struct pstate_str { double  C3, C2, C1, O, I, C3d, C2d, C1d, Od, Id;} PSTATE;
 void RTYSC14A_IKrAccess(int type,int index,double *value, double  *parmsPtr, double *statePtr)
 {
 
@@ -22,6 +34,28 @@ void RTYSC14A_IKrAccess(int type,int index,double *value, double  *parmsPtr, dou
       {
          case GKrIndex:
             *value = parms->GKr; 
+            break;
+         case DIndex:
+            *value = parms->D; 
+            break;
+         case kCIndex:
+            *value = parms->kC; 
+            break;
+         case kOIndex:
+            *value = parms->kO; 
+            break;
+         case kIIndex:
+            *value = parms->kI; 
+            break;
+         case rCIndex:
+            *value = parms->rC; 
+            break;
+         case rOIndex:
+            printf("getValue r0=%g\n",parms->rO); 
+            *value = parms->rO; 
+            break;
+         case rIIndex:
+            *value = parms->rI; 
             break;
          case C3Index:
             *value = state->C3; 
@@ -38,6 +72,21 @@ void RTYSC14A_IKrAccess(int type,int index,double *value, double  *parmsPtr, dou
          case IIndex:
             *value = state->I; 
             break;
+         case C3dIndex:
+            *value = state->C3d; 
+            break;
+         case C2dIndex:
+            *value = state->C2d; 
+            break;
+         case C1dIndex:
+            *value = state->C1d; 
+            break;
+         case OdIndex:
+            *value = state->Od; 
+            break;
+         case IdIndex:
+            *value = state->Id; 
+            break;
          default:
             assert(0); 
       }
@@ -48,6 +97,27 @@ void RTYSC14A_IKrAccess(int type,int index,double *value, double  *parmsPtr, dou
       {
          case GKrIndex:
             parms->GKr = *value;
+            break;
+         case DIndex:
+            parms->D = *value;
+            break;
+         case kCIndex:
+            parms->kC = *value;
+            break;
+         case kOIndex:
+            parms->kO = *value;
+            break;
+         case kIIndex:
+            parms->kI = *value;
+            break;
+         case rCIndex:
+            parms->rC = *value;
+            break;
+         case rOIndex:
+            parms->rO = *value;
+            break;
+         case rIIndex:
+            parms->rI = *value;
             break;
          case C3Index:
             state->C3 = *value;
@@ -63,6 +133,21 @@ void RTYSC14A_IKrAccess(int type,int index,double *value, double  *parmsPtr, dou
             break;
          case IIndex:
             state->I = *value;
+            break;
+         case C3dIndex:
+            state->C3d = *value;
+            break;
+         case C2dIndex:
+            state->C2d = *value;
+            break;
+         case C1dIndex:
+            state->C1d = *value;
+            break;
+         case OdIndex:
+            state->Od = *value;
+            break;
+         case IdIndex:
+            state->Id = *value;
             break;
             assert(0); 
       }

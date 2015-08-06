@@ -23,6 +23,7 @@ COMPONENTINFO OHaraRudy_INabInit();
 COMPONENTINFO OHaraRudy_IpCaInit();
 COMPONENTINFO OHaraRudy_ItoInit();
 
+COMPONENTINFO OHaraRudyMod_INaFastInit();
 COMPONENTINFO RTYSC14A_IKrInit();
 
 void reversalPotentials(double Nai, double Ki, DERIVED *derived);
