@@ -268,14 +268,13 @@ makedirs:
 # generate dependencies in makefile: use -Y to avoid library header files
 # that are likely to be different on other platforms.
  depend :
+	./mkCompInclude $(CONSTRUCTED_INCLUDES)
 	makedepend -f .depend_$(BUILD_SUFFIX) -p'$(OBJDIR)/' -o '.o' -Y -- $(CFLAGS) $(CXXFLAGS) -- *.cc *.c *.hh *.h 2> /dev/null
-
- dependTest :
-	makedepend -f /tmp/depend -p'$(OBJDIR)/' -o '.o' -Y -- $(CFLAGS) $(CXXFLAGS) --  OHaraRudy_INaFast.c
 
 .depend_$(BUILD_SUFFIX): $(CARDIOIDSRC)
 	@touch .depend_$(BUILD_SUFFIX)
 	@$(MAKE) depend BUILD_SUFFIX=$(BUILD_SUFFIX)
+	rm -r 
 
 #------------------------------------------------------------------------------
 #  Cleanup object files

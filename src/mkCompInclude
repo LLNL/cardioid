@@ -1,5 +1,6 @@
 #!/bin/csh 
-set file = $1
+foreach file ( $argv[*]   ) 
 set class = `echo $file:r | awk -F'_' '{print $1}'`
 set root  = `echo $file:r | awk -F'_' '{print $2}'`
 fgrep  $class' '  OHaraRudy_symbols.txt | fgrep $root' '  | awk -f mkCompInclude.awk  > $file
+end
