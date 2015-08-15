@@ -85,6 +85,10 @@ RTYSC14ASRC = OHaraRudyMod_INaFast.c RTYSC14A_IKr.c
 SPISRC=	 spi_impl.c
 SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c $(OHaraRudySRC) $(RTYSC14ASRC)
 
+CONSTRUCTED_INCLUDES=\
+OHaraRudy_Ito.h OHaraRudy_IpCa.h OHaraRudy_INab.h OHaraRudy_INaL.h OHaraRudy_INaK.h OHaraRudy_INaCass.h \
+OHaraRudy_INaCai.h OHaraRudy_IKs.h OHaraRudy_IKr.h OHaraRudy_IKb.h OHaraRudy_IK1.h OHaraRudy_ICab.h OHaraRudy_ICa.h \
+OHaraRudy_Fluxes.h OHaraRudy_Concent.h OHaraRudy_CaMKtrap.h OHaraRudy_INaFast.h OHaraRudyMod_INaFast.h RTYSC14A_IKr.h
 
 DDCMD_FILES = \
 	codata.h \
@@ -194,8 +198,12 @@ oss:
 	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=cardioid-$(ARCH)-oss \
    LD="/usr/global/tools/openspeedshop/oss-dev/bgq/oss202/bgq/bin/osslink -c pcsamp $(CXX)"
 
+
 $(OBJDIR)/%.o: %.cc
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
+
+$(OBJDIR)/%.o: %.c
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
@@ -211,9 +219,10 @@ $(BINDIR)/$(EXENAME): $(CARDIOIDOBJS) Version.cc
 	-DTARGET=$(EXENAME) \
 	-DARCH=$(ARCH) 
 
-OHaraRudy.cc : OHaraRudy.h
-#	awk -f OHaraRudyMkInclude.awk OHaraRudy.h
-#	touch OHaraRudy.cc
+#OHaraRudy.cc : OHaraRudy.h  $(CONSTRUCTED_INCLUDES) mkCompInclude   mkCompInclude.awk
+
+$(CONSTRUCTED_INCLUDES) :  mkCompInclude mkCompInclude.awk 
+	mkCompInclude $@
 
 testLoadBalancer:
 	@$(MAKE) --no-print-directory makedirs testLoadBalancer-target \
@@ -261,6 +270,9 @@ makedirs:
  depend :
 	makedepend -f .depend_$(BUILD_SUFFIX) -p'$(OBJDIR)/' -o '.o' -Y -- $(CFLAGS) $(CXXFLAGS) -- *.cc *.c *.hh *.h 2> /dev/null
 
+ dependTest :
+	makedepend -f /tmp/depend -p'$(OBJDIR)/' -o '.o' -Y -- $(CFLAGS) $(CXXFLAGS) --  OHaraRudy_INaFast.c
+
 .depend_$(BUILD_SUFFIX): $(CARDIOIDSRC)
 	@touch .depend_$(BUILD_SUFFIX)
 	@$(MAKE) depend BUILD_SUFFIX=$(BUILD_SUFFIX)
@@ -280,6 +292,7 @@ clean :
 
 distclean: clean
 	rm -f $(DDCMD_FILES)
+	rm -f $(CONSTRUCTED_INCLUDES)
 	rm -rf ddcMD_files
 	rm -rf objs-*
 	rm -f .depend*
@@ -290,3 +303,4 @@ distclean: clean
 ifdef BUILD_SUFFIX
   -include .depend_$(BUILD_SUFFIX)
 endif
+

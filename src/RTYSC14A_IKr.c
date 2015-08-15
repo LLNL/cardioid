@@ -64,7 +64,7 @@ void RTYSC14A_IKrFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *d
 /*
 */
 
-   static loop=0; 
+   static int loop=0; 
    if (loop %10 == 0) 
    {
    printf("STATE %8d %16.8e",loop,Vm); 

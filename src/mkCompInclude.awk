@@ -20,6 +20,7 @@ nVar = 0; ns=0; np=0;  nt=0 ;
    }
 }
 END {
+printf "/* ******   THIS FILE IS AUTOMATICLY GENERATED.  DO NOT EDIT!! ******* */"
 printf "#include <assert.h>\n"; 
 #printf "static double FRT = -1.0;\n"
 printf "enum enumIndex{"  ;
