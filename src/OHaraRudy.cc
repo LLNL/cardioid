@@ -43,7 +43,9 @@ double OHaraRudy::calc(double dt, double Vm, double iStim)
    reversalPotentials(Nai,Ki,&derived); 
 
    for (int i=1;i<=16;i++) 
+   {
       info_[i].func(cellParms_+privateParmsOffset_[i], (STATE *)state_, privateStateOffset_[ i], &derived, dt);
+   }
    info_[0].func(cellParms_+privateParmsOffset_[0], (STATE *)state_, privateStateOffset_[0], &derived, dt );
 
    //if (isfinite(dV)==0)MPI_Abort(MPI_COMM_WORLD,1); 

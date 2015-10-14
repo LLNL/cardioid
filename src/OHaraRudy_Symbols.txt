@@ -124,3 +124,19 @@
  OHaraRudyMod PSTATE    INaFast              j     0.692477 1
  OHaraRudyMod PSTATE    INaFast      hCaMKSlow     0.448501 1
  OHaraRudyMod PSTATE    INaFast          jCaMK     0.692413 1
+
+MYBGBKC       PARAMETER INa              GNa       13.5     mS/uF
+MYBGBKC       PSTATE    INa              C3        1        1     
+MYBGBKC       PSTATE    INa              C2        0        1     
+MYBGBKC       PSTATE    INa              C1        0        1     
+MYBGBKC       PSTATE    INa               O        0        1     
+MYBGBKC       PSTATE    INa              IS        0        1     
+MYBGBKC       PSTATE    INa              IC3       0        1     
+MYBGBKC       PSTATE    INa              IC2       0        1     
+MYBGBKC       PSTATE    INa              IF        0        1     
+MYBGBKC       PSTATE    INa              IM1       0        1     
+MYBGBKC       PSTATE    INa              IM2       0        1     
+MYBGBKC       PSTATE    INa              BC3       0        1     
+MYBGBKC       PSTATE    INa              BC2       0        1     
+MYBGBKC       PSTATE    INa              BC1       0        1     
+MYBGBKC       PSTATE    INa              BO        0        1     
