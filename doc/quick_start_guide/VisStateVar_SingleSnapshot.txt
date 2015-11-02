@@ -1,0 +1,54 @@
+	Guide for visualizing Vm, and other state variables, in Visit at a single time snapshot
+	
+1)  Run Cardioid so that it writes to the snapshot directories the state variable you are interested in visualizing
+	a)  Add the following object block, or similar with another state variable, in your object.data (state variables are classified as type SENSOR)
+		Vm SENSOR
+     		{
+     			method = stateVariable;
+     			cellList = "sensor.txt";
+     			filename = Vm;
+     			fields = Vm dVmD dVmR;
+			printRate = 200;
+			evalRate = 200;
+		}
+		Explanation of above object block:
+			Vm SENSOR;:  			Add a SENSOR called Vm, you can call it whatever you like
+			method = stateVariable;:  	Vm is a state variable, so use method stateVariable
+			cellList = "sensor.txt";:  	sensor.txt is just a list of gids (a.k.a. "cells") where you want Vm printed out, so it can be a subset of all total gids in the simulation
+			filename = Vm;			What file name do you want the files containing your state variable to be called in the snapshot directories? I want mine to be have a root name of Vm
+			fields = Vm dVmD dVmR;		What fields (i.e., columns in the Vm#* output files) do you want printed out, here it is transmembrane potential, derivative of Vm due to diffusion component of mathematical model (I think), and derivative of Vm due to reaction component of mathematical model (I think)
+			printRate = 200;		How often do you want Vm printed to snapshot directories?  Here it is ever 200 time steps
+			evalRate = 200;			How often do you want to evaluate Vm?  Not sure what this is exactly
+			
+	b)  In object.data, whatever you named your SENSOR object, in this case, "Vm", make sure to include it as a SENSOR that is printed out to snapshot directories.  This is done by adding the name of the sensor to the list of sensors under the SIMULATE object block, e.g., add Vm to the line "sensor = dv coarsening;", and by doing so this line now reads "sensor = dv coarsening Vm;"
+	
+	c)  You should now be good to run Cardioid EP, and as it runs you should see Vm#* files (or whatever you named your files) being written in the snapshot directories.
+	
+2)  For EACH of the snapshot directories that you want to visualize in Visit:
+	a)  Create a file called "snapshot.[#].ddcMD" at the same directory level as the snapshot directories, for example "snapshot.000000008000.ddcMD"
+	b)  Put this one line in each of your snapshot.[#].ddcMD files:  
+		ddcMD FILEHEADER {files = [filename];}
+	    where [filename] is the filename you specified in object.data, e.g., ddcMD FILEHEADER {files = Vm;}
+	c)  Visit uses a different x,y,z scheme, so must go into every snapshot.[#] directory, open the Vm#000000 file and swap nx and nz values in the header section of the file
+
+3)  Download Visit to your local machine from https://wci.llnl.gov/simulation/computer-codes/visit/executables.
+
+4)  Open visit on your local machine, and choose File->Open File.  Under "Host" choose the LLNL cluster where your snapshot.[#].ddcMD files are stored.  As I recall, the list of LLNL LC clusters comes pre-installed with your copy of Visit, so it is really easy to point and click which cluster you want.  After you choose the cluster, you may have to change the user name to your personal LC user name (popup window lets you do this), then enter you password in the LC clusters.  
+Note #1:  If your snapshot directories are not on the same cluster that you have an LC bank with, then you may need to copy over both the snapshot directories as well as the corresponding .ddcMD files to the cluster that you do have a bank with.
+Note #2:  Visit is not compatible with Vulcan Blue Gene Q architecture, so cannot use Vulcan as a host.
+
+5)  After entering your password and navigating to and choosing your .ddcMD file created in step 2) (may have to turn off "File grouping" in Visit to allow you to choose a single .ddcMD file), a window should pop up allowing you to specify which queue you want (pbatch, pdebug, etc.), number of processes, number of nodes, bank, and time limit.  I recommend using pbatch with at least 5 nodes and [5 x # cores/node] processes for at least 2 hours, but you can experiments with using fewer nodes.  I've found that using too few nodes causes Visit to crash.  So, for example, on sierra you should use 5 cores, and 5 nodes x 12 cores/node = 60 processes.  However, if you did not print out many cells in your sensor.txt, then you might be able to get away with pdebug with 1 node and [# cores/node] processes (e.g. 12 processes on sierra).
+
+6)  Now you are ready to start Visualizing!  In the Visit window on the left (with title Visit [version #]), henceforth called "the control window", click Add->Psuedocolor->[filename used in object.data, e.g., "Vm"], then click Draw.
+What is wrong, it looks like a big block of color?  What is that color and where does it fall in the color bar?  About zero, right?  The problem is that Visit assumes a start variable value of zero for any regions of the volume that are not tissue.  Thus, the heart geometry is hidden inside this bock of zero color.  See following steps to get around that.
+
+7)  Create an expression that re-assigns zero Vm values to non-physiological values.  To do this, choose Controls->Expressions, then click "New" button.  Give it the title "VmNotZero".  Use the "Insert Function" button to specify a function that takes all values of Vm that are zero and assigns them to a non-physiological value, like -1000 mV, and all values of Vm that are not zero and keeps them as their respective Vm values.  For example, your expression could look like:  if(ne(Vm, 0), Vm, -1000), which reads "if Vm is not 0 then use Vm, otherwise, use -1000".  Click "Apply" then "Dismiss"  Refer to the Visit users manual, Expressions section, to learn more about expressions available in Visit and their format:  https://wci.llnl.gov/codes/visit/1.5/VisItUsersManual1.5.pdf
+
+8)  Right click your pseudocolor Vm plot in the control window and choose "Hide/Show".  Now choose Add->Pseudocolor->VmNotZero, and click "Draw" button.  Still seeing a colored block, but now all values are at -1000 mV!
+
+9)  Threshold out Vm values to physiological range.  Choose Operator Attributes->Selection->Threshold.  Set Lower bound at -100 mV, and leave Upper bound as "max".  Click "Apply", then click "Yes" to allow the threshold operation.  Now click "Draw" button in the control window to draw again, but with the threshold this time.
+
+10)  Great, now we have a heart-shaped object with Vm values mapped onto it, but the resolution of different Vm values is not very good.  That is because the color bar still wants to show the entire range of data, which still goes down to -1000 mV.  We can easily fix that by Plot Attributes->Pseudocolor.  Under the Data submenu, set the Minimum to -100 (or whatever you chose in step 9) above, and leave the Maximum alone.  Now click apply, and you should see the color change, and only show range -100 mV to some max value around +34 mV.
+
+11)  Yay, now you can play with your heart!  You can rotate the heart, zoom in, etc.  
+You can even create movies by opening multiple snapshot directories at a time (enable File Grouping when opening .ddcMD files within Visit, and it will open all .ddcMD files it finds in current directory and group them together as a movie).  Follow same procedures 1 - 10 above for one of the snapshots (may have to select "all windows" radio button under the "Apply to" section in the control window), then click play button and it will cycle through all of them in a movie.  However, no matter how many times you cycle through the snapshots, it redraws each snapshot each time the movie cycles through, so it makes for a slow movie.  I haven't figured out how to buffer the visualization and then play through them fluidly within Visit.  However, I've started work on making external movie files from Visit's snapshots, which of course do play fluidly in a video player, but details of that will wait until the next installation of the quick start guide!
