@@ -85,6 +85,7 @@ namespace
                "%8d %8.3f %12lld %21.15f %21.15f %21.15f\n",
                sim.loop_, sim.time_, sim.anatomy_.gid(pi),
                VmArray[pi], dVmReaction[pi], dVd);  
+         fflush(sim.printFile_); 
       }
       stopTimer(printDataTimer);
    }
