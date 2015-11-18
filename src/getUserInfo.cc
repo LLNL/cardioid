@@ -5,6 +5,7 @@
 using namespace std;
 
 
+static char unknown[] = {'u','n','k','n','o','w','n','\0'} ; 
 #if defined (BGP)
 #define NO_GETPWUID
 #endif
@@ -15,7 +16,10 @@ using namespace std;
 #if not defined (NO_GETPWUID)
 string getUserName()
 {
-   return getpwuid(getuid())->pw_name;
+   struct passwd *pwd = getpwuid(getuid());
+   string name("unknown"); 
+   if (pwd != NULL) name = pwd->pw_name; 
+   return name; 
 }
 #else
 string getUserName()
