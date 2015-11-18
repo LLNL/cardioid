@@ -296,7 +296,7 @@ void sampleLog(struct LogParms *logParms, int nCells, int offset, int *cellTypeV
   double MNa=_Na_i; 
   double MK =_K_i; 
   
-  for (ii=1i+offset;ii<nCells+offset;ii++) 
+  for (ii=offset;ii<nCells+offset;ii++) 
   {
        Vm = VM[ii]; 
        _Na_i = state[Na_i][ii]; 
