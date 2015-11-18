@@ -9,13 +9,3 @@ void OHaraRudy_IpCaFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED 
    double Cai = state->Cai; 
    derived->I.pCa = cP->GpCa * Cai/(0.0005 + Cai); 
 }
-COMPONENTINFO OHaraRudy_IpCaInit()
-{
-   COMPONENTINFO info;
-   info.nVar = nVar; 
-   info.varInfo = varInfo;
-   info.func = OHaraRudy_IpCaFunc;
-   info.access = OHaraRudy_IpCaAccess;
-   return info;
-}
-

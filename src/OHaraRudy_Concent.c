@@ -77,7 +77,7 @@ void OHaraRudy_ConcentFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIV
 
    double dNai = -(INa + 3*I->NaCai + 3*I->NaK )*AFV            + J.diffNa*VssVmyo;
    double dNass= -(I->CaNa + 3*I->NaCass       )*AFVss          - J.diffNa; 
-   double dKi =  -(IK - 2*I->NaK + I->stimulus )*AFV            + J.diffK*VssVmyo;
+   double dKi =  -(IK - 2*I->NaK + I->stimulus )*AFV            + J.diffK*VssVmyo;                 //             dVm = dVmR + dVmD + dVmS
    double dKss = -(I->CaK                      )*AFVss          - J.diffK; 
    double dCai= (-(IpCab  - 2*I->NaCai         )*AFV  *0.5      - J.up*VnsrVmyo + J.diffCa*VssVmyo)*bCai; 
    double dCass=(-(I->CaL - 2*I->NaCass        )*AFVss*0.5      + J.rel*VjsrVss - J.diffCa        )*bCass; 
@@ -95,14 +95,4 @@ void OHaraRudy_ConcentFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIV
    pState->Cansr*= exp(dt*dCansr/state->Cansr); 
    pState->Cajsr*= exp(dt*dCajsr/state->Cajsr); 
 
-}
-COMPONENTINFO OHaraRudy_ConcentInit()
-{
-   OHaraRudyCellular();
-   COMPONENTINFO info;
-   info.nVar = nVar; 
-   info.varInfo = varInfo;
-   info.func = OHaraRudy_ConcentFunc;
-   info.access = OHaraRudy_ConcentAccess;
-   return info;
 }

@@ -32,12 +32,3 @@ void OHaraRudy_INaLFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED 
    pState->hL += dt*dhL; 
    pState->hLCaMK += dt*dhLCaMK; 
 }
-COMPONENTINFO OHaraRudy_INaLInit()
-{
-   COMPONENTINFO info;
-   info.nVar = nVar; 
-   info.varInfo = varInfo;
-   info.func = OHaraRudy_INaLFunc;
-   info.access = OHaraRudy_INaLAccess;
-   return info;
-}

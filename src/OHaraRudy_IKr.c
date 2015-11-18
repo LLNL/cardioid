@@ -28,13 +28,3 @@ void OHaraRudy_IKrFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *
    pState->XrSlow += dt*dXrSlow; 
    pState->XrFast += dt*dXrFast; 
 }
-COMPONENTINFO OHaraRudy_IKrInit()
-{
-   COMPONENTINFO info;
-   info.nVar = nVar; 
-   info.varInfo = varInfo;
-   info.func = OHaraRudy_IKrFunc;
-   info.access = OHaraRudy_IKrAccess;
-   return info;
-}
-

@@ -10,9 +10,12 @@
 #include "units.h"
 
 using namespace std;
+HandleMap  OHaraRudy_Reaction::handleMap_ ;
 
 OHaraRudy_Reaction::OHaraRudy_Reaction(const Anatomy& anatomy,OHaraRudy_Parms &parms)
 {
+   OHaraRudyInit();
+   makeHandleMap(); 
    ttType_.resize(256, -1); 
    ttType_[30] = ENDO_CELL;
    ttType_[31] = ENDO_CELL;
@@ -46,6 +49,9 @@ void OHaraRudy_Reaction::calc(double dt,
    assert(cells_.size() == dVm.size());
 
    int nCells = cells_.size();
+//   OHaraRudyPut(nCells,&Vm[0],&iStim[0]); 
+//   OHaraRudyCalc(); 
+//   OHaraRudyGet(&dVm[0]); 
 #pragma omp parallel for
    for (int ii=0; ii<nCells; ++ii)
       dVm[ii] = cells_[ii].calc(dt, Vm[ii], iStim[ii]);
@@ -58,20 +64,50 @@ void OHaraRudy_Reaction::initializeMembraneVoltage(VectorDouble32& Vm)
       Vm[ii] = cells_[ii].defaultVoltage();
 }
 
-void OHaraRudy_Reaction::getCheckpointInfo(vector<string>& fieldNames,
-      vector<string>& fieldUnits) const
+void OHaraRudy_Reaction::makeHandleMap()
 {
-   OHaraRudy::getCheckpointInfo(fieldNames, fieldUnits);
+   int ncomp=OHaraRudyGet_nComp(); 
+   COMPONENTINFO* info=OHaraRudyGet_compInfo(); 
+   for (int i=0;i<ncomp;i++)
+   {
+      VARINFO *varinfo = info[i].varInfo; 
+      for (int j=0;j<info[i].nVar;j++) 
+      {
+         string name = varinfo[j].name ;
+         string units = varinfo[j].units;
+         unsigned int index = (i << 16) + varinfo[j].index;
+         bool  checkpoint = false;
+         if (  name != "vm" ) checkpoint = true; 
+         OHaraRudy_Reaction::handleMap_[name] = CheckpointVarInfo(index, checkpoint, units );
+      }
+   } 
 }
-
 int OHaraRudy_Reaction::getVarHandle(const string& varName) const
 {
-   return OHaraRudy::getVarHandle(varName);
+   return OHaraRudy_Reaction::handleMap_[varName].handle_; 
+}
+void OHaraRudy_Reaction::getCheckpointInfo(vector<string>& name, vector<string>& unit) const
+{
+   const HandleMap& handleMap = OHaraRudy_Reaction::handleMap_;
+   for (HandleMap::const_iterator
+         iter=handleMap.begin(); iter!=handleMap.end(); ++iter)
+   {
+      if (iter->second.checkpoint_)
+      {
+         name.push_back(iter->first);
+         unit.push_back(iter->second.unit_);
+      }
+   }
+}
+const string OHaraRudy_Reaction::getUnit(const string& varName) const 
+{
+   return OHaraRudy_Reaction::handleMap_[varName].unit_;
 }
 
 void OHaraRudy_Reaction::setValue(int iCell, int varHandle, double value)
 {
    cells_[iCell].setValue(varHandle, value);
+   OHaraRudySetValue(iCell, varHandle, value);
 }
 
 double OHaraRudy_Reaction::getValue(int iCell, int varHandle) const
@@ -85,8 +121,4 @@ void OHaraRudy_Reaction::getValue(int iCell, const vector<int>& handle, vector<d
    cells_[iCell].getValue(handle, value);
 }
 
-const string OHaraRudy_Reaction::getUnit(const string& varName) const
-{
-   return OHaraRudy::getUnit(varName);
-}
 

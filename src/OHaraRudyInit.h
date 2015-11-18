@@ -25,6 +25,11 @@ COMPONENTINFO OHaraRudy_ItoInit();
 
 COMPONENTINFO OHaraRudyMod_INaFastInit();
 COMPONENTINFO RTYSC14A_IKrInit();
+COMPONENTINFO MYBGBKC_INaInit();
+COMPONENTINFO null_IInit();
+
+int OHaraRudyGet_nComp(); 
+COMPONENTINFO* OHaraRudyGet_compInfo(); 
 
 void reversalPotentials(double Nai, double Ki, DERIVED *derived);
 #ifdef __cplusplus

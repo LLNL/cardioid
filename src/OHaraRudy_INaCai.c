@@ -9,13 +9,3 @@ void OHaraRudy_INaCaiFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVE
    double V = state->Vm; 
    derived->I.NaCai =  cP->GNaCai *INaCaYFunc(state->Vm,state->Cai, state->Nai   );
 }
-COMPONENTINFO OHaraRudy_INaCaiInit()
-{
-   if (FRT < 0) FRT = F/(R*T); 
-   COMPONENTINFO info;
-   info.nVar = nVar; 
-   info.varInfo = varInfo;
-   info.func = OHaraRudy_INaCaiFunc;
-   info.access = OHaraRudy_INaCaiAccess;
-   return info; 
-}

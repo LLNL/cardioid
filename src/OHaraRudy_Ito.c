@@ -73,13 +73,3 @@ void OHaraRudy_ItoFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *
    pState->iCaMKSlow += dt*diCaMKSlow; 
    pState->iCaMKFast += dt*diCaMKFast; 
 }
-
-COMPONENTINFO OHaraRudy_ItoInit()
-{
-   COMPONENTINFO info;
-   info.nVar = nVar; 
-   info.varInfo = varInfo;
-   info.func = OHaraRudy_ItoFunc;
-   info.access = OHaraRudy_ItoAccess;
-   return info;
-}

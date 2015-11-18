@@ -22,7 +22,6 @@ double * OHaraRudy::defaultParmsEPI_=0;;
 double * OHaraRudy::defaultParmsM_=0;; 
 COMPONENTINFO* OHaraRudy::info_; 
 HandleMap  OHaraRudy::handleMap_ ;
-HandleMap handleMap ;
 
 OHaraRudy::OHaraRudy(int cellType, OHaraRudy_Parms &parms)
 {
@@ -42,7 +41,7 @@ double OHaraRudy::calc(double dt, double Vm, double iStim)
    derived.I.stimulus = iStim; 
    reversalPotentials(Nai,Ki,&derived); 
 
-   for (int i=1;i<=16;i++) 
+   for (int i=1;i<=16;i++)    //TEST
    {
       info_[i].func(cellParms_+privateParmsOffset_[i], (STATE *)state_, privateStateOffset_[ i], &derived, dt);
    }
@@ -136,6 +135,8 @@ void OHaraRudy::initConsts(int cellType,OHaraRudy_Parms &parms)
 
          if ( name == "OHaraRudyMod_INaFast") cInit[k++] = OHaraRudyMod_INaFastInit; 
          if ( name == "RTYSC14A_IKr")      cInit[k++] = RTYSC14A_IKrInit; 
+         if ( name == "MYBGBKC_INaL")      cInit[k++] = MYBGBKC_INaInit; 
+         if ( name == "null_I_INaFast")      cInit[k++] = null_IInit; 
       }
       cInit[k++] = OHaraRudy_FluxesInit;      // must be initialize after ICa
       assert(k == nComp); 
@@ -178,7 +179,6 @@ void OHaraRudy::initConsts(int cellType,OHaraRudy_Parms &parms)
             handleMap_[name] = CheckpointVarInfo(index, checkpoint, units );
          }
       } 
-      printf("size = %d %d\n",stateOffset,parmsOffset); 
       stateSize_ = stateOffset*sizeof(double); 
       parmsSize_ = parmsOffset*sizeof(double); 
 
@@ -223,8 +223,8 @@ void OHaraRudy::initConsts(int cellType,OHaraRudy_Parms &parms)
       }
       assert(nState*sizeof(double) == stateSize_); 
       initialized = true; 
-   for (int i=0;i<nState;i++) printf("OHaraRudy %2d %16s %16.8e %16.8e %16.8e\n",i,nameState[i],defaultStateENDO_[i],defaultStateEPI_[i],defaultStateM_[i]); 
-   for (int i=0;i<nParms;i++) printf("OHaraRudy %2d %16s %16.8e %16.8e %16.8e\n",i,nameParms[i],defaultParmsENDO_[i],defaultParmsEPI_[i],defaultParmsM_[i]); 
+//   for (int i=0;i<nState;i++) printf("OHaraRudy %2d %16s %16.8e %16.8e %16.8e\n",i,nameState[i],defaultStateENDO_[i],defaultStateEPI_[i],defaultStateM_[i]); 
+//   for (int i=0;i<nParms;i++) printf("OHaraRudy %2d %16s %16.8e %16.8e %16.8e\n",i,nameParms[i],defaultParmsENDO_[i],defaultParmsEPI_[i],defaultParmsM_[i]); 
    }
 }
 

@@ -17,12 +17,3 @@ void OHaraRudy_CaMKtrapFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERI
    double dCaMKtrap = aCaMK * CaMKBound * CaMKActive - bCaMK*CaMKtrap; 
    pState->CaMKtrap+=dt*dCaMKtrap; 
 }
-COMPONENTINFO OHaraRudy_CaMKtrapInit()
-{
-   COMPONENTINFO info;
-   info.nVar   = nVar; 
-   info.varInfo = varInfo;
-   info.func = OHaraRudy_CaMKtrapFunc;
-   info.access = OHaraRudy_CaMKtrapAccess;
-   return info;
-}

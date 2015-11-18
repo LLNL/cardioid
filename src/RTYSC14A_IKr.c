@@ -85,7 +85,7 @@ void RTYSC14A_Rates(double V, double *rate)
    rate[7] = T/TBase * exp(30.061 + (TBase/T)*(-0.0312*V-33.243));                  //beta_i       I->O
 }
 
-COMPONENTINFO RTYSC14A_IKrInit()
+void RTYSC14A_IKrConstants()
 {
    double rate0[8]; 
    double rate10[8]; 
@@ -97,11 +97,4 @@ COMPONENTINFO RTYSC14A_IKrInit()
       b[i] = 0.1*log(rate10[i]/rate0[i]);
    }
    cc = sqrt(Ko/5.4); 
-   
-   COMPONENTINFO info;
-   info.nVar = nVar; 
-   info.varInfo = varInfo;
-   info.func = RTYSC14A_IKrFunc;
-   info.access = RTYSC14A_IKrAccess;
-   return info;
 }

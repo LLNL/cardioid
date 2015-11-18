@@ -20,12 +20,3 @@ void OHaraRudy_IK1Func(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *
    double dXK1 = (XK1Mhu-XK1)*XK1TauR; // gate
    pState->XK1 += dt*dXK1; 
 }
-COMPONENTINFO OHaraRudy_IK1Init()
-{
-   COMPONENTINFO info;
-   info.nVar = nVar; 
-   info.varInfo = varInfo;
-   info.func = OHaraRudy_IK1Func;
-   info.access = OHaraRudy_IK1Access;
-   return info;
-}

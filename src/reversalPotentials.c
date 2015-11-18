@@ -16,6 +16,7 @@ void reversalPotentialsInit()
 void reversalPotentials(double Nai, double Ki,DERIVED *derived)
 {
    derived->ENa = RTFlogNao-RTF*log(Nai);
+   printf("R=%e T=%e F=%e  Ko=%e Ki=%e\n",R,T,F,Ko,Ki); 
    derived->EK  = RTFlogKo -RTF*log(Ki);
    derived->EKs = RTFlogKoNao-RTF*log((Ki+PRNaK*Nai));
 }

@@ -15,7 +15,9 @@ static double R   = 8314.0;  //J/kmol/K
 static double F   = 96485; //Coulomb/mol
 
 static double T   = 310; //K
+static double FRT = -1; 
 static double Cm     = 1.0    ; // uF; 
+
 
 static double PRNaK = 0.01833; 
 static double Nao =  140; //mM;
@@ -105,4 +107,18 @@ typedef struct componentInfo_st
    void (*func)(CELLPARMS *, STATE *, int, DERIVED *, double); 
    void (*access)(int, int, double *, double *, double *); 
 } COMPONENTINFO;
+#ifdef __cplusplus
+extern "C" 
+{
+#endif 
+void OHaraRudyInit(); 
+int OHaraRudyGet_nComp(); 
+COMPONENTINFO* OHaraRudyGet_compInfo(); 
+void OHaraRudySetValue(int, int handle, double cell); 
+void OHaraRudyCalc(); 
+void  OHaraRudyGet(double *dVm);
+void  OHaraRudyPut(int nCells, const double *Vm, double const *iStim);
+#ifdef __cplusplus
+}
+#endif 
 #endif

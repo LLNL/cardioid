@@ -10,12 +10,3 @@ void OHaraRudy_IKbFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *
    double xKb = 1/(1+exp(-(V-14.48)/18.34)) ; 
    derived->I.Kb = cP->GKb*xKb*(V-EK) ;
 }
-COMPONENTINFO OHaraRudy_IKbInit()
-{
-   COMPONENTINFO info;
-   info.nVar = nVar; 
-   info.varInfo = varInfo;
-   info.func = OHaraRudy_IKbFunc;
-   info.access = OHaraRudy_IKbAccess;
-   return info;
-}

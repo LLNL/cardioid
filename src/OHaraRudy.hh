@@ -8,7 +8,7 @@
 #include "OHaraRudy.h" 
 
 
-static std::string OHaraRudyCurrentNames[]={"INaCai","INaCass","INaK","INab","ICab","IKb","IpCa","INaFast","INaL","Ito","IKr","IKs","IK1","ICa",""};
+//static std::string OHaraRudyCurrentNames[]={"INaCai","INaCass","INaK","INab","ICab","IKb","IpCa","INaFast","INaL","Ito","IKr","IKs","IK1","ICa",""};
 struct OHaraRudy_Parms
 {
       std::vector<std::string> currentNames;

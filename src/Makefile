@@ -75,10 +75,10 @@ HEARTSRC= \
 	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc DVThreshSensor.cc \
    StateVariableSensor.cc
 
-OHaraRudySRC= OHaraRudy_Concent.c OHaraRudy_INaCai.c OHaraRudy_INaCass.c  \
+OHaraRudySRC= OHaraRudyc.c OHaraRudy_Concent.c OHaraRudy_INaCai.c OHaraRudy_INaCass.c  \
               OHaraRudy_INaK.c OHaraRudy_INab.c OHaraRudy_ICab.c OHaraRudy_IKb.c \
               OHaraRudy_IpCa.c OHaraRudy_INaFast.c OHaraRudy_INaL.c OHaraRudy_Ito.c \
-              OHaraRudy_IKr.c OHaraRudy_IKs.c OHaraRudy_IK1.c OHaraRudy_ICa.c \
+              OHaraRudy_IKr.c OHaraRudy_IKs.c OHaraRudy_IK1.c OHaraRudy_ICa.c null_I.c\
               OHaraRudy_Fluxes.c OHaraRudy_CaMKtrap.c reversalPotentials.c
 RTYSC14ASRC = OHaraRudyMod_INaFast.c RTYSC14A_IKr.c  MYBGBKC_INa.c
 

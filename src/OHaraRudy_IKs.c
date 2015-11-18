@@ -49,13 +49,3 @@ void OHaraRudy_IKsFuncDebug(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERI
    pState->Xs1 += dt*dXs1; 
    pState->Xs2 += dt*dXs2; 
 }
-COMPONENTINFO OHaraRudy_IKsInit()
-{
-   COMPONENTINFO info;
-   info.nVar = nVar; 
-   info.varInfo = varInfo;
-   info.func = OHaraRudy_IKsFunc;
-   info.access = OHaraRudy_IKsAccess;
-   return info;
-}
-

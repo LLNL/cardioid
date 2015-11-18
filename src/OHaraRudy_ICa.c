@@ -5,7 +5,6 @@
 #include <assert.h>
 #include "OHaraRudy.h"
 #include "OHaraRudy_ICa.h"
-static double FRT = -1; 
 void OHaraRudy_ICaFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt )
 {
    double V       =state->Vm; 
@@ -114,14 +113,4 @@ void OHaraRudy_ICaFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *
    pState->fCaCaMKFast += dt*dfCaCaMKFast; 
    pState->n  += dt*dn; 
 
-}
-COMPONENTINFO OHaraRudy_ICaInit()
-{
-   if (FRT  < 0) FRT = F/(R*T);
-   COMPONENTINFO info;
-   info.nVar = nVar; 
-   info.varInfo = varInfo;
-   info.func = OHaraRudy_ICaFunc;
-   info.access = OHaraRudy_ICaAccess;
-   return info;
 }

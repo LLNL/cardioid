@@ -63,13 +63,3 @@ void OHaraRudy_INaFastFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIV
       pState->hCaMKSlow += dt*dhCaMKSlow; 
       pState->jCaMK += dt*djCaMK;
 }
-COMPONENTINFO OHaraRudy_INaFastInit()
-{
-   COMPONENTINFO info;
-   info.nVar = nVar; 
-   info.varInfo = varInfo;
-   info.func = OHaraRudy_INaFastFunc;
-   info.access = OHaraRudy_INaFastAccess;
-   return info;
-}
-

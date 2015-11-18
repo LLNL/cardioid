@@ -54,12 +54,3 @@ void OHaraRudyFluxesFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED
    pState->JrelCaMK+= dt*dJrelCaMK; 
 
 }
-COMPONENTINFO OHaraRudyFluxesInit()
-{
-   COMPONENTINFO info;
-   info.nVar   = nVar; 
-   info.varInfo = varInfo;
-   info.func = OHaraRudyFluxesFunc;
-   info.access = OHaraRudyFluxesAccess;
-   return info;
-}

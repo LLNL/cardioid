@@ -20,9 +20,8 @@ nVar = 0; ns=0; np=0;  nt=0 ;
    }
 }
 END {
-printf "/* ******   THIS FILE IS AUTOMATICLY GENERATED.  DO NOT EDIT!! ******* */"
+printf "/* ******   THIS FILE IS AUTOMATICLY GENERATED.  DO NOT EDIT!! ******* */\n"
 printf "#include <assert.h>\n"; 
-#printf "static double FRT = -1.0;\n"
 printf "enum enumIndex{"  ;
 for (i=1;i<=nVar;i++) printf " %sIndex,",var[i];
 printf " %s","nVar";
@@ -66,6 +65,8 @@ if (ns > 0)
 #  printf "};\n"; 
 }
 
+printf "void %sFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt );\n",root[1];
+
 printf "void %sAccess(int type,int index,double *value, double  *parmsPtr, double *statePtr)\n",root[1]; 
 print "{\n"; 
 if (ns  > 0) printf "   PSTATE *state = (PSTATE *)statePtr;\n" 
@@ -102,16 +103,24 @@ printf "            assert(0); \n";
 printf "      }\n";
 printf "   }\n";
 printf "}\n";
+constFunc = root[1]"Constants()";
+cmd = sprintf( "fgrep '%s' %s.c ", constFunc, root[1]) ;
+cmd | getline line 
+constExist=0; 
+if (length(line) > 0) constExist=1; 
 
-#printf "COMPONENTINFO %sInit()\n{\n", root[1];
-#printf "   if (FRT  < 0) FRT = F/(R*T);\n"
-#printf "   COMPONENTINFO info;\n"
-#printf "   info.pSize = sizeof(PSTATE);\n"; 
-#printf "   info.nVar = %d;\n",nVar; 
-#printf "   info.varInfo = varInfo;\n"
-#printf "   info.func = %sFunc;\n",root[1]; 
-#printf "   info.access = %sAccess;\n",root[1]; 
-#printf "   return info;\n}\n"; 
+if (constExist) printf "void   %s;\n",constFunc
+printf "COMPONENTINFO %sInit()\n{\n", root[1];
+printf "   COMPONENTINFO info;\n"
+if (constExist) printf "   %s;\n",constFunc
+printf "   if (FRT  < 0) FRT = F/(R*T);\n"
+if (ns > 0) printf "   info.pStateSize = sizeof(PSTATE);\n"; 
+if (np > 0) printf "   info.parmsSize = sizeof(PARAMETERS);\n"; 
+printf "   info.nVar = %d;\n",nVar; 
+printf "   info.varInfo = varInfo;\n"
+printf "   info.func = %sFunc;\n",root[1]; 
+printf "   info.access = %sAccess;\n",root[1]; 
+printf "   return info;\n}\n"; 
 }
 function defaultString(string)
 {

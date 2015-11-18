@@ -15,8 +15,6 @@ static double KoNai = 9.073 ; //mM
 static double KoNao = 27.78 ; //mM
 static double delta = -0.1550;  
 
-static double FRT = -1; 
-
 void OHaraRudy_INaKFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt)
 {
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
@@ -61,14 +59,3 @@ void OHaraRudy_INaKFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED 
    double JNaKK = 2*(E4*b1-E3*a1); 
    derived->I.NaK = cP->PNaK*(zNa*JNaKNa + zK*JNaKK); 
 }
-COMPONENTINFO OHaraRudy_INaKInit()
-{
-   if (FRT  < 0) FRT = F/(R*T);
-   COMPONENTINFO info;
-   info.nVar = nVar; 
-   info.varInfo = varInfo;
-   info.func = OHaraRudy_INaKFunc;
-   info.access = OHaraRudy_INaKAccess;
-   return info;
-}
-

@@ -11,14 +11,3 @@ void OHaraRudy_INaCassFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIV
    double V = state->Vm; 
    derived->I.NaCass = cP->GNaCass*INaCaYFunc(state->Vm,state->Cass, state->Nass  );
 }
-
-COMPONENTINFO OHaraRudy_INaCassInit()
-{
-   if (FRT < 0) FRT = F/(R*T); 
-   COMPONENTINFO info;
-   info.nVar = nVar; 
-   info.varInfo = varInfo;
-   info.func = OHaraRudy_INaCassFunc;
-   info.access = OHaraRudy_INaCassAccess;
-   return info;
-}

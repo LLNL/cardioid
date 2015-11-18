@@ -10,7 +10,6 @@ static double kCaOn = 1.5e6 ; //mM/ms
 static double kCaOff=5e3; // Hz
 static double qNa = 0.5224; 
 static double qCa = 0.1670; 
-static double FRT=-1; 
 
 static inline double INaCaYFunc( double V,double CaY, double NaY  )
 {
