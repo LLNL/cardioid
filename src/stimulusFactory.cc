@@ -17,7 +17,7 @@ namespace
 {
    Stimulus* scanPointStimulus(OBJECT* obj, const StimulusBaseParms& p, const Anatomy& anatomy, Pulse* pulse);
    Stimulus* scanTestStimulus(OBJECT* obj, const StimulusBaseParms& p, Pulse* pulse);
-   Stimulus* scanBoxStimulus(OBJECT* obj, const StimulusBaseParms& p, const Anatomy& anatomy, Pulse* pulse);
+   Stimulus* scanBoxStimulus(OBJECT* obj, const StimulusBaseParms& p, const Anatomy& anatomy, Pulse* pulse, const std::string& name);
 }
 
 
@@ -60,7 +60,7 @@ Stimulus* stimulusFactory(const std::string& name, const Anatomy& anatomy)
    else if (method == "test")
       return scanTestStimulus(obj, p, pulse);
    else if (method == "box")
-      return scanBoxStimulus(obj, p, anatomy, pulse);
+      return scanBoxStimulus(obj, p, anatomy, pulse, name);
 
    assert(false); // reachable only due to bad input
    return 0;
@@ -92,7 +92,7 @@ namespace
 
 namespace
 {
-   Stimulus* scanBoxStimulus(OBJECT* obj, const StimulusBaseParms& bp, const Anatomy& anatomy, Pulse* pulse)
+   Stimulus* scanBoxStimulus(OBJECT* obj, const StimulusBaseParms& bp, const Anatomy& anatomy, Pulse* pulse, const std::string& name)
    {
       stringstream buf;
       buf << anatomy.nx(); string nxString = buf.str(); buf.str(string());
@@ -108,6 +108,6 @@ namespace
       objectGet(obj, "yMax",     p.yMax,     nyString);
       objectGet(obj, "zMax",     p.zMax,     nzString);
       
-      return new BoxStimulus(p, anatomy, pulse);
+      return new BoxStimulus(p, anatomy, pulse, name);
    }
 }

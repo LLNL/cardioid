@@ -3,6 +3,7 @@
 
 #include "Stimulus.hh"
 #include "Pulse.hh"
+#include <string>
 
 class Anatomy;
 
@@ -22,7 +23,7 @@ class BoxStimulus : public Stimulus
 {
  public:
    BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy,
-               Pulse* pulse);
+               Pulse* pulse, const std::string& name);
    int subClassStim(double time,
 		    VectorDouble32& dVmDiffusion);
    int nStim();
