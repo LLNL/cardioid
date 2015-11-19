@@ -141,3 +141,5 @@ MYBGBKC       PSTATE    INa              BC2       0        1
 MYBGBKC       PSTATE    INa              BC1       0        1     
 MYBGBKC       PSTATE    INa              BO        0        1     
 MYBGBKC       PSTATE    INa              Padding   0        1     
+
+null          PARAMETER INull            GrI       0.0      mS/uF

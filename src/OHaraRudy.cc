@@ -136,7 +136,7 @@ void OHaraRudy::initConsts(int cellType,OHaraRudy_Parms &parms)
          if ( name == "OHaraRudyMod_INaFast") cInit[k++] = OHaraRudyMod_INaFastInit; 
          if ( name == "RTYSC14A_IKr")      cInit[k++] = RTYSC14A_IKrInit; 
          if ( name == "MYBGBKC_INaL")      cInit[k++] = MYBGBKC_INaInit; 
-         if ( name == "null_I_INaFast")      cInit[k++] = null_IInit; 
+         if ( name == "null_I_INaFast")      cInit[k++] = null_INullInit; 
       }
       cInit[k++] = OHaraRudy_FluxesInit;      // must be initialize after ICa
       assert(k == nComp); 

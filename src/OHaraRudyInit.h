@@ -26,7 +26,7 @@ COMPONENTINFO OHaraRudy_ItoInit();
 COMPONENTINFO OHaraRudyMod_INaFastInit();
 COMPONENTINFO RTYSC14A_IKrInit();
 COMPONENTINFO MYBGBKC_INaInit();
-COMPONENTINFO null_IInit();
+COMPONENTINFO null_INullInit();
 
 int OHaraRudyGet_nComp(); 
 COMPONENTINFO* OHaraRudyGet_compInfo(); 
