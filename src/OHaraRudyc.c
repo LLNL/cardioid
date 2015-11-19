@@ -215,6 +215,14 @@ void  OHaraRudyCalc()
          info_[i].func(cellParms+privateParmsOffset_[i], (STATE *)state, privateStateOffset_[ i], &derived, dt_);
       }
       info_[0].func(cellParms+privateParmsOffset_[0], (STATE *)state, privateStateOffset_[0], &derived, dt_);
+      double *I =  (double *)&(derived.I.NaCai); 
+/*
+      for (int i=0;i<nCurrents_;i++)
+      {
+         printf("%2d %10s %20.12f\n",i,currentNames_[i],I[i]); 
+         
+      }
+*/
 
       dVm_[j]=derived.dVm;  
    }
@@ -222,9 +230,8 @@ void  OHaraRudyCalc()
 #ifdef SA
 int main(int iargc, char *argv[])
 {
-   double dt= 0.01; 
+   double dt= 0.01*0; 
    OHaraRudyInit();
-  for (int i=0;i<nCells_;i++) {iStim_[i]=0.0; Vm_[i]=((STATE *)(state_+i*nState_))->Vm;} 
    if (iargc == 2 )
    {
       char *filename = argv[1]; 
@@ -242,6 +249,7 @@ int main(int iargc, char *argv[])
          else cellParms_[0][iP++] = value;
       }
    }
+  for (int i=0;i<nCells_;i++) {iStim_[i]=0.0; Vm_[i]=((STATE *)(state_+i*nState_))->Vm;} 
    FILE *initData = fopen("init.data","w"); 
    for (int i=0;i<nState_;i++) fprintf(initData,"%2d %16s %20.8e\n",i,stateName_[i],state_[i]); 
    for (int i=0;i<nParms_;i++) fprintf(initData,"%2d %16s %20.8e\n",i,typeName_[i],cellParms_[0][i]); 
