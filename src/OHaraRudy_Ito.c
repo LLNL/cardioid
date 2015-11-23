@@ -3,7 +3,7 @@
 #include "OHaraRudy.h"
 #include "OHaraRudy_Ito.h"
 
-void OHaraRudy_ItoFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt )
+void OHaraRudy_ItoFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *derived, double dt )
 {
 #define iSlowTauC   1.780e-8 // code
 #define aTauC0     18.4099   // code
@@ -13,9 +13,10 @@ void OHaraRudy_ItoFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *
    //#define aTauC0   18.41      // paper 
    //#define aTauC1   29.38      // paper 
 
-   PSTATE *pState = (PSTATE *)(((double *)state)+pOffset) ; 
+   VOLTAGE *voltage = (VOLTAGE *)cell; 
+   PSTATE *pState = (PSTATE *)(((double *)cell)+pOffset) ; 
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
-   double V = state->Vm; 
+   double V = voltage->Vm; 
    double EK = derived->EK; 
    double phiCaMK   = derived->phiCaMK; 
 
@@ -66,6 +67,7 @@ void OHaraRudy_ItoFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *
    double iCaMKSlowTauR = iSlowTauR * deltaCaMKR;
    double diCaMKSlow = (iCaMKMhu-iCaMKSlow)*iCaMKSlowTauR;  // gate
    double diCaMKFast = (iCaMKMhu-iCaMKFast)*iCaMKFastTauR;  // gate
+   ENDCODE()
    pState->a += dt*da; 
    pState->iSlow += dt*diSlow; 
    pState->iFast += dt*diFast; 

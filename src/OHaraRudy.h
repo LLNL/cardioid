@@ -40,10 +40,16 @@ static double AfFast=0.6;
 enum CELLTYPES {ENDO_CELL, EPI_CELL, M_CELL};
 enum varTypes { PARAMETER_TYPE,PSTATE_TYPE,END_VARINFO}; 
 enum accessTypes { READ, WRITE}; 
-typedef struct commonState_st 
+typedef struct voltage_st 
+{
+   double Vm;          // mV
+   double dVm;         // mV/msec
+   double iStim;       // mV/msec
+} VOLTAGE; 
+#define CONCENTRATIONS_OFFSET 3 
+typedef struct concentrations_st 
 { 
 //        name         units checkpoint
-   double Vm;          // mV false
    double Nai;         // mM true
    double Nass;        // mM true
    double Ki;          // mM true
@@ -52,7 +58,7 @@ typedef struct commonState_st
    double Cass;        // mM true
    double Cansr;       // mM true
    double Cajsr;       // mM true
-}  STATE; 
+}  CONCENTRATIONS; 
 
 typedef struct flux_st    { double diffNa, diffK, diffCa, rel, up, tr;} FLUXES; 
 typedef struct current_st 
@@ -80,7 +86,6 @@ typedef struct current_st
 
 typedef struct derived_st 
 { 
-  double dVm; 
   double ENa, EK, EKs; 
   double phiCaMK; 
   CURRENTS I; 
@@ -104,20 +109,20 @@ typedef struct componentInfo_st
    int parmsSize; 
    int nVar; 
    VARINFO *varInfo;
-   void (*func)(CELLPARMS *, STATE *, int, DERIVED *, double); 
+   void (*func)(CELLPARMS *, double *, int, DERIVED *, double); 
    void (*access)(int, int, double *, double *, double *); 
 } COMPONENTINFO;
 #ifdef __cplusplus
 extern "C" 
 {
 #endif 
-void OHaraRudyInit(); 
+void OHaraRudyInit(double dt, int nCells);
 int OHaraRudyGet_nComp(); 
 COMPONENTINFO* OHaraRudyGet_compInfo(); 
 void OHaraRudySetValue(int, int handle, double cell); 
 void OHaraRudyCalc(); 
 void  OHaraRudyGet(double *dVm);
-void  OHaraRudyPut(int nCells, const double *Vm, double const *iStim);
+void  OHaraRudyPut(double dt, int nCells, const double *Vm, double const *iStim);
 #ifdef __cplusplus
 }
 #endif 

@@ -65,7 +65,7 @@ if (ns > 0)
 #  printf "};\n"; 
 }
 
-printf "void %sFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt );\n",root[1];
+printf "void %sFunc(CELLPARMS *parmsPtr, double *state, int pOffset, DERIVED *derived, double dt );\n",root[1];
 
 printf "void %sAccess(int type,int index,double *value, double  *parmsPtr, double *statePtr)\n",root[1]; 
 print "{\n"; 
@@ -121,6 +121,21 @@ printf "   info.varInfo = varInfo;\n"
 printf "   info.func = %sFunc;\n",root[1]; 
 printf "   info.access = %sAccess;\n",root[1]; 
 printf "   return info;\n}\n"; 
+
+print "#ifdef doEnd"
+print "#define ENDCODE() {\\" 
+k=0; 
+for (i=1;i<=nVar;i++) 
+{
+     if (type[i] != "PSTATE") continue; 
+     line = sprintf( "     printf(\"%-16s: %%2d %%22.15e %%22.15e\\n\",pOffset+%d,pState->%s,d%s);", var[i],k,var[i],var[i]) ;
+     k++; 
+     print line,"\\"; 
+}
+print "}"; 
+print "#else"
+print "#define ENDCODE()"
+print "#endif"
 }
 function defaultString(string)
 {

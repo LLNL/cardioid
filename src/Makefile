@@ -75,7 +75,7 @@ HEARTSRC= \
 	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc DVThreshSensor.cc \
    StateVariableSensor.cc
 
-OHaraRudySRC= OHaraRudyc.c OHaraRudy_Concent.c OHaraRudy_INaCai.c OHaraRudy_INaCass.c  \
+OHaraRudySRC= OHaraRudyc.c OHaraRudy_Voltage.c OHaraRudy_Concent.c OHaraRudy_INaCai.c OHaraRudy_INaCass.c  \
               OHaraRudy_INaK.c OHaraRudy_INab.c OHaraRudy_ICab.c OHaraRudy_IKb.c \
               OHaraRudy_IpCa.c OHaraRudy_INaFast.c OHaraRudy_INaL.c OHaraRudy_Ito.c \
               OHaraRudy_IKr.c OHaraRudy_IKs.c OHaraRudy_IK1.c OHaraRudy_ICa.c null_INull.c\
@@ -86,7 +86,7 @@ SPISRC=	 spi_impl.c
 SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c $(OHaraRudySRC) $(RTYSC14ASRC)
 
 CONSTRUCTED_INCLUDES=\
-OHaraRudy_Ito.h OHaraRudy_IpCa.h OHaraRudy_INab.h OHaraRudy_INaL.h OHaraRudy_INaK.h OHaraRudy_INaCass.h \
+OHaraRudy_Voltage.h OHaraRudy_Ito.h OHaraRudy_IpCa.h OHaraRudy_INab.h OHaraRudy_INaL.h OHaraRudy_INaK.h OHaraRudy_INaCass.h \
 OHaraRudy_INaCai.h OHaraRudy_IKs.h OHaraRudy_IKr.h OHaraRudy_IKb.h OHaraRudy_IK1.h OHaraRudy_ICab.h OHaraRudy_ICa.h \
 OHaraRudy_Fluxes.h OHaraRudy_Concent.h OHaraRudy_CaMKtrap.h OHaraRudy_INaFast.h OHaraRudyMod_INaFast.h RTYSC14A_IKr.h \
 MYBGBKC_INa.h null_INull.h

@@ -3,9 +3,13 @@
 #include "OHaraRudy.h"
 #include "OHaraRudy_INaCaCommon.h"
 #include "OHaraRudy_INaCai.h"
-void OHaraRudy_INaCaiFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt)
+void OHaraRudy_INaCaiFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *derived, double dt)
 {
+   VOLTAGE *voltage = (VOLTAGE *)cell; 
+   CONCENTRATIONS   *concentrations = (CONCENTRATIONS*) (cell + CONCENTRATIONS_OFFSET); 
+   double Cai = concentrations->Cai; 
+   double Nai = concentrations->Nai; 
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
-   double V = state->Vm; 
-   derived->I.NaCai =  cP->GNaCai *INaCaYFunc(state->Vm,state->Cai, state->Nai   );
+   double V = voltage->Vm; 
+   derived->I.NaCai =  cP->GNaCai *INaCaYFunc(V,Cai, Nai   );
 }

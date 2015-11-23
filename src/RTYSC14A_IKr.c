@@ -7,10 +7,11 @@ static double b[8];
 static double TBase = 310.0; // Kelvin
 static double cc; 
 
-void RTYSC14A_IKrFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt)
+void RTYSC14A_IKrFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *derived, double dt)
 {
 
-   double *S = ((double *)state)+pOffset ; 
+   VOLTAGE *voltage = (VOLTAGE *)cell; 
+   double *S = cell+pOffset ; 
    PSTATE *pState = (PSTATE *)S ; 
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
 /*
@@ -28,11 +29,11 @@ void RTYSC14A_IKrFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *d
    cP->kI =  0.0;    
    cP->D = 0.0;    
 */
-   double Vm = state->Vm; 
-   derived->I.Kr = cP->GKr * cc* (Vm-derived->EK)*pState->O; 
+   double V = voltage->Vm; 
+   derived->I.Kr = cP->GKr * cc* (V-derived->EK)*pState->O; 
 
    double rate[8]; 
-   for (int i=0;i<8;i++) rate[i] = a[i]*exp(b[i]*Vm); 
+   for (int i=0;i<8;i++) rate[i] = a[i]*exp(b[i]*V); 
 
    double  dSdt[10]; 
    dSdt[0] = rate[1]*S[1] - rate[0]*S[0]; 
@@ -65,7 +66,7 @@ void RTYSC14A_IKrFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *d
    static int loop=0; 
    if (loop %10 == 0) 
    {
-   printf("STATE %8d %16.8e",loop,Vm); 
+   printf("STATE %8d %16.8e",loop,V); 
    for (int i=0;i<10;i++) printf("%16.8e",S[i]); printf("\n"); 
    }
    loop++; 

@@ -2,14 +2,15 @@
 #include <math.h>
 #include "OHaraRudy.h"
 #include "OHaraRudy_INaFast.h"
-void OHaraRudy_INaFastFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt)
+void OHaraRudy_INaFastFunc(CELLPARMS *parmsPtr, double *state, int pOffset, DERIVED *derived, double dt)
 {
 //#define hSlowTauC   0.009764   //paper
 #define hSlowTauC   0.009794   //code
+   VOLTAGE *voltage = (VOLTAGE *)state; 
 
-   PSTATE *pState = (PSTATE *)(((double *)state)+pOffset) ; 
+   PSTATE *pState = (PSTATE *)(state+pOffset) ; 
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
-   double V = state->Vm; 
+   double V = voltage->Vm; 
    double ENa = derived->ENa; 
    double phiCaMK=derived->phiCaMK;
 
@@ -54,6 +55,8 @@ void OHaraRudy_INaFastFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIV
       double hCaMKMhu = sige((V+89.1)/6.086);
       double hCaMKSlowTauR = hSlowTauR/3.0; 
       double dhCaMKSlow = (hCaMKMhu-hCaMKSlow)*hCaMKSlowTauR;  // gate
+
+      ENDCODE()
       pState->m += dt*dm;    //Forward Euler for original OR mGate 
 //    double tauRdt = 1-exp(-dt*mTauR); //Rush Larsen needed with TT06 mMhu; 
 //    pState->m += (mMhu-m)*tauRdt;     // Rush Larsen needed with TT06 mMhu; 

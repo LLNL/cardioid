@@ -20,7 +20,7 @@ static   double VnsrVmyo;//= Vnsr/Vmyo;
 static   double VjsrVss ;//= Vjsr/Vss; 
 static   double VjsrVnsr;//= Vjsr/Vnsr; 
 
-void OHaraRudyCellular()
+void OHaraRudy_ConcentConstants()
 {
    double L = 0.01; // cm 
    double r = 0.0011; // cm
@@ -48,12 +48,12 @@ void OHaraRudyCellular()
    VjsrVss  = Vjsr/Vss; 
    VjsrVnsr  = Vjsr/Vnsr; 
 }
-void OHaraRudy_ConcentFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt)
+void OHaraRudy_ConcentFunc(CELLPARMS *parmsPtr, double *state, int pOffset, DERIVED *derived, double dt)
 {
-
-   PSTATE *pState = (PSTATE *)(((double *)state)+pOffset) ; 
+   VOLTAGE *voltage = (VOLTAGE *)state; 
+   PSTATE *pState = (PSTATE *)(state+pOffset) ; 
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
-   double V    = pState->Vm; 
+   double V = voltage->Vm; 
    double Nass = pState->Nass; 
    double Nai  = pState->Nai; 
    double Cass = pState->Cass; 
@@ -84,15 +84,16 @@ void OHaraRudy_ConcentFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIV
    double dCansr =                                                J.up-J.tr*VjsrVnsr; 
    double dCajsr =                                               (J.tr-J.rel                      )*bCajsr; 
    double dVm = -(INa + IK + I->CaL + I->CaNa + I->CaK + I->NaCai + I->NaCass + I->NaK + IpCab )/Cm;
-   derived->dVm = dVm; 
+   voltage->dVm = dVm; 
 
+   ENDCODE()
    pState->Nai  *= exp(dt*dNai/Nai); 
    pState->Nass *= exp(dt*dNass/Nass); 
    pState->Ki   *= exp(dt*dKi/Ki); 
    pState->Kss  *= exp(dt*dKss/Kss); 
    pState->Cai  *= exp(dt*dCai/Cai); 
    pState->Cass *= exp(dt*dCass/Cass); 
-   pState->Cansr*= exp(dt*dCansr/state->Cansr); 
-   pState->Cajsr*= exp(dt*dCajsr/state->Cajsr); 
+   pState->Cansr*= exp(dt*dCansr/Cansr); 
+   pState->Cajsr*= exp(dt*dCajsr/Cajsr); 
 
 }

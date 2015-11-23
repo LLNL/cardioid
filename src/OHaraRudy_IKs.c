@@ -3,12 +3,15 @@
 #include "OHaraRudy.h"
 #include "OHaraRudy_IKs.h"
 
-void OHaraRudy_IKsFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt)
+void OHaraRudy_IKsFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *derived, double dt)
 {
-   PSTATE *pState = (PSTATE *)(((double *)state)+pOffset) ; 
+   VOLTAGE *voltage = (VOLTAGE *)cell; 
+   CONCENTRATIONS  *concentrations = (CONCENTRATIONS*) (cell + CONCENTRATIONS_OFFSET); 
+
+   PSTATE *pState = (PSTATE *)(cell+pOffset) ; 
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
-   double V = state->Vm; 
-   double Cai = state->Cai; 
+   double V = voltage->Vm; 
+   double Cai = concentrations->Cai; 
 
    double EKs = derived->EKs; 
    double Xs1 = pState->Xs1; 
@@ -23,19 +26,22 @@ void OHaraRudy_IKsFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *
    double Xs2TauR = 1e-2*exp((V-50.0)/20.0) + 1.93e-2*exp(-(V+66.54)/31);
    double dXs1 = (XsMhu-Xs1)*Xs1TauR;  // gate
    double dXs2 = (XsMhu-Xs2)*Xs2TauR;  // gate
+   ENDCODE()
    pState->Xs1 += dt*dXs1; 
    pState->Xs2 += dt*dXs2; 
 }
 // IKs  V,Cai:EKs:GKs:Xs1,Xs2
-void OHaraRudy_IKsFuncDebug(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt)
+void OHaraRudy_IKsFuncDebug(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *derived, double dt)
 {
-   PSTATE *pState = (PSTATE *)(((double *)state)+pOffset) ; 
+   VOLTAGE *voltage = (VOLTAGE *)cell; 
+   CONCENTRATIONS  *concentrations = (CONCENTRATIONS*) (cell + CONCENTRATIONS_OFFSET); 
+   PSTATE *pState = (PSTATE *)(cell+pOffset) ; 
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
-   double V = state->Vm; 
+   double V = voltage->Vm; 
    double EKs = derived->EKs; 
    double Xs1 = pState->Xs1; 
    double Xs2 = pState->Xs2; 
-   double Cai = state->Cai; 
+   double Cai = concentrations->Cai; 
 
    double phi =  1 + 0.6*sigm(pow(3.8e-5/Cai,1.4)); 
    derived->I.Ks = cP->GKs *(V-EKs) * phi * Xs1*Xs2;

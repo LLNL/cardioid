@@ -2,11 +2,12 @@
 #include <math.h>
 #include "OHaraRudy.h"
 #include "OHaraRudy_INaL.h"
-void OHaraRudy_INaLFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt)
+void OHaraRudy_INaLFunc(CELLPARMS *parmsPtr, double *state, int pOffset, DERIVED *derived, double dt)
 {
-   PSTATE *pState = (PSTATE *)(((double *)state)+pOffset) ; 
+   VOLTAGE *voltage = (VOLTAGE *)state; 
+   PSTATE *pState = (PSTATE *)(state+pOffset) ; 
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
-   double V = state->Vm; 
+   double V = voltage->Vm; 
    double ENa = derived->ENa; 
    double phiCaMK=derived->phiCaMK;
    //   Gates needed to calculate INaL; 
@@ -28,7 +29,8 @@ void OHaraRudy_INaLFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED 
    double hLCaMKMhu = sige((V+93.81)/7.488);
    double hLCaMKTauR = hLTauR/3.0; 
    double dhLCaMK = (hLCaMKMhu-hLCaMK)*hLCaMKTauR;  // gate
-   pState->mL += dt*dmL; 
-   pState->hL += dt*dhL; 
+   ENDCODE()
+   pState->mL     += dt*dmL; 
+   pState->hL     += dt*dhL; 
    pState->hLCaMK += dt*dhLCaMK; 
 }

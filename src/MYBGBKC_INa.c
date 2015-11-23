@@ -16,10 +16,11 @@ static double cc;
 
 void MYBGBKC_Rates(double V, double *rate);
 
-void MYBGBKC_INaFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt)
+void MYBGBKC_INaFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *derived, double dt)
 {
 
-   double *S = ((double *)state)+pOffset ; 
+   VOLTAGE *voltage = (VOLTAGE *)cell; 
+   double *S = cell+pOffset ; 
    PSTATE *pState = (PSTATE *)S ; 
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
 /*
@@ -37,13 +38,12 @@ void MYBGBKC_INaFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *de
    cP->kI =  0.0;    
    cP->D = 0.0;    
 */
-   double Vm = state->Vm; 
-   derived->I.NaL = cP->GNa * (Vm-derived->ENa)*(pState->O+pState->BO); 
+   double V = voltage->Vm; 
+   derived->I.NaL = cP->GNa * (V-derived->ENa)*(pState->O+pState->BO); 
    derived->I.NaFast = 0.0; 
-   //printf("INa = %e %e %e %x\n",derived->I.NaL,pState->O,pState->BO,S); 
 
    double rate[50]; 
-   MYBGBKC_Rates(Vm, rate);
+   MYBGBKC_Rates(V, rate);
 
    double  dSdt[15]; 
    int nSubSteps=10; 

@@ -3,12 +3,12 @@
 #include "OHaraRudy.h"
 #include "OHaraRudy_IKr.h"
 
-void OHaraRudy_IKrFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt)
+void OHaraRudy_IKrFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *derived, double dt)
 {
-
-   PSTATE *pState = (PSTATE *)(((double *)state)+pOffset) ; 
+   VOLTAGE *voltage = (VOLTAGE *)cell; 
+   PSTATE *pState = (PSTATE *)(cell+pOffset) ; 
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
-   double V = state->Vm; 
+   double V = voltage->Vm; 
    double EK = derived->EK; 
    double XrFast = pState->XrFast; 
    double XrSlow = pState->XrSlow; 
@@ -25,6 +25,7 @@ void OHaraRudy_IKrFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *
    double XrSlowTauR = 1/XrSlowTau; 
    double dXrSlow = (XrMhu - XrSlow)*XrSlowTauR;  // gate
    double dXrFast = (XrMhu - XrFast)*XrFastTauR;  // gate
+   ENDCODE()
    pState->XrSlow += dt*dXrSlow; 
    pState->XrFast += dt*dXrFast; 
 }

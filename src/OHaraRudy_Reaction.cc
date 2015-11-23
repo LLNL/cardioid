@@ -14,7 +14,7 @@ HandleMap  OHaraRudy_Reaction::handleMap_ ;
 
 OHaraRudy_Reaction::OHaraRudy_Reaction(const Anatomy& anatomy,OHaraRudy_Parms &parms)
 {
-   OHaraRudyInit();
+   OHaraRudyInit(0.0,anatomy.nLocal());
    makeHandleMap(); 
    ttType_.resize(256, -1); 
    ttType_[30] = ENDO_CELL;
@@ -52,7 +52,6 @@ void OHaraRudy_Reaction::calc(double dt,
 //   OHaraRudyPut(nCells,&Vm[0],&iStim[0]); 
 //   OHaraRudyCalc(); 
 //   OHaraRudyGet(&dVm[0]); 
-#pragma omp parallel for
    for (int ii=0; ii<nCells; ++ii)
       dVm[ii] = cells_[ii].calc(dt, Vm[ii], iStim[ii]);
 }

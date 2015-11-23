@@ -15,12 +15,14 @@ static double KoNai = 9.073 ; //mM
 static double KoNao = 27.78 ; //mM
 static double delta = -0.1550;  
 
-void OHaraRudy_INaKFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt)
+void OHaraRudy_INaKFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *derived, double dt)
 {
+   VOLTAGE *voltage = (VOLTAGE *)cell; 
+   CONCENTRATIONS  *concentrations = (CONCENTRATIONS*) (cell + CONCENTRATIONS_OFFSET); 
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
-   double V = state->Vm; 
-   double Nai = state->Nai; 
-   double Ki = state->Ki; 
+   double V = voltage->Vm; 
+   double Nai = concentrations->Nai; 
+   double Ki  = concentrations->Ki; 
 
    double KNai = KoNai*exp(delta*V*FRT/3); 
    double KNao = KoNao*exp((1-delta)*V*FRT/3); 

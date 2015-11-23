@@ -5,16 +5,18 @@
 #include <assert.h>
 #include "OHaraRudy.h"
 #include "OHaraRudy_ICa.h"
-void OHaraRudy_ICaFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt )
+void OHaraRudy_ICaFunc(CELLPARMS *parmsPtr, double  *cell, int pOffset, DERIVED *derived, double dt )
 {
-   double V       =state->Vm; 
-   double Cass    =state->Cass;
-   double Nass    =state->Nass;
-   double Kss     =state->Kss;
+   VOLTAGE *voltage = (VOLTAGE *)cell; 
+   CONCENTRATIONS  *concentrations = (CONCENTRATIONS*) (cell + CONCENTRATIONS_OFFSET); 
+   double V = voltage->Vm; 
+   double Cass    =concentrations->Cass;
+   double Nass    =concentrations->Nass;
+   double Kss     =concentrations->Kss;
 
    double phiCaMK   = derived->phiCaMK; 
 
-   PSTATE *pState = (PSTATE *)(((double *)state)+pOffset) ; 
+   PSTATE *pState = (PSTATE *)(cell+pOffset) ; 
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
    
 
@@ -103,6 +105,7 @@ void OHaraRudy_ICaFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *
    double an = 1.0/(Kp2n/Km2n + SQ(SQ(1+Kmn/Cass)));
    double dn =  an*Kp2n -n * Km2n;  //gate
 
+   ENDCODE()
    pState->d += dt*dd; 
    pState->fSlow += dt*dfSlow; 
    pState->fFast += dt*dfFast; 

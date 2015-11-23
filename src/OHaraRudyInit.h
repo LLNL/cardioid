@@ -5,6 +5,7 @@ extern "C"
 {
 #endif 
 void reversalPotentialsInit();
+COMPONENTINFO OHaraRudy_VoltageInit();
 COMPONENTINFO OHaraRudy_ConcentInit();
 COMPONENTINFO OHaraRudy_FluxesInit();
 COMPONENTINFO OHaraRudy_CaMKtrapInit();
@@ -27,11 +28,12 @@ COMPONENTINFO OHaraRudyMod_INaFastInit();
 COMPONENTINFO RTYSC14A_IKrInit();
 COMPONENTINFO MYBGBKC_INaInit();
 COMPONENTINFO null_INullInit();
-
+ 
 int OHaraRudyGet_nComp(); 
 COMPONENTINFO* OHaraRudyGet_compInfo(); 
 
 void reversalPotentials(double Nai, double Ki, DERIVED *derived);
+void OHaraRudyCellular(); 
 #ifdef __cplusplus
 }
 #endif 

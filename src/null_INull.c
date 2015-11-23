@@ -1,7 +1,7 @@
 #include "OHaraRudy.h"
 #include "null_INull.h"
 
-void null_INullFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt)
+void null_INullFunc(CELLPARMS *parmsPtr, double *state, int pOffset, DERIVED *derived, double dt)
 {
 
 }

@@ -34,18 +34,17 @@ OHaraRudy::OHaraRudy(int cellType, OHaraRudy_Parms &parms)
 double OHaraRudy::calc(double dt, double Vm, double iStim)
 {
    DERIVED derived; 
-   double Nai = ((STATE*)state_)->Nai; 
-   double Ki = ((STATE*)state_)->Ki; 
+   VOLTAGE *voltage = (VOLTAGE*)(state_+privateStateOffset_[0]);
+   voltage->Vm=Vm; 
+   voltage->iStim=iStim; 
+   CONCENTRATIONS *concentrations  = (CONCENTRATIONS *)(state_+privateStateOffset_[1]); 
+   reversalPotentials(concentrations->Nai,concentrations->Ki,&derived); 
 
-   ((STATE*)state_)->Vm=Vm; 
-   derived.I.stimulus = iStim; 
-   reversalPotentials(Nai,Ki,&derived); 
-
-   for (int i=1;i<=16;i++)    //TEST
+   for (int i=2;i<=17;i++)    //TEST
    {
-      info_[i].func(cellParms_+privateParmsOffset_[i], (STATE *)state_, privateStateOffset_[ i], &derived, dt);
+      info_[i].func(cellParms_+privateParmsOffset_[i], state_, privateStateOffset_[ i], &derived, dt);
    }
-   info_[0].func(cellParms_+privateParmsOffset_[0], (STATE *)state_, privateStateOffset_[0], &derived, dt );
+   info_[1].func(cellParms_+privateParmsOffset_[1], state_, privateStateOffset_[1], &derived, dt );
 
    //if (isfinite(dV)==0)MPI_Abort(MPI_COMM_WORLD,1); 
    //static double t=0; 
@@ -54,7 +53,8 @@ double OHaraRudy::calc(double dt, double Vm, double iStim)
    //printf("IKr: %f %e\n",t,I.Kr); 
    //t += dt; 
    //exit(0); 
-   return derived.dVm;  
+   
+   return voltage->dVm;  
 }
 double OHaraRudyDebug::calc(double dt, double Vm, double iStim)
 {
@@ -109,10 +109,11 @@ void OHaraRudy::initConsts(int cellType,OHaraRudy_Parms &parms)
    {
       typedef COMPONENTINFO (*CINIT)(); 
       int nI = parms.currentNames.size(); 
-      int nComp = 3 + nI; 
+      int nComp = 4 + nI; 
       CINIT *cInit = (CINIT *)calloc(nComp,sizeof(CINIT)); 
       reversalPotentialsInit();
       int k=0; 
+      cInit[k++] = OHaraRudy_VoltageInit;   // Concentration must be first and CaMK trap second. 
       cInit[k++] = OHaraRudy_ConcentInit;   // Concentration must be first and CaMK trap second. 
       cInit[k++] = OHaraRudy_CaMKtrapInit; 
       for (int i=0;i<parms.currentNames.size();i++)   // Order of currents initialization does not matter. 

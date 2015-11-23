@@ -2,8 +2,11 @@
 // If only one value is specifed ie <value> the endo epi and m will have the same value.  The form <endoValue>*<multEpi>*<multM>
 // allow expressing the epi and m values in terms of a scaling of the endo values.   ie  epiValue = endoValue*multEPi
 //Model     type        Component         variable     Default      Units
+ OHaraRudy     PSTATE    Voltage             Vm       -87.84          mV
+ OHaraRudy     PSTATE    Voltage             dVm        0             mV/ms
+ OHaraRudy     PSTATE    Voltage             iStim      0             mV/ms
+
  OHaraRudy  PARAMETER    Concent           CMDN     0.05*1.3*1.0  mM
- OHaraRudy     PSTATE    Concent             Vm       -87.84          mV
  OHaraRudy     PSTATE    Concent            Nai         7.23          mM
  OHaraRudy     PSTATE    Concent           Nass         7.23          mM
  OHaraRudy     PSTATE    Concent             Ki       143.79          mM

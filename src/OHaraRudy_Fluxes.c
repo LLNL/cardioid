@@ -6,20 +6,20 @@ static double tauRDiffCa=5.0;// ms
 static double tauRtr    = 0.01;// ms
 static double deltaKmPLB = 0.00017 ; // mM
 static double deltaJupCaMK=1.75; 
-void OHaraRudy_FluxesFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVED *derived, double dt )
+void OHaraRudy_FluxesFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *derived, double dt )
 {
-   FLUXES J; 
-   PSTATE *pState = (PSTATE *)(((double *)state)+pOffset) ; 
+   CONCENTRATIONS   *concentrations = (CONCENTRATIONS*) (cell + CONCENTRATIONS_OFFSET); 
+   PSTATE *pState = (PSTATE *)(cell+pOffset) ; 
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
    double phiRelCaMK=derived->phiCaMK;
-   double Cajsr = state->Cajsr; 
-   double Cansr = state->Cansr; 
-   double Nass = state->Nass; 
-   double Cass = state->Cass; 
-   double Cai = state->Cai; 
-   double Nai = state->Nai; 
-   double Ki = state->Ki; 
-   double Kss = state->Kss; 
+   double Cajsr = concentrations->Cajsr; 
+   double Cansr = concentrations->Cansr; 
+   double Nass = concentrations->Nass; 
+   double Cass = concentrations->Cass; 
+   double Cai = concentrations->Cai; 
+   double Nai = concentrations->Nai; 
+   double Ki = concentrations->Ki; 
+   double Kss = concentrations->Kss; 
    derived->J.rel = (1.0-phiRelCaMK)*pState->JrelNP + phiRelCaMK*pState->JrelCaMK; 
 
    double x = SQ(SQ(SQ(Cajsr/1.5))); 
@@ -49,6 +49,7 @@ void OHaraRudy_FluxesFunc(CELLPARMS *parmsPtr, STATE *state, int pOffset, DERIVE
    derived->J.diffCa = (Cass-Cai   )*tauRDiffCa;
    derived->J.diffK  = (Kss-Ki     )*tauRDiffK;
    derived->J.tr     = (Cansr-Cajsr)*tauRtr; 
+   ENDCODE()
 
    pState->JrelNP  += dt*dJrelNP; 
    pState->JrelCaMK+= dt*dJrelCaMK; 

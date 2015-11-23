@@ -25,45 +25,40 @@ static double *initialStateBuffer_=0;
 static double **initialState_=0;
 static char **stateName_=0; 
 
-int nCells_ =1;
-double *buffer_=0; 
-double *state_=0;
-double *Vm_;
-double *dVm_;
-double *iStim_;
-double **cellParms_=0;
+static int nCells_ =1;
+static double dt_=0.0; 
+static double **cellParms_=0;
 
-double dt_=0.0; 
+static double *state_; 
+
 
 void OHaraRudyDefineComps();
 void OHaraRudyDefineDefaultTypes();
 
-void OHaraRudyInit()
+void OHaraRudyInit(double dt, int nCells)
 {
-
+   dt_ = dt; 
+   nCells_ = nCells; 
    reversalPotentialsInit();
    OHaraRudyDefineComps(); 
    OHaraRudyDefineDefaultTypes();
-   buffer_ = (double *)malloc(nCells_*(nState_+ 3)*sizeof(double)); 
-   Vm_     =  buffer_; 
-   dVm_     = buffer_ + 1*nCells_; 
-   iStim_   = buffer_ + 2*nCells_; 
-   state_   = buffer_ + 3*nCells_;  
+   state_ = (double *)malloc(nCells_*nState_*sizeof(double)); 
    cellParms_ = (double **)malloc(nCells_*sizeof(char*)); 
    for (int i=0;i<nCells_;i++) 
    {
       cellParms_[i] = typeParms_[ENDO_CELL]; 
-      double *state = state_+i*nState_; 
+      double *state = state_ +i*nState_ ; 
       for (int j=0;j<nState_;j++) state[j] = initialState_[ENDO_CELL][j]; 
    }
 }
 void OHaraRudyDefineComps()
 {
-   nComp_     = nCurrents_ + 3; 
+   nComp_     = nCurrents_ + 4; 
    typedef COMPONENTINFO (*CINIT)(); 
    CINIT *cInit = (CINIT *)calloc(nComp_,sizeof(CINIT)); 
    int k=0; 
-   cInit[k++] = OHaraRudy_ConcentInit;   // Concentration must be first and CaMK trap second. 
+   cInit[k++] = OHaraRudy_VoltageInit;   // Concentration must be second and CaMK trap third. 
+   cInit[k++] = OHaraRudy_ConcentInit;   
    cInit[k++] = OHaraRudy_CaMKtrapInit; 
    for (int i=0;i<nCurrents_;i++)   // Order of currents initialization does not matter. 
    {
@@ -171,67 +166,104 @@ void OHaraRudyDefineDefaultTypes()
 }
 int OHaraRudyGet_nComp() {return nComp_;} 
 COMPONENTINFO* OHaraRudyGet_compInfo() {return info_;} 
-void OHaraRudySetValue(int cell, int varHandle, double value) 
+void OHaraRudySetValue(int iCell, int varHandle, double value) 
 {
    int iComp = varHandle >> 16; 
    int index = varHandle &  0xffff; 
-   double *pstate = state_+ nState_*cell  + privateStateOffset_[iComp]; 
-   double *cellParms = cellParms_[cell] + privateParmsOffset_[iComp]; 
+   double *pstate = state_+ nState_*iCell  + privateStateOffset_[iComp]; 
+   double *cellParms = cellParms_[iCell] + privateParmsOffset_[iComp]; 
    info_[iComp].access(WRITE,index,&value,cellParms,pstate); 
 }
-//void  OHaraRudyCalc(double dt, double *Vm, double *iStim, double *dVm)
-void  OHaraRudyPut(int nCells, const double *Vm, const double *iStim)
+void  OHaraRudyPut(double dt, int nCells, const double *Vm, const double *iStim)
 {
+      dt_= dt; 
       nCells_ = nCells; 
       for (int ii=0;ii<nCells_;ii++) 
       {
-         Vm_[ii] = Vm[ii]; 
-         iStim_[ii] = iStim[ii]; 
+         double *state     = state_+ii*nState_; 
+         VOLTAGE *voltage = (VOLTAGE*)state; 
+         voltage->Vm = Vm[ii]; 
+         voltage->iStim = iStim[ii]; 
       }
 }
 void  OHaraRudyGet(double *dVm)
 {
       for (int ii=0;ii<nCells_;ii++) 
       {
-         dVm[ii] = dVm_[ii]; 
+         double *state     = state_+ii*nState_; 
+         VOLTAGE *voltage = (VOLTAGE*)state; 
+         dVm[ii] = voltage->dVm; 
       }
 }
 void  OHaraRudyCalc()
 {
    DERIVED derived; 
-   for (int j=0;j<nCells_;j++) 
+   for (int ii=0;ii<nCells_;ii++) 
    {
-      double *state     = state_+j*nState_; 
-      double *cellParms = cellParms_[j]; 
-      double Nai = ((STATE*)state_)->Nai; 
-      double Ki  = ((STATE*)state_)->Ki; 
+      CONCENTRATIONS *concentrations     = (CONCENTRATIONS *)(state_+ii*nState_+privateStateOffset_[1]); 
+      double *cellParms = cellParms_[ii]; 
+      double Nai = concentrations->Nai; 
+      double Ki  = concentrations->Ki; 
 
-      ((STATE*)state_)->Vm=Vm_[j]; 
-      derived.I.stimulus = iStim_[j]; 
       reversalPotentials(Nai,Ki,&derived); 
 
-      for (int i=1;i<=16;i++) 
+      for (int i=2;i<=17;i++) 
       {
-         info_[i].func(cellParms+privateParmsOffset_[i], (STATE *)state, privateStateOffset_[ i], &derived, dt_);
+         info_[i].func(cellParms+privateParmsOffset_[i], state_, privateStateOffset_[ i], &derived, dt_);
       }
-      info_[0].func(cellParms+privateParmsOffset_[0], (STATE *)state, privateStateOffset_[0], &derived, dt_);
-      double *I =  (double *)&(derived.I.NaCai); 
+      info_[1].func(cellParms+privateParmsOffset_[0], state_, privateStateOffset_[1], &derived, dt_);
 /*
+      double *I =  (double *)&(derived.I.NaCai); 
       for (int i=0;i<nCurrents_;i++)
-      {
          printf("%2d %10s %20.12f\n",i,currentNames_[i],I[i]); 
          
-      }
 */
-
-      dVm_[j]=derived.dVm;  
    }
 }
 #ifdef SA
+#include <unistd.h>
+typedef struct parms_st 
+{int loopMax, 
+printInterval;
+char *filename; 
+} PARMS;
+PARMS comandLineArgs(int iargc, char *argv[])
+{
+   PARMS parms={10000000,100000," "}; 
+   char opt; 
+   while ((opt = getopt(iargc, argv, "l:p:")) != -1) 
+   {
+      switch (opt) 
+     {
+         case 'l':
+            parms.loopMax = atoi(optarg); 
+            break;
+         case 'p':
+            parms.printInterval = atoi(optarg); 
+            break;
+         case '?':
+         break;
+         default:
+         {
+
+         }
+      }
+   if (optind == iargc-1) parms.filename = strdup(argv[optind]); 
+   printf("opt=%s %d %d\n",optarg,optind,iargc); 
+   }
+   
+   
+   iargc -= optind;
+   argv += optind;
+   return parms; 
+}
+
 int main(int iargc, char *argv[])
 {
-   double dt= 0.01*0; 
-   OHaraRudyInit();
+   PARMS parms = comandLineArgs(iargc, argv);
+   double dt = 0.01; 
+   double nCells = 1; 
+   OHaraRudyInit(dt,nCells);
    if (iargc == 2 )
    {
       char *filename = argv[1]; 
@@ -248,16 +280,33 @@ int main(int iargc, char *argv[])
          if (i < nState_) state_[iS++] = value;
          else cellParms_[0][iP++] = value;
       }
+      fclose(file); 
    }
-  for (int i=0;i<nCells_;i++) {iStim_[i]=0.0; Vm_[i]=((STATE *)(state_+i*nState_))->Vm;} 
-   FILE *initData = fopen("init.data","w"); 
-   for (int i=0;i<nState_;i++) fprintf(initData,"%2d %16s %20.8e\n",i,stateName_[i],state_[i]); 
-   for (int i=0;i<nParms_;i++) fprintf(initData,"%2d %16s %20.8e\n",i,typeName_[i],cellParms_[0][i]); 
-   //for (int loop = 0;loop< 10;loop++) 
+   double t=0.0; 
+   OHaraRudyCalc();
+   VOLTAGE *voltage0 = (VOLTAGE *)(state_+0*nState_) ;
+#ifdef doEnd
+   printf("Vm              : %2d %22.15e %22.15e\n",0,voltage0->Vm,voltage0->dVm); 
+   exit(0); 
+#endif
+   int loop = 0; 
+   for (loop ;loop< parms.loopMax;loop++) 
    {
+      if (loop%parms.printInterval==0)
+      {
+         printf("%10d %10.3f %24.15f %24.15f\n",loop,loop*dt,voltage0->Vm,voltage0->dVm); 
+         fflush(stdout); 
+      }
+      for (int i=0;i<nCells_;i++)
+      {
+         VOLTAGE *voltage = (VOLTAGE *)(state_+i*nState_) ;
+         voltage->Vm += voltage->dVm*dt;
+      }
       OHaraRudyCalc();
-      for (int i=0;i<nCells_;i++) printf("dVm=%24.15f\n",dVm_[i]); 
-      for (int i=0;i<nCells_;i++)  Vm_[i] += dVm_[i] *dt; 
    }
+   for (int i=0;i<nCells_;i++) printf("%10d %10.3f %24.15f %24.15f\n",loop,loop*dt,voltage0->Vm,voltage0->dVm); 
+   FILE *initData = fopen("init.data","w"); 
+   for (int i=0;i<nState_;i++) fprintf(initData,"%2d %16s  %22.15e\n",i,stateName_[i],state_[i]); 
+   for (int i=0;i<nParms_;i++) fprintf(initData,"%2d %16s  %22.15e\n",i,typeName_[i],cellParms_[0][i]); 
 }
 #endif
