@@ -9,5 +9,8 @@ void OHaraRudy_ICabFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED 
    double V = voltage->Vm; 
    double Cai    =concentrations->Cai;
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
-   derived->I.Cab = cP->PCab*SQ(zCa)*V*FRT*F*(gammaCai*Cai*exp(zCa*V*FRT)-gammaCao*Cao)/(exp(zCa*V*FRT)-1); 
+   double x = zCa*V*FRT; 
+   double f;
+   xexp(f,x); 
+   derived->I.Cab = cP->PCab*zCa*F*(gammaCai*Cai*exp(zCa*V*FRT)-gammaCao*Cao)*f; 
 }

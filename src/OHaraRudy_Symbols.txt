@@ -99,8 +99,8 @@
  OHaraRudy     PSTATE        ICa              n   0.00267171 1
  OHaraRudy     PSTATE        ICa      fCaMKFast          1.0 1
  OHaraRudy     PSTATE        ICa    fCaCaMKFast          1.0 1
-// IKr Vm::GKr 
- RTYSC14A   PARAMETER        IKr            GKr       0.04218*1.3*0.8 mS/uF
+// IKr Vm::GKr 0.04218
+ RTYSC14A   PARAMETER        IKr            GKr       0.05520*1.3*0.8 mS/uF
  RTYSC14A   PARAMETER        IKr            D         0.0*0.0*0.0 mM
  RTYSC14A   PARAMETER        IKr            kC        0.0*0.0*0.0 1/(mM*ms)
  RTYSC14A   PARAMETER        IKr            kO        0.0*0.0*0.0 1/(mM*ms)

@@ -61,28 +61,23 @@ void RTYSC14A_IKrFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *d
    dSdt[2] += cP->rC*S[7]   ; dSdt[7] -= cP->rC*S[7]; 
    dSdt[3] += cP->rO*S[8]   ; dSdt[8] -= cP->rO*S[8]; 
    dSdt[4] += cP->rI*S[9]   ; dSdt[9] -= cP->rI*S[9]; 
-/*
-
-   static int loop=0; 
-   if (loop %10 == 0) 
+   if (derived->dState != 0) 
    {
-   printf("STATE %8d %16.8e",loop,V); 
-   for (int i=0;i<10;i++) printf("%16.8e",S[i]); printf("\n"); 
+      double  *dState = derived->dState+pOffset;
+      for (int i=0;i<10;i++) dState[i] = dSdt[i]; 
    }
-   loop++; 
-*/
    for (int i=0;i<10;i++) S[i] += dt*dSdt[i]; 
 
 }
 void RTYSC14A_Rates(double V, double *rate)
 {
    rate[0] = T/TBase * exp(24.335 + (T/TBase)*( 0.0112*V-25.914));                  //alpha        C3->C2
-   rate[1] = T/TBase * exp(13.668 + (TBase/T)*(-0.0603*V-15.707));                  //beta         C2->C3
-   rate[2] = T/TBase * exp(22.764 + (TBase/T)*(         -25.914));                  //alpha_in     C2->C1
+   rate[1] = T/TBase * exp(13.688 + (TBase/T)*(-0.0603*V-15.707));                  //beta         C2->C3
+   rate[2] = T/TBase * exp(22.746 + (TBase/T)*(         -25.914));                  //alpha_in     C2->C1
    rate[3] = T/TBase * exp(13.193 + (TBase/T)*(         -15.707));                  //beta_in      C1->C2
    rate[4] = T/TBase * exp(22.098 + (TBase/T)*( 0.0365*V-25.914));                  //alphaalpha   C1->O
    rate[5] = T/TBase * exp( 7.313 + (TBase/T)*(-0.0399*V-15.707));                  //betabeta     O->C1
-   rate[6] = T/TBase * exp(30.016 + (TBase/T)*( 0.0223*V-30.880))*pow(5.4/Ko,0.4);  // alpha_i     O->I
+   rate[6] = T/TBase * exp(30.016 + (TBase/T)*( 0.0223*V-30.888))*pow(5.4/Ko,0.4);  // alpha_i     O->I  // paper used 30.880
    rate[7] = T/TBase * exp(30.061 + (TBase/T)*(-0.0312*V-33.243));                  //beta_i       I->O
 }
 

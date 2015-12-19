@@ -57,9 +57,16 @@ void OHaraRudy_ICaFunc(CELLPARMS *parmsPtr, double  *cell, int pOffset, DERIVED 
    double expCa =  SQ(expVFRT); // exp(zCa*VFRT);
    double expNa =     expVFRT;  // exp(zNa*VFRT);
    double expK  =     expVFRT;  // exp(zK *VFRT);
-   double psiCa   = SQ(zCa)*VFFRT*(gammaCai*Cass*expCa-gammaCao*Cao)/(expCa-1.0); 
-   double psiCaNa = SQ(zNa)*VFFRT*(gammaNai*Nass*expNa-gammaNao*Nao)/(expNa-1.0); 
-   double psiCaK  = SQ(zK )*VFFRT*(gammaKi * Kss*expK -gammaKo *Ko )/(expK -1.0); 
+   double xCa = zCa*V*FRT; 
+   double xNa = zNa*V*FRT; 
+   double xK  = zK *V*FRT; 
+   double xexpCa;  xexp(xexpCa,xCa); 
+   double xexpNa;  xexp(xexpNa,xNa); 
+   double xexpK ;  xexp(xexpK, xK ); 
+   
+   double psiCa   = zCa*F*(gammaCai*Cass*expCa-gammaCao*Cao)*xexpCa; 
+   double psiCaNa = zNa*F*(gammaNai*Nass*expNa-gammaNao*Nao)*xexpNa; 
+   double psiCaK  = zK *F*(gammaKi * Kss*expK -gammaKo *Ko )*xexpK ; 
 
    derived->I.CaL   = cP->PCaL *psiCa  *chi; 
    derived->I.CaNa  = cP->PCaNa*psiCaNa*chi; 

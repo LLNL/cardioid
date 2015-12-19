@@ -10,5 +10,8 @@ void OHaraRudy_INabFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED 
    PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
    double V = voltage->Vm; 
    double Nai = concentrations->Nai; 
-   derived->I.Nab = cP->PNab*SQ(zNa) *V*FRT*F*(Nai*exp(zNa*V*FRT)-Nao)/(exp(zNa*V*FRT)-1); 
+   double x = zNa*V*FRT; 
+   double f;
+   xexp(f,x) ;
+   derived->I.Nab = cP->PNab*zNa*F*(Nai*exp(x)-Nao)*f; 
 }

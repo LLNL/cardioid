@@ -7,10 +7,14 @@
 #include "CheckpointVarInfo.hh"
 #include "OHaraRudy.h" 
 #include "Reaction.hh"
-#include "OHaraRudy.hh"
 class Anatomy;
 class OHaraRudy;
 class BucketOfBits;
+struct OHaraRudy_Parms
+{
+      std::vector<std::string> currentNames;
+      std::vector<std::string> currentModels;
+};
 
 class OHaraRudy_Reaction : public Reaction
 {
@@ -40,8 +44,9 @@ class OHaraRudy_Reaction : public Reaction
  private:
 
    int indexS_;
+   int nCells_; 
    std::vector<int>      ttType_; // maps cellType to ttType
-   std::vector<OHaraRudy> cells_;
+//   std::vector<OHaraRudy> cells_;
    void makeHandleMap(); 
 };
 

@@ -76,7 +76,14 @@ void MYBGBKC_INaFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *de
       }
       dSdt[3] += -rate[44]*S[3] + rate[45]*S[7]; 
       dSdt[7] += +rate[44]*S[3] - rate[45]*S[7]; 
-      
+      if (l==0) 
+      {
+         if (derived->dState != 0) 
+         {
+               double  *dState = derived->dState+pOffset;
+               for (int i=0;i<15;i++) dState[i] = dSdt[i]; 
+         }
+      }
       for (int i=0;i<15;i++) S[i] += dt*dSdt[i]/nSubSteps; 
    }
       
@@ -89,8 +96,6 @@ void MYBGBKC_INaFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *de
       dSdt[i+5] = rate[2*i-2]*S[i-1+5] + rate[2*i+1]*S[i+1+5] - (rate[2*i-1]+rate[2*i])*S[i+5]; 
       } 
       dSdt[4+5] = rate[6]*S[3+5] - rate[7]*S[4+5]; 
-      for (int i=0;i<4;i++) 
-      printf("%2d %12.8f %12.8f\n",i,rate[2*i],rates[2*i+1); 
 
       double D = cP->D; 
       dSdt[0] -= cP->kC*D*S[0] ; dSdt[5] += cP->kC*D*S[0]; 
@@ -121,7 +126,7 @@ void MYBGBKC_Rates(double V, double *rate)
    double beta12  = 2.7574   *exp(-(V- 5)/20.3);                             //beta12  C1->C2, IF->IC2
    double beta13  = 4.7755e-1*exp(-(V-10)/20.3);                             //beta13  O->C1
    double alpha3  = 5.1458e-6*exp(-V/8.2471);                                //alpha3  IC3->C3, IC2->C2, IF->C1
-   double beta3   = 6.1205   *exp( V/12.542);                                //beta3   C3->IC3, C2->IC2, C1->IF
+   double beta3   = 6.1205   *exp( V/13.542);      //12.542 is paper value   //beta3   C3->IC3, C2->IC2, C1->IF
    double alpha2  = 13.370   *exp( V/43.749);                                //alpha2  O->IF
    double beta2   = (alpha13*alpha2*alpha3)/(beta13*beta3);                  //beta2   IF->O
    double alphax  = 3.4229e-2*alpha2;                                        //alphax  O->IS
@@ -153,12 +158,12 @@ void MYBGBKC_Rates(double V, double *rate)
    rate[k++] =  0.0; 
    rate[k++] =  0.0; 
 
-   rate[k++] =  0.0; 
-   rate[k++] =  0.0; 
-   rate[k++] =  0.0; 
-   rate[k++] =  0.0; 
-   rate[k++] =  0.0; 
-   rate[k++] =  0.0; 
+   rate[k++] =  alpha11;
+   rate[k++] =  beta11;
+   rate[k++] =  alpha12;
+   rate[k++] =  beta12;
+   rate[k++] =  alpha13; 
+   rate[k++] =  beta13;
    rate[k++] =  0.0; 
    rate[k++] =  0.0; 
 

@@ -13,8 +13,6 @@
 #include "pade.hh"
 #include "TT06_RRG_Reaction.hh"    // TT06 with modifications from Rice et al.
 #include "OHaraRudy_Reaction.hh"    // OHara Rudy .
-#include "OHaraRudy.hh"    // OHara Rudy .
-//#include "TT06Func.hh"
 #include "ReactionFHN.hh"
 #include "NullReaction.hh"
 #include "TestReaction.hh"

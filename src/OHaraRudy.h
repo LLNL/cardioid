@@ -1,6 +1,8 @@
 #ifndef OHARARUDY_H
 #define OHARARUDY_H
 #include <stdio.h>
+#include <math.h>
+#define doEnd
 
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
 #define sigm(x)   (1.0/(1.0 + (x)))
@@ -90,6 +92,8 @@ typedef struct derived_st
   double phiCaMK; 
   CURRENTS I; 
   FLUXES J;
+  double *dState;
+  double Vo; 
 } DERIVED; 
 
 typedef struct varInfo_str 
@@ -105,6 +109,7 @@ typedef struct varInfo_str
 
 typedef struct componentInfo_st
 {
+   char *compName; 
    int pStateSize; 
    int parmsSize; 
    int nVar; 
@@ -112,14 +117,16 @@ typedef struct componentInfo_st
    void (*func)(CELLPARMS *, double *, int, DERIVED *, double); 
    void (*access)(int, int, double *, double *, double *); 
 } COMPONENTINFO;
+#define xexp(f,x) do {if ((x)*(x) > 1e-10)  f = (x)/(exp((x))-1.0);  else   f = 1/(1+0.5*(x)+ 0.1666666666666667*(x)*(x));  } while(0)
 #ifdef __cplusplus
 extern "C" 
 {
 #endif 
-void OHaraRudyInit(double dt, int nCells);
+void OHaraRudyInit(double dt, int nCells, int *cellType);
 int OHaraRudyGet_nComp(); 
 COMPONENTINFO* OHaraRudyGet_compInfo(); 
 void OHaraRudySetValue(int, int handle, double cell); 
+double OHaraRudyGetValue(int, int handle); 
 void OHaraRudyCalc(); 
 void  OHaraRudyGet(double *dVm);
 void  OHaraRudyPut(double dt, int nCells, const double *Vm, double const *iStim);

@@ -23,7 +23,7 @@ void OHaraRudy_FluxesFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVE
    derived->J.rel = (1.0-phiRelCaMK)*pState->JrelNP + phiRelCaMK*pState->JrelCaMK; 
 
    double x = SQ(SQ(SQ(Cajsr/1.5))); 
-   double y = (Cajsr/0.123); 
+   double y = (Cajsr/0.0123); 
    double alpha0   = (-derived->I.CaL)*x/(1.0+x);
    double beta0    = y/(1+y); 
 

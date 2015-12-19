@@ -208,6 +208,7 @@ void simulationLoop(Simulate& sim)
       {
          double dVm = dVmReaction[ii] + dVmDiffusion[ii];
          vmarray[ii] += sim.dt_*dVm;
+         if (sim.findVrest_) vmarray[ii] = sim.Vrest_; 
       }
 
       sim.time_ += sim.dt_;

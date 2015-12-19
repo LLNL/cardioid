@@ -8,7 +8,6 @@
 #include "ioUtils.h"
 #include "mpiUtils.h"
 #include "OHaraRudy_Reaction.hh"    // OHara Rudy .
-#include "OHaraRudy.hh"    // OHara Rudy .
 namespace  scanReaction
 {
    char *getKeywordValue(char *ptr, char **keywordPtr, char **valuePtr)

@@ -22,11 +22,13 @@ nVar = 0; ns=0; np=0;  nt=0 ;
 END {
 printf "/* ******   THIS FILE IS AUTOMATICLY GENERATED.  DO NOT EDIT!! ******* */\n"
 printf "#include <assert.h>\n"; 
+printf "#include <string.h>\n"; 
 printf "enum enumIndex{"  ;
 for (i=1;i<=nVar;i++) printf " %sIndex,",var[i];
 printf " %s","nVar";
 printf "};\n"
 
+printf "static const char *compName = \"%s\";\n",$3
 if (nVar > 0) {
 printf "static VARINFO varInfo[] =\n";
 printf "{\n"; 
@@ -114,6 +116,7 @@ printf "COMPONENTINFO %sInit()\n{\n", root[1];
 printf "   COMPONENTINFO info;\n"
 if (constExist) printf "   %s;\n",constFunc
 printf "   if (FRT  < 0) FRT = F/(R*T);\n"
+printf "   info.compName = strdup(compName);\n";
 if (ns > 0) printf "   info.pStateSize = sizeof(PSTATE);\n"; 
 if (np > 0) printf "   info.parmsSize = sizeof(PARAMETERS);\n"; 
 printf "   info.nVar = %d;\n",nVar; 
@@ -125,13 +128,17 @@ printf "   return info;\n}\n";
 print "#ifdef doEnd"
 print "#define ENDCODE() {\\" 
 k=0; 
+printf "   if (derived->dState != 0) \\\n";
+printf "   {\\\n";
+printf "   double  *dState = derived->dState+pOffset;\\\n" ; 
 for (i=1;i<=nVar;i++) 
 {
      if (type[i] != "PSTATE") continue; 
-     line = sprintf( "     printf(\"%-16s: %%2d %%22.15e %%22.15e\\n\",pOffset+%d,pState->%s,d%s);", var[i],k,var[i],var[i]) ;
+     line = sprintf( "   dState[%d]=d%s;",k,var[i]) ;
      k++; 
      print line,"\\"; 
 }
+print "   }\\"; 
 print "}"; 
 print "#else"
 print "#define ENDCODE()"

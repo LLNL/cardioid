@@ -63,7 +63,6 @@ HEARTSRC= \
    TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc \
    TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc \
 	TT06_RRG.cc \
-   OHaraRudy.cc \
    OHaraRudyScan.cc \
 	TestStimulus.cc PointStimulus.cc BoxStimulus.cc \
 	PeriodicPulse.cc RandomPulse.cc \
@@ -75,7 +74,7 @@ HEARTSRC= \
 	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc DVThreshSensor.cc \
    StateVariableSensor.cc
 
-OHaraRudySRC= OHaraRudyc.c OHaraRudy_Voltage.c OHaraRudy_Concent.c OHaraRudy_INaCai.c OHaraRudy_INaCass.c  \
+OHaraRudySRC= OHaraRudy.c OHaraRudy_Voltage.c OHaraRudy_Concent.c OHaraRudy_INaCai.c OHaraRudy_INaCass.c  \
               OHaraRudy_INaK.c OHaraRudy_INab.c OHaraRudy_ICab.c OHaraRudy_IKb.c \
               OHaraRudy_IpCa.c OHaraRudy_INaFast.c OHaraRudy_INaL.c OHaraRudy_Ito.c \
               OHaraRudy_IKr.c OHaraRudy_IKs.c OHaraRudy_IK1.c OHaraRudy_ICa.c null_INull.c\
