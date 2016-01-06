@@ -53,7 +53,7 @@ void DataVoronoiCoarsening::writeAverages(const string& filename,
      PioSet(file, "ngroup", nFiles_);
 
    const int nfields = 2+(int)times_.size(); 
-   const int lrec    = 20+13*(int)times_.size();
+   const int lrec    = 20+13*(int)times_.size() + 1;
 
    const std::set<int>& owned_colors(coarsening_.getOwnedColors());
 

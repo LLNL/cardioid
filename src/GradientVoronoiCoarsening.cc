@@ -593,7 +593,7 @@ void GradientVoronoiCoarsening::writeGradients(const string& filename,
       {
          //Pprintf(file, "  datatype = FIXRECORDASCII;\n");
          Pprintf(file, "  datatype = VARRECORDASCII;\n");
-         const int lrec    = 20+13*3*eval_count_;
+         const int lrec    = 20+13*3*eval_count_ + 1;
          const int nfields = 2+3*eval_count_; 
          Pprintf(file, "  lrec = %d;\n", lrec);
          Pprintf(file, "  nfields = %d;\n", nfields);
