@@ -226,7 +226,9 @@ void  OHaraRudyCalc()
 {
    for (int ii=0;ii<nCells_;ii++) 
    {
-      CONCENTRATIONS *concentrations     = (CONCENTRATIONS *)(state_+ii*nState_+privateStateOffset_[1]); 
+      
+      double *state = state_+ii*nState_; 
+      CONCENTRATIONS *concentrations     = (CONCENTRATIONS *)(state+privateStateOffset_[1]); 
       double *cellParms = cellParms_[ii]; 
       double Nai = concentrations->Nai; 
       double Ki  = concentrations->Ki; 
@@ -235,9 +237,9 @@ void  OHaraRudyCalc()
 
       for (int i=2;i<=17;i++) 
       {
-         info_[i].func(cellParms+privateParmsOffset_[i], state_, privateStateOffset_[ i], derived_+ii, dt_);
+         info_[i].func(cellParms+privateParmsOffset_[i], state, privateStateOffset_[ i], derived_+ii, dt_);
       }
-      info_[1].func(cellParms+privateParmsOffset_[0], state_, privateStateOffset_[1], derived_+ii, dt_);
+      info_[1].func(cellParms+privateParmsOffset_[0], state, privateStateOffset_[1], derived_+ii, dt_);
 /*
       double *I =  (double *)&(derived_[ii].I.NaCai); 
       for (int i=0;i<nCurrents_;i++)
