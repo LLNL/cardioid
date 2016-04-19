@@ -54,6 +54,9 @@ endif
 ifeq ($(HOSTNAME),cab)  
   ARCHGUESS = peloton
 endif
+ifeq ($(HOSTNAME),syrah)
+  ARCHGUESS = peloton
+endif
 ifeq ($(HOSTNAME),edge)  
   ARCHGUESS = peloton
 endif
@@ -85,6 +88,9 @@ ifeq ($(HOSTNAME),whistler)
   ARCHGUESS = osx
 endif
 ifeq ($(HOSTNAME),cypress)
+  ARCHGUESS = osx
+endif
+ifeq ($(HOSTNAME),soifon)
   ARCHGUESS = osx
 endif
 ifeq ($(HOSTNAME),sierra)

@@ -13,6 +13,7 @@
 #include "pade.hh"
 #include "TT06_RRG_Reaction.hh"    // TT06 with modifications from Rice et al.
 #include "OHaraRudy_Reaction.hh"    // OHara Rudy .
+//#include "Grandi_Reaction.hh"      // Grandi
 #include "ReactionFHN.hh"
 #include "NullReaction.hh"
 #include "TestReaction.hh"
@@ -30,6 +31,7 @@ namespace  scanReaction
    Reaction* scanTT06Dev(OBJECT* obj, double dt, Anatomy& anatomy, const ThreadTeam& group, const vector<string>& scaleCurrents);
    Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanOHaraRudy(OBJECT* obj, const Anatomy& anatomy);
+   Reaction* scanGrandi(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanFHN(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanNull(OBJECT* obj);
    Reaction* scanTest(OBJECT* obj);
@@ -58,6 +60,8 @@ Reaction* reactionFactory(const string& name, double dt, Anatomy& anatomy,
       return scanReaction::scanTT06_RRG(obj, anatomy);
    else if (method == "OHaraRudy" )
       return scanReaction::scanOHaraRudy(obj, anatomy);
+   else if (method == "Grandi" )
+      return scanReaction::scanGrandi(obj, anatomy);
    else if (method == "FHN" || method == "FitzhughNagumo")
       return scanReaction::scanFHN(obj, anatomy);
    else if (method == "null")
