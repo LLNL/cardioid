@@ -103,9 +103,9 @@ void DataVoronoiCoarsening::writeAverages(const string& filename,
       ss << setw(7)<< right << avg_valcolors_.nValues(color);
       
       ss << setprecision(8);
-      for(int it=0;it<times_.size();++it)
+      for(int it2=0;it2<times_.size();++it2)
       {
-         ss<< " " << setw(12)<< color_avg[it];
+         ss<< " " << setw(12)<< color_avg[it2];
       }
       ss << endl;
       string line(ss.str());
