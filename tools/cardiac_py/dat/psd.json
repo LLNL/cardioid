@@ -1,0 +1,8 @@
+{
+    "PSD": {
+    	"delta_t_ms" : 0.005,
+    	"sample_rate" : 1000,
+    	"t_min_s": 20.5,
+    	"t_max_s": 59.95
+    }
+}

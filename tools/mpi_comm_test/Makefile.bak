@@ -1,0 +1,43 @@
+
+
+BGQ_SDK_PATH = /bgsys/drivers/ppcfloor/
+SRC = CommTable.cc spi_impl.c test.cc
+OBJ = $(addsuffix .o,$(notdir $(basename $(SRC))))
+LIBS += 
+XLCXX = mpixlcxx_r
+XLC = mpixlc_r
+
+PROGNAME = test
+TARGET = $(PROGNAME).x
+
+$(TARGET): $(OBJ)
+test.o : HaloExchange.hh
+
+BGSYS_INC := -I$(BGQ_SDK_PATH)/comm/sys/include			\
+	-I$(BGQ_SDK_PATH) -I$(BGQ_SDK_PATH)/spi/include			\
+	-I$(BGQ_SDK_PATH)/spi/include/kernel/cnk			\
+	-I$(BGQ_SDK_PATH)/spi/include/mu/default/
+
+SPI_INC := -I$(SPI_PATH)/libutil/include
+BGSYS_LIBS := -L$(BGQ_SDK_PATH)/lib -lrt -L$(BGQ_SDK_PATH)/spi/lib -lSPI -lSPI_cnk
+
+C_FLAGS = -q64 -g -O3 
+#C_FLAGS = -m64 -g -O3
+
+LDFLAGS  += 
+DEF = -DSPI
+
+%.o: %.cc
+	@echo "xlc: "`$(BASENAME) $$PWD`"/"`$(BASENAME) $<`
+	$(XLCXX) -c $(C_FLAGS) $(BGSYS_INC) $(SPI_INC) $(DEF) $< -o $*.o
+
+%.o: %.c
+	@echo "xlc: "`$(BASENAME) $$PWD`"/"`$(BASENAME) $<`
+	$(XLC) -c $(C_FLAGS) $(BGSYS_INC) $(SPI_INC) $(DEF) $< -o $*.o
+
+%.x: $(OBJ)
+	@echo "Linking Executable $@ ..."
+	$(XLCXX) -o $@ $(OBJ) $(LDFLAGS) $(LIBS) $(BGSYS_LIBS) $(DEF)
+
+clean :
+	rm $(OBJ) $(TARGET)

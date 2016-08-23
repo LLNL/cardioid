@@ -1,0 +1,5 @@
+To generate verification inputs, run "tools/makeVerifInputs.pl" from
+this directory.  This will create a verif-runs-[date] directory with
+subdirectories for each set of parameters containing object.data files
+and runscripts for both Sequoia and the peloton machines.
+

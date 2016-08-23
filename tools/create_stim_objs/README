@@ -1,0 +1,5 @@
+create_purkinje_stim_objs.py script takes as input a Paraview state file (.pvsm) with box stimuli in it (place box stimuli using Paraview GUI, and save it as a state file within the GUI), and produces an object.stim.data with STIMULUS objects in it that are compatible with object.data STIMULUS objects.  This saves the trouble of having to manually type in box stimulus data into object.data after positioning them in Paraview, which can take a really long time if there are many box stimuli.
+
+For more information see comment at top of create_purkinje_stim_objs.py
+
+Here's how to run the python script from a command line terminal:  python create_purkinje_stim_objs.py [.pvsm file]

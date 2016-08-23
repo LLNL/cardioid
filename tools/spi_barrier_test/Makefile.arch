@@ -1,0 +1,79 @@
+
+# guess hostname with hostname command, stripping off all numbers
+HOSTNAME := $(shell hostname -s | sed  's/[0-9]*//g')
+
+ifeq ($(HOSTNAME),bgqfen)  
+  ARCHGUESS = spi
+#  ARCHGUESS = q32
+endif
+ifeq ($(HOSTNAME),rzuseqlac)  
+  ARCHGUESS = bgq
+endif
+ifeq ($(HOSTNAME),seqlac)  
+  ARCHGUESS = bgq-spi
+#  ARCHGUESS = bgq
+endif
+ifeq ($(HOSTNAME),dawn)  
+  ARCHGUESS = bgp
+endif
+ifeq ($(HOSTNAME),dawndev)
+  ARCHGUESS = bgp
+endif
+ifeq ($(HOSTNAME),udawn)
+  ARCHGUESS = bgp
+endif
+ifeq ($(HOSTNAME),tambo)
+  ARCHGUESS = tambo
+endif
+ifeq ($(HOSTNAME),rzdawndev)
+  ARCHGUESS = bgp
+endif
+ifeq ($(HOSTNAME),bgl)  
+  ARCHGUESS = bgl
+endif
+ifeq ($(HOSTNAME),ubgl)  
+  ARCHGUESS = bgl
+endif
+ifeq ($(HOSTNAME),atlas)  
+  ARCHGUESS = peloton
+endif
+ifeq ($(HOSTNAME),ansel)  
+  ARCHGUESS = peloton
+endif
+ifeq ($(HOSTNAME),aztec)  
+  ARCHGUESS = peloton
+endif
+ifeq ($(HOSTNAME),hera)  
+  ARCHGUESS = peloton
+endif
+ifeq ($(HOSTNAME),minos)  
+  ARCHGUESS = peloton
+endif
+ifeq ($(HOSTNAME),rhea)
+  ARCHGUESS = peloton
+endif
+ifeq ($(HOSTNAME),hopi)
+  ARCHGUESS = peloton
+endif
+ifeq ($(HOSTNAME),tux)
+  ARCHGUESS = linux_gnu
+endif
+ifeq ($(HOSTNAME),sole)
+  ARCHGUESS = osx
+endif
+ifeq ($(HOSTNAME),largo)
+  ARCHGUESS = osx
+endif
+ifeq ($(HOSTNAME),blackcomb)
+  ARCHGUESS = osx
+endif
+ifeq ($(HOSTNAME),whistler)
+  ARCHGUESS = osx
+endif
+ifeq ($(HOSTNAME),sierra)
+  ARCHGUESS = peloton
+endif
+
+ifndef ARCHGUESS
+   $(error Unrecognized build host.  Edit Makefile.arch)
+endif

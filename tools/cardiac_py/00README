@@ -1,0 +1,23 @@
+cardiac_py
+----------------
+cardiac_py is a collection of python modules to ease post-processing and 
+Analysis of the data. A minimal effort has been put into pre-processing efforts
+as well.
+
+The anaylsis scripts are split with some components designed to be run server
+side and some designed to be run on a users workstation.
+
+Software requirements:
+python2.6+
+numpy
+scipy 
+vtk with python bindings, however, not having vtk will only reduce functionality
+mpi4py
+
+Coding formatting and requirements:
+PEP8 compliant python at all times possible* (extended hard coded strings are 
+an exception). Indentation is at set using 4 spaces.
+
+INSTALL:
+cardiac_py consists of a set of quasi-indepentent sub-packages. It is suggested
+that the best way to install is to append the path of cardiac_py to PYTHONPATH.
