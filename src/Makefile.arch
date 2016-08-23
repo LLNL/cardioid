@@ -81,6 +81,9 @@ endif
 ifeq ($(HOSTNAME),silence)
   ARCHGUESS = osx
 endif
+ifeq ($(HOSTNAME),polgara)
+  ARCHGUESS = osx
+endif
 ifeq ($(HOSTNAME),blackcomb)
   ARCHGUESS = osx
 endif
