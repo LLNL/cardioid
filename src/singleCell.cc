@@ -4,12 +4,14 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <cstring>
 
 #include "Reaction.hh"
 #include "VectorDouble32.hh"
 #include "reactionFactory.hh"
 #include "Anatomy.hh"
 #include "ThreadServer.hh"
+#include "object.h"
 
 #include "singleCellOptions.h"
 
@@ -87,11 +89,55 @@ int main(int argc, char* argv[]) {
   //Output setup
   int outputTimestepInterval = timeline.timestepFromRealTime(params.output_dt_arg);
 
-
   
   //create the ionic model
   const int nCells = 1;
-  std::string modelName = params.model_arg;
+  
+  /* figure out the name of the object
+
+     Unlike most uses of the object database, we'd like users to be
+     able to name the top level object here whatever they'd like, so
+     they can use the same reaction object in actual simulation runs
+  */
+  std::string objectName;
+  std::string objectClass;
+  {
+    OBJECTFILE file;
+    file = object_fopen(params.object_arg, "r");
+    if (file.file == NULL) {
+      fprintf(stderr, "Object file could not be opened for reading.\n");
+      return __LINE__;
+    }
+    char* g_line = object_read(file);
+    if (g_line == NULL) {
+      fprintf(stderr, "Object file is empty.\n");
+      return __LINE__;
+    }
+    char* line = strdup(g_line);
+    OBJECT obj;
+    int rc = object_lineparse(line, &obj);
+    if (rc >= 2) {
+      fprintf(stderr, "Other object parsing error?\n");
+      return __LINE__;
+    }
+    objectName = obj.name;
+    objectClass = obj.objclass;
+
+    free(obj.name);
+    free(obj.objclass);
+    free(obj.value);
+    free(line);
+    object_fclose(file);
+  }
+  if (objectClass != "REACTION") {
+    fprintf(stderr, "First object in file must be a REACTION!\n");
+    return __LINE__;
+  }
+  
+  //read in the object file
+  object_compilefile(params.object_arg);
+  
+  //create the dependent variables.
   Anatomy anatomy;
   {
     anatomy.setGridSize(nCells,1,1);
@@ -106,7 +152,7 @@ int main(int argc, char* argv[]) {
   }
   ThreadServer& threadServer = ThreadServer::getInstance();
   ThreadTeam threads = threadServer.getThreadTeam(std::vector<unsigned>());
-  Reaction* reaction = reactionFactory(modelName,dt,
+  Reaction* reaction = reactionFactory(objectName,dt,
                                        anatomy, threads,
                                        std::vector<std::string>());
 
@@ -125,7 +171,7 @@ int main(int argc, char* argv[]) {
   while(1) {
     //if we should checkpoint, do so.
 
-    if (itime % outputTimestepInterval == 0) {
+    if ((itime % outputTimestepInterval) == 0) {
       //doIO();
       printf("%.16g %.16g\n", timeline.realTimeFromTimestep(itime), Vm[0]);
     }
