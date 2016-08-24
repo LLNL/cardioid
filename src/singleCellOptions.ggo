@@ -16,7 +16,7 @@ option      "s1-count"           n "Number of s1 stimulii"                      
 option      "s1-bcl"             b "Basic cycle length"                                 double  default="1000" optional
 option      "s1-offset"          f "Time to start s1 stimulii"                          double  default="0" optional
 option      "stim-at"            s "Stimulate at the following time in ms"              double  multiple optional
-option      "stim-strength"      a "Strength of the stimulus"                           double  default="80" optional
+option      "stim-strength"      a "Strength of the stimulus"                           double  default="60" optional
 option      "stim-duration"      t "Duration of the stimulus"                           double  default="1" optional
 
 
