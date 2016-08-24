@@ -3,10 +3,21 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
+#include <string>
+
+#include "Reaction.hh"
+#include "VectorDouble32.hh"
+#include "reactionFactory.hh"
+#include "Anatomy.hh"
+#include "ThreadServer.hh"
+
 #include "singleCellOptions.h"
 
 MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
 
+/*!
+  Keeps track of real time versus simulation ticks.
+ */
 class Timeline {
  public:
   Timeline(double dt, double duration) {
@@ -31,9 +42,16 @@ class Timeline {
 
 int main(int argc, char* argv[]) {
 
+  int npes, mype;
+  MPI_Init(&argc,&argv);
+  MPI_Comm_size(MPI_COMM_WORLD, &npes);
+  MPI_Comm_rank(MPI_COMM_WORLD, &mype);  
+
   struct gengetopt_args_info params;
   cmdline_parser(argc, argv, &params);
 
+  double dt = params.dt_arg;
+  
   double duration;
   if (params.duration_given) {
     duration = params.duration_arg;
@@ -41,7 +59,7 @@ int main(int argc, char* argv[]) {
     duration = params.s1_offset_arg + params.s1_count_arg*params.s1_bcl_arg;
   }
 
-  Timeline timeline(params.dt_arg, duration);
+  Timeline timeline(dt, duration);
 
 
   //Stimulus setup
@@ -68,8 +86,52 @@ int main(int argc, char* argv[]) {
 
   //Output setup
   int outputTimestepInterval = timeline.timestepFromRealTime(params.output_dt_arg);
+
+
   
-  for (int itime=0; itime<timeline.maxTimesteps(); itime++) {
+  //create the ionic model
+  const int nCells = 1;
+  std::string modelName = params.model_arg;
+  Anatomy anatomy;
+  {
+    anatomy.setGridSize(nCells,1,1);
+    std::vector<AnatomyCell>& cells = anatomy.cellArray();
+    cells.reserve(nCells);
+    for (int ii=0; ii<nCells; ii++) {
+      AnatomyCell tmp;
+      tmp.gid_ = ii;
+      tmp.cellType_ = 102;
+      cells.push_back(tmp);
+    }
+  }
+  ThreadServer& threadServer = ThreadServer::getInstance();
+  ThreadTeam threads = threadServer.getThreadTeam(std::vector<unsigned>());
+  Reaction* reaction = reactionFactory(modelName,dt,
+                                       anatomy, threads,
+                                       std::vector<std::string>());
+
+  //initialize the ionic model
+  VectorDouble32 Vm(nCells);
+  std::vector<double> iStim(nCells);
+  VectorDouble32 dVm(nCells);
+  reaction->initializeMembraneVoltage(Vm);
+
+  //read from a checkpoint if necessary.
+
+
+  //using a forever loop here so we can repeat outputs on the last iteration.
+  //otherwise, we'd use a for loop here.
+  int itime=0;
+  while(1) {
+    //if we should checkpoint, do so.
+
+    if (itime % outputTimestepInterval == 0) {
+      //doIO();
+      printf("%.16g %.16g\n", timeline.realTimeFromTimestep(itime), Vm[0]);
+    }
+  
+    //if we're done with the loop, exit.
+    if (itime == timeline.maxTimesteps()) { break; }
 
     //any stimulii left?
     if (nextStimulus != stimTimesteps.end()) {
@@ -79,21 +141,42 @@ int main(int argc, char* argv[]) {
         timestepsLeftInStimulus=timestepsInEachStimulus;
       }
     }
-    double iStim=0;
-    if (timestepsLeftInStimulus > 0) {
-      iStim = params.stim_strength_arg;
-      timestepsLeftInStimulus--;
+    for (int ii=0; ii<nCells; ii++) {
+      iStim[ii]=0;
+      if (timestepsLeftInStimulus > 0) {
+        /* Check the negative sign here.  Look at:
+
+           startTimer(stimulusTimer);
+           // add stimulus to dVmDiffusion
+           for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
+              sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
+           for (unsigned ii=0; ii<nLocal; ++ii)
+              iStim[ii] = -(dVmDiffusion[ii]);
+           stopTimer(stimulusTimer);
+
+           Notice that the stimulii all add their current to
+           stimulus. If you assume diffusion is zero, then istim ends
+           up negative.
+
+        */
+        iStim[ii] = -params.stim_strength_arg;
+        timestepsLeftInStimulus--;
+      }
     }
 
-    //apply stimulus
+    //calc() dVm and update the internal states
+    reaction->calc(dt, Vm, iStim, dVm);
     
-    //calc();
-    if (itime % outputTimestepInterval == 0) {
-      //doIO();
+    //update Vm and apply stimulus
+    for (int ii=0; ii<nCells; ii++) {
+      //use a negative sign here to undo the negative we had above.
+      Vm[ii] += (dVm[ii] - iStim[ii]) * dt;
     }
-    //checkpoint();
-    
+
+    itime++;
   }
-  
+
+
+  MPI_Finalize();
   return 0;
 }
