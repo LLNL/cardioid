@@ -60,7 +60,7 @@ struct gengetopt_args_info
   char * read_state_file_arg;	/**< @brief Filename to read the state from (default='singleCell.data').  */
   char * read_state_file_orig;	/**< @brief Filename to read the state from original value given at command line.  */
   const char *read_state_file_help; /**< @brief Filename to read the state from help description.  */
-  int s1_count_arg;	/**< @brief Number of s1 stimulii.  */
+  int s1_count_arg;	/**< @brief Number of s1 stimulii (default='1').  */
   char * s1_count_orig;	/**< @brief Number of s1 stimulii original value given at command line.  */
   const char *s1_count_help; /**< @brief Number of s1 stimulii help description.  */
   double s1_bcl_arg;	/**< @brief Basic cycle length (default='1000').  */
@@ -74,7 +74,7 @@ struct gengetopt_args_info
   unsigned int stim_at_min; /**< @brief Stimulate at the following time in ms's minimum occurreces */
   unsigned int stim_at_max; /**< @brief Stimulate at the following time in ms's maximum occurreces */
   const char *stim_at_help; /**< @brief Stimulate at the following time in ms help description.  */
-  double stim_strength_arg;	/**< @brief Strength of the stimulus (default='10').  */
+  double stim_strength_arg;	/**< @brief Strength of the stimulus (default='80').  */
   char * stim_strength_orig;	/**< @brief Strength of the stimulus original value given at command line.  */
   const char *stim_strength_help; /**< @brief Strength of the stimulus help description.  */
   double stim_duration_arg;	/**< @brief Duration of the stimulus (default='1').  */

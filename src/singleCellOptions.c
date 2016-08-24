@@ -43,11 +43,11 @@ const char *gengetopt_args_info_help[] = {
   "  -F, --save-state-file[=STRING]\n                                Filename to save the state to\n                                  (default=`singleCell.data')",
   "  -S, --save-state-time=DOUBLE  Time to save the state",
   "  -R, --read-state-file[=STRING]\n                                Filename to read the state from\n                                  (default=`singleCell.data')",
-  "  -n, --s1-count=INT            Number of s1 stimulii",
+  "  -n, --s1-count=INT            Number of s1 stimulii  (default=`1')",
   "  -b, --s1-bcl=DOUBLE           Basic cycle length  (default=`1000')",
   "  -f, --s1-offset=DOUBLE        Time to start s1 stimulii  (default=`0')",
   "  -s, --stim-at=DOUBLE          Stimulate at the following time in ms",
-  "  -a, --stim-strength=DOUBLE    Strength of the stimulus  (default=`10')",
+  "  -a, --stim-strength=DOUBLE    Strength of the stimulus  (default=`80')",
   "  -t, --stim-duration=DOUBLE    Duration of the stimulus  (default=`1')",
     0
 };
@@ -109,6 +109,7 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->save_state_time_orig = NULL;
   args_info->read_state_file_arg = gengetopt_strdup ("singleCell.data");
   args_info->read_state_file_orig = NULL;
+  args_info->s1_count_arg = 1;
   args_info->s1_count_orig = NULL;
   args_info->s1_bcl_arg = 1000;
   args_info->s1_bcl_orig = NULL;
@@ -116,7 +117,7 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->s1_offset_orig = NULL;
   args_info->stim_at_arg = NULL;
   args_info->stim_at_orig = NULL;
-  args_info->stim_strength_arg = 10;
+  args_info->stim_strength_arg = 80;
   args_info->stim_strength_orig = NULL;
   args_info->stim_duration_arg = 1;
   args_info->stim_duration_orig = NULL;
@@ -1038,7 +1039,7 @@ cmdline_parser_internal (
         
           if (update_arg( (void *)&(args_info->s1_count_arg), 
                &(args_info->s1_count_orig), &(args_info->s1_count_given),
-              &(local_args_info.s1_count_given), optarg, 0, 0, ARG_INT,
+              &(local_args_info.s1_count_given), optarg, 0, "1", ARG_INT,
               check_ambiguity, override, 0, 0,
               "s1-count", 'n',
               additional_error))
@@ -1083,7 +1084,7 @@ cmdline_parser_internal (
         
           if (update_arg( (void *)&(args_info->stim_strength_arg), 
                &(args_info->stim_strength_orig), &(args_info->stim_strength_given),
-              &(local_args_info.stim_strength_given), optarg, 0, "10", ARG_DOUBLE,
+              &(local_args_info.stim_strength_given), optarg, 0, "80", ARG_DOUBLE,
               check_ambiguity, override, 0, 0,
               "stim-strength", 'a',
               additional_error))
