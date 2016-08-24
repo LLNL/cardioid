@@ -51,12 +51,12 @@ struct gengetopt_args_info
   double duration_arg;	/**< @brief Duration of the simulation.  */
   char * duration_orig;	/**< @brief Duration of the simulation original value given at command line.  */
   const char *duration_help; /**< @brief Duration of the simulation help description.  */
-  char * save_state_file_arg;	/**< @brief Filename to save the state to (default='singleCell.data').  */
-  char * save_state_file_orig;	/**< @brief Filename to save the state to original value given at command line.  */
-  const char *save_state_file_help; /**< @brief Filename to save the state to help description.  */
-  double save_state_time_arg;	/**< @brief Time to save the state.  */
-  char * save_state_time_orig;	/**< @brief Time to save the state original value given at command line.  */
-  const char *save_state_time_help; /**< @brief Time to save the state help description.  */
+  char * write_state_file_arg;	/**< @brief Filename to save the state to (default='singleCell.data').  */
+  char * write_state_file_orig;	/**< @brief Filename to save the state to original value given at command line.  */
+  const char *write_state_file_help; /**< @brief Filename to save the state to help description.  */
+  double write_state_time_arg;	/**< @brief Time to save the state.  */
+  char * write_state_time_orig;	/**< @brief Time to save the state original value given at command line.  */
+  const char *write_state_time_help; /**< @brief Time to save the state help description.  */
   char * read_state_file_arg;	/**< @brief Filename to read the state from (default='singleCell.data').  */
   char * read_state_file_orig;	/**< @brief Filename to read the state from original value given at command line.  */
   const char *read_state_file_help; /**< @brief Filename to read the state from help description.  */
@@ -74,7 +74,7 @@ struct gengetopt_args_info
   unsigned int stim_at_min; /**< @brief Stimulate at the following time in ms's minimum occurreces */
   unsigned int stim_at_max; /**< @brief Stimulate at the following time in ms's maximum occurreces */
   const char *stim_at_help; /**< @brief Stimulate at the following time in ms help description.  */
-  double stim_strength_arg;	/**< @brief Strength of the stimulus (default='80').  */
+  double stim_strength_arg;	/**< @brief Strength of the stimulus (default='60').  */
   char * stim_strength_orig;	/**< @brief Strength of the stimulus original value given at command line.  */
   const char *stim_strength_help; /**< @brief Strength of the stimulus help description.  */
   double stim_duration_arg;	/**< @brief Duration of the stimulus (default='1').  */
@@ -87,8 +87,8 @@ struct gengetopt_args_info
   unsigned int dt_given ;	/**< @brief Whether dt was given.  */
   unsigned int output_dt_given ;	/**< @brief Whether output-dt was given.  */
   unsigned int duration_given ;	/**< @brief Whether duration was given.  */
-  unsigned int save_state_file_given ;	/**< @brief Whether save-state-file was given.  */
-  unsigned int save_state_time_given ;	/**< @brief Whether save-state-time was given.  */
+  unsigned int write_state_file_given ;	/**< @brief Whether write-state-file was given.  */
+  unsigned int write_state_time_given ;	/**< @brief Whether write-state-time was given.  */
   unsigned int read_state_file_given ;	/**< @brief Whether read-state-file was given.  */
   unsigned int s1_count_given ;	/**< @brief Whether s1-count was given.  */
   unsigned int s1_bcl_given ;	/**< @brief Whether s1-bcl was given.  */

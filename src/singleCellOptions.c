@@ -40,14 +40,14 @@ const char *gengetopt_args_info_help[] = {
   "  -h, --dt=DOUBLE               Timestep for the simulation  (default=`0.020')",
   "  -p, --output-dt=DOUBLE        Output timetep  (default=`1')",
   "  -d, --duration=DOUBLE         Duration of the simulation",
-  "  -F, --save-state-file[=STRING]\n                                Filename to save the state to\n                                  (default=`singleCell.data')",
-  "  -S, --save-state-time=DOUBLE  Time to save the state",
+  "  -W, --write-state-file[=STRING]\n                                Filename to save the state to\n                                  (default=`singleCell.data')",
+  "  -T, --write-state-time=DOUBLE Time to save the state",
   "  -R, --read-state-file[=STRING]\n                                Filename to read the state from\n                                  (default=`singleCell.data')",
   "  -n, --s1-count=INT            Number of s1 stimulii  (default=`1')",
   "  -b, --s1-bcl=DOUBLE           Basic cycle length  (default=`1000')",
   "  -f, --s1-offset=DOUBLE        Time to start s1 stimulii  (default=`0')",
   "  -s, --stim-at=DOUBLE          Stimulate at the following time in ms",
-  "  -a, --stim-strength=DOUBLE    Strength of the stimulus  (default=`80')",
+  "  -a, --stim-strength=DOUBLE    Strength of the stimulus  (default=`60')",
   "  -t, --stim-duration=DOUBLE    Duration of the stimulus  (default=`1')",
     0
 };
@@ -82,8 +82,8 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->dt_given = 0 ;
   args_info->output_dt_given = 0 ;
   args_info->duration_given = 0 ;
-  args_info->save_state_file_given = 0 ;
-  args_info->save_state_time_given = 0 ;
+  args_info->write_state_file_given = 0 ;
+  args_info->write_state_time_given = 0 ;
   args_info->read_state_file_given = 0 ;
   args_info->s1_count_given = 0 ;
   args_info->s1_bcl_given = 0 ;
@@ -104,9 +104,9 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->output_dt_arg = 1;
   args_info->output_dt_orig = NULL;
   args_info->duration_orig = NULL;
-  args_info->save_state_file_arg = gengetopt_strdup ("singleCell.data");
-  args_info->save_state_file_orig = NULL;
-  args_info->save_state_time_orig = NULL;
+  args_info->write_state_file_arg = gengetopt_strdup ("singleCell.data");
+  args_info->write_state_file_orig = NULL;
+  args_info->write_state_time_orig = NULL;
   args_info->read_state_file_arg = gengetopt_strdup ("singleCell.data");
   args_info->read_state_file_orig = NULL;
   args_info->s1_count_arg = 1;
@@ -117,7 +117,7 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->s1_offset_orig = NULL;
   args_info->stim_at_arg = NULL;
   args_info->stim_at_orig = NULL;
-  args_info->stim_strength_arg = 80;
+  args_info->stim_strength_arg = 60;
   args_info->stim_strength_orig = NULL;
   args_info->stim_duration_arg = 1;
   args_info->stim_duration_orig = NULL;
@@ -135,8 +135,8 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->dt_help = gengetopt_args_info_help[3] ;
   args_info->output_dt_help = gengetopt_args_info_help[4] ;
   args_info->duration_help = gengetopt_args_info_help[5] ;
-  args_info->save_state_file_help = gengetopt_args_info_help[6] ;
-  args_info->save_state_time_help = gengetopt_args_info_help[7] ;
+  args_info->write_state_file_help = gengetopt_args_info_help[6] ;
+  args_info->write_state_time_help = gengetopt_args_info_help[7] ;
   args_info->read_state_file_help = gengetopt_args_info_help[8] ;
   args_info->s1_count_help = gengetopt_args_info_help[9] ;
   args_info->s1_bcl_help = gengetopt_args_info_help[10] ;
@@ -280,9 +280,9 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->dt_orig));
   free_string_field (&(args_info->output_dt_orig));
   free_string_field (&(args_info->duration_orig));
-  free_string_field (&(args_info->save_state_file_arg));
-  free_string_field (&(args_info->save_state_file_orig));
-  free_string_field (&(args_info->save_state_time_orig));
+  free_string_field (&(args_info->write_state_file_arg));
+  free_string_field (&(args_info->write_state_file_orig));
+  free_string_field (&(args_info->write_state_time_orig));
   free_string_field (&(args_info->read_state_file_arg));
   free_string_field (&(args_info->read_state_file_orig));
   free_string_field (&(args_info->s1_count_orig));
@@ -342,10 +342,10 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "output-dt", args_info->output_dt_orig, 0);
   if (args_info->duration_given)
     write_into_file(outfile, "duration", args_info->duration_orig, 0);
-  if (args_info->save_state_file_given)
-    write_into_file(outfile, "save-state-file", args_info->save_state_file_orig, 0);
-  if (args_info->save_state_time_given)
-    write_into_file(outfile, "save-state-time", args_info->save_state_time_orig, 0);
+  if (args_info->write_state_file_given)
+    write_into_file(outfile, "write-state-file", args_info->write_state_file_orig, 0);
+  if (args_info->write_state_time_given)
+    write_into_file(outfile, "write-state-time", args_info->write_state_time_orig, 0);
   if (args_info->read_state_file_given)
     write_into_file(outfile, "read-state-file", args_info->read_state_file_orig, 0);
   if (args_info->s1_count_given)
@@ -927,8 +927,8 @@ cmdline_parser_internal (
         { "dt",	1, NULL, 'h' },
         { "output-dt",	1, NULL, 'p' },
         { "duration",	1, NULL, 'd' },
-        { "save-state-file",	2, NULL, 'F' },
-        { "save-state-time",	1, NULL, 'S' },
+        { "write-state-file",	2, NULL, 'W' },
+        { "write-state-time",	1, NULL, 'T' },
         { "read-state-file",	2, NULL, 'R' },
         { "s1-count",	1, NULL, 'n' },
         { "s1-bcl",	1, NULL, 'b' },
@@ -939,7 +939,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "Vo:h:p:d:F::S:R::n:b:f:s:a:t:", long_options, &option_index);
+      c = getopt_long (argc, argv, "Vo:h:p:d:W::T:R::n:b:f:s:a:t:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -998,26 +998,26 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'F':	/* Filename to save the state to.  */
+        case 'W':	/* Filename to save the state to.  */
         
         
-          if (update_arg( (void *)&(args_info->save_state_file_arg), 
-               &(args_info->save_state_file_orig), &(args_info->save_state_file_given),
-              &(local_args_info.save_state_file_given), optarg, 0, "singleCell.data", ARG_STRING,
+          if (update_arg( (void *)&(args_info->write_state_file_arg), 
+               &(args_info->write_state_file_orig), &(args_info->write_state_file_given),
+              &(local_args_info.write_state_file_given), optarg, 0, "singleCell.data", ARG_STRING,
               check_ambiguity, override, 0, 0,
-              "save-state-file", 'F',
+              "write-state-file", 'W',
               additional_error))
             goto failure;
         
           break;
-        case 'S':	/* Time to save the state.  */
+        case 'T':	/* Time to save the state.  */
         
         
-          if (update_arg( (void *)&(args_info->save_state_time_arg), 
-               &(args_info->save_state_time_orig), &(args_info->save_state_time_given),
-              &(local_args_info.save_state_time_given), optarg, 0, 0, ARG_DOUBLE,
+          if (update_arg( (void *)&(args_info->write_state_time_arg), 
+               &(args_info->write_state_time_orig), &(args_info->write_state_time_given),
+              &(local_args_info.write_state_time_given), optarg, 0, 0, ARG_DOUBLE,
               check_ambiguity, override, 0, 0,
-              "save-state-time", 'S',
+              "write-state-time", 'T',
               additional_error))
             goto failure;
         
@@ -1084,7 +1084,7 @@ cmdline_parser_internal (
         
           if (update_arg( (void *)&(args_info->stim_strength_arg), 
                &(args_info->stim_strength_orig), &(args_info->stim_strength_given),
-              &(local_args_info.stim_strength_given), optarg, 0, "80", ARG_DOUBLE,
+              &(local_args_info.stim_strength_given), optarg, 0, "60", ARG_DOUBLE,
               check_ambiguity, override, 0, 0,
               "stim-strength", 'a',
               additional_error))
