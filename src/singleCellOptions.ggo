@@ -1,0 +1,26 @@
+package "cardiodSingleCell"
+version "0.1"
+purpose "Run a single cell simulation"
+description "This program runs a single cell simulation of Vm' = -Iion."
+
+option      "model"              m "Model name"                                         string  required
+option      "dt"                 h "Timestep for the simulation"                        double  default="0.020" optional
+option      "output-dt"          p "Output timetep"                                     double  default="1" optional
+option      "duration"           d "Duration of the simulation"                         double  optional
+option      "save-state-file"    F "Filename to save the state to"                      string  default="singleCell.data" argoptional optional
+option      "save-state-time"    S "Time to save the state"                             double  optional
+option      "read-state-file"    R "Filename to read the state from"                    string  default="singleCell.data" argoptional optional
+
+
+option      "s1-count"           n "Number of s1 stimulii"                              int     optional
+option      "s1-bcl"             b "Basic cycle length"                                 double  default="1000" optional
+option      "s1-offset"          o "Time to start s1 stimulii"                          double  default="0" optional
+option      "stim-at"            s "Stimulate at the following time in ms"              double  multiple optional
+option      "stim-strength"      a "Strength of the stimulus"                           double  default="10" optional
+option      "stim-duration"      t "Duration of the stimulus"                           double  default="1" optional
+
+
+#option      "initial-condition"  i "File to read in the initial conditions"            string  optional
+#option      "currents"           I "No idea!"                                          string  optionalx1
+#option      "print-interval"     p "Not sure!"                                         double  default="" optional
+#option      "fix-vm"             v "Not really sure"                                   double  default="0" optional

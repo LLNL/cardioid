@@ -213,6 +213,9 @@ oss:
 	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=cardioid-$(ARCH)-oss \
    LD="/usr/global/tools/openspeedshop/oss-dev/bgq/oss202/bgq/bin/osslink -c pcsamp $(CXX)"
 
+GENGETOPT ?= gengetopt
+%.c %.h: %.ggo
+	$(GENGETOPT) -i $< -F $* 
 
 $(OBJDIR)/%.o: %.cc
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
@@ -268,6 +271,16 @@ collectGradientTraces:
 
 collectGradientTraces-target: $(HEARTOBJS) $(OBJDIR)/collectGradientTraces.o Version.cc
 	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(OBJDIR)/collectGradientTraces.o $(LDFLAGS)
+
+.SECONDARY: singleCellOptions.c singleCellOptions.h
+singleCell: 
+	@$(MAKE) --no-print-directory makedirs $@-target \
+	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH) \
+	CFLAGS="$(CFLAGS_OPT)" CXXFLAGS="$(CXXFLAGS_OPT)" \
+	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=$@-$(ARCH)
+
+singleCell-target: $(HEARTOBJS) $(OBJDIR)/singleCell.o $(OBJDIR)/singleCellOptions.o singleCellOptions.h Version.cc
+	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(OBJDIR)/singleCell.o $(OBJDIR)/singleCellOptions.o $(LDFLAGS)
 
 $(DDCMD_FILES):
 	./mkLinks_ddcMD.sh $@
