@@ -89,6 +89,14 @@ int main(int argc, char* argv[]) {
   //Output setup
   int outputTimestepInterval = timeline.timestepFromRealTime(params.output_dt_arg);
 
+  bool shouldWriteState=false;
+  int writeStateTimestep=timeline.maxTimesteps();
+  if (params.write_state_time_given || params.write_state_file_given) {
+    shouldWriteState=true;
+    if (params.write_state_time_given) {
+      writeStateTimestep=timeline.timestepFromRealTime(params.write_state_time_arg);
+    }
+  }
   
   //create the ionic model
   const int nCells = 1;
@@ -170,7 +178,10 @@ int main(int argc, char* argv[]) {
   int itime=0;
   while(1) {
     //if we should checkpoint, do so.
+    if (shouldWriteState && itime == writeStateTimestep) {
+    }
 
+    //if we should do output, do so.
     if ((itime % outputTimestepInterval) == 0) {
       //doIO();
       printf("%.16g %.16g\n", timeline.realTimeFromTimestep(itime), Vm[0]);

@@ -7,8 +7,8 @@ option      "object"             o "Object file"                                
 option      "dt"                 h "Timestep for the simulation"                        double  default="0.020" optional
 option      "output-dt"          p "Output timetep"                                     double  default="1" optional
 option      "duration"           d "Duration of the simulation"                         double  optional
-option      "save-state-file"    F "Filename to save the state to"                      string  default="singleCell.data" argoptional optional
-option      "save-state-time"    S "Time to save the state"                             double  optional
+option      "write-state-file"   W "Filename to save the state to"                      string  default="singleCell.data" argoptional optional
+option      "write-state-time"   T "Time to save the state"                             double  optional
 option      "read-state-file"    R "Filename to read the state from"                    string  default="singleCell.data" argoptional optional
 
 
