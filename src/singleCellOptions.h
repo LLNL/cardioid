@@ -39,9 +39,9 @@ struct gengetopt_args_info
 {
   const char *help_help; /**< @brief Print help and exit help description.  */
   const char *version_help; /**< @brief Print version and exit help description.  */
-  char * model_arg;	/**< @brief Model name.  */
-  char * model_orig;	/**< @brief Model name original value given at command line.  */
-  const char *model_help; /**< @brief Model name help description.  */
+  char * object_arg;	/**< @brief Object file.  */
+  char * object_orig;	/**< @brief Object file original value given at command line.  */
+  const char *object_help; /**< @brief Object file help description.  */
   double dt_arg;	/**< @brief Timestep for the simulation (default='0.020').  */
   char * dt_orig;	/**< @brief Timestep for the simulation original value given at command line.  */
   const char *dt_help; /**< @brief Timestep for the simulation help description.  */
@@ -83,7 +83,7 @@ struct gengetopt_args_info
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
-  unsigned int model_given ;	/**< @brief Whether model was given.  */
+  unsigned int object_given ;	/**< @brief Whether object was given.  */
   unsigned int dt_given ;	/**< @brief Whether dt was given.  */
   unsigned int output_dt_given ;	/**< @brief Whether output-dt was given.  */
   unsigned int duration_given ;	/**< @brief Whether duration was given.  */

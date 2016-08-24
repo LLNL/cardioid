@@ -36,7 +36,7 @@ const char *gengetopt_args_info_description = "This program runs a single cell s
 const char *gengetopt_args_info_help[] = {
   "      --help                    Print help and exit",
   "  -V, --version                 Print version and exit",
-  "  -m, --model=STRING            Model name",
+  "  -o, --object=STRING           Object file",
   "  -h, --dt=DOUBLE               Timestep for the simulation  (default=`0.020')",
   "  -p, --output-dt=DOUBLE        Output timetep  (default=`1')",
   "  -d, --duration=DOUBLE         Duration of the simulation",
@@ -45,7 +45,7 @@ const char *gengetopt_args_info_help[] = {
   "  -R, --read-state-file[=STRING]\n                                Filename to read the state from\n                                  (default=`singleCell.data')",
   "  -n, --s1-count=INT            Number of s1 stimulii",
   "  -b, --s1-bcl=DOUBLE           Basic cycle length  (default=`1000')",
-  "  -o, --s1-offset=DOUBLE        Time to start s1 stimulii  (default=`0')",
+  "  -f, --s1-offset=DOUBLE        Time to start s1 stimulii  (default=`0')",
   "  -s, --stim-at=DOUBLE          Stimulate at the following time in ms",
   "  -a, --stim-strength=DOUBLE    Strength of the stimulus  (default=`10')",
   "  -t, --stim-duration=DOUBLE    Duration of the stimulus  (default=`1')",
@@ -78,7 +78,7 @@ void clear_given (struct gengetopt_args_info *args_info)
 {
   args_info->help_given = 0 ;
   args_info->version_given = 0 ;
-  args_info->model_given = 0 ;
+  args_info->object_given = 0 ;
   args_info->dt_given = 0 ;
   args_info->output_dt_given = 0 ;
   args_info->duration_given = 0 ;
@@ -97,8 +97,8 @@ static
 void clear_args (struct gengetopt_args_info *args_info)
 {
   FIX_UNUSED (args_info);
-  args_info->model_arg = NULL;
-  args_info->model_orig = NULL;
+  args_info->object_arg = NULL;
+  args_info->object_orig = NULL;
   args_info->dt_arg = 0.020;
   args_info->dt_orig = NULL;
   args_info->output_dt_arg = 1;
@@ -130,7 +130,7 @@ void init_args_info(struct gengetopt_args_info *args_info)
 
   args_info->help_help = gengetopt_args_info_help[0] ;
   args_info->version_help = gengetopt_args_info_help[1] ;
-  args_info->model_help = gengetopt_args_info_help[2] ;
+  args_info->object_help = gengetopt_args_info_help[2] ;
   args_info->dt_help = gengetopt_args_info_help[3] ;
   args_info->output_dt_help = gengetopt_args_info_help[4] ;
   args_info->duration_help = gengetopt_args_info_help[5] ;
@@ -274,8 +274,8 @@ static void
 cmdline_parser_release (struct gengetopt_args_info *args_info)
 {
 
-  free_string_field (&(args_info->model_arg));
-  free_string_field (&(args_info->model_orig));
+  free_string_field (&(args_info->object_arg));
+  free_string_field (&(args_info->object_orig));
   free_string_field (&(args_info->dt_orig));
   free_string_field (&(args_info->output_dt_orig));
   free_string_field (&(args_info->duration_orig));
@@ -333,8 +333,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "help", 0, 0 );
   if (args_info->version_given)
     write_into_file(outfile, "version", 0, 0 );
-  if (args_info->model_given)
-    write_into_file(outfile, "model", args_info->model_orig, 0);
+  if (args_info->object_given)
+    write_into_file(outfile, "object", args_info->object_orig, 0);
   if (args_info->dt_given)
     write_into_file(outfile, "dt", args_info->dt_orig, 0);
   if (args_info->output_dt_given)
@@ -609,9 +609,9 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
   FIX_UNUSED (additional_error);
 
   /* checks for required options */
-  if (! args_info->model_given)
+  if (! args_info->object_given)
     {
-      fprintf (stderr, "%s: '--model' ('-m') option required%s\n", prog_name, (additional_error ? additional_error : ""));
+      fprintf (stderr, "%s: '--object' ('-o') option required%s\n", prog_name, (additional_error ? additional_error : ""));
       error_occurred = 1;
     }
   
@@ -922,7 +922,7 @@ cmdline_parser_internal (
       static struct option long_options[] = {
         { "help",	0, NULL, 0 },
         { "version",	0, NULL, 'V' },
-        { "model",	1, NULL, 'm' },
+        { "object",	1, NULL, 'o' },
         { "dt",	1, NULL, 'h' },
         { "output-dt",	1, NULL, 'p' },
         { "duration",	1, NULL, 'd' },
@@ -931,14 +931,14 @@ cmdline_parser_internal (
         { "read-state-file",	2, NULL, 'R' },
         { "s1-count",	1, NULL, 'n' },
         { "s1-bcl",	1, NULL, 'b' },
-        { "s1-offset",	1, NULL, 'o' },
+        { "s1-offset",	1, NULL, 'f' },
         { "stim-at",	1, NULL, 's' },
         { "stim-strength",	1, NULL, 'a' },
         { "stim-duration",	1, NULL, 't' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "Vm:h:p:d:F::S:R::n:b:o:s:a:t:", long_options, &option_index);
+      c = getopt_long (argc, argv, "Vo:h:p:d:F::S:R::n:b:f:s:a:t:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -949,14 +949,14 @@ cmdline_parser_internal (
           cmdline_parser_free (&local_args_info);
           exit (EXIT_SUCCESS);
 
-        case 'm':	/* Model name.  */
+        case 'o':	/* Object file.  */
         
         
-          if (update_arg( (void *)&(args_info->model_arg), 
-               &(args_info->model_orig), &(args_info->model_given),
-              &(local_args_info.model_given), optarg, 0, 0, ARG_STRING,
+          if (update_arg( (void *)&(args_info->object_arg), 
+               &(args_info->object_orig), &(args_info->object_given),
+              &(local_args_info.object_given), optarg, 0, 0, ARG_STRING,
               check_ambiguity, override, 0, 0,
-              "model", 'm',
+              "object", 'o',
               additional_error))
             goto failure;
         
@@ -1057,14 +1057,14 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'o':	/* Time to start s1 stimulii.  */
+        case 'f':	/* Time to start s1 stimulii.  */
         
         
           if (update_arg( (void *)&(args_info->s1_offset_arg), 
                &(args_info->s1_offset_orig), &(args_info->s1_offset_given),
               &(local_args_info.s1_offset_given), optarg, 0, "0", ARG_DOUBLE,
               check_ambiguity, override, 0, 0,
-              "s1-offset", 'o',
+              "s1-offset", 'f',
               additional_error))
             goto failure;
         
