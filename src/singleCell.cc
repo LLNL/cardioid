@@ -119,8 +119,11 @@ int main(int argc, char* argv[])
    const int nCells = 1;
 
    //read in the object file
-   object_compilefile(params.object_arg);
-
+   for (int iobject=0; iobject<params.object_given; iobject++) 
+   {
+      object_compilefile(params.object_arg[iobject]);
+   }
+   
    //figure out the name of the object
    string objectName;
    if (params.reaction_name_given) 
@@ -129,7 +132,7 @@ int main(int argc, char* argv[])
       objectFind(objectName, "REACTION");
    }
    else
-   {   
+   {
       /* 
          Unlike most uses of the object database, we'd like users to be
          able to name the top level object here whatever they'd like, so
@@ -137,7 +140,7 @@ int main(int argc, char* argv[])
       */
       string objectClass;
       OBJECTFILE file;
-      file = object_fopen(params.object_arg, "r");
+      file = object_fopen(params.object_arg[0], "r");
       if (file.file == NULL)
       {
          fprintf(stderr, "Object file could not be opened for reading.\n");
