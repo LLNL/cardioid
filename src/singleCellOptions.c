@@ -37,6 +37,7 @@ const char *gengetopt_args_info_help[] = {
   "      --help                    Print help and exit",
   "  -V, --version                 Print version and exit",
   "  -o, --object=STRING           Object file",
+  "  -r, --reaction-name=STRING    Name of reaction in object file",
   "  -h, --dt=DOUBLE               Timestep for the simulation  (default=`0.020')",
   "  -p, --output-dt=DOUBLE        Output timetep  (default=`1')",
   "  -d, --duration=DOUBLE         Duration of the simulation",
@@ -79,6 +80,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->help_given = 0 ;
   args_info->version_given = 0 ;
   args_info->object_given = 0 ;
+  args_info->reaction_name_given = 0 ;
   args_info->dt_given = 0 ;
   args_info->output_dt_given = 0 ;
   args_info->duration_given = 0 ;
@@ -99,6 +101,8 @@ void clear_args (struct gengetopt_args_info *args_info)
   FIX_UNUSED (args_info);
   args_info->object_arg = NULL;
   args_info->object_orig = NULL;
+  args_info->reaction_name_arg = NULL;
+  args_info->reaction_name_orig = NULL;
   args_info->dt_arg = 0.020;
   args_info->dt_orig = NULL;
   args_info->output_dt_arg = 1;
@@ -132,20 +136,21 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->help_help = gengetopt_args_info_help[0] ;
   args_info->version_help = gengetopt_args_info_help[1] ;
   args_info->object_help = gengetopt_args_info_help[2] ;
-  args_info->dt_help = gengetopt_args_info_help[3] ;
-  args_info->output_dt_help = gengetopt_args_info_help[4] ;
-  args_info->duration_help = gengetopt_args_info_help[5] ;
-  args_info->write_state_file_help = gengetopt_args_info_help[6] ;
-  args_info->write_state_time_help = gengetopt_args_info_help[7] ;
-  args_info->read_state_file_help = gengetopt_args_info_help[8] ;
-  args_info->s1_count_help = gengetopt_args_info_help[9] ;
-  args_info->s1_bcl_help = gengetopt_args_info_help[10] ;
-  args_info->s1_offset_help = gengetopt_args_info_help[11] ;
-  args_info->stim_at_help = gengetopt_args_info_help[12] ;
+  args_info->reaction_name_help = gengetopt_args_info_help[3] ;
+  args_info->dt_help = gengetopt_args_info_help[4] ;
+  args_info->output_dt_help = gengetopt_args_info_help[5] ;
+  args_info->duration_help = gengetopt_args_info_help[6] ;
+  args_info->write_state_file_help = gengetopt_args_info_help[7] ;
+  args_info->write_state_time_help = gengetopt_args_info_help[8] ;
+  args_info->read_state_file_help = gengetopt_args_info_help[9] ;
+  args_info->s1_count_help = gengetopt_args_info_help[10] ;
+  args_info->s1_bcl_help = gengetopt_args_info_help[11] ;
+  args_info->s1_offset_help = gengetopt_args_info_help[12] ;
+  args_info->stim_at_help = gengetopt_args_info_help[13] ;
   args_info->stim_at_min = 0;
   args_info->stim_at_max = 0;
-  args_info->stim_strength_help = gengetopt_args_info_help[13] ;
-  args_info->stim_duration_help = gengetopt_args_info_help[14] ;
+  args_info->stim_strength_help = gengetopt_args_info_help[14] ;
+  args_info->stim_duration_help = gengetopt_args_info_help[15] ;
   
 }
 
@@ -277,6 +282,8 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
 
   free_string_field (&(args_info->object_arg));
   free_string_field (&(args_info->object_orig));
+  free_string_field (&(args_info->reaction_name_arg));
+  free_string_field (&(args_info->reaction_name_orig));
   free_string_field (&(args_info->dt_orig));
   free_string_field (&(args_info->output_dt_orig));
   free_string_field (&(args_info->duration_orig));
@@ -336,6 +343,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "version", 0, 0 );
   if (args_info->object_given)
     write_into_file(outfile, "object", args_info->object_orig, 0);
+  if (args_info->reaction_name_given)
+    write_into_file(outfile, "reaction-name", args_info->reaction_name_orig, 0);
   if (args_info->dt_given)
     write_into_file(outfile, "dt", args_info->dt_orig, 0);
   if (args_info->output_dt_given)
@@ -924,6 +933,7 @@ cmdline_parser_internal (
         { "help",	0, NULL, 0 },
         { "version",	0, NULL, 'V' },
         { "object",	1, NULL, 'o' },
+        { "reaction-name",	1, NULL, 'r' },
         { "dt",	1, NULL, 'h' },
         { "output-dt",	1, NULL, 'p' },
         { "duration",	1, NULL, 'd' },
@@ -939,7 +949,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "Vo:h:p:d:W:T:R:n:b:f:s:a:t:", long_options, &option_index);
+      c = getopt_long (argc, argv, "Vo:r:h:p:d:W:T:R:n:b:f:s:a:t:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -958,6 +968,18 @@ cmdline_parser_internal (
               &(local_args_info.object_given), optarg, 0, 0, ARG_STRING,
               check_ambiguity, override, 0, 0,
               "object", 'o',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'r':	/* Name of reaction in object file.  */
+        
+        
+          if (update_arg( (void *)&(args_info->reaction_name_arg), 
+               &(args_info->reaction_name_orig), &(args_info->reaction_name_given),
+              &(local_args_info.reaction_name_given), optarg, 0, 0, ARG_STRING,
+              check_ambiguity, override, 0, 0,
+              "reaction-name", 'r',
               additional_error))
             goto failure;
         

@@ -42,6 +42,9 @@ struct gengetopt_args_info
   char * object_arg;	/**< @brief Object file.  */
   char * object_orig;	/**< @brief Object file original value given at command line.  */
   const char *object_help; /**< @brief Object file help description.  */
+  char * reaction_name_arg;	/**< @brief Name of reaction in object file.  */
+  char * reaction_name_orig;	/**< @brief Name of reaction in object file original value given at command line.  */
+  const char *reaction_name_help; /**< @brief Name of reaction in object file help description.  */
   double dt_arg;	/**< @brief Timestep for the simulation (default='0.020').  */
   char * dt_orig;	/**< @brief Timestep for the simulation original value given at command line.  */
   const char *dt_help; /**< @brief Timestep for the simulation help description.  */
@@ -84,6 +87,7 @@ struct gengetopt_args_info
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
   unsigned int object_given ;	/**< @brief Whether object was given.  */
+  unsigned int reaction_name_given ;	/**< @brief Whether reaction-name was given.  */
   unsigned int dt_given ;	/**< @brief Whether dt was given.  */
   unsigned int output_dt_given ;	/**< @brief Whether output-dt was given.  */
   unsigned int duration_given ;	/**< @brief Whether duration was given.  */
