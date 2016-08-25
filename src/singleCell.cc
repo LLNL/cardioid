@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
    vector<int> stimTimesteps;
    if (params.stim_at_given)
    {
-      for(int istim=0; istim<params.stim_at_max; istim++)
+      for(int istim=0; istim<params.stim_at_given; istim++)
       {
          stimTimesteps.push_back(timeline.timestepFromRealTime(params.stim_at_arg[istim]));
       }
