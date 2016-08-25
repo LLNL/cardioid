@@ -1,4 +1,5 @@
 #include "Reaction.hh"
+#include "object_cc.hh"
 #include <cassert>
 
 using namespace std;
@@ -6,6 +7,52 @@ using namespace std;
 void initializeMembraneState(Reaction* reaction, const string& objectName, VectorDouble32& Vm)
 {
    reaction->initializeMembraneVoltage(Vm);
+   OBJECT* reactionObj = objectFind(objectName, "REACTION");
+   assert(reactionObj != NULL);
+   if (object_testforkeyword(reactionObj, "initialState"))
+   {
+      //Get the state object.
+      string stateName;
+      objectGet(reactionObj, "initialState", stateName, "");
+      assert(!stateName.empty());
+      OBJECT* stateObj = objectFind(stateName, "SINGLECELL");
+      assert(stateObj != NULL);
+      string stateMethodName;
+      objectGet(stateObj, "method", stateMethodName, "");
+      assert(stateMethodName == reaction->methodName());
+
+      //read in the voltage
+      if (object_testforkeyword(stateObj, "Vm"))
+      {
+         double newVoltage;
+         objectGet(stateObj, "Vm", newVoltage, "", "mV");
+         //set the voltage
+         for (int ii=0; ii<Vm.size(); ++ii)
+         {
+            Vm[ii] = newVoltage;
+         }
+      }
+
+      //read in the rest of the state variables
+      vector<string> reactionStateNames;
+      vector<string> reactionStateUnits;
+      reaction->getCheckpointInfo(reactionStateNames, reactionStateUnits);
+      for (int istate=0; istate<reactionStateNames.size(); istate++)
+      {
+         string& thisState = reactionStateNames[istate];
+         string& thisUnit = reactionStateUnits[istate];
+         if (object_testforkeyword(stateObj, thisState.c_str()))
+         {
+            double newValue;
+            objectGet(stateObj, thisState, newValue, "", thisUnit);
+            int handle = reaction->getVarHandle(thisState);
+            for (int ii=0; ii<Vm.size(); ++ii)
+            {
+               reaction->setValue(ii, handle, newValue);
+            }
+         }
+      }
+   }
 }
 
 /** Gets the names and units of all fields that should be written in a

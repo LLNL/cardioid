@@ -191,7 +191,8 @@ int main(int argc, char* argv[]) {
       if (file == NULL) {
         perror(("Can't open "+std::string(params.write_state_file_arg)+" for writing: ").c_str());
       } else {
-        fprintf(file, "state %s_SINGLECELL_STATE {\n", reaction->methodName().c_str());
+        fprintf(file, "%s SINGLECELL {\n", objectName.c_str());
+        fprintf(file, "  method = %s;\n", reaction->methodName().c_str());
         fprintf(file, "  Vm = %21.16g mV;\n", Vm[0]);
         for (int istate=0; istate<fieldNames.size(); ++istate) {
           fprintf(file, "  %s = %21.16g %s;\n",
