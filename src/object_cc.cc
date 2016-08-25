@@ -76,7 +76,7 @@ void objectGet(OBJECT* obj, const std::string& name, double& value, const std::s
                const std::string& unitConvertTo)
 {
    double tmp;
-   object_get(obj, name.c_str(), &tmp, WITH_UNITS, 1, defVal.c_str(), unitConvertTo.c_str(), NULL);
+   object_get(obj, name.c_str(), &tmp, WITH_UNITS, 1, defVal.c_str(), NULL, unitConvertTo.c_str());
    value = tmp;
 }
 
