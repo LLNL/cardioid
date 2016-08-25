@@ -106,12 +106,12 @@ int main(int argc, char* argv[])
 
    bool shouldWriteState=false;
    int writeStateTimestep=timeline.maxTimesteps();
-   if (params.write_state_time_given || params.write_state_file_given)
+   if (params.save_state_time_given || params.save_state_file_given)
    {
       shouldWriteState=true;
-      if (params.write_state_time_given)
+      if (params.save_state_time_given)
       {
-         writeStateTimestep=timeline.timestepFromRealTime(params.write_state_time_arg);
+         writeStateTimestep=timeline.timestepFromRealTime(params.save_state_time_arg);
       }
    }
 
@@ -195,12 +195,6 @@ int main(int argc, char* argv[])
                                         anatomy, threads,
                                         vector<string>());
 
-   //read from a checkpoint if necessary.
-   if (params.read_state_file_given)
-   {
-      object_compilefile(params.read_state_file_arg);
-   }
-
    //initialize the ionic model
    VectorDouble32 Vm(nCells);
    vector<double> iStim(nCells);
@@ -217,7 +211,26 @@ int main(int argc, char* argv[])
       fieldHandles[istate] = reaction->getVarHandle(fieldNames[istate]);
    }
 
-
+   vector<int> extraColumns(params.add_column_given);
+   for (int iextra=0; iextra<extraColumns.size(); ++iextra) 
+   {
+      //find the state name
+      int foundState = -1;
+      for (int istate=0; istate<fieldNames.size(); ++istate) 
+      {
+         if (fieldNames[istate] == params.add_column_arg[iextra]) 
+         {
+            foundState = istate;
+         }
+         if (foundState == -1)
+         {
+            fprintf(stderr, "Couldn't find state '%s' in the model\n", params.add_column_arg[iextra]);
+            return __LINE__;
+         }
+         extraColumns[iextra] = fieldHandles[foundState];
+      }
+   }
+   
    //using a forever loop here so we can repeat outputs on the last iteration.
    //otherwise, we'd use a for loop here.
    int itime=0;
@@ -226,10 +239,10 @@ int main(int argc, char* argv[])
       //if we should checkpoint, do so.
       if (shouldWriteState && itime == writeStateTimestep)
       {
-         FILE* file = fopen(params.write_state_file_arg, "w");
+         FILE* file = fopen(params.save_state_file_arg, "w");
          if (file == NULL)
          {
-            perror(("Can't open "+string(params.write_state_file_arg)+" for writing: ").c_str());
+            perror(("Can't open "+string(params.save_state_file_arg)+" for writing: ").c_str());
          }
          else
          {
@@ -255,7 +268,12 @@ int main(int argc, char* argv[])
       if ((itime % outputTimestepInterval) == 0)
       {
          //doIO();
-         printf("%21.17g %21.17g\n", timeline.realTimeFromTimestep(itime), Vm[0]);
+         printf("%21.17g %21.17g", timeline.realTimeFromTimestep(itime), Vm[0]);
+         for (int iextra=0; iextra<extraColumns.size(); ++iextra) 
+         {
+            printf(" %21.17g", reaction->getValue(0,extraColumns[iextra]));
+         }
+         printf("\n");
       }
 
       //if we're done with the loop, exit.

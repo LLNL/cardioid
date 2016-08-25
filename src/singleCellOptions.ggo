@@ -6,12 +6,13 @@ description "This program runs a single cell simulation of Vm' = -Iion."
 option      "object"             o "Object file"                                        string  required multiple
 option      "reaction-name"      r "Name of reaction in object file"                    string  optional
 option      "dt"                 h "Timestep for the simulation"                        double  default="0.020" optional
-option      "output-dt"          p "Output timetep"                                     double  default="1" optional
 option      "duration"           d "Duration of the simulation"                         double  optional
-option      "write-state-file"   W "Filename to save the state to"                      string  optional
-option      "write-state-time"   T "Time to save the state"                             double  optional
-option      "read-state-file"    R "Filename to read the state from"                    string  optional
 
+option      "save-state-file"    S "Filename to save the state to"                      string  optional
+option      "save-state-time"    T "Time to save the state"                             double  optional
+
+option      "output-dt"          p "Output timetep"                                     double  default="1" optional
+option      "add-column"         c "Add a column of output (currently only SVs)"        string  optional multiple
 
 option      "s1-count"           n "Number of s1 stimulii"                              int     default="1" optional
 option      "s1-bcl"             b "Basic cycle length"                                 double  default="1000" optional
@@ -21,7 +22,4 @@ option      "stim-strength"      a "Strength of the stimulus"                   
 option      "stim-duration"      t "Duration of the stimulus"                           double  default="1" optional
 
 
-#option      "initial-condition"  i "File to read in the initial conditions"            string  optional
-#option      "currents"           I "No idea!"                                          string  optionalx1
-#option      "print-interval"     p "Not sure!"                                         double  default="" optional
 #option      "fix-vm"             v "Not really sure"                                   double  default="0" optional

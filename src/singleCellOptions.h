@@ -50,21 +50,23 @@ struct gengetopt_args_info
   double dt_arg;	/**< @brief Timestep for the simulation (default='0.020').  */
   char * dt_orig;	/**< @brief Timestep for the simulation original value given at command line.  */
   const char *dt_help; /**< @brief Timestep for the simulation help description.  */
-  double output_dt_arg;	/**< @brief Output timetep (default='1').  */
-  char * output_dt_orig;	/**< @brief Output timetep original value given at command line.  */
-  const char *output_dt_help; /**< @brief Output timetep help description.  */
   double duration_arg;	/**< @brief Duration of the simulation.  */
   char * duration_orig;	/**< @brief Duration of the simulation original value given at command line.  */
   const char *duration_help; /**< @brief Duration of the simulation help description.  */
-  char * write_state_file_arg;	/**< @brief Filename to save the state to.  */
-  char * write_state_file_orig;	/**< @brief Filename to save the state to original value given at command line.  */
-  const char *write_state_file_help; /**< @brief Filename to save the state to help description.  */
-  double write_state_time_arg;	/**< @brief Time to save the state.  */
-  char * write_state_time_orig;	/**< @brief Time to save the state original value given at command line.  */
-  const char *write_state_time_help; /**< @brief Time to save the state help description.  */
-  char * read_state_file_arg;	/**< @brief Filename to read the state from.  */
-  char * read_state_file_orig;	/**< @brief Filename to read the state from original value given at command line.  */
-  const char *read_state_file_help; /**< @brief Filename to read the state from help description.  */
+  char * save_state_file_arg;	/**< @brief Filename to save the state to.  */
+  char * save_state_file_orig;	/**< @brief Filename to save the state to original value given at command line.  */
+  const char *save_state_file_help; /**< @brief Filename to save the state to help description.  */
+  double save_state_time_arg;	/**< @brief Time to save the state.  */
+  char * save_state_time_orig;	/**< @brief Time to save the state original value given at command line.  */
+  const char *save_state_time_help; /**< @brief Time to save the state help description.  */
+  double output_dt_arg;	/**< @brief Output timetep (default='1').  */
+  char * output_dt_orig;	/**< @brief Output timetep original value given at command line.  */
+  const char *output_dt_help; /**< @brief Output timetep help description.  */
+  char ** add_column_arg;	/**< @brief Add a column of output (currently only SVs).  */
+  char ** add_column_orig;	/**< @brief Add a column of output (currently only SVs) original value given at command line.  */
+  unsigned int add_column_min; /**< @brief Add a column of output (currently only SVs)'s minimum occurreces */
+  unsigned int add_column_max; /**< @brief Add a column of output (currently only SVs)'s maximum occurreces */
+  const char *add_column_help; /**< @brief Add a column of output (currently only SVs) help description.  */
   int s1_count_arg;	/**< @brief Number of s1 stimulii (default='1').  */
   char * s1_count_orig;	/**< @brief Number of s1 stimulii original value given at command line.  */
   const char *s1_count_help; /**< @brief Number of s1 stimulii help description.  */
@@ -91,11 +93,11 @@ struct gengetopt_args_info
   unsigned int object_given ;	/**< @brief Whether object was given.  */
   unsigned int reaction_name_given ;	/**< @brief Whether reaction-name was given.  */
   unsigned int dt_given ;	/**< @brief Whether dt was given.  */
-  unsigned int output_dt_given ;	/**< @brief Whether output-dt was given.  */
   unsigned int duration_given ;	/**< @brief Whether duration was given.  */
-  unsigned int write_state_file_given ;	/**< @brief Whether write-state-file was given.  */
-  unsigned int write_state_time_given ;	/**< @brief Whether write-state-time was given.  */
-  unsigned int read_state_file_given ;	/**< @brief Whether read-state-file was given.  */
+  unsigned int save_state_file_given ;	/**< @brief Whether save-state-file was given.  */
+  unsigned int save_state_time_given ;	/**< @brief Whether save-state-time was given.  */
+  unsigned int output_dt_given ;	/**< @brief Whether output-dt was given.  */
+  unsigned int add_column_given ;	/**< @brief Whether add-column was given.  */
   unsigned int s1_count_given ;	/**< @brief Whether s1-count was given.  */
   unsigned int s1_bcl_given ;	/**< @brief Whether s1-bcl was given.  */
   unsigned int s1_offset_given ;	/**< @brief Whether s1-offset was given.  */

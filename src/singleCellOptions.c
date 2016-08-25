@@ -39,11 +39,11 @@ const char *gengetopt_args_info_help[] = {
   "  -o, --object=STRING           Object file",
   "  -r, --reaction-name=STRING    Name of reaction in object file",
   "  -h, --dt=DOUBLE               Timestep for the simulation  (default=`0.020')",
-  "  -p, --output-dt=DOUBLE        Output timetep  (default=`1')",
   "  -d, --duration=DOUBLE         Duration of the simulation",
-  "  -W, --write-state-file=STRING Filename to save the state to",
-  "  -T, --write-state-time=DOUBLE Time to save the state",
-  "  -R, --read-state-file=STRING  Filename to read the state from",
+  "  -S, --save-state-file=STRING  Filename to save the state to",
+  "  -T, --save-state-time=DOUBLE  Time to save the state",
+  "  -p, --output-dt=DOUBLE        Output timetep  (default=`1')",
+  "  -c, --add-column=STRING       Add a column of output (currently only SVs)",
   "  -n, --s1-count=INT            Number of s1 stimulii  (default=`1')",
   "  -b, --s1-bcl=DOUBLE           Basic cycle length  (default=`1000')",
   "  -f, --s1-offset=DOUBLE        Time to start s1 stimulii  (default=`0')",
@@ -82,11 +82,11 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->object_given = 0 ;
   args_info->reaction_name_given = 0 ;
   args_info->dt_given = 0 ;
-  args_info->output_dt_given = 0 ;
   args_info->duration_given = 0 ;
-  args_info->write_state_file_given = 0 ;
-  args_info->write_state_time_given = 0 ;
-  args_info->read_state_file_given = 0 ;
+  args_info->save_state_file_given = 0 ;
+  args_info->save_state_time_given = 0 ;
+  args_info->output_dt_given = 0 ;
+  args_info->add_column_given = 0 ;
   args_info->s1_count_given = 0 ;
   args_info->s1_bcl_given = 0 ;
   args_info->s1_offset_given = 0 ;
@@ -105,14 +105,14 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->reaction_name_orig = NULL;
   args_info->dt_arg = 0.020;
   args_info->dt_orig = NULL;
+  args_info->duration_orig = NULL;
+  args_info->save_state_file_arg = NULL;
+  args_info->save_state_file_orig = NULL;
+  args_info->save_state_time_orig = NULL;
   args_info->output_dt_arg = 1;
   args_info->output_dt_orig = NULL;
-  args_info->duration_orig = NULL;
-  args_info->write_state_file_arg = NULL;
-  args_info->write_state_file_orig = NULL;
-  args_info->write_state_time_orig = NULL;
-  args_info->read_state_file_arg = NULL;
-  args_info->read_state_file_orig = NULL;
+  args_info->add_column_arg = NULL;
+  args_info->add_column_orig = NULL;
   args_info->s1_count_arg = 1;
   args_info->s1_count_orig = NULL;
   args_info->s1_bcl_arg = 1000;
@@ -140,11 +140,13 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->object_max = 0;
   args_info->reaction_name_help = gengetopt_args_info_help[3] ;
   args_info->dt_help = gengetopt_args_info_help[4] ;
-  args_info->output_dt_help = gengetopt_args_info_help[5] ;
-  args_info->duration_help = gengetopt_args_info_help[6] ;
-  args_info->write_state_file_help = gengetopt_args_info_help[7] ;
-  args_info->write_state_time_help = gengetopt_args_info_help[8] ;
-  args_info->read_state_file_help = gengetopt_args_info_help[9] ;
+  args_info->duration_help = gengetopt_args_info_help[5] ;
+  args_info->save_state_file_help = gengetopt_args_info_help[6] ;
+  args_info->save_state_time_help = gengetopt_args_info_help[7] ;
+  args_info->output_dt_help = gengetopt_args_info_help[8] ;
+  args_info->add_column_help = gengetopt_args_info_help[9] ;
+  args_info->add_column_min = 0;
+  args_info->add_column_max = 0;
   args_info->s1_count_help = gengetopt_args_info_help[10] ;
   args_info->s1_bcl_help = gengetopt_args_info_help[11] ;
   args_info->s1_offset_help = gengetopt_args_info_help[12] ;
@@ -304,13 +306,12 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->reaction_name_arg));
   free_string_field (&(args_info->reaction_name_orig));
   free_string_field (&(args_info->dt_orig));
-  free_string_field (&(args_info->output_dt_orig));
   free_string_field (&(args_info->duration_orig));
-  free_string_field (&(args_info->write_state_file_arg));
-  free_string_field (&(args_info->write_state_file_orig));
-  free_string_field (&(args_info->write_state_time_orig));
-  free_string_field (&(args_info->read_state_file_arg));
-  free_string_field (&(args_info->read_state_file_orig));
+  free_string_field (&(args_info->save_state_file_arg));
+  free_string_field (&(args_info->save_state_file_orig));
+  free_string_field (&(args_info->save_state_time_orig));
+  free_string_field (&(args_info->output_dt_orig));
+  free_multiple_string_field (args_info->add_column_given, &(args_info->add_column_arg), &(args_info->add_column_orig));
   free_string_field (&(args_info->s1_count_orig));
   free_string_field (&(args_info->s1_bcl_orig));
   free_string_field (&(args_info->s1_offset_orig));
@@ -365,16 +366,15 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "reaction-name", args_info->reaction_name_orig, 0);
   if (args_info->dt_given)
     write_into_file(outfile, "dt", args_info->dt_orig, 0);
-  if (args_info->output_dt_given)
-    write_into_file(outfile, "output-dt", args_info->output_dt_orig, 0);
   if (args_info->duration_given)
     write_into_file(outfile, "duration", args_info->duration_orig, 0);
-  if (args_info->write_state_file_given)
-    write_into_file(outfile, "write-state-file", args_info->write_state_file_orig, 0);
-  if (args_info->write_state_time_given)
-    write_into_file(outfile, "write-state-time", args_info->write_state_time_orig, 0);
-  if (args_info->read_state_file_given)
-    write_into_file(outfile, "read-state-file", args_info->read_state_file_orig, 0);
+  if (args_info->save_state_file_given)
+    write_into_file(outfile, "save-state-file", args_info->save_state_file_orig, 0);
+  if (args_info->save_state_time_given)
+    write_into_file(outfile, "save-state-time", args_info->save_state_time_orig, 0);
+  if (args_info->output_dt_given)
+    write_into_file(outfile, "output-dt", args_info->output_dt_orig, 0);
+  write_multiple_into_file(outfile, args_info->add_column_given, "add-column", args_info->add_column_orig, 0);
   if (args_info->s1_count_given)
     write_into_file(outfile, "s1-count", args_info->s1_count_orig, 0);
   if (args_info->s1_bcl_given)
@@ -644,6 +644,9 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
     }
   
   if (check_multiple_option_occurrences(prog_name, args_info->object_given, args_info->object_min, args_info->object_max, "'--object' ('-o')"))
+     error_occurred = 1;
+  
+  if (check_multiple_option_occurrences(prog_name, args_info->add_column_given, args_info->add_column_min, args_info->add_column_max, "'--add-column' ('-c')"))
      error_occurred = 1;
   
   if (check_multiple_option_occurrences(prog_name, args_info->stim_at_given, args_info->stim_at_min, args_info->stim_at_max, "'--stim-at' ('-s')"))
@@ -921,6 +924,7 @@ cmdline_parser_internal (
   int c;	/* Character of the parsed option.  */
 
   struct generic_list * object_list = NULL;
+  struct generic_list * add_column_list = NULL;
   struct generic_list * stim_at_list = NULL;
   int error_occurred = 0;
   struct gengetopt_args_info local_args_info;
@@ -957,11 +961,11 @@ cmdline_parser_internal (
         { "object",	1, NULL, 'o' },
         { "reaction-name",	1, NULL, 'r' },
         { "dt",	1, NULL, 'h' },
-        { "output-dt",	1, NULL, 'p' },
         { "duration",	1, NULL, 'd' },
-        { "write-state-file",	1, NULL, 'W' },
-        { "write-state-time",	1, NULL, 'T' },
-        { "read-state-file",	1, NULL, 'R' },
+        { "save-state-file",	1, NULL, 'S' },
+        { "save-state-time",	1, NULL, 'T' },
+        { "output-dt",	1, NULL, 'p' },
+        { "add-column",	1, NULL, 'c' },
         { "s1-count",	1, NULL, 'n' },
         { "s1-bcl",	1, NULL, 'b' },
         { "s1-offset",	1, NULL, 'f' },
@@ -971,7 +975,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "Vo:r:h:p:d:W:T:R:n:b:f:s:a:t:", long_options, &option_index);
+      c = getopt_long (argc, argv, "Vo:r:h:d:S:T:p:c:n:b:f:s:a:t:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1015,18 +1019,6 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'p':	/* Output timetep.  */
-        
-        
-          if (update_arg( (void *)&(args_info->output_dt_arg), 
-               &(args_info->output_dt_orig), &(args_info->output_dt_given),
-              &(local_args_info.output_dt_given), optarg, 0, "1", ARG_DOUBLE,
-              check_ambiguity, override, 0, 0,
-              "output-dt", 'p',
-              additional_error))
-            goto failure;
-        
-          break;
         case 'd':	/* Duration of the simulation.  */
         
         
@@ -1039,14 +1031,14 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'W':	/* Filename to save the state to.  */
+        case 'S':	/* Filename to save the state to.  */
         
         
-          if (update_arg( (void *)&(args_info->write_state_file_arg), 
-               &(args_info->write_state_file_orig), &(args_info->write_state_file_given),
-              &(local_args_info.write_state_file_given), optarg, 0, 0, ARG_STRING,
+          if (update_arg( (void *)&(args_info->save_state_file_arg), 
+               &(args_info->save_state_file_orig), &(args_info->save_state_file_given),
+              &(local_args_info.save_state_file_given), optarg, 0, 0, ARG_STRING,
               check_ambiguity, override, 0, 0,
-              "write-state-file", 'W',
+              "save-state-file", 'S',
               additional_error))
             goto failure;
         
@@ -1054,23 +1046,32 @@ cmdline_parser_internal (
         case 'T':	/* Time to save the state.  */
         
         
-          if (update_arg( (void *)&(args_info->write_state_time_arg), 
-               &(args_info->write_state_time_orig), &(args_info->write_state_time_given),
-              &(local_args_info.write_state_time_given), optarg, 0, 0, ARG_DOUBLE,
+          if (update_arg( (void *)&(args_info->save_state_time_arg), 
+               &(args_info->save_state_time_orig), &(args_info->save_state_time_given),
+              &(local_args_info.save_state_time_given), optarg, 0, 0, ARG_DOUBLE,
               check_ambiguity, override, 0, 0,
-              "write-state-time", 'T',
+              "save-state-time", 'T',
               additional_error))
             goto failure;
         
           break;
-        case 'R':	/* Filename to read the state from.  */
+        case 'p':	/* Output timetep.  */
         
         
-          if (update_arg( (void *)&(args_info->read_state_file_arg), 
-               &(args_info->read_state_file_orig), &(args_info->read_state_file_given),
-              &(local_args_info.read_state_file_given), optarg, 0, 0, ARG_STRING,
+          if (update_arg( (void *)&(args_info->output_dt_arg), 
+               &(args_info->output_dt_orig), &(args_info->output_dt_given),
+              &(local_args_info.output_dt_given), optarg, 0, "1", ARG_DOUBLE,
               check_ambiguity, override, 0, 0,
-              "read-state-file", 'R',
+              "output-dt", 'p',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'c':	/* Add a column of output (currently only SVs).  */
+        
+          if (update_multiple_arg_temp(&add_column_list, 
+              &(local_args_info.add_column_given), optarg, 0, 0, ARG_STRING,
+              "add-column", 'c',
               additional_error))
             goto failure;
         
@@ -1167,6 +1168,10 @@ cmdline_parser_internal (
     &(args_info->object_orig), args_info->object_given,
     local_args_info.object_given, 0,
     ARG_STRING, object_list);
+  update_multiple_arg((void *)&(args_info->add_column_arg),
+    &(args_info->add_column_orig), args_info->add_column_given,
+    local_args_info.add_column_given, 0,
+    ARG_STRING, add_column_list);
   update_multiple_arg((void *)&(args_info->stim_at_arg),
     &(args_info->stim_at_orig), args_info->stim_at_given,
     local_args_info.stim_at_given, 0,
@@ -1174,6 +1179,8 @@ cmdline_parser_internal (
 
   args_info->object_given += local_args_info.object_given;
   local_args_info.object_given = 0;
+  args_info->add_column_given += local_args_info.add_column_given;
+  local_args_info.add_column_given = 0;
   args_info->stim_at_given += local_args_info.stim_at_given;
   local_args_info.stim_at_given = 0;
   
@@ -1191,6 +1198,7 @@ cmdline_parser_internal (
 
 failure:
   free_list (object_list, 1 );
+  free_list (add_column_list, 1 );
   free_list (stim_at_list, 0 );
   
   cmdline_parser_release (&local_args_info);
