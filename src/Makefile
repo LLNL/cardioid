@@ -214,8 +214,8 @@ oss:
    LD="/usr/global/tools/openspeedshop/oss-dev/bgq/oss202/bgq/bin/osslink -c pcsamp $(CXX)"
 
 GENGETOPT ?= gengetopt
-%.c %.h: %.ggo
-	$(GENGETOPT) -i $< -F $* 
+gengetopt:
+	$(GENGETOPT) -i singleCellOptions.ggo -F singleCellOptions 
 
 $(OBJDIR)/%.o: %.cc
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
@@ -272,7 +272,6 @@ collectGradientTraces:
 collectGradientTraces-target: $(HEARTOBJS) $(OBJDIR)/collectGradientTraces.o Version.cc
 	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(OBJDIR)/collectGradientTraces.o $(LDFLAGS)
 
-.SECONDARY: singleCellOptions.c singleCellOptions.h
 singleCell: 
 	@$(MAKE) --no-print-directory makedirs $@-target \
 	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH) \
