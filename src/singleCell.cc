@@ -166,8 +166,13 @@ int main(int argc, char* argv[]) {
                                        anatomy, threads,
                                        vector<string>());
 
-  //initialize the ionic model
   //read from a checkpoint if necessary.
+  if (params.read_state_file_given)
+  {
+     object_compilefile(params.read_state_file_arg);
+  }
+
+  //initialize the ionic model
   VectorDouble32 Vm(nCells);
   vector<double> iStim(nCells);
   VectorDouble32 dVm(nCells);
@@ -193,6 +198,8 @@ int main(int argc, char* argv[]) {
       if (file == NULL) {
         perror(("Can't open "+string(params.write_state_file_arg)+" for writing: ").c_str());
       } else {
+        fprintf(file, "%s REACTION { initialState = %s; }\n",
+                objectName.c_str(), objectName.c_str());
         fprintf(file, "%s SINGLECELL {\n", objectName.c_str());
         fprintf(file, "  method = %s;\n", reaction->methodName().c_str());
         fprintf(file, "  Vm = %.17g mV;\n", Vm[0]);
