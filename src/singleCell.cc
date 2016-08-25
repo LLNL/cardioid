@@ -173,18 +173,43 @@ int main(int argc, char* argv[]) {
   //read from a checkpoint if necessary.
 
 
+  std::vector<std::string> fieldNames;
+  std::vector<std::string> fieldUnits;
+  reaction->getCheckpointInfo(fieldNames,fieldUnits);
+  std::vector<int> fieldHandles(fieldNames.size());
+  for (int istate=0; istate<fieldNames.size(); ++istate) {
+    fieldHandles[istate] = reaction->getVarHandle(fieldNames[istate]);
+  }
+  
+  
   //using a forever loop here so we can repeat outputs on the last iteration.
   //otherwise, we'd use a for loop here.
   int itime=0;
   while(1) {
     //if we should checkpoint, do so.
     if (shouldWriteState && itime == writeStateTimestep) {
+      FILE* file = fopen(params.write_state_file_arg, "w");
+      if (file == NULL) {
+        perror(("Can't open "+std::string(params.write_state_file_arg)+" for writing: ").c_str());
+      } else {
+        fprintf(file, "state %s_SINGLECELL_STATE {\n", reaction->methodName().c_str());
+        fprintf(file, "  Vm = %21.16g mV;\n", Vm[0]);
+        for (int istate=0; istate<fieldNames.size(); ++istate) {
+          fprintf(file, "  %s = %21.16g %s;\n",
+                  fieldNames[istate].c_str(),
+                  reaction->getValue(0,fieldHandles[istate]),
+                  fieldUnits[istate].c_str()
+                  );
+        }
+        fprintf(file, "}\n");
+        fclose(file);
+      }
     }
 
     //if we should do output, do so.
     if ((itime % outputTimestepInterval) == 0) {
       //doIO();
-      printf("%.16g %.16g\n", timeline.realTimeFromTimestep(itime), Vm[0]);
+      printf("%21.16g %21.16g\n", timeline.realTimeFromTimestep(itime), Vm[0]);
     }
   
     //if we're done with the loop, exit.
