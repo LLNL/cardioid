@@ -193,9 +193,9 @@ int main(int argc, char* argv[]) {
       } else {
         fprintf(file, "%s SINGLECELL {\n", objectName.c_str());
         fprintf(file, "  method = %s;\n", reaction->methodName().c_str());
-        fprintf(file, "  Vm = %21.16g mV;\n", Vm[0]);
+        fprintf(file, "  Vm = %.17g mV;\n", Vm[0]);
         for (int istate=0; istate<fieldNames.size(); ++istate) {
-          fprintf(file, "  %s = %21.16g %s;\n",
+          fprintf(file, "  %s = %.17g %s;\n",
                   fieldNames[istate].c_str(),
                   reaction->getValue(0,fieldHandles[istate]),
                   fieldUnits[istate].c_str()
@@ -209,7 +209,7 @@ int main(int argc, char* argv[]) {
     //if we should do output, do so.
     if ((itime % outputTimestepInterval) == 0) {
       //doIO();
-      printf("%21.16g %21.16g\n", timeline.realTimeFromTimestep(itime), Vm[0]);
+      printf("%21.17g %21.17g\n", timeline.realTimeFromTimestep(itime), Vm[0]);
     }
   
     //if we're done with the loop, exit.
