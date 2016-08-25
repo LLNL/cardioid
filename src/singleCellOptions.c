@@ -136,6 +136,8 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->help_help = gengetopt_args_info_help[0] ;
   args_info->version_help = gengetopt_args_info_help[1] ;
   args_info->object_help = gengetopt_args_info_help[2] ;
+  args_info->object_min = 0;
+  args_info->object_max = 0;
   args_info->reaction_name_help = gengetopt_args_info_help[3] ;
   args_info->dt_help = gengetopt_args_info_help[4] ;
   args_info->output_dt_help = gengetopt_args_info_help[5] ;
@@ -275,13 +277,30 @@ free_multiple_field(unsigned int len, void *arg, char ***orig)
   }
 }
 
+static void
+free_multiple_string_field(unsigned int len, char ***arg, char ***orig)
+{
+  unsigned int i;
+  if (*arg) {
+    for (i = 0; i < len; ++i)
+      {
+        free_string_field(&((*arg)[i]));
+        free_string_field(&((*orig)[i]));
+      }
+    free_string_field(&((*arg)[0])); /* free default string */
+
+    free (*arg);
+    *arg = 0;
+    free (*orig);
+    *orig = 0;
+  }
+}
 
 static void
 cmdline_parser_release (struct gengetopt_args_info *args_info)
 {
 
-  free_string_field (&(args_info->object_arg));
-  free_string_field (&(args_info->object_orig));
+  free_multiple_string_field (args_info->object_given, &(args_info->object_arg), &(args_info->object_orig));
   free_string_field (&(args_info->reaction_name_arg));
   free_string_field (&(args_info->reaction_name_orig));
   free_string_field (&(args_info->dt_orig));
@@ -341,8 +360,7 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "help", 0, 0 );
   if (args_info->version_given)
     write_into_file(outfile, "version", 0, 0 );
-  if (args_info->object_given)
-    write_into_file(outfile, "object", args_info->object_orig, 0);
+  write_multiple_into_file(outfile, args_info->object_given, "object", args_info->object_orig, 0);
   if (args_info->reaction_name_given)
     write_into_file(outfile, "reaction-name", args_info->reaction_name_orig, 0);
   if (args_info->dt_given)
@@ -625,6 +643,9 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
       error_occurred = 1;
     }
   
+  if (check_multiple_option_occurrences(prog_name, args_info->object_given, args_info->object_min, args_info->object_max, "'--object' ('-o')"))
+     error_occurred = 1;
+  
   if (check_multiple_option_occurrences(prog_name, args_info->stim_at_given, args_info->stim_at_min, args_info->stim_at_max, "'--stim-at' ('-s')"))
      error_occurred = 1;
   
@@ -899,6 +920,7 @@ cmdline_parser_internal (
 {
   int c;	/* Character of the parsed option.  */
 
+  struct generic_list * object_list = NULL;
   struct generic_list * stim_at_list = NULL;
   int error_occurred = 0;
   struct gengetopt_args_info local_args_info;
@@ -962,11 +984,8 @@ cmdline_parser_internal (
 
         case 'o':	/* Object file.  */
         
-        
-          if (update_arg( (void *)&(args_info->object_arg), 
-               &(args_info->object_orig), &(args_info->object_given),
+          if (update_multiple_arg_temp(&object_list, 
               &(local_args_info.object_given), optarg, 0, 0, ARG_STRING,
-              check_ambiguity, override, 0, 0,
               "object", 'o',
               additional_error))
             goto failure;
@@ -1144,11 +1163,17 @@ cmdline_parser_internal (
     } /* while */
 
 
+  update_multiple_arg((void *)&(args_info->object_arg),
+    &(args_info->object_orig), args_info->object_given,
+    local_args_info.object_given, 0,
+    ARG_STRING, object_list);
   update_multiple_arg((void *)&(args_info->stim_at_arg),
     &(args_info->stim_at_orig), args_info->stim_at_given,
     local_args_info.stim_at_given, 0,
     ARG_DOUBLE, stim_at_list);
 
+  args_info->object_given += local_args_info.object_given;
+  local_args_info.object_given = 0;
   args_info->stim_at_given += local_args_info.stim_at_given;
   local_args_info.stim_at_given = 0;
   
@@ -1165,6 +1190,7 @@ cmdline_parser_internal (
   return 0;
 
 failure:
+  free_list (object_list, 1 );
   free_list (stim_at_list, 0 );
   
   cmdline_parser_release (&local_args_info);

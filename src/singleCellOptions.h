@@ -39,8 +39,10 @@ struct gengetopt_args_info
 {
   const char *help_help; /**< @brief Print help and exit help description.  */
   const char *version_help; /**< @brief Print version and exit help description.  */
-  char * object_arg;	/**< @brief Object file.  */
-  char * object_orig;	/**< @brief Object file original value given at command line.  */
+  char ** object_arg;	/**< @brief Object file.  */
+  char ** object_orig;	/**< @brief Object file original value given at command line.  */
+  unsigned int object_min; /**< @brief Object file's minimum occurreces */
+  unsigned int object_max; /**< @brief Object file's maximum occurreces */
   const char *object_help; /**< @brief Object file help description.  */
   char * reaction_name_arg;	/**< @brief Name of reaction in object file.  */
   char * reaction_name_orig;	/**< @brief Name of reaction in object file original value given at command line.  */
