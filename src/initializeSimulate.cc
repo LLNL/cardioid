@@ -240,6 +240,7 @@ void initializeSimulate(const string& name, Simulate& sim)
    timestampBarrier("building reaction object", MPI_COMM_WORLD);
    objectGet(obj, "reaction", nameTmp, "reaction");
    sim.reaction_ = reactionFactory(nameTmp, sim.dt_, sim.anatomy_, sim.reactionThreads_, scaleCurrents);
+   sim.reactionName_ = nameTmp;
    timestampBarrier("finished building reaction object", MPI_COMM_WORLD);
 
    sim.printIndex_ = -1;

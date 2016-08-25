@@ -165,14 +165,13 @@ int main(int argc, char* argv[]) {
                                        std::vector<std::string>());
 
   //initialize the ionic model
+  //read from a checkpoint if necessary.
   VectorDouble32 Vm(nCells);
   std::vector<double> iStim(nCells);
   VectorDouble32 dVm(nCells);
-  reaction->initializeMembraneVoltage(Vm);
+  initializeMembraneState(reaction, objectName, Vm);
 
-  //read from a checkpoint if necessary.
-
-
+  //prepare for checkpoint output and extra columns
   std::vector<std::string> fieldNames;
   std::vector<std::string> fieldUnits;
   reaction->getCheckpointInfo(fieldNames,fieldUnits);

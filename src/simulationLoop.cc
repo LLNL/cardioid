@@ -96,7 +96,7 @@ void simulationProlog(Simulate& sim)
    // initialize membrane voltage with default value from the reaction
    // model.  Initialize with zero for remote cells
    sim.vdata_.setup(sim.anatomy_);
-   sim.reaction_->initializeMembraneVoltage(sim.vdata_.VmArray_);
+   initializeMembraneState(sim.reaction_, sim.reactionName_, sim.vdata_.VmArray_);
    for (unsigned ii=sim.anatomy_.nLocal(); ii<sim.anatomy_.size(); ++ii)
       sim.vdata_.VmArray_[ii] = 0;
 

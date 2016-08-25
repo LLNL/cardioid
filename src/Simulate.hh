@@ -120,7 +120,8 @@ class Simulate
 
    Anatomy anatomy_;
    Diffusion* diffusion_;
-   Reaction* reaction_; 
+   Reaction* reaction_;
+   std::string reactionName_;
    std::vector<Stimulus*> stimulus_;
    std::vector<Sensor*> sensor_;
    std::vector<Drug*> drug_;

@@ -39,4 +39,7 @@ class Reaction
    virtual const std::string getUnit(const std::string& varName) const;
 };
 
+//! Call this instead of initializeMembraneVoltage directly.
+void initializeMembraneState(Reaction* reaction, const std::string& objectName, VectorDouble32& Vm);
+
 #endif

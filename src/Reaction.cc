@@ -3,6 +3,11 @@
 
 using namespace std;
 
+void initializeMembraneState(Reaction* reaction, const string& objectName, VectorDouble32& Vm)
+{
+   reaction->initializeMembraneVoltage(Vm);
+}
+
 /** Gets the names and units of all fields that should be written in a
  *  checkpoint file. */
 void Reaction::getCheckpointInfo(vector<string>& fieldNames,
