@@ -221,14 +221,15 @@ int main(int argc, char* argv[])
          if (fieldNames[istate] == params.add_column_arg[iextra]) 
          {
             foundState = istate;
+            break;
          }
-         if (foundState == -1)
-         {
-            fprintf(stderr, "Couldn't find state '%s' in the model\n", params.add_column_arg[iextra]);
-            return __LINE__;
-         }
-         extraColumns[iextra] = fieldHandles[foundState];
       }
+      if (foundState == -1)
+      {
+         fprintf(stderr, "Couldn't find state '%s' in the model\n", params.add_column_arg[iextra]);
+         return __LINE__;
+      }
+      extraColumns[iextra] = fieldHandles[foundState];
    }
    
    //using a forever loop here so we can repeat outputs on the last iteration.
