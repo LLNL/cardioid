@@ -12,6 +12,7 @@
 #include "Anatomy.hh"
 #include "ThreadServer.hh"
 #include "object.h"
+#include "object_cc.hh"
 
 #include "singleCellOptions.h"
 
@@ -117,15 +118,24 @@ int main(int argc, char* argv[])
    //create the ionic model
    const int nCells = 1;
 
-   /* figure out the name of the object
+   //read in the object file
+   object_compilefile(params.object_arg);
 
-      Unlike most uses of the object database, we'd like users to be
-      able to name the top level object here whatever they'd like, so
-      they can use the same reaction object in actual simulation runs
-   */
+   //figure out the name of the object
    string objectName;
-   string objectClass;
+   if (params.reaction_name_given) 
    {
+      objectName = params.reaction_name_arg;
+      objectFind(objectName, "REACTION");
+   }
+   else
+   {   
+      /* 
+         Unlike most uses of the object database, we'd like users to be
+         able to name the top level object here whatever they'd like, so
+         they can use the same reaction object in actual simulation runs
+      */
+      string objectClass;
       OBJECTFILE file;
       file = object_fopen(params.object_arg, "r");
       if (file.file == NULL)
@@ -155,15 +165,12 @@ int main(int argc, char* argv[])
       free(obj.value);
       free(line);
       object_fclose(file);
+      if (objectClass != "REACTION")
+      {
+         fprintf(stderr, "First object in file must be a REACTION!\n");
+         return __LINE__;
+      }
    }
-   if (objectClass != "REACTION")
-   {
-      fprintf(stderr, "First object in file must be a REACTION!\n");
-      return __LINE__;
-   }
-
-   //read in the object file
-   object_compilefile(params.object_arg);
 
    //create the dependent variables.
    Anatomy anatomy;

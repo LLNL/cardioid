@@ -4,6 +4,7 @@ purpose "Run a single cell simulation"
 description "This program runs a single cell simulation of Vm' = -Iion."
 
 option      "object"             o "Object file"                                        string  required
+option      "reaction-name"      r "Name of reaction in object file"                    string  optional
 option      "dt"                 h "Timestep for the simulation"                        double  default="0.020" optional
 option      "output-dt"          p "Output timetep"                                     double  default="1" optional
 option      "duration"           d "Duration of the simulation"                         double  optional
