@@ -15,6 +15,8 @@
 
 #include "singleCellOptions.h"
 
+using namespace std;
+
 MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
 
 /*!
@@ -65,7 +67,7 @@ int main(int argc, char* argv[]) {
 
 
   //Stimulus setup
-  std::vector<int> stimTimesteps;
+  vector<int> stimTimesteps;
   if (params.stim_at_given) {
     for(int istim=0; istim<params.stim_at_max; istim++) {
       stimTimesteps.push_back(timeline.timestepFromRealTime(params.stim_at_arg[istim]));
@@ -78,12 +80,12 @@ int main(int argc, char* argv[]) {
                               (params.s1_offset_arg + ibeat*params.s1_bcl_arg));
     }
   }
-  std::sort(stimTimesteps.begin(), stimTimesteps.end());
+  sort(stimTimesteps.begin(), stimTimesteps.end());
 
   int timestepsInEachStimulus=timeline.timestepFromRealTime(params.stim_duration_arg);
   double stimulusStrength = params.stim_strength_arg;
   int timestepsLeftInStimulus=0;
-  std::vector<int>::iterator nextStimulus=stimTimesteps.begin();
+  vector<int>::iterator nextStimulus=stimTimesteps.begin();
 
 
   //Output setup
@@ -107,8 +109,8 @@ int main(int argc, char* argv[]) {
      able to name the top level object here whatever they'd like, so
      they can use the same reaction object in actual simulation runs
   */
-  std::string objectName;
-  std::string objectClass;
+  string objectName;
+  string objectClass;
   {
     OBJECTFILE file;
     file = object_fopen(params.object_arg, "r");
@@ -149,7 +151,7 @@ int main(int argc, char* argv[]) {
   Anatomy anatomy;
   {
     anatomy.setGridSize(nCells,1,1);
-    std::vector<AnatomyCell>& cells = anatomy.cellArray();
+    vector<AnatomyCell>& cells = anatomy.cellArray();
     cells.reserve(nCells);
     for (int ii=0; ii<nCells; ii++) {
       AnatomyCell tmp;
@@ -159,23 +161,23 @@ int main(int argc, char* argv[]) {
     }
   }
   ThreadServer& threadServer = ThreadServer::getInstance();
-  ThreadTeam threads = threadServer.getThreadTeam(std::vector<unsigned>());
+  ThreadTeam threads = threadServer.getThreadTeam(vector<unsigned>());
   Reaction* reaction = reactionFactory(objectName,dt,
                                        anatomy, threads,
-                                       std::vector<std::string>());
+                                       vector<string>());
 
   //initialize the ionic model
   //read from a checkpoint if necessary.
   VectorDouble32 Vm(nCells);
-  std::vector<double> iStim(nCells);
+  vector<double> iStim(nCells);
   VectorDouble32 dVm(nCells);
   initializeMembraneState(reaction, objectName, Vm);
 
   //prepare for checkpoint output and extra columns
-  std::vector<std::string> fieldNames;
-  std::vector<std::string> fieldUnits;
+  vector<string> fieldNames;
+  vector<string> fieldUnits;
   reaction->getCheckpointInfo(fieldNames,fieldUnits);
-  std::vector<int> fieldHandles(fieldNames.size());
+  vector<int> fieldHandles(fieldNames.size());
   for (int istate=0; istate<fieldNames.size(); ++istate) {
     fieldHandles[istate] = reaction->getVarHandle(fieldNames[istate]);
   }
@@ -189,7 +191,7 @@ int main(int argc, char* argv[]) {
     if (shouldWriteState && itime == writeStateTimestep) {
       FILE* file = fopen(params.write_state_file_arg, "w");
       if (file == NULL) {
-        perror(("Can't open "+std::string(params.write_state_file_arg)+" for writing: ").c_str());
+        perror(("Can't open "+string(params.write_state_file_arg)+" for writing: ").c_str());
       } else {
         fprintf(file, "%s SINGLECELL {\n", objectName.c_str());
         fprintf(file, "  method = %s;\n", reaction->methodName().c_str());
