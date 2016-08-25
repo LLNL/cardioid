@@ -40,9 +40,9 @@ const char *gengetopt_args_info_help[] = {
   "  -h, --dt=DOUBLE               Timestep for the simulation  (default=`0.020')",
   "  -p, --output-dt=DOUBLE        Output timetep  (default=`1')",
   "  -d, --duration=DOUBLE         Duration of the simulation",
-  "  -W, --write-state-file[=STRING]\n                                Filename to save the state to\n                                  (default=`singleCell.data')",
+  "  -W, --write-state-file=STRING Filename to save the state to",
   "  -T, --write-state-time=DOUBLE Time to save the state",
-  "  -R, --read-state-file[=STRING]\n                                Filename to read the state from\n                                  (default=`singleCell.data')",
+  "  -R, --read-state-file=STRING  Filename to read the state from",
   "  -n, --s1-count=INT            Number of s1 stimulii  (default=`1')",
   "  -b, --s1-bcl=DOUBLE           Basic cycle length  (default=`1000')",
   "  -f, --s1-offset=DOUBLE        Time to start s1 stimulii  (default=`0')",
@@ -104,10 +104,10 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->output_dt_arg = 1;
   args_info->output_dt_orig = NULL;
   args_info->duration_orig = NULL;
-  args_info->write_state_file_arg = gengetopt_strdup ("singleCell.data");
+  args_info->write_state_file_arg = NULL;
   args_info->write_state_file_orig = NULL;
   args_info->write_state_time_orig = NULL;
-  args_info->read_state_file_arg = gengetopt_strdup ("singleCell.data");
+  args_info->read_state_file_arg = NULL;
   args_info->read_state_file_orig = NULL;
   args_info->s1_count_arg = 1;
   args_info->s1_count_orig = NULL;
@@ -927,9 +927,9 @@ cmdline_parser_internal (
         { "dt",	1, NULL, 'h' },
         { "output-dt",	1, NULL, 'p' },
         { "duration",	1, NULL, 'd' },
-        { "write-state-file",	2, NULL, 'W' },
+        { "write-state-file",	1, NULL, 'W' },
         { "write-state-time",	1, NULL, 'T' },
-        { "read-state-file",	2, NULL, 'R' },
+        { "read-state-file",	1, NULL, 'R' },
         { "s1-count",	1, NULL, 'n' },
         { "s1-bcl",	1, NULL, 'b' },
         { "s1-offset",	1, NULL, 'f' },
@@ -939,7 +939,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "Vo:h:p:d:W::T:R::n:b:f:s:a:t:", long_options, &option_index);
+      c = getopt_long (argc, argv, "Vo:h:p:d:W:T:R:n:b:f:s:a:t:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1003,7 +1003,7 @@ cmdline_parser_internal (
         
           if (update_arg( (void *)&(args_info->write_state_file_arg), 
                &(args_info->write_state_file_orig), &(args_info->write_state_file_given),
-              &(local_args_info.write_state_file_given), optarg, 0, "singleCell.data", ARG_STRING,
+              &(local_args_info.write_state_file_given), optarg, 0, 0, ARG_STRING,
               check_ambiguity, override, 0, 0,
               "write-state-file", 'W',
               additional_error))
@@ -1027,7 +1027,7 @@ cmdline_parser_internal (
         
           if (update_arg( (void *)&(args_info->read_state_file_arg), 
                &(args_info->read_state_file_orig), &(args_info->read_state_file_given),
-              &(local_args_info.read_state_file_given), optarg, 0, "singleCell.data", ARG_STRING,
+              &(local_args_info.read_state_file_given), optarg, 0, 0, ARG_STRING,
               check_ambiguity, override, 0, 0,
               "read-state-file", 'R',
               additional_error))

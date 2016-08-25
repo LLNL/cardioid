@@ -51,13 +51,13 @@ struct gengetopt_args_info
   double duration_arg;	/**< @brief Duration of the simulation.  */
   char * duration_orig;	/**< @brief Duration of the simulation original value given at command line.  */
   const char *duration_help; /**< @brief Duration of the simulation help description.  */
-  char * write_state_file_arg;	/**< @brief Filename to save the state to (default='singleCell.data').  */
+  char * write_state_file_arg;	/**< @brief Filename to save the state to.  */
   char * write_state_file_orig;	/**< @brief Filename to save the state to original value given at command line.  */
   const char *write_state_file_help; /**< @brief Filename to save the state to help description.  */
   double write_state_time_arg;	/**< @brief Time to save the state.  */
   char * write_state_time_orig;	/**< @brief Time to save the state original value given at command line.  */
   const char *write_state_time_help; /**< @brief Time to save the state help description.  */
-  char * read_state_file_arg;	/**< @brief Filename to read the state from (default='singleCell.data').  */
+  char * read_state_file_arg;	/**< @brief Filename to read the state from.  */
   char * read_state_file_orig;	/**< @brief Filename to read the state from original value given at command line.  */
   const char *read_state_file_help; /**< @brief Filename to read the state from help description.  */
   int s1_count_arg;	/**< @brief Number of s1 stimulii (default='1').  */
