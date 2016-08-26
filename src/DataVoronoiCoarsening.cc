@@ -102,7 +102,7 @@ void DataVoronoiCoarsening::writeAverages(const string& filename,
       ss << setw(12)<< right << coarsening_.getCenterGid(color) <<" ";
       ss << setw(7)<< right << avg_valcolors_.nValues(color);
       
-      ss << setprecision(8);
+      ss << setprecision(5) << scientific;
       for(int it2=0;it2<times_.size();++it2)
       {
          ss<< " " << setw(12)<< color_avg[it2];
