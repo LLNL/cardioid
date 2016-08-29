@@ -1,0 +1,98 @@
+// Notes Default allows default values for RA_SR, LA_SR, RA_AF, LA_AF cells using the form <RA_SRValue>:<LA_SRValue>:<RA_AFValue>:<LA_AFValue>.
+// If only one value is specifed ie <value> the types will have the same value.  The form <w>*<x>*<y>*<z>
+// allow expressing the x, y and z values in terms of a scaling of the w values.
+//Model    type    Component    variable    Default    Units
+Grandi    PSTATE    Voltage    Vm    -87.84    mV	
+Grandi    PSTATE    Voltage    dVm    0       mV/ms
+Grandi    PSTATE    Voltage    iStim    0     mV/ms
+
+Grandi    PSTATE    Concent    Csqnb    1.25    mM
+Grandi    PSTATE    Concent    NaBj    3.5    mM
+Grandi    PSTATE    Concent    NaBsl    0.8    mM
+Grandi    PSTATE    Concent    Naj    9.136    mM
+Grandi    PSTATE    Concent    Nasl    9.136    mM
+Grandi    PSTATE    Concent    Nai    9.136    mM
+Grandi    PSTATE    Concent    Ki    120.0    mM
+Grandi    PSTATE    Concent    Casr    0.01    mM
+Grandi    PSTATE    Concent    Caj    1.7e-4    mM
+Grandi    PSTATE    Concent    Casl    1.0e-4    mM
+Grandi    PSTATE    Concent    Cai    1.0e-4    mM
+
+Grandi    PARAMETER    Fluxes    AF    0:0:1:1    1
+Grandi    PARAMETER    Fluxes    ks    25.0    1/ms
+Grandi    PARAMETER    Fluxes    Vmax_SRCaP    5.3114e-3    mM/ms
+Grandi    PARAMETER    Fluxes    Vmax_leak    5.348e-6    mM/ms
+Grandi    PSTATE    Fluxes    RyRr    1.0    1
+Grandi    PSTATE    Fluxes    RyRo    0.0    1
+Grandi    PSTATE    Fluxes    RyRi    0.0    1
+Grandi    PSTATE    Fluxes    TnCL    0.01    1		  
+Grandi    PSTATE    Fluxes    TnCHc    0.1    1
+Grandi    PSTATE    Fluxes    TnCHm    0.01    1	       
+Grandi    PSTATE    Fluxes    CaM    3.0e-4    1
+Grandi    PSTATE    Fluxes    Myc    1.3e-3    1
+Grandi    PSTATE    Fluxes    Mym    0.14    1
+Grandi    PSTATE    Fluxes    SRB    2.0e-3    1
+Grandi    PSTATE    Fluxes    SLLj    0.01    1
+Grandi    PSTATE    Fluxes    SLLsl    0.1    1
+Grandi    PSTATE    Fluxes    SLHj    7.3e-3    1
+Grandi    PSTATE    Fluxes    SLHsl    7.3e-2    1
+
+Grandi    PARAMETER    ICa    AF    0:0:1:1    1
+Grandi    PARAMETER    ICa    pCa    2.7e-4    cm/s
+Grandi    PARAMETER    ICa    pNa    0.75e-8    cm/s
+Grandi    PARAMETER    ICa    pK    1.35e-7    cm/s
+Grandi    PSTATE    ICa    d    0.0    1
+Grandi    PSTATE    ICa    f    1.0    1
+Grandi    PSTATE    ICa    fcaBj    0.025    1
+Grandi    PSTATE    ICa    fcaBsl    0.015    1
+
+Grandi    PARAMETER    ICab    GCab    6.0643e-4    mS/uF
+
+Grandi    PARAMETER    IClCa    GClCa    0.0548    mS/uF
+
+Grandi    PARAMETER    IClb    GClb    9.0e-3    mS/uF
+
+Grandi    PARAMETER    IK1    AF    0:0:1:1    1
+Grandi    PARAMETER    IK1    GK1    0.0525    mS/uF
+
+Grandi    PARAMETER    IKp    GKp    0.002    mS/uF
+
+Grandi    PARAMETER    IKr    GKr    0.035    mS/uF
+Grandi    PSTATE    IKr    xkr    0.0    1
+
+Grandi    PARAMETER    IKs    AF    0:0:1:1    1
+Grandi    PARAMETER    IKs    GKs    0.0035    mS/uF
+Grandi    PSTATE    IKs    xks    0.0    1
+
+Grandi    PARAMETER    IKur    RA    1:0:1:0    1
+Grandi    PARAMETER    IKur    AF    0:0:1:1    1
+Grandi    PARAMETER    IKur    GKur    0.045    mS/uF
+Grandi    PSTATE    IKur    xkur    0.0    1
+Grandi    PSTATE    IKur    ykur    1.0    1
+
+Grandi    PARAMETER    INCX    AF    0:0:1:1    1
+Grandi    PARAMETER    INCX    GNCX    3.15    uA/uF
+
+Grandi    PARAMETER    INa    AF    0:0:1:1    1
+Grandi    PARAMETER    INa    GNa    23.0    mS/mF
+Grandi    PSTATE    INa    m    0.0    1
+Grandi    PSTATE    INa    h    1.0    1
+Grandi    PSTATE    INa    j    1.0    1
+
+Grandi    PARAMETER    INab    GNab    0.597e-3    mS/uF
+
+Grandi    PARAMETER    INaL    AF    0:0:1:1    1
+Grandi    PARAMETER    INaL    GNaL    0.0025    mS/mF
+Grandi    PSTATE    INaL    mL    0.0    1
+Grandi    PSTATE    INaL    hL    1.0    1
+
+Grandi    PARAMETER    INaK    IbarNaK    1.26    mV/mM
+
+Grandi    PARAMETER    IpCa    IbarSLCaP    0.0471    mS/uF
+
+Grandi    PARAMETER    Ito    AF    0:0:1:1    1
+Grandi    PARAMETER    Ito    Gto    0.165    mS/uF
+Grandi    PSTATE    Ito    xtof    0.0    1
+Grandi    PSTATE    Ito    ytof    1.0    1
+
+Grandi    PARAMETER    INull    GrI    0.0    mS/uF
