@@ -99,6 +99,9 @@ endif
 ifeq ($(HOSTNAME),sierra)
   ARCHGUESS = peloton
 endif
+ifeq ($(HOSTNAME),prince)
+  ARCHGUESS = osx
+endif
 
 ifndef ARCHGUESS
    $(error Unrecognized build host.  Edit Makefile.arch)

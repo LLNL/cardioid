@@ -98,12 +98,10 @@ OHaraRudy_INaCai.h OHaraRudy_IKs.h OHaraRudy_IKr.h OHaraRudy_IKb.h OHaraRudy_IK1
 OHaraRudy_Fluxes.h OHaraRudy_Concent.h OHaraRudy_CaMKtrap.h OHaraRudy_INaFast.h OHaraRudyMod_INaFast.h RTYSC14A_IKr.h \
 MYBGBKC_INa.h null_INull.h
 
-Grandi_CONSTRUCTED_INCLUDES=\
-Grandi.h           Grandi_ICa.h       Grandi_IKp.h       Grandi_INa.h       Grandi_IpCa.h \
-GrandiInit.h       Grandi_ICab.h      Grandi_IKr.h       Grandi_INaK.h      Grandi_Ito.h \
-GrandiNameString.h Grandi_IClCa.h     Grandi_IKs.h       Grandi_INaL.h      Grandi_Voltage.h \
-Grandi_Concent.h   Grandi_IClb.h      Grandi_IKur.h      Grandi_INab.h \
-Grandi_Fluxes.h    Grandi_IK1.h       Grandi_INCX.h      Grandi_INull.h
+GRANDI_CONSTRUCTED_INCLUDES=\
+Grandi_ICa.h Grandi_IKp.h Grandi_INa.h Grandi_IpCa.h Grandi_ICab.h Grandi_IKr.h Grandi_INaK.h Grandi_Ito.h \
+Grandi_IClCa.h Grandi_IKs.h Grandi_INaL.h Grandi_Voltage.h Grandi_Concent.h Grandi_IClb.h Grandi_IKur.h Grandi_INab.h \
+Grandi_Fluxes.h Grandi_IK1.h Grandi_INCX.h Grandi_INull.h
 
 DDCMD_FILES = \
 	codata.h \
@@ -242,6 +240,11 @@ $(BINDIR)/$(EXENAME): $(CARDIOIDOBJS) Version.cc
 $(CONSTRUCTED_INCLUDES) :  mkCompInclude mkCompInclude.awk 
 	mkCompInclude $@
 
+#Grandi.cc : Grandi.h  $(GRANDI_CONSTRUCTED_INCLUDES) mkCompInclude_Grandi   mkCompInclude_Grandi.awk
+
+$(GRANDI_CONSTRUCTED_INCLUDES) :  mkCompInclude_Grandi mkCompInclude_Grandi.awk 
+	mkCompInclude_Grandi $@
+
 testLoadBalancer:
 	@$(MAKE) --no-print-directory makedirs testLoadBalancer-target \
 	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH) \
@@ -296,6 +299,9 @@ makedirs:
 # that are likely to be different on other platforms.
  depend :
 	./mkCompInclude $(CONSTRUCTED_INCLUDES)
+	makedepend -f .depend_$(BUILD_SUFFIX) -p'$(OBJDIR)/' -o '.o' -Y -- $(CFLAGS) $(CXXFLAGS) -- *.cc *.c *.hh *.h 2> /dev/null
+
+	./mkCompInclude_Grandi $(GRANDI_CONSTRUCTED_INCLUDES)
 	makedepend -f .depend_$(BUILD_SUFFIX) -p'$(OBJDIR)/' -o '.o' -Y -- $(CFLAGS) $(CXXFLAGS) -- *.cc *.c *.hh *.h 2> /dev/null
 
 .depend_$(BUILD_SUFFIX): $(CARDIOIDSRC)
