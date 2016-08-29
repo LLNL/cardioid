@@ -47,7 +47,7 @@ namespace  scanReaction
          string defaultValue ="OHaraRudy"; 
          if (name == "INaFast")  defaultValue = "OHaraRudyMod"; 
          objectGet(obj,name,value,defaultValue); 
-         printf("name=%s value=%s\n",name.c_str(),value.c_str());  fflush(stdout); 
+         //printf("name=%s value=%s\n",name.c_str(),value.c_str());  fflush(stdout); 
          parms.currentNames.push_back(name); 
          parms.currentModels.push_back(value); 
       }
