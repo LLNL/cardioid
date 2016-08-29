@@ -11,9 +11,7 @@
 #define SQ(x)   ((x)*(x))
 #define CUBE(x)   ((x)*(x)*(x))
 
-static double AF=0.0;
 static double ISO=0.0;
-static double RA=0.0;
 
 //Physical Constants 
 //

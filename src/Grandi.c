@@ -4,11 +4,17 @@
 #include "Grandi.h"
 #include "GrandiInit.h"
 
-static char *currentNames_[]={"INa","INaL","INab","INaK","IKr","IKs","IKur","IKp","Ito","IK1","IClCa","IClb","ICa","INCX","IpCa",""};
+static double amp = -80.0;
+static double duration = 1.0;//0.5;
+static double CL = 1000.0;//500.0;
+static int beats = 100;
+static int show=5;
 
-static char *currentModels_[]={"Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi",""};
+static char *currentNames_[]={"INa","INaL","INab","INaK","IKr","IKs","IKur","IKp","Ito","IK1","IClCa","IClb","ICa","INCX","IpCa","ICab",""};
 
-static int nCurrents_ = 15; //actual number, not counting the null case 
+static char *currentModels_[]={"Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi","Grandi",""};
+
+static int nCurrents_ = 16; //actual number, not counting the null case 
 static int nComp_ ; 
 static int * privateStateOffset_=0;; 
 static int * privateParmsOffset_=0;; 
@@ -93,6 +99,7 @@ void GrandiDefineComps()
       if ( strcmp(name,"Grandi_ICa")     ==0) cInit[k++] = Grandi_ICaInit; 
       if ( strcmp(name,"Grandi_INCX")    ==0) cInit[k++] = Grandi_INCXInit; 
       if ( strcmp(name,"Grandi_IpCa")    ==0) cInit[k++] = Grandi_IpCaInit; 
+      if ( strcmp(name,"Grandi_ICab")    ==0) cInit[k++] = Grandi_ICabInit; 
    }
    cInit[k++] = Grandi_FluxesInit;      // must be initialize after ICa
    
@@ -228,7 +235,6 @@ void  GrandiCalc()
    for (int ii=0;ii<nCells_;ii++) 
    {
       double *state = state_+ii*nState_;
-      //CONCENTRATIONS *concentrations     = (CONCENTRATIONS *)(state_+ii*nState_+privateStateOffset_[1]); 
       CONCENTRATIONS *concentrations     = (CONCENTRATIONS *)(state+privateStateOffset_[1]);
       double *cellParms = cellParms_[ii]; 
 
@@ -242,17 +248,10 @@ void  GrandiCalc()
 
       for (int i=2;i<=(nComp_-1);i++) 
       {
-         //info_[i].func(cellParms+privateParmsOffset_[i], state_, privateStateOffset_[ i], derived_+ii, dt_);
          info_[i].func(cellParms+privateParmsOffset_[i], state, privateStateOffset_[ i], derived_+ii, dt_);
       }
-      //info_[1].func(cellParms+privateParmsOffset_[0], state_, privateStateOffset_[1], derived_+ii, dt_);
       info_[1].func(cellParms+privateParmsOffset_[0], state, privateStateOffset_[1], derived_+ii, dt_);
-/*
-      double *I =  (double *)&(derived_[ii].I.NaCai); 
-      for (int i=0;i<nCurrents_;i++)
-         printf("%2d %10s %20.12f\n",i,currentNames_[i],I[i]); 
-         
-*/
+      
    }
 }
 #ifdef SA
@@ -326,8 +325,20 @@ void doIO(int loop, double t, double *state, double *dState)
 {
          printf("%10.3f %24.15f\n",t,state[0]); 
 
+      int ii=0;
+      CONCENTRATIONS *concentrations = (CONCENTRATIONS *)(state_+ii*nState_+privateStateOffset_[1]); 
+      double Nai = concentrations->Nai;
+      double Cai = concentrations->Cai;
+
+      DERIVED *derived = (DERIVED *)(state_+ii*nState_+privateStateOffset_[1]); 
+      CURRENTS *I = &(derived->I);
+      FLUXES J = derived->J;
+      
 	 output = fopen("output.txt","a");//open the output file for appending new data
-         fprintf(output,"%-10.3f\t%-24.15f\n",t,state[0]); 
+         fprintf(output,"%-10.3f\t%-24.15f\t%-24.15f\n",t,state[0],Cai); 
+         //fprintf(output,"%-10.3f\t%-24.15f\n",t,Nai);
+         //fprintf(output,"%-10.3f\t%-24.15f\n",t,derived->I.Na_junc+derived->I.Na_sl);
+         //fprintf(output,"%-10.3f\t%-24.15f\t%-24.15f\t%-24.15f\n",t,J.rel,J.up,J.leak);
 	 fclose(output);
 
          /*for (int i=0;i<nState_;i++) 
@@ -403,39 +414,53 @@ int main(int iargc, char *argv[])
    if (parms.initialConditions != NULL)    readInitialConditions(parms.initialConditions); 
    VOLTAGE *voltage0 = (VOLTAGE *)(state_+0*nState_) ;
    
-   double amp = -80.0;
    if (parms.fixVmFlag) 
    {
       voltage0->Vm=parms.fixVm; 
       amp = 0.0 ; 
    }
    double state[nState_*nCells_]; 
-   for ( ;loop_< parms.loopMax;loop_++) 
-   {
-      double iStim =0; 
-      if (0<=fmod(time_,1000.0) && fmod(time_,1000.0)<0.5 )iStim = amp; 
 
-      for (int i=0;i<nState_*nCells_;i++) state[i] = state_[i]; 
-      for (int i=0;i<nCells_;i++)
-      {
-         VOLTAGE *voltage = (VOLTAGE *)(state_+i*nState_) ;
-         voltage->iStim=iStim;
-         voltage->Vm += (voltage->dVm-iStim)*dt;
-         if (parms.fixVmFlag) voltage->Vm = parms.fixVm; 
-      }
-      GrandiCalc();
-      double time = time_-parms.loopMax*dt+1000; 
-      if (loop_%parms.printInterval==0 && time >=-0.0000000001) 
-      {
-         doIO(loop_,time,state,dState_);
-         checkpoint(loop_,time_,nCells_,nState_,state,dState_); 
-      }
-      time_ += dt; 
+   for (int beat=0; beat<beats; beat++)
+   {
+     loop_=0;
+
+     for ( ;loop_< parms.loopMax;loop_++) 
+       {
+	  double iStim =0; 
+
+	  //if (0<=fmod(time_,CL*(beat)) && fmod(time_,CL*(beat))<duration )iStim = amp; 
+
+	  if ((time_>(beat*CL) && time_<(duration+beat*CL-dt)))
+		  {
+		  iStim=amp;
+		  }    
+
+	  for (int i=0;i<nState_*nCells_;i++) state[i] = state_[i]; 
+	  for (int i=0;i<nCells_;i++)
+	  {
+	     VOLTAGE *voltage = (VOLTAGE *)(state_+i*nState_) ;
+	     voltage->iStim=iStim;
+	     voltage->Vm += (voltage->dVm-iStim)*dt;
+	     if (parms.fixVmFlag) voltage->Vm = parms.fixVm; 
+	  }
+	  GrandiCalc();
+	  double time = time_-parms.loopMax*dt+CL; 
+	  if ( beat>=(beats-show))
+	    {
+	       if (loop_%parms.printInterval==0 && time >=-0.0000000001) 
+	       {
+		  doIO(loop_,time_-CL*(beats-show),state,dState_);
+		  checkpoint(loop_,time_,nCells_,nState_,state,dState_); 
+	       }
+	     }
+	  time_ += dt; 
+       }
    }
-   dt = 0.0; 
+   /*dt = 0.0; 
    GrandiCalc();
-   double   time = time_-parms.loopMax*dt+1000; 
-   if (loop_%parms.printInterval==0) doIO(loop_,time_,state,dState_); 
+   double   time = time_-parms.loopMax*dt+CL; 
+   if (loop_%parms.printInterval==0) doIO(loop_,time_,state,dState_);*/
    //   if (loop > 1000) checkpoint(loop_,time_,nCells_,nState_,state_,dState_); 
    //   for (int i=0;i<nParms_;i++) fprintf(initData,"%2d %16s  %22.15e\n",i,typeName_[i],cellParms_[0][i]);  
 }
