@@ -14,10 +14,10 @@ HandleMap  Grandi_Reaction::handleMap_ ;
 Grandi_Reaction::Grandi_Reaction(const Anatomy& anatomy,Grandi_Parms &parms)
 {
    ttType_.resize(256, -1); 
-   ttType_[100] = RA_SR;
-   ttType_[101] = LA_SR;
-   ttType_[102] = RA_AF;
-   ttType_[103] = LA_AF;
+   ttType_[100] = RA_AF;
+   ttType_[101] = LA_AF;
+   ttType_[102] = RA_SR;
+   ttType_[103] = LA_SR;
    indexS_=-2; 
    nCells_ = anatomy.nLocal(); 
    int cellType[nCells_]; 
@@ -106,5 +106,3 @@ void Grandi_Reaction::getValue(int iCell, const vector<int>& handle, vector<doub
    for (int ii=0;ii<handle.size();ii++) value[ii]= GrandiGetValue(iCell,handle[ii]); 
 
 }
-
-
