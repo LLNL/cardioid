@@ -49,7 +49,7 @@ void Grandi_FluxesFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *
    ////// Jrel
 
    double Kmf=(2.5-1.25*ISO)*0.246e-3;          // [mM] default
-   double koCa=10.0+20.0*AF+10.0*ISO*(1.0-AF);               // [mM^-2 1/ms]   //default 10   modified 20
+   double koCa=10.0+20.0*cP->AF+10.0*ISO*(1.0-cP->AF);               // [mM^-2 1/ms]   //default 10   modified 20
 
    double kCaSR=MaxSR - (MaxSR-MinSR)/(1.0+pow(ec50SR/Casr,2.5));
    double koSRCa=koCa/kCaSR;
@@ -64,11 +64,13 @@ void Grandi_FluxesFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *
 
    ////// JSERCA
 
-   derived->J.up=pow(Q10SRCaP,Qpow)*cP->Vmax_SRCaP*(pow(Cai/Kmf,hillSRCaP)-pow(Casr/Kmr,hillSRCaP))/(1.0+pow(Cai/Kmf,hillSRCaP)+pow(Casr/Kmr,hillSRCaP));
+   double Vmax_SRCaP_use=cP->Vmax_SRCaP*(1.0-0.5*cP->AF);
+   
+   derived->J.up=pow(Q10SRCaP,Qpow)*Vmax_SRCaP_use*(pow(Cai/Kmf,hillSRCaP)-pow(Casr/Kmr,hillSRCaP))/(1.0+pow(Cai/Kmf,hillSRCaP)+pow(Casr/Kmr,hillSRCaP));
 
    ////// Jleak
 
-   double phi=(1.0+0.25*AF);
+   double phi=(1.0+0.25*cP->AF);
    derived->J.leak=cP->Vmax_leak*phi*(Casr-Caj);           //   [mM/ms]
 
    ////// JBuffers

@@ -12,9 +12,9 @@ void Grandi_ItoFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *der
 
    double xtof = pState->xtof;
    double ytof = pState->ytof; 
-   double phi=(1.0-0.7*AF);
-   
-   derived->I.to=cP->Gto*xtof*ytof*(v-EK);
+   double phi=(1.0-0.7*cP->AF);
+
+   derived->I.to=phi*cP->Gto*xtof*ytof*(v-EK);
 
    double xtofss=1.0/(1.0+exp(-(v+1.0)/11.0 ));
    double tauxtof=3.5*exp(-(pow(v/30.0,2.0)))+1.5;

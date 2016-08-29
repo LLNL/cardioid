@@ -14,7 +14,7 @@ void Grandi_IKsFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *der
    double EKs = derived->EKs; 
    double xks = pState->xks; 
 
-   double phi=(1.0+1.0*AF+2.0*ISO);
+   double phi=(1.0+1.0*cP->AF+2.0*ISO);
    double Fsl=1.0-Fjunc;
 
    derived->I.Ks_junc=Fjunc*cP->GKs*phi*xks*xks*(v-EKs);

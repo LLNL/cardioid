@@ -54,14 +54,22 @@ void Grandi_ConcentFunc(CELLPARMS *parmsPtr, double *state, int pOffset, DERIVED
    //printf("Itot=%20.12f\t INa_tot_junc=%20.12f\t INa_tot_sl=%20.12f\t ICa_tot_junc=%20.12f\t ICa_tot_sl=%20.12f\t IK_tot=%20.12f\t ICl_tot=%20.12f\t\n",Itot,INa_tot_junc,INa_tot_sl,ICa_tot_junc,ICa_tot_sl,IK_tot,ICl_tot);
 
 
-   double dCsqnb=kon_csqn*Casr*(Bmax_Csqn-Csqnb)-koff_csqn*Csqnb;       // Csqn      [mM/ms]
+   double dCsqnb=0;//kon_csqn*Casr*(Bmax_Csqn-Csqnb)-koff_csqn*Csqnb;       // Csqn      [mM/ms]
+   double KmCsqnb=koff_csqn/kon_csqn;
+   double Buff_Csqnb=1.0/(1.0+Bmax_Csqn*KmCsqnb/pow(KmCsqnb+Casr,2.0));
+
+   //printf("Buff_Csqnb=%20.12f\n",Buff_Csqnb);
+
    double dNaBj=kon_na*Naj*(Bmax_Naj-NaBj)-koff_na*NaBj;        // NaBj      [mM/ms]
    double dNaBsl=kon_na*Nasl*(Bmax_Nasl-NaBsl)-koff_na*NaBsl;       // NaBsl     [mM/ms]
    double dNaj=-INa_tot_junc*Cmem/(Vjunc*F)+Jna_juncsl/Vjunc*(Nasl-Naj)-dNaBj;
    double dNasl=-INa_tot_sl*Cmem/(Vsl*F)+Jna_juncsl/Vsl*(Naj-Nasl)+Jna_slmyo/Vsl*(Nai-Nasl)-dNaBsl;
    double dNai=Jna_slmyo/Vmyo*(Nasl-Nai);             // [mM/msec]
    double dKi=-IK_tot*Cmem*(Vmyo*F);
-   double dCasr=J.up-(J.leak*Vmyo/Vsr+J.rel)-dCsqnb;         // Casr     [mM/ms] //Ratio 3 leak current
+
+   //double dCasr=J.up-(J.leak*Vmyo/Vsr+J.rel)-dCsqnb;         // Casr     [mM/ms] //Ratio 3 leak current
+   double dCasr=Buff_Csqnb*( J.up-(J.leak*Vmyo/Vsr+J.rel) );
+
    double dCaj=-ICa_tot_junc*Cmem/(Vjunc*2*F)+Jca_juncsl/Vjunc*(Casl-Caj)-J.CaB_junc+(J.rel)*Vsr/Vjunc+J.leak*Vmyo/Vjunc;  // Ca_j
    double dCasl=-ICa_tot_sl*Cmem/(Vsl*2*F)+Jca_juncsl/Vsl*(Caj-Casl)+ Jca_slmyo/Vsl*(Cai-Casl)-J.CaB_sl;   // Ca_sl
    double dCai=-J.up*Vsr/Vmyo-J.CaB_cytosol +Jca_slmyo/Vmyo*(Casl-Cai);
@@ -75,6 +83,7 @@ void Grandi_ConcentFunc(CELLPARMS *parmsPtr, double *state, int pOffset, DERIVED
 
    ENDCODE()
 
+     /*
    pState->Csqnb  *= exp(dt*dCsqnb/Csqnb);
    pState->NaBj  *= exp(dt*dNaBj/NaBj);
    pState->NaBsl  *= exp(dt*dNaBsl/NaBsl);
@@ -86,4 +95,17 @@ void Grandi_ConcentFunc(CELLPARMS *parmsPtr, double *state, int pOffset, DERIVED
    pState->Caj  *= exp(dt*dCaj/Caj);
    pState->Casl  *= exp(dt*dCasl/Casl); 
    pState->Cai  *= exp(dt*dCai/Cai);
+     */
+
+   pState->Csqnb  += dt*dCsqnb;
+   pState->NaBj  += dt*dNaBj;
+   pState->NaBsl  += dt*dNaBsl;
+   pState->Naj  += dt*dNaj;
+   pState->Nasl  += dt*dNasl;
+   pState->Nai  += dt*dNai;
+   pState->Ki  += dt*dKi;
+   pState->Casr  += dt*dCasr;
+   pState->Caj  += dt*dCaj;
+   pState->Casl  += dt*dCasl; 
+   pState->Cai  += dt*dCai;
 }

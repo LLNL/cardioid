@@ -6,6 +6,8 @@ void Grandi_ICaFunc(CELLPARMS *parmsPtr, double  *cell, int pOffset, DERIVED *de
 {
    VOLTAGE *voltage = (VOLTAGE *)cell; 
    CONCENTRATIONS  *concentrations = (CONCENTRATIONS*) (cell + CONCENTRATIONS_OFFSET); 
+   PSTATE *pState = (PSTATE *)(cell+pOffset) ; 
+   PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
    double v = voltage->Vm; 
    double Caj=concentrations->Caj;
    double Casl=concentrations->Casl;
@@ -13,11 +15,8 @@ void Grandi_ICaFunc(CELLPARMS *parmsPtr, double  *cell, int pOffset, DERIVED *de
    double Nasl=concentrations->Nasl;
    double Ki=concentrations->Ki;
 
-   double phi=(1.0+0.5*ISO)*(1.0-0.5*AF);
+   double phi=(1.0+0.5*ISO)*(1.0-0.5*cP->AF);
    double Fsl_CaL=1.0-Fjunc_CaL;
-
-   PSTATE *pState = (PSTATE *)(cell+pOffset) ; 
-   PARAMETERS *cP  = (PARAMETERS *)parmsPtr; 
    
    double d=pState->d;
    double f=pState->f;
@@ -29,11 +28,11 @@ void Grandi_ICaFunc(CELLPARMS *parmsPtr, double  *cell, int pOffset, DERIVED *de
    double exVFRT = exp(VFRT);
    double ex2VFRT = exp(2.0*VFRT);
    
-   double ibarca_j=cP->pCa*4.0*VFFRT*(0.341*Caj*ex2VFRT-0.341*Cao)/(ex2VFRT-1.0);
-   double ibarca_sl=cP->pCa*4.0*VFFRT*(0.341*Casl*ex2VFRT-0.341*Cao)/(ex2VFRT-1.0);
-   double ibark=cP->pK*VFFRT*(0.75*Ki*exVFRT-0.75*Ko) /(exVFRT-1.0);
-   double ibarna_j=cP->pNa*VFFRT*(0.75*Naj*exVFRT-0.75*Nao)/(exVFRT-1.0);
-   double ibarna_sl=cP->pNa*VFFRT*(0.75*Nasl*exVFRT-0.75*Nao)/(exVFRT-1.0);
+   double ibarca_j=phi*cP->pCa*4.0*VFFRT*(0.341*Caj*ex2VFRT-0.341*Cao)/(ex2VFRT-1.0);
+   double ibarca_sl=phi*cP->pCa*4.0*VFFRT*(0.341*Casl*ex2VFRT-0.341*Cao)/(ex2VFRT-1.0);
+   double ibark=phi*cP->pK*VFFRT*(0.75*Ki*exVFRT-0.75*Ko) /(exVFRT-1.0);
+   double ibarna_j=phi*cP->pNa*VFFRT*(0.75*Naj*exVFRT-0.75*Nao)/(exVFRT-1.0);
+   double ibarna_sl=phi*cP->pNa*VFFRT*(0.75*Nasl*exVFRT-0.75*Nao)/(exVFRT-1.0);
 
    double Q10CaL=1.8;
    double Qpow=(T-310.0)/10.0;

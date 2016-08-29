@@ -15,7 +15,7 @@ void Grandi_IKurFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *de
    double xkur = pState->xkur; 
    double ykur = pState->ykur; 
 
-   double phi=(1.0-0.5*AF)*(1.0+2.0*ISO)*(1.0+0.2*RA);
+   double phi=(1.0-0.5*cP->AF)*(1.0+2.0*ISO)*(1.0+0.2*cP->RA);
 
    derived->I.Kur=cP->GKur*phi*xkur*ykur*(v-EK);
 

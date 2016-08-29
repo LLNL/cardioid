@@ -34,7 +34,7 @@ void Grandi_INCXFunc(CELLPARMS *parmsPtr, double *cell, int pOffset, DERIVED *de
    double s2_sl=exp((nu-1.0)*VFRT)*Nao*Nao*Nao*Casl;
    double s3_sl=KmCai*Nao*Nao*Nao*(1.0+pow(Nasl/KmNai,3.0))+KmNao*KmNao*KmNao*Casl*(1.0+Casl/KmCai)+KmCao*Nasl*Nasl*Nasl+Nasl*Nasl*Nasl*Cao+Nao*Nao*Nao*Casl;
 
-   double phi = (1.0+0.4*AF);
+   double phi = (1.0+0.4*cP->AF);
    double Fsl=1.0-Fjunc;
 
    derived->I.NCX_junc=Fjunc*cP->GNCX*pow(Q10NCX,Qpow)*Ka_junc*(s1_junc-s2_junc)/s3_junc/(1.0+ksat*exp((nu-1.0)*VFRT));

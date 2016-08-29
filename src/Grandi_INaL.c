@@ -14,8 +14,10 @@ void Grandi_INaLFunc(CELLPARMS *parmsPtr, double *state, int pOffset, DERIVED *d
    double mL=pState->mL;
    double hL=pState->hL; 
 
-   derived->I.NaL_junc=Fjunc*cP->GNaL*mL*mL*mL*hL*(v-ENa_junc);
-   derived->I.NaL_sl=Fsl*cP->GNaL*mL*mL*mL*hL*(v-ENa_sl);
+   double GNaL_use=cP->GNaL*(1.0-cP->AF);
+
+   derived->I.NaL_junc=Fjunc*GNaL_use*mL*mL*mL*hL*(v-ENa_junc);
+   derived->I.NaL_sl=Fsl*GNaL_use*mL*mL*mL*hL*(v-ENa_sl);
 
    double aml=0.32*(v+47.13)/(1.0-exp(-0.1*(v+47.13)));
    double bml=0.08*exp(-v/11.0);

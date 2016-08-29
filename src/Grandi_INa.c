@@ -16,8 +16,10 @@ void Grandi_INaFunc(CELLPARMS *parmsPtr, double *state, int pOffset, DERIVED *de
       double h=pState->h; 
       double j=pState->j; 
 
-      derived->I.Na_junc=Fjunc*cP->GNa*(v-ENa_junc)*m*m*m*h*j; 
-      derived->I.Na_sl=Fsl*cP->GNa*(v-ENa_sl)*m*m*m*h*j; 
+      double GNa_use=cP->GNa*(1.0-0.1*cP->AF);
+
+      derived->I.Na_junc=Fjunc*GNa_use*(v-ENa_junc)*m*m*m*h*j; 
+      derived->I.Na_sl=Fsl*GNa_use*(v-ENa_sl)*m*m*m*h*j; 
 
       double mss=1.0 / (pow(1.0 + exp( -(56.86 + v) / 9.03 ),2.0));
       double taum=0.1292 * exp(-pow((v+45.79)/15.54,2.0)) + 0.06487 * exp(-pow((v-4.823)/51.12,2.0));
