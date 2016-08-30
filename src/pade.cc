@@ -53,7 +53,7 @@ static void padeError(int l,int m,double *a,int n,double *x,double *y,double *er
    *errMax = eMax; 
    *errRMS = sqrt(err2/n); 
 }
-int  findRationalApprox(int l, int m, int n, double *x, double *y, double *a )
+void  findRationalApprox(int l, int m, int n, double *x, double *y, double *a )
 {
    int k = m+l-1 ; 
    double Abuffer[(n+k)*k]; 
