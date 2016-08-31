@@ -313,7 +313,7 @@ void TT06Dev_Reaction::mkCellTypeVector_(Anatomy& anatomy, TT06Dev_ReactionParms
       cellTypeVector_[ii] = cellType; 
       nCellsOfType_[cellType]++; 
       int s0 = cellTypeParms_[cellType].s_switch;
-      if (s0 != 0) nCell_s0_++; 
+      if (s0 == 0) nCell_s0_++; 
    }
 
    for (unsigned ii=nCells_; ii<nCellBuffer_;ii++) 
@@ -418,8 +418,8 @@ void TT06Dev_Reaction::mkWorkBundles_(TT06Dev_ReactionParms& parms)
       int nCell = workBundle(squadId, nCells_, nSquads , 4, offset);
       int *gateThreadMap; 
       int offsetEq = nEq*squadRank; 
-      if (offset+nCell >= nCell_s0_ )  gateThreadMap = gateThreadMapS0; 
-      else if (  offset <= nCell_s0_ ) gateThreadMap = gateThreadMapS1; 
+      if (offset+nCell <= nCell_s0_ )  gateThreadMap = gateThreadMapS0; 
+      else if (  offset >= nCell_s0_ ) gateThreadMap = gateThreadMapS1; 
       else  
       {
          if (  offsetEq <=  sGateIndex && sGateIndex < offsetEq +nEq) 
