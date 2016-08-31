@@ -411,7 +411,7 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
  double  c_NaCa =  currentScales->NaCa; 
  double  c_pCa  =  currentScales->pCa*cnst.c24; 
  double  c_pK   =  currentScales->pK; 
- double  c_up   = currentScales->leak*cnst.c44;
+ double  c_up   = currentScales->up*cnst.c44;
  double  c_leak = currentScales->leak*cnst.c43;
  double  c_xfer = currentScales->xfer *cnst.c23;
  double  c_rel  = currentScales->rel  *cnst.c40;
