@@ -178,12 +178,9 @@ namespace  scanReaction
       }
       if (parms.fastReaction == -1) 
       {
-         if (fastGate     > -1 || fastNonGate > -1 )  
-         {
-            if (fastGate    ==  -1 )  fastGate   =0; 
-            if (fastNonGate ==  -1 )  fastNonGate=0; 
-            parms.fastReaction = fastGate+256*fastNonGate; 
-         } 
+         if (fastGate    ==  -1 )  fastGate   =0; 
+         if (fastNonGate ==  -1 )  fastNonGate=0; 
+         parms.fastReaction = fastGate+256*fastNonGate; 
       }
       objectGet(obj, "cellTypes", parms.cellTypeNames) ;
       if (parms.cellTypeNames.size() == 0)
