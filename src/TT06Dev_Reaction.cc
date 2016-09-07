@@ -226,14 +226,35 @@ TT06Dev_Reaction::TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_Reaction
 
    double **gate = &state_[gateOffset]; 
    int eq; 
-   for (eq=0;eq<13;eq++) 
+   for (eq=0;eq<11;eq++)
    {
       gateEqX[eq]  = gateEq[eq];  
-      if (eq < 12) gateX[eq]    = gate[eq];  
-      else gateX[12]    = gate[11];  
+      gateX[eq]    = gate[eq];
       mhuX[eq]     = gateFit[2*eq+0].coef; 
       tauRX[eq]    = gateFit[2*eq+1].coef; 
    }
+   //sGate
+   for (eq=11;eq<14;eq++)
+   {
+      gateEqX[eq]  = gateEq[eq];
+      gateX[eq] = gate[11];
+      switch (eq)
+      {
+        case 11:
+        case 12:
+         mhuX[eq]  = gateFit[2*eq+0].coef;
+         tauRX[eq] = gateFit[2*eq+1].coef;
+         break;
+        case 13:
+         mhuX[eq]  = gateFit[2*11+0].coef;
+         tauRX[eq] = gateFit[2*11+1].coef;
+         break;
+        default:
+         assert(0 && "Code should never get here, did you add a gate?");
+         break;
+      }
+   }
+
    mkWorkBundles_(parms);
 }
 void TT06Dev_Reaction::scaleCurrents(vector <double> currentScales)
