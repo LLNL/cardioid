@@ -12,10 +12,20 @@ dur = 1		# object.data parameter stimulus duration in ms
 per = 1000	# object.data parameter stimulus period in ms
 t0 = 0		# object.data parameter minimum start time of stimulus and simulation
 tf = 100000	# object.data parameter maximum end time of stimulus and simulation
+timeDelay = 0	# do delay stimuli firing based on their location, just fire all at beginning of each heart beat
+num_branches = 3	# number of branches, for example, left and right would be 2 branches
+
 
 # Debug parameters, feel free to alter
 print_debug = 1	# 1 if want to print debugging info. to std out (messier looking), 0 if not print debuggin info. (cleaner looking)
 
+# User defined functions
+def get_ind_first_digit(mystr):
+  ind = 0
+  for i in mystr:
+    if i.isdigit():
+      return ind
+    ind+=1;
 
 # Open Paraview state file (.pvsm file)
 try:
@@ -32,6 +42,10 @@ listen = 0		# trigger for reading the .pvsm file, if set to 1 then program will 
 boxnumlist = []		# list of # of each box stimuli, just the number part, e.g. 0 1 2 etc.
 boxfullnamelist = []	# list of full names of box stimuli, e.g. BoxR0 BoxR1 etc.
 boxidlist = []		# list of box ids, which are assigned by Paraview to identify boxes instead of using the name of boxes.  
+for ii in range(1,num_branches):	# initialize all branches
+  boxnumlist.append([])
+  boxfullnamelist.append([])
+  boxidlist.append([])
 
 for line in f:
 	if line.find('<ProxyCollection name="sources">') != -1:
@@ -45,21 +59,27 @@ for line in f:
 			boxidind1 = line.find('id')
 			boxidind2 = line.find('"',boxidind1+4)
 			boxid = line[boxidind1+4:boxidind2]	# the id of current box stimulus
+			indFirstDigit = get_ind_first_digit(name)
+			print 'Index of first digit in string %s is %d' % (name,indFirstDigit)
+			print 'boxnumlist is ',boxnumlist
 			if name.find('R') != -1:		# is box on left or right Purkinje branch?, store on different rows of boxnumlist array depending on which branch stim. is in
 				boxlistrow = 1
+			elif name.find('S') != -1:
+				boxlistrow = 2
 			else:
 				boxlistrow = 0
 			try:					# do binary search to find index to insert new box name in numerical order
-				nameind = bisect.bisect_right(boxnumlist[boxlistrow],int(name[4:]))
-				boxnumlist[boxlistrow].insert(nameind,int(name[4:]))			# insert box sequential order # (which should be part of full box stim. name) in boxnumlist, keeping list in sequential order by box #
+				nameind = bisect.bisect_right(boxnumlist[boxlistrow],float(name[indFirstDigit:]))
+				boxnumlist[boxlistrow].insert(nameind,float(name[indFirstDigit:]))			# insert box sequential order # (which should be part of full box stim. name) in boxnumlist, keeping list in sequential order by box #
+				print 'boxnumlist is', boxnumlist[boxlistrow]
 				boxfullnamelist[boxlistrow].insert(nameind,name)			# insert box full name in boxfullnamelist, keeping list in sequential order by box #
 				boxidlist[boxlistrow].insert(nameind,boxid)				# insert box id in boxidlist, keeping list in sequential order by box #
 			except IndexError:			# if binary search fails, that means the current row of the list does not exist, must make it and then just append item to it
 				boxnumlist.append([])							# append sublist to boxnumlist
 				boxfullnamelist.append([])						# append sublist to boxfullnamelist
 				boxidlist.append([])							# append sublist to boxidlist
-				nameind = bisect.bisect_right(boxnumlist[boxlistrow],int(name[4:]))	# now can do binary search on newly created sublist
-				boxnumlist[boxlistrow].insert(nameind,int(name[4:]))			# insert box sequential order # (which should be part of full box stim. name) in boxnumlist, keeping list in sequential order by box #
+				nameind = bisect.bisect_right(boxnumlist[boxlistrow],int(name[indFirstDigit:]))	# now can do binary search on newly created sublist
+				boxnumlist[boxlistrow].insert(nameind,int(name[indFirstDigit:]))			# insert box sequential order # (which should be part of full box stim. name) in boxnumlist, keeping list in sequential order by box #
 				boxfullnamelist[boxlistrow].insert(nameind,name)			# insert box full name in boxfullnamelist, keeping list in sequential order by box #
 				boxidlist[boxlistrow].insert(nameind,boxid)				# insert box id in boxidlist, keeping list in sequential order by box #
 			
@@ -72,7 +92,15 @@ if print_debug:
 	print 'Box stim. numbers are %s' % boxnumlist
 	print 'Box stim. IDs are %s\n' % map(str,boxidlist)
 
-
+# Check for duplicate box stimuli names
+myboxarr=[]
+for mybox in boxfullnamelist:
+	myboxstr = ' '.join(map(str,mybox))
+	for mybox_sub in mybox:
+	  myboxarr.append(mybox_sub)
+if len(myboxarr) != len(set(myboxarr)):
+  print "\n\nFATAL ERROR:  Names of box stimuli are repeated, every name must be unique, check your .pvsm file contains no duplicate box stimuli names\n\n"
+  exit(1)
 
 
 # Now that have names, numbers, and ids of all box stimuli, open the Paraview state file again and find the the values of center and x,y,z lengths for each of the box stimuli
@@ -227,7 +255,7 @@ for i in range(0,len(boxfullnamelist)):
 		f.write('   yMin = %f; yMax = %f;\n' % (clist[i][j][1]-llist[i][j][1]/2,clist[i][j][1]+llist[i][j][1]/2))
 		f.write('   zMin = %f; zMax = %f;\n' % (clist[i][j][2]-llist[i][j][2]/2,clist[i][j][2]+llist[i][j][2]/2))
 		f.write('   vStim = %f mV/ms;\n' % vStim) 
-		if j == 0:					# if first box stimulus in Purkinje branch, then tStart = 0
+		if j == 0 or not timeDelay:					# if first box stimulus in Purkinje branch, then tStart = 0
 			f.write('   tStart = 0;\n')
 		else:						# else, tStart comes from the tstart list which was made above
 			f.write('   tStart = %f;\n' % tstart[i][j-1])
@@ -240,6 +268,7 @@ f.close()
 
 # Print directions so user knows how to incorporate data generated in this script in Cardioid
 print '\n*******Two-Step directions to use these box stimulations in Cardioid*******\n1)  Copy and paste the below box stimuli names into object.data under SIMULATE object'
+myboxarr=[]
 for mybox in boxfullnamelist:
 	myboxstr = ' '.join(map(str,mybox))
 	print '%s' % myboxstr,
