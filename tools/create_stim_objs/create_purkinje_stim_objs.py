@@ -181,6 +181,25 @@ if print_debug:
 	print '\nclist is %s\n' % ' '.join(map(str,clist))
 	print 'llist is %s\n' % ' '.join(map(str,llist))
 
+# Check if any stimuli overlap, that is, stimulate the same region of tissue.  If so, warn the user, because this could cause instabilities in the model if stimulate any one region too much (instabilities in cell level model, at the very least)
+wmsg = "";
+for branch in range(0,len(clist)):
+  for box in range(0,len(clist[branch])):
+    wmsgT = "";
+    xc = clist[branch][box][0]; yc = clist[branch][box][1]; zc = clist[branch][box][2]
+    xl = llist[branch][box][0]; yl = llist[branch][box][1]; zl = llist[branch][box][2]
+    for branch2 in range(0,len(clist)):
+      for box2 in range(0,len(clist[branch2])):
+         xc2 = clist[branch2][box2][0]; yc2 = clist[branch2][box2][1]; zc2 = clist[branch2][box2][2]
+         xl2 = llist[branch2][box2][0]; yl2 = llist[branch2][box2][1]; zl2 = llist[branch2][box2][2]
+         if ( (abs(xc-xc2) - abs(0.5*xl + 0.5*xl2)) <= 1.00001  and (abs(yc-yc2) - abs(0.5*yl + 0.5*yl2)) <= 1.00001 and (abs(zc-zc2) - abs(0.5*zl + 0.5*zl2)) <= 1.00001 and (boxfullnamelist[branch2][box2] != boxfullnamelist[branch][box]) ):
+	     wmsgT = wmsgT + "%s, " % (boxfullnamelist[branch2][box2])
+    if wmsgT:
+      wmsgT = (boxfullnamelist[branch][box]) + " overlaps with boxes: " + wmsgT
+      wmsg += wmsgT + "\n\n"
+if wmsg:
+  wmsg = "!!!!!!!Warning, the following box stimuli overlap and will stimulate same piece of tissue, potentially leading to numerical instabilities if cumulative stimulus too high:\n\n" + wmsg
+
 
 # Open object.data to get dx, dy, and dz, so can later calculate distances in mm between stimuli, and then find tStart for each stimulus using this distance and conduction velocity in Purkinje fibers
 listen = 0
@@ -273,3 +292,4 @@ for mybox in boxfullnamelist:
 	myboxstr = ' '.join(map(str,mybox))
 	print '%s' % myboxstr,
 print '\n\n2) Append object.data with the STIMULUS objects in the newly created object.stim.data (by copying from object.stim.data and pasting into object.data\n'
+print wmsg
