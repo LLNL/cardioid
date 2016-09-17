@@ -93,13 +93,19 @@ if print_debug:
 	print 'Box stim. IDs are %s\n' % map(str,boxidlist)
 
 # Check for duplicate box stimuli names
-myboxarr=[]
-for mybox in boxfullnamelist:
-	myboxstr = ' '.join(map(str,mybox))
-	for mybox_sub in mybox:
-	  myboxarr.append(mybox_sub)
-if len(myboxarr) != len(set(myboxarr)):
-  print "\n\nFATAL ERROR:  Names of box stimuli are repeated, every name must be unique, check your .pvsm file contains no duplicate box stimuli names\n\n"
+rep_boxes = []
+for branch in range(0,len(boxfullnamelist)):
+  for box in range(0,len(boxfullnamelist[branch])):
+    mybox = boxfullnamelist[branch][box]
+    for box2 in boxfullnamelist[branch][box+1:]:
+      if (box2 == mybox):
+	rep_boxes.append(mybox)
+    for branch2 in range(branch+1,len(boxfullnamelist)):
+      for box2 in range(0,len(boxfullnamelist[branch2])):
+	if (box2 == mybox):
+	  rep_boxes.append(mybox)    
+if rep_boxes:
+  print "\n\nFATAL ERROR:  The following box stimuli names are repeated, every name must be unique, check your .pvsm file contains no duplicate box stimuli names\n\n",rep_boxes
   exit(1)
 
 
@@ -188,11 +194,16 @@ for branch in range(0,len(clist)):
     wmsgT = "";
     xc = clist[branch][box][0]; yc = clist[branch][box][1]; zc = clist[branch][box][2]
     xl = llist[branch][box][0]; yl = llist[branch][box][1]; zl = llist[branch][box][2]
-    for branch2 in range(0,len(clist)):
+    for box2 in range(box+1,len(clist[branch])):
+       xc2 = clist[branch][box2][0]; yc2 = clist[branch][box2][1]; zc2 = clist[branch][box2][2]
+       xl2 = llist[branch][box2][0]; yl2 = llist[branch][box2][1]; zl2 = llist[branch][box2][2]
+       if ( (abs(xc-xc2) - abs(0.5*xl + 0.5*xl2)) <= 1.00001  and (abs(yc-yc2) - abs(0.5*yl + 0.5*yl2)) <= 1.00001 and (abs(zc-zc2) - abs(0.5*zl + 0.5*zl2)) <= 1.00001 ):
+	   wmsgT = wmsgT + "%s, " % (boxfullnamelist[branch][box2])
+    for branch2 in range(branch+1,len(clist)):
       for box2 in range(0,len(clist[branch2])):
          xc2 = clist[branch2][box2][0]; yc2 = clist[branch2][box2][1]; zc2 = clist[branch2][box2][2]
          xl2 = llist[branch2][box2][0]; yl2 = llist[branch2][box2][1]; zl2 = llist[branch2][box2][2]
-         if ( (abs(xc-xc2) - abs(0.5*xl + 0.5*xl2)) <= 1.00001  and (abs(yc-yc2) - abs(0.5*yl + 0.5*yl2)) <= 1.00001 and (abs(zc-zc2) - abs(0.5*zl + 0.5*zl2)) <= 1.00001 and (boxfullnamelist[branch2][box2] != boxfullnamelist[branch][box]) ):
+         if ( (abs(xc-xc2) - abs(0.5*xl + 0.5*xl2)) <= 1.00001  and (abs(yc-yc2) - abs(0.5*yl + 0.5*yl2)) <= 1.00001 and (abs(zc-zc2) - abs(0.5*zl + 0.5*zl2)) <= 1.00001 ):
 	     wmsgT = wmsgT + "%s, " % (boxfullnamelist[branch2][box2])
     if wmsgT:
       wmsgT = (boxfullnamelist[branch][box]) + " overlaps with boxes: " + wmsgT
