@@ -57,6 +57,7 @@ void initializeAnatomy(Anatomy& anatomy, const string& name, MPI_Comm comm)
    typeSet.insert(100);
    typeSet.insert(101);
    typeSet.insert(102);
+   typeSet.insert(103);  //BUGFIX: Need define type 103 for Grandi Model.
    typeSet.insert(30);
    typeSet.insert(31);
    typeSet.insert(32);
