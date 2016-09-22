@@ -443,6 +443,7 @@ void TT06Dev_Reaction::mkWorkBundles_(TT06Dev_ReactionParms& parms)
       else if (  offset >= nCell_s0_ ) gateThreadMap = gateThreadMapS1; 
       else  
       {
+         gateThreadMap = gateThreadMapS; 
          if (  offsetEq <=  sGateIndex && sGateIndex < offsetEq +nEq) 
          {
             assert(splitRank == -1);   //At most  one thread/rank can gave both s0 and s1 cells 
@@ -453,8 +454,7 @@ void TT06Dev_Reaction::mkWorkBundles_(TT06Dev_ReactionParms& parms)
             double *s1Mhu     = gateFit[2*eq+0].coef; 
             double *s1TauR    = gateFit[2*eq+1].coef; 
             sGateInit(s1Mhu, s1TauR, nCell0, nCell1);
-            gateThreadMap = gateThreadMapS; 
-            splitRank == teamRank; 
+            splitRank = teamRank; 
          }
       }
 
