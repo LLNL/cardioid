@@ -4080,8 +4080,9 @@ void update_sGate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a
 {
 
  int ii=0;
+ int jj=0;
  
- for (int jj=0;jj<TTROUND(nCell0,8);jj+=8)
+ for (jj;jj<TTROUND(nCell0,8);jj+=8)
  { 
    vdt v_xa   = vec_ld(0, &VM[ii]);  
    vdt v_xb   = vec_ld(0, &VM[ii+4]); 
@@ -4256,7 +4257,7 @@ void update_sGate_v1(double dt, int nCells, double *VM, double *g, double *mhu_a
    ii+=8;
 
   } //xx
- for (int jj=0;jj<TTROUND(nCell0,4);jj+=4)
+ for (jj;jj<TTROUND(nCell0,4);jj+=4)
  { 
  //BODYSTART
    vdt v_xa   = vec_ld(0, &VM[ii]);  
@@ -4401,7 +4402,7 @@ int tauR_m=7 ;
    
  int mhu_k  = mhu_m+mhu_l-1;  
  int tauR_k = tauR_m+tauR_l-1;  
- for (int jj=0;jj<rCell0;jj++)
+ for (int kk=0;kk<rCell0;kk++)
  { 
    double x = VM[ii];  
    double sum1=0;
@@ -4431,7 +4432,7 @@ int tauR_m=11;
    
  int mhu_k  = mhu_m+mhu_l-1;  ;
  int tauR_k = tauR_m+tauR_l-1;  
- for (int jj=0;jj<rCell1;jj++)
+ for (int kk=0;kk<rCell1;kk++)
  { 
    double x = VM[ii];  
    double sum1=0;
@@ -4450,8 +4451,8 @@ int tauR_m=11;
 }
 // Finish  s0 s1    Split 
 
-
- for (int jj=0;jj<TTROUND(nCell1,16);jj+=16)
+ jj=0;
+ for (jj;jj<TTROUND(nCell1,16);jj+=16)
  { 
    vdt v_xa   = vec_ld(0, &VM[ii]);  
    vdt v_xb   = vec_ld(0, &VM[ii+4]);  
@@ -4683,7 +4684,7 @@ int tauR_m=11;
    ii+=16;
  }
  
- for (int jj=0;jj<TTROUND(nCell1,4);jj+=4)
+ for (jj;jj<TTROUND(nCell1,4);jj+=4)
  { 
  //BODYSTART
    vdt v_xa   = vec_ld(0, &VM[ii]);  
