@@ -12,8 +12,9 @@ dur = 1		# object.data parameter stimulus duration in ms
 per = 1000	# object.data parameter stimulus period in ms
 t0 = 0		# object.data parameter minimum start time of stimulus and simulation
 tf = 100000	# object.data parameter maximum end time of stimulus and simulation
-timeDelay = 0	# do delay stimuli firing based on their location, just fire all at beginning of each heart beat
+timeDelay = 1	# do delay stimuli firing based on their location, just fire all at beginning of each heart beat
 num_branches = 3	# number of branches, for example, left and right would be 2 branches
+durrerDelay = 1	# set stimulus time delays according to Durrer 1970
 
 
 # Debug parameters, feel free to alter
@@ -26,6 +27,10 @@ def get_ind_first_digit(mystr):
     if i.isdigit():
       return ind
     ind+=1;
+
+# Check no inconsitencies in parameter choices
+if (durrerDelay and not timeDelay):
+  timeDelay = 1
 
 # Open Paraview state file (.pvsm file)
 try:
@@ -285,10 +290,13 @@ for i in range(0,len(boxfullnamelist)):
 		f.write('   yMin = %f; yMax = %f;\n' % (clist[i][j][1]-llist[i][j][1]/2,clist[i][j][1]+llist[i][j][1]/2))
 		f.write('   zMin = %f; zMax = %f;\n' % (clist[i][j][2]-llist[i][j][2]/2,clist[i][j][2]+llist[i][j][2]/2))
 		f.write('   vStim = %f mV/ms;\n' % vStim) 
-		if j == 0 or not timeDelay:					# if first box stimulus in Purkinje branch, then tStart = 0
+		if (j == 0 and not durrerDelay) or (durrerDelay and boxfullnamelist[i][j].find("Zero") != -1) or not timeDelay:					# if first box stimulus in Purkinje branch, or Durrer level 0, or no time delays, then set tStart = 0
 			f.write('   tStart = 0;\n')
-		else:						# else, tStart comes from the tstart list which was made above
-			f.write('   tStart = %f;\n' % tstart[i][j-1])
+		else:																		# else, tStart comes from the tstart list which was made above, unless using Durrer timing
+		        if (durrerDelay and boxfullnamelist[i][j].find("One") != -1):
+			  f.write('   tStart = 5;\n')						
+			if (not durrerDelay):
+			  f.write('   tStart = %f;\n' % tstart[i][j-1])
 		f.write('   duration = %f;\n' % dur)
 		f.write('   period = %f;\n' % per)
 		f.write('   t0 = %f;\n' % t0)
