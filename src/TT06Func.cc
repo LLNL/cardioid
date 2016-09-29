@@ -165,9 +165,15 @@ UPDATEGATE updateGateFuncs1[]={ update_mGate_v1, update_hGate_v1, update_jGate_v
 */
 void updateGateFast(double dt, int nCellsTotal, int *cellTypeVector, double *Vm, int offset, double **gate, PADE *fit,  WORK &work)
 {
+#ifdef BGQ
      UPDATEGATE updateGateFuncs[]={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, 
                                     update_rGate_v1, update_dGate_v1, update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, 
                                     update_s0Gate_v1,update_s1Gate_v1} ;
+#else
+     UPDATEGATE updateGateFuncs[]={ update_mGate_v2, update_hGate_v2, update_jGate_v2, update_Xr1Gate_v2, update_Xr2Gate_v2, update_XsGate_v2, 
+                                    update_rGate_v2, update_dGate_v2, update_fGate_v2, update_f2Gate_v2,  update_jLGate_v2, 
+                                    update_s0Gate_v2,update_s1Gate_v2} ;
+#endif
     int nCell=work.nCell; 
     if (nCell ==0) return; 
     int offsetCell=work.offsetCell; 
@@ -229,8 +235,13 @@ void updateGateFast(double dt, int nCellsTotal, int *cellTypeVector, double *Vm,
 }
 void updateGateFast0(double dt, int nCellsTotal, int *cellTypeVector, double *Vm, int offset, double **gate, PADE *fit,  WORK &work)
 {
+#ifdef BGQ
      UPDATEGATE updateGateFuncs[]={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, 
                                     update_rGate_v1, update_dGate_v1, update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, update_s0Gate_v1} ;
+#else
+     UPDATEGATE updateGateFuncs[]={ update_mGate_v2, update_hGate_v2, update_jGate_v2, update_Xr1Gate_v2, update_Xr2Gate_v2, update_XsGate_v2, 
+                                    update_rGate_v2, update_dGate_v2, update_fGate_v2, update_f2Gate_v2,  update_jLGate_v2, update_s0Gate_v2} ;
+#endif
     int nCell=work.nCell; 
     if ( nCell ==0)  return; 
     int offsetCell=work.offsetCell; 
@@ -248,8 +259,13 @@ void updateGateFast0(double dt, int nCellsTotal, int *cellTypeVector, double *Vm
 }
 void updateGateFast1(double dt, int nCellsTotal, int *cellTypeVector, double *Vm, int offset, double **gate, PADE *fit,  WORK &work)
 {
+#ifdef BGQ
      UPDATEGATE updateGateFuncs[]={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, 
                                     update_rGate_v1, update_dGate_v1, update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, update_s1Gate_v1} ;
+#else
+     UPDATEGATE updateGateFuncs[]={ update_mGate_v2, update_hGate_v2, update_jGate_v2, update_Xr1Gate_v2, update_Xr2Gate_v2, update_XsGate_v2, 
+                                    update_rGate_v2, update_dGate_v2, update_fGate_v2, update_f2Gate_v2,  update_jLGate_v2, update_s1Gate_v2} ;
+#endif
     int nCell=work.nCell; 
    if ( nCell ==0)  return; 
     int offsetCell=work.offsetCell; 

@@ -91,7 +91,7 @@ GrandiSRC=    Grandi.c         Grandi_IClCa.c   Grandi_IKs.c     Grandi_INaL.c  
               Grandi_ICab.c    Grandi_IKr.c     Grandi_INaK.c    Grandi_Ito.c
 
 SPISRC=	 spi_impl.c
-SIMDSRC=  clooper.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c $(OHaraRudySRC) $(RTYSC14ASRC) $(GrandiSRC)
+SIMDSRC=  clooper.c TT06GatesSimd.c TT06GatesSimd2.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c $(OHaraRudySRC) $(RTYSC14ASRC) $(GrandiSRC)
 
 CONSTRUCTED_INCLUDES=\
 OHaraRudy_Voltage.h OHaraRudy_Ito.h OHaraRudy_IpCa.h OHaraRudy_INab.h OHaraRudy_INaL.h OHaraRudy_INaK.h OHaraRudy_INaCass.h \
