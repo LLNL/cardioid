@@ -78,6 +78,8 @@ class Equation:
             out("%s = %s;" % (self.lhs, self.rhs))
 
 def parseEquation(eqnElement):
+    if eqnElement[0].tag != "eq":
+        print ET.tostring(eqnElement)
     assert(eqnElement[0].tag == "eq")
     lhsElement = eqnElement[1]
     rhsElement = eqnElement[2]
@@ -280,6 +282,7 @@ class Component:
         allDecl = set()
         for component in self.subComponents.values():
             allDecl |= component.outputs
+            allDecl |= component.inputs
         allDecl |= self.localDiffvars()
         allDecl |= self.inputs
         allDecl |= self.outputs
@@ -294,7 +297,7 @@ class Component:
         for componentName in order(self.subComponents.keys()):
             subComponent = self.subComponents[componentName]
             allConstants |= subComponent.outputConstants()
-        allDiffvars |= self.localConstants()
+        allConstants |= self.localConstants()
 
         #separate those declared variables into computed and state
         if True:
@@ -329,9 +332,9 @@ class Component:
             #go through all the invocations and see if they are good to go
             for componentName in order(set(self.subComponents.keys())-invoked):
                 subComponent = self.subComponents[componentName]
-                if set(subComponent.inputs) <= good:
+                if subComponent.inputs <= good:
                     subComponent.toCode(out,declared)
-                    newFront |= set(subComponent.outputs)
+                    newFront |= subComponent.outputs
                     invoked.add(componentName)
             #go through all the equations looking for things with met dependencies.
             for var in order((set(self.eqns.keys()) - defined)):
@@ -349,20 +352,30 @@ class Component:
                 good |= newFront
                 defined |= newFront
 
-        if not self.outputs <= defined:
-            print self.outputs
-            print good
-            print invoked
-            print self.subComponents.keys()
-            print self.eqns.keys()
-            assert(self.outputs <= good)
-        if invoked < set(self.subComponents.keys()):
-            print self.outputs
-            print good
-            print invoked
-            print self.subComponents.keys()
-            print self.eqns.keys()
-            assert(False)
+        if not self.outputs <= defined or invoked < set(self.subComponents.keys()):
+            out("//WARNING, circular dependency detected, dumping the rest.  You'll have to fix this manually.")
+            for var in order((set(self.eqns.keys()) - defined)):
+                eqn.toCode(out)
+            for componentName in order(set(self.subComponents.keys())-invoked):
+                subComponent = self.subComponents[componentName]
+                subComponent.toCode(out,declared)
+            debug = False
+            if debug:
+                print self.eqns.keys()
+                print self.outputs
+                print self.outputs - defined
+                print good
+                print "-----"
+                print invoked
+                print set(self.subComponents.keys()) - invoked
+                for componentName in set(self.subComponents.keys()) - invoked:
+                    print "====="
+                    component = self.subComponents[componentName]
+                    print component.name
+                    print component.inputs - good
+                    print component.outputs - good
+                assert(False)
+
         if not self.isRoot:
             out.dec()
             out("}")
@@ -425,11 +438,20 @@ if __name__=="__main__":
     for component in components.values():
         allChildren |= set(component.subComponents.values())
 
-    rootInputs = components["environment"].outputs
-    rootOutputs = components["environment"].inputs
+    environmentNames = set(["environment","Environment","Myofilaments"])
+    rootInputs = set()
+    rootOutputs = set()
+    rootInputConstants = {}
+    for environmentName in environmentNames:
+        if environmentName in components:
+            for var in components[environmentName].outputConstants():
+                rootInputConstants[var] = components[environmentName].eqns[var]
+            rootInputs |= components[environmentName].outputs-set(rootInputConstants.keys())
+            rootOutputs |= components[environmentName].inputs
     root = RootComponent(rootInputs, rootOutputs)
+    root.eqns = rootInputConstants
     for component in components.values():
-        if component.name != "environment" and component not in allChildren:
+        if component.name not in environmentNames and component not in allChildren:
             root.addSubComponent(component)
     
     out = Indenter(sys.stdout)
