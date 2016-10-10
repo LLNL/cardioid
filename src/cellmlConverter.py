@@ -147,9 +147,13 @@ def parseRhs(rhsElement):
                     
                     
     if rhsElement.tag == "ci":
-        return (rhsElement.text, set([rhsElement.text]))
+        return (rhsElement.text.strip(), set([rhsElement.text]))
     elif rhsElement.tag == "cn":
-        return (rhsElement.text, set())
+        text = rhsElement.text.strip()
+        sep = rhsElement.find("sep")
+        if sep != None:
+            text += 'e'+sep.tail.strip()
+        return (text, set())
     elif rhsElement.tag == "true":
         return ("true", set())
     elif rhsElement.tag == "false":
