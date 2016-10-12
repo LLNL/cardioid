@@ -3,52 +3,52 @@
 #include <vector>
 class Anatomy;
 
-namespace SimpleGrandi 
+namespace SimpleOHaraRudy 
 {
 
 struct State 
 {
    //EDIT_STATE
-   double m;   
-   double h;   
-   double j;   
-   double mL;   
-   double hL;   
-   double xtf;   
-   double ytf;   
-   double xkr;   
-   double xks;   
-   double xkur;   
-   double ykur;   
-   double d;   
-   double f;   
-   double fcaBj;   
-   double fcaBsl;   
-   double RyRr;   
-   double RyRo;   
-   double RyRi;   
-   double NaBj;   
-   double NaBsl;   
-   double TnCL;   
-   double TnCHc;   
-   double TnCHm;   
-   double CaM;   
-   double Myc;   
-   double Mym;   
-   double SRB;   
-   double SLLj;   
-   double SLLsl;   
-   double SLHj;   
-   double SLHsl;   
-   double Csqnb;   
-   double Naj;   
-   double Nasl;   
-   double Nai;   
-   double Ki;   
-   double Casr;   
-   double Caj;   
-   double Casl;   
-   double Cai;   
+   double nai;
+   double nass;
+   double ki;
+   double kss;
+   double cai;
+   double cass;
+   double cansr;
+   double cajsr;
+   double m;
+   double hf;
+   double hs;
+   double j;
+   double hsp;
+   double jp;
+   double mL;
+   double hL;
+   double hLp;
+   double a;
+   double iF;
+   double iS;
+   double ap;
+   double iFp;
+   double iSp;
+   double d;
+   double ff;
+   double fs;
+   double fcaf;
+   double fcas;
+   double jca;
+   double nca;
+   double ffp;
+   double fcafp;
+   double xrf;
+   double xrs;
+   double xs1;
+   double xs2;
+   double xk1;
+   double Jrelnp;
+   double Jrelp;
+   double CaMKt;
 };
 
 struct PerCellFlags 
@@ -82,20 +82,10 @@ class ThisReaction : public Reaction
  public:
    //constant flags
    //EDIT_FLAGS
-   bool AF;
-   bool ISO;
-   bool RA;
+   int celltype;
 
-   //constant parameters
    //EDIT_PARAMETERS
-   /*double ks;
-   double Vmax_SRCaP;
    double GCaB;
-   double GClCa;
-   double GClB;
-   double gkp;
-   double IbarNaK;
-   double IbarSLCaP;*/
 
    //per-cell flags
    std::vector<PerCellFlags> perCellFlags_;
@@ -110,5 +100,5 @@ class ThisReaction : public Reaction
 
 namespace scanReaction 
 {
-   Reaction* scanSimpleGrandi(OBJECT* obj, const Anatomy& anatomy);
+   Reaction* scanSimpleOHaraRudy(OBJECT* obj, const Anatomy& anatomy);
 }
