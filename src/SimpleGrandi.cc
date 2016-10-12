@@ -33,7 +33,7 @@ namespace scanReaction
       //EDIT_FLAGS
       setDefault(AF, 0);
       setDefault(ISO, 0);
-      setDefault(RA, 0);
+      setDefault(RA, 1);
 
       //EDIT_PARAMETERS
       /*setDefault(ks, 25); // [1/ms]      
@@ -229,7 +229,7 @@ void ThisReaction::calc(double dt, const VectorDouble32& Vm,
       const double tauhl=600.0;
       const double diff_mL=aml*(1.0-mL)-bml*mL;
       const double diff_hL=(hlinf-hL)/tauhl;
-      const double GNaL=0.0025*AF;
+      const double GNaL=0.0025*(1.0-AF);
       const double INaL_junc=Fjunc*GNaL*mL*mL*mL*hL*(v-ENa_junc);
       const double INaL_sl=Fsl*GNaL*mL*mL*mL*hL*(v-ENa_sl);
 
@@ -283,7 +283,7 @@ void ThisReaction::calc(double dt, const VectorDouble32& Vm,
       const double tauykur=590.0/(1.0+exp((v+60.0)/10.0))+3050.0;
       const double diff_xkur=(xkurss-xkur)/tauxkur;
       const double diff_ykur=(ykurss-ykur)/tauykur;
-      const double Gkur=(1.0-0.5*AF)*(1.0+2.0*ISO)* 0.045*(1.0+0.2*RA);
+      const double Gkur=(1.0-0.5*AF)*(1.0+2.0*ISO)*0.045*(1.0+0.2*RA);
       const double IKur=Gkur*xkur*ykur*(v-EK);
 
       const double aki=1.02/(1+exp(0.2385*(v-EK-59.215)));
@@ -293,9 +293,10 @@ void ThisReaction::calc(double dt, const VectorDouble32& Vm,
 
       const double KdClCa=100.0e-3;
       const double GClCa =0.0548;
-      const double IClCa_junc=Fjunc*GClCa/(1+KdClCa/Caj)*(v-ECl);
-      const double IClCa_sl=Fsl*GClCa/(1+KdClCa/Casl)*(v-ECl);
+      const double IClCa_junc=Fjunc*GClCa/(1.0+KdClCa/Caj)*(v-ECl);
+      const double IClCa_sl=Fsl*GClCa/(1.0+KdClCa/Casl)*(v-ECl);
       const double IClCa=IClCa_junc+IClCa_sl;
+
       const double GClB=9.0e-3;
       const double IClbk=GClB*(v-ECl);
 
@@ -307,7 +308,7 @@ void ThisReaction::calc(double dt, const VectorDouble32& Vm,
       const double diff_f=(fss-f)/tauf;
       const double diff_fcaBj=1.7*Caj*(1.0-fcaBj)-11.9e-3*fcaBj;
       const double diff_fcaBsl=1.7*Casl*(1-fcaBsl)-11.9e-3*fcaBsl;
-      const double pNa=(1.0+0.5*ISO)*(1.0-0.5*AF)*0.75e-8;
+      const double pNa=(1.0+0.5*ISO)*(1.0-0.5*AF)*7.5e-9;
       const double pCa=(1.0+0.5*ISO)*(1.0-0.5*AF)*2.7e-4;
       const double pK=(1.0+0.5*ISO)*(1.0-0.5*AF)*1.35e-7;
       const double Q10CaL=1.8;
@@ -351,7 +352,6 @@ void ThisReaction::calc(double dt, const VectorDouble32& Vm,
       const double GCaB=6.0643e-4;
       const double Icabk_junc=Fjunc*GCaB*(v-ECa_junc);
       const double Icabk_sl=Fsl*GCaB*(v-ECa_sl);
-
 
       const double Q10SRCaP=2.6;
       const double Vmax_SRCaP=5.3114e-3;
