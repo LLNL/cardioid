@@ -464,7 +464,7 @@ void ThisReaction::calc(double dt, const VectorDouble32& Vm,
       const double Icabk_sl=Fsl*GCaB*(v-ECa_sl);
 
       const double Q10SRCaP=2.6;
-      const double Vmax_SRCaP=5.3114e-3;
+      const double Vmax_SRCaP=5.3114e-3*(1.0-0.5*AF);
       const double Kmf=(2.5-1.25*ISO)*0.246e-3;
       const double Kmr=1.7;
       const double hillSRCaP=1.787;
