@@ -69,10 +69,120 @@ string ThisReaction::methodName() const
 {
    return "SimpleOHaraRudy";
 }
+const char* varNames[] = 
+{
+   //EDIT_STATE
+   "nai",
+   "nass",
+   "ki",
+   "kss",
+   "cai",
+   "cass",
+   "cansr",
+   "cajsr",
+   "m",
+   "hf",
+   "hs",
+   "j",
+   "hsp",
+   "jp",
+   "mL",
+   "hL",
+   "hLp",
+   "a",
+   "iF",
+   "iS",
+   "ap",
+   "iFp",
+   "iSp",
+   "d",
+   "ff",
+   "fs",
+   "fcaf",
+   "fcas",
+   "jca",
+   "nca",
+   "ffp",
+   "fcafp",
+   "xrf",
+   "xrs",
+   "xs1",
+   "xs2",
+   "xk1",
+   "Jrelnp",
+   "Jrelp",
+   "CaMKt"
+};
+#define NUMVARS (sizeof(varNames)/sizeof(char*))
 
+int getVarOffset(const std::string& varName)
+{
+   for (int ivar=0; ivar<NUMVARS; ivar++) 
+   {
+      if (varNames[ivar] == varName) 
+      {
+         return ivar;
+      }
+   }
+   assert(0 && "Control should never get here.");
+   return -1;
+}
+
+void assertStateOrderAndVarNamesAgree(void)
+{
+   State s;
+#define checkVarOrder(x) assert(reinterpret_cast<double*>(&s)+getVarOffset(#x) == &s . x)
+
+   int STATIC_ASSERT_checkAllDouble[(NUMVARS == sizeof(s)/sizeof(double))? 1: 0];
+
+   //EDIT_STATE
+   checkVarOrder(nai);
+   checkVarOrder(nass);
+   checkVarOrder(ki);
+   checkVarOrder(kss);
+   checkVarOrder(cai);
+   checkVarOrder(cass);
+   checkVarOrder(cansr);
+   checkVarOrder(cajsr);
+   checkVarOrder(m);
+   checkVarOrder(hf);
+   checkVarOrder(hs);
+   checkVarOrder(j);
+   checkVarOrder(hsp);
+   checkVarOrder(jp);
+   checkVarOrder(mL);
+   checkVarOrder(hL);
+   checkVarOrder(hLp);
+   checkVarOrder(a);
+   checkVarOrder(iF);
+   checkVarOrder(iS);
+   checkVarOrder(ap);
+   checkVarOrder(iFp);
+   checkVarOrder(iSp);
+   checkVarOrder(d);
+   checkVarOrder(ff);
+   checkVarOrder(fs);
+   checkVarOrder(fcaf);
+   checkVarOrder(fcas);
+   checkVarOrder(jca);
+   checkVarOrder(nca);
+   checkVarOrder(ffp);
+   checkVarOrder(fcafp);
+   checkVarOrder(xrf);
+   checkVarOrder(xrs);
+   checkVarOrder(xs1);
+   checkVarOrder(xs2);
+   checkVarOrder(xk1);
+   checkVarOrder(Jrelnp);
+   checkVarOrder(Jrelp);
+   checkVarOrder(CaMKt);
+}
+
+   
 ThisReaction::ThisReaction(const Anatomy& anatomy)
 : nCells_(anatomy.nLocal())
 {
+   assertStateOrderAndVarNamesAgree();
    state_.resize(nCells_);
    perCellFlags_.resize(nCells_);
    perCellParameters_.resize(nCells_);
@@ -843,78 +953,20 @@ const string ThisReaction::getUnit(const std::string& varName) const
    return "1";
 }
 
-const char* varNames[] = 
-{
-   //EDIT_STATE
-   "nai",
-   "nass",
-   "ki",
-   "kss",
-   "cai",
-   "cass",
-   "cansr",
-   "cajsr",
-   "m",
-   "hf",
-   "hs",
-   "j",
-   "hsp",
-   "jp",
-   "mL",
-   "hL",
-   "hLp",
-   "a",
-   "iF",
-   "iS",
-   "ap",
-   "iFp",
-   "iSp",
-   "d",
-   "ff",
-   "fs",
-   "fcaf",
-   "fcas",
-   "jca",
-   "nca",
-   "ffp",
-   "fcafp",
-   "xrf",
-   "xrs",
-   "xs1",
-   "xs2",
-   "xk1",
-   "Jrelnp",
-   "Jrelp",
-   "CaMKt"
-};
-#define NUMVARS (sizeof(varNames)/sizeof(char*))
-
 #define HANDLE_OFFSET 1000
 int ThisReaction::getVarHandle(const std::string& varName) const
 {
-   for (int ivar=0; ivar<NUMVARS; ivar++) 
-   {
-      if (varNames[ivar] == varName) 
-      {
-         return HANDLE_OFFSET+ivar;
-      }
-   }
-   assert(0 && "Control should never get here.");
-   return -1;
+   return getVarOffset(varName)+HANDLE_OFFSET;
 }
 
 void ThisReaction::setValue(int iCell, int varHandle, double value) 
 {
-   //assure all states are doubles.
-   int STATIC_ASSERT_checkAllDouble[(NUMVARS == sizeof(state_[0])/sizeof(double))? 1: 0];
    reinterpret_cast<double*>(&state_[iCell])[varHandle-HANDLE_OFFSET] = value;
 }
 
 
 double ThisReaction::getValue(int iCell, int varHandle) const
 {
-   //assure all states are doubles.
-   int STATIC_ASSERT_checkAllDouble[(NUMVARS == sizeof(state_[0])/sizeof(double))? 1: 0];
    return reinterpret_cast<const double*>(&state_[iCell])[varHandle-HANDLE_OFFSET];
 }
 
