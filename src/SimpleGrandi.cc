@@ -34,6 +34,7 @@ namespace scanReaction
       setDefault(AF, 0);
       setDefault(ISO, 0);
       setDefault(RA, 1);
+      setDefault(useRatpolyApprox, 0);
 
       //EDIT_PARAMETERS
       /*setDefault(ks, 25); // [1/ms]      

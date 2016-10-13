@@ -1,4 +1,4 @@
-function [hornNumerator, hornDenominator] = rationalApprox(fff, lb, ub, numPoints, tolerance)
+function [hornNumerator, hornDenominator] = rationalApprox(fff, outputName, inputName, lb, ub, numPoints, tolerance)
   zzz = linspace(-1,1,numPoints)';
   xxx = zzz*(ub-lb)/2 + (ub+lb)/2;
   yyy = fff(xxx);
@@ -19,32 +19,36 @@ function [hornNumerator, hornDenominator] = rationalApprox(fff, lb, ub, numPoint
       for ii=1:length(hornDenominator)
         denominatorString{ii} = sprintf("%.17e", hornDenominator(ii));
       endfor
-      printf("if (useLookups)");
+      printf("double %s;\n", outputName);
       printf("{\n");
-      printf("   //rationalApprox(%s, %f, %f, %d, %e)\n", func2str(fff), lb, ub, numPoints, tolerance);
-      printf("   double x = ;\n");
-      printf("   const int pSize = %d;\n", numTermCount);
-      printf("   const double pCoeff[] = { %s }\;\n", strjoin(numeratorString, ", "));
-      printf("   double numerator=pCoeff[pSize-1];\n");
-      printf("   for (int ip=pSize-2; ip>=0; --ip)\n");
+      printf("   //rationalApprox(%s, \"%s\", \"%s\", %f, %f, %d, %e)\n", func2str(fff), outputName, inputName, lb, ub, numPoints, tolerance);
+      printf("   double __x = %s;\n", inputName);
+      printf("   if (useRatpolyApprox && %f <= __x && __x <= %f)\n", lb, ub);
       printf("   {\n");
-      printf("      numerator = pCoeff[ip] + x*numerator;\n")
-      printf("   }\n");
+      printf("      const int pSize = %d;\n", numTermCount);
+      printf("      const double pCoeff[] = { %s }\;\n", strjoin(numeratorString, ", "));
+      printf("      double numerator=pCoeff[pSize-1];\n");
+      printf("      for (int ip=pSize-2; ip>=0; --ip)\n");
+      printf("      {\n");
+      printf("         numerator = pCoeff[ip] + __x*numerator;\n")
+      printf("      }\n");
       if (denomTermCount == 1)
-        printf("   ret = numerator;\n");
+        printf("      %s = numerator;\n", outputName);
       else
-        printf("   const int qSize = %d;\n", denomTermCount);
-        printf("   double qCoeff[] = { %s };\n", strjoin(denominatorString, ", "));
-        printf("   double denominator = qCoeff[qSize-1];\n");
-        printf("   for (int iq=qSize-2; iq>=0; --iq)\n");
-        printf("   {\n");
-        printf("      denomerator = qCoeff[iq] + x*denominator;\n");
-        printf("   }\n");
-        printf("   ret = numerator/denominator;\n");
+        printf("      const int qSize = %d;\n", denomTermCount);
+        printf("      double qCoeff[] = { %s };\n", strjoin(denominatorString, ", "));
+        printf("      double denominator = qCoeff[qSize-1];\n");
+        printf("      for (int iq=qSize-2; iq>=0; --iq)\n");
+        printf("      {\n");
+        printf("         denomerator = qCoeff[iq] + __x*denominator;\n");
+        printf("      }\n");
+        printf("      %s = numerator/denominator;\n", outputName);
       endif
-      printf("}\n");
-      printf("else\n");
-      printf("{\n\n");
+      printf("   }\n");
+      printf("   else\n");
+      printf("   {\n\n");
+      printf("      %s = ;\n", outputName);
+      printf("   }\n");
       printf("}\n");
       break;
     endif

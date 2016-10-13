@@ -85,7 +85,8 @@ class ThisReaction : public Reaction
    bool AF;
    bool ISO;
    bool RA;
-
+   bool useRatpolyApprox;
+   
    //constant parameters
    //EDIT_PARAMETERS
    /*double ks;
