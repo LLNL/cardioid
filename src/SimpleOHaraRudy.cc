@@ -32,6 +32,7 @@ namespace scanReaction
       //override the defaults
       //EDIT_FLAGS
       setDefault(celltype, 0);
+      setDefault(useINaFromTT06, 0);
 
       //EDIT_PARAMETERS
       setDefault(GCaB, 6.0643e-4);    // [uA/uF] 3
@@ -292,29 +293,93 @@ void ThisReaction::calc(double dt, const VectorDouble32& Vm,
       const double diff_CaMKt=aCaMK*CaMKb*(CaMKb+CaMKt)-bCaMK*CaMKt;
 
       //// Membrane Currents
-      const double mss=1.0/(1.0+exp((-(v+39.57))/9.871));
-      const double tm=1.0/(6.765*exp((v+11.64)/34.77)+8.552*exp(-(v+77.42)/5.955));
+      double mss;
+      double tm;
+      double hss;
+      double thf;
+      double jss;
+      double tj;
+      if (useINaFromTT06)
+      {
+         const double aa_mTT2=1.0/(1.0+exp((-60.0-v)/5.0));
+         const double bb_mTT2=0.1/(1.0+exp((v+35.0)/5.0))+0.1/(1.0+exp((v-50.0)/200.0));
+         const double tau_mTT2=aa_mTT2*bb_mTT2;
+         const double mTT2_inf=1.0/((1.0+exp((-56.86-v)/9.03))*(1.0+exp((-56.86-v)/9.03)));
+         double aa_hTT2;
+         double bb_hTT2;
+         if (v>=-40.0)
+         {
+            aa_hTT2=0.0;
+            bb_hTT2=(0.77/(0.13*(1.0+exp(-(v+10.66)/11.1))));
+         }
+         else
+         {
+            aa_hTT2=(0.057*exp(-(v+80.0)/6.8));
+            bb_hTT2=(2.7*exp(0.079*v)+(3.1e5)*exp(0.3485*v));
+         }
+         const double tau_hTT2=1.0/(aa_hTT2+bb_hTT2);
+         const double hTT2_inf=1.0/((1.0+exp((v+71.55)/7.43))*(1.0+exp((v+71.55)/7.43)));
+         double aa_jTT2;
+         double bb_jTT2;
+         if (v>=-40)
+         {
+            aa_jTT2=0.0;
+            bb_jTT2 =(0.6*exp((0.057)*v)/(1.0+exp(-0.1*(v+32.0))));
+         }
+         else
+         {
+            aa_jTT2=(((-2.5428e4)*exp(0.2444*v)-(6.948e-6)*exp(-0.04391*v))*(v+37.78)/(1.0+exp(0.311*(v+79.23))));
+            bb_jTT2=(0.02424*exp(-0.01052*v)/(1.+exp(-0.1378*(v+40.14))));
+         }
+         const double tau_jTT2=1.0/(aa_jTT2+bb_jTT2);
+         const double jTT2_inf=hTT2_inf;
+
+         mss = mTT2_inf;
+         tm = tau_mTT2;
+
+         hss = hTT2_inf;
+         thf = tau_hTT2;
+
+         jss = jTT2_inf;
+         tj = tau_jTT2;
+      }
+      else
+      {
+         mss=1.0/(1.0+exp((-(v+39.57))/9.871));
+         tm=1.0/(6.765*exp((v+11.64)/34.77)+8.552*exp(-(v+77.42)/5.955));
+         hss=1.0/(1+exp((v+82.90)/6.086));
+         thf=1.0/(1.432e-5*exp(-(v+1.196)/6.285)+6.149*exp((v+0.5096)/20.27));
+         jss=hss;
+         tj=2.038+1.0/(0.02136*exp(-(v+100.6)/8.281)+0.3052*exp((v+0.9941)/38.45));
+      }
       const double diff_m=(mss-m)/tm;
-      const double hss=1.0/(1+exp((v+82.90)/6.086));
-      const double thf=1.0/(1.432e-5*exp(-(v+1.196)/6.285)+6.149*exp((v+0.5096)/20.27));
-      const double ths=1.0/(0.009794*exp(-(v+17.95)/28.05)+0.3343*exp((v+5.730)/56.66));
-      const double Ahf=0.99;
-      const double Ahs=1.0-Ahf;
       const double diff_hf=(hss-hf)/thf;
-      const double diff_hs=(hss-hs)/ths;
-      const double h=Ahf*hf+Ahs*hs;
-      const double jss=hss;
-      const double tj=2.038+1.0/(0.02136*exp(-(v+100.6)/8.281)+0.3052*exp((v+0.9941)/38.45));
       const double diff_j=(jss-j)/tj;
+
+      const double ths=1.0/(0.009794*exp(-(v+17.95)/28.05)+0.3343*exp((v+5.730)/56.66));
+      const double diff_hs=(hss-hs)/ths;
       const double hspss=1.0/(1+exp((v+89.1)/6.086));
       const double thsp=3.0*ths;
       const double diff_hsp=(hspss-hsp)/thsp;
-      const double hp=Ahf*hf+Ahs*hsp;
       const double tjp=1.46*tj;
       const double diff_jp=(jss-jp)/tjp;
-      const double GNa=75;
-      const double fINap=(1.0/(1.0+KmCaMK/CaMKa));
-      const double INa=GNa*(v-ENa)*m*m*m*((1.0-fINap)*h*j+fINap*hp*jp);
+
+      double GNa;
+      double INa;
+      if (useINaFromTT06) {
+         GNa=14.838;
+         INa=GNa*(v-ENa)*m*m*m*hf*j;
+      }
+      else
+      {
+         const double Ahf=0.99;
+         const double Ahs=1.0-Ahf;
+         const double h=Ahf*hf+Ahs*hs;
+         const double hp=Ahf*hf+Ahs*hsp;
+         const double fINap=(1.0/(1.0+KmCaMK/CaMKa));
+         GNa=75;
+         INa=GNa*(v-ENa)*m*m*m*((1.0-fINap)*h*j+fINap*hp*jp);
+      }
 
       const double mLss=1.0/(1.0+exp((-(v+42.85))/5.264));
       const double tmL=tm;

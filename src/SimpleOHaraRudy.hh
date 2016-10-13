@@ -83,6 +83,7 @@ class ThisReaction : public Reaction
    //constant flags
    //EDIT_FLAGS
    int celltype;
+   int useINaFromTT06;
 
    //EDIT_PARAMETERS
    double GCaB;
