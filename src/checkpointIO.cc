@@ -10,7 +10,7 @@
 #include "ioUtils.h"
 #include "Simulate.hh"
 #include "Anatomy.hh"
-#include "Reaction.hh"
+#include "ReactionManager.hh"
 #include "Long64.hh"
 #include "BucketOfBits.hh"
 #include "stateLoader.hh"

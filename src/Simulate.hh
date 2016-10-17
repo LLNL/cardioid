@@ -13,7 +13,7 @@
 #include "VectorDouble32.hh"
 
 class Diffusion;
-class Reaction;
+class ReactionManager;
 class Stimulus;
 class Sensor;
 class Drug;
@@ -120,8 +120,7 @@ class Simulate
 
    Anatomy anatomy_;
    Diffusion* diffusion_;
-   Reaction* reaction_;
-   std::string reactionName_;
+   ReactionManager* reaction_;
    std::vector<Stimulus*> stimulus_;
    std::vector<Sensor*> sensor_;
    std::vector<Drug*> drug_;
