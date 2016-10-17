@@ -4,6 +4,8 @@ OHaraRudy*_*.h
 RTYSC14A_*.h
 null_*.h
 objs-*
+Grandi*_*.h
+func_*
 
 #ddcmd files?
 GridAssignmentObject.c
