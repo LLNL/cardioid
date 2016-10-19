@@ -51,6 +51,7 @@ HEARTSRC= \
 	FGRDiffusionStrip.cc \
 	FGRUtils.cc \
 	Reaction.cc \
+	ReactionManager.cc \
 	ReactionFHN.cc \
 	TT04_CellML_Reaction.cc \
 	TT06_CellML_Reaction.cc  \

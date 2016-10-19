@@ -6,6 +6,7 @@
 #include <string>
 #include "VectorDouble32.hh"
 #include "ThreadUtils.hh"
+#include "Anatomy.hh"
 
 class Reaction;
 
@@ -28,7 +29,7 @@ class ReactionManager
    void scaleCurrents(std::vector<double>);  
 
    void addReaction(const std::string& reactionName);
-   void create(const double dt, const Anatomy& anatomy, const ThreadTeam &group, const std::vector<std::string>& scaleCurrents);
+   void create(const double dt, Anatomy& anatomy, const ThreadTeam &group, const std::vector<std::string>& scaleCurrents);
 
    /** Functions needed for checkpoint/restart */
    void getCheckpointInfo(std::vector<std::string>& fieldNames,
@@ -43,14 +44,12 @@ class ReactionManager
    const std::string getUnit(const std::string& varName) const;
    
  private:
-   std::vector<std::string> reactionNames_;
+   std::vector<std::string> rxnObjectNames_;
    std::vector<Reaction*> reactions_;
-   std::vector<int> reactionIndexFromLocal_;
-   std::vector<int> reactionOffsetFromLocal_;
-   std::map<int,int> reactionIndexFromAnatomy_;
-
+   std::vector<int> extents_;
+   
    std::vector<VectorDouble32> VmPerReaction_;
-   std::vector<VectorDouble32> iStimPerReaction_;
+   std::vector<std::vector<double> > iStimPerReaction_;
    std::vector<VectorDouble32> dVmPerReaction_;
 };
 
