@@ -2,7 +2,7 @@
 #include "Anatomy.hh"
 #include "ioUtils.h"
 #include "Simulate.hh"
-#include "Reaction.hh"
+#include "ReactionManager.hh"
 #include "pio.h"
 #include "BoundingBox.hh"
 #include "TupleToIndex.hh"
@@ -29,7 +29,7 @@ namespace
                          const vector<Long64>& cells,
                          string cellListFilename,
                          double radius);
-   FieldMap mkFieldMap(const Reaction* reaction);
+   FieldMap mkFieldMap(const ReactionManager* reaction);
 }
 
 
@@ -286,7 +286,7 @@ namespace
 
 namespace
 {
-   FieldMap mkFieldMap(const Reaction* reaction)
+   FieldMap mkFieldMap(const ReactionManager* reaction)
    {
       vector<string> reactionFields;
       vector<string> reactionFieldUnits;

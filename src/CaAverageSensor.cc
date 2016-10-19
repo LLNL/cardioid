@@ -4,7 +4,7 @@
 #include "Anatomy.hh"
 #include "pio.h"
 #include "ioUtils.h"
-#include "Reaction.hh"
+#include "ReactionManager.hh"
 #include "CommTable.hh"
 #include "stringUtils.hh"
 
@@ -22,7 +22,7 @@ CaAverageSensor::CaAverageSensor(const SensorParms& sp,
                                  unsigned nFiles,
                                  const Anatomy& anatomy,
                                  vector<Long64>& gid,
-                                 const Reaction& reaction,
+                                 const ReactionManager& reaction,
                                  const CommTable* commtable)
    :Sensor(sp),
     coarsening_(anatomy, gid, 10000.0, commtable),

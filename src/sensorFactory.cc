@@ -34,7 +34,7 @@ namespace
    Sensor* scanVoronoiCoarseningSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                                        const PotentialData&, const Simulate& sim);
    Sensor* scanCaSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
-                        const Reaction&, const Simulate& sim);
+                        const ReactionManager&, const Simulate& sim);
    Sensor* scanMaxDvSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
                            const PotentialData& vdata);
    Sensor* scanDVThreshSensor(OBJECT* obj, SensorParms& sp, const Anatomy& anatomy,
@@ -301,7 +301,7 @@ namespace
 namespace
 {
    Sensor* scanCaSensor(OBJECT* obj, const SensorParms& sp, const Anatomy& anatomy,
-                        const Reaction& reaction,
+                        const ReactionManager& reaction,
                         const Simulate& sim)
    {
       int myRank;

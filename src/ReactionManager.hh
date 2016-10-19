@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include "VectorDouble32.hh"
+#include "ThreadUtils.hh"
 
 class Reaction;
 
@@ -17,6 +18,7 @@ class ReactionManager
              VectorDouble32& dVm);
    void updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR);
    void updateGate   (double dt, const VectorDouble32& Vm);
+   std::string stateDescription() const;
 
    /** Populates the Vm array with some sensible default initial
     * membrane voltage.  Vm will be the parallel to the local cells in
@@ -28,7 +30,20 @@ class ReactionManager
    void addReaction(const std::string& reactionName);
    void create(const double dt, const Anatomy& anatomy, const ThreadTeam &group, const std::vector<std::string>& scaleCurrents);
 
+   /** Functions needed for checkpoint/restart */
+   void getCheckpointInfo(std::vector<std::string>& fieldNames,
+                          std::vector<std::string>& fieldUnits) const;
+   int getVarHandle(const std::string& varName) const;
+   std::vector<int> getVarHandle(const std::vector<std::string>& varName) const;
+   void setValue(int iCell, int varHandle, double value);
+   double getValue(int iCell, int varHandle) const;
+   void getValue(int iCell,
+                 const std::vector<int>& handle,
+                 std::vector<double>& value) const;
+   const std::string getUnit(const std::string& varName) const;
+   
  private:
+   std::vector<std::string> reactionNames_;
    std::vector<Reaction*> reactions_;
    std::vector<int> reactionIndexFromLocal_;
    std::vector<int> reactionOffsetFromLocal_;
