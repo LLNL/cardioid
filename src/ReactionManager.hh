@@ -59,6 +59,8 @@ class ReactionManager
    bool subUsesHandle(const int ridx, const int handle, int& subHandle, double& myUnitFromTheirUnit) const;
    
    std::vector<std::map<int, std::pair<int, double> > > subHandleInfoFromRidxAndHandle_;
+
+   std::vector<std::string> methodTypes_;
 };
 
 #endif

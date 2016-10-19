@@ -1,6 +1,9 @@
 
+#include <set>
 #include "ReactionManager.hh"
 #include "Reaction.hh"
+#include "object_cc.hh"
+
 
 using namespace std;
 
@@ -68,10 +71,80 @@ void ReactionManager::addReaction(const std::string& rxnObjectName)
 
 void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam &group, const std::vector<std::string>& scaleCurrents)
 {
+   //construct an array of all the objects
+   int numReactions=objectNameFromRidx_.size();
+   vector<OBJECT*> objects(numReactions);
+   for (int ii=0; ii<numReactions; ++ii)
+   {
+       objects[ii] = objectFind(objectNameFromRidx_[ii], "REACTION");
+   }
+
+   //get all the method types
+   int numTypes;
+   {
+      set<string> methodTypeSet;
+      for (int ii=0; ii<numReactions; ++ii)
+      {
+         string method;
+         objectGet(objects[ii], "method", method, "");
+         assert(method != "");
+         methodTypeSet.insert(method);
+      }
+      numTypes = methodTypeSet.size();
+      methodTypes_.resize(numTypes);
+      copy(methodTypeSet.begin(), methodTypeSet.end(), methodTypes_.begin());
+   }
+
+   {
+      vector<int> reactionReordering(numReactions);
+      {
+         int cursor=0;
+         for (int itype=0; itype<numTypes; ++itype)
+         {
+            for (int ireaction=0; ireaction<numReactions; ++ireaction)
+            {
+               string method;
+               objectGet(objects[ireaction], "method", method, "");
+               if (method == methodTypes_[itype])
+               {
+                  reactionReordering[ireaction] = cursor++;
+               }
+            }
+         }
+         assert(cursor == numReactions);
+      }
+
+      vector<string> nameCopy(numReactions);
+      vector<OBJECT*> objectCopy(numReactions);
+      for (int ireaction=0; ireaction<numReactions; ++ireaction)
+      {
+         objectCopy[reactionReordering[ireaction]] = objects[ireaction];
+         nameCopy[reactionReordering[ireaction]] = objectNameFromRidx_[ireaction];
+      }
+      objects = objectCopy;
+      objectNameFromRidx_ = nameCopy;
+   }
+
+   //ok, now all the reactions are sorted by their type
+   
+   /*
+   reactions_.resize(objectNameFromRidx_.size());
+   extents_.resize(objectNameFromRidx_.size()+1);
+   extents_[0] = 0;
+      reactions_[ii] = reactionFactory(objectNameFromRidx_[ii], dt, anatomy, group, scaleCurrents);
+      extents_[ii+1] = extents_[ii]+localSize;
+   }
+   */
 }
 
 std::string ReactionManager::stateDescription() const {
-   return "";
+   assert(methodTypes_.size() >= 1);
+   string retval = methodTypes_[0];
+   for (int itype=1; itype<methodTypes_.size(); ++itype) {
+      retval += "+";
+      retval += methodTypes_[itype];
+   }
+   return retval;
 }
 
    /** Functions needed for checkpoint/restart */
