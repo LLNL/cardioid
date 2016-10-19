@@ -54,7 +54,11 @@ class ReactionManager
 
    std::vector<std::string> unitFromHandle_;
    std::map<std::string, int> handleFromVarname_;
+
+   int getRidxFromCell(const int iCell) const;
+   bool subUsesHandle(const int ridx, const int handle, int& subHandle, double& myUnitFromTheirUnit) const;
    
+   std::vector<std::map<int, std::pair<int, double> > > subHandleInfoFromRidxAndHandle_;
 };
 
 #endif

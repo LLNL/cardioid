@@ -107,10 +107,25 @@ vector<int> ReactionManager::getVarHandle(const vector<string>& varName) const
 }
 void ReactionManager::setValue(int iCell, int varHandle, double value)
 {
+   int ridx = getRidxFromCell(iCell);
+   int subHandle;
+   double myUnitFromTheirUnit;
+   if (subUsesHandle(ridx, varHandle, subHandle, myUnitFromTheirUnit)) {
+      int subCell = iCell-extents_[ridx];
+      reactions_[ridx]->setValue(subCell, subHandle, value/myUnitFromTheirUnit);
+   }
 }
 double ReactionManager::getValue(int iCell, int varHandle) const
 {
-   return 0;
+   int ridx = getRidxFromCell(iCell);
+   int subHandle;
+   double myUnitFromTheirUnit;
+   if (subUsesHandle(ridx, varHandle, subHandle, myUnitFromTheirUnit)) {
+      int subCell = iCell-extents_[ridx];
+      return myUnitFromTheirUnit*reactions_[ridx]->getValue(subCell, subHandle);
+   } else {
+      return numeric_limits<double>::quiet_NaN();
+   }
 }
 void ReactionManager::getValue(int iCell,
                         const vector<int>& handle,
@@ -124,3 +139,37 @@ const std::string ReactionManager::getUnit(const std::string& varName) const
    return unitFromHandle_[getVarHandle(varName)];
 }
    
+int ReactionManager::getRidxFromCell(const int iCell) const {
+   //binary search to find the proper Ridx.
+   int begin=0;
+   int end=extents_.size();
+   while (begin+1 < end)
+   {
+      int mid=(begin+end)/2;
+      if (extents_[mid] == iCell)
+      {
+         return mid;
+      }
+      else if (extents_[mid] < iCell)
+      {
+         begin=mid;
+      }
+      else
+      {
+         end=mid;
+      }
+   }
+   return begin;
+}
+
+bool ReactionManager::subUsesHandle(const int ridx, const int handle, int& subHandle, double& myUnitFromTheirUnit) const
+{
+   if (subHandleInfoFromRidxAndHandle_[ridx].find(handle) == subHandleInfoFromRidxAndHandle_[ridx].end())
+   {
+      return false;
+   }
+
+   subHandle = subHandleInfoFromRidxAndHandle_[ridx].find(handle)->second.first;
+   myUnitFromTheirUnit = subHandleInfoFromRidxAndHandle_[ridx].find(handle)->second.second;
+   return true;
+}
