@@ -44,13 +44,17 @@ class ReactionManager
    const std::string getUnit(const std::string& varName) const;
    
  private:
-   std::vector<std::string> rxnObjectNames_;
+   std::vector<std::string> objectNameFromRidx_;
    std::vector<Reaction*> reactions_;
    std::vector<int> extents_;
    
    std::vector<VectorDouble32> VmPerReaction_;
    std::vector<std::vector<double> > iStimPerReaction_;
    std::vector<VectorDouble32> dVmPerReaction_;
+
+   std::vector<std::string> unitFromHandle_;
+   std::map<std::string, int> handleFromVarname_;
+   
 };
 
 #endif

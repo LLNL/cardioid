@@ -54,33 +54,47 @@ void ReactionManager::initializeMembraneState(VectorDouble32& Vm)
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
       Reaction* reaction = reactions_[ii];
-      string objectName = rxnObjectNames_[ii];
-      ::initializeMembraneState(reaction, objectName, Vm);
+      string objectName = objectNameFromRidx_[ii];
+      ::initializeMembraneState(reaction, objectName, VmPerReaction_[ii]);
+      copy(VmPerReaction_[ii].begin(), VmPerReaction_[ii].end(), &Vm[extents_[ii]]);      
    }
-}
-
-std::string ReactionManager::stateDescription() const {
-   return "";
 }
 
 
 void ReactionManager::addReaction(const std::string& rxnObjectName)
 {
-   rxnObjectNames_.push_back(rxnObjectName);
+   objectNameFromRidx_.push_back(rxnObjectName);
 }
 
 void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam &group, const std::vector<std::string>& scaleCurrents)
 {
 }
 
+std::string ReactionManager::stateDescription() const {
+   return "";
+}
+
    /** Functions needed for checkpoint/restart */
 void ReactionManager::getCheckpointInfo(std::vector<std::string>& fieldNames,
                                         std::vector<std::string>& fieldUnits) const
 {
+   fieldNames.clear();
+   fieldNames.reserve(handleFromVarname_.size());
+   for(map<string,int>::const_iterator iter=handleFromVarname_.begin();
+       iter != handleFromVarname_.end();
+       ++iter)
+   {
+      fieldNames.push_back(iter->first);
+   }
+   for (int ii=0; ii<fieldNames.size(); ++ii)
+   {
+      fieldUnits.push_back(getUnit(fieldNames[ii]));
+   }
 }
 int ReactionManager::getVarHandle(const std::string& varName) const
 {
-   return 0;
+   assert(handleFromVarname_.find(varName) != handleFromVarname_.end());
+   return handleFromVarname_.find(varName)->second;
 }
 
 vector<int> ReactionManager::getVarHandle(const vector<string>& varName) const
@@ -107,6 +121,6 @@ void ReactionManager::getValue(int iCell,
 }
 const std::string ReactionManager::getUnit(const std::string& varName) const
 {
-   return "1";
+   return unitFromHandle_[getVarHandle(varName)];
 }
    
