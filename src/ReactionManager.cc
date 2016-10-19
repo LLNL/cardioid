@@ -1,5 +1,6 @@
 
 #include <set>
+#include <algorithm>
 #include "ReactionManager.hh"
 #include "Reaction.hh"
 #include "object_cc.hh"
@@ -69,6 +70,41 @@ void ReactionManager::addReaction(const std::string& rxnObjectName)
    objectNameFromRidx_.push_back(rxnObjectName);
 }
 
+class SortByRidxThenAnatomyThenGid {
+ public:
+   const map<int, int>& ridxFromTag_;
+   SortByRidxThenAnatomyThenGid(map<int, int>& ridxFromTag) : ridxFromTag_(ridxFromTag)
+   {}
+   bool operator()(const AnatomyCell& a, const AnatomyCell& b)
+   {
+      if (ridxFromTag_.find(a.cellType_) != ridxFromTag_.find(b.cellType_))
+      {
+         if (ridxFromTag_.find(a.cellType_) == ridxFromTag_.end())
+         {
+            return false;
+         }
+         else if (ridxFromTag_.find(b.cellType_) == ridxFromTag_.end())
+         {
+            return true;
+         }
+         else
+         {
+            return ridxFromTag_.find(a.cellType_)->second < ridxFromTag_.find(b.cellType_)->second;
+         }
+      }
+      else if (a.cellType_ != b.cellType_)
+      {
+         return a.cellType_ < b.cellType_;
+      }
+      else if (a.gid_ != b.gid_)
+      {
+         return a.gid_ < b.gid_;
+      }
+
+      return false;
+   }
+};
+
 void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam &group, const std::vector<std::string>& scaleCurrents)
 {
    //construct an array of all the objects
@@ -95,19 +131,34 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
       copy(methodTypeSet.begin(), methodTypeSet.end(), methodTypes_.begin());
    }
 
+   vector<int> typeFromRidx(numReactions);
    {
       vector<int> reactionReordering(numReactions);
       {
          int cursor=0;
          for (int itype=0; itype<numTypes; ++itype)
          {
-            for (int ireaction=0; ireaction<numReactions; ++ireaction)
+            for (int ireaction=0; ireaction<numReactions; ++ireaction) //bottleneck when #reactions large
             {
                string method;
                objectGet(objects[ireaction], "method", method, "");
                if (method == methodTypes_[itype])
                {
+                  /*
+                    note, we use cursor instead of ireaction here
+                    because we're about to reorder the object arrays.
+                    This ensures that the typeFromRidx array
+                    corresponds to the same things as what the
+                    objects[] array and objectNameFromRidx_ arrays
+                    point to.
+
+                    If we used ireaction instead, we would have to
+                    permute the arrays below, and we don't want to do
+                    that.
+                  */
+                  typeFromRidx[cursor] = itype;
                   reactionReordering[ireaction] = cursor++;
+                  
                }
             }
          }
@@ -124,17 +175,72 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
       objects = objectCopy;
       objectNameFromRidx_ = nameCopy;
    }
-
-   //ok, now all the reactions are sorted by their type
-   
-   /*
-   reactions_.resize(objectNameFromRidx_.size());
-   extents_.resize(objectNameFromRidx_.size()+1);
-   extents_[0] = 0;
-      reactions_[ii] = reactionFactory(objectNameFromRidx_[ii], dt, anatomy, group, scaleCurrents);
-      extents_[ii+1] = extents_[ii]+localSize;
+   //now all the reactions are sorted by their type
+   //here are the invariants.
+   for (int ireaction=0; ireaction<numReactions; ++ireaction)
+   {
+      assert(objectNameFromRidx_[ireaction] == objects[ireaction]->name);
+      string method;
+      objectGet(objects[ireaction], "method", method, "");
+      assert(method == methodTypes_[typeFromRidx[ireaction]]);
    }
-   */
+      
+   //find all the anatomy tags that have been set as reaction models
+   map<int, int> ridxFromTag;
+   for (int ireaction=0; ireaction<numReactions; ++ireaction)
+   {
+      vector<int> anatomyTags;
+      objectGet(objects[ireaction], "anatomyTags", anatomyTags);
+      for (int itag=0; itag<anatomyTags.size(); ++itag)
+      {
+         if (ridxFromTag.find(anatomyTags[itag]) != ridxFromTag.end())
+         {
+            assert(0 && "Duplicate anatomy tags within the reaction models");
+         }
+         ridxFromTag[anatomyTags[itag]] = ireaction;
+      }
+   }
+
+   vector<AnatomyCell>& cellArray(anatomy.cellArray());
+   //sort the anatomy in the correct order.
+   {
+      SortByRidxThenAnatomyThenGid cmpFunc(ridxFromTag);
+      sort(cellArray.begin(),cellArray.end(), cmpFunc);
+   }
+      
+   //count how many of each we have.
+   vector<int> countFromRidx(numReactions);
+   for (int ireaction=0; ireaction<numReactions; ++ireaction)
+   {
+      countFromRidx[ireaction] = 0;
+   }
+   for (int icell=0; icell<cellArray.size(); ++icell)
+   {
+      const AnatomyCell& cell(cellArray[icell]);
+      if (ridxFromTag.find(cell.cellType_) != ridxFromTag.end())
+      {
+         countFromRidx[ridxFromTag[cell.cellType_]]++;
+      }
+   }
+
+   //create the reaction objects
+   reactions_.resize(numReactions);
+   extents_.resize(numReactions+1);
+   extents_[0] = 0;
+   for (int ireaction=0; ireaction<numReactions; ++ireaction)
+   {
+      int localSize = countFromRidx[ireaction];
+      //reactions_[ireaction] = reactionFactory(objectNameFromRidx_[ii], dt, localSize, group, scaleCurrents);
+      extents_[ireaction+1] = extents_[ireaction]+localSize;
+      VmPerReaction_.resize(localSize);
+      iStimPerReaction_.resize(localSize);
+      dVmPerReaction_.resize(localSize);
+   }
+
+   //Ok, now we've created the reaction objects.  Now we need to
+   //figure out the state variables and the mapping therein.
+   
+   
 }
 
 std::string ReactionManager::stateDescription() const {
