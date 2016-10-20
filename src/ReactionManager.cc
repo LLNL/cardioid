@@ -4,6 +4,7 @@
 #include "ReactionManager.hh"
 #include "Reaction.hh"
 #include "object_cc.hh"
+#include "units.h"
 
 
 using namespace std;
@@ -104,8 +105,6 @@ class SortByRidxThenAnatomyThenGid {
       return false;
    }
 };
-
-string baseUnitFromUnit(const string);
 
 void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam &group, const std::vector<std::string>& scaleCurrents)
 {
@@ -244,14 +243,14 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    //First, collect all the info about the state variables.
    vector<vector<string> > subUnitsFromType(numTypes);
    vector<vector<string> > subVarnamesFromType(numTypes);
-   vector<vector<int> > subHandleFromType(numTypes);
+   vector<vector<int> > subHandlesFromType(numTypes);
    for (int itype=0; itype<numTypes; ++itype)
    {
       //find a reaction object for this type.
       Reaction* thisReaction;
       //query the state variable information.
       thisReaction->getCheckpointInfo(subVarnamesFromType[itype], subUnitsFromType[itype]);
-      subHandleFromType[itype] = thisReaction->getVarHandle(subVarnamesFromType[itype]);
+      subHandlesFromType[itype] = thisReaction->getVarHandle(subVarnamesFromType[itype]);
    }
       
    
@@ -266,16 +265,16 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
          {
             const string& thisSubVarname(subVarnames[isubVarname]);
             const string& thisSubUnit(subUnitsFromType[itype][isubVarname]);
-            //see if this name has a type assigned to it.
+            //does this name has a subtype assigned to it?
             if (baseUnitFromSubVarname.find(thisSubVarname) == baseUnitFromSubVarname.end())
             {
                //if a type hasn't been identified yet for this guy, add it here.
-               baseUnitFromSubVarname[thisSubVarname] = baseUnitFromUnit(thisSubUnit);
+               baseUnitFromSubVarname[thisSubVarname] = thisSubUnit;
             }
             else
             {
                //otherwise, if the units don't match this guy has multiple bases.
-               if (baseUnitFromSubVarname[thisSubVarname] != baseUnitFromUnit(thisSubUnit))
+               if (units_check(baseUnitFromSubVarname[thisSubVarname].c_str(), thisSubUnit.c_str()))
                {
                   subVarnamesWithMultipleBases.insert(thisSubVarname);
                }
@@ -286,7 +285,6 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    
    //set up the rename structures
    //if a subvar has multiple bases, rename it everywhere.  Otherwise, pass it through.
-   vector<vector<string> > subRenameFromType;
    //collect up all the unique names and the bases.
    //sets unitFromHandle_
    //sets handleFromVarname_
@@ -296,9 +294,34 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    {
       for (int isubVarname=0; isubVarname<subVarnamesFromType[itype].size(); ++isubVarname)
       {
+         const string& thisSubVarname(subVarnamesFromType[itype][isubVarname]);
+         const string& thisSubUnit(subUnitsFromType[itype][isubVarname]);
+         const int& thisSubHandle(subHandlesFromType[itype][isubVarname]);
+         string newName = thisSubVarname;
+         if (subVarnamesWithMultipleBases.find(thisSubVarname) != subVarnamesWithMultipleBases.end())
+         {
+            newName = methodNameFromType_[itype]+"."+newName;
+         }
+
+         int thisHandle;
+         if (handleFromVarname_.find(newName) == handleFromVarname_.end())
+         {
+            thisHandle = handleFromVarname_.size();
+            handleFromVarname_[newName] = thisHandle;
+            unitFromHandle_.push_back(thisSubUnit);
+         }
+         else
+         {
+            thisHandle = handleFromVarname_[newName];
+         }
+         assert(thisHandle == handleFromVarname_[newName]);
+         assert(handleFromVarname_.size() == unitFromHandle_.size());
+         assert(units_check(thisSubUnit.c_str(),unitFromHandle_[thisHandle].c_str()));
+         
+         subHandleInfoFromTypeAndHandle_[itype][thisHandle].first = thisSubHandle;
+         subHandleInfoFromTypeAndHandle_[itype][thisHandle].second = units_convert(1,unitFromHandle_[thisHandle].c_str(),thisSubUnit.c_str());
       }
    }
-   
 }
 
 std::string ReactionManager::stateDescription() const {
