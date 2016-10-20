@@ -247,12 +247,21 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    for (int itype=0; itype<numTypes; ++itype)
    {
       //find a reaction object for this type.
-      Reaction* thisReaction;
+      Reaction* thisReaction=NULL;
+      for (int ireaction=0; ireaction<numReactions; ++ireaction)
+      {
+         if (typeFromRidx_[ireaction] == itype)
+         {
+            thisReaction = reactions_[ireaction];
+            break;
+         }
+      }
+      assert(thisReaction != NULL);
+      
       //query the state variable information.
       thisReaction->getCheckpointInfo(subVarnamesFromType[itype], subUnitsFromType[itype]);
       subHandlesFromType[itype] = thisReaction->getVarHandle(subVarnamesFromType[itype]);
    }
-      
    
    //find all the subVarnames with more than one baseType
    set<string> subVarnamesWithMultipleBases;
