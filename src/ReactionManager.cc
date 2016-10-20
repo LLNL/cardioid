@@ -186,25 +186,25 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    }
       
    //find all the anatomy tags that have been set as reaction models
-   map<int, int> ridxFromTag;
+   map<int, int> ridxFromCellType;
    for (int ireaction=0; ireaction<numReactions; ++ireaction)
    {
-      vector<int> anatomyTags;
-      objectGet(objects[ireaction], "anatomyTags", anatomyTags);
-      for (int itag=0; itag<anatomyTags.size(); ++itag)
+      vector<int> anatomyCellTypes;
+      objectGet(objects[ireaction], "cellTypes", anatomyCellTypes);
+      for (int itag=0; itag<anatomyCellTypes.size(); ++itag)
       {
-         if (ridxFromTag.find(anatomyTags[itag]) != ridxFromTag.end())
+         if (ridxFromCellType.find(anatomyCellTypes[itag]) != ridxFromCellType.end())
          {
-            assert(0 && "Duplicate anatomy tags within the reaction models");
+            assert(0 && "Duplicate cellTypes within the reaction models");
          }
-         ridxFromTag[anatomyTags[itag]] = ireaction;
+         ridxFromCellType[anatomyCellTypes[itag]] = ireaction;
       }
    }
 
    vector<AnatomyCell>& cellArray(anatomy.cellArray());
    //sort the anatomy in the correct order.
    {
-      SortByRidxThenAnatomyThenGid cmpFunc(ridxFromTag);
+      SortByRidxThenAnatomyThenGid cmpFunc(ridxFromCellType);
       sort(cellArray.begin(),cellArray.end(), cmpFunc);
    }
       
@@ -217,9 +217,9 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    for (int icell=0; icell<cellArray.size(); ++icell)
    {
       const AnatomyCell& cell(cellArray[icell]);
-      if (ridxFromTag.find(cell.cellType_) != ridxFromTag.end())
+      if (ridxFromCellType.find(cell.cellType_) != ridxFromCellType.end())
       {
-         countFromRidx[ridxFromTag[cell.cellType_]]++;
+         countFromRidx[ridxFromCellType[cell.cellType_]]++;
       }
    }
 
