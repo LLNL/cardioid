@@ -58,9 +58,10 @@ class ReactionManager
    int getRidxFromCell(const int iCell) const;
    bool subUsesHandle(const int ridx, const int handle, int& subHandle, double& myUnitFromTheirUnit) const;
    
-   std::vector<std::map<int, std::pair<int, double> > > subHandleInfoFromRidxAndHandle_;
+   std::vector<std::map<int, std::pair<int, double> > > subHandleInfoFromTypeAndHandle_;
 
-   std::vector<std::string> methodTypes_;
+   std::vector<int> typeFromRidx_;
+   std::vector<std::string> methodNameFromType_;
 };
 
 #endif

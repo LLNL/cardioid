@@ -105,6 +105,8 @@ class SortByRidxThenAnatomyThenGid {
    }
 };
 
+string baseUnitFromUnit(const string);
+
 void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam &group, const std::vector<std::string>& scaleCurrents)
 {
    //construct an array of all the objects
@@ -127,11 +129,10 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
          methodTypeSet.insert(method);
       }
       numTypes = methodTypeSet.size();
-      methodTypes_.resize(numTypes);
-      copy(methodTypeSet.begin(), methodTypeSet.end(), methodTypes_.begin());
+      methodNameFromType_.resize(numTypes);
+      copy(methodTypeSet.begin(), methodTypeSet.end(), methodNameFromType_.begin());
    }
 
-   vector<int> typeFromRidx(numReactions);
    {
       vector<int> reactionReordering(numReactions);
       {
@@ -142,7 +143,7 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
             {
                string method;
                objectGet(objects[ireaction], "method", method, "");
-               if (method == methodTypes_[itype])
+               if (method == methodNameFromType_[itype])
                {
                   /*
                     note, we use cursor instead of ireaction here
@@ -156,7 +157,7 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
                     permute the arrays below, and we don't want to do
                     that.
                   */
-                  typeFromRidx[cursor] = itype;
+                  typeFromRidx_[cursor] = itype;
                   reactionReordering[ireaction] = cursor++;
                   
                }
@@ -182,7 +183,7 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
       assert(objectNameFromRidx_[ireaction] == objects[ireaction]->name);
       string method;
       objectGet(objects[ireaction], "method", method, "");
-      assert(method == methodTypes_[typeFromRidx[ireaction]]);
+      assert(method == methodNameFromType_[typeFromRidx_[ireaction]]);
    }
       
    //find all the anatomy tags that have been set as reaction models
@@ -238,17 +239,74 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    }
 
    //Ok, now we've created the reaction objects.  Now we need to
-   //figure out the state variables and the mapping therein.
+   //figure out the state variables will map.
+
+   //First, collect all the info about the state variables.
+   vector<vector<string> > subUnitsFromType(numTypes);
+   vector<vector<string> > subVarnamesFromType(numTypes);
+   vector<vector<int> > subHandleFromType(numTypes);
+   for (int itype=0; itype<numTypes; ++itype)
+   {
+      //find a reaction object for this type.
+      Reaction* thisReaction;
+      //query the state variable information.
+      thisReaction->getCheckpointInfo(subVarnamesFromType[itype], subUnitsFromType[itype]);
+      subHandleFromType[itype] = thisReaction->getVarHandle(subVarnamesFromType[itype]);
+   }
+      
    
+   //find all the subVarnames with more than one baseType
+   set<string> subVarnamesWithMultipleBases;
+   {
+      map<string, string> baseUnitFromSubVarname;
+      for (int itype=0; itype<numTypes; ++itype)
+      {
+         const vector<string>& subVarnames(subVarnamesFromType[itype]);
+         for (int isubVarname=0; isubVarname<subVarnames.size(); ++isubVarname)
+         {
+            const string& thisSubVarname(subVarnames[isubVarname]);
+            const string& thisSubUnit(subUnitsFromType[itype][isubVarname]);
+            //see if this name has a type assigned to it.
+            if (baseUnitFromSubVarname.find(thisSubVarname) == baseUnitFromSubVarname.end())
+            {
+               //if a type hasn't been identified yet for this guy, add it here.
+               baseUnitFromSubVarname[thisSubVarname] = baseUnitFromUnit(thisSubUnit);
+            }
+            else
+            {
+               //otherwise, if the units don't match this guy has multiple bases.
+               if (baseUnitFromSubVarname[thisSubVarname] != baseUnitFromUnit(thisSubUnit))
+               {
+                  subVarnamesWithMultipleBases.insert(thisSubVarname);
+               }
+            }
+         }
+      }
+   }
+   
+   //set up the rename structures
+   //if a subvar has multiple bases, rename it everywhere.  Otherwise, pass it through.
+   vector<vector<string> > subRenameFromType;
+   //collect up all the unique names and the bases.
+   //sets unitFromHandle_
+   //sets handleFromVarname_
+   //sets subHandleInfoFromTypeAndHandle_
+   subHandleInfoFromTypeAndHandle_.resize(numTypes);
+   for (int itype=0; itype<numTypes; ++itype)
+   {
+      for (int isubVarname=0; isubVarname<subVarnamesFromType[itype].size(); ++isubVarname)
+      {
+      }
+   }
    
 }
 
 std::string ReactionManager::stateDescription() const {
-   assert(methodTypes_.size() >= 1);
-   string retval = methodTypes_[0];
-   for (int itype=1; itype<methodTypes_.size(); ++itype) {
+   assert(methodNameFromType_.size() >= 1);
+   string retval = methodNameFromType_[0];
+   for (int itype=1; itype<methodNameFromType_.size(); ++itype) {
       retval += "+";
-      retval += methodTypes_[itype];
+      retval += methodNameFromType_[itype];
    }
    return retval;
 }
@@ -343,12 +401,14 @@ int ReactionManager::getRidxFromCell(const int iCell) const {
 
 bool ReactionManager::subUsesHandle(const int ridx, const int handle, int& subHandle, double& myUnitFromTheirUnit) const
 {
-   if (subHandleInfoFromRidxAndHandle_[ridx].find(handle) == subHandleInfoFromRidxAndHandle_[ridx].end())
+   const map<int, pair<int, double> >& subHandleInfoFromHandle(subHandleInfoFromTypeAndHandle_[typeFromRidx_[ridx]]);
+   
+   if (subHandleInfoFromHandle.find(handle) == subHandleInfoFromHandle.end())
    {
       return false;
    }
 
-   subHandle = subHandleInfoFromRidxAndHandle_[ridx].find(handle)->second.first;
-   myUnitFromTheirUnit = subHandleInfoFromRidxAndHandle_[ridx].find(handle)->second.second;
+   subHandle = subHandleInfoFromHandle.find(handle)->second.first;
+   myUnitFromTheirUnit = subHandleInfoFromHandle.find(handle)->second.second;
    return true;
 }
