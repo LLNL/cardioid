@@ -25,7 +25,7 @@ class TT06_CellML_Reaction : public Reaction
                   // end marker
                   nVars};
    
-   TT06_CellML_Reaction(const Anatomy& anatomy, IntegratorType integrator);
+   TT06_CellML_Reaction(const int numPoints, const int ttType, IntegratorType integrator);
    ~TT06_CellML_Reaction();
    std::string methodName() const {return "TT06_CellML";}
 
@@ -62,7 +62,6 @@ class TT06_CellML_Reaction : public Reaction
    int nCells_;
    IntegratorType integrator_;
    
-   std::vector<int>              ttType_; // maps cellType to ttType
    std::vector<TT06_CellML*>     cellModel_;
    std::vector<TT06_CellMLState> s_;
 };

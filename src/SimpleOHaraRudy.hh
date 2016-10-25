@@ -64,7 +64,7 @@ struct PerCellParameters
 class ThisReaction : public Reaction
 {
  public:
-   ThisReaction(const Anatomy& anatomy);
+   ThisReaction(const int numPoints);
    std::string methodName() const;
    
    void calc(double dt,
@@ -101,5 +101,5 @@ class ThisReaction : public Reaction
 
 namespace scanReaction 
 {
-   Reaction* scanSimpleOHaraRudy(OBJECT* obj, const Anatomy& anatomy);
+   Reaction* scanSimpleOHaraRudy(OBJECT* obj, const int numPoints);
 }

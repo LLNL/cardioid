@@ -5,6 +5,7 @@
 #include "Reaction.hh"
 #include "object_cc.hh"
 #include "units.h"
+#include "reactionFactory.hh"
 
 
 using namespace std;
@@ -230,7 +231,7 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    for (int ireaction=0; ireaction<numReactions; ++ireaction)
    {
       int localSize = countFromRidx[ireaction];
-      //reactions_[ireaction] = reactionFactory(objectNameFromRidx_[ii], dt, localSize, group, scaleCurrents);
+      reactions_[ireaction] = reactionFactory(objectNameFromRidx_[ireaction], dt, localSize, group, scaleCurrents);
       extents_[ireaction+1] = extents_[ireaction]+localSize;
       VmPerReaction_.resize(localSize);
       iStimPerReaction_.resize(localSize);

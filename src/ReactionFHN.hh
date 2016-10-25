@@ -7,7 +7,7 @@ class Anatomy;
 class ReactionFHN : public Reaction
 {
  public:
-   ReactionFHN(const Anatomy& anatomy);
+   ReactionFHN(const int numPoints);
    std::string methodName() const {return "FHN";}
    
    void calc(double dt,

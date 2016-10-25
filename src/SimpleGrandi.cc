@@ -25,9 +25,9 @@ namespace scanReaction
 
 #define setDefault(name, value) objectGet(obj, #name, reaction->name, #value)
    
-   Reaction* scanSimpleGrandi(OBJECT* obj, const Anatomy& anatomy)
+   Reaction* scanSimpleGrandi(OBJECT* obj, const int numPoints)
    {
-      SimpleGrandi::ThisReaction* reaction = new SimpleGrandi::ThisReaction(anatomy);
+      SimpleGrandi::ThisReaction* reaction = new SimpleGrandi::ThisReaction(numPoints);
 
       //override the defaults
       //EDIT_FLAGS
@@ -190,8 +190,8 @@ void assertStateOrderAndVarNamesAgree(void)
    checkVarOrder(Cai);
 }
    
-ThisReaction::ThisReaction(const Anatomy& anatomy)
-: nCells_(anatomy.nLocal())
+ThisReaction::ThisReaction(const int numPoints)
+: nCells_(numPoints)
 {
    assertStateOrderAndVarNamesAgree();
    state_.resize(nCells_);

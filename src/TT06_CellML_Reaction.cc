@@ -16,27 +16,16 @@ struct TT06_CellMLState
 
 
 
-TT06_CellML_Reaction::TT06_CellML_Reaction(const Anatomy& anatomy,
+TT06_CellML_Reaction::TT06_CellML_Reaction(const int numPoints,
+                                           const int ttType,
                                            IntegratorType integrator)
-: nCells_(anatomy.nLocal()),
+: nCells_(numPoints),
           integrator_(integrator)
 {
-   ttType_.resize(256, -1); 
-   ttType_[30] = 0;
-   ttType_[31] = 0;
-   ttType_[75] = 0;
-   ttType_[76] = 1;
-   ttType_[77] = 2;
-   ttType_[100] = 0;
-   ttType_[101] = 1;
-   ttType_[102] = 2;
-
    
    cellModel_.reserve(nCells_);
    for (int ii=0; ii<nCells_; ++ii)
    {
-      assert(anatomy.cellType(ii) >= 0 && anatomy.cellType(ii) < 256);
-      int ttType = ttType_[anatomy.cellType(ii)];
       switch (ttType)
       {
         case 0:

@@ -19,7 +19,7 @@ class Anatomy;
 struct TT06Dev_ReactionParms
 {
    std::map<std::string, TT06Func::CellTypeParmsFull> cellTypeParms;
-   std::vector<std::string> cellTypeNames;
+   std::string cellTypeName;
    std::vector<std::string> currentNames;
    std::string fitFile; 
    double tolerance;
@@ -34,7 +34,7 @@ class TT06Dev_Reaction : public Reaction
 {
  public:
    
-   TT06Dev_Reaction(double dt, Anatomy& anatomy, TT06Dev_ReactionParms& parms, const ThreadTeam& group);
+   TT06Dev_Reaction(const double dt, const int numPoints, TT06Dev_ReactionParms& parms, const ThreadTeam& group);
 
    std::string methodName() const {return "TT06_Dev";}
    // copy constructor and assignment operator intentionally left unimplemented.

@@ -11,7 +11,7 @@ class TT04_CellML_Reaction : public Reaction
  public:
    enum IntegratorType {forwardEuler, rushLarsen};
    
-   TT04_CellML_Reaction(const Anatomy& anatomy, IntegratorType integrator);
+   TT04_CellML_Reaction(const int numPoints, const int ttType, IntegratorType integrator);
    std::string methodName() const {return "TT04_CellML";}
    // copy constructor and assignment operator intentionally
    // left unimplemented.
@@ -35,7 +35,6 @@ class TT04_CellML_Reaction : public Reaction
    unsigned nCells_;
    IntegratorType integrator_;
    
-   std::vector<int>              ttType_; // maps cellType to ttType
    std::vector<TT04_CellML*>     cellModel_;
    std::vector<TT04_CellMLState> s_;
 };
