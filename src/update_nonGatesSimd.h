@@ -1,5 +1,5 @@
 
-void updateFunction(void *fit, CURRENT_SCALES *currentScales, double dt, struct CellTypeParms *cellTypeParms,int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt)
+void updateFunction(void *fit, CURRENT_SCALES *currentScales, double dt, struct CellTypeParms *cellTypeParms,int nCells, double *VM, int offset, double **state, double *dVdt)
 {
 
   typedef vector4double vdt;
@@ -52,8 +52,6 @@ void updateFunction(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
   vdt v_dt =  vec_splats(dt);
 
 
-   int cellType = cellTypeVector[0];
-
    double c_K1  = currentScales->K1;        // done
    double c_Na  = currentScales->Na *SP[20];  //done
    double c_bNa = currentScales->bNa*SP[21];   //done
@@ -63,11 +61,11 @@ void updateFunction(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
    double c_pCa = currentScales->pCa*SP[6];    // done
    double c_pK  = currentScales->pK;           // done
 
-   vdt v_P_NaK   = vec_splats(currentScales->NaK*cellTypeParms[cellType].P_NaK);
-   vdt v_g_to    = vec_splats(currentScales->to *cellTypeParms[cellType].g_to); 
-   vdt v_g_Ks    = vec_splats(currentScales->Ks *cellTypeParms[cellType].g_Ks);
-   vdt v_g_Kr    = vec_splats(currentScales->Kr *cellTypeParms[cellType].g_Kr);
-   vdt v_g_NaL   = vec_splats(currentScales->NaL*cellTypeParms[cellType].g_NaL);
+   vdt v_P_NaK   = vec_splats(currentScales->NaK*cellTypeParms->P_NaK);
+   vdt v_g_to    = vec_splats(currentScales->to *cellTypeParms->g_to); 
+   vdt v_g_Ks    = vec_splats(currentScales->Ks *cellTypeParms->g_Ks);
+   vdt v_g_Kr    = vec_splats(currentScales->Kr *cellTypeParms->g_Kr);
+   vdt v_g_NaL   = vec_splats(currentScales->NaL*cellTypeParms->g_NaL);
 
    vdt v_ONE = vec_splats(1.0);
 
@@ -82,34 +80,6 @@ void updateFunction(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
    __dcbt(&SP[0]);
    __dcbt(&SP[4]);
    // __dcbt(&VM[ii]); //no help ... no hurt either
-    int t3 = cellTypeVector[ii+3];
-    if (cellType != t3)
-    {
-// bad #pragma execution_frequency(very_low)
-        int t0 = cellTypeVector[ii];
-        cellType = t0;
-        if (t0 != t3)
-        {
-           for ( int kk  = 0 ;kk < 4; kk++)
-           {
-            if (ii+kk == nCells) break;
-            int t = cellTypeVector[ii+kk];
-            v_P_NaK get [kk]  = currentScales->NaK*cellTypeParms[t].P_NaK;
-            v_g_to  get [kk]  = currentScales->to *cellTypeParms[t].g_to;
-            v_g_Ks  get [kk]  = currentScales->Ks *cellTypeParms[t].g_Ks;
-            v_g_Kr  get [kk]  = currentScales->Kr *cellTypeParms[t].g_Kr;
-            v_g_NaL get [kk]  = currentScales->NaL*cellTypeParms[t].g_NaL;
-           }
-        }
-        else
-        {
-           v_P_NaK   = vec_splats(currentScales->NaK*cellTypeParms[t0].P_NaK);
-           v_g_to    = vec_splats(currentScales->to *cellTypeParms[t0].g_to);
-           v_g_Ks    = vec_splats(currentScales->Ks *cellTypeParms[t0].g_Ks);
-           v_g_Kr    = vec_splats(currentScales->Kr *cellTypeParms[t0].g_Kr);
-           v_g_NaL   = vec_splats(currentScales->NaL*cellTypeParms[t0].g_NaL);
-        }
-    }
    v_v = vec_ld(0, &VM[ii]);
    vdt v_states_Na_i;
    vdt v_states_Ca_SR;

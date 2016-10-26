@@ -145,7 +145,7 @@ namespace  scanReaction
     Reaction* scanTT06Dev(OBJECT* obj, double dt, const int numPoints, const ThreadTeam& group, const vector<string>& scaleCurrents)
    {
       TT06Dev_ReactionParms parms;
-      parms.cellTypeParms=TT06Func::getStandardCellTypes(); 
+      map<string,TT06Func::CellTypeParmsFull> cellTypeParms = TT06Func::getStandardCellTypes(); 
       int fastGate =-1; 
       int fastNonGate =-1; 
       TT06Func::initCnst(); 
@@ -189,41 +189,29 @@ namespace  scanReaction
          if (fastNonGate ==  -1 )  fastNonGate=0; 
          parms.fastReaction = fastGate+256*fastNonGate; 
       }
-      objectGet(obj, "cellTypeName", parms.cellTypeNames) ;
-      if (parms.cellTypeNames.size() == 0)
-      {
-         parms.cellTypeNames.push_back("endoCellML");
-         parms.cellTypeNames.push_back("midCellML");
-         parms.cellTypeNames.push_back("epiCellML");
-      }
-      for (int ii=0;ii<parms.cellTypeNames.size();ii++) 
-      {
-         string name = parms.cellTypeNames[ii]; 
-         if (parms.cellTypeParms.count(name) == 0)
-            parms.cellTypeParms[name] = parms.cellTypeParms["endoCellML"]; 
+      string cellTypeName;
+      objectGet(obj, "cellTypeName", cellTypeName, "endoCellML");
 
-         OBJECT* cellobj = object_find2(name.c_str(), "CELLTYPE", IGNORE_IF_NOT_FOUND);
-         if (! cellobj)
-            continue;
-        
+      OBJECT* cellobj = object_find2(cellTypeName.c_str(), "CELLTYPE", IGNORE_IF_NOT_FOUND);
+      if (cellobj) {
          string clone; 
          objectGet(cellobj, "clone", clone, "") ;
          if (clone != "")
          {
-            assert(name != clone); 
-            assert(parms.cellTypeParms.count(clone) != 0); 
-            parms.cellTypeParms[name]=parms.cellTypeParms[clone]; 
-            parms.cellTypeParms[name].name=name;
+            assert(cellTypeName != clone); 
+            assert(cellTypeParms.count(clone) != 0);
+            cellTypeParms[cellTypeName]=cellTypeParms[clone]; 
+            cellTypeParms[cellTypeName].name=cellTypeName;
          }
-         if (object_testforkeyword(cellobj, "anatomyIndices") ) objectGet(cellobj,"anatomyIndices",parms.cellTypeParms[name].anatomyIndices); 
-         if (object_testforkeyword(cellobj, "s_switch")       ) objectGet(cellobj,"s_switch"      ,parms.cellTypeParms[name].s_switch,"0"); 
-         if (object_testforkeyword(cellobj, "P_NaK")          ) objectGet(cellobj,"P_NaK"         ,parms.cellTypeParms[name].P_NaK,"0.0"); 
-         if (object_testforkeyword(cellobj, "g_NaL")          ) objectGet(cellobj,"g_NaL"         ,parms.cellTypeParms[name].g_NaL,"0.0"); 
-         if (object_testforkeyword(cellobj, "g_Ks")           ) objectGet(cellobj,"g_Ks"        ,parms.cellTypeParms[name].g_Ks,"0.0"); 
-         if (object_testforkeyword(cellobj, "g_Kr")           ) objectGet(cellobj,"g_Kr"        ,parms.cellTypeParms[name].g_Kr,"0.0"); 
-         if (object_testforkeyword(cellobj, "g_to")           ) objectGet(cellobj,"g_to"        ,parms.cellTypeParms[name].g_to,"0.0"); 
-         
+         if (object_testforkeyword(cellobj, "s_switch")       ) objectGet(cellobj,"s_switch"      ,cellTypeParms[cellTypeName].s_switch,"0"); 
+         if (object_testforkeyword(cellobj, "P_NaK")          ) objectGet(cellobj,"P_NaK"         ,cellTypeParms[cellTypeName].P_NaK,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_NaL")          ) objectGet(cellobj,"g_NaL"         ,cellTypeParms[cellTypeName].g_NaL,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_Ks")           ) objectGet(cellobj,"g_Ks"        ,cellTypeParms[cellTypeName].g_Ks,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_Kr")           ) objectGet(cellobj,"g_Kr"        ,cellTypeParms[cellTypeName].g_Kr,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_to")           ) objectGet(cellobj,"g_to"        ,cellTypeParms[cellTypeName].g_to,"0.0"); 
       }
+      parms.cellTypeParm = cellTypeParms[cellTypeName];
+
       parms.currentNames = scaleCurrents;
       
       Reaction *reaction = new TT06Dev_Reaction(dt, numPoints, parms, group);

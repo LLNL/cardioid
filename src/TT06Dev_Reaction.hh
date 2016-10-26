@@ -18,8 +18,7 @@ class Anatomy;
 
 struct TT06Dev_ReactionParms
 {
-   std::map<std::string, TT06Func::CellTypeParmsFull> cellTypeParms;
-   std::string cellTypeName;
+   TT06Func::CellTypeParmsFull cellTypeParm;
    std::vector<std::string> currentNames;
    std::string fitFile; 
    double tolerance;
@@ -66,22 +65,18 @@ class TT06Dev_Reaction : public Reaction
 
    HandleMap& getHandleMap() const;
 
-   unsigned nCellTypes_;
-   std::vector<CellTypeParms> cellTypeParms_; 
-   std::vector<double> initialVm_; 
+   CellTypeParms cellTypeParm_;
+   double XXXinitialVm_;
    unsigned nCells_;
-   std::vector<int> tissueType2Rank_;
-   std::vector<unsigned> nCellsOfType_; 
    CURRENT_SCALES currentScales_; 
    std::vector<int> currentMap_; 
-   std::vector<    std::vector<double> > stateInitial_;
-   int nCell_s0_; 
 
-   void (*update_gate_)   (double dt,                                      int nCells, int *cellType, double *Vm, int offset, double **state, PADE* xfit, TT06Func::WORK& work);
-   void (*update_nonGate_)(void *fit, CURRENT_SCALES *, double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellType, double *Vm, int offset, double **state, double *dVdt);
+   std::vector<double> XXXstateInitial_;
+
+   void (*update_gate_)   (double dt,                                      int nCells, int s_switch, double *Vm, int offset, double **state, PADE* xfit, TT06Func::WORK& work);
+   void (*update_nonGate_)(void *fit, CURRENT_SCALES *, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *Vm, int offset, double **state, double *dVdt);
    int nonGateWorkPartition_(int& offset);
-   void mkCellTypeParms_(Anatomy& anatomy,TT06Dev_ReactionParms& parms);
-   void mkCellTypeVector_(Anatomy& anatomy, TT06Dev_ReactionParms& parms);
+   void mkCellTypeParms_(TT06Dev_ReactionParms& parms);
    void mkState_(TT06Dev_ReactionParms& parms);
    void mkFitParms_(TT06Dev_ReactionParms& parms);
    void mkWorkBundles_(TT06Dev_ReactionParms& parms); 
@@ -98,11 +93,9 @@ class TT06Dev_Reaction : public Reaction
    std::vector<ngwork> nonGateWork_;
    LogParms logParms_[64]; 
    
-   std::vector<int>              ttType_; // maps cellType to ttType
    int nCellBuffer_; 
    double *stateBuffer_; 
    std::vector<double*>state_; 
-   std::vector<int>cellTypeVector_; 
 };
 
 #endif

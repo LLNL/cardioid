@@ -184,8 +184,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(const double dt, const int numPoints, TT06Dev
    if(0) nCellBuffer_ += 4*((10 - (nFourVecs % 8)) % 8);
    else  nCellBuffer_ += ((10 - (nFourVecs & 7)) & 7) << 2;   
 
-   mkCellTypeParms_(anatomy,parms);
-   mkCellTypeVector_(anatomy,parms);
+   mkCellTypeParms_(parms);
    mkState_(parms);
    currentMap_.resize(parms.currentNames.size()); 
    int nCurrents=0; 
@@ -275,80 +274,27 @@ void TT06Dev_Reaction::scaleCurrents(vector <double> currentScales)
       ((double *)&currentScales_)[j]=currentScales[i]; 
    }
 }
-void TT06Dev_Reaction::mkCellTypeParms_(Anatomy& anatomy,TT06Dev_ReactionParms& parms)
+void TT06Dev_Reaction::mkCellTypeParms_(TT06Dev_ReactionParms& parms)
 {
-
-   nCellTypes_ = parms.cellTypeNames.size(); 
-   tissueType2Rank_.resize(256,-1); 
-
-   ttType_.resize(256, -1); 
-   initialVm_.resize(nCellTypes_);
-   cellTypeParms_.resize(nCellTypes_); 
-
-   stateInitial_.resize(nCellTypes_);
-   for (int i=0;i<nCellTypes_;i++) stateInitial_[i].resize(nStateVar);
-   for (int i=0;i<nCellTypes_;i++)
+   cellTypeParm_.s_switch = parms.cellTypeParm.s_switch;  
+   cellTypeParm_.P_NaK    = parms.cellTypeParm.P_NaK;  
+   cellTypeParm_.g_Ks     = parms.cellTypeParm.g_Ks ;  
+   cellTypeParm_.g_Kr     = parms.cellTypeParm.g_Kr ;  
+   cellTypeParm_.g_to     = parms.cellTypeParm.g_to ;  
+   cellTypeParm_.g_NaL    = parms.cellTypeParm.g_NaL;  
+   XXXinitialVm_ = parms.cellTypeParm.Vm;
+   XXXstateInitial_.resize(nStateVar);
+   int stateCnt=0; 
+   map<string,STATE>stateMap = parms.cellTypeParm.state; 
+   for (map<string,STATE>::iterator it=stateMap.begin();it!=stateMap.end();it++)
    {
-      string name = parms.cellTypeNames[i];   
-      int cellType = i; 
-      int cellRank = i + nCellTypes_ * parms.cellTypeParms[name].s_switch; 
-
-      vector<int> indices=parms.cellTypeParms[name].anatomyIndices; 
-      for (int j=0;j<indices.size();j++)
-      {
-         int k=indices[j];
-         assert(0<=k && k < 256);
-         assert(tissueType2Rank_[ k] == -1);
-         tissueType2Rank_[ k] = cellRank;
-         ttType_[k]=cellType; 
-      }
-
-      cellTypeParms_[cellType].cellType = cellType;  
-      cellTypeParms_[cellType].s_switch = parms.cellTypeParms[name].s_switch;  
-      cellTypeParms_[cellType].P_NaK    = parms.cellTypeParms[name].P_NaK;  
-      cellTypeParms_[cellType].g_Ks     = parms.cellTypeParms[name].g_Ks ;  
-      cellTypeParms_[cellType].g_Kr     = parms.cellTypeParms[name].g_Kr ;  
-      cellTypeParms_[cellType].g_to     = parms.cellTypeParms[name].g_to ;  
-      cellTypeParms_[cellType].g_NaL    = parms.cellTypeParms[name].g_NaL;  
-      initialVm_[cellType] = parms.cellTypeParms[name].Vm; 
-      int stateCnt=0; 
-      map<string,STATE>stateMap = parms.cellTypeParms[name].state; 
-      for (map<string,STATE>::iterator it=stateMap.begin();it!=stateMap.end();it++)
-      {
-         STATE stateDefault = it->second; 
-         double value = stateDefault.value; 
-         int type = stateDefault.type; 
-         int index = stateDefault.index; 
-         stateInitial_[cellType][index]=value; stateCnt++;
-      }
-      assert(stateCnt==nStateVar); 
+      STATE stateDefault = it->second; 
+      double value = stateDefault.value; 
+      int type = stateDefault.type; 
+      int index = stateDefault.index; 
+      XXXstateInitial_[index]=value; stateCnt++;
    }
-}
-void TT06Dev_Reaction::mkCellTypeVector_(Anatomy& anatomy, TT06Dev_ReactionParms& parms)
-{
-   cellTypeVector_.reserve(nCellBuffer_); 
-   cellTypeVector_.resize(nCells_); 
-   nCellsOfType_.resize(nCellTypes_,0); 
-   vector<AnatomyCell>& cells = anatomy.cellArray();
-
-   SortByRank_andTuple_factory sortFunc(tissueType2Rank_,anatomy);
-   sort(cells.begin(), cells.end(), sortFunc.emit_sorter());
-
-   nCell_s0_=0; 
-   for (unsigned ii=0; ii<nCells_; ++ii) 
-   {
-      assert(anatomy.cellType(ii) >= 0 && anatomy.cellType(ii) < 256);
-      int cellType = ttType_[anatomy.cellType(ii)];
-      cellTypeVector_[ii] = cellType; 
-      nCellsOfType_[cellType]++; 
-      int s0 = cellTypeParms_[cellType].s_switch;
-      if (s0 == 0) nCell_s0_++; 
-   }
-
-   for (unsigned ii=nCells_; ii<nCellBuffer_;ii++) 
-   {
-      cellTypeVector_[ii] = cellTypeVector_[ii-1]; 
-   }
+   assert(stateCnt==nStateVar); 
 }
 void TT06Dev_Reaction::mkState_(TT06Dev_ReactionParms& parms)
 {
@@ -367,9 +313,8 @@ void TT06Dev_Reaction::mkState_(TT06Dev_ReactionParms& parms)
    double c9=get_c9(); 
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
-      int cellType = cellTypeVector_[ii];
-      for (int j=0;j<nStateVar;j++) state_[j][ii]  = stateInitial_[cellType][j]; 
-      state_[dVK_i][ii] = state_[K_i][ii]/c9+initialVm_[cellType];
+      for (int j=0;j<nStateVar;j++) state_[j][ii]  = XXXstateInitial_[j]; 
+      state_[dVK_i][ii] = state_[K_i][ii]/c9+XXXinitialVm_;
    } 
    for (unsigned ii=nCells_; ii<nCellBuffer_;ii++) 
       for (int j=0;j<nStateVar;j++) state_[j][ii]  =  state_[j][ii-1];  
@@ -447,25 +392,14 @@ void TT06Dev_Reaction::mkWorkBundles_(TT06Dev_ReactionParms& parms)
       int nCell = workBundle(squadId, nCells_, nSquads , 4, offset);
       int *gateThreadMap; 
       int offsetEq = nEq*squadRank; 
-      if (offset+nCell <= nCell_s0_ )  gateThreadMap = gateThreadMapS0; 
-      else if (  offset >= nCell_s0_ ) gateThreadMap = gateThreadMapS1; 
-      else  
+      if (cellTypeParm_.s_switch)
       {
-         gateThreadMap = gateThreadMapS; 
-         if (  offsetEq <=  sGateIndex && sGateIndex < offsetEq +nEq) 
-         {
-            assert(splitRank == -1);   //At most  one thread/rank can gave both s0 and s1 cells 
-            int nCell0 = nCell_s0_ - offset; 
-            int nCell1 = nCell - nCell0; 
-            int eq = 12; 
-            PADE *gateFit = fit_+gateFitOffset; 
-            double *s1Mhu     = gateFit[2*eq+0].coef; 
-            double *s1TauR    = gateFit[2*eq+1].coef; 
-            sGateInit(s1Mhu, s1TauR, nCell0, nCell1);
-            splitRank = teamRank; 
-         }
+         gateThreadMap = gateThreadMapS1;
       }
-
+      else
+      {
+         gateThreadMap = gateThreadMapS0;
+      }
       gateWork_[teamRank].offsetCell =  offset; 
       gateWork_[teamRank].nCell    =  nCell; 
       gateWork_[teamRank].nEq      = nEq; 
@@ -596,8 +530,8 @@ void TT06Dev_Reaction::calc(double dt, const VectorDouble32& Vm, const vector<do
    WORK work ={ 0,nCells_,0,12}; 
    if (nCells_ > 0) 
    {
-      update_nonGate_((void*)fit_, &currentScales_,dt,&(cellTypeParms_[0]), nCells_, &(cellTypeVector_[0]),const_cast<double *>(&Vm[0]),  0, &state_[0], &dVm[0]);
-      update_gate_(dt, nCells_, &(cellTypeVector_[0]), const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],fit_,work);
+      update_nonGate_((void*)fit_, &currentScales_,dt,&(cellTypeParm_), nCells_,const_cast<double *>(&Vm[0]),  0, &state_[0], &dVm[0]);
+      update_gate_(dt, nCells_, cellTypeParm_.s_switch, const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],fit_,work);
    }
 }
 void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR)
@@ -657,7 +591,7 @@ void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, Vector
    if (nCells > 0) 
    {
       startTimer(nonGateTimer);
-      update_nonGate_(fit_,&currentScales_,dt,&cellTypeParms_[0], nCells, &cellTypeVector_[offset], const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
+      update_nonGate_(fit_,&currentScales_,dt,&cellTypeParm_, nCells, const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
       stopTimer(nonGateTimer);
    }
 }
@@ -685,8 +619,8 @@ void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)
 
 void TT06Dev_Reaction::initializeMembraneVoltage(VectorDouble32& Vm)
 {
-   assert(Vm.size() >= cellTypeVector_.size());
-   for (unsigned ii=0; ii<cellTypeVector_.size(); ++ii) Vm[ii] = initialVm_[cellTypeVector_[ii]];
+   assert(Vm.size() >= nCells_);
+   for (unsigned ii=0; ii<Vm.size(); ++ii) Vm[ii] = XXXinitialVm_;
 }
 
 void TT06Dev_Reaction::getCheckpointInfo(vector<string>& name,

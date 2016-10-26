@@ -49,7 +49,6 @@ struct STATE
 struct CellTypeParmsFull
 {
    std::string name;
-   std::vector<int> anatomyIndices;
    int s_switch;
    double P_NaK, g_Ks, g_Kr, g_to, g_NaL, Vm;
    std::map<std::string,STATE> state;
@@ -94,9 +93,9 @@ double jTauRMod(double Vm, void *parms) ;
 
 
 void initCnst();
-void updateGate(double dt, int n, int *cellType, double *Vm, int offset, double **state, PADE *fit, WORK& work);
-void updateGateFast(double dt, int n, int *cellType, double *Vm, int offset, double **state, PADE *fit, WORK& work);
-void updateGateFast1(double dt, int n, int *cellType, double *Vm, int offset, double **state, PADE *fit, WORK& work);
+void updateGate(double dt, int n, int s_switch, double *Vm, int offset, double **state, PADE *fit, WORK& work);
+void updateGateFast(double dt, int n, int s_switch, double *Vm, int offset, double **state, PADE *fit, WORK& work);
+void updateGateFast1(double dt, int n, int s_switch, double *Vm, int offset, double **state, PADE *fit, WORK& work);
 PADE **makeFit(char *fitNames[], double tol, double V0, double V1, double deltaV, int mod);
 std::map<std::string,CellTypeParmsFull> getStandardCellTypes();
 };
