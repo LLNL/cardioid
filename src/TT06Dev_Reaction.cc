@@ -25,25 +25,22 @@ using namespace PerformanceTimers;
 using namespace TT06Func;
 int workBundle(int index, int nItems, int nGroups , int mod, int& offset);
 
-#define sGateInit sGateInit_v2
 #ifdef BGQ
 static   UPDATEGATE gateEq[] ={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, 
                                update_Xr2Gate_v1, update_XsGate_v1, update_rGate_v1, update_dGate_v1, 
                                update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, update_s0Gate_v1, 
-                               update_s1Gate_v1, update_sGate_v2} ;
+                               update_s1Gate_v1} ;
 #else
 static   UPDATEGATE gateEq[] ={ update_mGate_v2, update_hGate_v2, update_jGate_v2, update_Xr1Gate_v2, 
                                update_Xr2Gate_v2, update_XsGate_v2, update_rGate_v2, update_dGate_v2, 
                                update_fGate_v2, update_f2Gate_v2,  update_jLGate_v2, update_s0Gate_v2, 
-                               update_s1Gate_v2, update_sGate_v2} ;
+                               update_s1Gate_v2} ;
 #endif
 static double *mhuX[14]; 
 static double *tauRX[14]; 
-static double *gateX[14]; 
 static UPDATEGATE gateEqX[14]; 
 static int gateThreadMapS0[] = { 0,1,2,3,4,5,6,7,8,9,10,11}; 
 static int gateThreadMapS1[] = { 0,1,2,3,4,5,6,7,8,9,10,12}; 
-static int gateThreadMapS[] =  { 0,1,2,3,4,5,6,7,8,9,10,13}; 
 
 
 OVF fitFuncMap(string name) 
@@ -154,7 +151,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(const double dt, const int numPoints, TT06Dev
    for (eq=0;eq<11;eq++)
    {
       gateEqX[eq]  = gateEq[eq];  
-      gateX[eq]    = gate[eq];
+      gateX_[eq]    = gate[eq];
       mhuX[eq]     = gateFit[2*eq+0].coef; 
       tauRX[eq]    = gateFit[2*eq+1].coef; 
    }
@@ -162,7 +159,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(const double dt, const int numPoints, TT06Dev
    for (eq=11;eq<14;eq++)
    {
       gateEqX[eq]  = gateEq[eq];
-      gateX[eq] = gate[11];
+      gateX_[eq] = gate[11];
       switch (eq)
       {
         case 11:
@@ -284,11 +281,9 @@ void TT06Dev_Reaction::mkWorkBundles_(TT06Dev_ReactionParms& parms)
          int m = parms.gateThreadMap[ii]; 
          gateThreadMapS0[ii]  = m; 
          gateThreadMapS1[ii]  = m; 
-         gateThreadMapS [ii]  = m; 
          if ( m == 11) 
          {
             gateThreadMapS1[ii]  = 12; 
-            gateThreadMapS[ii]   = 13; 
             sGateIndex = ii; 
          }
       }
@@ -530,7 +525,7 @@ void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)
    for (int ii=0;ii<nEq;ii++)
    {
       int eq = map[ii]; 
-      gateEqX[eq](dt, nCell , vm , gateX[eq]+offsetCell, mhuX[eq], tauRX[eq]);
+      gateEqX[eq](dt, nCell , vm , gateX_[eq]+offsetCell, mhuX[eq], tauRX[eq]);
    }
    stopTimer(gateTimer);
 }

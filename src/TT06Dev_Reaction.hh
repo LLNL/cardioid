@@ -96,6 +96,7 @@ class TT06Dev_Reaction : public Reaction
    int nCellBuffer_; 
    double *stateBuffer_; 
    std::vector<double*>state_; 
+   double* gateX_[14];
 };
 
 #endif
