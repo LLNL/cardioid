@@ -32,7 +32,7 @@ namespace  scanReaction
       *valuePtr = value; 
       return ptr; 
    }
-   Reaction* scanGrandi(OBJECT* obj, const Anatomy& anatomy)
+   Reaction* scanGrandi(OBJECT* obj, const int numPoints)
    {
       const char *defaultCurrentNames[]={"INa","INaL","INab","INaK","IKr","IKs","IKur","IKp","Ito","IK1","IClCa","IClb","ICa","INCX","IpCa",""};
       Grandi_Parms parms; 
@@ -50,10 +50,32 @@ namespace  scanReaction
          parms.currentNames.push_back(name); 
          parms.currentModels.push_back(value); 
       }
-      Reaction *reaction = new Grandi_Reaction(anatomy,parms);
-         char *ptr = obj->value;
-         while (*ptr != '\0')
-         {
+      string cellType;
+      objectGet(obj, "cellTypeName", cellType, "la_sr");
+      if (cellType == "la_sr")
+      {
+         parms.cellType = LA_SR;
+      }
+      else if (cellType == "ra_sr")
+      {
+         parms.cellType = RA_SR;
+      }
+      else if (cellType == "ra_af")
+      {
+         parms.cellType = RA_AF;
+      }
+      else if (cellType == "la_af")
+      {
+         parms.cellType = LA_AF;
+      }
+      else
+      {
+         assert(0 && "Unrecognized cell type for Grandi");
+      }
+      Reaction *reaction = new Grandi_Reaction(numPoints,parms);
+      char *ptr = obj->value;
+      while (*ptr != '\0')
+      {
          char *keyword;
          char *valueString;
          ptr = getKeywordValueGrandi(ptr,&keyword,&valueString);
@@ -62,19 +84,19 @@ namespace  scanReaction
          int handle = reaction->getVarHandle(Keyword);
          if (handle != -1)
          {
-         double value0;
-         double value = atof(valueString);
-         int iComp = handle >> 16;
-         int iVar  = handle & 0xffff;
-         value0=reaction->getValue(0,handle);
-         printf("%8x %2d %2d %s %g %g\n",handle,iComp,iVar,keyword,value,value0);
-         reaction->setValue(0,handle,value);
-         value0=reaction->getValue(0,handle);
-         printf("%8x %2d %2d %s %g %g\n",handle,iComp,iVar,keyword,value,value0);
+            double value0;
+            double value = atof(valueString);
+            int iComp = handle >> 16;
+            int iVar  = handle & 0xffff;
+            value0=reaction->getValue(0,handle);
+            printf("%8x %2d %2d %s %g %g\n",handle,iComp,iVar,keyword,value,value0);
+            reaction->setValue(0,handle,value);
+            value0=reaction->getValue(0,handle);
+            printf("%8x %2d %2d %s %g %g\n",handle,iComp,iVar,keyword,value,value0);
          }
          free(keyword);
          free(valueString);
-         }
+      }
       return  reaction; 
    }
 }

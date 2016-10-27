@@ -30,7 +30,7 @@ static char   **typeName_=0;
 static int nState_=0; 
 static double *initialStateBuffer_=0; 
 static double **initialState_=0;
-static int *cellType_; 
+static int cellType_; 
 static char **stateName_=0; 
 static int  *stateCompMap_=0; 
 static int  *parmCompMap_=0; 
@@ -50,7 +50,7 @@ void GrandiDefineDefaultTypes();
 
 FILE*output;
 
-void GrandiInit(double dt, int nCells, int *cellType)
+void GrandiInit(double dt, int nCells, CELLTYPES cellType)
 {
    dt_ = dt; 
    nCells_ = nCells; 
@@ -59,17 +59,16 @@ void GrandiInit(double dt, int nCells, int *cellType)
    GrandiDefineDefaultTypes();
    state_  = (double *)malloc(nCells_*nState_*sizeof(double)); 
    dState_ = (double *)malloc(nCells_*nState_*sizeof(double)); 
-   cellType_ = (int *)malloc(nCells_*sizeof(int)); 
+   cellType_ = cellType;
    derived_ = (DERIVED *)malloc(nCells_*sizeof(DERIVED)); 
    cellParms_ = (double **)malloc(nCells_*sizeof(char*)); 
    for (int i=0;i<nCells_;i++) 
    {
-      cellType_[i] = cellType[i]; 
-      cellParms_[i] = typeParms_[cellType[i]]; 
+      cellParms_[i] = typeParms_[cellType]; 
       double *state = state_ +i*nState_ ; 
       double *dState = dState_ +i*nState_ ; 
       derived_[i].dState = dState; 
-      for (int j=0;j<nState_;j++) state[j] = initialState_[cellType[i]][j]; 
+      for (int j=0;j<nState_;j++) state[j] = initialState_[cellType][j]; 
    }
 }
 void GrandiDefineComps()
@@ -408,8 +407,7 @@ int main(int iargc, char *argv[])
    double dt=parms.dt ;
    int nCells = 1; 
    if (parms.currents != NULL)    readCurrents(parms.currents); 
-   int cellType[nCells]; 
-   for (int ii=0;ii<nCells;ii++) cellType[ii] = LA_SR; //ENDO_CELL; 
+   CELLTYPES cellType = LA_SR; 
    GrandiInit(dt,nCells,cellType);
    if (parms.initialConditions != NULL)    readInitialConditions(parms.initialConditions); 
    VOLTAGE *voltage0 = (VOLTAGE *)(state_+0*nState_) ;

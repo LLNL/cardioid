@@ -12,6 +12,7 @@ class Grandi;
 class BucketOfBits;
 struct Grandi_Parms
 {
+   CELLTYPES cellType;
       std::vector<std::string> currentNames;
       std::vector<std::string> currentModels;
 };
@@ -20,7 +21,7 @@ class Grandi_Reaction : public Reaction
 {
  public:
    
-   Grandi_Reaction(const Anatomy& anatomy, Grandi_Parms &parms);
+   Grandi_Reaction(const int numPoints, Grandi_Parms &parms);
    std::string methodName() const {return "Grandi";}
    void calc(double dt,
              const VectorDouble32& Vm,
@@ -45,8 +46,7 @@ class Grandi_Reaction : public Reaction
 
    int indexS_;
    int nCells_; 
-   std::vector<int>      ttType_; // maps cellType to ttType
-//   std::vector<Grandi> cells_;
+   CELLTYPES cellType;
    void makeHandleMap(); 
 };
 
