@@ -12,15 +12,16 @@ class OHaraRudy;
 class BucketOfBits;
 struct OHaraRudy_Parms
 {
-      std::vector<std::string> currentNames;
-      std::vector<std::string> currentModels;
+   CELLTYPES cellType;
+   std::vector<std::string> currentNames;
+   std::vector<std::string> currentModels;
 };
 
 class OHaraRudy_Reaction : public Reaction
 {
  public:
    
-   OHaraRudy_Reaction(const Anatomy& anatomy, OHaraRudy_Parms &parms);
+   OHaraRudy_Reaction(const int numPoints, OHaraRudy_Parms &parms);
    std::string methodName() const {return "OHaraRudy";}
    void calc(double dt,
              const VectorDouble32& Vm,
@@ -44,9 +45,8 @@ class OHaraRudy_Reaction : public Reaction
  private:
 
    int indexS_;
-   int nCells_; 
-   std::vector<int>      ttType_; // maps cellType to ttType
-//   std::vector<OHaraRudy> cells_;
+   int nCells_;
+   CELLTYPES cellType;
    void makeHandleMap(); 
 };
 

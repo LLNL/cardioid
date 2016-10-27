@@ -11,25 +11,10 @@
 using namespace std;
 HandleMap  OHaraRudy_Reaction::handleMap_ ;
 
-OHaraRudy_Reaction::OHaraRudy_Reaction(const Anatomy& anatomy,OHaraRudy_Parms &parms)
+OHaraRudy_Reaction::OHaraRudy_Reaction(const int numPoints,OHaraRudy_Parms &parms)
 {
-   ttType_.resize(256, -1); 
-   ttType_[30] = ENDO_CELL;
-   ttType_[31] = ENDO_CELL;
-   ttType_[75] = ENDO_CELL;
-   ttType_[76] = M_CELL;
-   ttType_[77] = EPI_CELL;
-   ttType_[100] = ENDO_CELL;
-   ttType_[101] = M_CELL;
-   ttType_[102] = EPI_CELL;
-   indexS_=-2; 
-   nCells_ = anatomy.nLocal(); 
-   int cellType[nCells_]; 
-   for (unsigned ii=0; ii<nCells_; ++ii)
-   {
-      assert(anatomy.cellType(ii) >= 0 && anatomy.cellType(ii) < 256);
-      cellType[ii] = ttType_[anatomy.cellType(ii)];
-   }
+   nCells_ = numPoints;
+   cellType = parms.cellType;
    OHaraRudyInit(0.0,nCells_,cellType);
    makeHandleMap(); 
 
