@@ -87,6 +87,9 @@ struct gengetopt_args_info
   double stim_duration_arg;	/**< @brief Duration of the stimulus (default='1').  */
   char * stim_duration_orig;	/**< @brief Duration of the stimulus original value given at command line.  */
   const char *stim_duration_help; /**< @brief Duration of the stimulus help description.  */
+  int anatomy_tag_arg;	/**< @brief Anatomy tag to use for the cell model (default='102').  */
+  char * anatomy_tag_orig;	/**< @brief Anatomy tag to use for the cell model original value given at command line.  */
+  const char *anatomy_tag_help; /**< @brief Anatomy tag to use for the cell model help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
@@ -104,6 +107,7 @@ struct gengetopt_args_info
   unsigned int stim_at_given ;	/**< @brief Whether stim-at was given.  */
   unsigned int stim_strength_given ;	/**< @brief Whether stim-strength was given.  */
   unsigned int stim_duration_given ;	/**< @brief Whether stim-duration was given.  */
+  unsigned int anatomy_tag_given ;	/**< @brief Whether anatomy-tag was given.  */
 
 } ;
 

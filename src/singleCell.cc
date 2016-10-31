@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
       {
          AnatomyCell tmp;
          tmp.gid_ = ii;
-         tmp.cellType_ = 102;
+         tmp.cellType_ = params.anatomy_tag_arg;
          cells.push_back(tmp);
       }
    }

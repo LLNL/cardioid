@@ -50,6 +50,7 @@ const char *gengetopt_args_info_help[] = {
   "  -s, --stim-at=DOUBLE          Stimulate at the following time in ms",
   "  -a, --stim-strength=DOUBLE    Strength of the stimulus  (default=`60')",
   "  -t, --stim-duration=DOUBLE    Duration of the stimulus  (default=`1')",
+  "      --anatomy-tag=INT         Anatomy tag to use for the cell model\n                                  (default=`102')",
     0
 };
 
@@ -93,6 +94,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->stim_at_given = 0 ;
   args_info->stim_strength_given = 0 ;
   args_info->stim_duration_given = 0 ;
+  args_info->anatomy_tag_given = 0 ;
 }
 
 static
@@ -125,6 +127,8 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->stim_strength_orig = NULL;
   args_info->stim_duration_arg = 1;
   args_info->stim_duration_orig = NULL;
+  args_info->anatomy_tag_arg = 102;
+  args_info->anatomy_tag_orig = NULL;
   
 }
 
@@ -155,6 +159,7 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->stim_at_max = 0;
   args_info->stim_strength_help = gengetopt_args_info_help[14] ;
   args_info->stim_duration_help = gengetopt_args_info_help[15] ;
+  args_info->anatomy_tag_help = gengetopt_args_info_help[16] ;
   
 }
 
@@ -319,6 +324,7 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   args_info->stim_at_arg = 0;
   free_string_field (&(args_info->stim_strength_orig));
   free_string_field (&(args_info->stim_duration_orig));
+  free_string_field (&(args_info->anatomy_tag_orig));
   
   
 
@@ -386,6 +392,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "stim-strength", args_info->stim_strength_orig, 0);
   if (args_info->stim_duration_given)
     write_into_file(outfile, "stim-duration", args_info->stim_duration_orig, 0);
+  if (args_info->anatomy_tag_given)
+    write_into_file(outfile, "anatomy-tag", args_info->anatomy_tag_orig, 0);
   
 
   i = EXIT_SUCCESS;
@@ -972,6 +980,7 @@ cmdline_parser_internal (
         { "stim-at",	1, NULL, 's' },
         { "stim-strength",	1, NULL, 'a' },
         { "stim-duration",	1, NULL, 't' },
+        { "anatomy-tag",	1, NULL, 0 },
         { 0,  0, 0, 0 }
       };
 
@@ -1153,6 +1162,22 @@ cmdline_parser_internal (
             exit (EXIT_SUCCESS);
           }
 
+          /* Anatomy tag to use for the cell model.  */
+          if (strcmp (long_options[option_index].name, "anatomy-tag") == 0)
+          {
+          
+          
+            if (update_arg( (void *)&(args_info->anatomy_tag_arg), 
+                 &(args_info->anatomy_tag_orig), &(args_info->anatomy_tag_given),
+                &(local_args_info.anatomy_tag_given), optarg, 0, "102", ARG_INT,
+                check_ambiguity, override, 0, 0,
+                "anatomy-tag", '-',
+                additional_error))
+              goto failure;
+          
+          }
+          
+          break;
         case '?':	/* Invalid option.  */
           /* `getopt_long' already printed an error message.  */
           goto failure;

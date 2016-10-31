@@ -20,6 +20,6 @@ option      "s1-offset"          f "Time to start s1 stimulii"                  
 option      "stim-at"            s "Stimulate at the following time in ms"              double  multiple optional
 option      "stim-strength"      a "Strength of the stimulus"                           double  default="60" optional
 option      "stim-duration"      t "Duration of the stimulus"                           double  default="1" optional
-
+option      "anatomy-tag"        - "Anatomy tag to use for the cell model"              int     default="102" optional
 
 #option      "fix-vm"             v "Not really sure"                                   double  default="0" optional
