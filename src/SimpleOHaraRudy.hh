@@ -87,6 +87,7 @@ class ThisReaction : public Reaction
 
    //EDIT_PARAMETERS
    double GCaB;
+   double JrelStiffConst;
 
    //per-cell flags
    std::vector<PerCellFlags> perCellFlags_;

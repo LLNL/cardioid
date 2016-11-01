@@ -36,6 +36,7 @@ namespace scanReaction
 
       //EDIT_PARAMETERS
       setDefault(GCaB, 6.0643e-4);    // [uA/uF] 3
+      setDefault(JrelStiffConst, 0.005);  // ms
       
       return reaction;
    }
@@ -759,8 +760,50 @@ void ThisReaction::calc(double dt, const VectorDouble32& Vm,
 	}
       const double diff_Jrelp=(Jrelp_inf-Jrelp)/tau_relp_use;
       const double fJrelp=(1.0/(1.0+KmCaMK/CaMKa));
-      const double Jrel=(1.0-fJrelp)*Jrelnp+fJrelp*Jrelp;
+      /* May 2011:
+         RCB:
+         Ok, I came up with a hack for Jrel that doesn't involve clamping if
+         cajsr goes negative.  This gives the same results as an adaptive
+         integration scheme.
 
+         jrel_stiff_const should be 0.1*dt, roughly.
+
+
+         -Jrel=(1.0-fJrelp)*Jrelnp+fJrelp*Jrelp;
+         +Jrel_canidate=(1.0-fJrelp)*Jrelnp+fJrelp*Jrelp;
+         +Jrel=Jrel_canidate;
+         +
+         +jrel_stiff_const = 0.005; .param();
+         +if (Jrel_canidate*jrel_stiff_const > cajsr) {
+         +   Jrel = cajsr/jrel_stiff_const;
+         +}
+
+         Tom:
+         
+         This is terrific news.  My evening beers are dedicated to your
+         efforts!  She runs fast and smooth now?  I want very much to make it
+         so.  Please let me know what's next.
+
+         Rob:
+         I think she runs fast and smooth, at least in a single cell.  Simulation
+         results are going to take a few days to run and process.
+
+         The Jrel hack should maintain conservation of calcium.  I spent a couple
+         of hours writing equations to figure out what was happening.  Basically,
+         near zero the differential equation for cajsr turns into something like
+         this (I forget the exact details):
+         
+         y'' = -(1+c/y)*y'-b*y - d
+         
+         All my fix does is damp that (1+c/y) term when y is near zero.  cajsr
+         might take an extra timestep or two to reach zero, but it won't go negative.
+      */
+      double Jrel=(1.0-fJrelp)*Jrelnp+fJrelp*Jrelp;
+      if (Jrel*JrelStiffConst > cajsr)
+      {
+         Jrel = cajsr/JrelStiffConst;
+      }
+      
       double Jupnp=0.004375*cai/(cai+0.00092);
       double Jupp=2.75*0.004375*cai/(cai+0.00092-0.00017);
       if (celltype==1)
