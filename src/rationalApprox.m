@@ -1,4 +1,4 @@
-function [hornNumerator, hornDenominator] = rationalApprox(fff, outputName, inputName, lb, ub, numPoints, tolerance)
+function [thisTolerance, hornNumerator, hornDenominator] = rationalApprox(fff, outputName, inputName, lb, ub, numPoints, tolerance)
   zzz = linspace(-1,1,numPoints)';
   xxx = zzz*(ub-lb)/2 + (ub+lb)/2;
   yyy = fff(xxx);
@@ -40,7 +40,7 @@ function [hornNumerator, hornDenominator] = rationalApprox(fff, outputName, inpu
         printf("      double denominator = qCoeff[qSize-1];\n");
         printf("      for (int iq=qSize-2; iq>=0; --iq)\n");
         printf("      {\n");
-        printf("         denomerator = qCoeff[iq] + __x*denominator;\n");
+        printf("         denominator = qCoeff[iq] + __x*denominator;\n");
         printf("      }\n");
         printf("      %s = numerator/denominator;\n", outputName);
       endif
@@ -67,6 +67,9 @@ function [hornNumeratorCoeffs, hornDenominatorCoeffs, bestTolerance] = findBestA
   figure(1);
   plot(zzz, chebyPoly);
 
+  funcMin = min(yyy);
+  funcMax = max(yyy);
+  
   bestChebyCoeffs = zeros(maxTermCount-1);
   bestTolerance = 1e30;
   bestNumTermCount = 0;
@@ -75,9 +78,10 @@ function [hornNumeratorCoeffs, hornDenominatorCoeffs, bestTolerance] = findBestA
     numTermCount = maxTermCount - denomTermCount;
     
     [approximation, chebyCoeffs] = buildApproximate(yyy, chebyPoly, numTermCount, denomTermCount);
-    tolerance = norm(approximation - yyy)/rows(yyy);
-    if (tolerance < bestTolerance)
-      bestTolerance = tolerance;
+    rmsErrorScaled = norm(approximation - yyy)/sqrt(rows(yyy))/(funcMax-funcMin);
+    maxErrorScaled = max(abs(approximation - yyy))/(funcMax-funcMin);
+    if (maxErrorScaled < bestTolerance)
+      bestTolerance = maxErrorScaled;
       bestNumTermCount = numTermCount;
       bestDenomTermCount = denomTermCount;
       bestChebyCoeffs = chebyCoeffs;
@@ -105,11 +109,16 @@ function [hornNumeratorCoeffs, hornDenominatorCoeffs, bestTolerance] = findBestA
   endfor
 
   % combine them into one nice converter.
-  oldSetting = warning("query", "singular-matrix-div");
-  warning("off", "singular-matrix-div");
-  hornFromCheby = zFromHorn \ zFromCheby;
-  warning(oldSetting.state, "singular-matrix-div");
-  
+
+  if (diag(diag(zFromHorn) == zFromHorn))
+    hornFromCheby = diag(1./diag(zFromHorn)) * zFromCheby;
+  else
+    oldSetting = warning("query", "singular-matrix-div");
+    warning("off", "singular-matrix-div");
+    hornFromCheby = zFromHorn \ zFromCheby;
+    warning(oldSetting.state, "singular-matrix-div");
+  endif
+    
   chebyNumeratorCoeffs = bestChebyCoeffs(1:bestNumTermCount);
   chebyDenominatorCoeffs = [ 1; bestChebyCoeffs(bestNumTermCount+1:end) ];
   hornNumeratorCoeffs = hornFromCheby(1:bestNumTermCount,1:bestNumTermCount)*chebyNumeratorCoeffs;
@@ -117,8 +126,12 @@ function [hornNumeratorCoeffs, hornDenominatorCoeffs, bestTolerance] = findBestA
   %zFromCheby
   %zFromHorn
   %hornFromCheby
+  %zFromCheby(1:bestNumTermCount,1:bestNumTermCount)
   %chebyNumeratorCoeffs
+  %zFromCheby(1:bestNumTermCount,1:bestNumTermCount)*chebyNumeratorCoeffs
+  %zFromCheby(1:bestDenomTermCount,1:bestDenomTermCount)
   %chebyDenominatorCoeffs
+  %zFromCheby(1:bestDenomTermCount,1:bestDenomTermCount)*chebyDenominatorCoeffs
   %hornNumeratorCoeffs
   %hornDenominatorCoeffs
   hornNumeratorCoeffs = hornNumeratorCoeffs ./ hornDenominatorCoeffs(1);
@@ -141,5 +154,5 @@ function [approximation,coeffs] = buildApproximate(yyy, interpPoly, numTermCount
   endfor
 
   coeffs = AAA\bbb; % find the coeffs
-  approximation = AAA*coeffs;
+  approximation = interpPoly(:,1:numTermCount)*coeffs(1:numTermCount) ./ (ones(size(yyy)) + interpPoly(:,2:denomTermCount)*coeffs(numTermCount+1:end));
 endfunction
