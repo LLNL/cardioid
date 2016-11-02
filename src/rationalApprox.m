@@ -1,10 +1,10 @@
-function [thisTolerance, hornNumerator, hornDenominator] = rationalApprox(fff, outputName, inputName, lb, ub, numPoints, tolerance)
+function [thisTolerance, hornNumerator, hornDenominator] = rationalApprox(fff, outputName, inputName, lb, ub, numPoints, tolerance, errorType)
   zzz = linspace(-1,1,numPoints)';
   xxx = zzz*(ub-lb)/2 + (ub+lb)/2;
   yyy = fff(xxx);
 
   for cost=3:64
-    [hornNumerator, hornDenominator, thisTolerance] = findBestAtCost(yyy, zzz, lb, ub, cost);
+    [hornNumerator, hornDenominator, thisTolerance] = findBestAtCost(yyy, zzz, lb, ub, cost, errorType);
     numTermCount = rows(hornNumerator);
     denomTermCount = rows(hornDenominator);
     thisTolerance
@@ -21,7 +21,7 @@ function [thisTolerance, hornNumerator, hornDenominator] = rationalApprox(fff, o
       endfor
       printf("double %s;\n", outputName);
       printf("{\n");
-      printf("   //rationalApprox(%s, \"%s\", \"%s\", %f, %f, %d, %e)\n", func2str(fff), outputName, inputName, lb, ub, numPoints, tolerance);
+      printf("   //rationalApprox(%s, \"%s\", \"%s\", %f, %f, %d, %e, \"%s\")\n", func2str(fff), outputName, inputName, lb, ub, numPoints, tolerance, errorType);
       printf("   double __x = %s;\n", inputName);
       printf("   if (useRatpolyApprox && %f <= __x && __x <= %f)\n", lb, ub);
       printf("   {\n");
@@ -55,7 +55,7 @@ function [thisTolerance, hornNumerator, hornDenominator] = rationalApprox(fff, o
   endfor
 endfunction
 
-function [hornNumeratorCoeffs, hornDenominatorCoeffs, bestTolerance] = findBestAtCost(yyy, zzz, lb, ub, maxTermCount)
+function [hornNumeratorCoeffs, hornDenominatorCoeffs, bestTolerance] = findBestAtCost(yyy, zzz, lb, ub, maxTermCount, errorType)
   % build the polynomial
   assert(maxTermCount >= 2)
   chebyPoly = zeros(rows(zzz), maxTermCount);
@@ -80,8 +80,13 @@ function [hornNumeratorCoeffs, hornDenominatorCoeffs, bestTolerance] = findBestA
     [approximation, chebyCoeffs] = buildApproximate(yyy, chebyPoly, numTermCount, denomTermCount);
     rmsErrorScaled = norm(approximation - yyy)/sqrt(rows(yyy))/(funcMax-funcMin);
     maxErrorScaled = max(abs(approximation - yyy))/(funcMax-funcMin);
-    if (maxErrorScaled < bestTolerance)
-      bestTolerance = maxErrorScaled;
+    if (errorType == "rms")
+      errorScaled = rmsErrorScaled;
+    else
+      errorScaled = maxErrorScaled;
+    endif
+    if (errorScaled < bestTolerance)
+      bestTolerance = errorScaled;
       bestNumTermCount = numTermCount;
       bestDenomTermCount = denomTermCount;
       bestChebyCoeffs = chebyCoeffs;
