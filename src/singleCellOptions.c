@@ -51,6 +51,7 @@ const char *gengetopt_args_info_help[] = {
   "  -a, --stim-strength=DOUBLE    Strength of the stimulus  (default=`60')",
   "  -t, --stim-duration=DOUBLE    Duration of the stimulus  (default=`1')",
   "      --anatomy-tag=INT         Anatomy tag to use for the cell model\n                                  (default=`102')",
+  "  -N, --num-points=INT          Number of points to stimulate  (default=`1')",
     0
 };
 
@@ -95,6 +96,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->stim_strength_given = 0 ;
   args_info->stim_duration_given = 0 ;
   args_info->anatomy_tag_given = 0 ;
+  args_info->num_points_given = 0 ;
 }
 
 static
@@ -129,6 +131,8 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->stim_duration_orig = NULL;
   args_info->anatomy_tag_arg = 102;
   args_info->anatomy_tag_orig = NULL;
+  args_info->num_points_arg = 1;
+  args_info->num_points_orig = NULL;
   
 }
 
@@ -160,6 +164,7 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->stim_strength_help = gengetopt_args_info_help[14] ;
   args_info->stim_duration_help = gengetopt_args_info_help[15] ;
   args_info->anatomy_tag_help = gengetopt_args_info_help[16] ;
+  args_info->num_points_help = gengetopt_args_info_help[17] ;
   
 }
 
@@ -325,6 +330,7 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->stim_strength_orig));
   free_string_field (&(args_info->stim_duration_orig));
   free_string_field (&(args_info->anatomy_tag_orig));
+  free_string_field (&(args_info->num_points_orig));
   
   
 
@@ -394,6 +400,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "stim-duration", args_info->stim_duration_orig, 0);
   if (args_info->anatomy_tag_given)
     write_into_file(outfile, "anatomy-tag", args_info->anatomy_tag_orig, 0);
+  if (args_info->num_points_given)
+    write_into_file(outfile, "num-points", args_info->num_points_orig, 0);
   
 
   i = EXIT_SUCCESS;
@@ -981,10 +989,11 @@ cmdline_parser_internal (
         { "stim-strength",	1, NULL, 'a' },
         { "stim-duration",	1, NULL, 't' },
         { "anatomy-tag",	1, NULL, 0 },
+        { "num-points",	1, NULL, 'N' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "Vo:r:h:d:S:T:p:c:n:b:f:s:a:t:", long_options, &option_index);
+      c = getopt_long (argc, argv, "Vo:r:h:d:S:T:p:c:n:b:f:s:a:t:N:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1150,6 +1159,18 @@ cmdline_parser_internal (
               &(local_args_info.stim_duration_given), optarg, 0, "1", ARG_DOUBLE,
               check_ambiguity, override, 0, 0,
               "stim-duration", 't',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'N':	/* Number of points to stimulate.  */
+        
+        
+          if (update_arg( (void *)&(args_info->num_points_arg), 
+               &(args_info->num_points_orig), &(args_info->num_points_given),
+              &(local_args_info.num_points_given), optarg, 0, "1", ARG_INT,
+              check_ambiguity, override, 0, 0,
+              "num-points", 'N',
               additional_error))
             goto failure;
         
