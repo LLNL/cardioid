@@ -126,7 +126,6 @@ int getVarOffset(const std::string& varName)
          return ivar;
       }
    }
-   assert(0 && "Control should never get here.");
    return -1;
 }
 
