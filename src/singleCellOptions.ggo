@@ -22,4 +22,5 @@ option      "stim-strength"      a "Strength of the stimulus"                   
 option      "stim-duration"      t "Duration of the stimulus"                           double  default="1" optional
 option      "anatomy-tag"        - "Anatomy tag to use for the cell model"              int     default="102" optional
 
+option      "num-points"         N "Number of points to stimulate"                      int     default="1" optional
 #option      "fix-vm"             v "Not really sure"                                   double  default="0" optional

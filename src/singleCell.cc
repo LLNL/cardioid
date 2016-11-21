@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
    }
 
    //create the ionic model
-   const int nCells = 1;
+   const int nCells = params.num_points_arg;
 
    //read in the object file
    for (int iobject=0; iobject<params.object_given; iobject++) 
