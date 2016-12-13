@@ -100,43 +100,59 @@ function [hornNumeratorCoeffs, hornDenominatorCoeffs, bestTolerance] = findBestA
     plot(zzz, [yyy approximation]);
   endfor
 
-  % build the horn coeff
-  zFromCheby = zeros(maxTermCount, maxTermCount);
-  zFromCheby(1:2,1:2) = eye(2);
+  % Comments are in order here.
+  % For chebychev, we have
+  % c0 =  z0            = 1
+  % c1 =      z1        = z
+  % c2 = -z0     +2*z2  = 2z^2 - 1
+  %
+  % For horn, we have
+  % x0 =   z0                     = 1
+  % x1 = b*z0   +   m*z1          = b+mz
+  % x2 = b^2*z0 + 2mb*z1 + m^2*z2 = b^2+2mbz+m^2*z^2
+  %
+  % we just found coeffs q such that q'*C is a good approx.
+  % From the above, we know
+  % C = DZ
+  % X = BZ
+  % Therefore
+  % q'*C = q'*D*Z
+  %      = q'*D*inv(B)*X
+  %      = (inv(B')*D'*q)'*X
+  
+  
+  chebyPolyFromZ = zeros(maxTermCount,maxTermCount);
+  chebyPolyFromZ(1:2,1:2) = eye(2);
   for ii=3:maxTermCount
-    zFromCheby(:,ii) = [0; 2*zFromCheby(1:end-1, ii-1)] - zFromCheby(:, ii-2);
+    chebyPolyFromZ(ii,:) = [0 2*chebyPolyFromZ(ii-1, 1:end-1)] - chebyPolyFromZ(ii-2,:);
   endfor
 
-  zFromHorn = zeros(maxTermCount, maxTermCount);
-  zFromHorn(1,1) = 1;
+  hornPolyFromZ = zeros(maxTermCount,maxTermCount);
+  hornPolyFromZ(1,1) = 1;
   for ii=2:maxTermCount
-    zFromHorn(:,ii) = [0; zFromHorn(1:end-1, ii-1)]*(ub-lb)/2 + zFromHorn(:,ii-1)*(ub+lb)/2;
+    hornPolyFromZ(ii,:) = [0 hornPolyFromZ(ii-1, 1:end-1)]*(ub-lb)/2 + hornPolyFromZ(ii-1,:)*(ub+lb)/2;
   endfor
 
   % combine them into one nice converter.
 
-  if (diag(diag(zFromHorn) == zFromHorn))
-    hornFromCheby = diag(1./diag(zFromHorn)) * zFromCheby;
+  if (diag(diag(hornPolyFromZ)) == hornPolyFromZ)
+    hornCoeffFromCheby = diag(1./diag(hornPolyFromZ)) * chebyPolyFromZ';
   else
     oldSetting = warning("query", "singular-matrix-div");
     warning("off", "singular-matrix-div");
-    hornFromCheby = zFromHorn \ zFromCheby;
+    hornCoeffFromCheby = hornPolyFromZ' \ chebyPolyFromZ';
     warning(oldSetting.state, "singular-matrix-div");
   endif
     
   chebyNumeratorCoeffs = bestChebyCoeffs(1:bestNumTermCount);
   chebyDenominatorCoeffs = [ 1; bestChebyCoeffs(bestNumTermCount+1:end) ];
-  hornNumeratorCoeffs = hornFromCheby(1:bestNumTermCount,1:bestNumTermCount)*chebyNumeratorCoeffs;
-  hornDenominatorCoeffs = hornFromCheby(1:bestDenomTermCount, 1:bestDenomTermCount)*chebyDenominatorCoeffs;
-  %zFromCheby
-  %zFromHorn
-  %hornFromCheby
-  %zFromCheby(1:bestNumTermCount,1:bestNumTermCount)
+  hornNumeratorCoeffs = hornCoeffFromCheby(1:bestNumTermCount,1:bestNumTermCount)*chebyNumeratorCoeffs;
+  hornDenominatorCoeffs = hornCoeffFromCheby(1:bestDenomTermCount, 1:bestDenomTermCount)*chebyDenominatorCoeffs;
+  %chebyPolyFromZ
+  %hornPolyFromZ
+  %hornCoeffFromCheby
   %chebyNumeratorCoeffs
-  %zFromCheby(1:bestNumTermCount,1:bestNumTermCount)*chebyNumeratorCoeffs
-  %zFromCheby(1:bestDenomTermCount,1:bestDenomTermCount)
   %chebyDenominatorCoeffs
-  %zFromCheby(1:bestDenomTermCount,1:bestDenomTermCount)*chebyDenominatorCoeffs
   %hornNumeratorCoeffs
   %hornDenominatorCoeffs
   hornNumeratorCoeffs = hornNumeratorCoeffs ./ hornDenominatorCoeffs(1);
