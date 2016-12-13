@@ -1,28 +1,37 @@
 function [thisTolerance, hornNumerator, hornDenominator] = rationalApprox(fff, outputName, inputName, lb, ub, numPoints, tolerance, errorType)
+  useHornApprox = 1;
   zzz = linspace(-1,1,numPoints)';
   xxx = zzz*(ub-lb)/2 + (ub+lb)/2;
   yyy = fff(xxx);
 
   for cost=3:64
-    [hornNumerator, hornDenominator, thisTolerance] = findBestAtCost(yyy, zzz, lb, ub, cost, errorType);
-    numTermCount = rows(hornNumerator);
-    denomTermCount = rows(hornDenominator);
+    [numerator, denominator, thisTolerance] = findBestZAtCost(yyy, zzz, cost, errorType);
+    numTermCount = rows(numerator);
+    denomTermCount = rows(denominator);
     thisTolerance
 
     if (thisTolerance < tolerance)
       %print it out
-      numeratorString = cell(size(hornNumerator));
-      denominatorString = cell(size(hornDenominator));
-      for ii=1:length(hornNumerator)
-        numeratorString{ii} = sprintf("%.17e", hornNumerator(ii));
+      if (useHornApprox)
+        [numerator, denominator] = findHornFromZ(numerator,denominator,lb,ub);
+      endif
+      
+      numeratorString = cell(size(numerator));
+      denominatorString = cell(size(denominator));
+      for ii=1:length(numerator)
+        numeratorString{ii} = sprintf("%.17e", numerator(ii));
       endfor
-      for ii=1:length(hornDenominator)
-        denominatorString{ii} = sprintf("%.17e", hornDenominator(ii));
+      for ii=1:length(denominator)
+        denominatorString{ii} = sprintf("%.17e", denominator(ii));
       endfor
       printf("double %s;\n", outputName);
       printf("{\n");
       printf("   //rationalApprox(%s, \"%s\", \"%s\", %f, %f, %d, %e, \"%s\")\n", func2str(fff), outputName, inputName, lb, ub, numPoints, tolerance, errorType);
-      printf("   double __x = %s;\n", inputName);
+      if (useHornApprox)
+        printf("   double __x = %s;\n", inputName);
+      else
+        printf("   double __x = (2/(%f - %f))*(%s) - (%f + %f)/(%f - %f);\n",ub,lb,inputName,ub,lb,ub,lb);
+      endif
       printf("   if (useRatpolyApprox && %f <= __x && __x <= %f)\n", lb, ub);
       printf("   {\n");
       printf("      const int pSize = %d;\n", numTermCount);
@@ -55,7 +64,7 @@ function [thisTolerance, hornNumerator, hornDenominator] = rationalApprox(fff, o
   endfor
 endfunction
 
-function [hornNumeratorCoeffs, hornDenominatorCoeffs, bestTolerance] = findBestAtCost(yyy, zzz, lb, ub, maxTermCount, errorType)
+function [zNumeratorCoeffs, zDenominatorCoeffs, bestTolerance] = findBestZAtCost(yyy, zzz, maxTermCount, errorType)
   % build the polynomial
   assert(maxTermCount >= 2)
   chebyPoly = zeros(rows(zzz), maxTermCount);
@@ -127,6 +136,26 @@ function [hornNumeratorCoeffs, hornDenominatorCoeffs, bestTolerance] = findBestA
     chebyPolyFromZ(ii,:) = [0 2*chebyPolyFromZ(ii-1, 1:end-1)] - chebyPolyFromZ(ii-2,:);
   endfor
 
+  zCoeffFromCheby = chebyPolyFromZ';
+
+  chebyNumeratorCoeffs = bestChebyCoeffs(1:bestNumTermCount);
+  chebyDenominatorCoeffs = [ 1; bestChebyCoeffs(bestNumTermCount+1:end) ];
+  zNumeratorCoeffs = zCoeffFromCheby(1:bestNumTermCount,1:bestNumTermCount)*chebyNumeratorCoeffs;
+  zDenominatorCoeffs = zCoeffFromCheby(1:bestDenomTermCount, 1:bestDenomTermCount)*chebyDenominatorCoeffs;
+  %chebyPolyFromZ
+  %chebyNumeratorCoeffs
+  %chebyDenominatorCoeffs
+  %zNumeratorCoeffs
+  %zDenominatorCoeffs
+  zNumeratorCoeffs = zNumeratorCoeffs ./ zDenominatorCoeffs(1);
+  zDenominatorCoeffs = zDenominatorCoeffs ./ zDenominatorCoeffs(1);
+endfunction
+  
+function [hornNumeratorCoeffs, hornDenominatorCoeffs] = findHornFromZ(zNumeratorCoeffs, zDenominatorCoeffs, lb, ub)
+  numCount=length(zNumeratorCoeffs);
+  denomCount=length(zDenominatorCoeffs);
+  maxTermCount=max(numCount, denomCount);
+  
   hornPolyFromZ = zeros(maxTermCount,maxTermCount);
   hornPolyFromZ(1,1) = 1;
   for ii=2:maxTermCount
@@ -136,30 +165,24 @@ function [hornNumeratorCoeffs, hornDenominatorCoeffs, bestTolerance] = findBestA
   % combine them into one nice converter.
 
   if (diag(diag(hornPolyFromZ)) == hornPolyFromZ)
-    hornCoeffFromCheby = diag(1./diag(hornPolyFromZ)) * chebyPolyFromZ';
+    hornCoeffFromZ = diag(1./diag(hornPolyFromZ));
   else
     oldSetting = warning("query", "singular-matrix-div");
     warning("off", "singular-matrix-div");
-    hornCoeffFromCheby = hornPolyFromZ' \ chebyPolyFromZ';
+    hornCoeffFromZ = inv(hornPolyFromZ');
     warning(oldSetting.state, "singular-matrix-div");
   endif
-    
-  chebyNumeratorCoeffs = bestChebyCoeffs(1:bestNumTermCount);
-  chebyDenominatorCoeffs = [ 1; bestChebyCoeffs(bestNumTermCount+1:end) ];
-  hornNumeratorCoeffs = hornCoeffFromCheby(1:bestNumTermCount,1:bestNumTermCount)*chebyNumeratorCoeffs;
-  hornDenominatorCoeffs = hornCoeffFromCheby(1:bestDenomTermCount, 1:bestDenomTermCount)*chebyDenominatorCoeffs;
-  %chebyPolyFromZ
+
+  hornNumeratorCoeffs = hornCoeffFromZ(1:numCount,1:numCount)*zNumeratorCoeffs;
+  hornDenominatorCoeffs = hornCoeffFromZ(1:denomCount, 1:denomCount)*zDenominatorCoeffs;
   %hornPolyFromZ
-  %hornCoeffFromCheby
-  %chebyNumeratorCoeffs
-  %chebyDenominatorCoeffs
+  %hornCoeffFromZ
+  %zNumeratorCoeffs
+  %zDenominatorCoeffs
   %hornNumeratorCoeffs
   %hornDenominatorCoeffs
   hornNumeratorCoeffs = hornNumeratorCoeffs ./ hornDenominatorCoeffs(1);
   hornDenominatorCoeffs = hornDenominatorCoeffs ./ hornDenominatorCoeffs(1);
-  hornCoeffs = [hornNumeratorCoeffs; hornDenominatorCoeffs(2:end)];
-
-  
 endfunction
 
 function [approximation,coeffs] = buildApproximate(yyy, interpPoly, numTermCount, denomTermCount)
