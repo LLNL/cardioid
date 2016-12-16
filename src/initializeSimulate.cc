@@ -240,11 +240,11 @@ void initializeSimulate(const string& name, Simulate& sim)
    timestampBarrier("building reaction object", MPI_COMM_WORLD);
    vector<string> reactionNames;
    objectGet(obj, "reaction", reactionNames);
+   sim.reaction_ = new ReactionManager;
    for (int ii=0; ii<reactionNames.size(); ++ii) {
       const string& reactionName(reactionNames[ii]);
       sim.reaction_->addReaction(reactionName);
    }
-   sim.reaction_ = new ReactionManager;
    sim.reaction_->create(sim.dt_, sim.anatomy_, sim.reactionThreads_, scaleCurrents);
    timestampBarrier("finished building reaction object", MPI_COMM_WORLD);
 
