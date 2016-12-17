@@ -42,6 +42,7 @@ class ReactionManager
                  const std::vector<int>& handle,
                  std::vector<double>& value) const;
    const std::string getUnit(const std::string& varName) const;
+   std::vector<int> allCellTypes() const;
    
  private:
    std::vector<std::string> objectNameFromRidx_;
@@ -62,6 +63,7 @@ class ReactionManager
 
    std::vector<int> typeFromRidx_;
    std::vector<std::string> methodNameFromType_;
+   std::set<int> allCellTypes_;
 };
 
 #endif

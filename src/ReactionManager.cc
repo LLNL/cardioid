@@ -133,6 +133,7 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
       copy(methodTypeSet.begin(), methodTypeSet.end(), methodNameFromType_.begin());
    }
 
+   typeFromRidx_.resize(numReactions);
    {
       vector<int> reactionReordering(numReactions);
       {
@@ -185,7 +186,10 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
       objectGet(objects[ireaction], "method", method, "");
       assert(method == methodNameFromType_[typeFromRidx_[ireaction]]);
    }
-      
+
+   //check that all the reaction objects we're using have cellTypes defined and that cellTypes are numbers.
+   
+   
    //find all the anatomy tags that have been set as reaction models
    map<int, int> ridxFromCellType;
    for (int ireaction=0; ireaction<numReactions; ++ireaction)
@@ -199,6 +203,7 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
             assert(0 && "Duplicate cellTypes within the reaction models");
          }
          ridxFromCellType[anatomyCellTypes[itag]] = ireaction;
+         allCellTypes_.insert(anatomyCellTypes[itag]);
       }
    }
 
@@ -228,14 +233,17 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    reactions_.resize(numReactions);
    extents_.resize(numReactions+1);
    extents_[0] = 0;
+   VmPerReaction_.resize(numReactions);
+   iStimPerReaction_.resize(numReactions);
+   dVmPerReaction_.resize(numReactions);
    for (int ireaction=0; ireaction<numReactions; ++ireaction)
    {
       int localSize = countFromRidx[ireaction];
       reactions_[ireaction] = reactionFactory(objectNameFromRidx_[ireaction], dt, localSize, group, scaleCurrents);
       extents_[ireaction+1] = extents_[ireaction]+localSize;
-      VmPerReaction_.resize(localSize);
-      iStimPerReaction_.resize(localSize);
-      dVmPerReaction_.resize(localSize);
+      VmPerReaction_[ireaction].resize(localSize);
+      iStimPerReaction_[ireaction].resize(localSize);
+      dVmPerReaction_[ireaction].resize(localSize);
    }
 
    //Ok, now we've created the reaction objects.  Now we need to
@@ -326,7 +334,7 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
          }
          assert(thisHandle == handleFromVarname_[newName]);
          assert(handleFromVarname_.size() == unitFromHandle_.size());
-         assert(units_check(thisSubUnit.c_str(),unitFromHandle_[thisHandle].c_str()));
+         assert(units_check(thisSubUnit.c_str(),unitFromHandle_[thisHandle].c_str()) == 0);
          
          subHandleInfoFromTypeAndHandle_[itype][thisHandle].first = thisSubHandle;
          subHandleInfoFromTypeAndHandle_[itype][thisHandle].second = units_convert(1,unitFromHandle_[thisHandle].c_str(),thisSubUnit.c_str());
@@ -408,6 +416,13 @@ const std::string ReactionManager::getUnit(const std::string& varName) const
 {
    return unitFromHandle_[getVarHandle(varName)];
 }
+
+vector<int> ReactionManager::allCellTypes() const
+{
+   vector<int> retVal(allCellTypes_.size());
+   copy(allCellTypes_.begin(), allCellTypes_.end(), retVal.begin());
+   return retVal;
+}
    
 int ReactionManager::getRidxFromCell(const int iCell) const {
    //binary search to find the proper Ridx.
@@ -445,3 +460,4 @@ bool ReactionManager::subUsesHandle(const int ridx, const int handle, int& subHa
    myUnitFromTheirUnit = subHandleInfoFromHandle.find(handle)->second.second;
    return true;
 }
+
