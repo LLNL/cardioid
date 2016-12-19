@@ -188,7 +188,33 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    }
 
    //check that all the reaction objects we're using have cellTypes defined and that cellTypes are numbers.
-   
+   {
+      bool foundCellTypeProblem=false;
+      for (int ireaction=0; ireaction<numReactions; ++ireaction)
+      {
+         vector<string> cellTypesText;
+         objectGet(objects[ireaction], "cellTypes", cellTypesText);
+         if (cellTypesText.empty()) {
+            printf("cellTypes not found for %s.  cellTypes now required on all REACTION objects\n",
+                   objectNameFromRidx_[ireaction].c_str());
+            foundCellTypeProblem=true;
+         }
+         for (int itag=0; itag<cellTypesText.size(); ++itag)
+         {
+            for (int cursor=0; cursor<cellTypesText[itag].size(); ++cursor) {
+               unsigned char thisChar = cellTypesText[itag][cursor];
+               if (!('0' <= thisChar && thisChar <= '9')) {
+                  printf("Expected a number, found %s instead for cellTypes attribute on object %s\n"
+                         "If you're converting an old object.data file, use cellTypeName instead.\n"
+                         "Notice the singular.  You'll need diffent reaction objects for each type.\n",
+                         cellTypesText[itag].c_str(), objectNameFromRidx_[ireaction].c_str());
+                  foundCellTypeProblem=true;
+               }
+            }
+         }
+      }
+      assert(!foundCellTypeProblem);
+   }
    
    //find all the anatomy tags that have been set as reaction models
    map<int, int> ridxFromCellType;
