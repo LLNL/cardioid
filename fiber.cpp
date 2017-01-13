@@ -79,94 +79,23 @@ int main(int argc, char *argv[]) {
     Mesh *mesh = new Mesh(mesh_file, 1, 1);
     
     setSurfaces(mesh);
+/*    
     ofstream surfh;
     surfh.open("surfaces.vtk");    
     printSurfVTK(mesh, surfh);
-    return 0;
-    
-/*    
+    //return 0;
+      
     ofstream mfh;
     mfh.open("test.mesh");
     mesh->Print(mfh);
     return 0;
-*/
+ 
     ofstream vfh;
     vfh.open("test.vtk");
     mesh->PrintVTK(vfh);
     //return 0;
-
+*/
     
-/*    
-    ofstream vfh;
-    vfh.open("vertices.txt");
-    int nv = mesh->GetNV();
-    int count = 1;
-    double *coord;
-    for (int i = 0; i < nv; i++) {
-        coord = mesh->GetVertex(i);
-        for (int j = 0; j < 3; j++) {
-            vfh << coord[j] << " ";
-        }
-        if (count % 3 == 0) {
-            vfh << "\n";
-        }
-        count++;
-    }
-    vfh.close();
-
-    ofstream efh;
-    efh.open("elements.txt");
-    int ne = mesh->GetNE();
-    
-    for (int i = 0; i < ne; i++) {
-        const Element *ele = mesh->GetElement(i);
-        const int *v = ele->GetVertices();
-        const int nv = ele->GetNVertices();
-        efh << nv;
-        for (int j = 0; j < nv; j++) {
-            efh << ' ' << v[j];
-        }
-        efh << '\n';
-    }
-
-  
-    ofstream fcfh;
-    fcfh.open("faces.txt");
-    int nfc=mesh->GetNFaces();
-    for(int i=0; i<nfc; i++){
-        const Element *ele = mesh->GetFace(i);        
-        const int *v = ele->GetVertices();
-        const int nv = ele->GetNVertices();
-        fcfh << nv;
-        for (int j = 0; j < nv; j++) {
-            fcfh << ' ' << v[j];
-        }
-        fcfh << '\n';        
-    }
-    
-    ofstream befh;
-    int nbe=mesh->GetNBE();
-    befh.open("boundary.txt");
-    for(int i=0; i<nbe; i++){
-        const Element *ele = mesh->GetBdrElement(i);        
-        const int *v = ele->GetVertices();
-        const int nv = ele->GetNVertices();
-        befh << nv;
-        for (int j = 0; j < nv; j++) {
-            befh << ' ' << v[j];
-        }
-        befh << '\n';        
-    }   
-    
-    
-    
-    ofstream vtkout;
-    vtkout.open("out.vtk");
-    mesh->PrintVTK(vtkout);
-    vtkout.close();
-    
-    */
-
     int dim = mesh->Dimension();
     cout << "Dimension =" << dim << endl;
 
@@ -502,8 +431,10 @@ void setSurfaces(Mesh *mesh){
     // Check if there are unassigned elements left.
     for(int i=0; i<nbe; i++){
         Element *ele = mesh->GetBdrElement(i); 
-        MFEM_ASSERT(ele->GetAttribute()==0, "Unassigned element.");
-    }    
+        MFEM_ASSERT(ele->GetAttribute()!=0, "Unassigned element.");
+    }  
+    
+    mesh->SetAttributes();
             
 }
 
