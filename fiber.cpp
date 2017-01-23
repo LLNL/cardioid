@@ -138,18 +138,25 @@ int main(int argc, char *argv[]) {
     //    the boundary attributes from the mesh as essential (Dirichlet) and
     //    converting them to a list of true dofs.
     Array<int> ess_tdof_list;
-    if (mesh->bdr_attributes.Size()) {
-        Array<int> ess_bdr(mesh->bdr_attributes.Max());
-        ess_bdr = 1;
-        fespace->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
-    }
+    MFEM_ASSERT(mesh->bdr_attributes.Size()!=0, "Boundary size cannot be zero."); 
+
+
+    // Mark ALL boundaries as essential. This does not set what the actual Dirichlet
+    // values are
+    Array<int> all_ess_bdr(mesh->bdr_attributes.Max());
+    all_ess_bdr = 1;
+    all_ess_bdr[1]=0;
+
+    cout << "all_ess_bdr size=" << all_ess_bdr.Size() << endl;
+    fespace->GetEssentialTrueDofs(all_ess_bdr, ess_tdof_list);
+  
 
     // 6. Set up the linear form b(.) which corresponds to the right-hand side of
     //    the FEM linear system, which in this case is (1,phi_i) where phi_i are
     //    the basis functions in the finite element fespace.
     LinearForm *b = new LinearForm(fespace);
-    ConstantCoefficient one(1.0);
-    b->AddDomainIntegrator(new DomainLFIntegrator(one));
+    ConstantCoefficient zero(0.0);
+    b->AddDomainIntegrator(new DomainLFIntegrator(zero));
     b->Assemble();
 
     // 7. Define the solution vector x as a finite element grid function
@@ -157,11 +164,17 @@ int main(int argc, char *argv[]) {
     //    which satisfies the boundary conditions.
     GridFunction x(fespace);
     x = 0.0;
+    
+    cout << "x size " << x.Size() << endl;
+
 
     // 8. Set up the bilinear form a(.,.) on the finite element space
     //    corresponding to the Laplacian operator -Delta, by adding the Diffusion
     //    domain integrator.
     BilinearForm *a = new BilinearForm(fespace);
+
+    // The diffusion integrator should have a coefficient of one, not zero
+    ConstantCoefficient one(1.0);
     a->AddDomainIntegrator(new DiffusionIntegrator(one));
 
     // 9. Assemble the bilinear form and the corresponding linear system,
@@ -173,8 +186,39 @@ int main(int argc, char *argv[]) {
     }
     a->Assemble();
 
+    // Project the constant 14 value to all boundary attributes except 1
+    Array<int> nonzero_ess_bdr(mesh->bdr_attributes.Max());
+    nonzero_ess_bdr = 0;    
+    nonzero_ess_bdr[4] = 1;
+    //nonzero_ess_bdr[2] = 1;
+    ConstantCoefficient nonzero_bdr(1.0);
+    x.ProjectBdrCoefficient(nonzero_bdr, nonzero_ess_bdr);
+
+    // Project the constant 0 value to boundary attribute 1
+    Array<int> zero_ess_bdr(mesh->bdr_attributes.Max());
+    zero_ess_bdr = 0;    
+    //zero_ess_bdr[0] = 0;  
+    zero_ess_bdr[0] = 1; 
+    zero_ess_bdr[2] = 1;
+    zero_ess_bdr[3] = 1;
+    //zero_ess_bdr[2] = 0;
+    ConstantCoefficient zero_bdr(0.0);
+    x.ProjectBdrCoefficient(zero_bdr, zero_ess_bdr);
+
+    
+    int count=0;
+    for(int i=0; i<x.Size(); i++){
+        if(x[i] >0.01){
+            //cout << "["<< i << "]=" <<x[i] << " ";
+            count++;
+        }
+    }
+    cout << "\nCount= " << count <<endl;
+        
+    //return 0;
     SparseMatrix A;
     Vector B, X;
+    // Form the linear system using ALL of the essential boundary dofs (from all_ess_bdr)
     a->FormLinearSystem(ess_tdof_list, x, *b, A, X, B);
 
     cout << "Size of linear system: " << A.Height() << endl;
@@ -183,7 +227,7 @@ int main(int argc, char *argv[]) {
     // 10. Define a simple symmetric Gauss-Seidel preconditioner and use it to
     //     solve the system A X = B with PCG.
     GSSmoother M(A);
-    PCG(A, M, B, X, 1, 200, 1e-12, 0.0);
+    PCG(A, M, B, X, 1, 1000, 1e-12, 0.0);
 #else
     // 10. If MFEM was compiled with SuiteSparse, use UMFPACK to solve the system.
     UMFPackSolver umf_solver;
@@ -195,11 +239,25 @@ int main(int argc, char *argv[]) {
     // 11. Recover the solution as a finite element grid function.
     a->RecoverFEMSolution(X, *b, x);
 
+    // Create data collection for solution output: either VisItDataCollection for
+    // ascii data files, or SidreDataCollection for binary data files.
+    DataCollection *dc = NULL;
+    dc = new VisItDataCollection("Fiber", mesh);
+    dc->SetPrecision(8);
+    dc->RegisterField("solution", &x);
+    dc->SetCycle(0);
+    dc->SetTime(0.0);
+    dc->Save();
+
     // 12. Save the refined mesh and the solution. This output can be viewed later
     //     using GLVis: "glvis -m refined.mesh -g sol.gf".
     ofstream mesh_ofs("refined.mesh");
     mesh_ofs.precision(8);
     mesh->Print(mesh_ofs);
+    
+    ofstream vtk_ofs("refined.vtk");
+    mesh->PrintVTK(vtk_ofs);
+    
     ofstream sol_ofs("sol.gf");
     sol_ofs.precision(8);
     x.Save(sol_ofs);
@@ -298,11 +356,11 @@ void findNeighbor(Element* ele, vector<Element*>& elements, int attr){
 
 void setSurfaces(Mesh *mesh){
     // Attributes for different surface
-    const int apexAttr=10;
-    const int baseAttr=11;
-    const int epiAttr=12;
-    const int lvAttr=13;
-    const int rvAttr=14;
+    const int apexAttr=1;
+    const int baseAttr=2;
+    const int epiAttr=3;
+    const int lvAttr=4;
+    const int rvAttr=5;
        
     // Determine the max and min dimension of mesh and apex.
     double *coord;
