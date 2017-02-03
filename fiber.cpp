@@ -145,7 +145,9 @@ int main(int argc, char *argv[]) {
     // values are
     Array<int> all_ess_bdr(mesh->bdr_attributes.Max());
     all_ess_bdr = 1;
-    all_ess_bdr[1]=0;
+    all_ess_bdr[2]=0;
+    all_ess_bdr[3]=0;
+    all_ess_bdr[4]=0;
 
     cout << "all_ess_bdr size=" << all_ess_bdr.Size() << endl;
     fespace->GetEssentialTrueDofs(all_ess_bdr, ess_tdof_list);
@@ -189,7 +191,7 @@ int main(int argc, char *argv[]) {
     // Project the constant 14 value to all boundary attributes except 1
     Array<int> nonzero_ess_bdr(mesh->bdr_attributes.Max());
     nonzero_ess_bdr = 0;    
-    nonzero_ess_bdr[4] = 1;
+    nonzero_ess_bdr[1] = 1;
     //nonzero_ess_bdr[2] = 1;
     ConstantCoefficient nonzero_bdr(1.0);
     x.ProjectBdrCoefficient(nonzero_bdr, nonzero_ess_bdr);
@@ -198,9 +200,7 @@ int main(int argc, char *argv[]) {
     Array<int> zero_ess_bdr(mesh->bdr_attributes.Max());
     zero_ess_bdr = 0;    
     //zero_ess_bdr[0] = 0;  
-    zero_ess_bdr[0] = 1; 
-    zero_ess_bdr[2] = 1;
-    zero_ess_bdr[3] = 1;
+    zero_ess_bdr[0] = 1;
     //zero_ess_bdr[2] = 0;
     ConstantCoefficient zero_bdr(0.0);
     x.ProjectBdrCoefficient(zero_bdr, zero_ess_bdr);
@@ -238,7 +238,40 @@ int main(int argc, char *argv[]) {
 
     // 11. Recover the solution as a finite element grid function.
     a->RecoverFEMSolution(X, *b, x);
+  
+    GridFunction der0(fespace);
+    x.GetDerivative(1, 0, der0);
+    ofstream der0_ofs("der0.gf");
+    der0_ofs.precision(8);
+    der0.Save(der0_ofs);
+    
+    GridFunction der1(fespace);
+    x.GetDerivative(1, 1, der1);
+    ofstream der1_ofs("der1.gf");
+    der1_ofs.precision(8);
+    der1.Save(der1_ofs);
+    
+    GridFunction der2(fespace);
+    x.GetDerivative(1, 2, der2);
+    ofstream der2_ofs("der2.gf");
+    der2_ofs.precision(8);
+    der2.Save(der2_ofs);   
+    
+    const FiniteElementSpace *fes=x.FESpace();
+    int ne=fes->GetNE();
+    //for(int i=0; i<ne; i++){
+    for(int i=0; i<5; i++){    
+        ElementTransformation *tr=fes->GetElementTransformation(i);
+        Vector grad;
+        x.GetGradient((*tr), grad);
+        for(int j=0; j<grad.Size(); j++){
+            cout << "grad " << grad[j] << " ";
+        }
+        cout << endl;
+    }        
+      
 
+    
     // Create data collection for solution output: either VisItDataCollection for
     // ascii data files, or SidreDataCollection for binary data files.
     DataCollection *dc = NULL;
