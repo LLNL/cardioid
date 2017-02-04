@@ -41,12 +41,15 @@
 #include <sstream>
 #include <cmath>
 #include <algorithm>
+#include <string>
+#include <vector>
 
 using namespace std;
 using namespace mfem;
 
 void setSurfaces(Mesh *mesh);
 void printSurfVTK(Mesh *mesh, std::ostream &out);
+void laplace(Mesh *mesh, vector<double> &pot, vector<Vector> &gradients, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, string output, int order, bool static_cond);
 
 int main(int argc, char *argv[]) {
     // 1. Parse command-line options.
@@ -78,45 +81,144 @@ int main(int argc, char *argv[]) {
     //    the same code.
     Mesh *mesh = new Mesh(mesh_file, 1, 1);
     
+    // Set the surfaces for the mesh: 0-Apex, 1-Base, 2-EPI, 3-LV, 4-RV.
     setSurfaces(mesh);
-/*    
-    ofstream surfh;
-    surfh.open("surfaces.vtk");    
-    printSurfVTK(mesh, surfh);
-    //return 0;
-      
-    ofstream mfh;
-    mfh.open("test.mesh");
-    mesh->Print(mfh);
-    return 0;
+
+    // 3. Solve the laplacian for four different boundary conditions.
+    int bdr_attr_size=mesh->bdr_attributes.Max();
+    Array<int> all_ess_bdr(bdr_attr_size);    
+    Array<int> nonzero_ess_bdr(bdr_attr_size);
+    Array<int> zero_ess_bdr(bdr_attr_size);
+    int nv=mesh->GetNV();
+    
+    // 3a. Base → 1, Apex→ 0, Epi, LV, RV → no flux
+     // Mark ALL boundaries as essential. This does not set what the actual Dirichlet
+    // values are
+    all_ess_bdr = 1;
+    all_ess_bdr[2]=0;
+    all_ess_bdr[3]=0;
+    all_ess_bdr[4]=0;
+    
+    nonzero_ess_bdr = 0;    
+    nonzero_ess_bdr[1] = 1;   
+
+    zero_ess_bdr = 0;     
+    zero_ess_bdr[0] = 1;
+    
+    string output="psi_ab";
+    vector<double> psi_ab;
+    vector<Vector> psi_ab_grads;
+    laplace(mesh, psi_ab, psi_ab_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    MFEM_ASSERT(psi_ab.size()==nv, "size of psi_ab does not match number of vertices.");
+    MFEM_ASSERT(psi_ab_grads.size()==nv, "size of psi_ab_grads does not match number of vertices.");
+    
+    for(int i=0; i <5; i++){
+        cout << "psi_ab " <<psi_ab[i] << " grad ";
+        Vector grad=psi_ab_grads[i];
+        for(int j=0; j< grad.Size(); j++){
+            cout << grad[j]  << " ";
+        }
+        cout << endl;
+    }
+    
+    // 3b. Apex, Epi → 1, LV, RV→ 0, Base→ no flux
+    all_ess_bdr = 1;
+    all_ess_bdr[1]=0;
+    
+    nonzero_ess_bdr = 0;    
+    nonzero_ess_bdr[0] = 1;
+    nonzero_ess_bdr[2] = 1;   
+
+    zero_ess_bdr = 0;      
+    zero_ess_bdr[3] = 1;
+    zero_ess_bdr[4] = 1;
  
-    ofstream vfh;
-    vfh.open("test.vtk");
-    mesh->PrintVTK(vfh);
-    //return 0;
-*/
+    output="phi_epi";
+    vector<double> phi_epi;
+    vector<Vector> phi_epi_grads;
+
+    laplace(mesh, phi_epi, phi_epi_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    MFEM_ASSERT(phi_epi.size()==nv, "size of phi_epi does not match number of vertices.");
+    MFEM_ASSERT(phi_epi_grads.size()==nv, "size of phi_epi_grads does not match number of vertices.");
+    
+    for(int i=0; i <5; i++){
+        cout << "phi_epi " <<phi_epi[i] << " grad ";
+        Vector grad=phi_epi_grads[i];
+        for(int j=0; j< grad.Size(); j++){
+            cout << grad[j]  << " ";
+        }
+        cout << endl;
+    }
+    
+    //3c. LV → 1, Apex, Epi, RV→ 0, Base→ no flux
+    all_ess_bdr = 1;
+    all_ess_bdr[1]=0;
+    
+    nonzero_ess_bdr = 0;    
+    nonzero_ess_bdr[3] = 1;   
+
+    zero_ess_bdr = 0;      
+    zero_ess_bdr[0] = 1;
+    zero_ess_bdr[2] = 1;
+    zero_ess_bdr[4] = 1;
+ 
+    output="phi_lv";
+    vector<double> phi_lv;
+    vector<Vector> phi_lv_grads;
+
+    laplace(mesh, phi_lv, phi_lv_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    MFEM_ASSERT(phi_lv.size()==nv, "size of phi_lv does not match number of vertices.");
+    MFEM_ASSERT(phi_lv_grads.size()==nv, "size of phi_lv_grads does not match number of vertices.");    
+    
+    for(int i=0; i <5; i++){
+        cout << "phi_lv " <<phi_lv[i] << " grad ";
+        Vector grad=phi_lv_grads[i];
+        for(int j=0; j< grad.Size(); j++){
+            cout << grad[j]  << " ";
+        }
+        cout << endl;
+    } 
+    
+    //3d. RV → 1, Apex, Epi, LV→ 0, Base→ no flux
+    all_ess_bdr = 1;
+    all_ess_bdr[1]=0;
+    
+    nonzero_ess_bdr = 0;    
+    nonzero_ess_bdr[4] = 1;   
+
+    zero_ess_bdr = 0;      
+    zero_ess_bdr[0] = 1;
+    zero_ess_bdr[2] = 1;
+    zero_ess_bdr[3] = 1;
+ 
+    output="phi_rv";
+    vector<double> phi_rv;
+    vector<Vector> phi_rv_grads;
+
+    laplace(mesh, phi_rv, phi_rv_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    MFEM_ASSERT(phi_rv.size()==nv, "size of phi_rv does not match number of vertices.");
+    MFEM_ASSERT(phi_rv_grads.size()==nv, "size of phi_rv_grads does not match number of vertices.");
+    
+    for(int i=0; i <5; i++){
+        cout << "phi_rv " <<phi_rv[i] << " grad ";
+        Vector grad=phi_rv_grads[i];
+        for(int j=0; j< grad.Size(); j++){
+            cout << grad[j]  << " ";
+        }
+        cout << endl;
+    } 
+    
+    
+        
+    delete mesh;
+
+    return 0;
+}
+
+void laplace(Mesh *mesh, vector<double> &pot, vector<Vector> &gradients, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, string output, int order, bool static_cond){
     
     int dim = mesh->Dimension();
-    cout << "Dimension =" << dim << endl;
-
-    //delete mesh;
-
-    //return 0;
-
-    // 3. Refine the mesh to increase the resolution. In this example we do
-    //    'ref_levels' of uniform refinement. We choose 'ref_levels' to be the
-    //    largest number that gives a final mesh with no more than 50,000
-    //    elements.
-   /*
-    {
-        int ref_levels =
-                (int) floor(log(50000. / mesh->GetNE()) / log(2.) / dim);
-        for (int l = 0; l < ref_levels; l++) {
-            mesh->UniformRefinement();
-        }
-    }
-    */
-    
+    cout << "Dimension =" << dim << endl;    
     // 4. Define a finite element space on the mesh. Here we use continuous
     //    Lagrange finite elements of the specified order. If order < 1, we
     //    instead use an isoparametric/isogeometric space.
@@ -139,16 +241,6 @@ int main(int argc, char *argv[]) {
     //    converting them to a list of true dofs.
     Array<int> ess_tdof_list;
     MFEM_ASSERT(mesh->bdr_attributes.Size()!=0, "Boundary size cannot be zero."); 
-
-
-    // Mark ALL boundaries as essential. This does not set what the actual Dirichlet
-    // values are
-    Array<int> all_ess_bdr(mesh->bdr_attributes.Max());
-    all_ess_bdr = 1;
-    all_ess_bdr[2]=0;
-    all_ess_bdr[3]=0;
-    all_ess_bdr[4]=0;
-
     cout << "all_ess_bdr size=" << all_ess_bdr.Size() << endl;
     fespace->GetEssentialTrueDofs(all_ess_bdr, ess_tdof_list);
   
@@ -189,31 +281,12 @@ int main(int argc, char *argv[]) {
     a->Assemble();
 
     // Project the constant 14 value to all boundary attributes except 1
-    Array<int> nonzero_ess_bdr(mesh->bdr_attributes.Max());
-    nonzero_ess_bdr = 0;    
-    nonzero_ess_bdr[1] = 1;
-    //nonzero_ess_bdr[2] = 1;
     ConstantCoefficient nonzero_bdr(1.0);
     x.ProjectBdrCoefficient(nonzero_bdr, nonzero_ess_bdr);
 
     // Project the constant 0 value to boundary attribute 1
-    Array<int> zero_ess_bdr(mesh->bdr_attributes.Max());
-    zero_ess_bdr = 0;    
-    //zero_ess_bdr[0] = 0;  
-    zero_ess_bdr[0] = 1;
-    //zero_ess_bdr[2] = 0;
     ConstantCoefficient zero_bdr(0.0);
     x.ProjectBdrCoefficient(zero_bdr, zero_ess_bdr);
-
-    
-    int count=0;
-    for(int i=0; i<x.Size(); i++){
-        if(x[i] >0.01){
-            //cout << "["<< i << "]=" <<x[i] << " ";
-            count++;
-        }
-    }
-    cout << "\nCount= " << count <<endl;
         
     //return 0;
     SparseMatrix A;
@@ -238,71 +311,42 @@ int main(int argc, char *argv[]) {
 
     // 11. Recover the solution as a finite element grid function.
     a->RecoverFEMSolution(X, *b, x);
-  
-    GridFunction der0(fespace);
-    x.GetDerivative(1, 0, der0);
-    ofstream der0_ofs("der0.gf");
-    der0_ofs.precision(8);
-    der0.Save(der0_ofs);
-    
-    GridFunction der1(fespace);
-    x.GetDerivative(1, 1, der1);
-    ofstream der1_ofs("der1.gf");
-    der1_ofs.precision(8);
-    der1.Save(der1_ofs);
-    
-    GridFunction der2(fespace);
-    x.GetDerivative(1, 2, der2);
-    ofstream der2_ofs("der2.gf");
-    der2_ofs.precision(8);
-    der2.Save(der2_ofs);   
+      
+    //double *x_data=x.GetData();
+    for(int i=0; i<x.Size(); i++){         
+        //pot.push_back(x_data[i]);
+        pot.push_back(x(i));
+        if(i<5) cout << "pot " << x(i) << endl;
+    }
     
     const FiniteElementSpace *fes=x.FESpace();
-    int ne=fes->GetNE();
-    //for(int i=0; i<ne; i++){
-    for(int i=0; i<5; i++){    
+    int nv=fes->GetNV();
+    for(int i=0; i<nv; i++){   
         ElementTransformation *tr=fes->GetElementTransformation(i);
         Vector grad;
         x.GetGradient((*tr), grad);
-        for(int j=0; j<grad.Size(); j++){
-            cout << "grad " << grad[j] << " ";
+        gradients.push_back(grad);
+        if(i<5) {
+            cout << "grad ";
+            for (int j = 0; j < grad.Size(); j++) {
+                cout << grad[j] << " ";
+            }
+            cout << endl;
         }
-        cout << endl;
     }        
       
 
-    
-    // Create data collection for solution output: either VisItDataCollection for
-    // ascii data files, or SidreDataCollection for binary data files.
-    DataCollection *dc = NULL;
-    dc = new VisItDataCollection("Fiber", mesh);
-    dc->SetPrecision(8);
-    dc->RegisterField("solution", &x);
-    dc->SetCycle(0);
-    dc->SetTime(0.0);
-    dc->Save();
-
     // 12. Save the refined mesh and the solution. This output can be viewed later
     //     using GLVis: "glvis -m refined.mesh -g sol.gf".
-    ofstream mesh_ofs("refined.mesh");
+    string fileName=output+".mesh";
+    ofstream mesh_ofs(fileName.c_str());
     mesh_ofs.precision(8);
     mesh->Print(mesh_ofs);
-    
-    ofstream vtk_ofs("refined.vtk");
-    mesh->PrintVTK(vtk_ofs);
-    
-    ofstream sol_ofs("sol.gf");
+
+    fileName=output+".gf";
+    ofstream sol_ofs(fileName.c_str());
     sol_ofs.precision(8);
     x.Save(sol_ofs);
-
-    // 13. Send the solution by socket to a GLVis server.
-    if (visualization) {
-        char vishost[] = "localhost";
-        int visport = 19916;
-        socketstream sol_sock(vishost, visport);
-        sol_sock.precision(8);
-        sol_sock << "solution\n" << *mesh << x << flush;
-    }
 
     // 14. Free the used memory.
     delete a;
@@ -311,9 +355,8 @@ int main(int argc, char *argv[]) {
     if (order > 0) {
         delete fec;
     }
-    delete mesh;
 
-    return 0;
+        
 }
 
 bool isPlanar(double *coor0, double *coor1, double *coor2, double cosTheta){
@@ -392,8 +435,8 @@ void setSurfaces(Mesh *mesh){
     const int apexAttr=1;
     const int baseAttr=2;
     const int epiAttr=3;
-    const int lvAttr=4;
-    const int rvAttr=5;
+    const int lvAttr=5; // TODO: Need something to indicate the LV and RV
+    const int rvAttr=4;
        
     // Determine the max and min dimension of mesh and apex.
     double *coord;
