@@ -44,11 +44,14 @@
 #include <string>
 #include <vector>
 
+#define PI 3.14159265
+
 using namespace std;
 using namespace mfem;
 
-void setSurfaces(Mesh *mesh);
+void setSurfaces(Mesh *mesh, double angle);
 void printSurfVTK(Mesh *mesh, std::ostream &out);
+void printFiberVTK(Mesh *mesh, vector<Vector>& fiber_vecs, std::ostream &out);
 void laplace(Mesh *mesh, vector<double> &pot, vector<Vector> &gradients, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, string output, int order, bool static_cond);
 void bislerp(vector<Vector>& Q, vector<Vector>& Qa, vector<Vector>& Qb, double t);
 double a_s_f(double a_endo, double a_epi, double d);
@@ -57,6 +60,8 @@ double b_s_f(double b_endo, double b_epi, double d);
 double b_w_f(double b_endo, double b_epi, double d);
 void axis(vector<Vector>& Q,Vector &psi, Vector &phi);
 void orient(vector<Vector>& Qp, vector<Vector>& Q, double a, double b);
+bool vecisnonzero(Vector& vec);
+bool vecdot(Vector &q1, Vector &q2);
 
 int main(int argc, char *argv[]) {
     // 1. Parse command-line options.
@@ -65,10 +70,10 @@ int main(int argc, char *argv[]) {
     bool static_cond = false;
     bool visualization = 1;
 
-    double a_endo=60;
-    double a_epi=60;
-    double b_endo=20;
-    double b_epi=60;
+    double a_endo=40;
+    double a_epi=-50;
+    double b_endo=-65;
+    double b_epi=25;
     
     OptionsParser args(argc, argv);
     args.AddOption(&mesh_file, "-m", "--mesh",
@@ -94,7 +99,9 @@ int main(int argc, char *argv[]) {
     Mesh *mesh = new Mesh(mesh_file, 1, 1);
     
     // Set the surfaces for the mesh: 0-Apex, 1-Base, 2-EPI, 3-LV, 4-RV.
-    setSurfaces(mesh);
+    setSurfaces(mesh, 20); // use 30 degrees for determining the base surface. 
+    ofstream surf_ofs("surfaces.vtk");
+    printSurfVTK(mesh, surf_ofs);
 
     // 3. Solve the laplacian for four different boundary conditions.
     int bdr_attr_size=mesh->bdr_attributes.Max();
@@ -189,71 +196,169 @@ int main(int argc, char *argv[]) {
     vector<Vector> svectors;
     vector<Vector> tvectors;
     // Line 7 start for-loop
-    for(int i=0; i <nv; i++){        
-        double frac=phi_rv[i]/(phi_lv[i]+phi_rv[i]);
+    for(int i=0; i <nv; i++){  
+//        MFEM_ASSERT(phi_lv[i]>=0 && phi_lv[i] <=1, "phi_lv is not in range 0 to 1");
+//        MFEM_ASSERT(phi_rv[i]>=0 && phi_rv[i] <=1, "phi_rv is not in range 0 to 1");
+//        MFEM_ASSERT(phi_epi[i]>=0 && phi_epi[i] <=1, "phi_epi is not in range 0 to 1");
+//        MFEM_ASSERT(psi_ab[i]>=0 && psi_ab[i] <=1, "psi_ab is not in range 0 to 1");
+        //if(phi_lv[i] <0) phi_lv[i]=0;
+        //if(phi_rv[i] <0) phi_rv[i]=0;
+        //if(phi_epi[i] <0) phi_epi[i]=0;
+        //if(psi_ab[i] <0) psi_ab[i]=0;
+        double phi_v=phi_lv[i]+phi_rv[i];
+        double frac=0;
+        if(phi_v!=0){
+            frac=phi_rv[i]/phi_v;
+        }
         double frac_epi=phi_epi[i];
+        //stringstream ss;
+        //ss << "i=" << i << " phi_rv[i]=" << phi_rv[i] << " phi_lv[i]=" << phi_lv[i] << " frac=" << frac;
+        //MFEM_ASSERT(frac>=0 && frac<=1, ss.str());
+        //MFEM_ASSERT(frac_epi>=0 && frac_epi<=1, "frac_epi is not in range 0 to 1");
         double as=a_s_f(a_endo, a_epi, frac);
         double bs=b_s_f(b_endo, b_epi, frac);
         double aw=a_w_f(a_endo, a_epi, frac_epi);
         double bw=b_w_f(b_endo, b_epi, frac_epi);
         
-        // Line 8
+
         Vector psi_ab_vec=psi_ab_grads[i];
         Vector phi_lv_vec=phi_lv_grads[i];
-        Vector phi_lv_vec_neg(phi_lv_vec.Size());
-        for(int i=0; i<phi_lv_vec.Size(); ++i){
-            phi_lv_vec_neg(i)=phi_lv_vec(i);
-        }
-        vector<Vector> Qlv;
-        axis(Qlv, psi_ab_vec, phi_lv_vec_neg);
-        vector<Vector> QPlv;
-        orient(QPlv, Qlv, as, bs);
-        
-        //Line 9
         Vector phi_rv_vec=phi_rv_grads[i];
-        vector<Vector> Qrv;
-        axis(Qrv, psi_ab_vec, phi_rv_vec);
-        vector<Vector> QPrv;
-        orient(QPrv, Qrv, as, bs); 
-        
-        //Line 10
-        vector<Vector> QPendo;
-        bislerp(QPendo, QPlv, QPrv, frac);
-        
-        //Line 11
         Vector phi_epi_vec=phi_epi_grads[i];
-        vector<Vector> Qepi;
-        axis(Qepi, psi_ab_vec, phi_epi_vec);
-        vector<Vector> QPepi;
-        orient(QPepi, Qepi, aw, bw);
         
-        //Line 12
+        bool phi_lv_isnonzero=vecisnonzero(phi_lv_vec);
+        bool phi_rv_isnonzero=vecisnonzero(phi_rv_vec);
+        bool phi_epi_isnonzero=vecisnonzero(phi_epi_vec);
+        
+        vector<Vector> QPlv;        
+        if(phi_lv_isnonzero){
+            // Line 8
+            Vector phi_lv_vec_neg(phi_lv_vec.Size());
+            for (int i = 0; i < phi_lv_vec.Size(); ++i) {
+                phi_lv_vec_neg(i) = phi_lv_vec(i)*(-1);
+            }
+            vector<Vector> Qlv;
+            if(vecdot(psi_ab_vec, phi_lv_vec_neg)){
+                cout << "psi_ab_vec equal to phi_lv_vec_neg" << endl;
+                phi_lv_isnonzero=false;
+            }else{
+                axis(Qlv, psi_ab_vec, phi_lv_vec_neg);
+                orient(QPlv, Qlv, as, bs);
+            }            
+            // End of Line 8
+        }
+        
+        vector<Vector> QPrv;         
+        if(phi_rv_isnonzero){
+            //Line 9
+            vector<Vector> Qrv;
+            if(vecdot(psi_ab_vec, phi_rv_vec)){
+                cout << "psi_ab_vec equal to phi_rv_vec" << endl;
+                phi_rv_isnonzero=false;
+            }else{
+                axis(Qrv, psi_ab_vec, phi_rv_vec);
+                orient(QPrv, Qrv, as, bs); 
+            }
+        }
+               
+        vector<Vector> QPepi;
+        if (phi_epi_isnonzero) {
+            //Line 11
+            vector<Vector> Qepi;
+            if(vecdot(psi_ab_vec, phi_epi_vec)){
+                cout << "psi_ab_vec equal to phi_epi_vec" << endl;
+                phi_epi_isnonzero=false;
+            }else{           
+                axis(Qepi, psi_ab_vec, phi_epi_vec);
+                orient(QPepi, Qepi, aw, bw);
+            }
+        }
+        
+        vector<Vector> QPendo;
         vector<Vector> QPfib;
-        bislerp(QPfib, QPendo, QPepi, frac_epi);
+        if(phi_lv_isnonzero){    
+            
+            if(phi_rv_isnonzero){
+            
+                if(phi_epi_isnonzero){
+                    // if all three phi gradients are non-zero, use the original algorithm in paper. 
+                    //Line 10
+                    MFEM_ASSERT(QPlv.size()==3, "bislerp(QPendo, QPlv, QPrv, frac): Dimension of QPlv should be 3");
+                    MFEM_ASSERT(QPrv.size()==3, "bislerp(QPendo, QPlv, QPrv, frac): Dimension of QPrv should be 3");
+                    bislerp(QPendo, QPlv, QPrv, frac);
+                    //Line 12 
+                    MFEM_ASSERT(QPendo.size()==3, "bislerp(QPfib, QPendo, QPepi, frac_epi): Dimension of QPendo should be 3");
+                    MFEM_ASSERT(QPepi.size()==3, "bislerp(QPfib, QPendo, QPepi, frac_epi): Dimension of QPepi should be 3");
+                    bislerp(QPfib, QPendo, QPepi, frac_epi);
+                }else{
+                    // if phi_epi gradients are zero, phi_lv and phi are nonzero. use QPlv, QPrv, frac 
+                    MFEM_ASSERT(QPlv.size()==3, "bislerp(QPfib, QPlv, QPrv, frac): Dimension of QPlv should be 3");
+                    MFEM_ASSERT(QPrv.size()==3, "bislerp(QPfib, QPlv, QPrv, frac): Dimension of QPrv should be 3");
+                    bislerp(QPfib, QPlv, QPrv, frac);
+                }
+                
+            }else {
+                if(phi_epi_isnonzero){
+                    // if phi_rv is zero, phi_lv and phi_epi is nonzero
+                    MFEM_ASSERT(QPlv.size() == 3, "bislerp(QPfib, QPlv, QPepi, frac_epi) Dimension of QPlv should be 3");
+                    MFEM_ASSERT(QPepi.size() == 3, "bislerp(QPfib, QPlv, QPepi, frac_epi): Dimension of QPepi should be 3");
+                    bislerp(QPfib, QPlv, QPepi, frac_epi);
+                }else{
+                    // if gradients of phi_lv, phi_rv are zero, then phi_epi is zero 
+                    Vector e_0=psi_ab_vec;
+                    double norm=e_0.Norml2();
+                    e_0/=norm;
+                    QPfib.push_back(psi_ab_vec);
+                    // TODO add SVD 
+                    Vector s_zero(0);
+                    Vector t_zero(0);
+                    QPfib.push_back(s_zero);
+                    QPfib.push_back(t_zero);                    
+                }
+            }
+        }else{
+            if(phi_rv_isnonzero && phi_epi_isnonzero){                
+                // if phi_lv is zero, phi_rv and phi_epi is nonzero
+                MFEM_ASSERT(QPrv.size() == 3, "bislerp(QPfib, QPrv, QPepi, frac_epi) Dimension of QPrv should be 3");
+                MFEM_ASSERT(QPepi.size() == 3, "bislerp(QPfib, QPrv, QPepi, frac_epi): Dimension of QPepi should be 3");
+                bislerp(QPfib, QPrv, QPepi, frac_epi);
+            }else{
+                // if gradients of phi_lv, phi_rv are zero, then phi_epi is zero 
+                Vector e_0=psi_ab_vec;
+                double norm=e_0.Norml2();
+                e_0/=norm;                
+                QPfib.push_back(psi_ab_vec);
+                // TODO add SVD 
+                Vector s_zero(0);
+                Vector t_zero(0);
+                QPfib.push_back(s_zero);
+                QPfib.push_back(t_zero);
+            }
+        }
+                
+
         MFEM_ASSERT(QPfib.size()==3, "Size of QPfilb should be 3");
         fvectors.push_back(QPfib[0]);
         svectors.push_back(QPfib[1]);
         tvectors.push_back(QPfib[2]);
     }
     
-    ofstream f_ofs("fvectors.txt");
-    ofstream s_ofs("svectors.txt");
-    ofstream t_ofs("tvectors.txt");
-    
-    for(int i=0; i< fvectors.size(); ++i){
-        fvectors[i].Print(f_ofs, 10);
-        svectors[i].Print(s_ofs, 10);
-        tvectors[i].Print(t_ofs, 10);
-    }
-    
+    ofstream f_ofs("fvectors.vtk");
+    ofstream s_ofs("svectors.vtk");
+    ofstream t_ofs("tvectors.vtk");
+
+    printFiberVTK(mesh, fvectors, f_ofs);
+    printFiberVTK(mesh, svectors, s_ofs);
+    printFiberVTK(mesh, tvectors, t_ofs);
         
     delete mesh;
 
     return 0;
 }
 
+
 double a_s_f(double a_endo, double a_epi, double d){
-    return (a_endo*(1-d)-a_epi*d);
+    return (a_endo*(1-d)-a_endo*d);
 }
 
 double a_w_f(double a_endo, double a_epi, double d){
@@ -261,12 +366,60 @@ double a_w_f(double a_endo, double a_epi, double d){
 }
 
 double b_s_f(double b_endo, double b_epi, double d){
-    return (b_endo*(1-d)-b_epi*d);
+    return (b_endo*(1-d)-b_endo*d);
 }
 
 double b_w_f(double b_endo, double b_epi, double d){
     return (b_endo*(1-d)+b_epi*d);
 }
+
+bool vecdot(Vector &q1, Vector &q2){
+    Vector a=q1;
+    Vector b=q2;
+    
+    double norm1=a.Norml2();
+    double norm2=b.Norml2();
+    
+    if(norm1>0){
+        a/=norm1;
+    }
+    
+    if(norm2>0){
+        b/=norm2;
+    }
+    
+    double dot=a*b;
+    if(dot<0){
+        dot=-dot;
+    }
+    if(dot>0.9999){
+        return true;
+    }
+    return false;
+}
+
+bool vecisnorm(Vector &q){
+    double sum=0;
+    for(int i=0; i<q.Size(); i++){
+        sum=sum+q(i)*q(i);
+    }
+    if(sum>0.99 && sum <=1.01){
+        return true;
+    }
+    return false;
+}
+
+bool vecisnonzero(Vector& vec){
+    double sum=0.0;
+    for(int i=0; i<vec.Size(); i++){
+        sum=sum+vec(i)*vec(i);
+    }
+    if(sum>0.0001){
+        return true;
+    }
+    return false;
+}
+
 
 void cross(Vector &e_0, Vector &e_1, Vector &e_2){
     MFEM_ASSERT(e_1.Size()==3, "size of e_1 should be 3");
@@ -280,31 +433,72 @@ void axis(vector<Vector>& Q,Vector &psi, Vector &phi){
     double norm=psi.Norml2();
     Vector e_1=psi;
     e_1/=norm;
-    double psi_e1=e_1*psi;
+
+    norm=phi.Norml2();
+    Vector phi_unit=phi;
+    phi_unit/=norm;
+
+    double phi_e1=e_1*phi_unit; 
+    //cout << "dot " << phi_e1 << endl;
     Vector e_2(3);
-    add(phi, -psi_e1, e_1, e_2);
-    norm=e_2.Norml2();
+    add(phi_unit, -phi_e1, e_1, e_2);
+    norm=e_2.Norml2();    
     e_2/=norm;
+    
     Vector e_0(3);
     cross(e_0, e_1, e_2);
+
+//    if(!vecisnorm(e_0)){  
+//        norm=e_0.Norml2();
+//        e_0/=norm;
+//    }
+    
     Q.push_back(e_0);
     Q.push_back(e_1);
-    Q.push_back(e_2);
+    Q.push_back(e_2);    
+          
+    //MFEM_ASSERT(vecisnorm(e_0), "axis: e_0 is not normalized");
+    if(!vecisnorm(e_0)){
+        cout << "Norm psi ";
+        for(int i=0; i <psi.Size(); i++){
+            cout << psi(i) << " ";
+        } 
+        cout << " phi ";
+        for(int i=0; i <phi.Size(); i++){
+            cout << phi(i) << " ";
+        } 
+        cout <<endl;        
+        for(int j=0; j<Q.size(); j++){
+            Vector e=Q[j];
+            cout << "Norm e" << j << " ";
+            for(int i=0; i <e.Size(); i++){
+                cout << e(i) << " ";
+            }
+            cout << endl;
+        }         
+    }
+    MFEM_ASSERT(vecisnorm(e_1), "axis: e_1 is not normalized");
+    MFEM_ASSERT(vecisnorm(e_2), "axis: e_2 is not normalized");
+    
 }
 
 void orient(vector<Vector>& Qp, vector<Vector>& Q, double a, double b){
     Vector e_0=Q[0];
     Vector e_1=Q[1];
     Vector e_2=Q[2];
+
+    MFEM_ASSERT(vecisnorm(e_0), "orient: e_0 is not normalized");
+    MFEM_ASSERT(vecisnorm(e_1), "orient: e_1 is not normalized");
+    MFEM_ASSERT(vecisnorm(e_2), "orient: e_2 is not normalized");
     
     Vector ep_0(3);
     Vector ep_1(3);
     Vector ep_2(3);
     
-    double sina=sin(a);
-    double cosa=cos(a);
-    double sinb=sin(b);
-    double cosb=cos(b);
+    double sina=sin(a*PI/180);
+    double cosa=cos(a*PI/180);
+    double sinb=sin(b*PI/180);
+    double cosb=cos(b*PI/180);
     
     add(cosa, e_0, sina, e_1, ep_0);
     
@@ -316,10 +510,43 @@ void orient(vector<Vector>& Qp, vector<Vector>& Q, double a, double b){
     add(-sina*sinb, e_0, cosa*sinb, e_1, tmp_ep_2);
     add(1, tmp_ep_2, cosb, e_2, ep_2);   
     
+    if(!vecisnorm(ep_0)){
+        double norm=ep_0.Norml2();
+        ep_0/=norm;
+    }
+    if(!vecisnorm(ep_1)){
+        double norm=ep_1.Norml2();
+        ep_1/=norm;
+    }
+    if(!vecisnorm(ep_2)){
+        double norm=ep_2.Norml2();
+        ep_2/=norm;
+    }    
     Qp.push_back(ep_0);
     Qp.push_back(ep_1);
-    Qp.push_back(ep_2);
+    Qp.push_back(ep_2);    
     
+    MFEM_ASSERT(vecisnorm(ep_0), "orient: ep_0 is not normalized");
+    MFEM_ASSERT(vecisnorm(ep_1), "orient: ep_1 is not normalized");
+    MFEM_ASSERT(vecisnorm(ep_2), "orient: ep_2 is not normalized");    
+}
+
+double quatdot(Vector &q1, Vector &q2){
+    MFEM_ASSERT(q1.Size()==4, "quatdot Dimension of quaternion1 should be 4");
+    MFEM_ASSERT(q2.Size()==4, "quatdot Dimension of quaternion2 should be 4");
+    double sum=0.0;
+    for(int i=0; i<q1.Size(); i++){
+        sum=sum+q1(i)*q2(i);
+    }    
+    return sum;
+}
+
+void quatNormalized(Vector &q){
+    double sum=0.0;
+    for(int i=0; i<q.Size(); i++){
+        sum=sum+q(i)*q(i);
+    } 
+    q/=(sqrt(sum));    
 }
 
 void rot2quat(Vector &q,vector<Vector>& Q){
@@ -338,12 +565,16 @@ void rot2quat(Vector &q,vector<Vector>& Q){
     double M23=e_2(1);
     double M33=e_2(2);  
     
+    MFEM_ASSERT(vecisnorm(e_0), "rot2quat: e_0 is not normalized");
+    MFEM_ASSERT(vecisnorm(e_1), "rot2quat: e_1 is not normalized");
+    MFEM_ASSERT(vecisnorm(e_2), "rot2quat: e_2 is not normalized");
+    
     double w2=0.25*(1+M11+M22+M33);
-    double error=0.001;
+    double error=0.000001;
     if(w2>error){
         double w=sqrt(w2);
         q(0)=w;
-        double wq=0.25*w;
+        double wq=4*w;
         q(1)=(M23-M32)/wq;  //x
         q(2)=(M31-M13)/wq;  //y
         q(3)=(M12-M21)/wq;  //z
@@ -370,10 +601,16 @@ void rot2quat(Vector &q,vector<Vector>& Q){
         }
         
     }
+    quatNormalized(q);
+//    for(int i=0; i <q.Size(); i++){
+//        cout << q(i) << endl;
+//    }
+    //MFEM_ASSERT(vecisnorm(q), "rot2quat: quaternion is not normalized");
 }
 
 void quat2rot(vector<Vector>& Q, Vector &q){
     MFEM_ASSERT(q.Size()==4, "quat2rot: Dimension of quaternion should be 4");
+    //MFEM_ASSERT(vecisnorm(q), "quat2rot: quaternion is not normalized");
     double w=q(0);
     double x=q(1);
     double y=q(2);
@@ -409,41 +646,35 @@ void quat2rot(vector<Vector>& Q, Vector &q){
     Q.push_back(e_2);
 }
 
-double quatdot(Vector &q1, Vector &q2){
-    MFEM_ASSERT(q1.Size()==4, "quatdot Dimension of quaternion1 should be 4");
-    MFEM_ASSERT(q2.Size()==4, "quatdot Dimension of quaternion2 should be 4");
-    double sum=0.0;
-    for(int i=0; i<q1.Size(); i++){
-        sum=sum+q1(i)*q2(i);
-    }    
-    return sum;
-}
 
-void quatNormalized(Vector &q){
-    double sum=0.0;
-    for(int i=0; i<q.Size(); i++){
-        sum=sum+q(i)*q(i);
-    } 
-    q/=(sqrt(sum));    
-}
 
 
 void slerp(Vector &q, Vector &q1, Vector &q2, double t) {
     double dot = quatdot(q1, q2);
+    Vector q3=q2;
     if (dot < 0) {
         dot = -dot;
-        q2.Neg();
+        //MFEM_ASSERT(dot>=0 && dot<=1, "slerp: dot is not in the range from 0 to 1");
+        for(int i=0;i<q2.Size();i++){
+            q3(i)=-q2(i);
+        }
     } 
     
-    if (dot < 0.95) {
+//    if(dot>1){
+//        cout << "slerp: Warning: dot is " << dot << ", use linear interpolation. "<< endl;
+//    }
+    
+    if (dot < 0.999) {
         double angle = acos(dot);
         double a=sin(angle * (1 - t))/sin(angle);
         double b=sin(angle * t) / sin(angle);
-        add(a, q1, b, q2, q); //q = (q1 * sin(angle * (1 - t)) + q2 * sin(angle * t)) / sin(angle);
-    } else { // if the angle is small dot>0.95, use linear interpolation								
-        add((1-t), q1, t, q2, q); //q=q1*(1-t)+q2*t;
-        quatNormalized(q);
+        add(a, q1, b, q3, q); //q = (q1 * sin(angle * (1 - t)) + q2 * sin(angle * t)) / sin(angle);
+        //MFEM_ASSERT(vecisnorm(q), "slerp: quaternion is not normalized");
+    } else { // if the angle is small dot>0.999, use linear interpolation								
+        add((1-t), q1, t, q3, q); //q=q1*(1-t)+q2*t;
+        
     }	
+    quatNormalized(q);
 }
 
 void bislerp(vector<Vector>& Q, vector<Vector>& Qa, vector<Vector>& Qb, double t){
@@ -489,6 +720,7 @@ void bislerp(vector<Vector>& Q, vector<Vector>& Qa, vector<Vector>& Qb, double t
     double maxdot=-1;
     for(int i=0; i<qavec.size(); i++){
         Vector qai=qavec[i];
+        MFEM_ASSERT(vecisnorm(qai), "bislerp: quaternion qai is not normalized");
         double dot=abs(quatdot(qai, qb));
         if(maxdot<dot){
             maxdot=dot;
@@ -585,7 +817,7 @@ void laplace(Mesh *mesh, vector<double> &pot, vector<Vector> &gradients, Array<i
     cout << "Size of linear system: " << A.Height() << endl;
 
 #ifndef MFEM_USE_SUITESPARSE
-    // 10. Define a simple symmetric Gauss-Seidel preconditioner and use it to
+    // 10. Define a simple symmetric Gauss-Seidel preconditioner and use it to //ILU
     //     solve the system A X = B with PCG.
     GSSmoother M(A);
     PCG(A, M, B, X, 1, 1000, 1e-12, 0.0);
@@ -717,7 +949,7 @@ void findNeighbor(Element* ele, vector<Element*>& elements, int attr){
     }           
 }
 
-void setSurfaces(Mesh *mesh){
+void setSurfaces(Mesh *mesh, double angle=20){
     // Attributes for different surface
     const int apexAttr=1;
     const int baseAttr=2;
@@ -796,7 +1028,7 @@ void setSurfaces(Mesh *mesh){
     
     // Base    
     // The base must be planar. Its norm must be within 20 degrees of z axis.
-    double cosTheta = cos(20*3.14159265/180); 
+    double cosTheta = cos(angle*PI/180); 
     for(int i=0; i<nbe; i++){
         Element *ele = mesh->GetBdrElement(i);        
         const int *v = ele->GetVertices();
@@ -918,7 +1150,7 @@ void setBaseOLD(Mesh *mesh, int attr){
     befh.open("boundary3.txt");
 */    //
     
-    double cosTheta = cos(20*3.14159265/180); // within 20 degrees of z axis.
+    double cosTheta = cos(20*PI/180); // within 20 degrees of z axis.
     vector<vector<int> > baseBoundary;
     int nbe=mesh->GetNBE();
     for(int i=0; i<nbe; i++){
@@ -1054,6 +1286,89 @@ void printSurfVTK(Mesh *mesh, std::ostream &out){
    for (int i = 0; i < NumOfElements; i++)
    {
       const Element *ele = mesh->GetBdrElement(i);
+      out << ele->GetAttribute() << '\n';
+   }
+   out.flush();   
+      
+}
+
+void printFiberVTK(Mesh *mesh, vector<Vector>& fiber_vecs, std::ostream &out){
+   out <<
+       "# vtk DataFile Version 3.0\n"
+       "Generated by MFEM\n"
+       "ASCII\n"
+       "DATASET UNSTRUCTURED_GRID\n";
+   
+   int NumOfVertices=mesh->GetNV(); 
+   int spaceDim=3;
+   
+    out << "POINTS " << NumOfVertices << " double\n";
+    for (int i = 0; i < NumOfVertices; i++)
+    {
+       const double* coord=mesh->GetVertex(i);
+       for(int j=0; j<spaceDim; j++){
+           out << coord[j] << " ";
+       }
+       out << '\n';
+    }
+    
+    int NumOfElements=mesh->GetNE();
+      int size = 0;
+      for (int i = 0; i < NumOfElements; i++)
+      {
+         const Element *ele = mesh->GetElement(i); 
+         size += ele->GetNVertices() + 1;
+      }
+      
+      out << "CELLS " << NumOfElements << ' ' << size << '\n';
+      for (int i = 0; i < NumOfElements; i++)
+      {
+         const Element *ele = mesh->GetElement(i);
+         const int *v = ele->GetVertices();
+         const int nv = ele->GetNVertices();
+         out << nv;
+         for (int j = 0; j < nv; j++)
+         {
+            out << ' ' << v[j];
+         }
+         out << '\n';
+      } 
+      
+   out << "CELL_TYPES " << NumOfElements << '\n';
+   for (int i = 0; i < NumOfElements; i++)
+   {
+      const Element *ele = mesh->GetElement(i);
+      int vtk_cell_type = 5;
+      {
+         switch (ele->GetGeometryType())
+         {
+            case Geometry::TRIANGLE:     vtk_cell_type = 5;   break;
+            case Geometry::SQUARE:       vtk_cell_type = 9;   break;
+            case Geometry::TETRAHEDRON:  vtk_cell_type = 10;  break;
+            case Geometry::CUBE:         vtk_cell_type = 12;  break;
+         }
+      }
+
+      out << vtk_cell_type << '\n';
+   }
+   
+   // write point data
+   MFEM_ASSERT(fiber_vecs.size()==NumOfVertices, "Size of fiber vector should equal to size of points");
+   out << "POINT_DATA " << NumOfVertices<< "\n"
+       << "VECTORS fiber double\n";
+    for (int i = 0; i < NumOfVertices; i++) {
+        fiber_vecs[i].Print(out, 10);
+    }
+   
+   out << "\n";
+               
+   // write attributes
+   out << "CELL_DATA " << NumOfElements << '\n'
+       << "SCALARS material int\n"
+       << "LOOKUP_TABLE default\n";
+   for (int i = 0; i < NumOfElements; i++)
+   {
+      const Element *ele = mesh->GetElement(i);
       out << ele->GetAttribute() << '\n';
    }
    out.flush();   
