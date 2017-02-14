@@ -1,5 +1,5 @@
 #ifndef CONSTANTMODEL_HH
-#define CONSTANTMODEL_HH_HH
+#define CONSTANTMODEL_HH
 
 #include "SymmetricTensor.hh"
 #include <vector>

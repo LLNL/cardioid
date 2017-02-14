@@ -1,5 +1,5 @@
 #ifndef FGRDIFFUSION_OMP_HH
-#define FGRDIFFUSION_OPM_HH
+#define FGRDIFFUSION_OMP_HH
 
 #include "Diffusion.hh"
 #include "LocalGrid.hh"
