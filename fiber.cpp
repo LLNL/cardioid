@@ -65,7 +65,7 @@ bool vecdot(Vector &q1, Vector &q2);
 
 int main(int argc, char *argv[]) {
     // 1. Parse command-line options.
-    const char *mesh_file = "./mechmesh.vtk";
+    const char *mesh_file = "./human.vtk";
     int order = 1;
     bool static_cond = false;
     bool visualization = 1;
@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
     Array<int> zero_ess_bdr(bdr_attr_size);
     int nv=mesh->GetNV();
     
-    // 3a. Base → 1, Apex→ 0, Epi, LV, RV → no flux
+    // 3a. Base → 0, Apex→ 1, Epi, LV, RV → no flux
      // Mark ALL boundaries as essential. This does not set what the actual Dirichlet
     // values are
     all_ess_bdr = 1;
@@ -119,10 +119,10 @@ int main(int argc, char *argv[]) {
     all_ess_bdr[4]=0;
     
     nonzero_ess_bdr = 0;    
-    nonzero_ess_bdr[1] = 1;   
+    nonzero_ess_bdr[0] = 1;   
 
     zero_ess_bdr = 0;     
-    zero_ess_bdr[0] = 1;
+    zero_ess_bdr[1] = 1;
     
     string output="psi_ab";
     vector<double> psi_ab;
@@ -205,6 +205,7 @@ int main(int argc, char *argv[]) {
         //if(phi_rv[i] <0) phi_rv[i]=0;
         //if(phi_epi[i] <0) phi_epi[i]=0;
         //if(psi_ab[i] <0) psi_ab[i]=0;
+
         double phi_v=phi_lv[i]+phi_rv[i];
         double frac=0;
         if(phi_v!=0){
@@ -229,6 +230,24 @@ int main(int argc, char *argv[]) {
         bool phi_lv_isnonzero=vecisnonzero(phi_lv_vec);
         bool phi_rv_isnonzero=vecisnonzero(phi_rv_vec);
         bool phi_epi_isnonzero=vecisnonzero(phi_epi_vec);
+
+        vector<Vector> QPendo;
+        vector<Vector> QPfib;
+        
+        if(!vecisnonzero(psi_ab_vec)){
+            Vector ten(3);
+            ten=10;
+                QPfib.push_back(ten);
+                QPfib.push_back(ten);
+                QPfib.push_back(ten);  
+                
+        MFEM_ASSERT(QPfib.size()==3, "Size of QPfilb should be 3");
+        fvectors.push_back(QPfib[0]);
+        svectors.push_back(QPfib[1]);
+        tvectors.push_back(QPfib[2]);                
+            continue;
+        }
+        
         
         vector<Vector> QPlv;        
         if(phi_lv_isnonzero){
@@ -273,9 +292,7 @@ int main(int argc, char *argv[]) {
                 orient(QPepi, Qepi, aw, bw);
             }
         }
-        
-        vector<Vector> QPendo;
-        vector<Vector> QPfib;
+                
         if(phi_lv_isnonzero){    
             
             if(phi_rv_isnonzero){
@@ -285,16 +302,19 @@ int main(int argc, char *argv[]) {
                     //Line 10
                     MFEM_ASSERT(QPlv.size()==3, "bislerp(QPendo, QPlv, QPrv, frac): Dimension of QPlv should be 3");
                     MFEM_ASSERT(QPrv.size()==3, "bislerp(QPendo, QPlv, QPrv, frac): Dimension of QPrv should be 3");
-                    bislerp(QPendo, QPlv, QPrv, frac);
+                    //bislerp(QPendo, QPlv, QPrv, frac);
+                    QPendo=QPlv;
                     //Line 12 
                     MFEM_ASSERT(QPendo.size()==3, "bislerp(QPfib, QPendo, QPepi, frac_epi): Dimension of QPendo should be 3");
                     MFEM_ASSERT(QPepi.size()==3, "bislerp(QPfib, QPendo, QPepi, frac_epi): Dimension of QPepi should be 3");
-                    bislerp(QPfib, QPendo, QPepi, frac_epi);
+                    //bislerp(QPfib, QPendo, QPepi, frac_epi);
+                    QPfib=QPendo;
                 }else{
                     // if phi_epi gradients are zero, phi_lv and phi are nonzero. use QPlv, QPrv, frac 
                     MFEM_ASSERT(QPlv.size()==3, "bislerp(QPfib, QPlv, QPrv, frac): Dimension of QPlv should be 3");
                     MFEM_ASSERT(QPrv.size()==3, "bislerp(QPfib, QPlv, QPrv, frac): Dimension of QPrv should be 3");
-                    bislerp(QPfib, QPlv, QPrv, frac);
+                    //bislerp(QPfib, QPlv, QPrv, frac);
+                    QPfib=QPlv;
                 }
                 
             }else {
@@ -302,7 +322,8 @@ int main(int argc, char *argv[]) {
                     // if phi_rv is zero, phi_lv and phi_epi is nonzero
                     MFEM_ASSERT(QPlv.size() == 3, "bislerp(QPfib, QPlv, QPepi, frac_epi) Dimension of QPlv should be 3");
                     MFEM_ASSERT(QPepi.size() == 3, "bislerp(QPfib, QPlv, QPepi, frac_epi): Dimension of QPepi should be 3");
-                    bislerp(QPfib, QPlv, QPepi, frac_epi);
+                    //bislerp(QPfib, QPlv, QPepi, frac_epi);
+                    QPfib=QPlv;
                 }else{
                     // if gradients of phi_lv, phi_rv are zero, then phi_epi is zero 
                     Vector e_0=psi_ab_vec;
@@ -321,7 +342,8 @@ int main(int argc, char *argv[]) {
                 // if phi_lv is zero, phi_rv and phi_epi is nonzero
                 MFEM_ASSERT(QPrv.size() == 3, "bislerp(QPfib, QPrv, QPepi, frac_epi) Dimension of QPrv should be 3");
                 MFEM_ASSERT(QPepi.size() == 3, "bislerp(QPfib, QPrv, QPepi, frac_epi): Dimension of QPepi should be 3");
-                bislerp(QPfib, QPrv, QPepi, frac_epi);
+                //bislerp(QPfib, QPrv, QPepi, frac_epi);
+                QPfib=QPrv;
             }else{
                 // if gradients of phi_lv, phi_rv are zero, then phi_epi is zero 
                 Vector e_0=psi_ab_vec;
@@ -414,7 +436,7 @@ bool vecisnonzero(Vector& vec){
     for(int i=0; i<vec.Size(); i++){
         sum=sum+vec(i)*vec(i);
     }
-    if(sum>0.0001){
+    if(sum>0){
         return true;
     }
     return false;
@@ -510,18 +532,18 @@ void orient(vector<Vector>& Qp, vector<Vector>& Q, double a, double b){
     add(-sina*sinb, e_0, cosa*sinb, e_1, tmp_ep_2);
     add(1, tmp_ep_2, cosb, e_2, ep_2);   
     
-    if(!vecisnorm(ep_0)){
-        double norm=ep_0.Norml2();
-        ep_0/=norm;
-    }
-    if(!vecisnorm(ep_1)){
-        double norm=ep_1.Norml2();
-        ep_1/=norm;
-    }
-    if(!vecisnorm(ep_2)){
-        double norm=ep_2.Norml2();
-        ep_2/=norm;
-    }    
+//    if(!vecisnorm(ep_0)){
+//        double norm=ep_0.Norml2();
+//        ep_0/=norm;
+//    }
+//    if(!vecisnorm(ep_1)){
+//        double norm=ep_1.Norml2();
+//        ep_1/=norm;
+//    }
+//    if(!vecisnorm(ep_2)){
+//        double norm=ep_2.Norml2();
+//        ep_2/=norm;
+//    }    
     Qp.push_back(ep_0);
     Qp.push_back(ep_1);
     Qp.push_back(ep_2);    
@@ -601,7 +623,7 @@ void rot2quat(Vector &q,vector<Vector>& Q){
         }
         
     }
-    quatNormalized(q);
+//    quatNormalized(q);
 //    for(int i=0; i <q.Size(); i++){
 //        cout << q(i) << endl;
 //    }
@@ -674,7 +696,7 @@ void slerp(Vector &q, Vector &q1, Vector &q2, double t) {
         add((1-t), q1, t, q3, q); //q=q1*(1-t)+q2*t;
         
     }	
-    quatNormalized(q);
+//    quatNormalized(q);
 }
 
 void bislerp(vector<Vector>& Q, vector<Vector>& Qa, vector<Vector>& Qb, double t){
