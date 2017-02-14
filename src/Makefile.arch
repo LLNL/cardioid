@@ -99,6 +99,9 @@ endif
 ifeq ($(HOSTNAME),sierra)
   ARCHGUESS = peloton
 endif
+ifeq ($(HOSTNAME),ray)
+  ARCHGUESS = ray-openmp
+endif
 ifeq ($(HOSTNAME),prince)
   ARCHGUESS = osx
 endif
