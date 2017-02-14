@@ -30,9 +30,7 @@ namespace  scanReaction
    Reaction* scanTT06_CellML(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanTT06Dev(OBJECT* obj, double dt, Anatomy& anatomy, const ThreadTeam& group, const vector<string>& scaleCurrents);
    Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy);
-   Reaction* scanOHaraRudy(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanSimpleOHaraRudy(OBJECT* obj, const Anatomy& anatomy);
-   Reaction* scanGrandi(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanSimpleGrandi(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanFHN(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanNull(OBJECT* obj);
@@ -60,12 +58,8 @@ Reaction* reactionFactory(const string& name, double dt, Anatomy& anatomy,
       return scanReaction::scanTT06Dev(obj, dt, anatomy, group, scaleCurrents);
    else if (method == "TT06_RRG" )
       return scanReaction::scanTT06_RRG(obj, anatomy);
-   else if (method == "OHaraRudy" )
-      return scanReaction::scanOHaraRudy(obj, anatomy);
    else if (method == "SimpleOHaraRudy" )
       return scanReaction::scanSimpleOHaraRudy(obj, anatomy);
-   else if (method == "Grandi" )
-      return scanReaction::scanGrandi(obj, anatomy);
    else if (method == "SimpleGrandi" )
       return scanReaction::scanSimpleGrandi(obj, anatomy);
    else if (method == "FHN" || method == "FitzhughNagumo")
