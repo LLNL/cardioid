@@ -44,7 +44,8 @@
 #include <string>
 #include <vector>
 
-#define PI 3.14159265
+const double PI=3.14159265;
+const int dim3=3;
 
 using namespace std;
 using namespace mfem;
@@ -52,16 +53,18 @@ using namespace mfem;
 void setSurfaces(Mesh *mesh, double angle);
 void printSurfVTK(Mesh *mesh, std::ostream &out);
 void printFiberVTK(Mesh *mesh, vector<Vector>& fiber_vecs, std::ostream &out);
-void laplace(Mesh *mesh, vector<double> &pot, vector<Vector> &gradients, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, string output, int order, bool static_cond);
-void bislerp(vector<Vector>& Q, vector<Vector>& Qa, vector<Vector>& Qb, double t);
+void getVert2Elements(Mesh *mesh, vector<vector<int> >& vert2Elements);
+void laplace(Mesh *mesh, vector<vector<int> >& vert2Elements, vector<double> &pot, vector<Vector> &gradients, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, string output, int order, bool static_cond);
+void bislerp(DenseMatrix& Q, DenseMatrix& Qa, DenseMatrix& Qb, double t);
 double a_s_f(double a_endo, double a_epi, double d);
 double a_w_f(double a_endo, double a_epi, double d);
 double b_s_f(double b_endo, double b_epi, double d);
 double b_w_f(double b_endo, double b_epi, double d);
-void axis(vector<Vector>& Q,Vector &psi, Vector &phi);
-void orient(vector<Vector>& Qp, vector<Vector>& Q, double a, double b);
+void axis(DenseMatrix& Q,Vector &psi, Vector &phi);
+void orient(DenseMatrix& Qp, DenseMatrix& Q, double a, double b);
 bool vecisnonzero(Vector& vec);
 bool vecdot(Vector &q1, Vector &q2);
+void vectorEigen(Vector& psi_ab, DenseMatrix& QPfib);
 
 int main(int argc, char *argv[]) {
     // 1. Parse command-line options.
@@ -104,13 +107,28 @@ int main(int argc, char *argv[]) {
     printSurfVTK(mesh, surf_ofs);
 
     // 3. Solve the laplacian for four different boundary conditions.
+    
+    // get the vertex elements arrays.
+    vector<vector<int> > vert2Elements;
+    getVert2Elements(mesh, vert2Elements);
+    ofstream v2e_ofs("vert2Elements.txt");
+    for(int i=0; i<vert2Elements.size(); i++){
+        vector<int> elements=vert2Elements[i];
+        v2e_ofs << i  << " ";
+        for(int j=0; j<elements.size(); j++){
+            v2e_ofs << elements[j] << " ";
+        }
+        v2e_ofs << endl;
+    }
+    
+    
     int bdr_attr_size=mesh->bdr_attributes.Max();
     Array<int> all_ess_bdr(bdr_attr_size);    
     Array<int> nonzero_ess_bdr(bdr_attr_size);
     Array<int> zero_ess_bdr(bdr_attr_size);
     int nv=mesh->GetNV();
     
-    // 3a. Base → 0, Apex→ 1, Epi, LV, RV → no flux
+    // 3a. Base → 1, Apex→ 0, Epi, LV, RV → no flux
      // Mark ALL boundaries as essential. This does not set what the actual Dirichlet
     // values are
     all_ess_bdr = 1;
@@ -119,15 +137,15 @@ int main(int argc, char *argv[]) {
     all_ess_bdr[4]=0;
     
     nonzero_ess_bdr = 0;    
-    nonzero_ess_bdr[0] = 1;   
+    nonzero_ess_bdr[1] = 1;   
 
     zero_ess_bdr = 0;     
-    zero_ess_bdr[1] = 1;
+    zero_ess_bdr[0] = 1;
     
     string output="psi_ab";
     vector<double> psi_ab;
     vector<Vector> psi_ab_grads;
-    laplace(mesh, psi_ab, psi_ab_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    laplace(mesh, vert2Elements, psi_ab, psi_ab_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
     MFEM_ASSERT(psi_ab.size()==nv, "size of psi_ab does not match number of vertices.");
     MFEM_ASSERT(psi_ab_grads.size()==nv, "size of psi_ab_grads does not match number of vertices.");
     
@@ -148,7 +166,7 @@ int main(int argc, char *argv[]) {
     vector<double> phi_epi;
     vector<Vector> phi_epi_grads;
 
-    laplace(mesh, phi_epi, phi_epi_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    laplace(mesh, vert2Elements, phi_epi, phi_epi_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
     MFEM_ASSERT(phi_epi.size()==nv, "size of phi_epi does not match number of vertices.");
     MFEM_ASSERT(phi_epi_grads.size()==nv, "size of phi_epi_grads does not match number of vertices.");
     
@@ -168,7 +186,7 @@ int main(int argc, char *argv[]) {
     vector<double> phi_lv;
     vector<Vector> phi_lv_grads;
 
-    laplace(mesh, phi_lv, phi_lv_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    laplace(mesh, vert2Elements, phi_lv, phi_lv_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
     MFEM_ASSERT(phi_lv.size()==nv, "size of phi_lv does not match number of vertices.");
     MFEM_ASSERT(phi_lv_grads.size()==nv, "size of phi_lv_grads does not match number of vertices.");        
     
@@ -188,9 +206,19 @@ int main(int argc, char *argv[]) {
     vector<double> phi_rv;
     vector<Vector> phi_rv_grads;
 
-    laplace(mesh, phi_rv, phi_rv_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    laplace(mesh, vert2Elements, phi_rv, phi_rv_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
     MFEM_ASSERT(phi_rv.size()==nv, "size of phi_rv does not match number of vertices.");
     MFEM_ASSERT(phi_rv_grads.size()==nv, "size of phi_rv_grads does not match number of vertices.");
+    
+    ofstream psia_ofs("psi_ab_grads.vtk");
+    ofstream phie_ofs("phi_epi_grads.vtk");
+    ofstream phil_ofs("phi_lv_grads.vtk");
+    ofstream phir_ofs("phi_rv_grads.vtk");
+
+    printFiberVTK(mesh, psi_ab_grads, psia_ofs);
+    printFiberVTK(mesh, phi_epi_grads, phie_ofs);
+    printFiberVTK(mesh, phi_lv_grads, phil_ofs);    
+    printFiberVTK(mesh, phi_rv_grads, phir_ofs); 
             
     vector<Vector> fvectors;
     vector<Vector> svectors;
@@ -207,9 +235,12 @@ int main(int argc, char *argv[]) {
         //if(psi_ab[i] <0) psi_ab[i]=0;
 
         double phi_v=phi_lv[i]+phi_rv[i];
-        double frac=0;
+        double frac=0.5;
         if(phi_v!=0){
             frac=phi_rv[i]/phi_v;
+        }else{
+            cout << "Warning: phi_v ==0" ;
+            cout << " phi_lv[i]="<< phi_lv[i] << " phi_rv[i]=" << phi_rv[i]<< " phi_epi[i]=" << phi_epi[i] << " psi_ab[i]=" << psi_ab[i]<< endl;
         }
         double frac_epi=phi_epi[i];
         //stringstream ss;
@@ -231,32 +262,30 @@ int main(int argc, char *argv[]) {
         bool phi_rv_isnonzero=vecisnonzero(phi_rv_vec);
         bool phi_epi_isnonzero=vecisnonzero(phi_epi_vec);
 
-        vector<Vector> QPendo;
-        vector<Vector> QPfib;
-        
-        if(!vecisnonzero(psi_ab_vec)){
+        DenseMatrix QPendo(dim3,dim3);
+        DenseMatrix QPfib(dim3,dim3);
+
+        if (!vecisnonzero(psi_ab_vec)) {
+            cout << "Warning psi_ab gradient " << i << "is zero" <<endl;
             Vector ten(3);
-            ten=10;
-                QPfib.push_back(ten);
-                QPfib.push_back(ten);
-                QPfib.push_back(ten);  
-                
-        MFEM_ASSERT(QPfib.size()==3, "Size of QPfilb should be 3");
-        fvectors.push_back(QPfib[0]);
-        svectors.push_back(QPfib[1]);
-        tvectors.push_back(QPfib[2]);                
+            ten = 10;
+//            for(int i=0; i<dim3; i++){
+//                QPfib.SetCol(i,ten);
+//            }
+            
+            fvectors.push_back(ten);
+            svectors.push_back(ten);
+            tvectors.push_back(ten);
             continue;
         }
         
         
-        vector<Vector> QPlv;        
+        DenseMatrix QPlv(dim3,dim3);        
         if(phi_lv_isnonzero){
             // Line 8
-            Vector phi_lv_vec_neg(phi_lv_vec.Size());
-            for (int i = 0; i < phi_lv_vec.Size(); ++i) {
-                phi_lv_vec_neg(i) = phi_lv_vec(i)*(-1);
-            }
-            vector<Vector> Qlv;
+            Vector phi_lv_vec_neg=phi_lv_vec;
+            phi_lv_vec_neg.Neg();
+            DenseMatrix Qlv(dim3,dim3);
             if(vecdot(psi_ab_vec, phi_lv_vec_neg)){
                 cout << "psi_ab_vec equal to phi_lv_vec_neg" << endl;
                 phi_lv_isnonzero=false;
@@ -267,10 +296,10 @@ int main(int argc, char *argv[]) {
             // End of Line 8
         }
         
-        vector<Vector> QPrv;         
+        DenseMatrix QPrv(dim3,dim3);         
         if(phi_rv_isnonzero){
             //Line 9
-            vector<Vector> Qrv;
+            DenseMatrix Qrv(dim3,dim3);
             if(vecdot(psi_ab_vec, phi_rv_vec)){
                 cout << "psi_ab_vec equal to phi_rv_vec" << endl;
                 phi_rv_isnonzero=false;
@@ -280,10 +309,10 @@ int main(int argc, char *argv[]) {
             }
         }
                
-        vector<Vector> QPepi;
+        DenseMatrix QPepi(dim3,dim3);
         if (phi_epi_isnonzero) {
             //Line 11
-            vector<Vector> Qepi;
+            DenseMatrix Qepi(dim3,dim3);
             if(vecdot(psi_ab_vec, phi_epi_vec)){
                 cout << "psi_ab_vec equal to phi_epi_vec" << endl;
                 phi_epi_isnonzero=false;
@@ -300,69 +329,47 @@ int main(int argc, char *argv[]) {
                 if(phi_epi_isnonzero){
                     // if all three phi gradients are non-zero, use the original algorithm in paper. 
                     //Line 10
-                    MFEM_ASSERT(QPlv.size()==3, "bislerp(QPendo, QPlv, QPrv, frac): Dimension of QPlv should be 3");
-                    MFEM_ASSERT(QPrv.size()==3, "bislerp(QPendo, QPlv, QPrv, frac): Dimension of QPrv should be 3");
-                    //bislerp(QPendo, QPlv, QPrv, frac);
-                    QPendo=QPlv;
+                    bislerp(QPendo, QPlv, QPrv, frac);
+                    //QPendo=QPlv;
                     //Line 12 
-                    MFEM_ASSERT(QPendo.size()==3, "bislerp(QPfib, QPendo, QPepi, frac_epi): Dimension of QPendo should be 3");
-                    MFEM_ASSERT(QPepi.size()==3, "bislerp(QPfib, QPendo, QPepi, frac_epi): Dimension of QPepi should be 3");
-                    //bislerp(QPfib, QPendo, QPepi, frac_epi);
-                    QPfib=QPendo;
+                    bislerp(QPfib, QPendo, QPepi, frac_epi);
+                    //QPfib=QPendo;
                 }else{
                     // if phi_epi gradients are zero, phi_lv and phi are nonzero. use QPlv, QPrv, frac 
-                    MFEM_ASSERT(QPlv.size()==3, "bislerp(QPfib, QPlv, QPrv, frac): Dimension of QPlv should be 3");
-                    MFEM_ASSERT(QPrv.size()==3, "bislerp(QPfib, QPlv, QPrv, frac): Dimension of QPrv should be 3");
-                    //bislerp(QPfib, QPlv, QPrv, frac);
-                    QPfib=QPlv;
+                    bislerp(QPfib, QPlv, QPrv, frac);
+                    //QPfib=QPlv;
                 }
                 
             }else {
                 if(phi_epi_isnonzero){
                     // if phi_rv is zero, phi_lv and phi_epi is nonzero
-                    MFEM_ASSERT(QPlv.size() == 3, "bislerp(QPfib, QPlv, QPepi, frac_epi) Dimension of QPlv should be 3");
-                    MFEM_ASSERT(QPepi.size() == 3, "bislerp(QPfib, QPlv, QPepi, frac_epi): Dimension of QPepi should be 3");
-                    //bislerp(QPfib, QPlv, QPepi, frac_epi);
-                    QPfib=QPlv;
+                    bislerp(QPfib, QPlv, QPepi, frac_epi);
+                    //QPfib=QPlv;
                 }else{
                     // if gradients of phi_lv, phi_rv are zero, then phi_epi is zero 
-                    Vector e_0=psi_ab_vec;
-                    double norm=e_0.Norml2();
-                    e_0/=norm;
-                    QPfib.push_back(psi_ab_vec);
-                    // TODO add SVD 
-                    Vector s_zero(0);
-                    Vector t_zero(0);
-                    QPfib.push_back(s_zero);
-                    QPfib.push_back(t_zero);                    
+                    vectorEigen(psi_ab_vec, QPfib);
                 }
             }
         }else{
             if(phi_rv_isnonzero && phi_epi_isnonzero){                
                 // if phi_lv is zero, phi_rv and phi_epi is nonzero
-                MFEM_ASSERT(QPrv.size() == 3, "bislerp(QPfib, QPrv, QPepi, frac_epi) Dimension of QPrv should be 3");
-                MFEM_ASSERT(QPepi.size() == 3, "bislerp(QPfib, QPrv, QPepi, frac_epi): Dimension of QPepi should be 3");
-                //bislerp(QPfib, QPrv, QPepi, frac_epi);
-                QPfib=QPrv;
+                bislerp(QPfib, QPrv, QPepi, frac_epi);
+                //QPfib=QPrv;
             }else{
                 // if gradients of phi_lv, phi_rv are zero, then phi_epi is zero 
-                Vector e_0=psi_ab_vec;
-                double norm=e_0.Norml2();
-                e_0/=norm;                
-                QPfib.push_back(psi_ab_vec);
-                // TODO add SVD 
-                Vector s_zero(0);
-                Vector t_zero(0);
-                QPfib.push_back(s_zero);
-                QPfib.push_back(t_zero);
+                vectorEigen(psi_ab_vec, QPfib);
             }
         }
                 
-
-        MFEM_ASSERT(QPfib.size()==3, "Size of QPfilb should be 3");
-        fvectors.push_back(QPfib[0]);
-        svectors.push_back(QPfib[1]);
-        tvectors.push_back(QPfib[2]);
+        vector<Vector> qpVecs;
+        for(int j=0; j<dim3; j++){
+            Vector vec;
+            QPfib.GetColumn(j, vec);
+            qpVecs.push_back(vec);
+        }
+        fvectors.push_back(qpVecs[0]);
+        svectors.push_back(qpVecs[1]);
+        tvectors.push_back(qpVecs[2]);
     }
     
     ofstream f_ofs("fvectors.vtk");
@@ -410,6 +417,16 @@ bool vecdot(Vector &q1, Vector &q2){
         b/=norm2;
     }
     
+//    cout << "a=";
+//    a.Print(cout);
+//    cout << " b=";
+//    b.Print(cout);
+//    cout << " q1=";
+//    q1.Print(cout);
+//    cout << " q2=";
+//    q2.Print(cout); 
+//    cout << endl;
+    
     double dot=a*b;
     if(dot<0){
         dot=-dot;
@@ -451,7 +468,7 @@ void cross(Vector &e_0, Vector &e_1, Vector &e_2){
     e_0(2)=e_1(0)*e_2(1)-e_1(1)*e_2(0);    
 }
 
-void axis(vector<Vector>& Q,Vector &psi, Vector &phi){
+void axis(DenseMatrix& Q,Vector &psi, Vector &phi){
     double norm=psi.Norml2();
     Vector e_1=psi;
     e_1/=norm;
@@ -475,82 +492,68 @@ void axis(vector<Vector>& Q,Vector &psi, Vector &phi){
 //        e_0/=norm;
 //    }
     
-    Q.push_back(e_0);
-    Q.push_back(e_1);
-    Q.push_back(e_2);    
+    Q.SetCol(0, e_0);
+    Q.SetCol(1, e_1);
+    Q.SetCol(2, e_2);    
           
-    //MFEM_ASSERT(vecisnorm(e_0), "axis: e_0 is not normalized");
-    if(!vecisnorm(e_0)){
-        cout << "Norm psi ";
-        for(int i=0; i <psi.Size(); i++){
-            cout << psi(i) << " ";
-        } 
-        cout << " phi ";
-        for(int i=0; i <phi.Size(); i++){
-            cout << phi(i) << " ";
-        } 
-        cout <<endl;        
-        for(int j=0; j<Q.size(); j++){
-            Vector e=Q[j];
-            cout << "Norm e" << j << " ";
-            for(int i=0; i <e.Size(); i++){
-                cout << e(i) << " ";
-            }
-            cout << endl;
-        }         
-    }
+    MFEM_ASSERT(vecisnorm(e_0), "axis: e_0 is not normalized");
+//    if(!vecisnorm(e_0)){
+//        cout << "Norm psi ";
+//        for(int i=0; i <psi.Size(); i++){
+//            cout << psi(i) << " ";
+//        } 
+//        cout << " phi ";
+//        for(int i=0; i <phi.Size(); i++){
+//            cout << phi(i) << " ";
+//        } 
+//        cout <<endl;        
+//        for(int j=0; j<Q.size(); j++){
+//            Vector e=Q[j];
+//            cout << "Norm e" << j << " ";
+//            for(int i=0; i <e.Size(); i++){
+//                cout << e(i) << " ";
+//            }
+//            cout << endl;
+//        }         
+//    }
     MFEM_ASSERT(vecisnorm(e_1), "axis: e_1 is not normalized");
     MFEM_ASSERT(vecisnorm(e_2), "axis: e_2 is not normalized");
     
 }
 
-void orient(vector<Vector>& Qp, vector<Vector>& Q, double a, double b){
-    Vector e_0=Q[0];
-    Vector e_1=Q[1];
-    Vector e_2=Q[2];
-
-    MFEM_ASSERT(vecisnorm(e_0), "orient: e_0 is not normalized");
-    MFEM_ASSERT(vecisnorm(e_1), "orient: e_1 is not normalized");
-    MFEM_ASSERT(vecisnorm(e_2), "orient: e_2 is not normalized");
-    
-    Vector ep_0(3);
-    Vector ep_1(3);
-    Vector ep_2(3);
+void orient(DenseMatrix& Qp, DenseMatrix& Q, double a, double b){
     
     double sina=sin(a*PI/180);
     double cosa=cos(a*PI/180);
     double sinb=sin(b*PI/180);
     double cosb=cos(b*PI/180);
     
-    add(cosa, e_0, sina, e_1, ep_0);
+    //| cosa   -sina   0  |
+    //| sina    cosa   0  |
+    //|  0        0    1  |
+    DenseMatrix matrixA(dim3, dim3);
+    matrixA=0.0;
+    matrixA(0, 0)=cosa;
+    matrixA(0, 1)=-sina;
+    matrixA(1, 0)=sina;
+    matrixA(1, 1)=cosa;
+    matrixA(2, 2)=1;    
+    //|  1     0      0   |
+    //|  0    cosb   sinb |
+    //|  0   -sinb   cosb |    
+    DenseMatrix matrixB(dim3, dim3);
+    matrixB=0.0;
+    matrixB(0, 0)=1;
+    matrixB(1, 1)=cosb;
+    matrixB(1, 2)=sinb;
+    matrixB(2, 1)=-sinb;
+    matrixB(2, 2)=cosb;      
     
-    Vector tmp_ep_1(3);
-    add(-sina*cosb, e_0, cosa*cosb, e_1, tmp_ep_1);
-    add(1, tmp_ep_1, -sinb, e_2, ep_1);
+    DenseMatrix QA(dim3, dim3);
     
-    Vector tmp_ep_2(3);
-    add(-sina*sinb, e_0, cosa*sinb, e_1, tmp_ep_2);
-    add(1, tmp_ep_2, cosb, e_2, ep_2);   
-    
-//    if(!vecisnorm(ep_0)){
-//        double norm=ep_0.Norml2();
-//        ep_0/=norm;
-//    }
-//    if(!vecisnorm(ep_1)){
-//        double norm=ep_1.Norml2();
-//        ep_1/=norm;
-//    }
-//    if(!vecisnorm(ep_2)){
-//        double norm=ep_2.Norml2();
-//        ep_2/=norm;
-//    }    
-    Qp.push_back(ep_0);
-    Qp.push_back(ep_1);
-    Qp.push_back(ep_2);    
-    
-    MFEM_ASSERT(vecisnorm(ep_0), "orient: ep_0 is not normalized");
-    MFEM_ASSERT(vecisnorm(ep_1), "orient: ep_1 is not normalized");
-    MFEM_ASSERT(vecisnorm(ep_2), "orient: ep_2 is not normalized");    
+    Mult(Q, matrixA, QA);    
+    Mult(QA, matrixB, Qp);
+       
 }
 
 double quatdot(Vector &q1, Vector &q2){
@@ -571,26 +574,18 @@ void quatNormalized(Vector &q){
     q/=(sqrt(sum));    
 }
 
-void rot2quat(Vector &q,vector<Vector>& Q){
-    MFEM_ASSERT(Q.size()==3, "Dimension of rotation matrix should be 3");
+void rot2quat(Vector &q, DenseMatrix& Q){
     q.SetSize(4); // quaternion q=w+x*i+y*j+z*k
-    Vector e_0=Q[0];
-    double M11=e_0(0);
-    double M21=e_0(1);
-    double M31=e_0(2);
-    Vector e_1=Q[1];
-    double M12=e_1(0);
-    double M22=e_1(1);
-    double M32=e_1(2);    
-    Vector e_2=Q[2];
-    double M13=e_2(0);
-    double M23=e_2(1);
-    double M33=e_2(2);  
-    
-    MFEM_ASSERT(vecisnorm(e_0), "rot2quat: e_0 is not normalized");
-    MFEM_ASSERT(vecisnorm(e_1), "rot2quat: e_1 is not normalized");
-    MFEM_ASSERT(vecisnorm(e_2), "rot2quat: e_2 is not normalized");
-    
+    double M11=Q(0,0);
+    double M21=Q(1,0);
+    double M31=Q(2,0);
+    double M12=Q(0,1);
+    double M22=Q(1,1);
+    double M32=Q(2,1);    
+    double M13=Q(0,2);
+    double M23=Q(1,2);
+    double M33=Q(2,2);  
+        
     double w2=0.25*(1+M11+M22+M33);
     double error=0.000001;
     if(w2>error){
@@ -627,10 +622,10 @@ void rot2quat(Vector &q,vector<Vector>& Q){
 //    for(int i=0; i <q.Size(); i++){
 //        cout << q(i) << endl;
 //    }
-    //MFEM_ASSERT(vecisnorm(q), "rot2quat: quaternion is not normalized");
+//    MFEM_ASSERT(vecisnorm(q), "rot2quat: quaternion is not normalized");
 }
 
-void quat2rot(vector<Vector>& Q, Vector &q){
+void quat2rot(DenseMatrix& Q, Vector &q){
     MFEM_ASSERT(q.Size()==4, "quat2rot: Dimension of quaternion should be 4");
     //MFEM_ASSERT(vecisnorm(q), "quat2rot: quaternion is not normalized");
     double w=q(0);
@@ -648,27 +643,19 @@ void quat2rot(vector<Vector>& Q, Vector &q){
     double wy=w*y;
     double wz=w*z;
     
-    Vector e_0(3);
-    e_0(0)=1-2*y2-2*z2;
-    e_0(1)=2*xy-2*wz;
-    e_0(2)=2*xz+2*wy;
+    Q(0,0)=1-2*y2-2*z2;
+    Q(1,0)=2*xy-2*wz;
+    Q(2,0)=2*xz+2*wy;
     
-    Vector e_1(3);
-    e_1(0)=2*xy+2*wz;
-    e_1(1)=1-2*x2-2*z2;
-    e_1(2)=2*yz-2*wx;
+    Q(0,1)=2*xy+2*wz;
+    Q(1,1)=1-2*x2-2*z2;
+    Q(2,1)=2*yz-2*wx;
     
-    Vector e_2(3);
-    e_2(0)=2*xz-2*wy;
-    e_2(1)=2*yz+2*wx;
-    e_2(2)=1-2*x2-2*y2; 
+    Q(0,2)=2*xz-2*wy;
+    Q(1,2)=2*yz+2*wx;
+    Q(2,2)=1-2*x2-2*y2; 
     
-    Q.push_back(e_0);
-    Q.push_back(e_1);
-    Q.push_back(e_2);
 }
-
-
 
 
 void slerp(Vector &q, Vector &q1, Vector &q2, double t) {
@@ -677,16 +664,14 @@ void slerp(Vector &q, Vector &q1, Vector &q2, double t) {
     if (dot < 0) {
         dot = -dot;
         //MFEM_ASSERT(dot>=0 && dot<=1, "slerp: dot is not in the range from 0 to 1");
-        for(int i=0;i<q2.Size();i++){
-            q3(i)=-q2(i);
-        }
+        q3.Neg();
     } 
     
 //    if(dot>1){
 //        cout << "slerp: Warning: dot is " << dot << ", use linear interpolation. "<< endl;
 //    }
     
-    if (dot < 0.999) {
+    if (dot < 0.9999) {
         double angle = acos(dot);
         double a=sin(angle * (1 - t))/sin(angle);
         double b=sin(angle * t) / sin(angle);
@@ -699,7 +684,7 @@ void slerp(Vector &q, Vector &q1, Vector &q2, double t) {
 //    quatNormalized(q);
 }
 
-void bislerp(vector<Vector>& Q, vector<Vector>& Qa, vector<Vector>& Qb, double t){
+void bislerp(DenseMatrix& Q, DenseMatrix& Qa, DenseMatrix& Qb, double t){    
     Vector qa;
     rot2quat(qa, Qa);
     Vector qb;
@@ -742,7 +727,7 @@ void bislerp(vector<Vector>& Q, vector<Vector>& Qa, vector<Vector>& Qb, double t
     double maxdot=-1;
     for(int i=0; i<qavec.size(); i++){
         Vector qai=qavec[i];
-        MFEM_ASSERT(vecisnorm(qai), "bislerp: quaternion qai is not normalized");
+        //MFEM_ASSERT(vecisnorm(qai), "bislerp: quaternion qai is not normalized");
         double dot=abs(quatdot(qai, qb));
         if(maxdot<dot){
             maxdot=dot;
@@ -756,8 +741,78 @@ void bislerp(vector<Vector>& Q, vector<Vector>& Qa, vector<Vector>& Qb, double t
     
 }
 
+void vectorEigen(Vector& psi_ab, DenseMatrix& QPfib){
+    
+    Vector e=psi_ab;
+    double norm=e.Norml2();
+    e/=norm;
+    
+    DenseMatrix m(dim3,dim3);  
+    MultVVt(psi_ab, m);
+      
+    double lamda[dim3];
+    double vec[dim3*dim3];
+    m.CalcEigenvalues(lamda, vec);
+    double lamda_max=-1;
+    int index_max=-1;
+    for(int i=0; i<3; i++){
+        double lamda_abs=abs(lamda[i]);
+        if(lamda_abs>lamda_max) {
+            lamda_max=lamda_abs;
+            index_max=i;     
+        } 
+    }
+    
+    Vector fvec;
+    vector<Vector> stvec;
+    for(int i=0; i<3; i++){
+        Vector vec_tmp(3);
+        for(int j=0; j<3; j++){
+            vec_tmp(j)=vec[i*3+j];
+        }
+        if(i==index_max){
+            fvec=vec_tmp;
+        }else{
+            stvec.push_back(vec_tmp);
+        }
+    }
+    QPfib.SetCol(0, fvec);
+    for(int i=0; i<stvec.size(); i++){
+        QPfib.SetCol(i+1, stvec[i]);
+    }
+    
+}
 
-void laplace(Mesh *mesh, vector<double> &pot, vector<Vector> &gradients, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, string output, int order, bool static_cond){
+void getVert2Elements(Mesh *mesh, vector<vector<int> >& vert2Elements) {
+
+    int NumOfVertices = mesh->GetNV();
+    for (int i = 0; i < NumOfVertices; i++) {
+        vector<int> elements;
+        vert2Elements.push_back(elements);
+    }
+
+    int NumOfElements = mesh->GetNE();
+    for (int i = 0; i < NumOfElements; i++) {
+        const Element *ele = mesh->GetElement(i);
+        const int *v = ele->GetVertices();
+        const int nv = ele->GetNVertices();
+        for (int j = 0; j < nv; j++) {
+            int vert = v[j];
+            vert2Elements[vert].push_back(i);
+        }
+    }
+    
+    for (int i = 0; i < NumOfVertices; i++) {
+        stringstream msg;
+        msg << "getVert2Elements : vertex[" << i << "] size is zero"; 
+        MFEM_ASSERT(vert2Elements[i].size()!=0, msg.str());
+    }
+    
+
+}
+
+
+void laplace(Mesh *mesh, vector<vector<int> >& vert2Elements, vector<double> &pot, vector<Vector> &gradients, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, string output, int order, bool static_cond){
     
     int dim = mesh->Dimension();
     cout << "Dimension =" << dim << endl;    
@@ -862,21 +917,35 @@ void laplace(Mesh *mesh, vector<double> &pot, vector<Vector> &gradients, Array<i
     }
     
     const FiniteElementSpace *fes=x.FESpace();
-    int nv=fes->GetNV();
-    for(int i=0; i<nv; i++){   
-        ElementTransformation *tr=fes->GetElementTransformation(i);
-        Vector grad;
-        x.GetGradient((*tr), grad);
+    int nv = fes->GetNV();
+    for (int i = 0; i < nv; i++) {
+        vector<int> elements = vert2Elements[i];
+        Vector grad(3);
+        grad=0.0;
+        stringstream msg;
+        msg << "laplace : vertex[" << i << "] size is zero"; 
+        MFEM_ASSERT(elements.size()!=0, msg.str());        
+        for (int j = 0; j < elements.size(); j++) {
+            ElementTransformation * tr = fes->GetElementTransformation(elements[j]);
+            //Vector grad_ele;
+            //x.GetGradient((*tr), grad_ele);
+            //grad+=grad_ele; 
+            x.GetGradient((*tr), grad);
+            break;
+        }
+        //grad/=elements.size();
         gradients.push_back(grad);
-        if(i<5) {
+
+        if (i < 5) {
             cout << "grad ";
             for (int j = 0; j < grad.Size(); j++) {
                 cout << grad[j] << " ";
             }
             cout << endl;
         }
-    }        
-      
+
+    }
+
 
     // 12. Save the refined mesh and the solution. This output can be viewed later
     //     using GLVis: "glvis -m refined.mesh -g sol.gf".
@@ -889,6 +958,19 @@ void laplace(Mesh *mesh, vector<double> &pot, vector<Vector> &gradients, Array<i
     ofstream sol_ofs(fileName.c_str());
     sol_ofs.precision(8);
     x.Save(sol_ofs);
+    
+    vector<Vector> xvectors;
+    for(int i=0; i<x.Size(); i++){
+        Vector vectmp(3);
+        vectmp(0)=x(i);
+        vectmp(1)=0.0;
+        vectmp(2)=0.0;
+        xvectors.push_back(vectmp);
+    }
+    
+    fileName=output+"-x.vtk";
+    ofstream x_ofs(fileName.c_str());
+    printFiberVTK(mesh, xvectors, x_ofs);    
 
     // 14. Free the used memory.
     delete a;
