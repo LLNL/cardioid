@@ -921,19 +921,27 @@ void laplace(Mesh *mesh, vector<vector<int> >& vert2Elements, vector<double> &po
     for (int i = 0; i < nv; i++) {
         vector<int> elements = vert2Elements[i];
         Vector grad(3);
+        Vector grad_ele(3);
         grad=0.0;
         stringstream msg;
-        msg << "laplace : vertex[" << i << "] size is zero"; 
-        MFEM_ASSERT(elements.size()!=0, msg.str());        
+        msg << "laplace : vertex[" << i << "] size is zero";
+        MFEM_ASSERT(elements.size()!=0, msg.str());
         for (int j = 0; j < elements.size(); j++) {
             ElementTransformation * tr = fes->GetElementTransformation(elements[j]);
-            //Vector grad_ele;
-            //x.GetGradient((*tr), grad_ele);
-            //grad+=grad_ele; 
-            x.GetGradient((*tr), grad);
-            break;
+            const IntegrationRule &ir = fes->GetFE(elements[j])->GetNodes();  // Get the parametric integration rule
+            grad_ele= 0.0;
+            for (int k=0; k < ir.GetNPoints(); k++) {
+               Vector grad_point(3);
+               grad_point = 0.0;
+               const IntegrationPoint &ip = ir.IntPoint(k); // Get the current integration point
+               tr->SetIntPoint(&ip); // Set the integration point for the transformation
+               x.GetGradient((*tr), grad_point);
+               grad_ele += grad_point;
+            }
+            grad_ele /= ir.GetNPoints();
+            grad+=grad_ele;
         }
-        //grad/=elements.size();
+        grad/=elements.size();
         gradients.push_back(grad);
 
         if (i < 5) {
@@ -945,7 +953,6 @@ void laplace(Mesh *mesh, vector<vector<int> >& vert2Elements, vector<double> &po
         }
 
     }
-
 
     // 12. Save the refined mesh and the solution. This output can be viewed later
     //     using GLVis: "glvis -m refined.mesh -g sol.gf".
