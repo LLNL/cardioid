@@ -20,8 +20,13 @@ TEST_MK = $(MFEM_DIR)/config/test.mk
 MFEM_LIB_FILE = mfem_is_not_built
 -include $(CONFIG_MK)
 
-SEQ_EXAMPLES = fiber
+SEQ_EXAMPLES = fiber 
+#SEQ_EXAMPLES = mfemTest
 PAR_EXAMPLES = fiberp
+
+SOURCE = io.cpp fiber.cpp solver.cpp utils.cpp genfiber.cpp
+#OBJECT = io.o  fiber.o
+OBJECT = $(SOURCE:.cpp=.o)
 
 ifeq ($(MFEM_USE_MPI),NO)
    EXAMPLES = $(SEQ_EXAMPLES)
@@ -31,14 +36,14 @@ endif
 
 .PHONY: all clean clean-build clean-exec
 
-# Remove built-in rule
-%: %.cpp
+all: $(SOURCE) $(EXAMPLES)
+	
+$(EXAMPLES): $(OBJECT)
+	$(MFEM_CXX) $(MFEM_FLAGS) $(OBJECT) -o $@ $(MFEM_LIBS)
+	
+.cpp.o:
+	$(MFEM_CXX) $(MFEM_FLAGS) -c $(<) -o $(@)
 
-# Replace the default implicit rule for *.cpp files
-%: %.cpp $(MFEM_LIB_FILE) $(CONFIG_MK)
-	$(MFEM_CXX) $(MFEM_FLAGS) $< -o $@ $(MFEM_LIBS)
-
-all: $(EXAMPLES)
 
 MFEM_TESTS = EXAMPLES
 include $(TEST_MK)
