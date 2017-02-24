@@ -35,6 +35,7 @@ namespace  scanReaction
    Reaction* scanGrandi(OBJECT* obj, const int numPoints);
    Reaction* scanSimpleGrandi(OBJECT* obj, const int numPoints);
    Reaction* scanFHN(OBJECT* obj, const int numPoints);
+   Reaction* scanPassive(OBJECT* obj, const int numPoints);
    Reaction* scanNull(OBJECT* obj);
    Reaction* scanTest(OBJECT* obj);
 }
@@ -69,6 +70,8 @@ Reaction* reactionFactory(const string& name, double dt, const int numPoints,
       return scanReaction::scanSimpleGrandi(obj, numPoints);
    else if (method == "FHN" || method == "FitzhughNagumo")
       return scanReaction::scanFHN(obj, numPoints);
+   else if (method == "Passive")
+      return scanReaction::scanPassive(obj, numPoints);
    else if (method == "null")
       return scanReaction::scanNull(obj);
    else if (method == "test")
