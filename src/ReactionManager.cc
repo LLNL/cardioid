@@ -6,6 +6,7 @@
 #include "object_cc.hh"
 #include "units.h"
 #include "reactionFactory.hh"
+#include "slow_fix.hh"
 
 
 using namespace std;
@@ -19,10 +20,10 @@ void ReactionManager::calc(double dt,
 {
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
-      copy(&Vm[extents_[ii]], &Vm[extents_[ii+1]], VmPerReaction_[ii].begin());
-      copy(&iStim[extents_[ii]], &iStim[extents_[ii+1]], iStimPerReaction_[ii].begin());
+      copy(&Vm[extents_[ii]], &Vm[extents_[ii+1]], &VmPerReaction_[ii][0]);
+      copy(&iStim[extents_[ii]], &iStim[extents_[ii+1]], &iStimPerReaction_[ii][0]);
       reactions_[ii]->calc(dt, VmPerReaction_[ii], iStimPerReaction_[ii], dVmPerReaction_[ii]);
-      copy(dVmPerReaction_[ii].begin(), dVmPerReaction_[ii].end(), &dVm[extents_[ii]]);
+      copy(&dVmPerReaction_[ii][0], &dVmPerReaction_[ii][extents_[ii+1]-extents_[ii]], &dVm[extents_[ii]]);
    }
 }
    
@@ -30,16 +31,16 @@ void ReactionManager::updateNonGate(double dt, const VectorDouble32& Vm, VectorD
 {
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
-      copy(&Vm[extents_[ii]], &Vm[extents_[ii+1]], VmPerReaction_[ii].begin());
+      copy(&Vm[extents_[ii]], &Vm[extents_[ii+1]], &VmPerReaction_[ii][0]);
       reactions_[ii]->updateNonGate(dt, VmPerReaction_[ii], dVmPerReaction_[ii]);
-      copy(dVmPerReaction_[ii].begin(), dVmPerReaction_[ii].end(), &dVR[extents_[ii]]);
+      copy(&dVmPerReaction_[ii][0], &dVmPerReaction_[ii][extents_[ii+1]-extents_[ii]], &dVR[extents_[ii]]);
    }
 }
 void ReactionManager::updateGate(double dt, const VectorDouble32& Vm)
 {
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
-      copy(&Vm[extents_[ii]], &Vm[extents_[ii+1]], VmPerReaction_[ii].begin());
+      copy(&Vm[extents_[ii]], &Vm[extents_[ii+1]], &VmPerReaction_[ii][0]);
       reactions_[ii]->updateGate(dt, VmPerReaction_[ii]);
    }
 }
@@ -62,7 +63,7 @@ void ReactionManager::initializeMembraneState(VectorDouble32& Vm)
       Reaction* reaction = reactions_[ii];
       string objectName = objectNameFromRidx_[ii];
       ::initializeMembraneState(reaction, objectName, VmPerReaction_[ii]);
-      copy(VmPerReaction_[ii].begin(), VmPerReaction_[ii].end(), &Vm[extents_[ii]]);      
+      copy(&VmPerReaction_[ii][0], &VmPerReaction_[ii][extents_[ii+1]-extents_[ii]], &Vm[extents_[ii]]);
    }
 }
 
@@ -267,9 +268,10 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
       int localSize = countFromRidx[ireaction];
       reactions_[ireaction] = reactionFactory(objectNameFromRidx_[ireaction], dt, localSize, group, scaleCurrents);
       extents_[ireaction+1] = extents_[ireaction]+localSize;
-      VmPerReaction_[ireaction].resize(localSize);
-      iStimPerReaction_[ireaction].resize(localSize);
-      dVmPerReaction_[ireaction].resize(localSize);
+      int bufferSize = convertActualSizeToBufferSize(localSize);
+      VmPerReaction_[ireaction].resize(bufferSize);
+      iStimPerReaction_[ireaction].resize(bufferSize);
+      dVmPerReaction_[ireaction].resize(bufferSize);
    }
 
    //Ok, now we've created the reaction objects.  Now we need to

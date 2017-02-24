@@ -94,10 +94,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(const double dt, const int numPoints, TT06Dev
       string fCassFormName[] = { "TT06", "RICE"}; 
       if (pid ==0) printf("fCassForm = %s\n",fCassFormName[fCassForm].c_str()); 
    }
-   nCellBuffer_ =  4*((nCells_+3)/4); 
-   int nFourVecs = nCellBuffer_ >> 2;     // Number of full four vectors. 
-   if(0) nCellBuffer_ += 4*((10 - (nFourVecs % 8)) % 8);
-   else  nCellBuffer_ += ((10 - (nFourVecs & 7)) & 7) << 2;   
+   nCellBuffer_ =  convertActualSizeToBufferSize(nCells_);
 
    mkCellTypeParms_(parms);
    mkState_(parms);
