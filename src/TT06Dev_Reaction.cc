@@ -18,7 +18,8 @@
 
 #include "slow_fix.hh"
 
-typedef void  (*UPDATEGATE)(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a) ; 
+//#define SHOWVAR(x) std::cout << #x " = " << x << std::endl
+
 
 using namespace std;
 using namespace PerformanceTimers;
@@ -26,21 +27,16 @@ using namespace TT06Func;
 int workBundle(int index, int nItems, int nGroups , int mod, int& offset);
 
 #ifdef BGQ
-static   UPDATEGATE gateEq[] ={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, 
+static const  UPDATEGATE gateEq[] ={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, 
                                update_Xr2Gate_v1, update_XsGate_v1, update_rGate_v1, update_dGate_v1, 
                                update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, update_s0Gate_v1, 
                                update_s1Gate_v1} ;
 #else
-static   UPDATEGATE gateEq[] ={ update_mGate_v2, update_hGate_v2, update_jGate_v2, update_Xr1Gate_v2, 
+static const  UPDATEGATE gateEq[] ={ update_mGate_v2, update_hGate_v2, update_jGate_v2, update_Xr1Gate_v2, 
                                update_Xr2Gate_v2, update_XsGate_v2, update_rGate_v2, update_dGate_v2, 
                                update_fGate_v2, update_f2Gate_v2,  update_jLGate_v2, update_s0Gate_v2, 
                                update_s1Gate_v2} ;
 #endif
-static double *mhuX[14]; 
-static double *tauRX[14]; 
-static UPDATEGATE gateEqX[14]; 
-static int gateThreadMapS0[] = { 0,1,2,3,4,5,6,7,8,9,10,11}; 
-static int gateThreadMapS1[] = { 0,1,2,3,4,5,6,7,8,9,10,12}; 
 
 
 OVF fitFuncMap(string name) 
@@ -93,10 +89,18 @@ TT06Dev_Reaction::TT06Dev_Reaction(const double dt, const int numPoints, TT06Dev
       MPI_Comm_rank(MPI_COMM_WORLD,&pid);	  
       string fCassFormName[] = { "TT06", "RICE"}; 
       if (pid ==0) printf("fCassForm = %s\n",fCassFormName[fCassForm].c_str()); 
-   }
+   }   
    nCellBuffer_ =  convertActualSizeToBufferSize(nCells_);
-
    mkCellTypeParms_(parms);
+   for (int ii=0; ii<11; ii++) {
+      gateThreadMap_[ii] = ii;
+   }
+   if (cellTypeParm_.s_switch) {
+      gateThreadMap_[11] = 12;
+   } else {
+      gateThreadMap_[11] = 11;
+   }
+
    mkState_(parms);
    currentMap_.resize(parms.currentNames.size()); 
    int nCurrents=0; 
@@ -104,12 +108,17 @@ TT06Dev_Reaction::TT06Dev_Reaction(const double dt, const int numPoints, TT06Dev
    //printf("current sizes: %d %d %d\n",nCurrents,sizeof(double),sizeof(currentScales_)); 
    assert(nCurrents*sizeof(double) == sizeof(currentScales_)); 
    currentScales_=currentScalesDefault; 
-   
+
+   //SHOWVAR(parms.currentNames.size());
    for (int i=0;i<parms.currentNames.size();i++)
    {
       int j = 0;
-      for (;j<nCurrents;j++) 
-         if ( std::string(TT06currentNames[j]) == parms.currentNames[i]) break; 
+      for (;j<nCurrents;j++) {
+         if ( std::string(TT06currentNames[j]) == parms.currentNames[i]) { break; }
+      }
+      //SHOWVAR(i);
+      //SHOWVAR(nCurrents);
+      //SHOWVAR(j);
       assert(j<nCurrents); 
       currentMap_[i]   = j;
    }
@@ -147,37 +156,26 @@ TT06Dev_Reaction::TT06Dev_Reaction(const double dt, const int numPoints, TT06Dev
    int eq; 
    for (eq=0;eq<11;eq++)
    {
-      gateEqX[eq]  = gateEq[eq];  
+      gateEqX_[eq]  = gateEq[eq];  
       gateX_[eq]    = gate[eq];
-      mhuX[eq]     = gateFit[2*eq+0].coef; 
-      tauRX[eq]    = gateFit[2*eq+1].coef; 
+      mhuX_[eq]     = gateFit[2*eq+0].coef; 
+      tauRX_[eq]    = gateFit[2*eq+1].coef; 
    }
    //sGate
-   for (eq=11;eq<14;eq++)
+   for (eq=11;eq<13;eq++)
    {
-      gateEqX[eq]  = gateEq[eq];
+      gateEqX_[eq]  = gateEq[eq];
       gateX_[eq] = gate[11];
-      switch (eq)
-      {
-        case 11:
-        case 12:
-         mhuX[eq]  = gateFit[2*eq+0].coef;
-         tauRX[eq] = gateFit[2*eq+1].coef;
-         break;
-        case 13:
-         mhuX[eq]  = gateFit[2*11+0].coef;
-         tauRX[eq] = gateFit[2*11+1].coef;
-         break;
-        default:
-         assert(0 && "Code should never get here, did you add a gate?");
-         break;
-      }
+      mhuX_[eq]  = gateFit[2*eq+0].coef;
+      tauRX_[eq] = gateFit[2*eq+1].coef;
    }
 
    mkWorkBundles_(parms);
 }
 void TT06Dev_Reaction::scaleCurrents(vector <double> currentScales)
 {
+   //SHOWVAR(currentScales.size());
+   //SHOWVAR(currentMap_.size());
    assert(currentScales.size() == currentMap_.size()); 
    currentScales_=currentScalesDefault; 
    for (int i=0;i<currentScales.size();i++) 
@@ -275,14 +273,11 @@ void TT06Dev_Reaction::mkWorkBundles_(TT06Dev_ReactionParms& parms)
       assert(parms.gateThreadMap.size()  == 12); 
       for (int ii=0;ii<12;ii++) 
       {
-         int m = parms.gateThreadMap[ii]; 
-         gateThreadMapS0[ii]  = m; 
-         gateThreadMapS1[ii]  = m; 
-         if ( m == 11) 
-         {
-            gateThreadMapS1[ii]  = 12; 
-            sGateIndex = ii; 
+         int m = parms.gateThreadMap[ii];
+         if ( m == 11 && cellTypeParm_.s_switch) {
+            m = 12;
          }
+         gateThreadMap_[ii] = m;
       }
    }
    gateWork_.resize(nThreads); 
@@ -300,20 +295,11 @@ void TT06Dev_Reaction::mkWorkBundles_(TT06Dev_ReactionParms& parms)
       assert(squadSize == rankInfo.squadSize_);
       int offset; 
       int nCell = workBundle(squadId, nCells_, nSquads , 4, offset);
-      int *gateThreadMap; 
       int offsetEq = nEq*squadRank; 
-      if (cellTypeParm_.s_switch)
-      {
-         gateThreadMap = gateThreadMapS1;
-      }
-      else
-      {
-         gateThreadMap = gateThreadMapS0;
-      }
       gateWork_[teamRank].offsetCell =  offset; 
       gateWork_[teamRank].nCell    =  nCell; 
       gateWork_[teamRank].nEq      = nEq; 
-      gateWork_[teamRank].map      = gateThreadMap+offsetEq; 
+      gateWork_[teamRank].map      = gateThreadMap_+offsetEq; 
 
       /* non Gate work partitioning */ 
       int nv = (nCell+3)/4;
@@ -522,7 +508,7 @@ void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)
    for (int ii=0;ii<nEq;ii++)
    {
       int eq = map[ii]; 
-      gateEqX[eq](dt, nCell , vm , gateX_[eq]+offsetCell, mhuX[eq], tauRX[eq]);
+      gateEqX_[eq](dt, nCell , vm , gateX_[eq]+offsetCell, mhuX_[eq], tauRX_[eq]);
    }
    stopTimer(gateTimer);
 }

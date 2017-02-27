@@ -28,6 +28,7 @@ struct TT06Dev_ReactionParms
    int fastReaction;
 };
 
+typedef void  (*UPDATEGATE)(double dt, int nCells, double *VM, double *g, double *mhu_a, double *tauR_a) ; 
 
 class TT06Dev_Reaction : public Reaction
 {
@@ -96,7 +97,12 @@ class TT06Dev_Reaction : public Reaction
    int nCellBuffer_; 
    double *stateBuffer_; 
    std::vector<double*>state_; 
-   double* gateX_[14];
+   double* gateX_[13];
+   double* mhuX_[13];
+   double* tauRX_[13];
+   UPDATEGATE gateEqX_[13];
+   int gateThreadMap_[12];
+
 };
 
 #endif
