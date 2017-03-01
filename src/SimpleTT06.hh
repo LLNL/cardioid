@@ -71,6 +71,10 @@ class ThisReaction : public Reaction
  private:
    unsigned nCells_;
    std::vector<State> state_;
+   bool isCPUValid_;
+   bool isDeviceValid_;
+   void updateDevice() const;
+   void updateHost() const;
 };
 
 }
