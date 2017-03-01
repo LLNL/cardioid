@@ -32,6 +32,7 @@ namespace  scanReaction
    Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanSimpleOHaraRudy(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanSimpleGrandi(OBJECT* obj, const Anatomy& anatomy);
+   Reaction* scanSimpleTT06(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanFHN(OBJECT* obj, const Anatomy& anatomy);
    Reaction* scanNull(OBJECT* obj);
    Reaction* scanTest(OBJECT* obj);
@@ -62,6 +63,8 @@ Reaction* reactionFactory(const string& name, double dt, Anatomy& anatomy,
       return scanReaction::scanSimpleOHaraRudy(obj, anatomy);
    else if (method == "SimpleGrandi" )
       return scanReaction::scanSimpleGrandi(obj, anatomy);
+   else if (method == "SimpleTT06" )
+      return scanReaction::scanSimpleTT06(obj, anatomy);
    else if (method == "FHN" || method == "FitzhughNagumo")
       return scanReaction::scanFHN(obj, anatomy);
    else if (method == "null")

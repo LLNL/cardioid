@@ -58,6 +58,7 @@ HEARTSRC= \
 	TT06_RRG_Reaction.cc \
 	SimpleOHaraRudy.cc \
 	SimpleGrandi.cc \
+	SimpleTT06.cc \
 	TT06Tau.cc \
 	TT06Func.cc \
 	pade.cc \
