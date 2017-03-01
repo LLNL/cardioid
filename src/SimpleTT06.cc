@@ -148,7 +148,7 @@ ThisReaction::ThisReaction(const Anatomy& anatomy)
    
    State* stateAlias = &state_[0];
 #if _OPENMP >= 201511
-#pragma omp target enter data alloc(stateAlias[0:nCells_])
+#pragma omp target enter data map(alloc: stateAlias[0:nCells_])
 #endif
    
 }
