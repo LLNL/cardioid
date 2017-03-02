@@ -43,6 +43,12 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <deque>
+#include <limits>
+#include <functional>
+#include <set>
+
+#include "kdtree++/kdtree.hpp"
 
 #include "io.h"
 #include "solver.h"
@@ -53,9 +59,96 @@
 using namespace std;
 using namespace mfem;
 
+std::set<const void*> registered;
+
+struct triplet
+{
+  typedef int value_type;
+
+  triplet(value_type a, value_type b, value_type c)
+  {
+    d[0] = a;
+    d[1] = b;
+    d[2] = c;
+    bool reg_ok = (registered.find(this) == registered.end());
+    assert(reg_ok);
+    registered.insert(this).second;
+  }
+
+  triplet(const triplet & x)
+  {
+    d[0] = x.d[0];
+    d[1] = x.d[1];
+    d[2] = x.d[2];
+    bool reg_ok = (registered.find(this) == registered.end());
+    assert(reg_ok);
+    registered.insert(this).second;
+  }
+
+  ~triplet()
+  {
+    bool unreg_ok = (registered.find(this) != registered.end());
+    assert(unreg_ok);
+    registered.erase(this);
+  }
+
+  double distance_to(triplet const& x) const
+  {
+     double dist = 0;
+     for (int i = 0; i != 3; ++i)
+        dist += (d[i]-x.d[i])*(d[i]-x.d[i]);
+     return std::sqrt(dist);
+  }
+
+  inline value_type operator[](size_t const N) const { return d[N]; }
+
+  value_type d[3];
+};
+
+
+// same as triplet, except with the values reversed.
+struct alternate_triplet
+{
+  typedef int value_type;
+
+  alternate_triplet(const triplet & x)
+  {
+    d[0] = x.d[2];
+    d[1] = x.d[1];
+    d[2] = x.d[0];
+  }
+
+  inline value_type operator[](size_t const N) const { return d[2-N]; }
+
+  value_type d[3];
+};
+
+inline bool operator==(triplet const& A, triplet const& B) {
+  return A.d[0] == B.d[0] && A.d[1] == B.d[1] && A.d[2] == B.d[2];
+}
+
+std::ostream& operator<<(std::ostream& out, triplet const& T)
+{
+  assert(registered.find(&T) != registered.end());
+  return out << '(' << T.d[0] << ',' << T.d[1] << ',' << T.d[2] << ')';
+}
+
+inline double tac( triplet t, size_t k ) { return t[k]; }
+
+// use tac as a class instead of a function,
+// can access more than one type with just 1 definition.
+struct alternate_tac
+{
+   typedef double result_type;
+   double operator()( triplet const& t, size_t k ) const { return t[k]; }
+   double operator()( alternate_triplet const& t, size_t k ) const { return t[k]; }
+};
+
+
+
 int main(int argc, char *argv[]) {
     // 1. Parse command-line options.
-    const char *mesh_file = "./human.vtk";
+    const char *mesh_file = "./mechmesh.vtk";
     int order = 1;
     bool static_cond = false;
     bool visualization = 1;
@@ -64,6 +157,8 @@ int main(int argc, char *argv[]) {
     double a_epi=-50;
     double b_endo=-65;
     double b_epi=25;
+
+    typedef KDTree::KDTree<3, triplet, alternate_tac> alt_tree;    
     
     OptionsParser args(argc, argv);
     args.AddOption(&mesh_file, "-m", "--mesh",
@@ -99,10 +194,10 @@ int main(int argc, char *argv[]) {
     vector<vector<int> > vert2Elements;
     getVert2Elements(mesh, vert2Elements);
     ofstream v2e_ofs("vert2Elements.txt");
-    for(int i=0; i<vert2Elements.size(); i++){
+    for(unsigned i=0; i<vert2Elements.size(); i++){
         vector<int> elements=vert2Elements[i];
         v2e_ofs << i  << " ";
-        for(int j=0; j<elements.size(); j++){
+        for(unsigned j=0; j<elements.size(); j++){
             v2e_ofs << elements[j] << " ";
         }
         v2e_ofs << endl;
@@ -113,7 +208,7 @@ int main(int argc, char *argv[]) {
     Array<int> all_ess_bdr(bdr_attr_size);    
     Array<int> nonzero_ess_bdr(bdr_attr_size);
     Array<int> zero_ess_bdr(bdr_attr_size);
-    int nv=mesh->GetNV();
+    unsigned nv=mesh->GetNV();
     
     // 3a. Base → 1, Apex→ 0, Epi, LV, RV → no flux
      // Mark ALL boundaries as essential. This does not set what the actual Dirichlet
@@ -211,7 +306,7 @@ int main(int argc, char *argv[]) {
     vector<Vector> svectors;
     vector<Vector> tvectors;
     // Line 7 start for-loop
-    for(int i=0; i <nv; i++){  
+    for(unsigned i=0; i <nv; i++){  
 //        MFEM_ASSERT(phi_lv[i]>=0 && phi_lv[i] <=1, "phi_lv is not in range 0 to 1");
 //        MFEM_ASSERT(phi_rv[i]>=0 && phi_rv[i] <=1, "phi_rv is not in range 0 to 1");
 //        MFEM_ASSERT(phi_epi[i]>=0 && phi_epi[i] <=1, "phi_epi is not in range 0 to 1");

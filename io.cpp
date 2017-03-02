@@ -134,7 +134,7 @@ void printFiberVTK(Mesh *mesh, vector<Vector>& fiber_vecs, std::ostream &out){
    }
    
    // write point data
-   MFEM_ASSERT(fiber_vecs.size()==NumOfVertices, "Size of fiber vector should equal to size of points");
+   MFEM_ASSERT(fiber_vecs.size()==(unsigned)NumOfVertices, "Size of fiber vector should equal to size of points");
    out << "POINT_DATA " << NumOfVertices<< "\n"
        << "VECTORS fiber double\n";
     for (int i = 0; i < NumOfVertices; i++) {

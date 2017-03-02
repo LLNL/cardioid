@@ -45,28 +45,17 @@ $(EXAMPLES): $(OBJECT)
 	$(MFEM_CXX) $(MFEM_FLAGS) -c $(<) -o $(@)
 
 
-MFEM_TESTS = EXAMPLES
-include $(TEST_MK)
+test: mfemTest kdtreeTest
 
-# Testing: Parallel vs. serial runs
-%-test-par: %
-	@$(call mfem-test,$<, mpirun -np 4, Parallel example)
-%-test-seq: %
-	@$(call mfem-test,$<,, Serial example)
+mfemTest:
+	$(MFEM_CXX) $(MFEM_FLAGS) -c mfemTest.cpp -o mfemTest.o
+	$(MFEM_CXX) $(MFEM_FLAGS) mfemTest.o -o $@ $(MFEM_LIBS)
+	./mfemTest
+	
+kdtreeTest:
+	$(MFEM_CXX) $(MFEM_FLAGS) kdtreeTest.cpp -o $@ 
+	./kdtreeTest
 
-# Testing: Specific execution options
-ex1-test-seq: ex1
-	@$(call mfem-test,$<,, Serial example)
-ex1p-test-par: ex1p
-	@$(call mfem-test,$<, mpirun -np 4, Parallel example)
-ex10-test-seq: ex10
-	@$(call mfem-test,$<,, Serial example,-tf 5)
-ex10p-test-par: ex10p
-	@$(call mfem-test,$<, mpirun -np 4, Parallel example,-tf 5)
-ex15-test-seq: ex15
-	@$(call mfem-test,$<,, Serial example,-e 1)
-ex15p-test-par: ex15p
-	@$(call mfem-test,$<, mpirun -np 4, Parallel example,-e 1)
 
 # Testing: "test" target and mfem-test* variables are defined in config/test.mk
 
@@ -74,7 +63,7 @@ ex15p-test-par: ex15p
 $(MFEM_LIB_FILE):
 	$(error The MFEM library is not built)
 
-clean: clean-build clean-exec
+clean: clean-build clean-exec clean-test
 
 clean-build:
 	rm -f *.o *~ $(SEQ_EXAMPLES) $(PAR_EXAMPLES)
@@ -86,3 +75,6 @@ clean-exec:
 	@rm -f sphere_refined.* sol.* sol_u.* sol_p.*
 	@rm -f ex9.mesh ex9-mesh.* ex9-init.* ex9-final.*
 	@rm -f deformed.* velocity.* elastic_energy.* mode_*
+
+clean-test:
+	rm -rf mfemTest.o mfemTest kdtreeTest.o kdtreeTest
