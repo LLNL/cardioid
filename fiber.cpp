@@ -52,103 +52,16 @@
 
 #include "io.h"
 #include "solver.h"
-#include "constants.h"
-#include "utils.h"
 #include "genfiber.h"
+#include "cardfiber.h"
+#include "triplet.h"
 
 using namespace std;
 using namespace mfem;
 
-std::set<const void*> registered;
-
-struct triplet
-{
-  typedef int value_type;
-
-  triplet(value_type a, value_type b, value_type c)
-  {
-    d[0] = a;
-    d[1] = b;
-    d[2] = c;
-    bool reg_ok = (registered.find(this) == registered.end());
-    assert(reg_ok);
-    registered.insert(this).second;
-  }
-
-  triplet(const triplet & x)
-  {
-    d[0] = x.d[0];
-    d[1] = x.d[1];
-    d[2] = x.d[2];
-    bool reg_ok = (registered.find(this) == registered.end());
-    assert(reg_ok);
-    registered.insert(this).second;
-  }
-
-  ~triplet()
-  {
-    bool unreg_ok = (registered.find(this) != registered.end());
-    assert(unreg_ok);
-    registered.erase(this);
-  }
-
-  double distance_to(triplet const& x) const
-  {
-     double dist = 0;
-     for (int i = 0; i != 3; ++i)
-        dist += (d[i]-x.d[i])*(d[i]-x.d[i]);
-     return std::sqrt(dist);
-  }
-
-  inline value_type operator[](size_t const N) const { return d[N]; }
-
-  value_type d[3];
-};
-
-
-// same as triplet, except with the values reversed.
-struct alternate_triplet
-{
-  typedef int value_type;
-
-  alternate_triplet(const triplet & x)
-  {
-    d[0] = x.d[2];
-    d[1] = x.d[1];
-    d[2] = x.d[0];
-  }
-
-  inline value_type operator[](size_t const N) const { return d[2-N]; }
-
-  value_type d[3];
-};
-
-inline bool operator==(triplet const& A, triplet const& B) {
-  return A.d[0] == B.d[0] && A.d[1] == B.d[1] && A.d[2] == B.d[2];
-}
-
-std::ostream& operator<<(std::ostream& out, triplet const& T)
-{
-  assert(registered.find(&T) != registered.end());
-  return out << '(' << T.d[0] << ',' << T.d[1] << ',' << T.d[2] << ')';
-}
-
-inline double tac( triplet t, size_t k ) { return t[k]; }
-
-// use tac as a class instead of a function,
-// can access more than one type with just 1 definition.
-struct alternate_tac
-{
-   typedef double result_type;
-   double operator()( triplet const& t, size_t k ) const { return t[k]; }
-   double operator()( alternate_triplet const& t, size_t k ) const { return t[k]; }
-};
-
-
-
 int main(int argc, char *argv[]) {
     // 1. Parse command-line options.
-    const char *mesh_file = "./mechmesh.vtk";
+    const char *mesh_file = "./human.vtk";
     int order = 1;
     bool static_cond = false;
     bool visualization = 1;
@@ -157,8 +70,10 @@ int main(int argc, char *argv[]) {
     double a_epi=-50;
     double b_endo=-65;
     double b_epi=25;
-
-    typedef KDTree::KDTree<3, triplet, alternate_tac> alt_tree;    
+    
+    // grid spacing
+    double dd=1;
+  
     
     OptionsParser args(argc, argv);
     args.AddOption(&mesh_file, "-m", "--mesh",
@@ -183,10 +98,25 @@ int main(int argc, char *argv[]) {
     //    the same code.
     Mesh *mesh = new Mesh(mesh_file, 1, 1);
     
+    vector<Vector> boundingbox;
     // Set the surfaces for the mesh: 0-Apex, 1-Base, 2-EPI, 3-LV, 4-RV.
-    setSurfaces(mesh, 20); // use 30 degrees for determining the base surface. 
+    setSurfaces(mesh, boundingbox, 20); // use 30 degrees for determining the base surface.
+//    for(unsigned i = 0; i < boundingbox.size(); i++) {
+//        Vector vec=boundingbox[i];     
+//        cout << "Bounding Box " << i;\
+//        for(int j = 0; j < vec.Size(); j++) {
+//            cout << " " << vec(j);
+//        }
+//        cout << endl;
+//    }
     ofstream surf_ofs("surfaces.vtk");
     printSurfVTK(mesh, surf_ofs);
+    
+
+    tree_type kdtree(std::ptr_fun(tac));
+    buildKDTree(mesh, kdtree, boundingbox, dd);
+    
+    return 0;
 
     // 3. Solve the laplacian for four different boundary conditions.
     
@@ -227,7 +157,8 @@ int main(int argc, char *argv[]) {
     string output="psi_ab";
     vector<double> psi_ab;
     vector<Vector> psi_ab_grads;
-    laplace(mesh, vert2Elements, psi_ab, psi_ab_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    GridFunction x_psi_ab=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, order, static_cond);
+    getVetecesGradients(mesh, x_psi_ab, vert2Elements, psi_ab,psi_ab_grads, output);
     MFEM_ASSERT(psi_ab.size()==nv, "size of psi_ab does not match number of vertices.");
     MFEM_ASSERT(psi_ab_grads.size()==nv, "size of psi_ab_grads does not match number of vertices.");
     
@@ -248,7 +179,9 @@ int main(int argc, char *argv[]) {
     vector<double> phi_epi;
     vector<Vector> phi_epi_grads;
 
-    laplace(mesh, vert2Elements, phi_epi, phi_epi_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    //laplace(mesh, vert2Elements, phi_epi, phi_epi_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    GridFunction x_phi_epi=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, order, static_cond);
+    getVetecesGradients(mesh, x_phi_epi, vert2Elements, phi_epi,phi_epi_grads, output);
     MFEM_ASSERT(phi_epi.size()==nv, "size of phi_epi does not match number of vertices.");
     MFEM_ASSERT(phi_epi_grads.size()==nv, "size of phi_epi_grads does not match number of vertices.");
     
@@ -268,7 +201,9 @@ int main(int argc, char *argv[]) {
     vector<double> phi_lv;
     vector<Vector> phi_lv_grads;
 
-    laplace(mesh, vert2Elements, phi_lv, phi_lv_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    //laplace(mesh, vert2Elements, phi_lv, phi_lv_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    GridFunction x_phi_lv=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, order, static_cond);
+    getVetecesGradients(mesh, x_phi_lv, vert2Elements, phi_lv,phi_lv_grads, output);    
     MFEM_ASSERT(phi_lv.size()==nv, "size of phi_lv does not match number of vertices.");
     MFEM_ASSERT(phi_lv_grads.size()==nv, "size of phi_lv_grads does not match number of vertices.");        
     
@@ -288,7 +223,9 @@ int main(int argc, char *argv[]) {
     vector<double> phi_rv;
     vector<Vector> phi_rv_grads;
 
-    laplace(mesh, vert2Elements, phi_rv, phi_rv_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    //laplace(mesh, vert2Elements, phi_rv, phi_rv_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    GridFunction x_phi_rv=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, order, static_cond);
+    getVetecesGradients(mesh, x_phi_rv, vert2Elements, phi_rv,phi_rv_grads, output);
     MFEM_ASSERT(phi_rv.size()==nv, "size of phi_rv does not match number of vertices.");
     MFEM_ASSERT(phi_rv_grads.size()==nv, "size of phi_rv_grads does not match number of vertices.");
     
@@ -302,151 +239,19 @@ int main(int argc, char *argv[]) {
     printFiberVTK(mesh, phi_lv_grads, phil_ofs);    
     printFiberVTK(mesh, phi_rv_grads, phir_ofs); 
             
+    vector<DenseMatrix> QPfibVectors;   
+    genfiber(mesh, QPfibVectors, psi_ab, psi_ab_grads, phi_epi, phi_epi_grads, 
+        phi_lv, phi_lv_grads, phi_rv, phi_rv_grads, a_endo, a_epi, b_endo, b_epi);
+    
     vector<Vector> fvectors;
     vector<Vector> svectors;
     vector<Vector> tvectors;
-    // Line 7 start for-loop
-    for(unsigned i=0; i <nv; i++){  
-//        MFEM_ASSERT(phi_lv[i]>=0 && phi_lv[i] <=1, "phi_lv is not in range 0 to 1");
-//        MFEM_ASSERT(phi_rv[i]>=0 && phi_rv[i] <=1, "phi_rv is not in range 0 to 1");
-//        MFEM_ASSERT(phi_epi[i]>=0 && phi_epi[i] <=1, "phi_epi is not in range 0 to 1");
-//        MFEM_ASSERT(psi_ab[i]>=0 && psi_ab[i] <=1, "psi_ab is not in range 0 to 1");
-        //if(phi_lv[i] <0) phi_lv[i]=0;
-        //if(phi_rv[i] <0) phi_rv[i]=0;
-        //if(phi_epi[i] <0) phi_epi[i]=0;
-        //if(psi_ab[i] <0) psi_ab[i]=0;
-
-        double phi_v=phi_lv[i]+phi_rv[i];
-        double frac=0.5;
-        if(phi_v!=0){
-            frac=phi_rv[i]/phi_v;
-        }else{
-            cout << "Warning: phi_v ==0" ;
-            cout << " phi_lv[i]="<< phi_lv[i] << " phi_rv[i]=" << phi_rv[i]<< " phi_epi[i]=" << phi_epi[i] << " psi_ab[i]=" << psi_ab[i]<< endl;
-        }
-        double frac_epi=phi_epi[i];
-        //stringstream ss;
-        //ss << "i=" << i << " phi_rv[i]=" << phi_rv[i] << " phi_lv[i]=" << phi_lv[i] << " frac=" << frac;
-        //MFEM_ASSERT(frac>=0 && frac<=1, ss.str());
-        //MFEM_ASSERT(frac_epi>=0 && frac_epi<=1, "frac_epi is not in range 0 to 1");
-        double as=a_s_f(a_endo, a_epi, frac);
-        double bs=b_s_f(b_endo, b_epi, frac);
-        double aw=a_w_f(a_endo, a_epi, frac_epi);
-        double bw=b_w_f(b_endo, b_epi, frac_epi);
-        
-
-        Vector psi_ab_vec=psi_ab_grads[i];
-        Vector phi_lv_vec=phi_lv_grads[i];
-        Vector phi_rv_vec=phi_rv_grads[i];
-        Vector phi_epi_vec=phi_epi_grads[i];
-        
-        bool phi_lv_isnonzero=vecisnonzero(phi_lv_vec);
-        bool phi_rv_isnonzero=vecisnonzero(phi_rv_vec);
-        bool phi_epi_isnonzero=vecisnonzero(phi_epi_vec);
-
-        DenseMatrix QPendo(dim3,dim3);
-        DenseMatrix QPfib(dim3,dim3);
-
-        if (!vecisnonzero(psi_ab_vec)) {
-            cout << "Warning psi_ab gradient " << i << "is zero" <<endl;
-            Vector ten(3);
-            ten = 10;
-//            for(int i=0; i<dim3; i++){
-//                QPfib.SetCol(i,ten);
-//            }
-            
-            fvectors.push_back(ten);
-            svectors.push_back(ten);
-            tvectors.push_back(ten);
-            continue;
-        }
-        
-        
-        DenseMatrix QPlv(dim3,dim3);        
-        if(phi_lv_isnonzero){
-            // Line 8
-            Vector phi_lv_vec_neg=phi_lv_vec;
-            phi_lv_vec_neg.Neg();
-            DenseMatrix Qlv(dim3,dim3);
-            if(vecdot(psi_ab_vec, phi_lv_vec_neg)){
-                cout << "psi_ab_vec equal to phi_lv_vec_neg" << endl;
-                phi_lv_isnonzero=false;
-            }else{
-                axis(Qlv, psi_ab_vec, phi_lv_vec_neg);
-                orient(QPlv, Qlv, as, bs);
-            }            
-            // End of Line 8
-        }
-        
-        DenseMatrix QPrv(dim3,dim3);         
-        if(phi_rv_isnonzero){
-            //Line 9
-            DenseMatrix Qrv(dim3,dim3);
-            if(vecdot(psi_ab_vec, phi_rv_vec)){
-                cout << "psi_ab_vec equal to phi_rv_vec" << endl;
-                phi_rv_isnonzero=false;
-            }else{
-                axis(Qrv, psi_ab_vec, phi_rv_vec);
-                orient(QPrv, Qrv, as, bs); 
-            }
-        }
-               
-        DenseMatrix QPepi(dim3,dim3);
-        if (phi_epi_isnonzero) {
-            //Line 11
-            DenseMatrix Qepi(dim3,dim3);
-            if(vecdot(psi_ab_vec, phi_epi_vec)){
-                cout << "psi_ab_vec equal to phi_epi_vec" << endl;
-                phi_epi_isnonzero=false;
-            }else{           
-                axis(Qepi, psi_ab_vec, phi_epi_vec);
-                orient(QPepi, Qepi, aw, bw);
-            }
-        }
-                
-        if(phi_lv_isnonzero){    
-            
-            if(phi_rv_isnonzero){
-            
-                if(phi_epi_isnonzero){
-                    // if all three phi gradients are non-zero, use the original algorithm in paper. 
-                    //Line 10
-                    bislerp(QPendo, QPlv, QPrv, frac);
-                    //QPendo=QPlv;
-                    //Line 12 
-                    bislerp(QPfib, QPendo, QPepi, frac_epi);
-                    //QPfib=QPendo;
-                }else{
-                    // if phi_epi gradients are zero, phi_lv and phi are nonzero. use QPlv, QPrv, frac 
-                    bislerp(QPfib, QPlv, QPrv, frac);
-                    //QPfib=QPlv;
-                }
-                
-            }else {
-                if(phi_epi_isnonzero){
-                    // if phi_rv is zero, phi_lv and phi_epi is nonzero
-                    bislerp(QPfib, QPlv, QPepi, frac_epi);
-                    //QPfib=QPlv;
-                }else{
-                    // if gradients of phi_lv, phi_rv are zero, then phi_epi is zero 
-                    vectorEigen(psi_ab_vec, QPfib);
-                }
-            }
-        }else{
-            if(phi_rv_isnonzero && phi_epi_isnonzero){                
-                // if phi_lv is zero, phi_rv and phi_epi is nonzero
-                bislerp(QPfib, QPrv, QPepi, frac_epi);
-                //QPfib=QPrv;
-            }else{
-                // if gradients of phi_lv, phi_rv are zero, then phi_epi is zero 
-                vectorEigen(psi_ab_vec, QPfib);
-            }
-        }
-                
+    
+    for(unsigned i=0; i< QPfibVectors.size(); i++){
         vector<Vector> qpVecs;
-        for(int j=0; j<dim3; j++){
+        for(int j=0; j<3; j++){
             Vector vec;
-            QPfib.GetColumn(j, vec);
+            QPfibVectors[i].GetColumn(j, vec);
             qpVecs.push_back(vec);
         }
         fvectors.push_back(qpVecs[0]);
@@ -460,8 +265,11 @@ int main(int argc, char *argv[]) {
 
     printFiberVTK(mesh, fvectors, f_ofs);
     printFiberVTK(mesh, svectors, s_ofs);
-    printFiberVTK(mesh, tvectors, t_ofs);
-        
+    printFiberVTK(mesh, tvectors, t_ofs);  
+    
+    
+    
+    
     delete mesh;
 
     return 0;

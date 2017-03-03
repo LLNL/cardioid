@@ -22,10 +22,10 @@
 using namespace std;
 using namespace mfem;
 
-void setSurfaces(Mesh *mesh, double angle);
+void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle);
 void getVert2Elements(Mesh *mesh, vector<vector<int> >& vert2Elements);
-void laplace(Mesh *mesh, vector<vector<int> >& vert2Elements, vector<double> &pot, vector<Vector> &gradients, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, string output, int order, bool static_cond);
-
+GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, int order, bool static_cond);
+void getVetecesGradients(Mesh *mesh, GridFunction& x, vector<vector<int> >& vert2Elements, vector<double> &pot, vector<Vector> &gradients, string output);
 
 #endif	/* SOLVER_H */
 

@@ -17,7 +17,7 @@ std::set<const void*> registered;
 
 struct triplet
 {
-  typedef int value_type;
+  typedef double value_type;
 
   triplet(value_type a, value_type b, value_type c)
   {

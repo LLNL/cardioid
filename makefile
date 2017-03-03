@@ -24,7 +24,7 @@ SEQ_EXAMPLES = fiber
 #SEQ_EXAMPLES = mfemTest
 PAR_EXAMPLES = fiberp
 
-SOURCE = io.cpp fiber.cpp solver.cpp utils.cpp genfiber.cpp
+SOURCE = io.cpp fiber.cpp solver.cpp utils.cpp genfiber.cpp cardfiber.cpp triplet.cpp
 #OBJECT = io.o  fiber.o
 OBJECT = $(SOURCE:.cpp=.o)
 

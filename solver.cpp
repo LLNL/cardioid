@@ -30,7 +30,7 @@ void getVert2Elements(Mesh *mesh, vector<vector<int> >& vert2Elements) {
 }
 
 
-void laplace(Mesh *mesh, vector<vector<int> >& vert2Elements, vector<double> &pot, vector<Vector> &gradients, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, string output, int order, bool static_cond){
+GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, int order, bool static_cond){
     
     int dim = mesh->Dimension();
     cout << "Dimension =" << dim << endl;    
@@ -127,6 +127,11 @@ void laplace(Mesh *mesh, vector<vector<int> >& vert2Elements, vector<double> &po
     // 11. Recover the solution as a finite element grid function.
     a->RecoverFEMSolution(X, *b, x);
       
+    return x;
+}
+
+
+void getVetecesGradients(Mesh *mesh, GridFunction& x, vector<vector<int> >& vert2Elements, vector<double> &pot, vector<Vector> &gradients, string output){
     //double *x_data=x.GetData();
     for(int i=0; i<x.Size(); i++){         
         //pot.push_back(x_data[i]);
@@ -135,8 +140,8 @@ void laplace(Mesh *mesh, vector<vector<int> >& vert2Elements, vector<double> &po
     }
     
     const FiniteElementSpace *fes=x.FESpace();
-    int nv = fes->GetNV();
-    for (int i = 0; i < nv; i++) {
+    unsigned nv = fes->GetNV();
+    for (unsigned i = 0; i < nv; i++) {
         vector<int> elements = vert2Elements[i];
         Vector grad(3);
         Vector grad_ele(3);
@@ -144,7 +149,7 @@ void laplace(Mesh *mesh, vector<vector<int> >& vert2Elements, vector<double> &po
         stringstream msg;
         msg << "laplace : vertex[" << i << "] size is zero";
         MFEM_ASSERT(elements.size()!=0, msg.str());
-        for (int j = 0; j < elements.size(); j++) {
+        for (unsigned j = 0; j < elements.size(); j++) {
             ElementTransformation * tr = fes->GetElementTransformation(elements[j]);
             const IntegrationRule &ir = fes->GetFE(elements[j])->GetNodes();  // Get the parametric integration rule
             grad_ele= 0.0;
@@ -198,12 +203,12 @@ void laplace(Mesh *mesh, vector<vector<int> >& vert2Elements, vector<double> &po
     printFiberVTK(mesh, xvectors, x_ofs);    
 
     // 14. Free the used memory.
-    delete a;
-    delete b;
-    delete fespace;
-    if (order > 0) {
-        delete fec;
-    }
+//    delete a;
+//    delete b;
+//    delete fespace;
+//    if (order > 0) {
+//        delete fec;
+//    }
     
 }
 
@@ -252,7 +257,7 @@ bool isTriInTet(vector<int>& tri, vector<int>& tet){
 void findNeighbor(Element* ele, vector<Element*>& elements, int attr){
     const int *v = ele->GetVertices();
     const int nv = ele->GetNVertices(); 
-    for(int i=0; i<elements.size(); i++){
+    for(unsigned i=0; i<elements.size(); i++){
         Element* queryEle=elements[i];
         // Only search for elements with unassigned attributes.
         if(queryEle->GetAttribute()==0){ 
@@ -278,7 +283,7 @@ void findNeighbor(Element* ele, vector<Element*>& elements, int attr){
     }           
 }
 
-void setSurfaces(Mesh *mesh, double angle=20){
+void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle=20){
     // Attributes for different surface
     const int apexAttr=1;
     const int baseAttr=2;
@@ -288,8 +293,8 @@ void setSurfaces(Mesh *mesh, double angle=20){
        
     // Determine the max and min dimension of mesh and apex.
     double *coord;
-    double coord_min[3];
-    double coord_max[3];
+    Vector coord_min(3);
+    Vector coord_max(3);
     bool firstEle=true;
     int apexVet=0;
     int apexEleIndex=0;
@@ -304,8 +309,8 @@ void setSurfaces(Mesh *mesh, double angle=20){
             firstEle=false;
             coord=mesh->GetVertex(v[0]);
             for (int j = 0; j < 3; j++) {
-                coord_min[j]=coord[j];
-                coord_max[j]=coord[j];
+                coord_min(j)=coord[j];
+                coord_max(j)=coord[j];
             }            
         }
         
@@ -314,7 +319,7 @@ void setSurfaces(Mesh *mesh, double angle=20){
             
             for (int k = 0; k < 3; k++) {
                 if(coord[k]<coord_min[k]){
-                    coord_min[k]=coord[k];
+                    coord_min(k)=coord[k];
                     // Keep track vertex and element indeces for min in z-axis
                     if(k==2){  
                         apexVet=v[j];
@@ -322,15 +327,18 @@ void setSurfaces(Mesh *mesh, double angle=20){
                     }
                 }
                 if(coord[k]>coord_max[k]){
-                    coord_max[k]=coord[k];
+                    coord_max(k)=coord[k];
                 }            
             }                                    
         }
         
     }
+    
+    boundingbox.push_back(coord_min);
+    boundingbox.push_back(coord_max);
 
-    cout << "Min: " << coord_min[0] << " " << coord_min[1] << " " << coord_min[2] << endl;
-    cout << "Max: " << coord_max[0] << " " << coord_max[1] << " " << coord_max[2] << endl;
+    cout << "Min: " << coord_min(0) << " " << coord_min(1) << " " << coord_min(2) << endl;
+    cout << "Max: " << coord_max(0) << " " << coord_max(1) << " " << coord_max(2) << endl;
     coord = mesh->GetVertex(apexVet);
     cout << "Apex: " << coord[0] << " " << coord[1] << " " << coord[2] << endl;
     
@@ -388,7 +396,7 @@ void setSurfaces(Mesh *mesh, double angle=20){
     
     // LV & RV
     vector<Element *> vElements;    
-    for(int i=0; i<elements.size(); i++){
+    for(unsigned i=0; i<elements.size(); i++){
         Element *ele =elements[i];
         if(ele->GetAttribute()==0){
             vElements.push_back(ele);
@@ -403,7 +411,7 @@ void setSurfaces(Mesh *mesh, double angle=20){
     vElements.pop_back();
     findNeighbor(lastEle, vElements, lvAttr);
     
-    for(int i=0; i<vElements.size(); i++){
+    for(unsigned i=0; i<vElements.size(); i++){
         Element *ele =vElements[i];
         if(ele->GetAttribute()==0){
             ele->SetAttribute(rvAttr);
@@ -533,7 +541,7 @@ void setBaseOLD(Mesh *mesh, int attr){
             }
             sort(tet.begin(), tet.end());
 
-            for(int j=0; j < baseBoundary.size(); j++){
+            for(unsigned j=0; j < baseBoundary.size(); j++){
                 vector<int> tri=baseBoundary[j];
                 if(isTriInTet(tri, tet)){
                     ele->SetAttribute(attr);
