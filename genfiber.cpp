@@ -39,26 +39,25 @@ void axis(DenseMatrix& Q,Vector &psi, Vector &phi){
     Q.SetCol(1, e_1);
     Q.SetCol(2, e_2);    
           
+   // MFEM_ASSERT(vecisnorm(e_0), "axis: e_0 is not normalized");
+    if(!vecisnorm(e_0)){
+        cout << "Norm psi ";
+        for(int i=0; i <psi.Size(); i++){
+            cout << psi(i) << " ";
+        } 
+        cout << " phi ";
+        for(int i=0; i <phi.Size(); i++){
+            cout << phi(i) << " ";
+        } 
+        cout <<endl; 
+        double *data=Q.Data();
+        for(int j=0; j<9; j++){
+            cout << " d " << j << " = " << data[j] << " ";
+            
+        }  
+        cout <<endl; 
+    }
     MFEM_ASSERT(vecisnorm(e_0), "axis: e_0 is not normalized");
-//    if(!vecisnorm(e_0)){
-//        cout << "Norm psi ";
-//        for(int i=0; i <psi.Size(); i++){
-//            cout << psi(i) << " ";
-//        } 
-//        cout << " phi ";
-//        for(int i=0; i <phi.Size(); i++){
-//            cout << phi(i) << " ";
-//        } 
-//        cout <<endl;        
-//        for(int j=0; j<Q.size(); j++){
-//            Vector e=Q[j];
-//            cout << "Norm e" << j << " ";
-//            for(int i=0; i <e.Size(); i++){
-//                cout << e(i) << " ";
-//            }
-//            cout << endl;
-//        }         
-//    }
     MFEM_ASSERT(vecisnorm(e_1), "axis: e_1 is not normalized");
     MFEM_ASSERT(vecisnorm(e_2), "axis: e_2 is not normalized");
     
@@ -326,7 +325,132 @@ void vectorEigen(Vector& psi_ab, DenseMatrix& QPfib){
     
 }
 
-void genfiber(Mesh *mesh, vector<DenseMatrix>& QPfibVectors,
+void biSlerpCombo(DenseMatrix& QPfib,
+        double psi_ab, Vector& psi_ab_vec,
+        double phi_epi, Vector& phi_epi_vec,
+        double phi_lv, Vector& phi_lv_vec,
+        double phi_rv, Vector& phi_rv_vec,
+        double a_endo, double a_epi, double b_endo, double b_epi) {
+
+    double phi_v = phi_lv + phi_rv;
+    double frac = 0.5;
+    if (phi_v != 0) {
+        frac = phi_rv / phi_v;
+    } else {
+        cout << "Warning: phi_v ==0";
+        cout << " phi_lv[i]=" << phi_lv << " phi_rv[i]=" << phi_rv << " phi_epi[i]=" << phi_epi << " psi_ab[i]=" << psi_ab << endl;
+    }
+    double frac_epi = phi_epi;
+    //stringstream ss;
+    //ss << "i=" << i << " phi_rv[i]=" << phi_rv[i] << " phi_lv[i]=" << phi_lv[i] << " frac=" << frac;
+    //MFEM_ASSERT(frac>=0 && frac<=1, ss.str());
+    //MFEM_ASSERT(frac_epi>=0 && frac_epi<=1, "frac_epi is not in range 0 to 1");
+    double as = a_s_f(a_endo, a_epi, frac);
+    double bs = b_s_f(b_endo, b_epi, frac);
+    double aw = a_w_f(a_endo, a_epi, frac_epi);
+    double bw = b_w_f(b_endo, b_epi, frac_epi);
+
+    bool phi_lv_isnonzero = vecisnonzero(phi_lv_vec);
+    bool phi_rv_isnonzero = vecisnonzero(phi_rv_vec);
+    bool phi_epi_isnonzero = vecisnonzero(phi_epi_vec);
+
+    DenseMatrix QPendo(dim3, dim3);
+
+    if (!vecisnonzero(psi_ab_vec)) {
+        cout << "Warning psi_ab gradient is zero" << endl;
+        Vector ten(3);
+        ten = 10;
+        for (int i = 0; i < dim3; i++) {
+            QPfib.SetCol(i, ten);
+        }
+        return;
+    }
+
+
+    DenseMatrix QPlv(dim3, dim3);
+    if (phi_lv_isnonzero) {
+        // Line 8
+        Vector phi_lv_vec_neg = phi_lv_vec;
+        phi_lv_vec_neg.Neg();
+        DenseMatrix Qlv(dim3, dim3);
+        if (vecdot(psi_ab_vec, phi_lv_vec_neg)) {
+            cout << "psi_ab_vec equal to phi_lv_vec_neg" << endl;
+            phi_lv_isnonzero = false;
+        } else {
+            axis(Qlv, psi_ab_vec, phi_lv_vec_neg);
+            orient(QPlv, Qlv, as, bs);
+        }
+        // End of Line 8
+    }
+
+    DenseMatrix QPrv(dim3, dim3);
+    if (phi_rv_isnonzero) {
+        //Line 9
+        DenseMatrix Qrv(dim3, dim3);
+        if (vecdot(psi_ab_vec, phi_rv_vec)) {
+            cout << "psi_ab_vec equal to phi_rv_vec" << endl;
+            phi_rv_isnonzero = false;
+        } else {
+            axis(Qrv, psi_ab_vec, phi_rv_vec);
+            orient(QPrv, Qrv, as, bs);
+        }
+    }
+
+    DenseMatrix QPepi(dim3, dim3);
+    if (phi_epi_isnonzero) {
+        //Line 11
+        DenseMatrix Qepi(dim3, dim3);
+        if (vecdot(psi_ab_vec, phi_epi_vec)) {
+            cout << "psi_ab_vec equal to phi_epi_vec" << endl;
+            phi_epi_isnonzero = false;
+        } else {
+            axis(Qepi, psi_ab_vec, phi_epi_vec);
+            orient(QPepi, Qepi, aw, bw);
+        }
+    }
+
+    if (phi_lv_isnonzero) {
+
+        if (phi_rv_isnonzero) {
+
+            if (phi_epi_isnonzero) {
+                // if all three phi gradients are non-zero, use the original algorithm in paper. 
+                //Line 10
+                bislerp(QPendo, QPlv, QPrv, frac);
+                //QPendo=QPlv;
+                //Line 12 
+                bislerp(QPfib, QPendo, QPepi, frac_epi);
+                //QPfib=QPendo;
+            } else {
+                // if phi_epi gradients are zero, phi_lv and phi are nonzero. use QPlv, QPrv, frac 
+                bislerp(QPfib, QPlv, QPrv, frac);
+                //QPfib=QPlv;
+            }
+
+        } else {
+            if (phi_epi_isnonzero) {
+                // if phi_rv is zero, phi_lv and phi_epi is nonzero
+                bislerp(QPfib, QPlv, QPepi, frac_epi);
+                //QPfib=QPlv;
+            } else {
+                // if gradients of phi_lv, phi_rv are zero, then phi_epi is zero 
+                vectorEigen(psi_ab_vec, QPfib);
+            }
+        }
+    } else {
+        if (phi_rv_isnonzero && phi_epi_isnonzero) {
+            // if phi_lv is zero, phi_rv and phi_epi is nonzero
+            bislerp(QPfib, QPrv, QPepi, frac_epi);
+            //QPfib=QPrv;
+        } else {
+            // if gradients of phi_lv, phi_rv are zero, then phi_epi is zero 
+            vectorEigen(psi_ab_vec, QPfib);
+        }
+    }
+                    
+}
+
+void genfiber(vector<DenseMatrix>& QPfibVectors,
         vector<double>& psi_ab, vector<Vector>& psi_ab_grads,
         vector<double>& phi_epi, vector<Vector>& phi_epi_grads,
         vector<double>& phi_lv, vector<Vector>& phi_lv_grads,
@@ -346,130 +470,15 @@ void genfiber(Mesh *mesh, vector<DenseMatrix>& QPfibVectors,
         //if(phi_epi[i] <0) phi_epi[i]=0;
         //if(psi_ab[i] <0) psi_ab[i]=0;
 
-        double phi_v=phi_lv[i]+phi_rv[i];
-        double frac=0.5;
-        if(phi_v!=0){
-            frac=phi_rv[i]/phi_v;
-        }else{
-            cout << "Warning: phi_v ==0" ;
-            cout << " phi_lv[i]="<< phi_lv[i] << " phi_rv[i]=" << phi_rv[i]<< " phi_epi[i]=" << phi_epi[i] << " psi_ab[i]=" << psi_ab[i]<< endl;
-        }
-        double frac_epi=phi_epi[i];
-        //stringstream ss;
-        //ss << "i=" << i << " phi_rv[i]=" << phi_rv[i] << " phi_lv[i]=" << phi_lv[i] << " frac=" << frac;
-        //MFEM_ASSERT(frac>=0 && frac<=1, ss.str());
-        //MFEM_ASSERT(frac_epi>=0 && frac_epi<=1, "frac_epi is not in range 0 to 1");
-        double as=a_s_f(a_endo, a_epi, frac);
-        double bs=b_s_f(b_endo, b_epi, frac);
-        double aw=a_w_f(a_endo, a_epi, frac_epi);
-        double bw=b_w_f(b_endo, b_epi, frac_epi);
-        
-
         Vector psi_ab_vec=psi_ab_grads[i];
         Vector phi_lv_vec=phi_lv_grads[i];
         Vector phi_rv_vec=phi_rv_grads[i];
         Vector phi_epi_vec=phi_epi_grads[i];
-        
-        bool phi_lv_isnonzero=vecisnonzero(phi_lv_vec);
-        bool phi_rv_isnonzero=vecisnonzero(phi_rv_vec);
-        bool phi_epi_isnonzero=vecisnonzero(phi_epi_vec);
-
-        DenseMatrix QPendo(dim3,dim3);
         DenseMatrix QPfib(dim3,dim3);
+        
+        biSlerpCombo(QPfib, psi_ab[i], psi_ab_vec, phi_epi[i], phi_epi_vec, phi_lv[i], phi_lv_vec, phi_rv[i], phi_rv_vec,
+                a_endo, a_epi, b_endo, b_epi);
 
-        if (!vecisnonzero(psi_ab_vec)) {
-            cout << "Warning psi_ab gradient " << i << "is zero" <<endl;
-            Vector ten(3);
-            ten = 10;
-            for(int i=0; i<dim3; i++){
-                QPfib.SetCol(i,ten);
-            }
-            QPfibVectors.push_back(QPfib);
-            continue;
-        }
-        
-        
-        DenseMatrix QPlv(dim3,dim3);        
-        if(phi_lv_isnonzero){
-            // Line 8
-            Vector phi_lv_vec_neg=phi_lv_vec;
-            phi_lv_vec_neg.Neg();
-            DenseMatrix Qlv(dim3,dim3);
-            if(vecdot(psi_ab_vec, phi_lv_vec_neg)){
-                cout << "psi_ab_vec equal to phi_lv_vec_neg" << endl;
-                phi_lv_isnonzero=false;
-            }else{
-                axis(Qlv, psi_ab_vec, phi_lv_vec_neg);
-                orient(QPlv, Qlv, as, bs);
-            }            
-            // End of Line 8
-        }
-        
-        DenseMatrix QPrv(dim3,dim3);         
-        if(phi_rv_isnonzero){
-            //Line 9
-            DenseMatrix Qrv(dim3,dim3);
-            if(vecdot(psi_ab_vec, phi_rv_vec)){
-                cout << "psi_ab_vec equal to phi_rv_vec" << endl;
-                phi_rv_isnonzero=false;
-            }else{
-                axis(Qrv, psi_ab_vec, phi_rv_vec);
-                orient(QPrv, Qrv, as, bs); 
-            }
-        }
-               
-        DenseMatrix QPepi(dim3,dim3);
-        if (phi_epi_isnonzero) {
-            //Line 11
-            DenseMatrix Qepi(dim3,dim3);
-            if(vecdot(psi_ab_vec, phi_epi_vec)){
-                cout << "psi_ab_vec equal to phi_epi_vec" << endl;
-                phi_epi_isnonzero=false;
-            }else{           
-                axis(Qepi, psi_ab_vec, phi_epi_vec);
-                orient(QPepi, Qepi, aw, bw);
-            }
-        }
-                
-        if(phi_lv_isnonzero){    
-            
-            if(phi_rv_isnonzero){
-            
-                if(phi_epi_isnonzero){
-                    // if all three phi gradients are non-zero, use the original algorithm in paper. 
-                    //Line 10
-                    bislerp(QPendo, QPlv, QPrv, frac);
-                    //QPendo=QPlv;
-                    //Line 12 
-                    bislerp(QPfib, QPendo, QPepi, frac_epi);
-                    //QPfib=QPendo;
-                }else{
-                    // if phi_epi gradients are zero, phi_lv and phi are nonzero. use QPlv, QPrv, frac 
-                    bislerp(QPfib, QPlv, QPrv, frac);
-                    //QPfib=QPlv;
-                }
-                
-            }else {
-                if(phi_epi_isnonzero){
-                    // if phi_rv is zero, phi_lv and phi_epi is nonzero
-                    bislerp(QPfib, QPlv, QPepi, frac_epi);
-                    //QPfib=QPlv;
-                }else{
-                    // if gradients of phi_lv, phi_rv are zero, then phi_epi is zero 
-                    vectorEigen(psi_ab_vec, QPfib);
-                }
-            }
-        }else{
-            if(phi_rv_isnonzero && phi_epi_isnonzero){                
-                // if phi_lv is zero, phi_rv and phi_epi is nonzero
-                bislerp(QPfib, QPrv, QPepi, frac_epi);
-                //QPfib=QPrv;
-            }else{
-                // if gradients of phi_lv, phi_rv are zero, then phi_epi is zero 
-                vectorEigen(psi_ab_vec, QPfib);
-            }
-        }
-                
         QPfibVectors.push_back(QPfib);
 //        vector<Vector> qpVecs;
 //        for(int j=0; j<dim3; j++){

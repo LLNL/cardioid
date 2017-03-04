@@ -156,4 +156,34 @@ void printFiberVTK(Mesh *mesh, vector<Vector>& fiber_vecs, std::ostream &out){
       
 }
 
-
+void printAnatomy(vector<anatomy>& anatVectors, filerheader& header, std::ostream &out){
+    // Print out the anatomy file header
+    out << "anatomy FILEHEADER { \n" 
+        << "datatype = VARRECORDASCII;\n"
+        << "nfiles = 1;  \n"
+        << "nrecord = " << header.nrecord << "; \n"
+        << "   nfields = 1; \n"
+        << "   lrec = 80; \n"
+        << "   endian_key = 875770417; \n"
+        << "   field_names = gid cellType sigma11 sigma12 sigma13 sigma22 sigma23 sigma33; \n"
+        << "   field_types = u u f f f f f f; \n"
+        << "   field_units = 1 1 mS/mm mS/mm mS/mm mS/mm mS/mm mS/mm; \n"
+        << "   nx =  "<< header.nx<<"; \n"
+        << "   ny = "<< header.ny<<"; \n"
+        << "   nz = "<< header.nz<<"; \n"
+        << "   dx = "<< header.dx<<"; \n"
+        << "   dy = "<< header.dy<<"; \n"
+        << "   dz = "<< header.dz<<"; \n"
+        << "} \n\n";
+    
+    for(unsigned i=0; i<anatVectors.size(); i++){
+        anatomy anat=anatVectors[i];
+        out << "   "  << anat.gid << " " << anat.celltype << " ";        
+        for(int j=0; j<6; j++){
+            out << anat.sigma[j] << " ";    
+        }
+                    
+        out << endl;
+    }
+            
+}

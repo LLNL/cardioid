@@ -73,8 +73,12 @@ int main(int argc, char *argv[]) {
     
     // grid spacing
     double dd=1;
-  
-    
+
+    double gL = 0.0001334177*1000; // mS/mm
+    double gT = 0.0000176062*1000; // mS/mm
+    double gN = 0.0000176062*1000; // mS/mm   
+
+       
     OptionsParser args(argc, argv);
     args.AddOption(&mesh_file, "-m", "--mesh",
             "Mesh file to use.");
@@ -103,7 +107,7 @@ int main(int argc, char *argv[]) {
     setSurfaces(mesh, boundingbox, 20); // use 30 degrees for determining the base surface.
 //    for(unsigned i = 0; i < boundingbox.size(); i++) {
 //        Vector vec=boundingbox[i];     
-//        cout << "Bounding Box " << i;\
+//        cout << "Bounding Box " << i;
 //        for(int j = 0; j < vec.Size(); j++) {
 //            cout << " " << vec(j);
 //        }
@@ -111,12 +115,6 @@ int main(int argc, char *argv[]) {
 //    }
     ofstream surf_ofs("surfaces.vtk");
     printSurfVTK(mesh, surf_ofs);
-    
-
-    tree_type kdtree(std::ptr_fun(tac));
-    buildKDTree(mesh, kdtree, boundingbox, dd);
-    
-    return 0;
 
     // 3. Solve the laplacian for four different boundary conditions.
     
@@ -240,7 +238,7 @@ int main(int argc, char *argv[]) {
     printFiberVTK(mesh, phi_rv_grads, phir_ofs); 
             
     vector<DenseMatrix> QPfibVectors;   
-    genfiber(mesh, QPfibVectors, psi_ab, psi_ab_grads, phi_epi, phi_epi_grads, 
+    genfiber(QPfibVectors, psi_ab, psi_ab_grads, phi_epi, phi_epi_grads, 
         phi_lv, phi_lv_grads, phi_rv, phi_rv_grads, a_endo, a_epi, b_endo, b_epi);
     
     vector<Vector> fvectors;
@@ -267,9 +265,22 @@ int main(int argc, char *argv[]) {
     printFiberVTK(mesh, svectors, s_ofs);
     printFiberVTK(mesh, tvectors, t_ofs);  
     
+    cout << "\nStart to build k-D tree for the mesh...\n";
+    cout.flush();
+    tree_type kdtree(std::ptr_fun(tac));
+    buildKDTree(mesh, kdtree);
     
-    
-    
+    cout << "\nGet cardioid point gradients ...\n";
+    cout.flush();
+    Vector conduct(3);
+    conduct(0)=gL;
+    conduct(1)=gT;
+    conduct(2)=gN;
+    getCardGradients(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
+        kdtree, vert2Elements, boundingbox, dd,  
+        conduct, a_endo, a_epi, b_endo, b_epi);
+        
+
     delete mesh;
 
     return 0;

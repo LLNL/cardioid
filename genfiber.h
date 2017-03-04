@@ -24,7 +24,13 @@ void bislerp(DenseMatrix& Q, DenseMatrix& Qa, DenseMatrix& Qb, double t);
 void axis(DenseMatrix& Q,Vector &psi, Vector &phi);
 void orient(DenseMatrix& Qp, DenseMatrix& Q, double a, double b);
 void vectorEigen(Vector& psi_ab, DenseMatrix& QPfib);
-void genfiber(Mesh *mesh, vector<DenseMatrix>& QPfibVectors,
+void biSlerpCombo(DenseMatrix& QPfib,
+        double psi_ab, Vector& psi_ab_vec,
+        double phi_epi, Vector& phi_epi_vec,
+        double phi_lv, Vector& phi_lv_vec, 
+        double phi_rv, Vector& phi_rv_vec,  
+        double a_endo, double a_epi, double b_endo, double b_epi);
+void genfiber(vector<DenseMatrix>& QPfibVectors,
         vector<double>& psi_ab, vector<Vector>& psi_ab_grads,
         vector<double>& phi_epi, vector<Vector>& phi_epi_grads,
         vector<double>& phi_lv, vector<Vector>& phi_lv_grads,

@@ -27,6 +27,8 @@ struct triplet {
     ~triplet();
 
     double distance_to(triplet const& x) const;
+    
+    int getIndex() const;
 
     inline value_type operator[](size_t const N) const {
         return d[N];

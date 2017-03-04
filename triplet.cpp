@@ -45,6 +45,10 @@ triplet::~triplet() {
     registered.erase(this);
 }
 
+int triplet::getIndex() const{
+    return index;
+}
+
 double triplet::distance_to(triplet const& x) const {
     double dist = 0;
     for (int i = 0; i != 3; ++i)
