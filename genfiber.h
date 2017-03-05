@@ -29,14 +29,13 @@ void biSlerpCombo(DenseMatrix& QPfib,
         double phi_epi, Vector& phi_epi_vec,
         double phi_lv, Vector& phi_lv_vec, 
         double phi_rv, Vector& phi_rv_vec,  
-        double a_endo, double a_epi, double b_endo, double b_epi);
+        Vector& fiberAngles);
 void genfiber(vector<DenseMatrix>& QPfibVectors,
         vector<double>& psi_ab, vector<Vector>& psi_ab_grads,
         vector<double>& phi_epi, vector<Vector>& phi_epi_grads,
         vector<double>& phi_lv, vector<Vector>& phi_lv_grads,
         vector<double>& phi_rv, vector<Vector>& phi_rv_grads,
-        double a_endo, double a_epi, double b_endo, double b_epi
-        );
+        Vector& fiberAngles);
 
 
 #endif	/* GENFIBER_H */

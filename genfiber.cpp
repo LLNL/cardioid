@@ -330,7 +330,12 @@ void biSlerpCombo(DenseMatrix& QPfib,
         double phi_epi, Vector& phi_epi_vec,
         double phi_lv, Vector& phi_lv_vec,
         double phi_rv, Vector& phi_rv_vec,
-        double a_endo, double a_epi, double b_endo, double b_epi) {
+        Vector& fiberAngles) {
+    
+    double a_endo=fiberAngles(0);
+    double a_epi=fiberAngles(1);
+    double b_endo=fiberAngles(2);
+    double b_epi=fiberAngles(3);    
 
     double phi_v = phi_lv + phi_rv;
     double frac = 0.5;
@@ -455,7 +460,7 @@ void genfiber(vector<DenseMatrix>& QPfibVectors,
         vector<double>& phi_epi, vector<Vector>& phi_epi_grads,
         vector<double>& phi_lv, vector<Vector>& phi_lv_grads,
         vector<double>& phi_rv, vector<Vector>& phi_rv_grads,
-        double a_endo, double a_epi, double b_endo, double b_epi
+        Vector& fiberAngles
         ){
     
     unsigned nv=psi_ab.size();
@@ -476,8 +481,7 @@ void genfiber(vector<DenseMatrix>& QPfibVectors,
         Vector phi_epi_vec=phi_epi_grads[i];
         DenseMatrix QPfib(dim3,dim3);
         
-        biSlerpCombo(QPfib, psi_ab[i], psi_ab_vec, phi_epi[i], phi_epi_vec, phi_lv[i], phi_lv_vec, phi_rv[i], phi_rv_vec,
-                a_endo, a_epi, b_endo, b_epi);
+        biSlerpCombo(QPfib, psi_ab[i], psi_ab_vec, phi_epi[i], phi_epi_vec, phi_lv[i], phi_lv_vec, phi_rv[i], phi_rv_vec, fiberAngles);
 
         QPfibVectors.push_back(QPfib);
 //        vector<Vector> qpVecs;

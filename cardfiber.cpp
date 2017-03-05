@@ -154,7 +154,7 @@ int getCellType(double phi_epi, double phi_lv, double phi_rv){
 
 void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
         tree_type& kdtree, vector<vector<int> >& vert2Elements, vector<Vector>& boundingbox, double dd,  
-        Vector& conduct, double a_endo, double a_epi, double b_endo, double b_epi){
+        Vector& conduct, Vector& fiberAngles){
     Vector min=boundingbox[0];
     Vector max=boundingbox[1];
     
@@ -219,8 +219,7 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                         
                         DenseMatrix QPfib(dim3, dim3);
                         biSlerpCombo(QPfib, psi_ab, psi_ab_vec, phi_epi, phi_epi_vec,
-                            phi_lv, phi_lv_vec, phi_rv, phi_rv_vec,  
-                            a_endo, a_epi, b_endo, b_epi); 
+                            phi_lv, phi_lv_vec, phi_rv, phi_rv_vec, fiberAngles); 
 
                         DenseMatrix Sigma(dim3, dim3);
                         calcSigma(Sigma, QPfib, conduct);

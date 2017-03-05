@@ -48,7 +48,6 @@ $(EXAMPLES): $(OBJECT)
 test: mfemTest kdtreeTest
 
 mfemTest:
-	rm -f mfemTest
 	$(MFEM_CXX) $(MFEM_FLAGS) -c mfemTest.cpp -o mfemTest.o
 	$(MFEM_CXX) $(MFEM_FLAGS) mfemTest.o solver.o io.o -o $@ $(MFEM_LIBS)
 	./mfemTest

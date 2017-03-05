@@ -72,8 +72,8 @@ int main(int argc, char *argv[]) {
     double b_epi=25;
     
     // grid spacing
-    double dd=1;
-
+    double dd=5;
+    // conductivity
     double gL = 0.0001334177*1000; // mS/mm
     double gT = 0.0000176062*1000; // mS/mm
     double gN = 0.0000176062*1000; // mS/mm   
@@ -97,6 +97,12 @@ int main(int argc, char *argv[]) {
     }
     args.PrintOptions(cout);
 
+    // Keep fiber angles in a Vector.
+    Vector fiberAngles(4);
+    fiberAngles(0)=a_endo;
+    fiberAngles(1)=a_epi;
+    fiberAngles(2)=b_endo;
+    fiberAngles(3)=b_epi;    
     // 2. Read the mesh from the given mesh file. We can handle triangular,
     //    quadrilateral, tetrahedral, hexahedral, surface and volume meshes with
     //    the same code.
@@ -239,7 +245,7 @@ int main(int argc, char *argv[]) {
             
     vector<DenseMatrix> QPfibVectors;   
     genfiber(QPfibVectors, psi_ab, psi_ab_grads, phi_epi, phi_epi_grads, 
-        phi_lv, phi_lv_grads, phi_rv, phi_rv_grads, a_endo, a_epi, b_endo, b_epi);
+        phi_lv, phi_lv_grads, phi_rv, phi_rv_grads, fiberAngles);
     
     vector<Vector> fvectors;
     vector<Vector> svectors;
@@ -278,7 +284,7 @@ int main(int argc, char *argv[]) {
     conduct(2)=gN;
     getCardGradients(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
         kdtree, vert2Elements, boundingbox, dd,  
-        conduct, a_endo, a_epi, b_endo, b_epi);
+        conduct, fiberAngles);
         
 
     delete mesh;
