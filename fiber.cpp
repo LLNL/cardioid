@@ -95,9 +95,9 @@ int main(int argc, char *argv[]) {
     args.AddOption(&b_endo, "-bo", "--bendo", "Fiber angle beta endo.");
     args.AddOption(&b_epi, "-bi", "--bepi", "Fiber angle beta epi."); 
     args.AddOption(&dd, "-dd", "--dspacing", "Grid spacing for ddcMD gid.");
-    args.AddOption(&gL, "-gl", "--gL", "Conductivity gL.");
-    args.AddOption(&gT, "-gt", "--gT", "Conductivity gT.");
-    args.AddOption(&gN, "-gn", "--gN", "Conductivity gN.");
+    args.AddOption(&gL, "-gl", "--gL", "Conductivity gL mS/mm.");
+    args.AddOption(&gT, "-gt", "--gT", "Conductivity gT mS/mm.");
+    args.AddOption(&gN, "-gn", "--gN", "Conductivity gN mS/mm.");
     args.Parse();
     if (!args.Good()) {
         args.PrintUsage(cout);

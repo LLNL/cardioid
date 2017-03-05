@@ -237,10 +237,11 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                         anatVectors.push_back(anat);
                         
                         totalCardPoints++;
-                        if(totalCardPoints%10000==0){
+                        if(totalCardPoints%10000==0){ 
                             cout << "Finish " << totalCardPoints << " points." << endl;
                             cout.flush();
-                        }                        
+                        }                          
+                        break; // If the point is found in an element, don't need to check next one in the list. 
                     } 
                 }
                 
