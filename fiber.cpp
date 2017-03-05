@@ -90,6 +90,14 @@ int main(int argc, char *argv[]) {
     args.AddOption(&visualization, "-vis", "--visualization", "-no-vis",
             "--no-visualization",
             "Enable or disable GLVis visualization.");
+    args.AddOption(&a_endo, "-ao", "--aendo", "Fiber angle alpha endo.");
+    args.AddOption(&a_epi, "-ai", "--aepi", "Fiber angle alpha epi.");
+    args.AddOption(&b_endo, "-bo", "--bendo", "Fiber angle beta endo.");
+    args.AddOption(&b_epi, "-bi", "--bepi", "Fiber angle beta epi."); 
+    args.AddOption(&dd, "-dd", "--dspacing", "Grid spacing for ddcMD gid.");
+    args.AddOption(&gL, "-gl", "--gL", "Conductivity gL.");
+    args.AddOption(&gT, "-gt", "--gT", "Conductivity gT.");
+    args.AddOption(&gN, "-gn", "--gN", "Conductivity gN.");
     args.Parse();
     if (!args.Good()) {
         args.PrintUsage(cout);
