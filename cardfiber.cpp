@@ -111,15 +111,22 @@ void getCardEleGrads(GridFunction& x, const Vector& q, int eleIndex, vector<doub
     grad_ele=0.0;
     const FiniteElementSpace *fes = x.FESpace();
     ElementTransformation * tr = fes->GetElementTransformation(eleIndex);
+    //Coordinates
+    Vector coor(3);
+    coor(0)=q(0);
+    coor(1)=q(1);
+    coor(2)=q(2);
+    
     const IntegrationRule &ir = fes->GetFE(eleIndex)->GetNodes(); // Get the parametric integration rule
 
     for (int k = 0; k < ir.GetNPoints(); k++) {
         Vector grad_point(3);
         grad_point = 0.0;
-        const IntegrationPoint &ip = ir.IntPoint(k); // Get the current integration point
+        IntegrationPoint ip; // Get the current integration point
+        tr->TransformBack(coor, ip);
         //ip.weight=barycentric[k];
         //xVal+=x.GetValue(eleIndex, ip, 1);
-        tr->SetIntPoint(&ip); // Set the integration point for the transformation
+        //tr->SetIntPoint(&ip); // Set the integration point for the transformation
         x.GetGradient((*tr), grad_point);
         grad_ele += grad_point;
     }
@@ -192,7 +199,8 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                 int vertex=vetexNearPt.getIndex();
                 vector<int> elements = vert2Elements[vertex];
                 for (unsigned e = 0; e < elements.size(); e++) {
-                    int eleIndex=elements[e];
+                    int eleIndex=elements[e];                  
+                    //For barycentric
                     Vector q(4);
                     q(0)=x;
                     q(1)=y;

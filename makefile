@@ -24,15 +24,17 @@ SEQ_EXAMPLES = fiber
 #SEQ_EXAMPLES = mfemTest
 PAR_EXAMPLES = fiberp
 
-SOURCE = io.cpp fiber.cpp solver.cpp utils.cpp triplet.cpp genfiber.cpp cardfiber.cpp 
-#OBJECT = io.o  fiber.o
-OBJECT = $(SOURCE:.cpp=.o)
 
 ifeq ($(MFEM_USE_MPI),NO)
    EXAMPLES = $(SEQ_EXAMPLES)
+   SOURCE = io.cpp fiber.cpp solver.cpp utils.cpp triplet.cpp genfiber.cpp cardfiber.cpp 
 else
-   EXAMPLES = $(PAR_EXAMPLES) $(SEQ_EXAMPLES)
+   # haven't implement it yet.
+   EXAMPLES = $(PAR_EXAMPLES) 
+   SOURCE = io.cpp fiberp.cpp solver.cpp utils.cpp triplet.cpp genfiber.cpp cardfiberp.cpp 
 endif
+
+OBJECT = $(SOURCE:.cpp=.o)
 
 .PHONY: all clean clean-build clean-exec
 
