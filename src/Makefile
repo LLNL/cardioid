@@ -288,6 +288,15 @@ singleCell:
 singleCell-target: $(HEARTOBJS) $(OBJDIR)/singleCell.o $(OBJDIR)/singleCellOptions.o singleCellOptions.h Version.cc
 	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(OBJDIR)/singleCell.o $(OBJDIR)/singleCellOptions.o $(LDFLAGS)
 
+modifyAnatomyFile:
+	@$(MAKE) --no-print-directory makedirs $@-target \
+	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH) \
+	CFLAGS="$(CFLAGS_OPT)" CXXFLAGS="$(CXXFLAGS_OPT)" \
+	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=$@-$(ARCH)
+
+modifyAnatomyFile-target: $(HEARTOBJS) $(OBJDIR)/modifyAnatomyFile.o Version.cc
+	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(OBJDIR)/modifyAnatomyFile.o $(LDFLAGS) -llapack
+
 $(DDCMD_FILES):
 	./mkLinks_ddcMD.sh $@
 
