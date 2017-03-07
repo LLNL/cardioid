@@ -81,16 +81,13 @@ else
         utilities.c \
         utilities.h
 
-$(DDCMD_FILES):
-	./mkLinks_ddcMD.sh $@
 
-
-  DDCMDSRC = $(filter %.c, $(DDCMD_FILES))	
+   DDCMDSRC = $(filter %.c, $(DDCMD_FILES))	
    EXAMPLES = $(PAR_EXAMPLES) 
    FIBER_SOURCE = io.cpp fiberp.cpp solver.cpp utils.cpp triplet.cpp genfiber.cpp cardfiber.cpp cardgradientsp.cpp
    FIBER_OBJECT = $(FIBER_SOURCE:.cpp=.o)
    DDCMD_OBJECT = $(DDCMDSRC:.c=.o)
-   SOURCE = $(FIBER_SOURCE) $(DDCMDSRC)
+   SOURCE = $(FIBER_SOURCE) $(DDCMD_FILES)
    OBJECT = $(FIBER_OBJECT) $(DDCMD_OBJECT)
 
 #print:
@@ -113,6 +110,9 @@ $(EXAMPLES): $(OBJECT)
 	$(MFEM_CXX) $(MFEM_FLAGS) -c $(<) -o $(@)
 
 ifeq ($(MFEM_USE_MPI),YES)
+
+$(DDCMD_FILES):
+	./mkLinks_ddcMD.sh $@
 
 %.o : %.c
 	$(MPI_CC) $(CC_FLAGS) -c $(<) -o $(@)
