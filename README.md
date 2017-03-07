@@ -7,5 +7,7 @@ Bayer, J. D.; Blake, R. C.; Plank, G.; Trayanova, N. A., A Novel Rule-Based Algo
 Installation Guide
 
 1. Download and install mfem library.
+    a. for serial version, you only need to install mfem.
+    b. for the MPI parallel version, you need to install hypre and metis library. follow the mfem MPI installation guide.
 
-2. Unzip Fiber code to the mfem home directory. Compile the code by use make.
+2. Unzip Fiber code to the mfem home directory. Compile the code by use make. The code depends on mfem configuration. If mfem is serial the code will be compiled serial. If paralell, the code will be compiled parallel. 
