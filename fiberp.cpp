@@ -38,163 +38,314 @@
 #include "mfem.hpp"
 #include <fstream>
 #include <iostream>
+#include <sstream>
+#include <cmath>
+#include <algorithm>
+#include <string>
+#include <vector>
+#include <deque>
+#include <limits>
+#include <functional>
+#include <set>
+
+#include "kdtree++/kdtree.hpp"
+
+#include "io.h"
+#include "solver.h"
+#include "genfiber.h"
+#include "cardfiber.h"
+#include "cardgradientsp.h"
+#include "triplet.h"
 
 using namespace std;
 using namespace mfem;
 
-int main(int argc, char *argv[])
-{
-   // 1. Parse command-line options.
-   const char *mesh_file = "../data/star.mesh";
-   int order = 1;
-   bool static_cond = false;
-   bool visualization = 1;
+int main(int argc, char *argv[]) {
+   // 1. Initialize MPI.
+   int num_procs, myid;
+   MPI_Init(&argc, &argv);
+   MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
+   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+   
+    // 2. Parse command-line options.
+    const char *mesh_file = "./human.vtk";
+    int order = 1;
+    bool static_cond = false;
+    bool visualization = 1;
 
-   OptionsParser args(argc, argv);
-   args.AddOption(&mesh_file, "-m", "--mesh",
-                  "Mesh file to use.");
-   args.AddOption(&order, "-o", "--order",
-                  "Finite element order (polynomial degree) or -1 for"
-                  " isoparametric space.");
-   args.AddOption(&static_cond, "-sc", "--static-condensation", "-no-sc",
-                  "--no-static-condensation", "Enable static condensation.");
-   args.AddOption(&visualization, "-vis", "--visualization", "-no-vis",
-                  "--no-visualization",
-                  "Enable or disable GLVis visualization.");
-   args.Parse();
-   if (!args.Good())
-   {
-      args.PrintUsage(cout);
-      return 1;
-   }
-   args.PrintOptions(cout);
+    double a_endo=40;
+    double a_epi=-50;
+    double b_endo=-65;
+    double b_epi=25;
+    
+    // grid spacing
+    double dd=2;
+    // conductivity
+    double gL = 0.0001334177*1000; // mS/mm
+    double gT = 0.0000176062*1000; // mS/mm
+    double gN = 0.0000176062*1000; // mS/mm   
 
-   // 2. Read the mesh from the given mesh file. We can handle triangular,
-   //    quadrilateral, tetrahedral, hexahedral, surface and volume meshes with
-   //    the same code.
-   Mesh *mesh = new Mesh(mesh_file, 1, 1);
-   int dim = mesh->Dimension();
+       
+    OptionsParser args(argc, argv);
+    args.AddOption(&mesh_file, "-m", "--mesh",
+            "Mesh file to use.");
+    args.AddOption(&order, "-o", "--order",
+            "Finite element order (polynomial degree) or -1 for"
+            " isoparametric space.");
+    args.AddOption(&static_cond, "-sc", "--static-condensation", "-no-sc",
+            "--no-static-condensation", "Enable static condensation.");
+    args.AddOption(&visualization, "-vis", "--visualization", "-no-vis",
+            "--no-visualization",
+            "Enable or disable GLVis visualization.");
+    args.AddOption(&a_endo, "-ao", "--aendo", "Fiber angle alpha endo.");
+    args.AddOption(&a_epi, "-ai", "--aepi", "Fiber angle alpha epi.");
+    args.AddOption(&b_endo, "-bo", "--bendo", "Fiber angle beta endo.");
+    args.AddOption(&b_epi, "-bi", "--bepi", "Fiber angle beta epi."); 
+    args.AddOption(&dd, "-dd", "--dspacing", "Grid spacing for ddcMD gid.");
+    args.AddOption(&gL, "-gl", "--gL", "Conductivity gL mS/mm.");
+    args.AddOption(&gT, "-gt", "--gT", "Conductivity gT mS/mm.");
+    args.AddOption(&gN, "-gn", "--gN", "Conductivity gN mS/mm.");
+    args.Parse();
 
-   // 3. Refine the mesh to increase the resolution. In this example we do
-   //    'ref_levels' of uniform refinement. We choose 'ref_levels' to be the
-   //    largest number that gives a final mesh with no more than 50,000
-   //    elements.
-   {
-      int ref_levels =
-         (int)floor(log(50000./mesh->GetNE())/log(2.)/dim);
-      for (int l = 0; l < ref_levels; l++)
-      {
-         mesh->UniformRefinement();
-      }
-   }
+    if (!args.Good()) {
+        if (myid == 0) {
+            args.PrintUsage(cout);
+        }
+        MPI_Finalize();
+        return 1;
+    }
+    if (myid == 0) {
+        args.PrintOptions(cout);
+    }
 
-   // 4. Define a finite element space on the mesh. Here we use continuous
-   //    Lagrange finite elements of the specified order. If order < 1, we
-   //    instead use an isoparametric/isogeometric space.
-   FiniteElementCollection *fec;
-   if (order > 0)
-   {
-      fec = new H1_FECollection(order, dim);
-   }
-   else if (mesh->GetNodes())
-   {
-      fec = mesh->GetNodes()->OwnFEC();
-      cout << "Using isoparametric FEs: " << fec->Name() << endl;
-   }
-   else
-   {
-      fec = new H1_FECollection(order = 1, dim);
-   }
-   FiniteElementSpace *fespace = new FiniteElementSpace(mesh, fec);
-   cout << "Number of finite element unknowns: "
-        << fespace->GetTrueVSize() << endl;
+    // Keep fiber angles in a Vector.
+    Vector fiberAngles(4);
+    fiberAngles(0)=a_endo;
+    fiberAngles(1)=a_epi;
+    fiberAngles(2)=b_endo;
+    fiberAngles(3)=b_epi;    
+    // 2. Read the mesh from the given mesh file. We can handle triangular,
+    //    quadrilateral, tetrahedral, hexahedral, surface and volume meshes with
+    //    the same code.
+    Mesh *mesh = new Mesh(mesh_file, 1, 1);
+    
+    vector<Vector> boundingbox;
+    // Set the surfaces for the mesh: 0-Apex, 1-Base, 2-EPI, 3-LV, 4-RV.
+    setSurfaces(mesh, boundingbox, 20, myid); // use 30 degrees for determining the base surface.
+//    for(unsigned i = 0; i < boundingbox.size(); i++) {
+//        Vector vec=boundingbox[i];     
+//        cout << "Bounding Box " << i;
+//        for(int j = 0; j < vec.Size(); j++) {
+//            cout << " " << vec(j);
+//        }
+//        cout << endl;
+//    }
 
-   // 5. Determine the list of true (i.e. conforming) essential boundary dofs.
-   //    In this example, the boundary conditions are defined by marking all
-   //    the boundary attributes from the mesh as essential (Dirichlet) and
-   //    converting them to a list of true dofs.
-   Array<int> ess_tdof_list;
-   if (mesh->bdr_attributes.Size())
-   {
-      Array<int> ess_bdr(mesh->bdr_attributes.Max());
-      ess_bdr = 1;
-      fespace->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
-   }
+    if (myid == 0) {
+        ofstream surf_ofs("surfaces.vtk");
+        printSurfVTK(mesh, surf_ofs);
+    }
+    // 3. Solve the laplacian for four different boundary conditions.
+    
+    // get the vertex elements arrays.
+    vector<vector<int> > vert2Elements;
+    getVert2Elements(mesh, vert2Elements);
+    
+    if (myid == 0) {
+        ofstream v2e_ofs("vert2Elements.txt");
+        for (unsigned i = 0; i < vert2Elements.size(); i++) {
+            vector<int> elements = vert2Elements[i];
+            v2e_ofs << i << " ";
+            for (unsigned j = 0; j < elements.size(); j++) {
+                v2e_ofs << elements[j] << " ";
+            }
+            v2e_ofs << endl;
+        }
+    }
+      
+    int bdr_attr_size=mesh->bdr_attributes.Max();
+    Array<int> all_ess_bdr(bdr_attr_size);    
+    Array<int> nonzero_ess_bdr(bdr_attr_size);
+    Array<int> zero_ess_bdr(bdr_attr_size);
+    unsigned nv=mesh->GetNV();
+  
+    // 3a. Base → 1, Apex→ 0, Epi, LV, RV → no flux
+     // Mark ALL boundaries as essential. This does not set what the actual Dirichlet
+    // values are
+    if (myid == 0) {
+        cout << "\n3a. Base → 1, Apex→ 0, Epi, LV, RV → no flux...\n";
+        cout.flush();
+    } 
+    all_ess_bdr = 1;
+    all_ess_bdr[2]=0;
+    all_ess_bdr[3]=0;
+    all_ess_bdr[4]=0;
+    
+    nonzero_ess_bdr = 0;    
+    nonzero_ess_bdr[1] = 1;   
 
-   // 6. Set up the linear form b(.) which corresponds to the right-hand side of
-   //    the FEM linear system, which in this case is (1,phi_i) where phi_i are
-   //    the basis functions in the finite element fespace.
-   LinearForm *b = new LinearForm(fespace);
-   ConstantCoefficient one(1.0);
-   b->AddDomainIntegrator(new DomainLFIntegrator(one));
-   b->Assemble();
+    zero_ess_bdr = 0;     
+    zero_ess_bdr[0] = 1;
+    
+    string output="psi_ab";
+    vector<double> psi_ab;
+    vector<Vector> psi_ab_grads;
+    GridFunction x_psi_ab=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, order, static_cond,myid);
+    getVetecesGradients(mesh, x_psi_ab, vert2Elements, psi_ab,psi_ab_grads, output, myid);
+    MFEM_ASSERT(psi_ab.size()==nv, "size of psi_ab does not match number of vertices.");
+    MFEM_ASSERT(psi_ab_grads.size()==nv, "size of psi_ab_grads does not match number of vertices.");
+    
+    
+    // 3b. Apex, Epi → 1, LV, RV→ 0, Base→ no flux
+    if (myid == 0) {
+        cout << "\n3b. Apex, Epi → 1, LV, RV→ 0, Base→ no flux...\n";
+        cout.flush();
+    }  
+    all_ess_bdr = 1;
+    all_ess_bdr[1]=0;
+    
+    nonzero_ess_bdr = 0;    
+    nonzero_ess_bdr[0] = 1;
+    nonzero_ess_bdr[2] = 1;   
 
-   // 7. Define the solution vector x as a finite element grid function
-   //    corresponding to fespace. Initialize x with initial guess of zero,
-   //    which satisfies the boundary conditions.
-   GridFunction x(fespace);
-   x = 0.0;
+    zero_ess_bdr = 0;      
+    zero_ess_bdr[3] = 1;
+    zero_ess_bdr[4] = 1;
+ 
+    output="phi_epi";
+    vector<double> phi_epi;
+    vector<Vector> phi_epi_grads;
 
-   // 8. Set up the bilinear form a(.,.) on the finite element space
-   //    corresponding to the Laplacian operator -Delta, by adding the Diffusion
-   //    domain integrator.
-   BilinearForm *a = new BilinearForm(fespace);
-   a->AddDomainIntegrator(new DiffusionIntegrator(one));
+    //laplace(mesh, vert2Elements, phi_epi, phi_epi_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    GridFunction x_phi_epi=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, order, static_cond,myid);
+    getVetecesGradients(mesh, x_phi_epi, vert2Elements, phi_epi,phi_epi_grads, output,myid);
+    MFEM_ASSERT(phi_epi.size()==nv, "size of phi_epi does not match number of vertices.");
+    MFEM_ASSERT(phi_epi_grads.size()==nv, "size of phi_epi_grads does not match number of vertices.");
+    
+    //3c. LV → 1, Apex, Epi, RV→ 0, Base→ no flux
+    if (myid == 0) {
+        cout << "\n3c. LV → 1, Apex, Epi, RV→ 0, Base→ no flux...\n";
+        cout.flush();
+    } 
+    all_ess_bdr = 1;
+    all_ess_bdr[1]=0;
+    
+    nonzero_ess_bdr = 0;    
+    nonzero_ess_bdr[3] = 1;   
 
-   // 9. Assemble the bilinear form and the corresponding linear system,
-   //    applying any necessary transformations such as: eliminating boundary
-   //    conditions, applying conforming constraints for non-conforming AMR,
-   //    static condensation, etc.
-   if (static_cond) { a->EnableStaticCondensation(); }
-   a->Assemble();
+    zero_ess_bdr = 0;      
+    zero_ess_bdr[0] = 1;
+    zero_ess_bdr[2] = 1;
+    zero_ess_bdr[4] = 1;
+ 
+    output="phi_lv";
+    vector<double> phi_lv;
+    vector<Vector> phi_lv_grads;
 
-   SparseMatrix A;
-   Vector B, X;
-   a->FormLinearSystem(ess_tdof_list, x, *b, A, X, B);
+    //laplace(mesh, vert2Elements, phi_lv, phi_lv_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    GridFunction x_phi_lv=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, order, static_cond,myid);
+    getVetecesGradients(mesh, x_phi_lv, vert2Elements, phi_lv,phi_lv_grads, output,myid);    
+    MFEM_ASSERT(phi_lv.size()==nv, "size of phi_lv does not match number of vertices.");
+    MFEM_ASSERT(phi_lv_grads.size()==nv, "size of phi_lv_grads does not match number of vertices.");        
+    
+    //3d. RV → 1, Apex, Epi, LV→ 0, Base→ no flux
+    if (myid == 0) {
+        cout << "\n3d. RV → 1, Apex, Epi, LV→ 0, Base→ no flux...\n";
+        cout.flush();
+    }     
+    all_ess_bdr = 1;
+    all_ess_bdr[1]=0;
+    
+    nonzero_ess_bdr = 0;    
+    nonzero_ess_bdr[4] = 1;   
 
-   cout << "Size of linear system: " << A.Height() << endl;
+    zero_ess_bdr = 0;      
+    zero_ess_bdr[0] = 1;
+    zero_ess_bdr[2] = 1;
+    zero_ess_bdr[3] = 1;
+ 
+    output="phi_rv";
+    vector<double> phi_rv;
+    vector<Vector> phi_rv_grads;
 
-#ifndef MFEM_USE_SUITESPARSE
-   // 10. Define a simple symmetric Gauss-Seidel preconditioner and use it to
-   //     solve the system A X = B with PCG.
-   GSSmoother M(A);
-   PCG(A, M, B, X, 1, 200, 1e-12, 0.0);
-#else
-   // 10. If MFEM was compiled with SuiteSparse, use UMFPACK to solve the system.
-   UMFPackSolver umf_solver;
-   umf_solver.Control[UMFPACK_ORDERING] = UMFPACK_ORDERING_METIS;
-   umf_solver.SetOperator(A);
-   umf_solver.Mult(B, X);
-#endif
+    //laplace(mesh, vert2Elements, phi_rv, phi_rv_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
+    GridFunction x_phi_rv=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, order, static_cond,myid);
+    getVetecesGradients(mesh, x_phi_rv, vert2Elements, phi_rv,phi_rv_grads, output,myid);
+    MFEM_ASSERT(phi_rv.size()==nv, "size of phi_rv does not match number of vertices.");
+    MFEM_ASSERT(phi_rv_grads.size()==nv, "size of phi_rv_grads does not match number of vertices.");
 
-   // 11. Recover the solution as a finite element grid function.
-   a->RecoverFEMSolution(X, *b, x);
+    if (myid == 0) {
+        ofstream psia_ofs("psi_ab_grads.vtk");
+        ofstream phie_ofs("phi_epi_grads.vtk");
+        ofstream phil_ofs("phi_lv_grads.vtk");
+        ofstream phir_ofs("phi_rv_grads.vtk");
 
-   // 12. Save the refined mesh and the solution. This output can be viewed later
-   //     using GLVis: "glvis -m refined.mesh -g sol.gf".
-   ofstream mesh_ofs("refined.mesh");
-   mesh_ofs.precision(8);
-   mesh->Print(mesh_ofs);
-   ofstream sol_ofs("sol.gf");
-   sol_ofs.precision(8);
-   x.Save(sol_ofs);
+        printFiberVTK(mesh, psi_ab_grads, psia_ofs);
+        printFiberVTK(mesh, phi_epi_grads, phie_ofs);
+        printFiberVTK(mesh, phi_lv_grads, phil_ofs);
+        printFiberVTK(mesh, phi_rv_grads, phir_ofs);
+    }
 
-   // 13. Send the solution by socket to a GLVis server.
-   if (visualization)
-   {
-      char vishost[] = "localhost";
-      int  visport   = 19916;
-      socketstream sol_sock(vishost, visport);
-      sol_sock.precision(8);
-      sol_sock << "solution\n" << *mesh << x << flush;
-   }
+    if (myid == 0) {
+        cout << "\nWorking on fiber angles with the bislerp method...\n";
+        cout.flush();
+    }    
+    vector<DenseMatrix> QPfibVectors;   
+    genfiber(QPfibVectors, psi_ab, psi_ab_grads, phi_epi, phi_epi_grads, 
+        phi_lv, phi_lv_grads, phi_rv, phi_rv_grads, fiberAngles);
+    
+    vector<Vector> fvectors;
+    vector<Vector> svectors;
+    vector<Vector> tvectors;
+    
+    for(unsigned i=0; i< QPfibVectors.size(); i++){
+        vector<Vector> qpVecs;
+        for(int j=0; j<3; j++){
+            Vector vec;
+            QPfibVectors[i].GetColumn(j, vec);
+            qpVecs.push_back(vec);
+        }
+        fvectors.push_back(qpVecs[0]);
+        svectors.push_back(qpVecs[1]);
+        tvectors.push_back(qpVecs[2]);
+    }
 
-   // 14. Free the used memory.
-   delete a;
-   delete b;
-   delete fespace;
-   if (order > 0) { delete fec; }
-   delete mesh;
+    if (myid == 0) {
+        ofstream f_ofs("fvectors.vtk");
+        ofstream s_ofs("svectors.vtk");
+        ofstream t_ofs("tvectors.vtk");
 
-   return 0;
+        printFiberVTK(mesh, fvectors, f_ofs);
+        printFiberVTK(mesh, svectors, s_ofs);
+        printFiberVTK(mesh, tvectors, t_ofs);
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (myid == 0) {
+        cout << "\nStart to build k-D tree for the mesh...\n";
+        cout.flush();
+    }
+    tree_type kdtree(std::ptr_fun(tac));
+    buildKDTree(mesh, kdtree);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (myid == 0) {
+        cout << "\nGet cardioid point gradients ...\n";
+        cout.flush();
+    }
+    Vector conduct(3);
+    conduct(0)=gL;
+    conduct(1)=gT;
+    conduct(2)=gN;
+    getCardGradientsp(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
+        kdtree, vert2Elements, boundingbox, dd,  
+        conduct, fiberAngles, num_procs, myid);
+        
+
+    delete mesh;
+
+    MPI_Finalize(); 
+    
+    return 0;
 }
+

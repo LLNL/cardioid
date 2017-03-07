@@ -22,7 +22,7 @@ using namespace std;
 using namespace mfem;
 
 struct filerheader{
-    long nrecord;
+    int nrecord;
     int nx;
     int ny;
     int nz;
@@ -37,10 +37,18 @@ struct anatomy{
     double sigma[6];
     
 };
+
 void buildKDTree(Mesh *mesh, tree_type& kdtree);
-void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_rv,
+
+double det4X4(DenseMatrix& matrix);
+bool isInTetElement(const Vector& q, Mesh* mesh, int eleIndex);
+void getCardEleGrads(GridFunction& x, const Vector& q, int eleIndex, Vector& grad_ele, double& xVal);
+void calcSigma(DenseMatrix& Sigma, DenseMatrix& Q, Vector& conduct);
+int getCellType(double phi_epi, double phi_lv, double phi_rv);
+
+void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_rv,
         tree_type& kdtree, vector<vector<int> >& vert2Elements, vector<Vector>& boundingbox, double dd, 
-        Vector& conduct, Vector& fiberAngles);
+        Vector& conduct, Vector& fiberAngles, int myid=0);
 
 #endif	/* CARDFIBER_H */
 

@@ -24,17 +24,83 @@ SEQ_EXAMPLES = fiber
 #SEQ_EXAMPLES = mfemTest
 PAR_EXAMPLES = fiberp
 
-
 ifeq ($(MFEM_USE_MPI),NO)
    EXAMPLES = $(SEQ_EXAMPLES)
-   SOURCE = io.cpp fiber.cpp solver.cpp utils.cpp triplet.cpp genfiber.cpp cardfiber.cpp 
+   SOURCE = io.cpp fiber.cpp solver.cpp utils.cpp triplet.cpp genfiber.cpp cardfiber.cpp cardgradients.cpp
+   OBJECT = $(SOURCE:.cpp=.o)
 else
-   # haven't implement it yet.
+   # MPI C Compiler for PIO.
+   MPI_CC=mpicc
+
+  ifeq ($(MFEM_DEBUG), NO)
+       CC_FLAGS = -O3 --std=gnu99
+  else
+       CC_FLAGS = -g --std=gnu99
+  endif
+
+   DDCMD_FILES = \
+        codata.h \
+        ddcMalloc.c \
+        ddcMalloc.h \
+        ddcMath.h \
+        error.c \
+        error.h \
+        external.h \
+        GridAssignmentObject.c \
+        GridAssignmentObject.h \
+        hardwareInfo.c \
+        hardwareInfo.h \
+        heap.c \
+        heap.h \
+        ioUtils.c \
+        ioUtils.h \
+        intQueue.c \
+        intQueue.h \
+        lessThan.c \
+        lessThan.h \
+        match.c \
+        match.h \
+        mpiUtils.c \
+        mpiUtils.h \
+        object.c \
+        object.h \
+        pio.c \
+        pio.h \
+        pioFixedRecordHelper.c \
+        pioFixedRecordHelper.h \
+        pioHelper.c \
+        pioHelper.h \
+        pioVariableRecordHelper.c \
+        pioVariableRecordHelper.h \
+        tagServer.c \
+        tagServer.h \
+        three_algebra.c \
+        three_algebra.h \
+        units.c \
+        units.h \
+        utilities.c \
+        utilities.h
+
+$(DDCMD_FILES):
+	./mkLinks_ddcMD.sh $@
+
+
+  DDCMDSRC = $(filter %.c, $(DDCMD_FILES))	
    EXAMPLES = $(PAR_EXAMPLES) 
-   SOURCE = io.cpp fiberp.cpp solver.cpp utils.cpp triplet.cpp genfiber.cpp cardfiberp.cpp 
+   FIBER_SOURCE = io.cpp fiberp.cpp solver.cpp utils.cpp triplet.cpp genfiber.cpp cardfiber.cpp cardgradientsp.cpp
+   FIBER_OBJECT = $(FIBER_SOURCE:.cpp=.o)
+   DDCMD_OBJECT = $(DDCMDSRC:.c=.o)
+   SOURCE = $(FIBER_SOURCE) $(DDCMDSRC)
+   OBJECT = $(FIBER_OBJECT) $(DDCMD_OBJECT)
+
+#print:
+#	echo "DDCMDSRC", $(DDCMDSRC)
+#	echo "OBJECT", $(OBJECT)
+#	echo "SOURCE", $(SOURCE)
+
+
 endif
 
-OBJECT = $(SOURCE:.cpp=.o)
 
 .PHONY: all clean clean-build clean-exec
 
@@ -43,9 +109,15 @@ all: $(SOURCE) $(EXAMPLES)
 $(EXAMPLES): $(OBJECT)
 	$(MFEM_CXX) $(MFEM_FLAGS) $(OBJECT) -o $@ $(MFEM_LIBS)
 	
-.cpp.o:
+%.o : %.cpp
 	$(MFEM_CXX) $(MFEM_FLAGS) -c $(<) -o $(@)
 
+ifeq ($(MFEM_USE_MPI),YES)
+
+%.o : %.c
+	$(MPI_CC) $(CC_FLAGS) -c $(<) -o $(@)
+
+endif
 
 test: mfemTest kdtreeTest
 
@@ -80,3 +152,8 @@ clean-exec:
 
 clean-test:
 	rm -rf mfemTest.o mfemTest kdtreeTest.o kdtreeTest
+
+distclean:
+	rm -f *.o *~ $(SEQ_EXAMPLES) $(PAR_EXAMPLES)
+	rm -rf *.dSYM *.TVD.*breakpoints
+	rm -f $(DDCMD_FILES)

@@ -54,6 +54,7 @@
 #include "solver.h"
 #include "genfiber.h"
 #include "cardfiber.h"
+#include "cardgradients.h"
 #include "triplet.h"
 
 using namespace std;

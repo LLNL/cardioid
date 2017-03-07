@@ -30,7 +30,7 @@ void getVert2Elements(Mesh *mesh, vector<vector<int> >& vert2Elements) {
 }
 
 
-GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, int order, bool static_cond){
+GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, int order, bool static_cond, int myid){
     
     int dim = mesh->Dimension();
     cout << "Dimension =" << dim << endl;    
@@ -47,8 +47,10 @@ GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_es
         fec = new H1_FECollection(order = 1, dim);
     }
     FiniteElementSpace *fespace = new FiniteElementSpace(mesh, fec);
-    cout << "Number of finite element unknowns: "
-            << fespace->GetTrueVSize() << endl;
+    if (myid == 0) {
+        cout << "Number of finite element unknowns: "
+                << fespace->GetTrueVSize() << endl;
+    }
 
     // 5. Determine the list of true (i.e. conforming) essential boundary dofs.
     //    In this example, the boundary conditions are defined by marking all
@@ -56,7 +58,7 @@ GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_es
     //    converting them to a list of true dofs.
     Array<int> ess_tdof_list;
     MFEM_ASSERT(mesh->bdr_attributes.Size()!=0, "Boundary size cannot be zero."); 
-    cout << "all_ess_bdr size=" << all_ess_bdr.Size() << endl;
+    
     fespace->GetEssentialTrueDofs(all_ess_bdr, ess_tdof_list);
   
 
@@ -73,9 +75,11 @@ GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_es
     //    which satisfies the boundary conditions.
     GridFunction x(fespace);
     x = 0.0;
-    
-    cout << "x size " << x.Size() << endl;
 
+    if (myid == 0) {
+        cout << "all_ess_bdr size=" << all_ess_bdr.Size() << endl;
+        cout << "x size " << x.Size() << endl;
+    }
 
     // 8. Set up the bilinear form a(.,.) on the finite element space
     //    corresponding to the Laplacian operator -Delta, by adding the Diffusion
@@ -109,13 +113,18 @@ GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_es
     // Form the linear system using ALL of the essential boundary dofs (from all_ess_bdr)
     a->FormLinearSystem(ess_tdof_list, x, *b, A, X, B);
 
-    cout << "Size of linear system: " << A.Height() << endl;
-
+    if (myid == 0) {
+        cout << "Size of linear system: " << A.Height() << endl;
+    }
 #ifndef MFEM_USE_SUITESPARSE
     // 10. Define a simple symmetric Gauss-Seidel preconditioner and use it to //ILU
     //     solve the system A X = B with PCG.
     GSSmoother M(A);
-    PCG(A, M, B, X, 1, 1000, 1e-12, 0.0);
+    if (myid == 0) {
+        PCG(A, M, B, X, 0, 1000, 1e-12, 0.0);
+    }else{
+        PCG(A, M, B, X, 1, 1000, 1e-12, 0.0);
+    }
 #else
     // 10. If MFEM was compiled with SuiteSparse, use UMFPACK to solve the system.
     UMFPackSolver umf_solver;
@@ -131,7 +140,7 @@ GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_es
 }
 
 
-void getVetecesGradients(Mesh *mesh, GridFunction& x, vector<vector<int> >& vert2Elements, vector<double> &pot, vector<Vector> &gradients, string output){
+void getVetecesGradients(Mesh *mesh, GridFunction& x, vector<vector<int> >& vert2Elements, vector<double> &pot, vector<Vector> &gradients, string output, int myid){
     //double *x_data=x.GetData();
     for(int i=0; i<x.Size(); i++){         
         //pot.push_back(x_data[i]);
@@ -167,40 +176,43 @@ void getVetecesGradients(Mesh *mesh, GridFunction& x, vector<vector<int> >& vert
         grad/=elements.size();
         gradients.push_back(grad);
 
-        if (i < 5) {
-            cout << "grad ";
-            for (int j = 0; j < grad.Size(); j++) {
-                cout << grad[j] << " ";
-            }
-            cout << endl;
-        }
+//        if (i < 5) {
+//            cout << "grad ";
+//            for (int j = 0; j < grad.Size(); j++) {
+//                cout << grad[j] << " ";
+//            }
+//            cout << endl;
+//        }
 
     }
 
     // 12. Save the refined mesh and the solution. This output can be viewed later
     //     using GLVis: "glvis -m refined.mesh -g sol.gf".
-    string fileName=output+".mesh";
-    ofstream mesh_ofs(fileName.c_str());
-    mesh_ofs.precision(8);
-    mesh->Print(mesh_ofs);
 
-    fileName=output+".gf";
-    ofstream sol_ofs(fileName.c_str());
-    sol_ofs.precision(8);
-    x.Save(sol_ofs);
-    
-    vector<Vector> xvectors;
-    for(int i=0; i<x.Size(); i++){
-        Vector vectmp(3);
-        vectmp(0)=x(i);
-        vectmp(1)=0.0;
-        vectmp(2)=0.0;
-        xvectors.push_back(vectmp);
+    if (myid == 0) {
+        string fileName = output + ".mesh";
+        ofstream mesh_ofs(fileName.c_str());
+        mesh_ofs.precision(8);
+        mesh->Print(mesh_ofs);
+
+        fileName = output + ".gf";
+        ofstream sol_ofs(fileName.c_str());
+        sol_ofs.precision(8);
+        x.Save(sol_ofs);
+
+        vector<Vector> xvectors;
+        for (int i = 0; i < x.Size(); i++) {
+            Vector vectmp(3);
+            vectmp(0) = x(i);
+            vectmp(1) = 0.0;
+            vectmp(2) = 0.0;
+            xvectors.push_back(vectmp);
+        }
+
+        fileName = output + "-x.vtk";
+        ofstream x_ofs(fileName.c_str());
+        printFiberVTK(mesh, xvectors, x_ofs);
     }
-    
-    fileName=output+"-x.vtk";
-    ofstream x_ofs(fileName.c_str());
-    printFiberVTK(mesh, xvectors, x_ofs);    
 
     // 14. Free the used memory.
 //    delete a;
@@ -283,7 +295,7 @@ void findNeighbor(Element* ele, vector<Element*>& elements, int attr){
     }           
 }
 
-void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle=20){
+void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle=20, int myid){
     // Attributes for different surface
     const int apexAttr=1;
     const int baseAttr=2;
@@ -337,15 +349,17 @@ void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle=20){
     boundingbox.push_back(coord_min);
     boundingbox.push_back(coord_max);
 
-    cout << "Min: " << coord_min(0) << " " << coord_min(1) << " " << coord_min(2) << endl;
-    cout << "Max: " << coord_max(0) << " " << coord_max(1) << " " << coord_max(2) << endl;
     coord = mesh->GetVertex(apexVet);
-    cout << "Apex: " << coord[0] << " " << coord[1] << " " << coord[2] << endl;
     
     // Top 5% of the z axis.
     double zTop5=coord_max[2]-(coord_max[2]-coord_min[2])*0.05;
-    cout << "Top 5% z coordinate: " << zTop5 << endl;    
 
+    if (myid == 0) {
+        cout << "Min: " << coord_min(0) << " " << coord_min(1) << " " << coord_min(2) << endl;
+        cout << "Max: " << coord_max(0) << " " << coord_max(1) << " " << coord_max(2) << endl;
+        cout << "Apex: " << coord[0] << " " << coord[1] << " " << coord[2] << endl;
+        cout << "Top 5% z coordinate: " << zTop5 << endl;
+    }
     // Initialization the attributes to 0 and set attribute of apex
     for(int i=0; i<nbe; i++){
         Element *ele = mesh->GetBdrElement(i);        
@@ -358,7 +372,7 @@ void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle=20){
         for (int j = 0; j < nv; j++) {
             if (v[j] ==apexVet){
                 ele->SetAttribute(apexAttr);
-                cout << "Element index = " << i << endl;
+                //cout << "Element index = " << i << endl;
             }
         }        
     }
