@@ -50,7 +50,7 @@ inline void freeOnDevice(const std::vector<TTT>& data)
    }
    const TTT* dataAlias = &data[0];
 #if _OPENMP >= 201511
-#pragma omp target exit data map(alloc: dataAlias[0:data.size()])
+#pragma omp target exit data map(release: dataAlias[0:data.size()])
 #endif   
 }
 
