@@ -192,7 +192,7 @@ gengetopt:
 	$(GENGETOPT) -i singleCellOptions.ggo -F singleCellOptions 
 
 $(OBJDIR)/%.o: %.cc
-	$(CXX) $(CXXFLAGS) -o $@ -c $<
+	$(CXX) $(CXXFLAGS) -o $@ -c -std=c++11 $<
 
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<

@@ -137,42 +137,17 @@ void assertStateOrderAndVarNamesAgree(void)
 
    
 ThisReaction::ThisReaction(const Anatomy& anatomy)
-: nCells_(anatomy.nLocal())
+: nCells_(anatomy.nLocal()), stateTransport_(vector<State>(anatomy.nLocal()))
 {
    assertStateOrderAndVarNamesAgree();
-   state_.resize(nCells_);
    perCellFlags_.resize(nCells_);
-   perCellParameters_.resize(nCells_);
-   isCPUValid_ = true;
-   isDeviceValid_ = false;
-   
-   State* stateAlias = &state_[0];
-#if _OPENMP >= 201511
-#pragma omp target enter data map(alloc: stateAlias[0:nCells_])
-#endif
-   
+   perCellParameters_.resize(nCells_);   
 }
 
 #define CUBE(x) ((x)*(x)*(x))
 #define SQ(x) ((x)*(x))
 #define sigm(x)   ((x)/(1+(x)))
 #define logSeries(x)    (log(1+(x)) )
-
-void ThisReaction::updateDevice() const {
-   if (isCPUValid_ == true && isDeviceValid_ == false) {
-      const State* stateAlias = &state_[0];
-#pragma omp target update to(stateAlias[0:nCells_])
-      const_cast<bool&>(isDeviceValid_) = true;
-   }
-}
-
-void ThisReaction::updateHost() const {
-   if (isCPUValid_ == false && isDeviceValid_ == true) {
-      const State* stateAlias = &state_[0];
-#pragma omp target update from(stateAlias[0:nCells_])
-      const_cast<bool&>(isCPUValid_) = true;
-   }
-}
    
 void actualCalc(const double dt, const int nCells_, const double Vm[], const double iStim[], double dVm[], State state_[])
 {
@@ -759,9 +734,8 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
 void ThisReaction::calc(double dt, const VectorDouble32& Vm,
                        const vector<double>& iStim , VectorDouble32& dVm)
 {
-   updateDevice();
-   isCPUValid_ = false;
-   actualCalc(dt, nCells_, &Vm[0], &iStim[0], &dVm[0], &state_[0]);
+   vector<State>& state(stateTransport_.modifyOnDevice());
+   actualCalc(dt, nCells_, &Vm[0], &iStim[0], &dVm[0], &state[0]);
 }
    
 void ThisReaction::initializeMembraneVoltage(VectorDouble32& Vm)
@@ -772,8 +746,7 @@ void ThisReaction::initializeMembraneVoltage(VectorDouble32& Vm)
    State initState;
    //EDIT_STATE
 
-   updateHost();
-   isDeviceValid_ = false;
+   vector<State>& state(stateTransport_.modifyOnHost());
    
    const double pcnst_2 = 96485.3415;
    const double pcnst_3 = 0.185;
@@ -800,7 +773,7 @@ void ThisReaction::initializeMembraneVoltage(VectorDouble32& Vm)
    initState.sGate    =0.3212  ;
    initState.jLGate   =0.066   ;
 
-   state_.assign(state_.size(), initState);
+   state.assign(state.size(), initState);
    
 }
 
@@ -818,16 +791,15 @@ int ThisReaction::getVarHandle(const std::string& varName) const
 
 void ThisReaction::setValue(int iCell, int varHandle, double value) 
 {
-   updateHost();
-   isDeviceValid_ = false;
-   reinterpret_cast<double*>(&state_[iCell])[varHandle-HANDLE_OFFSET] = value;
+   vector<State>& state(stateTransport_.modifyOnHost());
+   reinterpret_cast<double*>(&state[iCell])[varHandle-HANDLE_OFFSET] = value;
 }
 
 
 double ThisReaction::getValue(int iCell, int varHandle) const
 {
-   updateHost();
-   return reinterpret_cast<const double*>(&state_[iCell])[varHandle-HANDLE_OFFSET];
+   const vector<State>& state(stateTransport_.readOnHost());
+   return reinterpret_cast<const double*>(&state[iCell])[varHandle-HANDLE_OFFSET];
 }
 
 void ThisReaction::getCheckpointInfo(vector<string>& fieldNames,

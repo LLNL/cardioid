@@ -1,6 +1,8 @@
 #include "Reaction.hh"
 #include "object.h"
+#include "TransportCoordinator.hh"
 #include <vector>
+
 class Anatomy;
 
 namespace SimpleTT06 
@@ -70,11 +72,7 @@ class ThisReaction : public Reaction
 
  private:
    unsigned nCells_;
-   std::vector<State> state_;
-   bool isCPUValid_;
-   bool isDeviceValid_;
-   void updateDevice() const;
-   void updateHost() const;
+   TransportCoordinator<std::vector<State> > stateTransport_;
 };
 
 }
