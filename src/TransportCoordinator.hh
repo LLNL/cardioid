@@ -13,8 +13,8 @@ inline void allocOnDevice(const TTT& data) {};
 template <typename TTT>
 inline void freeOnDevice(const TTT& data) {};
 
-template <typename TTT>
-inline void copyToDevice(const std::vector<TTT>& data)
+template <typename TTT,typename AAA>
+inline void copyToDevice(const std::vector<TTT, AAA>& data)
 {
    const TTT* dataAlias = &data[0];
 #pragma omp target update to(dataAlias[0:data.size()])
@@ -22,8 +22,8 @@ inline void copyToDevice(const std::vector<TTT>& data)
       copyToDevice(item);
    }
 }
-template <typename TTT>
-inline void copyToHost(const std::vector<TTT>& data)
+template <typename TTT,typename AAA>
+inline void copyToHost(const std::vector<TTT, AAA>& data)
 {
    const TTT* dataAlias = &data[0];
 #pragma omp target update from(dataAlias[0:data.size()])
@@ -31,8 +31,8 @@ inline void copyToHost(const std::vector<TTT>& data)
       copyToHost(item);
    }
 }
-template <typename TTT>
-inline void allocOnDevice(const std::vector<TTT>& data)
+template <typename TTT, typename AAA>
+inline void allocOnDevice(const std::vector<TTT, AAA>& data)
 {
    const TTT* dataAlias = &data[0];
 #if _OPENMP >= 201511
@@ -42,8 +42,8 @@ inline void allocOnDevice(const std::vector<TTT>& data)
       allocOnDevice(item);
    }
 }
-template <typename TTT>
-inline void freeOnDevice(const std::vector<TTT>& data)
+template <typename TTT, typename AAA>
+inline void freeOnDevice(const std::vector<TTT,AAA>& data)
 {
    for (const TTT& item : data) {
       freeOnDevice(item);
@@ -57,14 +57,38 @@ inline void freeOnDevice(const std::vector<TTT>& data)
 template <typename TTT>
 class TransportCoordinator {
  public:
-   TransportCoordinator(TTT&& initData) : data_(initData)
+   TransportCoordinator()
    {
-      allocOnDevice(data_);
+      allocated_ = false;
+      isHostValid_ = false;
+      isDeviceValid_ = false;
+   }
+   TransportCoordinator(TTT&& initData)
+   {
+      setup(std::move(initData));
    }
    ~TransportCoordinator()
    {
-      freeOnDevice(data_);
+      teardown();
    }
+   inline void setup(TTT&& initData)
+   {
+      data_ = initData;
+      allocOnDevice(data_);
+      allocated_ = true;
+      isHostValid_ = true;
+      isDeviceValid_ = false;
+   }
+   inline void teardown()
+   {
+      if (allocated_)
+      {
+         freeOnDevice(data_);
+         allocated_ = false;
+         isHostValid_ = false;
+         isDeviceValid_ = false;
+      }
+   }      
    inline TTT& modifyOnHost()
    {
       readOnHost();
@@ -99,6 +123,7 @@ class TransportCoordinator {
    }
  private:
    TTT data_;
+   bool allocated_;
    bool isHostValid_;
    bool isDeviceValid_;
 };
