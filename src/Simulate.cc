@@ -12,6 +12,7 @@ using std::vector;
 
 /** Offsets version.  Be sure to maintain in parallel with OMP version*/
 void Simulate::checkRanges(int begin, int end,
+                           const VectorDouble32& Vm,
                            const VectorDouble32& dVmReaction,
                            const VectorDouble32& dVmDiffusion)
 {
@@ -19,17 +20,17 @@ void Simulate::checkRanges(int begin, int end,
    //const double vMin = -110.;
    const double vMax = checkRange_.vMax;
    const double vMin = checkRange_.vMin;
-   const VectorDouble32& Vm = (vdata_.VmArray_);
    for (unsigned ii=begin; ii<end; ++ii)
    {
       if ( Vm[ii] > vMax || Vm[ii] < vMin )
-         outOfRange(ii, vdata_.dVmReaction_[ii], vdata_.dVmDiffusion_[ii]);
+         outOfRange(ii, Vm[ii], dVmReaction[ii], dVmDiffusion[ii]);
    }
 }
 
 /** Omp version.  Be sure to maintain in parallel with offsets version.
  *  Don't call from parallel loop */
-void Simulate::checkRanges(const VectorDouble32& dVmReaction,
+void Simulate::checkRanges(const VectorDouble32& Vm,
+                           const VectorDouble32& dVmReaction,
                            const VectorDouble32& dVmDiffusion)
 {
    int nLocal = anatomy_.nLocal();
@@ -37,21 +38,20 @@ void Simulate::checkRanges(const VectorDouble32& dVmReaction,
    //const double vMin = -110.;
    const double vMax = checkRange_.vMax;
    const double vMin = checkRange_.vMin;
-   const VectorDouble32& Vm = vdata_.VmArray_;
    #pragma omp parallel for
    for (int ii=0; ii<nLocal; ++ii)
    {
       if ( Vm[ii] > vMax || Vm[ii] < vMin )
-         outOfRange(ii, vdata_.dVmReaction_[ii], vdata_.dVmDiffusion_[ii]);
+         outOfRange(ii, Vm[ii], dVmReaction[ii], dVmDiffusion[ii]);
    }
 }
 
-void Simulate::outOfRange(unsigned index, double dVmr, double dVmd)
+void Simulate::outOfRange(unsigned index, const double Vm, const double dVmr, const double dVmd)
 {
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank); 
-   double Vm = vdata_.VmArray_[index];
 
+#if 0 //FIXME!!!!!!
    /** This is awful.  Some diffusion classes don't store the results in
     *  array form, but keep them in an internal matrix.  We have to go
     *  fetch them. */
@@ -60,6 +60,7 @@ void Simulate::outOfRange(unsigned index, double dVmr, double dVmd)
       unsigned bi = diffusion_->blockIndex()[index];
       dVmd += diffusion_->dVmBlock()[bi] * diffusion_->diffusionScale();
    }
+#endif
    
    printf("WARNING: Voltage out of range: rank %d, index %d gid %llu "
           "loop = %d, V = %e, dVmd = %e, dVmr = %e\n",

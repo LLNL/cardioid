@@ -663,9 +663,10 @@ void GradientVoronoiCoarsening::eval(double time, int loop)
    
    if( eval_count_==0 )time0_=time;
    if( eval_count_==1 )dt_=time-time0_;
-   
-   computeColorCenterValues(vdata_.VmArray_);
-   setupLSsystem(vdata_.VmArray_);
+
+   const VectorDouble32& VmArray(vdata_.VmTransport_.readOnHost());
+   computeColorCenterValues(VmArray);
+   setupLSsystem(VmArray);
    computeLeastSquareGradients(time, loop);   
    
    eval_count_++;

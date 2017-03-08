@@ -11,6 +11,7 @@
 #include "Anatomy.hh"
 #include "ThreadServer.hh"
 #include "VectorDouble32.hh"
+#include "TransportCoordinator.hh"
 
 class Diffusion;
 class Reaction;
@@ -33,9 +34,9 @@ class PotentialData
    
    void setup(const Anatomy& anatomy)
    {
-      VmArray_     = VectorDouble32(anatomy.size(), 0.);
-      dVmDiffusion_= VectorDouble32(anatomy.nLocal(), 0.);
-      dVmReaction_ = VectorDouble32(anatomy.nLocal(), 0.);
+      VectorDouble32 VmArray(anatomy.size(), 0.);
+      VectorDouble32 dVmDiffusion(anatomy.nLocal(), 0.);
+      VectorDouble32 dVmReaction(anatomy.nLocal(), 0.);
       unsigned paddedSize = 4*((anatomy.nLocal()+3)/4);
 //#include "slow_fix.hh"
 //#ifdef SLOW_FIX
@@ -43,22 +44,25 @@ class PotentialData
 	int nFourVecs = paddedSize>>2;
 	if(0) paddedSize += 4*((10 - (nFourVecs % 8)) % 8);
 	else  paddedSize += ((10 - (nFourVecs & 7)) & 7) << 2;
-	VmArray_.reserve(paddedSize);
       }
 //#endif
-      dVmDiffusion_.reserve(paddedSize);
-      dVmReaction_.reserve(paddedSize);
+      VmArray.reserve(paddedSize);
+      dVmDiffusion.reserve(paddedSize);
+      dVmReaction.reserve(paddedSize);
 
-      assert((size_t)&(VmArray_[0])      % 32 == 0);
-      assert((size_t)&(dVmDiffusion_[0]) % 32 == 0);
-      assert((size_t)&(dVmReaction_[0])  % 32 == 0);
-      
+      assert((size_t)&(VmArray[0])      % 32 == 0);
+      assert((size_t)&(dVmDiffusion[0]) % 32 == 0);
+      assert((size_t)&(dVmReaction[0])  % 32 == 0);
+
+      VmTransport_.setup(std::move(VmArray));
+      dVmDiffusionTransport_.setup(std::move(dVmDiffusion));
+      dVmReactionTransport_.setup(std::move(dVmReaction));
    }
    
    // use pointers to vector so that they can be swapped
-   VectorDouble32 VmArray_; // local and remote
-   VectorDouble32 dVmDiffusion_;
-   VectorDouble32 dVmReaction_;
+   TransportCoordinator<VectorDouble32> VmTransport_; // local and remote
+   TransportCoordinator<VectorDouble32> dVmDiffusionTransport_;
+   TransportCoordinator<VectorDouble32> dVmReactionTransport_;
 };
 
 // Kitchen sink class for heart simulation.  This is probably a great
@@ -77,9 +81,11 @@ class Simulate
    enum LoopType {omp, pdr};
    
    void checkRanges(int begin, int end,
+                    const VectorDouble32& Vm,
                     const VectorDouble32& dVmReaction,
                     const VectorDouble32& dVmDiffusion);
-   void checkRanges(const VectorDouble32& dVmReaction,
+   void checkRanges(const VectorDouble32& Vm,
+                    const VectorDouble32& dVmReaction,
                     const VectorDouble32& dVmDiffusion);
    
 
@@ -130,7 +136,7 @@ class Simulate
    void initSensors(const std::vector<std::string>& names);
 
  private:
-   void outOfRange(unsigned index, double dVmr, double dVmd);
+   void outOfRange(unsigned index, const double Vm, const double dVmr, const double dVmd);
 
 };
 

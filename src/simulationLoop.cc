@@ -66,9 +66,9 @@ namespace
       int pi = sim.printIndex_; 
       if (pi >= 0)
       {
-         const VectorDouble32& VmArray(sim.vdata_.VmArray_);
-         const VectorDouble32& dVmReaction(sim.vdata_.dVmReaction_);
-         const VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusion_);
+         const VectorDouble32& VmArray(sim.vdata_.VmTransport_.readOnHost());
+         const VectorDouble32& dVmReaction(sim.vdata_.dVmReactionTransport_.readOnHost());
+         const VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusionTransport_.readOnHost());
          const unsigned* const blockIndex = sim.diffusion_->blockIndex();
          double dVd = dVmDiffusion[pi];
          if (blockIndex)
@@ -96,9 +96,10 @@ void simulationProlog(Simulate& sim)
    // initialize membrane voltage with default value from the reaction
    // model.  Initialize with zero for remote cells
    sim.vdata_.setup(sim.anatomy_);
-   initializeMembraneState(sim.reaction_, sim.reactionName_, sim.vdata_.VmArray_);
+   VectorDouble32& VmArray(sim.vdata_.VmTransport_.modifyOnHost());
+   initializeMembraneState(sim.reaction_, sim.reactionName_, VmArray);
    for (unsigned ii=sim.anatomy_.nLocal(); ii<sim.anatomy_.size(); ++ii)
-      sim.vdata_.VmArray_[ii] = 0;
+      VmArray[ii] = 0;
 
    // Load state file, assign corresponding values to membrane voltage
    // and cell model.  This may overwrite the initialization we just
@@ -117,9 +118,9 @@ void loopIO(const Simulate& sim,int firstCall)
 
    int loop = sim.loop_; 
 
-   const VectorDouble32& VmArray(sim.vdata_.VmArray_);
-   const VectorDouble32& dVmR(sim.vdata_.dVmReaction_);
-   const VectorDouble32& dVmD(sim.vdata_.dVmDiffusion_);
+   const VectorDouble32& VmArray(sim.vdata_.VmTransport_.readOnHost());
+   const VectorDouble32& dVmR(sim.vdata_.dVmReactionTransport_.readOnHost());
+   const VectorDouble32& dVmD(sim.vdata_.dVmDiffusionTransport_.readOnHost());
 
    // SENSORS
 #pragma omp critical 
@@ -148,9 +149,6 @@ void simulationLoop(Simulate& sim)
    HaloExchange<double, AlignedAllocator<double> > voltageExchange(sim.sendMap_, (sim.commTable_));
 
    PotentialData& vdata=sim.vdata_;
-   VectorDouble32& vmarray(vdata.VmArray_);
-   VectorDouble32& dVmDiffusion(vdata.dVmDiffusion_);
-   VectorDouble32& dVmReaction(vdata.dVmReaction_);
 
 #if defined(SPI) && defined(TRACESPI)
    int myRank;
@@ -178,37 +176,57 @@ void simulationLoop(Simulate& sim)
 
       // DIFFUSION
       startTimer(diffusionCalcTimer);
-      sim.diffusion_->updateLocalVoltage(&(vmarray[0]));
-      sim.diffusion_->updateRemoteVoltage(voltageExchange.getRecvBuf());
-      sim.diffusion_->calc(dVmDiffusion);
+      {
+         const VectorDouble32& vmarray(vdata.VmTransport_.readOnDevice());
+         VectorDouble32& dVmDiffusion(vdata.dVmDiffusionTransport_.modifyOnDevice());
+         sim.diffusion_->updateLocalVoltage(&(vmarray[0]));
+         sim.diffusion_->updateRemoteVoltage(voltageExchange.getRecvBuf());
+         sim.diffusion_->calc(dVmDiffusion);
+      }
       stopTimer(diffusionCalcTimer);
 
       startTimer(stimulusTimer);
-      // add stimulus to dVmDiffusion
-      for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
-         sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
-      for (unsigned ii=0; ii<nLocal; ++ii)
-         iStim[ii] = -(dVmDiffusion[ii]);
+      {
+         // add stimulus to dVmDiffusion
+         for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
+            sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
+         for (unsigned ii=0; ii<nLocal; ++ii)
+            iStim[ii] = -(dVmDiffusion[ii]);
+      }
       stopTimer(stimulusTimer);
-
 
       // REACTION
       startTimer(reactionTimer);
-
-      sim.reaction_->calc(sim.dt_, vmarray, iStim, dVmReaction);
+      {
+         const VectorDouble32& vmarray(vdata.VmTransport_.readOnDevice());
+         VectorDouble32& dVmReaction(vdata.dVmReactionTransport_.modifyOnDevice());
+         
+         sim.reaction_->calc(sim.dt_, vmarray, iStim, dVmReaction);
+      }
       stopTimer(reactionTimer);
 
       startTimer(integratorTimer);
-      // no special BGQ integrator is this loop.  More bang for buck
-      // from OMP threading.
       if (sim.checkRange_.on)
-         sim.checkRanges(dVmReaction, dVmDiffusion);
-#pragma omp parallel for
-      for (int ii=0; ii<nLocal; ++ii)
       {
-         double dVm = dVmReaction[ii] + dVmDiffusion[ii];
-         vmarray[ii] += sim.dt_*dVm;
-         if (sim.findVrest_) vmarray[ii] = sim.Vrest_; 
+         const VectorDouble32& vmarray(vdata.VmTransport_.readOnHost());
+         const VectorDouble32& dVmDiffusion(vdata.dVmDiffusionTransport_.readOnHost());
+         const VectorDouble32& dVmReaction(vdata.dVmReactionTransport_.readOnHost());
+         if (sim.checkRange_.on)
+            sim.checkRanges(vmarray, dVmReaction, dVmDiffusion);
+      }
+         // no special BGQ integrator is this loop.  More bang for buck
+         // from OMP threading.
+      {
+         VectorDouble32& vmarray(vdata.VmTransport_.modifyOnDevice());
+         const VectorDouble32& dVmDiffusion(vdata.dVmDiffusionTransport_.readOnDevice());
+         const VectorDouble32& dVmReaction(vdata.dVmReactionTransport_.readOnDevice());
+#pragma omp target teams distribute parallel for
+         for (int ii=0; ii<nLocal; ++ii)
+         {
+            double dVm = dVmReaction[ii] + dVmDiffusion[ii];
+            vmarray[ii] += sim.dt_*dVm;
+            if (sim.findVrest_) vmarray[ii] = sim.Vrest_; 
+         }
       }
 
       sim.time_ += sim.dt_;
@@ -348,8 +366,6 @@ void diffusionLoop(Simulate& sim,
    L2_BarrierWithSync_InitInThread(loopData.timingBarrier, &timingHandle);
    int nTotalThreads = sim.reactionThreads_.nThreads() + sim.diffusionThreads_.nThreads();
 
-   VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusion_);
-
    vector<int> zeroDiffusionOffset(nThreads+1);
    mkOffsets(zeroDiffusionOffset, dVmDiffusion.size(), sim.diffusionThreads_);
    int zdoBegin = zeroDiffusionOffset[tid];
@@ -488,9 +504,6 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
    L2_BarrierHandle_t timingHandle;
    L2_BarrierWithSync_InitInThread(loopData.reactionWaitOnNonGateBarrier, &reactionWaitOnNonGateHandle);
    L2_BarrierWithSync_InitInThread(loopData.timingBarrier, &timingHandle);
-   VectorDouble32& VmArray(sim.vdata_.VmArray_);
-   VectorDouble32& dVmReaction(sim.vdata_.dVmReaction_);
-   VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusion_);
    int nTotalThreads = sim.reactionThreads_.nThreads() + sim.diffusionThreads_.nThreads();
 
 #ifdef PER_SQUAD_BARRIER
@@ -621,7 +634,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 
       startTimer(rangeCheckTimer); 
 #ifndef NTIMING
-      if (sim.checkRange_.on) sim.checkRanges(begin, end, dVmReaction, dVmDiffusion);
+      if (sim.checkRange_.on) sim.checkRanges(begin, end, VmArray, dVmReaction, dVmDiffusion);
 #endif
       stopTimer(rangeCheckTimer); 
       startTimer(reactionMiscTimer); 
@@ -699,7 +712,6 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
    cout << "Rank[" << myRank << "]: numOfNeighborToSend=" << sim.commTable_->_sendTask.size() << " numOfNeighborToRecv=" << sim.commTable_->_recvTask.size() << " numOfBytesToSend=" << sim.commTable_->_sendOffset[sim.commTable_->_sendTask.size()]*sizeof(double) << " numOfBytesToRecv=" << sim.commTable_->_recvOffset[sim.commTable_->_recvTask.size()]*sizeof(double) << endl;
 #endif
-   VectorDouble32& VmArray(sim.vdata_.VmArray_);
 
    timestampBarrier("Entering threaded region", MPI_COMM_WORLD);
 

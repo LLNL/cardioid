@@ -120,8 +120,9 @@ void DataVoronoiCoarsening::eval(double time, int loop)
    startTimer(sensorEvalTimer);
    
    times_.push_back(time);
-   
-   computeColorAverages(vdata_.VmArray_);
+
+   const VectorDouble32& VmArray(vdata_.VmTransport_.readOnHost());
+   computeColorAverages(VmArray);
    
    const std::set<int>& owned_colors(coarsening_.getOwnedColors());
    for(set<int>::const_iterator it = owned_colors.begin();
