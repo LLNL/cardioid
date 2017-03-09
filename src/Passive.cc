@@ -69,17 +69,14 @@ string ThisReaction::methodName() const
 {
    return "Passive";
 }
-const char* varNames[] = 
-{
-   //EDIT_STATE
-};
-#define NUMVARS (sizeof(varNames)/sizeof(char*))
+const char** varNames=NULL;
+#define NUMVARS 0
 
 int getVarOffset(const std::string& varName)
 {
    for (int ivar=0; ivar<NUMVARS; ivar++) 
    {
-      if (varNames[ivar] == varName) 
+      if (string(varNames[ivar]) == varName) 
       {
          return ivar;
       }
