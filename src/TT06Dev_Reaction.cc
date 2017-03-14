@@ -221,13 +221,11 @@ void TT06Dev_Reaction::mkState_(TT06Dev_ReactionParms& parms)
    }
 
    double c9=get_c9(); 
-   for (unsigned ii=0; ii<nCells_; ++ii)
+   for (unsigned ii=0; ii<nCellBuffer_; ++ii)
    {
       for (int j=0;j<nStateVar;j++) state_[j][ii]  = XXXstateInitial_[j]; 
       state_[dVK_i][ii] = state_[K_i][ii]/c9+XXXinitialVm_;
-   } 
-   for (unsigned ii=nCells_; ii<nCellBuffer_;ii++) 
-      for (int j=0;j<nStateVar;j++) state_[j][ii]  =  state_[j][ii-1];  
+   }
 }
 void TT06Dev_Reaction::mkFitParms_(TT06Dev_ReactionParms& parms)
 {
