@@ -49,6 +49,7 @@ HEARTSRC= \
 	FGRDiffusionThreads.cc \
 	FGRDiffusionOverlap.cc \
 	FGRDiffusionStrip.cc \
+	GPUDiffusion.cc \
 	FGRUtils.cc \
 	Reaction.cc \
 	ReactionFHN.cc \

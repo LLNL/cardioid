@@ -11,6 +11,7 @@
 #include "FGRDiffusionStrip.hh"
 #include "FGRDiffusionOverlap.hh"
 #include "NullDiffusion.hh"
+#include "GPUDiffusion.hh"
 #include "Simulate.hh"
 
 class Anatomy;
@@ -45,6 +46,8 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
       assert(1==0);
    else if (method == "FGR")
       return fgrDiffusionFactory(obj, anatomy, threadInfo, reactionThreadInfo, simLoopType, variantHint);
+   else if (method == "gpu")
+      return new GPUDiffusion(anatomy, simLoopType);
    else if (method == "null")
       return new NullDiffusion(anatomy, simLoopType);
    
