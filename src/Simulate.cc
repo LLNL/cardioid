@@ -6,7 +6,7 @@
 #include "Diffusion.hh"
 #include <stdio.h>
 
-using std::isnan;
+//using std::isnan;
 using std::vector;
 
 

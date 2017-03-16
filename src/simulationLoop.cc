@@ -61,7 +61,7 @@ namespace {
 
     void printData(const Simulate& sim) {
         startTimer(printDataTimer);
-        int pi = sim.printIndex_;
+        int pi = sim.printIndex_;  
         if (pi >= 0) {
             const VectorDouble32 & VmArray(sim.vdata_.VmTransport_.readOnHost());
             const VectorDouble32 & dVmReaction(sim.vdata_.dVmReactionTransport_.readOnHost());
@@ -169,7 +169,7 @@ void simulationLoop(Simulate& sim) {
         // DIFFUSION
         startTimer(diffusionCalcTimer);
         {
-            VectorDouble32 vmarray(vdata.VmTransport_.modifyOnDevice());
+            const VectorDouble32 vmarray(vdata.VmTransport_.readOnDevice());
             VectorDouble32 dVmDiffusion(vdata.dVmDiffusionTransport_.modifyOnDevice());
             sim.diffusion_->updateLocalVoltage(&(vmarray[0]));
             sim.diffusion_->updateRemoteVoltage(voltageExchange.getRecvBuf());
@@ -179,7 +179,7 @@ void simulationLoop(Simulate& sim) {
 
         startTimer(stimulusTimer);
         {
-            VectorDouble32 dVmDiffusion(sim.vdata_.dVmDiffusionTransport_.readOnHost());
+            VectorDouble32 dVmDiffusion(sim.vdata_.dVmDiffusionTransport_.modifyOnDevice());
             // add stimulus to dVmDiffusion
             for (unsigned ii = 0; ii < sim.stimulus_.size(); ++ii)
                 sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
@@ -191,7 +191,7 @@ void simulationLoop(Simulate& sim) {
         // REACTION
         startTimer(reactionTimer);
         {
-            VectorDouble32 vmarray(vdata.VmTransport_.modifyOnDevice());
+            const VectorDouble32 vmarray(vdata.VmTransport_.readOnHost());
             VectorDouble32 dVmReaction(vdata.dVmReactionTransport_.modifyOnDevice());
 
             sim.reaction_->calc(sim.dt_, vmarray, iStim, dVmReaction);
@@ -200,7 +200,7 @@ void simulationLoop(Simulate& sim) {
 
         startTimer(integratorTimer);
         if (sim.checkRange_.on) {
-            const VectorDouble32 & vmarray(vdata.VmTransport_.readOnHost());
+            const VectorDouble32 & vmarray(vdata.VmTransport_.readOnDevice());
             const VectorDouble32 & dVmDiffusion(vdata.dVmDiffusionTransport_.readOnHost());
             const VectorDouble32 & dVmReaction(vdata.dVmReactionTransport_.readOnHost());
             if (sim.checkRange_.on)

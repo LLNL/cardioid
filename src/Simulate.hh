@@ -19,7 +19,7 @@ class Stimulus;
 class Sensor;
 class Drug;
 class CommTable;
-using std::isnan;
+//using std::isnan;
 
 // storage class for persistent data such as potentials that may 
 // need to be analyzed or printed out by sensors
