@@ -32,11 +32,9 @@ using namespace std;
 namespace
 {
    void pioConductivity(const BucketOfBits& data,
-                        const set<int>& typeSet,
                         vector<AnatomyCell>& cell);
    void fibreConductivity(OBJECT* obj,
                           const BucketOfBits& data,
-                          const set<int>& typeSet,
                           vector<AnatomyCell>& cell);
    void jhuConductivity(OBJECT* obj,
                         const Tuple& globalGridSize,
@@ -52,7 +50,6 @@ namespace
 void setConductivity(const string& name,
                      const BucketOfBits& data,
                      const Tuple& globalGridSize,
-                     const set<int> typeSet,
                      vector<AnatomyCell>& cell)
 {
    OBJECT* obj = 0;
@@ -63,9 +60,9 @@ void setConductivity(const string& name,
       objectGet(obj, "method", method, "pio");
 
    if (method == "pio")
-      pioConductivity(data, typeSet, cell);
+      pioConductivity(data, cell);
    else if (method == "fiber" || method == "fibre")
-      fibreConductivity(obj, data, typeSet, cell);
+      fibreConductivity(obj, data, cell);
    else if (method == "JHU")
       jhuConductivity(obj, globalGridSize, cell);
    else if (method == "uniform")
@@ -77,7 +74,6 @@ void setConductivity(const string& name,
 namespace
 {
    void pioConductivity(const BucketOfBits& data,
-                        const set<int>& typeSet,
                         vector<AnatomyCell>& cell)
    {
       unsigned nFields = data.nFields();
@@ -119,8 +115,6 @@ namespace
          BucketOfBits::Record rr = data.getRecord(ii);
          int cellType;
          rr.getValue(indexType, cellType);
-         if (typeSet.count(cellType) == 0)
-            continue;
          rr.getValue(index11, cell[iCell].sigma_.a11);
          rr.getValue(index12, cell[iCell].sigma_.a12);
          rr.getValue(index13, cell[iCell].sigma_.a13);
@@ -147,7 +141,6 @@ namespace
 {
    void fibreConductivity(OBJECT* obj,
                           const BucketOfBits& data,
-                          const set<int>& typeSet,
                           vector<AnatomyCell>& cell)
    {
       FibreConductivityParms p;
@@ -180,8 +173,6 @@ namespace
             BucketOfBits::Record rr = data.getRecord(ii);
             int cellType;
             rr.getValue(typeIndex, cellType);
-            if (typeSet.count(cellType) == 0)
-               continue;
             
             Long64 gid;
             rr.getValue(gidIndex, gid);

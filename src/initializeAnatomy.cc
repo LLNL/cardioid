@@ -16,7 +16,7 @@ using namespace std;
 namespace
 {
    // Caller is resposible to delete the returned pointer
-   BucketOfBits* readUsingPio(Anatomy& anatomy, const set<int>& typeSet,
+   BucketOfBits* readUsingPio(Anatomy& anatomy,
                               OBJECT* obj, MPI_Comm comm);
    BucketOfBits* generateTissueBrick(Anatomy& anatomy, OBJECT* obj, MPI_Comm comm);
 }
@@ -52,28 +52,13 @@ void initializeAnatomy(Anatomy& anatomy, const string& name, MPI_Comm comm)
    anatomy.dx() = dx;
    anatomy.dy() = dy;
    anatomy.dz() = dz;
-
-   set<int> typeSet;
-   typeSet.insert(100);
-   typeSet.insert(101);
-   typeSet.insert(102);
-   typeSet.insert(103);  //BUGFIX: Need define type 103 for Grandi Model.
-   typeSet.insert(30);
-   typeSet.insert(31);
-   typeSet.insert(32);
-   typeSet.insert(33);
-   typeSet.insert(34);
-   typeSet.insert(35);
-   typeSet.insert(75);
-   typeSet.insert(76);
-   typeSet.insert(77);
    
    BucketOfBits* data = 0;
    
    string method;
    objectGet(obj, "method", method, "pio");
    if (method == "pio")
-      data = readUsingPio(anatomy, typeSet, obj, comm);
+      data = readUsingPio(anatomy, obj, comm);
    else if (method == "brick")
       data = generateTissueBrick(anatomy, obj, comm);
    else if (method == "simple")
@@ -104,7 +89,7 @@ void initializeAnatomy(Anatomy& anatomy, const string& name, MPI_Comm comm)
       }
    }
    
-   setConductivity(conductivityName, *data, globalGridSize, typeSet, anatomy.cellArray());
+   setConductivity(conductivityName, *data, globalGridSize, anatomy.cellArray());
    delete data;
 }
 
@@ -130,7 +115,7 @@ namespace
         a six digit sequence number., snapshot.initial/anatomy#}
      @endkeywords
    */
-   BucketOfBits* readUsingPio(Anatomy& anatomy, const set<int>& typeSet,
+   BucketOfBits* readUsingPio(Anatomy& anatomy,
                               OBJECT* obj, MPI_Comm comm)
    {
       int myRank;
@@ -141,7 +126,7 @@ namespace
       
       if (myRank==0) cout << "Starting read" <<endl;
 
-      BucketOfBits* bucketP = readAnatomy(fileName, comm, anatomy, typeSet);
+      BucketOfBits* bucketP = readAnatomy(fileName, comm, anatomy);
       if (myRank==0) cout << "Finished read" <<endl;
       return bucketP;
    }
