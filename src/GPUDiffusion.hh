@@ -2,8 +2,10 @@
 #define GPU_DIFFUSION_HH
 
 #include "Diffusion.hh"
-#include <vector>
+#include "TransportCoordinator.hh"
 #include "Anatomy.hh"
+#include "LocalGrid.hh"
+#include <vector>
 
 class GPUDiffusion : public Diffusion
 {
@@ -21,10 +23,24 @@ class GPUDiffusion : public Diffusion
    
  private:
    int simLoopType_;
-   std::vector<unsigned> blockIndex_;
+   int nLocal_;
+   int nRemote_;
+   int nCells_;
+   int nRed_;
+   int nBlack_;
+   int nRedLocal_;
+   int nx_;
+   int ny_;
+   int nz_;
+   
    double Vm_;
    double dVm_;
-   
+   LocalGrid localGrid_;
+   TransportCoordinator<std::vector<double> > VmBlock_;
+   TransportCoordinator<std::vector<double> > sigmaFaceNormal_;
+   TransportCoordinator<std::vector<int> > blockFromRed_;
+   TransportCoordinator<std::vector<int> > cellFromRed_;
+   TransportCoordinator<std::vector<int> > cellLookup_;
 };
 
 
