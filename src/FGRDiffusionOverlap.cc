@@ -49,7 +49,7 @@ FGRDiffusionOverlap::FGRDiffusionOverlap(const FGRDiffusionParms& parms,
 
   
    //simd thread offsets
-   int work[3]={ny,nx,nx};
+   unsigned int work[3]={ny,nx,nx};
    for(int ii=0;ii<3;ii++)
    {
      int Twork=work[ii]-2;
@@ -878,7 +878,7 @@ void FGRDiffusionOverlap::printAllWeights(const Array3d<int>& tissue)
 
 void FGRDiffusionOverlap::printAllVoltage(Array3d<double>& Voltage,int map)
 {
-   int ll[3]={Voltage.nx(),Voltage.ny(),Voltage.nz()};
+   unsigned int ll[3]={Voltage.nx(),Voltage.ny(),Voltage.nz()};
    int xi[3];
    for(xi[0]=0;xi[0]<ll[map];xi[0]++)
    for(xi[1]=0;xi[1]<ll[(map+1)%3];xi[1]++)

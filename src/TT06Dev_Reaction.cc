@@ -593,7 +593,7 @@ int TT06Dev_Reaction::nonGateWorkPartition_(int& offset)
 
 void TT06Dev_Reaction::calc(double dt, const VectorDouble32& Vm, const vector<double>& iStim, VectorDouble32& dVm)
 {
-   WORK work ={ 0,nCells_,0,12}; 
+   WORK work ={ 0,static_cast<int>(nCells_),0,12}; 
    if (nCells_ > 0) 
    {
       update_nonGate_((void*)fit_, &currentScales_,dt,&(cellTypeParms_[0]), nCells_, &(cellTypeVector_[0]),const_cast<double *>(&Vm[0]),  0, &state_[0], &dVm[0]);
