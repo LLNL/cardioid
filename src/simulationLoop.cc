@@ -182,12 +182,19 @@ void simulationLoop(Simulate& sim) {
         {
             VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusionTransport_.modifyOnDevice());
             // add stimulus to dVmDiffusion
-#pragma omp target teams distribute parallel for            
+            #pragma omp target teams distribute parallel for            
             for (unsigned ii = 0; ii < sim.stimulus_.size(); ++ii)
                 sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
-#pragma omp target teams distribute parallel for            
-            for (unsigned ii = 0; ii < nLocal; ++ii)
-                iStim[ii] = -(dVmDiffusion[ii]);
+
+            {
+                 double* iStimRaw=&iStim[0];
+                 double* dVmDiffusionRaw=&dVmDiffusion[0];
+                 #pragma omp target teams distribute parallel for
+                 for (unsigned ii = 0; ii < nLocal; ++ii)
+                 {
+                     iStimRaw[ii] = -(dVmDiffusionRaw[ii]);
+                 }
+            } 
         }
         stopTimer(stimulusTimer);
 
@@ -215,8 +222,9 @@ void simulationLoop(Simulate& sim) {
             VectorDouble32 & vmarray(vdata.VmTransport_.modifyOnDevice());
             const VectorDouble32 & dVmDiffusion(vdata.dVmDiffusionTransport_.readOnDevice());
             const VectorDouble32 & dVmReaction(vdata.dVmReactionTransport_.readOnDevice());
-#pragma omp target teams distribute parallel for
-            for (int ii = 0; ii < nLocal; ++ii) {
+            #pragma omp target teams distribute parallel for
+            for (int ii = 0; ii < nLocal; ++ii)
+            {
                 double dVm = dVmReaction[ii] + dVmDiffusion[ii];
                 vmarray[ii] += sim.dt_*dVm;
                 if (sim.findVrest_) vmarray[ii] = sim.Vrest_;
