@@ -176,7 +176,6 @@ void GPUDiffusion::calc(VectorDouble32& dVm)
             if (other < 0) { continue; }
          
             int thisIndex = blockFromRedVec[ired];
-            const double* thisSigma = &sigmaFaceNormalVec[3*(idim + 3*ired)];
             double flux = 0;
             for (int jdim=0; jdim<3; jdim++)
             {
