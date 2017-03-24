@@ -118,18 +118,24 @@ void GPUDiffusion::updateLocalVoltage(const double* VmLocal)
    vector<double>& VmBlockVec(VmBlock_.modifyOnDevice());
    const vector<int>& blockFromRedVec(blockFromRed_.readOnDevice());
    const vector<int>& cellFromRedVec(cellFromRed_.readOnDevice());
+   
+   double* VmBlockVecRaw=&VmBlockVec[0];
+   const int* blockFromRedVecRaw=&blockFromRedVec[0];
+   const int* cellFromRedVecRaw=&cellFromRedVec[0];
    #pragma omp target teams distribute parallel for
    for (int ired=0; ired<nRedLocal_; ired++)
    {
-      int icell = cellFromRedVec[ired];
-      VmBlockVec[blockFromRedVec[ired]] = VmLocal[icell];
+      int icell = cellFromRedVecRaw[ired];
+      VmBlockVecRaw[blockFromRedVecRaw[ired]] = VmLocal[icell];
    }
+
    #pragma omp target teams distribute parallel for
    for (int ired=nRedLocal_+nRemote_; ired<nCells_; ired++)
    {
-      int icell = cellFromRedVec[ired];
-      VmBlockVec[blockFromRedVec[ired]] = VmLocal[icell];
+      int icell = cellFromRedVecRaw[ired];
+      VmBlockVecRaw[blockFromRedVecRaw[ired]] = VmLocal[icell];
    }
+   
 }
 
 void GPUDiffusion::updateRemoteVoltage(const double* VmRemote)
@@ -137,22 +143,27 @@ void GPUDiffusion::updateRemoteVoltage(const double* VmRemote)
    vector<double>& VmBlockVec(VmBlock_.modifyOnDevice());
    const vector<int>& blockFromRedVec(blockFromRed_.readOnDevice());
    const vector<int>& cellFromRedVec(cellFromRed_.readOnDevice());
+   
+   double* VmBlockVecRaw=&VmBlockVec[0];
+   const int* blockFromRedVecRaw=&blockFromRedVec[0];
+   const int* cellFromRedVecRaw=&cellFromRedVec[0];   
    #pragma omp target teams distribute parallel for
    for (int ired=nRedLocal_; ired<nRedLocal_+nRemote_; ired++)
    {
-      int icell = cellFromRedVec[ired];
-      VmBlockVec[blockFromRedVec[ired]] = VmRemote[icell-nLocal_];
+      int icell = cellFromRedVecRaw[ired];
+      VmBlockVecRaw[blockFromRedVecRaw[ired]] = VmRemote[icell-nLocal_];
    }
 }
 
 void GPUDiffusion::calc(VectorDouble32& dVm)
 {
+   double* dVmRaw=&dVm[0];
    if (simLoopType_ != 0)
    {
       #pragma omp target teams distribute parallel for
       for (int icell=0; icell<nLocal_; icell++)
       {
-         dVm[icell] = 0;
+         dVmRaw[icell] = 0;
       }
    }
    
@@ -161,6 +172,12 @@ void GPUDiffusion::calc(VectorDouble32& dVm)
    const vector<int>& cellLookupVec(cellLookup_.readOnDevice());
    const vector<int>& blockFromRedVec(blockFromRed_.readOnDevice());
    const vector<int>& cellFromRedVec(cellFromRed_.readOnDevice());
+   
+   const double* VmBlockVecRaw=&VmBlockVec[0];
+   const double* sigmaFaceNormalVecRaw=&sigmaFaceNormalVec[0];
+   const int* cellLookupVecRaw=&cellLookupVec[0];
+   const int* blockFromRedVecRaw=&blockFromRedVec[0];
+   const int* cellFromRedVecRaw=&cellFromRedVec[0];    
 
    const int extents[3] = {0, nRed_, nCells_};
    const int offset[3] = {1, nx_, nx_*ny_};
@@ -172,35 +189,35 @@ void GPUDiffusion::calc(VectorDouble32& dVm)
          #pragma omp target teams distribute parallel for
          for (int ired=extents[red]; ired<extents[red+1]; ired++)
          { 
-            int other = cellLookupVec[ired + idim*nCells_];
+            int other = cellLookupVecRaw[ired + idim*nCells_];
             if (other < 0) { continue; }
          
-            int thisIndex = blockFromRedVec[ired];
+            int thisIndex = blockFromRedVecRaw[ired];
             double flux = 0;
             for (int jdim=0; jdim<3; jdim++)
             {
                double thisGradient;
                if (idim==jdim)
                {
-                  thisGradient = VmBlockVec[thisIndex] - VmBlockVec[thisIndex-offset[idim]];
+                  thisGradient = VmBlockVecRaw[thisIndex] - VmBlockVecRaw[thisIndex-offset[idim]];
                }
                else
                {
                   thisGradient = 0.25*(
-                       VmBlockVec[thisIndex +offset[jdim]              ]
-                     + VmBlockVec[thisIndex +offset[jdim] -offset[idim]]
-                     - VmBlockVec[thisIndex -offset[jdim]              ]
-                     - VmBlockVec[thisIndex -offset[jdim] -offset[idim]]
+                       VmBlockVecRaw[thisIndex +offset[jdim]              ]
+                     + VmBlockVecRaw[thisIndex +offset[jdim] -offset[idim]]
+                     - VmBlockVecRaw[thisIndex -offset[jdim]              ]
+                     - VmBlockVecRaw[thisIndex -offset[jdim] -offset[idim]]
                   );
                }    
-               double thisSigma = sigmaFaceNormalVec[jdim +3*(idim + 3*ired)];
+               double thisSigma = sigmaFaceNormalVecRaw[jdim +3*(idim + 3*ired)];
                flux += thisSigma*thisGradient;
             }
-            dVm[other] -= flux;
-            int icell = cellFromRedVec[ired];
+            dVmRaw[other] -= flux;
+            int icell = cellFromRedVecRaw[ired];
             if (icell < nLocal_) //if this is a local cell
             {
-               dVm[icell] += flux;
+               dVmRaw[icell] += flux;
             }
          }
       }
