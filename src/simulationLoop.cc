@@ -189,7 +189,9 @@ void simulationLoop(Simulate& sim)
          const VectorDouble32& vmarray(vdata.VmTransport_.readOnDevice());
          VectorDouble32& dVmDiffusion(vdata.dVmDiffusionTransport_.modifyOnDevice());
          sim.diffusion_->updateLocalVoltage(&(vmarray[0]));
+         #if _OPENMP >= 201511
          #pragma omp target update from(voltageExchange.recvBuf_[0:voltageExchange.width_])
+         #endif
          sim.diffusion_->updateRemoteVoltage(voltageExchange.getRecvBuf());
          sim.diffusion_->calc(dVmDiffusion);
       }
