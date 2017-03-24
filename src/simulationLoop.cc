@@ -199,7 +199,7 @@ void simulationLoop(Simulate& sim)
       {
          VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusionTransport_.modifyOnDevice());
          // add stimulus to dVmDiffusion
-         #pragma omp target teams distribute parallel for
+//         #pragma omp target teams distribute parallel for
          for (unsigned ii = 0; ii < sim.stimulus_.size(); ++ii)
          {
             sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
@@ -244,13 +244,18 @@ void simulationLoop(Simulate& sim)
          VectorDouble32 & vmarray(vdata.VmTransport_.modifyOnDevice());
          const VectorDouble32 & dVmDiffusion(vdata.dVmDiffusionTransport_.readOnDevice());
          const VectorDouble32 & dVmReaction(vdata.dVmReactionTransport_.readOnDevice());
+         
+         double* vmarrayRaw=&vmarray[0];
+         const double* dVmReactionRaw=&dVmReaction[0];
+         const double* dVmDiffusionRaw=&dVmDiffusion[0];            
          #pragma omp target teams distribute parallel for
          for (int ii = 0; ii < nLocal; ++ii)
          {
-            double dVm = dVmReaction[ii] + dVmDiffusion[ii];
-            vmarray[ii] += sim.dt_*dVm;
-            if (sim.findVrest_) { vmarray[ii] = sim.Vrest_; }
+            double dVm = dVmReactionRaw[ii] + dVmDiffusionRaw[ii];
+            vmarrayRaw[ii] += sim.dt_*dVm;
+            if (sim.findVrest_) { vmarrayRaw[ii] = sim.Vrest_; }
          }
+         
       }
 
       sim.time_ += sim.dt_;
