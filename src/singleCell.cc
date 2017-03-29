@@ -336,11 +336,14 @@ int main(int argc, char* argv[])
          reaction->calc(dt, Vm, iStim, dVm);
 
          //update Vm and apply stimulus
+         double* VmRaw = &Vm[0];
+         const double* iStimRaw = &iStim[0];
+         const double* dVmRaw = &dVm[0];
          #pragma omp target teams distribute parallel for
          for (int ii=0; ii<nCells; ii++)
          {
             //use a negative sign here to undo the negative we had above.
-            Vm[ii] += (dVm[ii] - iStim[ii]) * dt;
+            VmRaw[ii] += (dVmRaw[ii] - iStimRaw[ii]) * dt;
          }
       }
       itime++;

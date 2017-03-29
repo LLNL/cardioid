@@ -45,8 +45,9 @@ int BoxStimulus::subClassStim(double time,
    const vector<int>& stimList(stimListTransport_.readOnDevice());
    const int* stimListRaw=&stimList[0];
    double* dVmDiffusionRaw=&dVmDiffusion[0];
+   int size=stimList.size();
    #pragma omp target teams distribute parallel for
-   for (unsigned ii=0; ii<stimList.size(); ++ii)
+   for (unsigned ii=0; ii<size; ++ii)
       dVmDiffusionRaw[stimListRaw[ii]] += value;
    return 1;
 }
