@@ -13,6 +13,7 @@
 #include "ThreadServer.hh"
 #include "object.h"
 #include "object_cc.hh"
+#include "TransportCoordinator.hh"
 
 #include "singleCellOptions.h"
 
@@ -196,10 +197,16 @@ int main(int argc, char* argv[])
                                         vector<string>());
 
    //initialize the ionic model
-   VectorDouble32 Vm(nCells);
-   vector<double> iStim(nCells);
-   VectorDouble32 dVm(nCells);
-   initializeMembraneState(reaction, objectName, Vm);
+   TransportCoordinator<VectorDouble32> VmTransport;
+   VmTransport.setup(VectorDouble32(nCells));
+   TransportCoordinator<vector<double> > iStimTransport;
+   iStimTransport.setup(vector<double>(nCells));
+   TransportCoordinator<VectorDouble32> dVmTransport;
+   dVmTransport.setup(VectorDouble32(nCells));
+   {
+      VectorDouble32& Vm(VmTransport.modifyOnHost());
+      initializeMembraneState(reaction, objectName, Vm);
+   }
 
    //prepare for checkpoint output and extra columns
    vector<string> fieldNames;
@@ -247,6 +254,7 @@ int main(int argc, char* argv[])
          }
          else
          {
+            const VectorDouble32& Vm(VmTransport.readOnHost());
             fprintf(file, "%s REACTION { initialState = %s; }\n",
                     objectName.c_str(), objectName.c_str());
             fprintf(file, "%s SINGLECELL {\n", objectName.c_str());
@@ -269,6 +277,7 @@ int main(int argc, char* argv[])
       if ((itime % outputTimestepInterval) == 0)
       {
          //doIO();
+         const VectorDouble32& Vm(VmTransport.readOnHost());
          printf("%21.17g %21.17g", timeline.realTimeFromTimestep(itime), Vm[0]);
          for (int iextra=0; iextra<extraColumns.size(); ++iextra) 
          {
@@ -290,11 +299,13 @@ int main(int argc, char* argv[])
             timestepsLeftInStimulus=timestepsInEachStimulus;
          }
       }
-      for (int ii=0; ii<nCells; ii++)
       {
-         iStim[ii]=0;
-         if (timestepsLeftInStimulus > 0)
+         vector<double>& iStim(iStimTransport.modifyOnHost());
+         for (int ii=0; ii<nCells; ii++)
          {
+            iStim[ii]=0;
+            if (timestepsLeftInStimulus > 0)
+            {
             /* Check the negative sign here.  Look at:
 
                startTimer(stimulusTimer);
@@ -310,21 +321,28 @@ int main(int argc, char* argv[])
                up negative.
 
             */
-            iStim[ii] = -params.stim_strength_arg;
-            timestepsLeftInStimulus--;
+               iStim[ii] = -params.stim_strength_arg;
+               timestepsLeftInStimulus--;
+            }
          }
       }
 
-      //calc() dVm and update the internal states
-      reaction->calc(dt, Vm, iStim, dVm);
-
-      //update Vm and apply stimulus
-      for (int ii=0; ii<nCells; ii++)
       {
-         //use a negative sign here to undo the negative we had above.
-         Vm[ii] += (dVm[ii] - iStim[ii]) * dt;
-      }
+         VectorDouble32& Vm(VmTransport.modifyOnDevice());
+         const vector<double>& iStim(iStimTransport.readOnDevice());
+         VectorDouble32& dVm(dVmTransport.modifyOnDevice());
+         
+         //calc() dVm and update the internal states
+         reaction->calc(dt, Vm, iStim, dVm);
 
+         //update Vm and apply stimulus
+         #pragma omp target teams distribute parallel for
+         for (int ii=0; ii<nCells; ii++)
+         {
+            //use a negative sign here to undo the negative we had above.
+            Vm[ii] += (dVm[ii] - iStim[ii]) * dt;
+         }
+      }
       itime++;
    }
 
