@@ -150,7 +150,8 @@ void loopIO(const Simulate& sim, int firstCall)
 
 void simulationLoop(Simulate& sim)
 {
-   vector<double> iStim(sim.anatomy_.nLocal(), 0.0);
+   TransportCoordinator<vector<double> > iStimTransport;
+   iStimTransport.setup(vector<double>(sim.anatomy_.nLocal(), 0.0));
    simulationProlog(sim);
    HaloExchange<double, AlignedAllocator<double> > voltageExchange(sim.sendMap_, (sim.commTable_));
 
@@ -207,6 +208,7 @@ void simulationLoop(Simulate& sim)
          }
 
          {
+            vector<double>& iStim(iStimTransport.modifyOnDevice());
             double* iStimRaw=&iStim[0];
             double* dVmDiffusionRaw=&dVmDiffusion[0];
             #pragma omp target teams distribute parallel for
@@ -222,6 +224,7 @@ void simulationLoop(Simulate& sim)
       startTimer(reactionTimer);
       {
          const VectorDouble32& vmarray(vdata.VmTransport_.readOnDevice());
+         const vector<double>& iStim(iStimTransport.readOnDevice());
          VectorDouble32& dVmReaction(vdata.dVmReactionTransport_.modifyOnDevice());
 
          sim.reaction_->calc(sim.dt_, vmarray, iStim, dVmReaction);

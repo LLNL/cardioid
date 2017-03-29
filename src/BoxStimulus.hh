@@ -3,6 +3,7 @@
 
 #include "Stimulus.hh"
 #include "Pulse.hh"
+#include "TransportCoordinator.hh"
 #include <string>
 
 class Anatomy;
@@ -30,7 +31,7 @@ class BoxStimulus : public Stimulus
    
  private:
    Pulse* pulse_;
-   std::vector<int> stimList_;
+   TransportCoordinator<std::vector<int> > stimListTransport_;
 };
 
 #endif
