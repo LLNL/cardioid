@@ -44,26 +44,6 @@ namespace scanReaction
 
 namespace SimpleTT06 
 {
-
-inline double pow(const double x, const int p)
-{
-   double ret=1;
-   if (p > 0) 
-   {
-      for (int ii=0; ii<p; ii++) 
-      {
-         ret *= x;
-      }
-   }
-   else
-   {
-      for (int ii=0; ii<-p; ii++) 
-      {
-         ret /= x;
-      }
-   }
-   return ret;
-}
    
 string ThisReaction::methodName() const
 {
@@ -539,7 +519,7 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
                                                 \
       sum1 = 0;                                 \
       for (int j = Tau_m-1; j >= 0; j--)        \
-         sum1 = Tau_a[j]*0.02 + x*sum1;         \
+         sum1 = Tau_a[j] + x*sum1;              \
                                                 \
       sum2 = 0;                                 \
       k = Tau_m + Tau_l - 1;                    \
