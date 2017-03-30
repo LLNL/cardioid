@@ -19,6 +19,7 @@ GPUDiffusion::GPUDiffusion(const Anatomy& anatomy, int simLoopType)
    VmBlock_.setup(vector<double>(nx_*ny_*nz_));
 
    nLocal_ = anatomy.nLocal();
+   nRemote_ = anatomy.nRemote();
    nCells_ = anatomy.size();
    
    //initialize the block index as well.
