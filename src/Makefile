@@ -257,12 +257,6 @@ singleCell:
 singleCell-target: $(HEARTOBJS) $(OBJDIR)/singleCell.o $(OBJDIR)/singleCellOptions.o singleCellOptions.h Version.cc
 	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(OBJDIR)/singleCell.o $(OBJDIR)/singleCellOptions.o $(LDFLAGS)
 
-$(DDCMD_FILES):
-	./mkLinks_ddcMD.sh $@
-
-ddcMD_dist:
-	./mkDist_ddcMD.sh $(DDCMD_FILES)
-
 makedirs:
 	@if [ ! -d $(OBJDIR) ]; then mkdir -p $(OBJDIR) ; fi
 	@if [ ! -d $(BINDIR) ]; then mkdir -p $(BINDIR) ; fi
@@ -296,9 +290,7 @@ clean :
 	rm -f testGridRouter
 
 distclean: clean
-	rm -f $(DDCMD_FILES)
 	rm -f $(CONSTRUCTED_INCLUDES)
-	rm -rf ddcMD_files
 	rm -rf objs-*
 	rm -f .depend*
 	rm -rf $(BINDIR)
