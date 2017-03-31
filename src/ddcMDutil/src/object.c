@@ -744,8 +744,8 @@ void object_compilefilesubset(const char *filename, int first, int last)
 			if (n>=first)
 			{
 				object_compilestring(line);
-				if ( ++n > last ) break; 
 			}
+			if ( ++n > last ) break; 
 		}
 		object_fclose(file);
 	}

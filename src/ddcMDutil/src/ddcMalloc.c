@@ -35,7 +35,7 @@ typedef struct memBlock_st
    char   location[40];
 } MEMBLOCK;
 
-#define MAX_BLOCK 4000
+#define MAX_BLOCK 32000
 static MEMBLOCK _block[MAX_BLOCK];
 static int      _freeBlock[MAX_BLOCK];
 static int      _nextBlock = MAX_BLOCK +1;

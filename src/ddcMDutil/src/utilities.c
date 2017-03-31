@@ -202,9 +202,20 @@ time_t convert_timestring(char *time_string)
    struct tm* local_tm = localtime(&t0);
    
    struct tm tm = *local_tm;
-   strptime(time_string,"%Y-%m-%d %T",&tm);
-   time_t t1 = mktime(&tm);
-   printf("%s delta Time = %d\n", time_string, t1-t0); 
+   char *end = strptime(time_string,"%m/%d/%Y-%X",&tm);
+   time_t  t1; 
+   if (end != NULL)
+   {
+      t1 = mktime(&tm);
+   }
+   else
+   {
+      if (getRank(0)==0) 
+      {
+         printf("time_string %s is the wrong format\nCorrect format is mm/dd/yyyy-hh:mm:ss\n",time_string); 
+      }
+      t1 = t0; 
+   }
    return t1;
 }
 
@@ -231,15 +242,15 @@ void timestamp_anyTask(const char* string)
    local_tm=localtime(&t);
    char *dateString = asctime(local_tm); 
    date = strdup(dateString);
-   
+
    c = index(date, '\n');
    if (c != NULL) *c = (char)'\0';
    printf("%s: %s\n", date, string);
-/*		mem_debug(string); */
+   /*		mem_debug(string); */
    fflush(stdout);
    ddcFree(date);
 }
-   
+
 void timestamp(const char *string)
 {
    if (getRank(0) == 0) timestamp_anyTask(string);
@@ -248,9 +259,9 @@ void timestamp(const char *string)
 
 
 /*
-__ctype_b()
-{
-}
+   __ctype_b()
+   {
+   }
 
 */
 
@@ -268,30 +279,30 @@ void checkLimits(void)
 
 int removeDuplicates(unsigned* a, int na)
 {
-	if (na == 0) return 0;
-	int newEnd = 0;
-	int scan = 1;
+   if (na == 0) return 0;
+   int newEnd = 0;
+   int scan = 1;
 
-	while (scan < na)
-	{
-		if (a[newEnd] != a[scan])
-		{
-			++newEnd;
-			if (newEnd != scan)
-				a[newEnd] = a[scan];
-		}
-		++scan;
-	}
-	return newEnd+1;
+   while (scan < na)
+   {
+      if (a[newEnd] != a[scan])
+      {
+         ++newEnd;
+         if (newEnd != scan)
+            a[newEnd] = a[scan];
+      }
+      ++scan;
+   }
+   return newEnd+1;
 }
 char *astrcat(char *dest, char *str)
 {
-  dest = realloc(dest,strlen(dest)+strlen(str)+1); 
-  strcat(dest,str);
-  return dest; 
+   dest = realloc(dest,strlen(dest)+strlen(str)+1); 
+   strcat(dest,str);
+   return dest; 
 }
 
-		
+
 
 /* Local Variables: */
 /* tab-width: 3 */
