@@ -157,6 +157,8 @@ void initializeSimulate(const string& name, Simulate& sim)
        sim.loopType_ = Simulate::omp;
    else if (tmp == "pdr")
       sim.loopType_ = Simulate::pdr;
+   else if (tmp == "gpu")
+      sim.loopType_ = Simulate::gpu;
    else
       assert(false);
    if (object_testforkeyword(obj, "parallelDiffusionReaction"))

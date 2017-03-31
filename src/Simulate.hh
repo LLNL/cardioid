@@ -78,7 +78,7 @@ class Simulate
 {
  public:
 
-   enum LoopType {omp, pdr};
+   enum LoopType {omp, pdr, gpu};
    
    void checkRanges(int begin, int end,
                     const VectorDouble32& Vm,

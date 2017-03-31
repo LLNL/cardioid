@@ -159,7 +159,7 @@ void GPUDiffusion::updateRemoteVoltage(const double* VmRemote)
 void GPUDiffusion::calc(VectorDouble32& dVm)
 {
    double* dVmRaw=&dVm[0];
-   if (simLoopType_ != 0)
+   if (simLoopType_ == 2) // still a hard coded of enum LoopType {omp, pdr, gpu}  
    {
       #pragma omp target teams distribute parallel for
       for (int icell=0; icell<nLocal_; icell++)
