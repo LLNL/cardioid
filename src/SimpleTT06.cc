@@ -94,7 +94,7 @@ void assertStateOrderAndVarNamesAgree(void)
    int STATIC_ASSERT_checkAllDouble[(NUMVARS == sizeof(s)/sizeof(double))? 1: 0];
 
    //EDIT_STATE
-   checkVarOrder(f2Gate);
+/*   checkVarOrder(f2Gate);
    checkVarOrder(fGate);
    checkVarOrder(dGate);
    checkVarOrder(mGate);
@@ -113,11 +113,12 @@ void assertStateOrderAndVarNamesAgree(void)
    checkVarOrder(fCass);
    checkVarOrder(dVK_i);
    checkVarOrder(R_prime);
-}
+*/
+   }
 
    
 ThisReaction::ThisReaction(const Anatomy& anatomy)
-: nCells_(anatomy.nLocal()), stateTransport_(vector<State>(anatomy.nLocal()))
+: nCells_(anatomy.nLocal()), stateTransport_(vector<State>((anatomy.nLocal()+SIMD_WIDTH-1)/SIMD_WIDTH))
 {
    assertStateOrderAndVarNamesAgree();
    perCellFlags_.resize(nCells_);
@@ -132,34 +133,36 @@ ThisReaction::ThisReaction(const Anatomy& anatomy)
 void actualCalc(const double dt, const int nCells_, const double Vm[], const double iStim[], double dVm[], State state_[])
 {
 #pragma omp target teams distribute parallel for
-   for (unsigned ii=0; ii<nCells_; ++ii)
+   for (int ii=0; ii<(nCells_+SIMD_WIDTH-1)/SIMD_WIDTH; ++ii)
+   {
+   for (int jj=0; jj<SIMD_WIDTH; ++jj)
    {
 
       //set Vm
-      const double thisVm = Vm[ii];
+      const double thisVm = Vm[ii*SIMD_WIDTH+jj];
       const double istim = iStim[ii];
 
       //set all state variables
       //EDIT_STATE
-      const double f2Gate=state_[ii].f2Gate;
-      const double fGate=state_[ii].fGate;
-      const double dGate=state_[ii].dGate;
-      const double mGate=state_[ii].mGate;
-      const double jGate=state_[ii].jGate;
-      const double hGate=state_[ii].hGate;
-      const double rGate=state_[ii].rGate;
-      const double sGate=state_[ii].sGate;
-      const double Xr1Gate=state_[ii].Xr1Gate;
-      const double Xr2Gate=state_[ii].Xr2Gate;
-      const double XsGate=state_[ii].XsGate;
-      const double jLGate=state_[ii].jLGate;
-      const double _Na_i=state_[ii].Na_i;
-      const double _Ca_i=state_[ii].Ca_i;
-      const double _Ca_ss=state_[ii].Ca_ss;
-      const double _Ca_SR=state_[ii].Ca_sr;
-      const double _fCass=state_[ii].fCass;
-      const double _dVK_i=state_[ii].dVK_i;
-      const double _R_prime=state_[ii].R_prime;
+      const double f2Gate=state_[ii].f2Gate[jj];
+      const double fGate=state_[ii].fGate[jj];
+      const double dGate=state_[ii].dGate[jj];
+      const double mGate=state_[ii].mGate[jj];
+      const double jGate=state_[ii].jGate[jj];
+      const double hGate=state_[ii].hGate[jj];
+      const double rGate=state_[ii].rGate[jj];
+      const double sGate=state_[ii].sGate[jj];
+      const double Xr1Gate=state_[ii].Xr1Gate[jj];
+      const double Xr2Gate=state_[ii].Xr2Gate[jj];
+      const double XsGate=state_[ii].XsGate[jj];
+      const double jLGate=state_[ii].jLGate[jj];
+      const double _Na_i=state_[ii].Na_i[jj];
+      const double _Ca_i=state_[ii].Ca_i[jj];
+      const double _Ca_ss=state_[ii].Ca_ss[jj];
+      const double _Ca_SR=state_[ii].Ca_sr[jj];
+      const double _fCass=state_[ii].fCass[jj];
+      const double _dVK_i=state_[ii].dVK_i[jj];
+      const double _R_prime=state_[ii].R_prime[jj];
 
       //set per-cell flags
       //EDIT_PERCELL_FLAGS
@@ -361,7 +364,7 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
          I_xfer = c23 * (_Ca_ss - _Ca_i);
          I_delta = I_leak - I_up; // I_detal = -itmp5
          I_sum =   I_bCa + I_pCa; // itmp4 =I_bCa+I_pCa;
-         state_[ii].Ca_i   = _Ca_i + (dt * c9) * (sigm3 * (0.5 * I_sum - I_NaCa + I_xfer * c15 + I_delta*c16));
+         state_[ii].Ca_i[jj]   = _Ca_i + (dt * c9) * (sigm3 * (0.5 * I_sum - I_NaCa + I_xfer * c15 + I_delta*c16));
          dVR  -= I_sum;
          //if (ii %4 ==0) printf("\n%d dVR=%14.12f ", ii,dVR);
          //else printf("%14.12f ", ii,I_sum);
@@ -435,9 +438,9 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
          iK =  I_Ks + I_NaK + I_pK + I_K1 + I_to + I_Kr;
 
 
-         state_[ii].dVK_i += dt * iK;
+         state_[ii].dVK_i[jj] += dt * iK;
          dVR    -=  iNa + iK - 2.0 * I_NaCa;
-         state_[ii].Na_i = _Na_i + (dt * c9) * iNa;
+         state_[ii].Na_i[jj] = _Na_i + (dt * c9) * iNa;
       }
 
       //  Update Ca_SS, Ca_SR, R_prime concentrations and fCass gate;
@@ -479,9 +482,9 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
          double O = SQ(_Ca_ss) * _R_prime / (tmp8 * c17 + SQ(_Ca_ss));
          I_rel =c40 * O * (_Ca_SR - _Ca_ss);
 
-         state_[ii].Ca_ss   = _Ca_ss   + (dt * c9) * sigm6 * (I_xfer + I_rel * c14 + I_CaL * c13);
-         state_[ii].Ca_sr   = _Ca_SR   - (dt * c9) * sigm5 * (I_delta + I_rel);
-         state_[ii].R_prime = _R_prime + (dt * c9) * (c36 - tmp9 * _R_prime);
+         state_[ii].Ca_ss[jj]   = _Ca_ss   + (dt * c9) * sigm6 * (I_xfer + I_rel * c14 + I_CaL * c13);
+         state_[ii].Ca_sr[jj]   = _Ca_SR   - (dt * c9) * sigm5 * (I_delta + I_rel);
+         state_[ii].R_prime[jj] = _R_prime + (dt * c9) * (c36 - tmp9 * _R_prime);
 
          //#if fCassForm == TT06
          double t1 = 1.0/(1.0 + SQ(20 * _Ca_ss));
@@ -496,7 +499,7 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
          double tauR   = 0.005/mhu;
          #endif
          */
-         state_[ii].fCass   = _fCass   + dt*(mhu - _fCass) * tauR;
+         state_[ii].fCass[jj]   = _fCass   + dt*(mhu - _fCass) * tauR;
 
          dVR += I_CaL;
       }
@@ -527,8 +530,8 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
          sum2 = Tau_a[j] + x * sum2;            \
       double tauR = sum1/sum2*dt
 
-#define RushLarsen(name) state_[ii].name -= (mhu - state_[ii].name)*expm1(-tauR);
-#define ForwardEuler(name) state_[ii].name += (mhu - state_[ii].name)*tauR
+#define RushLarsen(name) state_[ii].name[jj] -= (mhu - state_[ii].name[jj])*expm1(-tauR);
+#define ForwardEuler(name) state_[ii].name[jj] += (mhu - state_[ii].name[jj])*tauR
       //0
       {
       const int Mhu_l = 10;
@@ -709,6 +712,7 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
          ForwardEuler(sGate);
       }   
    }
+   }
 }
 
 void ThisReaction::calc(double dt, const VectorDouble32& Vm,
@@ -727,32 +731,34 @@ void ThisReaction::initializeMembraneVoltage(VectorDouble32& Vm)
    //EDIT_STATE
 
    vector<State>& state(stateTransport_.modifyOnHost());
-   
-   const double pcnst_2 = 96485.3415;
-   const double pcnst_3 = 0.185;
-   const double pcnst_4 = 0.016404;
-   const double c9 = -pcnst_3/(pcnst_4*pcnst_2);
-   const double K_i = 138.4;
-   initState.dVK_i = K_i/c9+initVm;
-   initState.Na_i     =10.355;
-   initState.Ca_i     =0.00013;
-   initState.Ca_ss    =0.00036 ;
-   initState.Ca_sr    =3.715   ;
-   initState.R_prime  =0.9068  ;
-   initState.fCass    =0.9953  ;
-   initState.Xr1Gate  =0.00448 ;
-   initState.Xr2Gate  =0.476   ;
-   initState.XsGate   =0.0087  ;
-   initState.mGate    =0.00155 ;
-   initState.hGate    =0.7573  ;
-   initState.jGate    =0.7225  ;
-   initState.rGate    =2.235e-8;
-   initState.dGate    =3.164e-5;
-   initState.fGate    =0.8009  ;
-   initState.f2Gate   =0.9778  ;
-   initState.sGate    =0.3212  ;
-   initState.jLGate   =0.066   ;
 
+   for (int jj=0; jj<SIMD_WIDTH; jj++)
+   {
+      const double pcnst_2 = 96485.3415;
+      const double pcnst_3 = 0.185;
+      const double pcnst_4 = 0.016404;
+      const double c9 = -pcnst_3/(pcnst_4*pcnst_2);
+      const double K_i = 138.4;
+      initState.dVK_i[jj] = K_i/c9+initVm;
+      initState.Na_i[jj]     =10.355;
+      initState.Ca_i[jj]     =0.00013;
+      initState.Ca_ss[jj]    =0.00036 ;
+      initState.Ca_sr[jj]    =3.715   ;
+      initState.R_prime[jj]  =0.9068  ;
+      initState.fCass[jj]    =0.9953  ;
+      initState.Xr1Gate[jj]  =0.00448 ;
+      initState.Xr2Gate[jj]  =0.476   ;
+      initState.XsGate[jj]   =0.0087  ;
+      initState.mGate[jj]    =0.00155 ;
+      initState.hGate[jj]    =0.7573  ;
+      initState.jGate[jj]    =0.7225  ;
+      initState.rGate[jj]    =2.235e-8;
+      initState.dGate[jj]    =3.164e-5;
+      initState.fGate[jj]    =0.8009  ;
+      initState.f2Gate[jj]   =0.9778  ;
+      initState.sGate[jj]    =0.3212  ;
+      initState.jLGate[jj]   =0.066   ;
+   }
    state.assign(state.size(), initState);
    
 }
@@ -772,14 +778,20 @@ int ThisReaction::getVarHandle(const std::string& varName) const
 void ThisReaction::setValue(int iCell, int varHandle, double value) 
 {
    vector<State>& state(stateTransport_.modifyOnHost());
-   reinterpret_cast<double*>(&state[iCell])[varHandle-HANDLE_OFFSET] = value;
+   reinterpret_cast<double*>(&state[iCell/SIMD_WIDTH])
+      [(varHandle-HANDLE_OFFSET)*SIMD_WIDTH
+       +(iCell % SIMD_WIDTH)
+       ] = value;
 }
 
 
 double ThisReaction::getValue(int iCell, int varHandle) const
 {
    const vector<State>& state(stateTransport_.readOnHost());
-   return reinterpret_cast<const double*>(&state[iCell])[varHandle-HANDLE_OFFSET];
+   return reinterpret_cast<const double*>(&state[iCell/SIMD_WIDTH])
+      [(varHandle-HANDLE_OFFSET)*SIMD_WIDTH
+       +(iCell % SIMD_WIDTH)
+      ];
 }
 
 void ThisReaction::getCheckpointInfo(vector<string>& fieldNames,
