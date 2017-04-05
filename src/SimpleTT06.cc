@@ -140,7 +140,7 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
 
       //set Vm
       const double thisVm = Vm[ii*SIMD_WIDTH+jj];
-      const double istim = iStim[ii];
+      const double istim = iStim[ii*SIMD_WIDTH+jj];
 
       //set all state variables
       //EDIT_STATE
@@ -504,7 +504,7 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
          dVR += I_CaL;
       }
 
-      dVm[ii] = dVR;
+      dVm[ii*SIMD_WIDTH+jj] = dVR;
       
 #define ratPolyGate()                           \
       double sum1,sum2;                         \
