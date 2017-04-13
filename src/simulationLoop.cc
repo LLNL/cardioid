@@ -123,10 +123,6 @@ void loopIO(const Simulate& sim, int firstCall)
 
    int loop = sim.loop_;
 
-   const VectorDouble32 & VmArray(sim.vdata_.VmTransport_.readOnHost());
-   const VectorDouble32 & dVmR(sim.vdata_.dVmReactionTransport_.readOnHost());
-   const VectorDouble32 & dVmD(sim.vdata_.dVmDiffusionTransport_.readOnHost());
-
    // SENSORS
    #pragma omp critical
    {
@@ -191,7 +187,7 @@ void simulationLoop(Simulate& sim)
          VectorDouble32& dVmDiffusion(vdata.dVmDiffusionTransport_.modifyOnDevice());
          sim.diffusion_->updateLocalVoltage(&(vmarray[0]));
          double* recvBuf = voltageExchange.recvBuf_;
-         #pragma omp target update from(recvBuf[0:voltageExchange.width_])
+         #pragma omp target update to(recvBuf[0:voltageExchange.width_])
          sim.diffusion_->updateRemoteVoltage(voltageExchange.getRecvBuf());
          sim.diffusion_->calc(dVmDiffusion);
       }
@@ -237,10 +233,7 @@ void simulationLoop(Simulate& sim)
          const VectorDouble32 & vmarray(vdata.VmTransport_.readOnHost());
          const VectorDouble32 & dVmDiffusion(vdata.dVmDiffusionTransport_.readOnHost());
          const VectorDouble32 & dVmReaction(vdata.dVmReactionTransport_.readOnHost());
-         if (sim.checkRange_.on)
-         {
-            sim.checkRanges(vmarray, dVmReaction, dVmDiffusion);
-         }
+         sim.checkRanges(vmarray, dVmReaction, dVmDiffusion);
       }
       // no special BGQ integrator is this loop.  More bang for buck
       // from OMP threading.
