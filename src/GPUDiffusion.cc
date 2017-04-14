@@ -8,6 +8,29 @@ using namespace std;
 
 #define CONTAINS(container, item) (container.find(item) != container.end())
 
+/* Here's the design constraints for this piece of code:
+ *
+ * - When we do the hot loop, we're updating adjacent cells at the
+ *   same time.  Therefore, we can never be doing operations on the
+ *   adjacent cells without creating a race condition.
+ *
+ * - We'd like the local and the remote coordinates to be contiguous
+ *   as much as possible.
+ *
+ * Here, I have 3 orderings:
+ * cell ordering - the ordering the external arrays (where we have no control)
+ * red/black ordering - redLocal redRemote blackRemote blackLocal
+ * block ordering - ordering of the points in the block
+ *
+ * In the constructor I'm constructing the mappings between these
+ * orderings. I've set up the red ordering so that all the reds are
+ * first, followed by all the blacks.  The remotes are in a contiguous
+ * block in the middle.
+ * 
+ * The hot loop runs on the red black ordering.  
+ *
+ */
+
 GPUDiffusion::GPUDiffusion(const Anatomy& anatomy, int simLoopType)
 : simLoopType_(simLoopType),
   localGrid_(DiffusionUtils::findBoundingBox(anatomy, false))
