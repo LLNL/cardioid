@@ -12,6 +12,7 @@ simulate SIMULATE
    time = 0 ms; 
    printRate = 50;      // in timesteps
    snapshotRate = 5000; // in timesteps
+   checkRanges = 0;
 }
 
 pioAnatomy ANATOMY 
