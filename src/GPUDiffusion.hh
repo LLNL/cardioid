@@ -41,7 +41,9 @@ class GPUDiffusion : public Diffusion
    TransportCoordinator<std::vector<int> > blockFromRed_;
    TransportCoordinator<std::vector<int> > cellFromRed_;
    TransportCoordinator<std::vector<int> > cellLookup_;
+   
+   friend void actualCalc(GPUDiffusion& self, VectorDouble32& dVm);
 };
 
-
+void actualCalc(GPUDiffusion& self, VectorDouble32& dVm);
 #endif

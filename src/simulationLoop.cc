@@ -190,7 +190,7 @@ void simulationLoop(Simulate& sim)
          #pragma omp target update to(recvBuf[0:voltageExchange.width_])
          sim.diffusion_->updateRemoteVoltage(voltageExchange.getRecvBuf());
          sim.diffusion_->calc(dVmDiffusion);
-      }
+            }
       stopTimer(diffusionCalcTimer);
 
       startTimer(stimulusTimer);

@@ -179,23 +179,29 @@ void GPUDiffusion::updateRemoteVoltage(const double* VmRemote)
    }
 }
 
-void GPUDiffusion::calc(VectorDouble32& dVm)
+void GPUDiffusion::calc(VectorDouble32& dVm){
+   actualCalc(*this, dVm);
+}
+
+void actualCalc(GPUDiffusion& self, VectorDouble32& dVm)
 {
+      int self_nLocal_ = self.nLocal_;
+      int self_nCells_ = self.nCells_;
    double* dVmRaw=&dVm[0];
-   if (simLoopType_ == 0) // it is a hard coded of enum LoopType {omp, pdr}  
+   if (self.simLoopType_ == 0) // it is a hard coded of enum LoopType {omp, pdr}  
    {
-      #pragma omp target teams distribute parallel for
-      for (int icell=0; icell<nLocal_; icell++)
+      #pragma omp target teams distribute parallel for firstprivate(self_nLocal_)
+      for (int icell=0; icell<self_nLocal_; icell++)
       {
          dVmRaw[icell] = 0;
       }
    }
    
-   const vector<double>& VmBlockVec(VmBlock_.readOnDevice());
-   const vector<double>& sigmaFaceNormalVec(sigmaFaceNormal_.readOnDevice());
-   const vector<int>& cellLookupVec(cellLookup_.readOnDevice());
-   const vector<int>& blockFromRedVec(blockFromRed_.readOnDevice());
-   const vector<int>& cellFromRedVec(cellFromRed_.readOnDevice());
+   const vector<double>& VmBlockVec(self.VmBlock_.readOnDevice());
+   const vector<double>& sigmaFaceNormalVec(self.sigmaFaceNormal_.readOnDevice());
+   const vector<int>& cellLookupVec(self.cellLookup_.readOnDevice());
+   const vector<int>& blockFromRedVec(self.blockFromRed_.readOnDevice());
+   const vector<int>& cellFromRedVec(self.cellFromRed_.readOnDevice());
    
    const double* VmBlockVecRaw=&VmBlockVec[0];
    const double* sigmaFaceNormalVecRaw=&sigmaFaceNormalVec[0];
@@ -203,17 +209,17 @@ void GPUDiffusion::calc(VectorDouble32& dVm)
    const int* blockFromRedVecRaw=&blockFromRedVec[0];
    const int* cellFromRedVecRaw=&cellFromRedVec[0];    
 
-   const int extents[3] = {0, nRed_, nCells_};
-   const int offset[3] = {1, nx_, nx_*ny_};
+   const int extents[3] = {0, self.nRed_, self.nCells_};
+   const int offset[3] = {1, self.nx_, self.nx_*self.ny_};
   
    for (int idim=0; idim<3; idim++)
    {
       for (int red=0; red<=1; red++)
       {
-         #pragma omp target teams distribute parallel for
+         #pragma omp target teams distribute parallel for default(none) firstprivate(idim, red, extents, offset, self_nCells_, self_nLocal_)
          for (int ired=extents[red]; ired<extents[red+1]; ired++)
          { 
-            int other = cellLookupVecRaw[ired + idim*nCells_];
+            int other = cellLookupVecRaw[ired + idim*self_nCells_];
             if (other < 0) { continue; }
          
             int thisIndex = blockFromRedVecRaw[ired];
@@ -239,7 +245,7 @@ void GPUDiffusion::calc(VectorDouble32& dVm)
             }
             dVmRaw[other] -= flux;
             int icell = cellFromRedVecRaw[ired];
-            if (icell < nLocal_) //if this is a local cell
+            if (icell < self_nLocal_) //if this is a local cell
             {
                dVmRaw[icell] += flux;
             }
