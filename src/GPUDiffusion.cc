@@ -187,6 +187,9 @@ void actualCalc(GPUDiffusion& self, VectorDouble32& dVm)
 {
       int self_nLocal_ = self.nLocal_;
       int self_nCells_ = self.nCells_;
+      int self_nRed_ = self.nRed_;
+      int self_nx_ = self.nx_;
+      int self_ny_ = self.ny_;
    double* dVmRaw=&dVm[0];
    if (self.simLoopType_ == 0) // it is a hard coded of enum LoopType {omp, pdr}  
    {
@@ -209,16 +212,18 @@ void actualCalc(GPUDiffusion& self, VectorDouble32& dVm)
    const int* blockFromRedVecRaw=&blockFromRedVec[0];
    const int* cellFromRedVecRaw=&cellFromRedVec[0];    
 
-   const int extents[3] = {0, self.nRed_, self.nCells_};
-   const int offset[3] = {1, self.nx_, self.nx_*self.ny_};
-  
    for (int idim=0; idim<3; idim++)
    {
       for (int red=0; red<=1; red++)
       {
-         #pragma omp target teams distribute parallel for firstprivate(idim, red, extents, offset, self_nCells_, self_nLocal_)
-         for (int ired=extents[red]; ired<extents[red+1]; ired++)
+         const int extents[3] = {0, self_nRed_, self_nCells_};
+         int lower = extents[red];
+         int upper = extents[red+1];
+
+         #pragma target teams omp distribute parallel for firstprivate(idim, red, self_nCells_, self_nx_, self_ny_, self_nLocal_, lower, upper)
+         for (int ired=lower; ired<upper; ired++)
          { 
+            const int offset[3] = {1, self_nx_, self_nx_*self_ny_};
             int other = cellLookupVecRaw[ired + idim*self_nCells_];
             if (other < 0) { continue; }
          
