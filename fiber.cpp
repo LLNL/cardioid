@@ -66,6 +66,9 @@ int main(int argc, char *argv[]) {
     int order = 1;
     bool static_cond = false;
     bool visualization = 1;
+    // run omar's task
+    bool omar_task=false;
+    const char *fiblocs="";
 
     double a_endo=40;
     double a_epi=-50;
@@ -91,6 +94,11 @@ int main(int argc, char *argv[]) {
     args.AddOption(&visualization, "-vis", "--visualization", "-no-vis",
             "--no-visualization",
             "Enable or disable GLVis visualization.");
+    args.AddOption(&omar_task, "-omar", "--omar_task", "-no-omar",
+            "--no-omar_task",
+            "Enable or disable Omar task.");   
+    args.AddOption(&fiblocs, "-fl", "--fiblocs",
+            "Fiber locagtion file to use.");    
     args.AddOption(&a_endo, "-ao", "--aendo", "Fiber angle alpha endo.");
     args.AddOption(&a_epi, "-ai", "--aepi", "Fiber angle alpha epi.");
     args.AddOption(&b_endo, "-bo", "--bendo", "Fiber angle beta endo.");
@@ -103,6 +111,11 @@ int main(int argc, char *argv[]) {
     if (!args.Good()) {
         args.PrintUsage(cout);
         return 1;
+    }
+    if(omar_task && strlen(fiblocs)==0){
+       std::cout << "The program runs Omar task but missing fiber location file!" << std::endl;
+       args.PrintUsage(cout);
+       return 1;
     }
     args.PrintOptions(cout);
 
@@ -285,16 +298,22 @@ int main(int argc, char *argv[]) {
     tree_type kdtree(std::ptr_fun(tac));
     buildKDTree(mesh, kdtree);
     
-    cout << "\nGet cardioid point gradients ...\n";
-    cout.flush();
-    Vector conduct(3);
-    conduct(0)=gL;
-    conduct(1)=gT;
-    conduct(2)=gN;
-    getCardGradients(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
-        kdtree, vert2Elements, boundingbox, dd,  
-        conduct, fiberAngles);
-        
+    if(omar_task){
+       cout << "\nGet Omar's rotation matrix ...\n";
+       getRotMatrix(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
+          kdtree, vert2Elements, fiberAngles, fiblocs);
+       
+    }else{
+      cout << "\nGet cardioid point gradients ...\n";
+      cout.flush();
+      Vector conduct(3);
+      conduct(0)=gL;
+      conduct(1)=gT;
+      conduct(2)=gN;
+      getCardGradients(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
+          kdtree, vert2Elements, boundingbox, dd,  
+          conduct, fiberAngles);
+    }     
 
     delete mesh;
 
