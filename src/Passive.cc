@@ -111,7 +111,7 @@ void ThisReaction::calc(double dt, const VectorDouble32& Vm,
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
       const double v = Vm[ii];
-      dVm[ii] = G*(v-E_R);      
+      dVm[ii] = -G*(v-E_R);      
    }
 }
 
