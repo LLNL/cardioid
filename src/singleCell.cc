@@ -303,8 +303,16 @@ int main(int argc, char* argv[])
       }
 
       //calc() dVm and update the internal states
-      reaction->calc(dt, Vm, iStim, dVm);
-
+      if (params.alternate_update_flag)
+      {
+         reaction->updateNonGate(dt, Vm, dVm);
+         reaction->updateGate(dt,Vm);
+      }
+      else
+      {
+         reaction->calc(dt, Vm, iStim, dVm);
+      }
+      
       //update Vm and apply stimulus
       for (int ii=0; ii<nCells; ii++)
       {

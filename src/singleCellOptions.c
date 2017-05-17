@@ -50,10 +50,12 @@ const char *gengetopt_args_info_help[] = {
   "  -s, --stim-at=DOUBLE          Stimulate at the following time in ms",
   "  -a, --stim-strength=DOUBLE    Strength of the stimulus  (default=`60')",
   "  -t, --stim-duration=DOUBLE    Duration of the stimulus  (default=`1')",
+  "  -U, --alternate-update        Use updateGates/nonGates formulation.\n                                  (default=off)",
     0
 };
 
 typedef enum {ARG_NO
+  , ARG_FLAG
   , ARG_STRING
   , ARG_INT
   , ARG_DOUBLE
@@ -93,6 +95,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->stim_at_given = 0 ;
   args_info->stim_strength_given = 0 ;
   args_info->stim_duration_given = 0 ;
+  args_info->alternate_update_given = 0 ;
 }
 
 static
@@ -125,6 +128,7 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->stim_strength_orig = NULL;
   args_info->stim_duration_arg = 1;
   args_info->stim_duration_orig = NULL;
+  args_info->alternate_update_flag = 0;
   
 }
 
@@ -155,6 +159,7 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->stim_at_max = 0;
   args_info->stim_strength_help = gengetopt_args_info_help[14] ;
   args_info->stim_duration_help = gengetopt_args_info_help[15] ;
+  args_info->alternate_update_help = gengetopt_args_info_help[16] ;
   
 }
 
@@ -386,6 +391,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "stim-strength", args_info->stim_strength_orig, 0);
   if (args_info->stim_duration_given)
     write_into_file(outfile, "stim-duration", args_info->stim_duration_orig, 0);
+  if (args_info->alternate_update_given)
+    write_into_file(outfile, "alternate-update", 0, 0 );
   
 
   i = EXIT_SUCCESS;
@@ -724,6 +731,9 @@ int update_arg(void *field, char **orig_field,
     val = possible_values[found];
 
   switch(arg_type) {
+  case ARG_FLAG:
+    *((int *)field) = !*((int *)field);
+    break;
   case ARG_INT:
     if (val) *((int *)field) = strtol (val, &stop_char, 0);
     break;
@@ -758,6 +768,7 @@ int update_arg(void *field, char **orig_field,
   /* store the original value */
   switch(arg_type) {
   case ARG_NO:
+  case ARG_FLAG:
     break;
   default:
     if (value && orig_field) {
@@ -972,10 +983,11 @@ cmdline_parser_internal (
         { "stim-at",	1, NULL, 's' },
         { "stim-strength",	1, NULL, 'a' },
         { "stim-duration",	1, NULL, 't' },
+        { "alternate-update",	0, NULL, 'U' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "Vo:r:h:d:S:T:p:c:n:b:f:s:a:t:", long_options, &option_index);
+      c = getopt_long (argc, argv, "Vo:r:h:d:S:T:p:c:n:b:f:s:a:t:U", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1141,6 +1153,16 @@ cmdline_parser_internal (
               &(local_args_info.stim_duration_given), optarg, 0, "1", ARG_DOUBLE,
               check_ambiguity, override, 0, 0,
               "stim-duration", 't',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'U':	/* Use updateGates/nonGates formulation..  */
+        
+        
+          if (update_arg((void *)&(args_info->alternate_update_flag), 0, &(args_info->alternate_update_given),
+              &(local_args_info.alternate_update_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "alternate-update", 'U',
               additional_error))
             goto failure;
         

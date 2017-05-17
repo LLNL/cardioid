@@ -21,5 +21,6 @@ option      "stim-at"            s "Stimulate at the following time in ms"      
 option      "stim-strength"      a "Strength of the stimulus"                           double  default="60" optional
 option      "stim-duration"      t "Duration of the stimulus"                           double  default="1" optional
 
+option      "alternate-update"   U "Use updateGates/nonGates formulation."              flag    off
 
 #option      "fix-vm"             v "Not really sure"                                   double  default="0" optional
