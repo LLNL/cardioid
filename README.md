@@ -29,3 +29,8 @@ The output is rotmatrix.txt
 ...
 ...
  
+
+To run the parallel version:
+
+mpirun -np 4 fiberp -omar -m DTI060904.1.vtk -fl fiberlocs
+
