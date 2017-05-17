@@ -176,23 +176,10 @@ int main(int argc, char* argv[])
    }
 
    //create the dependent variables.
-   Anatomy anatomy;
-   {
-      anatomy.setGridSize(nCells,1,1);
-      vector<AnatomyCell>& cells = anatomy.cellArray();
-      cells.reserve(nCells);
-      for (int ii=0; ii<nCells; ii++)
-      {
-         AnatomyCell tmp;
-         tmp.gid_ = ii;
-         tmp.cellType_ = 102;
-         cells.push_back(tmp);
-      }
-   }
    ThreadServer& threadServer = ThreadServer::getInstance();
    ThreadTeam threads = threadServer.getThreadTeam(vector<unsigned>());
    Reaction* reaction = reactionFactory(objectName,dt,
-                                        anatomy, threads,
+                                        nCells, threads,
                                         vector<string>());
 
    //initialize the ionic model
