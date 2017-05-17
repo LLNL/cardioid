@@ -105,6 +105,12 @@ ThisReaction::ThisReaction(const int numPoints)
    perCellParameters_.resize(nCells_);
 }
 
+
+void ThisReaction::updateNonGate(double dt, const VectorDouble32& Vm,VectorDouble32& dVm) {
+   vector<double> noop;
+   calc(dt,Vm,noop,dVm);
+}
+  
 void ThisReaction::calc(double dt, const VectorDouble32& Vm,
                        const vector<double>& iStim , VectorDouble32& dVm)
 {

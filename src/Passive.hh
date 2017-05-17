@@ -38,7 +38,8 @@ class ThisReaction : public Reaction
    virtual void setValue(int iCell, int varHandle, double value);
    virtual double getValue(int iCell, int varHandle) const;
    virtual const std::string getUnit(const std::string& varName) const;
-
+   virtual void updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR);
+   
  public:
    //constant flags
    //EDIT_FLAGS
