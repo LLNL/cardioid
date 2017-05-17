@@ -419,27 +419,25 @@ void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
 
    if (file_free == 1)
    {
+      ofstream out;
+      
       if (rank == 0)
       {
-         ofstream out("rotmatrix.txt");
+         out.open("rotmatrix.txt");
          out << "# elementnum mat11 mat12 mat13 mat21 mat22 mat23 mat31 mat32 mat33" << endl;
-         for (int ii = 0; ii < outLines.size(); ii++)
-         {
-            out << outLines[ii];
-         }
-         out.close();
 
       }
       else
       {
-         ofstream out;
          out.open("rotmatrix.txt", std::fstream::app);
-         for (int ii = 0; ii < outLines.size(); ii++)
-         {
-            out << outLines[ii];
-         }
-         out.close();
       }
+      
+      for (int ii = 0; ii < outLines.size(); ii++)
+      {
+         out << outLines[ii];
+      }
+      out.close();
+
    }
 
    if (rank != size - 1)
