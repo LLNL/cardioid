@@ -185,6 +185,7 @@ void getRotMatrix(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, G
          triplet vetexNearPt = *found.first;
          int vertex = vetexNearPt.getIndex();
          vector<int> elements = vert2Elements[vertex];
+         bool findPt=false;
          for (unsigned e = 0; e < elements.size(); e++)
          {
             int eleIndex = elements[e];
@@ -232,9 +233,24 @@ void getRotMatrix(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, G
                   cout << "Finish " << totalCardPoints << " points." << endl;
                   cout.flush();
                }
+               findPt=true;
                break; // If the point is found in an element, don't need to check next one in the list. 
 
             }
+                    
+         }
+         if(!findPt){
+
+                f_ofs << tokens[0] << " ";
+               for (int ii = 0; ii < dim3; ii++)
+               {
+                  for (int jj = 0; jj < dim3; jj++)
+                  {
+                     f_ofs << "999 ";
+                  }
+               }
+               f_ofs << endl;            
+                  
          }
       }
    }

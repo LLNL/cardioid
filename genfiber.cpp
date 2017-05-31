@@ -363,10 +363,10 @@ void biSlerpCombo(DenseMatrix& QPfib,
 
     if (!vecisnonzero(psi_ab_vec)) {
         cout << "Warning psi_ab gradient is zero" << endl;
-        Vector ten(3);
-        ten = 10;
+        Vector nonVal(3);
+        nonVal = 999;
         for (int i = 0; i < dim3; i++) {
-            QPfib.SetCol(i, ten);
+            QPfib.SetCol(i, nonVal);
         }
         return;
     }
