@@ -331,7 +331,14 @@ void biSlerpCombo(DenseMatrix& QPfib,
         double phi_lv, Vector& phi_lv_vec,
         double phi_rv, Vector& phi_rv_vec,
         Vector& fiberAngles) {
-    
+
+   // Initialize big values for QPfib so we will know it is a wrong one.
+   Vector nonVal(3);
+   nonVal = 999;
+   for (int i = 0; i < dim3; i++) {
+       QPfib.SetCol(i, nonVal);
+   }   
+   
     double a_endo=fiberAngles(0);
     double a_epi=fiberAngles(1);
     double b_endo=fiberAngles(2);
@@ -363,11 +370,6 @@ void biSlerpCombo(DenseMatrix& QPfib,
 
     if (!vecisnonzero(psi_ab_vec)) {
         cout << "Warning psi_ab gradient is zero" << endl;
-        Vector nonVal(3);
-        nonVal = 999;
-        for (int i = 0; i < dim3; i++) {
-            QPfib.SetCol(i, nonVal);
-        }
         return;
     }
 
