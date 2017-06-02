@@ -74,6 +74,7 @@ int main(int argc, char *argv[]) {
     bool visualization = 1;
     // run omar's task
     bool omar_task=false;
+    bool omar_fast=false;
     const char *fiblocs="";
     
     double a_endo=40;
@@ -103,6 +104,9 @@ int main(int argc, char *argv[]) {
     args.AddOption(&omar_task, "-omar", "--omar_task", "-no-omar",
             "--no-omar_task",
             "Enable or disable Omar task.");   
+    args.AddOption(&omar_fast, "-ofast", "--omar_fast", "-no-ofast",
+            "--no-omar_fast",
+            "Enable or disable Omar fast task.");      
     args.AddOption(&fiblocs, "-fl", "--fiblocs",
             "Fiber locagtion file to use.");     
     args.AddOption(&a_endo, "-ao", "--aendo", "Fiber angle alpha endo.");
@@ -122,6 +126,25 @@ int main(int argc, char *argv[]) {
         MPI_Finalize();
         return 1;
     }
+    
+    if(omar_task && strlen(fiblocs)==0){
+       if (myid == 0) {
+         std::cout << "The program runs Omar task but missing fiber location file!" << std::endl;
+         args.PrintUsage(cout);
+       }
+       MPI_Finalize();
+       return 1;
+    }
+    
+    if(omar_fast && strlen(fiblocs)==0){
+       if (myid == 0) {
+         std::cout << "The program runs Omar fast task but missing fiber location file!" << std::endl;
+         args.PrintUsage(cout);
+       }
+       MPI_Finalize();
+       return 1;
+    }      
+    
     if (myid == 0) {
         args.PrintOptions(cout);
     }
@@ -329,6 +352,20 @@ int main(int argc, char *argv[]) {
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
+    
+    if(omar_fast){
+      if (myid == 0) {
+         cout << "\nGet Omar's rotation matrix in fast way ...\n";
+      }
+      getRotMatrixFastp(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
+          vert2Elements, fiberAngles, fiblocs, num_procs, myid);  
+      
+      delete mesh;
+      MPI_Finalize(); 
+      return 0;       
+    }    
+    
+    
     if (myid == 0) {
         cout << "\nStart to build k-D tree for the mesh...\n";
         cout.flush();

@@ -257,3 +257,94 @@ void getRotMatrix(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, G
 
           
 }
+
+
+void getRotMatrixFast(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
+        vector<vector<int> >& vert2Elements, Vector& fiberAngles, const char *fiblocs){
+
+    long long totalCardPoints=0;
+
+    ofstream f_ofs("rotmatrix.txt");
+    f_ofs << "# elementnum mat11 mat12 mat13 mat21 mat22 mat23 mat31 mat32 mat33" << endl;
+    
+    ifstream f_ifs;
+    try{
+       f_ifs.open(fiblocs);
+    }
+    catch(...)
+    {
+       std::cout << "Cannot open file: " << fiblocs << std::endl;
+       return;
+    }
+
+    std::string fileLine;
+    
+    const std::string comment="#";
+
+   while (f_ifs)
+   {
+      std::getline(f_ifs, fileLine);
+      if (fileLine.compare(0, 1, comment) == 0) continue;
+      std::vector<std::string> tokens;
+      tokenize(fileLine, tokens);
+      if (tokens.size() > 3)
+      {
+         int eleIndex=atoi(tokens[0].c_str());
+         double x = atof(tokens[1].c_str());
+         double y = atof(tokens[2].c_str());
+         double z = atof(tokens[3].c_str());
+
+            //For barycentric
+            Vector q(4);
+            q(0) = x;
+            q(1) = y;
+            q(2) = z;
+            q(3) = 1.0;
+            vector<double> barycentric;
+            if (isInTetElement(q, mesh, eleIndex))
+            {
+               //cout << "fiblocs element index=" << tokens[0] << "; k-D tree index=" << eleIndex << endl;
+               Vector psi_ab_vec(3);
+               double psi_ab = 0.0;
+               getCardEleGrads(x_psi_ab, q, eleIndex, psi_ab_vec, psi_ab);
+
+               Vector phi_epi_vec(3);
+               double phi_epi = 0.0;
+               getCardEleGrads(x_phi_epi, q, eleIndex, phi_epi_vec, phi_epi);
+
+               Vector phi_lv_vec(3);
+               double phi_lv = 0.0;
+               getCardEleGrads(x_phi_lv, q, eleIndex, phi_lv_vec, phi_lv);
+
+               Vector phi_rv_vec(3);
+               double phi_rv = 0.0;
+               getCardEleGrads(x_phi_rv, q, eleIndex, phi_rv_vec, phi_rv);
+
+               DenseMatrix QPfib(dim3, dim3);
+               biSlerpCombo(QPfib, psi_ab, psi_ab_vec, phi_epi, phi_epi_vec,
+                            phi_lv, phi_lv_vec, phi_rv, phi_rv_vec, fiberAngles);
+               
+               f_ofs << tokens[0] << " ";
+               for(int ii=0; ii<dim3; ii++){
+                  for(int jj=0; jj<dim3; jj++){
+                     f_ofs << QPfib(ii, jj) << " ";
+                  }
+               }
+               f_ofs << endl;
+               
+               totalCardPoints++;
+               if (totalCardPoints % 10000 == 0)
+               {
+                  cout << "Finish " << totalCardPoints << " points." << endl;
+                  cout.flush();
+               }
+
+            }
+                    
+         
+
+      }
+   }
+
+          
+}

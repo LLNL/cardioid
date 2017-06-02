@@ -34,3 +34,9 @@ To run the parallel version:
 
 mpirun -np 4 fiberp -omar -m DTI060904.1.vtk -fl fiberlocs
 
+
+To get Omar's rotation matrices using the elementnum provided in the fiberlocs:
+
+mpirun -np 4 fiberp -ofast -m DTI060904.1.vtk -fl fiberlocs
+
+

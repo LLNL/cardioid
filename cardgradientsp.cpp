@@ -466,3 +466,170 @@ void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
 
 }
 
+void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
+                   vector<vector<int> >& vert2Elements, Vector& fiberAngles, const char *fiblocs, int size, int rank)
+{
+
+   long long totalCardPoints = 0;
+   
+   //f_ofs << "# elementnum mat11 mat12 mat13 mat21 mat22 mat23 mat31 mat32 mat33" << endl;
+
+
+   MPI_File in;
+
+   int ierr = MPI_File_open(MPI_COMM_WORLD, fiblocs, MPI_MODE_RDONLY, MPI_INFO_NULL, &in);
+   if (ierr)
+   {
+      if (rank == 0) fprintf(stderr, "Couldn't open file %s\n", fiblocs);
+      MPI_Finalize();
+      exit(2);
+   }
+
+   const int overlap = 200;
+   char **lines;
+   int nlines;
+   readlines(&in, rank, size, overlap, &lines, &nlines);
+   printf("Rank %d has %d lines\n", rank, nlines);
+
+   std::string fileLine;
+
+   const std::string comment = "#";
+
+   vector<string> outLines;
+
+   for (int i = 0; i < nlines; i++)
+   {
+      fileLine = lines[i];
+      if (fileLine.compare(0, 1, comment) == 0) continue;
+      std::vector<std::string> tokens;
+      tokenize(fileLine, tokens);
+      if (tokens.size() > 3)
+      {
+         int eleIndex=atoi(tokens[0].c_str());
+         double x = atof(tokens[1].c_str());
+         double y = atof(tokens[2].c_str());
+         double z = atof(tokens[3].c_str());
+
+            //For barycentric
+            Vector q(4);
+            q(0) = x;
+            q(1) = y;
+            q(2) = z;
+            q(3) = 1.0;
+            vector<double> barycentric;
+            if (isInTetElement(q, mesh, eleIndex))
+            {
+               //cout << "fiblocs element index=" << tokens[0] << "; k-D tree index=" << eleIndex << endl;
+               Vector psi_ab_vec(3);
+               double psi_ab = 0.0;
+               getCardEleGrads(x_psi_ab, q, eleIndex, psi_ab_vec, psi_ab);
+
+               Vector phi_epi_vec(3);
+               double phi_epi = 0.0;
+               getCardEleGrads(x_phi_epi, q, eleIndex, phi_epi_vec, phi_epi);
+
+               Vector phi_lv_vec(3);
+               double phi_lv = 0.0;
+               getCardEleGrads(x_phi_lv, q, eleIndex, phi_lv_vec, phi_lv);
+
+               Vector phi_rv_vec(3);
+               double phi_rv = 0.0;
+               getCardEleGrads(x_phi_rv, q, eleIndex, phi_rv_vec, phi_rv);
+
+               DenseMatrix QPfib(dim3, dim3);
+               biSlerpCombo(QPfib, psi_ab, psi_ab_vec, phi_epi, phi_epi_vec,
+                            phi_lv, phi_lv_vec, phi_rv, phi_rv_vec, fiberAngles);
+
+               stringstream f_ofs;
+               f_ofs << tokens[0] << " ";
+               for (int ii = 0; ii < dim3; ii++)
+               {
+                  for (int jj = 0; jj < dim3; jj++)
+                  {
+                     f_ofs << QPfib(ii, jj) << " ";
+                  }
+               }
+               f_ofs << endl;
+               outLines.push_back(f_ofs.str());
+
+               totalCardPoints++;
+                if (totalCardPoints % 10000 == 0) {
+                    cout << "Processor " << rank << " finish " << totalCardPoints << " points." << endl;
+                    cout.flush();
+                }
+
+
+            
+         }
+         
+
+         
+         
+      }
+   }
+   
+   cout << "Processor " << rank << " has " << outLines.size() << " lines." << endl;
+
+//    // Parallel I/O
+//    string fullname = "omar";
+//    if (rank == 0) {
+//        DirTestCreate(fullname.c_str());
+//    }
+//    
+//    fullname += "/rotmatrix";
+//    int lrec = 80;
+//    heap_allocate(lrec*totalCardPoints*64 + 4096);
+//    
+//    PFILE* file = Popen(fullname.c_str(), "w", MPI_COMM_WORLD);
+//    PioReserve(file, lrec*totalCardPoints*64 + 4096);
+//
+//    for (unsigned i = 0; i < outLines.size(); i++) {
+//        string line = outLines[i];
+//        Pprintf(file, "%s", line.c_str());
+//    }
+//
+//    Pclose(file);   
+   
+   int file_free = 0;
+   MPI_Status status;
+
+   if (rank == 0)
+   {
+      file_free = 1;
+   }
+   else
+   {
+      MPI_Recv(&file_free, 1, MPI_INT, rank - 1, 1, MPI_COMM_WORLD, &status);
+   }
+
+   if (file_free == 1)
+   {
+      ofstream out;
+      
+      if (rank == 0)
+      {
+         out.open("rotmatrix.txt");
+         out << "# elementnum mat11 mat12 mat13 mat21 mat22 mat23 mat31 mat32 mat33" << endl;
+
+      }
+      else
+      {
+         out.open("rotmatrix.txt", std::fstream::app);
+      }
+      
+      for (int ii = 0; ii < outLines.size(); ii++)
+      {
+         out << outLines[ii];
+      }
+      out.close();
+
+   }
+
+   if (rank != size - 1)
+   {
+      MPI_Send(&file_free, 1, MPI_INT, rank + 1, 1, MPI_COMM_WORLD);
+   }
+
+
+}
+

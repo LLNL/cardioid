@@ -68,6 +68,7 @@ int main(int argc, char *argv[]) {
     bool visualization = 1;
     // run omar's task
     bool omar_task=false;
+    bool omar_fast=false;
     const char *fiblocs="";
 
     double a_endo=40;
@@ -96,7 +97,10 @@ int main(int argc, char *argv[]) {
             "Enable or disable GLVis visualization.");
     args.AddOption(&omar_task, "-omar", "--omar_task", "-no-omar",
             "--no-omar_task",
-            "Enable or disable Omar task.");   
+            "Enable or disable Omar task.");  
+    args.AddOption(&omar_fast, "-ofast", "--omar_fast", "-no-ofast",
+            "--no-omar_fast",
+            "Enable or disable Omar fast task.");    
     args.AddOption(&fiblocs, "-fl", "--fiblocs",
             "Fiber locagtion file to use.");    
     args.AddOption(&a_endo, "-ao", "--aendo", "Fiber angle alpha endo.");
@@ -117,6 +121,12 @@ int main(int argc, char *argv[]) {
        args.PrintUsage(cout);
        return 1;
     }
+    
+    if(omar_fast && strlen(fiblocs)==0){
+       std::cout << "The program runs Omar fast task but missing fiber location file!" << std::endl;
+       args.PrintUsage(cout);
+       return 1;
+    }    
     args.PrintOptions(cout);
 
     // Keep fiber angles in a Vector.
@@ -291,7 +301,18 @@ int main(int argc, char *argv[]) {
 
     printFiberVTK(mesh, fvectors, f_ofs);
     printFiberVTK(mesh, svectors, s_ofs);
-    printFiberVTK(mesh, tvectors, t_ofs);  
+    printFiberVTK(mesh, tvectors, t_ofs); 
+    
+    if(omar_fast){
+      
+      cout << "\nGet Omar's rotation matrix in fast way ...\n";
+      getRotMatrixFast(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
+          vert2Elements, fiberAngles, fiblocs);  
+      
+      delete mesh;
+
+      return 0;       
+    }
     
     cout << "\nStart to build k-D tree for the mesh...\n";
     cout.flush();
