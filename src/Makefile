@@ -240,12 +240,12 @@ $(BINDIR)/$(EXENAME): $(CARDIOIDOBJS) Version.cc
 #OHaraRudy.cc : OHaraRudy.h  $(CONSTRUCTED_INCLUDES) mkCompInclude   mkCompInclude.awk
 
 $(CONSTRUCTED_INCLUDES) :  mkCompInclude mkCompInclude.awk 
-	mkCompInclude $@
+	./mkCompInclude $@
 
 #Grandi.cc : Grandi.h  $(GRANDI_CONSTRUCTED_INCLUDES) mkCompInclude_Grandi   mkCompInclude_Grandi.awk
 
 $(GRANDI_CONSTRUCTED_INCLUDES) :  mkCompInclude_Grandi mkCompInclude_Grandi.awk 
-	mkCompInclude_Grandi $@
+	./mkCompInclude_Grandi $@
 
 testLoadBalancer:
 	@$(MAKE) --no-print-directory makedirs testLoadBalancer-target \
@@ -299,17 +299,12 @@ makedirs:
 #------------------------------------------------------------------------------
 # generate dependencies in makefile: use -Y to avoid library header files
 # that are likely to be different on other platforms.
- depend :
-	./mkCompInclude $(CONSTRUCTED_INCLUDES)
-	makedepend -f .depend_$(BUILD_SUFFIX) -p'$(OBJDIR)/' -o '.o' -Y -- $(CFLAGS) $(CXXFLAGS) -- *.cc *.c *.hh *.h 2> /dev/null
-
-	./mkCompInclude_Grandi $(GRANDI_CONSTRUCTED_INCLUDES)
+ depend : $(CONSTRUCTED_INCLUDES) $(GRANDI_CONSTRUCTED_INCLUDES)
 	makedepend -f .depend_$(BUILD_SUFFIX) -p'$(OBJDIR)/' -o '.o' -Y -- $(CFLAGS) $(CXXFLAGS) -- *.cc *.c *.hh *.h 2> /dev/null
 
 .depend_$(BUILD_SUFFIX): $(CARDIOIDSRC)
 	@touch .depend_$(BUILD_SUFFIX)
 	@$(MAKE) depend BUILD_SUFFIX=$(BUILD_SUFFIX)
-	rm -r 
 
 #------------------------------------------------------------------------------
 #  Cleanup object files
