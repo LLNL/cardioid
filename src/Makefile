@@ -76,7 +76,7 @@ HEARTSRC= \
 	CaAverageSensor.cc \
 	ECGSensor.cc \
 	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc DVThreshSensor.cc \
-   StateVariableSensor.cc
+   StateVariableSensor.cc Interpolation.cc
 
 OHaraRudySRC= OHaraRudy.c OHaraRudy_Voltage.c OHaraRudy_Concent.c OHaraRudy_INaCai.c OHaraRudy_INaCass.c  \
               OHaraRudy_INaK.c OHaraRudy_INab.c OHaraRudy_ICab.c OHaraRudy_IKb.c \

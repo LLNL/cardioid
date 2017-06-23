@@ -19,6 +19,7 @@
 #include "TestReaction.hh"
 #include "ConstantReaction.hh"
 #include "ThreadServer.hh"
+#include "Anatomy.hh"
 #include "string.h"
 
 #include <iostream>
