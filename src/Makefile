@@ -50,6 +50,8 @@ HEARTSRC= \
 	FGRDiffusionOverlap.cc \
 	FGRDiffusionStrip.cc \
 	GPUDiffusion.cc \
+	CUDADiffusion.cc \
+	CUDADiffusion_ker.cu \
 	FGRUtils.cc \
 	Reaction.cc \
 	ReactionFHN.cc \
@@ -124,14 +126,15 @@ DDCMD_FILES = \
 	utilities.h 
 
 DDCMDSRC = $(filter %.c, $(DDCMD_FILES))
-
-HEARTOBJS = $(HEARTSRC:%.cc=$(OBJDIR)/%.o)
+HEARTOBJS = $(HEARTSRC:%.cu=$(OBJDIR)/%.o)
+HEARTOBJS += $(HEARTSRC:%.cc=$(OBJDIR)/%.o)
 HEARTOBJS += $(DDCMDSRC:%.c=$(OBJDIR)/%.o)
 HEARTOBJS += $(SPISRC:%.c=$(OBJDIR)/%.o)
 HEARTOBJS += $(SIMDSRC:%.c=$(OBJDIR)/%.o)
 
 CARDIOIDSRC = $(HEARTSRC) cardioid.cc 
 CARDIOIDOBJS = $(CARDIOIDSRC:%.cc=$(OBJDIR)/%.o)
+CARDIOIDOBJS += $(CARDIOIDSRC:%.cu=$(OBJDIR)/%.o)
 CARDIOIDOBJS += $(DDCMDSRC:%.c=$(OBJDIR)/%.o)
 CARDIOIDOBJS += $(SPISRC:%.c=$(OBJDIR)/%.o)
 CARDIOIDOBJS += $(SIMDSRC:%.c=$(OBJDIR)/%.o)
@@ -197,6 +200,9 @@ $(OBJDIR)/%.o: %.cc
 
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
+
+$(OBJDIR)/%.o: %.cu
+	$(NVCC) $(NVCFLAGS) -o $@ -c $<
 
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
