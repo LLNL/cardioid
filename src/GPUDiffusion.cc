@@ -216,7 +216,7 @@ void actualCalc(GPUDiffusion& self, VectorDouble32& dVm)
    {
       for (int red=0; red<=1; red++)
       {
-         #pragma omp target teams distribute parallel for default(none) firstprivate(idim, red, extents, offset, self_nCells_, self_nLocal_)
+         #pragma omp target teams distribute parallel for firstprivate(idim, red, extents, offset, self_nCells_, self_nLocal_)
          for (int ired=extents[red]; ired<extents[red+1]; ired++)
          { 
             int other = cellLookupVecRaw[ired + idim*self_nCells_];
