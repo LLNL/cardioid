@@ -289,7 +289,7 @@ void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
 
    MPI_File in;
 
-   int ierr = MPI_File_open(MPI_COMM_WORLD, fiblocs, MPI_MODE_RDONLY, MPI_INFO_NULL, &in);
+   int ierr = MPI_File_open(MPI_COMM_WORLD, (char *)fiblocs, MPI_MODE_RDONLY, MPI_INFO_NULL, &in);
    if (ierr)
    {
       if (rank == 0) fprintf(stderr, "Couldn't open file %s\n", fiblocs);
@@ -477,7 +477,7 @@ void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
 
    MPI_File in;
 
-   int ierr = MPI_File_open(MPI_COMM_WORLD, fiblocs, MPI_MODE_RDONLY, MPI_INFO_NULL, &in);
+   int ierr = MPI_File_open(MPI_COMM_WORLD, (char *)fiblocs, MPI_MODE_RDONLY, MPI_INFO_NULL, &in);
    if (ierr)
    {
       if (rank == 0) fprintf(stderr, "Couldn't open file %s\n", fiblocs);
