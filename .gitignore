@@ -1,3 +1,6 @@
+*.o
+fiber
+fiberp
 /fiber.cpp-bak
 /fiber.dSYM/
 /nbproject/
