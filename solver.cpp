@@ -300,8 +300,10 @@ void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle=20, int m
     const int apexAttr=1;
     const int baseAttr=2;
     const int epiAttr=3;
-    const int lvAttr=5; // TODO: Need something to indicate the LV and RV
+    const int lvAttr=5; 
     const int rvAttr=4;
+    
+    const int vAttr=9; // A temporary value assigned to one of ventricle first.
        
     // Determine the max and min dimension of mesh and apex.
     double *coord;
@@ -416,20 +418,48 @@ void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle=20, int m
             vElements.push_back(ele);
         }
     }
-    // pick one element in the container and assume it is in LV.
-    // TODO: we need additional information to identify LV and RV.
+    // pick one element in the container and assigned it to a temporary attr value.
     int last=vElements.size()-1;
     Element *lastEle=vElements[last];
-    lastEle->SetAttribute(lvAttr);
+    lastEle->SetAttribute(vAttr);
     // get rid of last element in the container
     vElements.pop_back();
-    findNeighbor(lastEle, vElements, lvAttr);
+    findNeighbor(lastEle, vElements, vAttr);
     
+    //count the numbers of points in two ventricles
+    unsigned v1count=0;
+    unsigned v2count=0;
     for(unsigned i=0; i<vElements.size(); i++){
         Element *ele =vElements[i];
-        if(ele->GetAttribute()==0){
-            ele->SetAttribute(rvAttr);
+        if(ele->GetAttribute()==vAttr){
+            v1count++;
         }
+        if(ele->GetAttribute()==0){
+            v2count++;
+        }        
+    }
+    
+    //The right ventricle has more points/cells than the left 
+    if(v1count>v2count){
+      for(unsigned i=0; i<vElements.size(); i++){
+          Element *ele =vElements[i];
+          if(ele->GetAttribute()==vAttr){
+             ele->SetAttribute(rvAttr);
+          }
+          if(ele->GetAttribute()==0){
+              ele->SetAttribute(lvAttr);
+          }        
+      }       
+    }else{
+      for(unsigned i=0; i<vElements.size(); i++){
+          Element *ele =vElements[i];
+          if(ele->GetAttribute()==vAttr){
+             ele->SetAttribute(lvAttr);
+          }
+          if(ele->GetAttribute()==0){
+              ele->SetAttribute(rvAttr);
+          }        
+      }        
     }
 
     // Check if there are unassigned elements left.
