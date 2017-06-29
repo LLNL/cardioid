@@ -441,6 +441,7 @@ void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle=20, int m
     
     //The right ventricle has more points/cells than the left 
     if(v1count>v2count){
+       lastEle->SetAttribute(rvAttr);
       for(unsigned i=0; i<vElements.size(); i++){
           Element *ele =vElements[i];
           if(ele->GetAttribute()==vAttr){
@@ -451,6 +452,7 @@ void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle=20, int m
           }        
       }       
     }else{
+       lastEle->SetAttribute(lvAttr);
       for(unsigned i=0; i<vElements.size(); i++){
           Element *ele =vElements[i];
           if(ele->GetAttribute()==vAttr){
