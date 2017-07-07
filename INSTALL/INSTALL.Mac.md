@@ -66,6 +66,12 @@ cd $CARDIOID
 ln -sf mfem-3.3/fib-gen
 ~~~
 
+## MAKE SURFACE in FIB-GEN
+~~~
+make surface
+~~~
+
+
 ---
 
 ## GO TO README FOR USAGE

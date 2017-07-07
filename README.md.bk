@@ -39,4 +39,6 @@ To get Omar's rotation matrices using the elementnum provided in the fiberlocs:
 
 mpirun -np 4 fiberp -ofast -m DTI060904.1.vtk -fl fiberlocs
 
-
+To run surface and get the preserved faces for the surface mesh:
+./surface  -m heart.surf.vtk
+this will generate a surf4surf.vtk 
