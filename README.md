@@ -8,7 +8,11 @@ TO INSTALL:
 - Follow instructions in the INSTALL directory for your particular system
 
 TO RUN:
+Step 1: Generate fibers
 - on LC account: srun -N1 -n4 -ppdebug $CARDIOID/fib-gen/fiberp -ofast -m heart.vtk -fl IPlocations.txt
 - on personal Mac: mpirun -np 4 $CARDIOID/fib-gen/fiberp -ofast -m heart.vtk -fl IPlocations.txt
 - on personal Ubuntu: mpirun -np 4 $CARDIOID/fib-gen/fiberp -ofast -m heart.vtk -fl IPlocations.txt
 
+Step 2: Tag surfaces
+$CARDIOID/fib-gen/ply2vtk heart.ply heart.surf.vtk
+$CARDIOID/fib-gen/surface -m heart.surf.vtk
