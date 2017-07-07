@@ -20,6 +20,7 @@ using namespace mfem;
 using namespace std;
 
 void printSurfVTK(Mesh *mesh, std::ostream &out);
+void printSurf4SurfVTK(Mesh *mesh, std::ostream &out);
 void printFiberVTK(Mesh *mesh, vector<Vector>& fiber_vecs, std::ostream &out);
 void printAnatomy(vector<anatomy>& anatVectors, filerheader& header, std::ostream &out); 
 

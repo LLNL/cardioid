@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
     if(omar_task && strlen(fiblocs)==0){
        std::cout << "The program runs Omar task but missing fiber location file!" << std::endl;
        args.PrintUsage(cout);
-       return 1;
+       return 1; 
     }
     
     if(omar_fast && strlen(fiblocs)==0){
@@ -157,6 +157,7 @@ int main(int argc, char *argv[]) {
     // 3. Solve the laplacian for four different boundary conditions.
     
     // get the vertex elements arrays.
+    mesh->SetAttributes();
     vector<vector<int> > vert2Elements;
     getVert2Elements(mesh, vert2Elements);
     ofstream v2e_ofs("vert2Elements.txt");

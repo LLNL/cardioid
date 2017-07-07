@@ -295,7 +295,7 @@ void findNeighbor(Element* ele, vector<Element*>& elements, int attr){
     }           
 }
 
-void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle=20, int myid){
+void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle, int myid){
     // Attributes for different surface
     const int apexAttr=1;
     const int baseAttr=2;
@@ -470,9 +470,187 @@ void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle=20, int m
         MFEM_ASSERT(ele->GetAttribute()!=0, "Unassigned element.");
     }  
     
-    mesh->SetAttributes();
+    //mesh->SetAttributes();
             
 }
+
+void setSurf4Surf(Mesh *surface, double angle){
+    // Attributes for different surface
+    const int apexAttr=1;
+    const int baseAttr=2;
+    const int epiAttr=3;
+    const int lvAttr=5; 
+    const int rvAttr=4;
+    
+    const int vAttr=9; // A temporary value assigned to one of ventricle first.
+       
+    // Determine the max and min dimension of mesh and apex.
+    double *coord;
+    Vector coord_min(3);
+    Vector coord_max(3);
+    bool firstEle=true;
+    int apexVet=0;
+    int apexEleIndex=0;
+    
+    int ne=surface->GetNE();
+    for(int i=0; i<ne; i++){
+        Element *ele = surface->GetElement(i);        
+        const int *v = ele->GetVertices();
+        const int nv = ele->GetNVertices();
+        // The first loop has to initialize the min and max.
+        if(firstEle){
+            firstEle=false;
+            coord=surface->GetVertex(v[0]);
+            for (int j = 0; j < 3; j++) {
+                coord_min(j)=coord[j];
+                coord_max(j)=coord[j];
+            }            
+        }
+        
+        for(int j=0; j<nv; j++){
+            coord=surface->GetVertex(v[j]);
+            
+            for (int k = 0; k < 3; k++) {
+                if(coord[k]<coord_min[k]){
+                    coord_min(k)=coord[k];
+                    // Keep track vertex and element indeces for min in z-axis
+                    if(k==2){  
+                        apexVet=v[j];
+                        apexEleIndex=i;
+                    }
+                }
+                if(coord[k]>coord_max[k]){
+                    coord_max(k)=coord[k];
+                }            
+            }                                    
+        }
+        
+    }
+    
+
+    coord = surface->GetVertex(apexVet);
+    
+    // Top 5% of the z axis.
+    double zTop5=coord_max[2]-(coord_max[2]-coord_min[2])*0.05;
+
+
+    cout << "Min: " << coord_min(0) << " " << coord_min(1) << " " << coord_min(2) << endl;
+    cout << "Max: " << coord_max(0) << " " << coord_max(1) << " " << coord_max(2) << endl;
+    cout << "Apex: " << coord[0] << " " << coord[1] << " " << coord[2] << endl;
+    cout << "Top 5% z coordinate: " << zTop5 << endl;
+
+    // Initialization the attributes to 0 and set attribute of apex
+    for(int i=0; i<ne; i++){
+        Element *ele = surface->GetElement(i);        
+        const int *v = ele->GetVertices();
+        const int nv = ele->GetNVertices();
+        // initialize the attribute for boundary.  
+        ele->SetAttribute(0);
+        
+        //Found apex elements and set attribute.
+        for (int j = 0; j < nv; j++) {
+            if (v[j] ==apexVet){
+                ele->SetAttribute(apexAttr);
+                //cout << "Element index = " << i << endl;
+            }
+        }        
+    }
+    
+    // Base    
+    // The base must be planar. Its norm must be within 20 degrees of z axis.
+    double cosTheta = cos(angle*PI/180); 
+    for(int i=0; i<ne; i++){
+        Element *ele = surface->GetElement(i);        
+        const int *v = ele->GetVertices();
+        const int nv = ele->GetNVertices();
+        MFEM_ASSERT(nv == 3, "Wrong boundary size");
+        
+        double *coord0 = surface->GetVertex(v[0]);
+        if(coord0[2]>zTop5){
+            double *coord1 = surface->GetVertex(v[1]);
+            double *coord2 = surface->GetVertex(v[2]);
+            if(isPlanar(coord0, coord1, coord2, cosTheta)){
+                ele->SetAttribute(baseAttr);
+            }
+        }
+    }
+    
+    //EPI
+    vector<Element *> elements;
+    for(int i=0; i<ne; i++){
+        Element *ele = surface->GetElement(i); 
+        if(ele->GetAttribute()==0){
+            elements.push_back(ele);
+        }
+    }
+    
+    Element *apexEle=surface->GetElement(apexEleIndex);
+    findNeighbor(apexEle, elements, epiAttr);
+    
+    // LV & RV
+    vector<Element *> vElements;    
+    for(unsigned i=0; i<elements.size(); i++){
+        Element *ele =elements[i];
+        if(ele->GetAttribute()==0){
+            vElements.push_back(ele);
+        }
+    }
+    // pick one element in the container and assigned it to a temporary attr value.
+    int last=vElements.size()-1;
+    Element *lastEle=vElements[last];
+    lastEle->SetAttribute(vAttr);
+    // get rid of last element in the container
+    vElements.pop_back();
+    findNeighbor(lastEle, vElements, vAttr);
+    
+    //count the numbers of points in two ventricles
+    unsigned v1count=0;
+    unsigned v2count=0;
+    for(unsigned i=0; i<vElements.size(); i++){
+        Element *ele =vElements[i];
+        if(ele->GetAttribute()==vAttr){
+            v1count++;
+        }
+        if(ele->GetAttribute()==0){
+            v2count++;
+        }        
+    }
+    
+    //The right ventricle has more points/cells than the left 
+    if(v1count>v2count){
+       lastEle->SetAttribute(rvAttr);
+      for(unsigned i=0; i<vElements.size(); i++){
+          Element *ele =vElements[i];
+          if(ele->GetAttribute()==vAttr){
+             ele->SetAttribute(rvAttr);
+          }
+          if(ele->GetAttribute()==0){
+              ele->SetAttribute(lvAttr);
+          }        
+      }       
+    }else{
+       lastEle->SetAttribute(lvAttr);
+      for(unsigned i=0; i<vElements.size(); i++){
+          Element *ele =vElements[i];
+          if(ele->GetAttribute()==vAttr){
+             ele->SetAttribute(lvAttr);
+          }
+          if(ele->GetAttribute()==0){
+              ele->SetAttribute(rvAttr);
+          }        
+      }        
+    }
+
+    // Check if there are unassigned elements left.
+    for(int i=0; i<ne; i++){
+        Element *ele = surface->GetElement(i); 
+        MFEM_ASSERT(ele->GetAttribute()!=0, "Unassigned element.");
+    }  
+    
+    //surface->SetAttributes();
+            
+}
+
 
 void setBaseOLD(Mesh *mesh, int attr){
     int nv = mesh->GetNV();

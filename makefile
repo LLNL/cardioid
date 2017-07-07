@@ -130,6 +130,10 @@ kdtreeTest:
 	$(MFEM_CXX) $(MFEM_FLAGS) kdtreeTest.cpp -o $@ 
 	./kdtreeTest
 
+surface:
+	$(MFEM_CXX) $(MFEM_FLAGS) -c surface.cpp -o surface.o
+	$(MFEM_CXX) $(MFEM_FLAGS) surface.o solver.o io.o -o $@ $(MFEM_LIBS)
+	
 
 # Testing: "test" target and mfem-test* variables are defined in config/test.mk
 
@@ -151,7 +155,7 @@ clean-exec:
 	@rm -f deformed.* velocity.* elastic_energy.* mode_*
 
 clean-test:
-	rm -rf mfemTest.o mfemTest kdtreeTest.o kdtreeTest
+	rm -rf mfemTest.o mfemTest kdtreeTest.o kdtreeTest surface
 
 distclean:
 	rm -f *.o *~ $(SEQ_EXAMPLES) $(PAR_EXAMPLES)
