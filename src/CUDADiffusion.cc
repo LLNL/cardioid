@@ -169,8 +169,10 @@ void actualCalc(CUDADiffusion& self, VectorDouble32& dVm)
    const double* sigmaRaw=&sigmaFaceNormalVec[0];
    const int*    lookupRaw=&cellLookupVec[0];
    double* dVmOut=&dVm[0];
-  
+   
+#if _OPENMP >= 201511
    #pragma omp target data use_device_ptr(VmRaw, dVmRaw, sigmaRaw, dVmOut, lookupRaw)
+#endif
    {
       call_cuda_kernels(VmRaw,dVmRaw,sigmaRaw,nx,ny,nz,dVmOut,lookupRaw,self_nCells_);
    }
