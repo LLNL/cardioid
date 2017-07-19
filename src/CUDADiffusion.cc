@@ -170,7 +170,10 @@ void actualCalc(CUDADiffusion& self, VectorDouble32& dVm)
    const int*    lookupRaw=&cellLookupVec[0];
    double* dVmOut=&dVm[0];
   
-   call_cuda_kernels(VmRaw,dVmRaw,sigmaRaw,nx,ny,nz,dVmOut,lookupRaw,self_nCells_);
+   #pragma omp target data use_device_ptr(VmRaw, dVmRaw, sigmaRaw, dVmOut, lookupRaw)
+   {
+      call_cuda_kernels(VmRaw,dVmRaw,sigmaRaw,nx,ny,nz,dVmOut,lookupRaw,self_nCells_);
+   }
    //diff_6face_v1<<<dim3(10,10,10),dim3(32,32,1)>>>(VmRaw,dVmRaw,sigmaRaw,sigmaRaw+3*nx*ny*nz,sigmaRaw+6*nx*ny*nz,nx,ny,nz);
    //map_dVm<<<self_nCells_>>>(dVmRaw,dVmOut,lookupRaw);
 
