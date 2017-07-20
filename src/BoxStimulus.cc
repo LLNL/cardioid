@@ -54,6 +54,6 @@ int BoxStimulus::subClassStim(double time,
 
 int BoxStimulus::nStim()
 {
-   const vector<int>& stimList(stimListTransport_.readOnDevice());
+   const vector<int>& stimList(stimListTransport_.readOnHost());
    return stimList.size();
 }
