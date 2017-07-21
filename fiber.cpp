@@ -156,8 +156,7 @@ int main(int argc, char *argv[]) {
 
     // 3. Solve the laplacian for four different boundary conditions.
     
-    // get the vertex elements arrays.
-    mesh->SetAttributes();
+    // get the vertex elements arrays.    
     vector<vector<int> > vert2Elements;
     getVert2Elements(mesh, vert2Elements);
     ofstream v2e_ofs("vert2Elements.txt");

@@ -470,7 +470,7 @@ void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle, int myid
         MFEM_ASSERT(ele->GetAttribute()!=0, "Unassigned element.");
     }  
     
-    //mesh->SetAttributes();
+    mesh->SetAttributes();
             
 }
 
