@@ -324,18 +324,18 @@ int main(int argc, char *argv[]) {
        getRotMatrix(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
           kdtree, vert2Elements, fiberAngles, fiblocs);
        
-    }else{
-      cout << "\nGet cardioid point gradients ...\n";
-      cout.flush();
-      Vector conduct(3);
-      conduct(0)=gL;
-      conduct(1)=gT;
-      conduct(2)=gN;
-      getCardGradients(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
-          kdtree, vert2Elements, boundingbox, dd,  
-          conduct, fiberAngles);
-    }     
-
+    }
+    
+    cout << "\nGet cardioid point gradients ...\n";
+    cout.flush();
+    Vector conduct(3);
+    conduct(0)=gL;
+    conduct(1)=gT;
+    conduct(2)=gN;
+    getCardGradients(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
+        kdtree, vert2Elements, boundingbox, dd,  
+        conduct, fiberAngles);
+         
     delete mesh;
 
     return 0;

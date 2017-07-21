@@ -381,21 +381,20 @@ int main(int argc, char *argv[]) {
        getRotMatrixp(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
           kdtree, vert2Elements, fiberAngles, fiblocs, num_procs, myid);
        
-    }else{    
+    }    
         
-      if (myid == 0) {
-          cout << "\nGet cardioid point gradients ...\n";
-          cout.flush();
-      }
-      Vector conduct(3);
-      conduct(0)=gL;
-      conduct(1)=gT;
-      conduct(2)=gN;
-      getCardGradientsp(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
-          kdtree, vert2Elements, boundingbox, dd,  
-          conduct, fiberAngles, num_procs, myid);
+    if (myid == 0) {
+        cout << "\nGet cardioid point gradients ...\n";
+        cout.flush();
     }
-
+    Vector conduct(3);
+    conduct(0)=gL;
+    conduct(1)=gT;
+    conduct(2)=gN;
+    getCardGradientsp(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
+        kdtree, vert2Elements, boundingbox, dd,  
+        conduct, fiberAngles, num_procs, myid);
+    
     delete mesh;
 
     MPI_Finalize(); 
