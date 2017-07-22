@@ -1,0 +1,9 @@
+#!/bin/bash
+#msub -A vhh
+#msub -l nodes=1
+#msub -l walltime=1:59:00 
+#msub -l partition=cab
+
+srun -N1 -n16 -ppbatch --account=vhh fiber-peloton
+#srun -N1 -n1 fiber-peloton
+#srun -N1 -n16 fiber-peloton
