@@ -153,7 +153,7 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
         Pprintf(file, "  datatype = VARRECORDASCII;\n");
         Pprintf(file, "  nfiles = %d;  \n", nFiles_);
         Pprintf(file, "  nrecord = %d; \n", header.nrecord);
-        Pprintf(file, "  nfields = 1; \n");
+        Pprintf(file, "  nfields = 8; \n");
         Pprintf(file, "  lrec = %d; \n", lrec);
         Pprintf(file, "  endian_key = 875770417; \n");
         Pprintf(file, "  field_names = gid cellType sigma11 sigma12 sigma13 sigma22 sigma23 sigma33; \n");

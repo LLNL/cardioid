@@ -237,7 +237,7 @@ void printAnatomy(vector<anatomy>& anatVectors, filerheader& header, std::ostrea
         << "datatype = VARRECORDASCII;\n"
         << "nfiles = 1;  \n"
         << "nrecord = " << header.nrecord << "; \n"
-        << "   nfields = 1; \n"
+        << "   nfields = 8; \n"
         << "   lrec = 80; \n"
         << "   endian_key = 875770417; \n"
         << "   field_names = gid cellType sigma11 sigma12 sigma13 sigma22 sigma23 sigma33; \n"
