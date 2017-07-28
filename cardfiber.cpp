@@ -17,7 +17,7 @@ void buildKDTree(Mesh *mesh, tree_type& kdtree) {
         triplet node(coord[0], coord[1], coord[2], i);
         kdtree.insert(node);
     }
-    
+    kdtree.optimise();
 //    triplet t(97.3604, 40.8014, 63.152, 0);
 //      std::pair<tree_type::const_iterator,double> found = kdtree.find_nearest(t);
 //      assert(found.first != kdtree.end());
@@ -104,6 +104,43 @@ bool isInTetElement(const Vector& q, Mesh* mesh, int eleIndex){
     
     return true;
     
+}
+
+void calcGradient(GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
+        Vector& conduct, Vector& fiberAngles, Vector& q, int eleIndex, anatomy& anat){
+    
+    Vector psi_ab_vec(3);                        
+    double psi_ab=0.0;
+    getCardEleGrads(x_psi_ab, q, eleIndex, psi_ab_vec, psi_ab);
+
+    Vector phi_epi_vec(3);
+    double phi_epi=0.0;
+    getCardEleGrads(x_phi_epi, q, eleIndex, phi_epi_vec, phi_epi);                        
+
+    Vector phi_lv_vec(3);
+    double phi_lv=0.0;
+    getCardEleGrads(x_phi_lv, q, eleIndex, phi_lv_vec, phi_lv);  
+
+    Vector phi_rv_vec(3);
+    double phi_rv=0.0;
+    getCardEleGrads(x_phi_rv, q, eleIndex, phi_rv_vec, phi_rv);  
+
+    DenseMatrix QPfib(dim3, dim3);
+    biSlerpCombo(QPfib, psi_ab, psi_ab_vec, phi_epi, phi_epi_vec,
+        phi_lv, phi_lv_vec, phi_rv, phi_rv_vec, fiberAngles); 
+
+    DenseMatrix Sigma(dim3, dim3);
+    calcSigma(Sigma, QPfib, conduct);
+
+    double *s=Sigma.Data();
+    
+    anat.celltype=getCellType(phi_epi, phi_lv, phi_rv);
+    anat.sigma[0]=s[0];
+    anat.sigma[1]=s[3];
+    anat.sigma[2]=s[6];
+    anat.sigma[3]=s[4];
+    anat.sigma[4]=s[7];
+    anat.sigma[5]=s[8];   
 }
 
 void getCardEleGrads(GridFunction& x, const Vector& q, int eleIndex, Vector& grad_ele, double& xVal) {
