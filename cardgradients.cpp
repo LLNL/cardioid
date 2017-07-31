@@ -33,6 +33,9 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
     
     long long totalCardPoints=0;
     vector<anatomy> anatVectors;
+    
+    double cutoff=getMaxEdgeLen(mesh)*0.6123724356957945;  //Radius of circumsphere sqrt(6)/4 
+    cout << "\nCutoff for nearest point is " << cutoff << std::endl;
        
     for(int i=0; i<nx; i++){
         for(int j=0; j<ny; j++){
@@ -50,6 +53,9 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                 triplet pt(x, y, z, 0);                
                 std::pair<tree_type::const_iterator,double> found = kdtree.find_nearest(pt);
                 assert(found.first != kdtree.end());
+                // Skip if the distance between pt and nearest is larger than cutoff
+                if (found.second>cutoff) continue; 
+                
                 triplet vetexNearPt=*found.first;
                 int vertex=vetexNearPt.getIndex();
                 vector<int> elements = vert2Elements[vertex];

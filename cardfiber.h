@@ -40,6 +40,8 @@ struct anatomy{
 
 void buildKDTree(Mesh *mesh, tree_type& kdtree);
 
+double getMaxEdgeLen(Mesh *mesh);
+
 double det4X4(DenseMatrix& matrix);
 bool isInTetElement(const Vector& q, Mesh* mesh, int eleIndex);
 void getCardEleGrads(GridFunction& x, const Vector& q, int eleIndex, Vector& grad_ele, double& xVal);

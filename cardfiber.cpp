@@ -8,6 +8,8 @@
 #include "io.h"
 #include "kdtree++/kdtree.hpp"
 
+#include <cmath>
+
 void buildKDTree(Mesh *mesh, tree_type& kdtree) {
     int NumOfVertices = mesh->GetNV();
 
@@ -29,6 +31,32 @@ void buildKDTree(Mesh *mesh, tree_type& kdtree) {
 //    }
 }
 
+double getMaxEdgeLen(Mesh *mesh){
+    double maxEdgeLen=0;
+    int NumOfElements=mesh->GetNE();
+    for (int i = 0; i < NumOfElements; i++){
+         const Element *ele = mesh->GetElement(i);
+         const int *v = ele->GetVertices();
+         const int ne = ele->GetNEdges();
+         for (int j = 0; j < ne; j++){
+            const int *e = ele->GetEdgeVertices(j);
+            const double* coord0=mesh->GetVertex(v[e[0]]);
+            const double* coord1=mesh->GetVertex(v[e[1]]);
+            double dist2=0;
+            for(int j=0; j<3; j++){
+                dist2+=(coord0[j]-coord1[j])*(coord0[j]-coord1[j]);
+            }            
+//            std::cout << "e[0]=" << e[0] << " e[1]=" << e[1] 
+//                    << " v[e[0]]=" << v[e[0]] << " v[e[1]]=" << v[e[1]] 
+//                    << " dist2=" << dist2 <<std::endl; 
+            if(maxEdgeLen<dist2){
+                maxEdgeLen=dist2;
+            }
+         }
+        //break;
+    }
+    return std::sqrt(maxEdgeLen);
+}
 
 // MFEM doesn't have determinant function for 4X4 matrix. So write my own version.
 double det4X4(DenseMatrix& matrix){

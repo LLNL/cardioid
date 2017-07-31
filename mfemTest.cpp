@@ -262,6 +262,40 @@ void testCross() {
     e_0.Print(cout);
 }
 
+void testMesh(){
+    const char *mesh_file = "../fiber-test/human.vtk";
+    int order = 1;
+    bool static_cond = false;
+    bool visualization = 1;
+
+    Mesh *mesh = new Mesh(mesh_file, 1, 1);
+    
+    double maxEdgeLen=0;
+    int NumOfElements=mesh->GetNE();
+    for (int i = 0; i < NumOfElements; i++){
+         const Element *ele = mesh->GetElement(i);
+         const int *v = ele->GetVertices();
+         const int ne = ele->GetNEdges();
+         for (int j = 0; j < ne; j++){
+            const int *e = ele->GetEdgeVertices(j);
+            const double* coord0=mesh->GetVertex(v[e[0]]);
+            const double* coord1=mesh->GetVertex(v[e[1]]);
+            double dist2=0;
+            for(int j=0; j<3; j++){
+                dist2+=(coord0[j]-coord1[j])*(coord0[j]-coord1[j]);
+            }            
+//            std::cout << "e[0]=" << e[0] << " e[1]=" << e[1] 
+//                    << " v[e[0]]=" << v[e[0]] << " v[e[1]]=" << v[e[1]] 
+//                    << " dist2=" << dist2 <<std::endl; 
+            if(maxEdgeLen<dist2){
+                maxEdgeLen=dist2;
+            }
+         }
+        //break;
+    }
+    std::cout << "maxEdgeLen=" << maxEdgeLen << std::endl;
+}
+
 void testMFEM() {
     const char *mesh_file = "../fiber-test/human.vtk";
     int order = 1;
@@ -454,7 +488,8 @@ int main(int argc, char *argv[]) {
     
     //testTet();
     //testMatrix2();
-    testMFEM();
+    //testMFEM();
+    testMesh();
     //testMatrix();
     //testMatrixEigen();
     //testRotQat();
