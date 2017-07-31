@@ -279,6 +279,9 @@ int main(int argc, char *argv[]) {
     genfiber(QPfibVectors, psi_ab, psi_ab_grads, phi_epi, phi_epi_grads, 
         phi_lv, phi_lv_grads, phi_rv, phi_rv_grads, fiberAngles);
     
+    cout << "\nCalculate fiber on the nodes ...\n";
+    calcNodeFiber(QPfibVectors); 
+        
     vector<Vector> fvectors;
     vector<Vector> svectors;
     vector<Vector> tvectors;

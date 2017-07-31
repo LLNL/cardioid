@@ -263,12 +263,17 @@ void testCross() {
 }
 
 void testMesh(){
-    const char *mesh_file = "../fiber-test/human.vtk";
+    const char *mesh_file = "examples/heart/heart.vtk";
     int order = 1;
     bool static_cond = false;
     bool visualization = 1;
 
     Mesh *mesh = new Mesh(mesh_file, 1, 1);
+    
+    int vmax0=0;
+    int vmax1=0;
+    double* cMax0=0;
+    double* cMax1=0;
     
     double maxEdgeLen=0;
     int NumOfElements=mesh->GetNE();
@@ -289,11 +294,19 @@ void testMesh(){
 //                    << " dist2=" << dist2 <<std::endl; 
             if(maxEdgeLen<dist2){
                 maxEdgeLen=dist2;
+                vmax0=v[e[0]];
+                vmax1=v[e[1]];
+                cMax0=const_cast<double*>(coord0);
+                cMax1=const_cast<double*>(coord1);
             }
          }
         //break;
     }
     std::cout << "maxEdgeLen=" << maxEdgeLen << std::endl;
+    std::cout << "vmax0=" << vmax0  << " vmax1=" << vmax1 << std::endl;
+    for(int j=0; j<3; j++){
+        std::cout << cMax0[j]  << " " << cMax1[j] << std::endl;
+    }
 }
 
 void testMFEM() {

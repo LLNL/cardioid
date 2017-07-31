@@ -34,7 +34,7 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
     long long totalCardPoints=0;
     vector<anatomy> anatVectors;
     
-    double cutoff=getMaxEdgeLen(mesh)*0.6123724356957945;  //Radius of circumsphere sqrt(6)/4 
+    double cutoff=getMaxEdgeLen(mesh)*0.6124;  //Radius of circumsphere sqrt(6)/4 
     cout << "\nCutoff for nearest point is " << cutoff << std::endl;
        
     for(int i=0; i<nx; i++){
@@ -321,4 +321,38 @@ void getRotMatrixFast(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
    }
 
           
+}
+
+
+void calcNodeFiber(vector<DenseMatrix>& QPfibVectors){
+    
+    // Set up diag matrix
+    // [ 3 0 0 
+    //   0 2 0 
+    //   0 0 1 ]    
+    DenseMatrix diag(dim3, dim3);
+    for(int i=0; i<dim3; i++){
+        Vector vec(3);
+        vec=0.0;
+        vec(i)=3-i;
+        diag.SetCol(i, vec);
+    }
+ 
+    ofstream f_ofs("heart.fiber");
+    
+     for(unsigned i=0; i< QPfibVectors.size(); i++){
+        DenseMatrix Q=QPfibVectors[i]; 
+        DenseMatrix tmp(dim3, dim3);
+        Mult(Q, diag, tmp);    
+        DenseMatrix QT=Q;
+        QT.Transpose();  
+        DenseMatrix Sigma(dim3, dim3);
+        Mult(tmp, QT, Sigma);
+        f_ofs << i << " " 
+             << Sigma(0,0) << " " << Sigma(1,0) << " " << Sigma(2,0) << " " 
+             << Sigma(1,1) << " " << Sigma(2,1) << " " << Sigma(2,2) 
+             << std::endl;
+        
+    }   
+    
 }

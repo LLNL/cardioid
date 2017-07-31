@@ -49,3 +49,5 @@ fiberp
 /units.h
 /utilities.h
 /units.c
+/kdtreeTest
+/mfemTest

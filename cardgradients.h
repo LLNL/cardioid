@@ -21,5 +21,7 @@ void getRotMatrix(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, G
 void getRotMatrixFast(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
         vector<vector<int> >& vert2Elements, Vector& fiberAngles, const char *fiblocs);
 
+void calcNodeFiber(vector<DenseMatrix>& QPfibVectors);
+
 #endif	/* CARDGRADIENTS_H */
 

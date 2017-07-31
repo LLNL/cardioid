@@ -215,8 +215,9 @@ void calcSigma(DenseMatrix& Sigma, DenseMatrix& Q, Vector& conduct){
     
     DenseMatrix tmp(dim3, dim3);
     Mult(Q, diag, tmp);
-    Q.Transpose();
-    Mult(tmp, Q, Sigma);
+    DenseMatrix QT=Q;
+    QT.Transpose();
+    Mult(tmp, QT, Sigma);
     
 }
 
