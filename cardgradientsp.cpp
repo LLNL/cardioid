@@ -131,7 +131,7 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
     if (myid == 0) {
         Pprintf(file, "anatomy FILEHEADER { \n");
         Pprintf(file, "  datatype = VARRECORDASCII;\n");
-        Pprintf(file, "  nfiles = %d;  \n", file.nfiles);
+        Pprintf(file, "  nfiles = %d;  \n", file->nfiles);
         Pprintf(file, "  nrecord = %d; \n", header.nrecord);
         Pprintf(file, "  nfields = 8; \n");
         Pprintf(file, "  lrec = %d; \n", lrec);
