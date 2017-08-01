@@ -43,18 +43,19 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                 double x=xmin+i*dx;
                 double y=ymin+j*dy;
                 double z=zmin+k*dz;
-                //For barycentric
-                Vector q(4);
-                q(0)=x;
-                q(1)=y;
-                q(2)=z;
-                q(3)=1.0; 
                 //For k-D tree
                 triplet pt(x, y, z, 0);                
                 std::pair<tree_type::const_iterator,double> found = kdtree.find_nearest(pt);
                 assert(found.first != kdtree.end());
                 // Skip if the distance between pt and nearest is larger than cutoff
                 if (found.second>cutoff) continue; 
+
+                //For barycentric
+                Vector q(4);
+                q(0)=x;
+                q(1)=y;
+                q(2)=z;
+                q(3)=1.0;                 
                 
                 triplet vetexNearPt=*found.first;
                 int vertex=vetexNearPt.getIndex();

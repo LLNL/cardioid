@@ -47,7 +47,12 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
 
     int totalCardPoints = 0;
     vector<anatomy> anatVectors;
-
+    
+    double cutoff=getMaxEdgeLen(mesh)*0.6123724356957945;  //Radius of circumsphere sqrt(6)/4 
+    if(myid==0){
+        cout << "\nCutoff for nearest point is " << cutoff << std::endl;    
+    }
+    
     long long gid_dim = nx * ny*nz;
     // MPI Parallel
     for (long long g = myid; g < gid_dim; g += num_procs) {
@@ -61,52 +66,27 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
         triplet pt(x, y, z, 0);
         std::pair<tree_type::const_iterator, double> found = kdtree.find_nearest(pt);
         assert(found.first != kdtree.end());
+        // Skip if the distance between pt and nearest is larger than cutoff
+        if (found.second>cutoff) continue; 
+         
+        //For barycentric
+        Vector q(4);
+        q(0) = x;
+        q(1) = y;
+        q(2) = z;
+        q(3) = 1.0;
+        
         triplet vetexNearPt = *found.first;
         int vertex = vetexNearPt.getIndex();
+        
         vector<int> elements = vert2Elements[vertex];
         for (unsigned e = 0; e < elements.size(); e++) {
             int eleIndex = elements[e];
-            //For barycentric
-            Vector q(4);
-            q(0) = x;
-            q(1) = y;
-            q(2) = z;
-            q(3) = 1.0;
-            if (isInTetElement(q, mesh, eleIndex)) {
 
-                Vector psi_ab_vec(3);
-                double psi_ab = 0.0;
-                getCardEleGrads(x_psi_ab, q, eleIndex, psi_ab_vec, psi_ab);
-
-                Vector phi_epi_vec(3);
-                double phi_epi = 0.0;
-                getCardEleGrads(x_phi_epi, q, eleIndex, phi_epi_vec, phi_epi);
-
-                Vector phi_lv_vec(3);
-                double phi_lv = 0.0;
-                getCardEleGrads(x_phi_lv, q, eleIndex, phi_lv_vec, phi_lv);
-
-                Vector phi_rv_vec(3);
-                double phi_rv = 0.0;
-                getCardEleGrads(x_phi_rv, q, eleIndex, phi_rv_vec, phi_rv);
-
-                DenseMatrix QPfib(dim3, dim3);
-                biSlerpCombo(QPfib, psi_ab, psi_ab_vec, phi_epi, phi_epi_vec,
-                        phi_lv, phi_lv_vec, phi_rv, phi_rv_vec, fiberAngles);
-
-                DenseMatrix Sigma(dim3, dim3);
-                calcSigma(Sigma, QPfib, conduct);
-
-                double *s = Sigma.Data();
+            if (isInTetElement(q, mesh, eleIndex)) {                
                 anatomy anat;
                 anat.gid = g;
-                anat.celltype = getCellType(phi_epi, phi_lv, phi_rv);
-                anat.sigma[0] = s[0];
-                anat.sigma[1] = s[3];
-                anat.sigma[2] = s[6];
-                anat.sigma[3] = s[4];
-                anat.sigma[4] = s[7];
-                anat.sigma[5] = s[8];
+                calcGradient(x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv, conduct, fiberAngles, q, eleIndex, anat);                
                 anatVectors.push_back(anat);
 
                 totalCardPoints++;
