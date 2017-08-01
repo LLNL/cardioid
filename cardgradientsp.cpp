@@ -366,39 +366,24 @@ void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
          triplet vetexNearPt = *found.first;
          int vertex = vetexNearPt.getIndex();
          vector<int> elements = vert2Elements[vertex];
+         
+        //For barycentric
+        Vector q(4);
+        q(0) = x;
+        q(1) = y;
+        q(2) = z;
+        q(3) = 1.0;
+            
          bool findPt=false;
          for (unsigned e = 0; e < elements.size(); e++)
          {
             int eleIndex = elements[e];
-            //For barycentric
-            Vector q(4);
-            q(0) = x;
-            q(1) = y;
-            q(2) = z;
-            q(3) = 1.0;
-            vector<double> barycentric;
+
             if (isInTetElement(q, mesh, eleIndex))
             {
-               //cout << "fiblocs element index=" << tokens[0] << "; k-D tree index=" << eleIndex << endl;
-               Vector psi_ab_vec(3);
-               double psi_ab = 0.0;
-               getCardEleGrads(x_psi_ab, q, eleIndex, psi_ab_vec, psi_ab);
-
-               Vector phi_epi_vec(3);
-               double phi_epi = 0.0;
-               getCardEleGrads(x_phi_epi, q, eleIndex, phi_epi_vec, phi_epi);
-
-               Vector phi_lv_vec(3);
-               double phi_lv = 0.0;
-               getCardEleGrads(x_phi_lv, q, eleIndex, phi_lv_vec, phi_lv);
-
-               Vector phi_rv_vec(3);
-               double phi_rv = 0.0;
-               getCardEleGrads(x_phi_rv, q, eleIndex, phi_rv_vec, phi_rv);
-
                DenseMatrix QPfib(dim3, dim3);
-               biSlerpCombo(QPfib, psi_ab, psi_ab_vec, phi_epi, phi_epi_vec,
-                            phi_lv, phi_lv_vec, phi_rv, phi_rv_vec, fiberAngles);
+               Phi phi;
+               calcGradient(x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv, fiberAngles, q, eleIndex, QPfib, phi);  
 
                stringstream f_ofs;
                f_ofs << tokens[0] << " ";
@@ -556,7 +541,7 @@ void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
             q(1) = y;
             q(2) = z;
             q(3) = 1.0;
-            vector<double> barycentric;
+
             if (isInTetElement(q, mesh, eleIndex))
             {
                //cout << "fiblocs element index=" << tokens[0] << "; k-D tree index=" << eleIndex << endl;
