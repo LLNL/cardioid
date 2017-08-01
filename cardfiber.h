@@ -38,6 +38,12 @@ struct anatomy{
     
 };
 
+struct Phi{
+    double epi;
+    double lv;
+    double rv;
+};
+
 void buildKDTree(Mesh *mesh, tree_type& kdtree);
 
 double getMaxEdgeLen(Mesh *mesh);
@@ -48,12 +54,9 @@ void getCardEleGrads(GridFunction& x, const Vector& q, int eleIndex, Vector& gra
 void calcSigma(DenseMatrix& Sigma, DenseMatrix& Q, Vector& conduct);
 int getCellType(double phi_epi, double phi_lv, double phi_rv);
 
-void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_rv,
-        tree_type& kdtree, vector<vector<int> >& vert2Elements, vector<Vector>& boundingbox, double dd, 
-        Vector& conduct, Vector& fiberAngles, int myid=0);
-
 void calcGradient(GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-        Vector& conduct, Vector& fiberAngles, Vector& q, int eleIndex, anatomy& anat);
+        Vector& fiberAngles, Vector& q, int eleIndex, DenseMatrix& QPfib, Phi& phi);
 
+void getAnatomy(anatomy& anat, DenseMatrix& QPfib, Vector& conduct, Phi& phi);
 #endif	/* CARDFIBER_H */
 

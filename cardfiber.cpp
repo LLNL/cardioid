@@ -135,7 +135,7 @@ bool isInTetElement(const Vector& q, Mesh* mesh, int eleIndex){
 }
 
 void calcGradient(GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-        Vector& conduct, Vector& fiberAngles, Vector& q, int eleIndex, anatomy& anat){
+        Vector& fiberAngles, Vector& q, int eleIndex, DenseMatrix& QPfib, Phi& phi){
     
     Vector psi_ab_vec(3);                        
     double psi_ab=0.0;
@@ -153,22 +153,29 @@ void calcGradient(GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction&
     double phi_rv=0.0;
     getCardEleGrads(x_phi_rv, q, eleIndex, phi_rv_vec, phi_rv);  
 
-    DenseMatrix QPfib(dim3, dim3);
+    phi.epi=phi_epi;
+    phi.lv=phi_lv;
+    phi.rv=phi_rv;
+    
     biSlerpCombo(QPfib, psi_ab, psi_ab_vec, phi_epi, phi_epi_vec,
         phi_lv, phi_lv_vec, phi_rv, phi_rv_vec, fiberAngles); 
 
+ 
+}
+
+void getAnatomy(anatomy& anat, DenseMatrix& QPfib, Vector& conduct, Phi& phi){
     DenseMatrix Sigma(dim3, dim3);
     calcSigma(Sigma, QPfib, conduct);
 
     double *s=Sigma.Data();
     
-    anat.celltype=getCellType(phi_epi, phi_lv, phi_rv);
+    anat.celltype=getCellType(phi.epi, phi.lv, phi.rv);
     anat.sigma[0]=s[0];
     anat.sigma[1]=s[3];
     anat.sigma[2]=s[6];
     anat.sigma[3]=s[4];
     anat.sigma[4]=s[7];
-    anat.sigma[5]=s[8];   
+    anat.sigma[5]=s[8];      
 }
 
 void getCardEleGrads(GridFunction& x, const Vector& q, int eleIndex, Vector& grad_ele, double& xVal) {

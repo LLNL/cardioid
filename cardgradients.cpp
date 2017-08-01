@@ -63,9 +63,12 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                 for (unsigned e = 0; e < elements.size(); e++) {
                     int eleIndex=elements[e];                   
                     if(isInTetElement(q, mesh, eleIndex)){
+                        DenseMatrix QPfib(dim3, dim3);
+                        Phi phi;
+                        calcGradient(x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv, fiberAngles, q, eleIndex, QPfib, phi);  
                         anatomy anat;
                         anat.gid=i+j*nx+k*nx*ny;
-                        calcGradient(x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv, conduct, fiberAngles, q, eleIndex, anat);  
+                        getAnatomy(anat, QPfib, conduct, phi);
                         anatVectors.push_back(anat); 
                         totalCardPoints++;
                         if(totalCardPoints%10000==0){ 
