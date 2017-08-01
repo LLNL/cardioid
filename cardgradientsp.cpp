@@ -694,7 +694,7 @@ void calcNodeFiberP(vector<DenseMatrix>& QPfibVectors, int size, int rank){
             QT.Transpose();  
             DenseMatrix Sigma(dim3, dim3);
             Mult(tmp, QT, Sigma);
-            SigmaVec.append(Sigma);
+            SigmaVec.push_back(Sigma);
          }
     }   
         
