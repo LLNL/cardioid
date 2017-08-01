@@ -371,7 +371,12 @@ int main(int argc, char *argv[]) {
       MPI_Finalize(); 
       return 0;       
     }    
-    
+
+    double maxEdgeLen=getMaxEdgeLen(mesh);
+    if (myid == 0) {
+        cout << "\nThe maximum edge length in the mesh is "<< maxEdgeLen <<"\n";
+        cout.flush();     
+    }
     
     if (myid == 0) {
         cout << "\nStart to build k-D tree for the mesh...\n";
@@ -400,7 +405,7 @@ int main(int argc, char *argv[]) {
     conduct(2)=gN;
     getCardGradientsp(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
         kdtree, vert2Elements, boundingbox, dd,  
-        conduct, fiberAngles, num_procs, myid);
+        conduct, fiberAngles, maxEdgeLen, num_procs, myid);
     
     delete mesh;
 

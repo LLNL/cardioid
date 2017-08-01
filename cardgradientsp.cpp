@@ -25,7 +25,7 @@ using namespace mfem;
 
 void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
         tree_type& kdtree, vector<vector<int> >& vert2Elements, vector<Vector>& boundingbox, double dd,
-        Vector& conduct, Vector& fiberAngles, int num_procs, int myid) {
+        Vector& conduct, Vector& fiberAngles, double maxEdgeLen, int num_procs, int myid) {
     Vector min = boundingbox[0];
     Vector max = boundingbox[1];
 
@@ -50,7 +50,7 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
     int totalCardPoints = 0;
     vector<anatomy> anatVectors;
     
-    double cutoff=getMaxEdgeLen(mesh)*0.6123724356957945;  //Radius of circumsphere sqrt(6)/4 
+    double cutoff=maxEdgeLen*0.6123724356957945;  //Radius of circumsphere sqrt(6)/4 
     if(myid==0){
         cout << "\nCutoff for nearest point is " << cutoff << std::endl;    
     }
