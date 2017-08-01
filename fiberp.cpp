@@ -325,6 +325,13 @@ int main(int argc, char *argv[]) {
     genfiber(QPfibVectors, psi_ab, psi_ab_grads, phi_epi, phi_epi_grads, 
         phi_lv, phi_lv_grads, phi_rv, phi_rv_grads, fiberAngles);
     
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (myid == 0) {    
+        cout << "\nCalculate fiber on the nodes ...\n";
+        cout.flush();
+    }     
+    calcNodeFiberP(QPfibVectors, num_procs, myid);     
+    
     vector<Vector> fvectors;
     vector<Vector> svectors;
     vector<Vector> tvectors;
