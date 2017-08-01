@@ -142,14 +142,19 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
     
     strftime(buffer, sizeof(buffer), "%a %b %d %H:%M:%S %Y", timePtr);
     string myline(buffer);
-    myline = "  created_time = " + myline + "\n";    
+    myline = "  created_time = " + myline + "\n";  
+    
+    int nfiles=file->nfiles;
+    if(nfiles>num_procs){
+        nfiles=num_procs;
+    }
 
     if (myid == 0) {
         Pprintf(file, "anatomy FILEHEADER { \n");
         Pprintf(file, "  exe_version = fiber; \n");
         Pprintf(file, myline.c_str());
         Pprintf(file, "  datatype = FIXRECORDASCII;\n");
-        Pprintf(file, "  nfiles = %d;  \n", file->nfiles);
+        Pprintf(file, "  nfiles = %d;  \n", nfiles);
         Pprintf(file, "  nrecord = %d; \n", header.nrecord);
         Pprintf(file, "  lrec = %d; \n", lrec);        
         Pprintf(file, "  endian_key = 875770417; \n");        
