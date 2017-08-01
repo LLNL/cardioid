@@ -273,8 +273,8 @@ int main(int argc, char *argv[]) {
     printFiberVTK(mesh, psi_ab_grads, psia_ofs);
     printFiberVTK(mesh, phi_epi_grads, phie_ofs);
     printFiberVTK(mesh, phi_lv_grads, phil_ofs);    
-    printFiberVTK(mesh, phi_rv_grads, phir_ofs); 
-            
+    printFiberVTK(mesh, phi_rv_grads, phir_ofs);
+    
     vector<DenseMatrix> QPfibVectors;   
     genfiber(QPfibVectors, psi_ab, psi_ab_grads, phi_epi, phi_epi_grads, 
         phi_lv, phi_lv_grads, phi_rv, phi_rv_grads, fiberAngles);
@@ -317,6 +317,10 @@ int main(int argc, char *argv[]) {
       return 0;       
     }
     
+    double maxEdgeLen=getMaxEdgeLen(mesh);
+    cout << "\nThe maximum edge length in the mesh is "<< maxEdgeLen <<"\n";
+    cout.flush();     
+      
     cout << "\nStart to build k-D tree for the mesh...\n";
     cout.flush();
     tree_type kdtree(std::ptr_fun(tac));
@@ -337,7 +341,7 @@ int main(int argc, char *argv[]) {
     conduct(2)=gN;
     getCardGradients(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
         kdtree, vert2Elements, boundingbox, dd,  
-        conduct, fiberAngles);
+        conduct, fiberAngles, maxEdgeLen);
          
     delete mesh;
 

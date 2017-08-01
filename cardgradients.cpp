@@ -9,7 +9,7 @@
 
 void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
         tree_type& kdtree, vector<vector<int> >& vert2Elements, vector<Vector>& boundingbox, double dd,  
-        Vector& conduct, Vector& fiberAngles){
+        Vector& conduct, Vector& fiberAngles, double maxEdgeLen){
     Vector min=boundingbox[0];
     Vector max=boundingbox[1];
     
@@ -34,7 +34,7 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
     long long totalCardPoints=0;
     vector<anatomy> anatVectors;
     
-    double cutoff=getMaxEdgeLen(mesh)*0.6124;  //Radius of circumsphere sqrt(6)/4 
+    double cutoff=maxEdgeLen*0.6124;  //Radius of circumsphere sqrt(6)/4 
     cout << "\nCutoff for nearest point is " << cutoff << std::endl;
        
     for(int i=0; i<nx; i++){
