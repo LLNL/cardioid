@@ -1,9 +1,12 @@
 #!/bin/bash
-#msub -A vhh
-#msub -l nodes=1
-#msub -l walltime=5:59:00 
-#msub -l partition=cab
+ ##### These lines are for Moab
+ #MSUB -l nodes=16
+ #MSUB -l partition=cab
+ #MSUB -l walltime=01:59:00
+ #MSUB -q pbatch
+ #MSUB -A vhh
+ ##MSUB -o slurm.out
+ ##MSUB -e slurm.err
 
-srun -N1 -n16 -ppbatch --account=vhh fiber-peloton
-#srun -N1 -n1 fiber-peloton
-#srun -N1 -n16 fiber-peloton
+##### Now comes the srun call
+srun -N16 -n256 -ppbatch --account=vhh fiberp -m heart.vtk -dd 0.1 -omar -fl IPlocations.txt 
