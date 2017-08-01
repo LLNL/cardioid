@@ -17,6 +17,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <string>
+#include <time.h>
 
 using namespace std;
 using namespace mfem;
@@ -119,7 +121,8 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
     }
     
     fullname += "/anatomy";
-    int lrec = 80;
+    int lrec = 88;
+//     int lrec = 80;
     heap_allocate(lrec*totalCardPoints*64 + 4096);
     
     PFILE* file = Popen(fullname.c_str(), "w", MPI_COMM_WORLD);
@@ -128,37 +131,86 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
 //    if (nFiles_ > 0)
 //        PioSet(file, "ngroup", nFiles_);  
 
+
+
+//  EDITED BY OMH
+//
+    time_t tt = time(NULL);
+    tm* timePtr = localtime(&tt);
+    char buffer[256];
+    string myfmt;
+    
+    strftime(buffer, sizeof(buffer), "%a %b %d %H:%M:%S %Y", timePtr);
+    string myline(buffer);
+    myline = "  created_time = " + myline + "\n";    
+
     if (myid == 0) {
         Pprintf(file, "anatomy FILEHEADER { \n");
-        Pprintf(file, "  datatype = VARRECORDASCII;\n");
+        Pprintf(file, "  exe_version = fiber; \n");
+        Pprintf(file, myline.c_str());
+        Pprintf(file, "  datatype = FIXRECORDASCII;\n");
         Pprintf(file, "  nfiles = %d;  \n", file->nfiles);
         Pprintf(file, "  nrecord = %d; \n", header.nrecord);
+        Pprintf(file, "  lrec = %d; \n", lrec);        
+        Pprintf(file, "  endian_key = 875770417; \n");        
         Pprintf(file, "  nfields = 8; \n");
-        Pprintf(file, "  lrec = %d; \n", lrec);
-        Pprintf(file, "  endian_key = 875770417; \n");
         Pprintf(file, "  field_names = gid cellType sigma11 sigma12 sigma13 sigma22 sigma23 sigma33; \n");
         Pprintf(file, "  field_types = u u f f f f f f; \n");
-        Pprintf(file, "  field_units = 1 1 mS/mm mS/mm mS/mm mS/mm mS/mm mS/mm; \n");
-        Pprintf(file, "  nx =  %d;\n", header.nx);
-        Pprintf(file, "  ny =  %d;\n", header.ny);
-        Pprintf(file, "  nz =  %d;\n", header.nz);
-        Pprintf(file, "  dx =  %f;\n", header.dx);
-        Pprintf(file, "  dy =  %f;\n", header.dy);
-        Pprintf(file, "  dz =  %f;\n", header.dz);
+        Pprintf(file, "  nx =  %d; ny =  %d; nz =  %d;\n", header.nx, header.ny, header.nz);
+        Pprintf(file, "  field_units = 1 1 mS/mm mS/mm mS/mm mS/mm mS/mm mS/mm; \n");        
+        Pprintf(file, "  dx =  %f; dy =  %f; dz =  %f;\n", header.dx, header.dy, header.dz);        
         Pprintf(file, "} \n\n");
 
     }  
 
     for (unsigned i = 0; i < anatVectors.size(); i++) {
         anatomy anat = anatVectors[i];
-        Pprintf(file, "    %llu  %d ", anat.gid, anat.celltype);
+        Pprintf(file, "%10llu%5d", anat.gid, anat.celltype);
         for (int j = 0; j < 6; j++) {
-            Pprintf(file, "%f ", anat.sigma[j]);
+            myfmt = "%12.5e";
+            if (anat.sigma[j] < 0) {
+               myfmt = "%12.4e";
+            }
+            Pprintf(file, myfmt.c_str(), anat.sigma[j]);
         }
         Pprintf(file, "\n");
     }
 
-    Pclose(file);
+   Pclose(file);
+
+
+//    XIAOHUA'S ORIGINAL PIO
+//    if (myid == 0) {
+//        Pprintf(file, "anatomy FILEHEADER { \n");
+//        Pprintf(file, "  datatype = VARRECORDASCII;\n");
+//        Pprintf(file, "  nfiles = %d;  \n", file->nfiles);
+//        Pprintf(file, "  nrecord = %d; \n", header.nrecord);
+//        Pprintf(file, "  nfields = 8; \n");
+//        Pprintf(file, "  lrec = %d; \n", lrec);
+//        Pprintf(file, "  endian_key = 875770417; \n");
+//        Pprintf(file, "  field_names = gid cellType sigma11 sigma12 sigma13 sigma22 sigma23 sigma33; \n");
+//        Pprintf(file, "  field_types = u u f f f f f f; \n");
+//        Pprintf(file, "  field_units = 1 1 mS/mm mS/mm mS/mm mS/mm mS/mm mS/mm; \n");
+//        Pprintf(file, "  nx =  %d;\n", header.nx);
+//        Pprintf(file, "  ny =  %d;\n", header.ny);
+//       Pprintf(file, "  nz =  %d;\n", header.nz);
+//        Pprintf(file, "  dx =  %f;\n", header.dx);
+//        Pprintf(file, "  dy =  %f;\n", header.dy);
+//       Pprintf(file, "  dz =  %f;\n", header.dz);
+//        Pprintf(file, "} \n\n");
+//
+//    }  
+
+//    for (unsigned i = 0; i < anatVectors.size(); i++) {
+//        anatomy anat = anatVectors[i];
+//        Pprintf(file, "    %llu  %d ", anat.gid, anat.celltype);
+//        for (int j = 0; j < 6; j++) {
+//            Pprintf(file, "%f ", anat.sigma[j]);
+//        }
+//        Pprintf(file, "\n");
+//    }
+//
+//   Pclose(file);
     
 }
 
