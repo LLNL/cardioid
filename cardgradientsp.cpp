@@ -694,7 +694,7 @@ void calcNodeFiberP(vector<DenseMatrix>& QPfibVectors, int size, int rank){
             QT.Transpose();  
             DenseMatrix Sigma(dim3, dim3);
             Mult(tmp, QT, Sigma);
-            SigmaVec.append(Sigma)
+            SigmaVec.append(Sigma);
          }
     }   
         
@@ -730,7 +730,7 @@ void calcNodeFiberP(vector<DenseMatrix>& QPfibVectors, int size, int rank){
       {
         DenseMatrix Sigma=SigmaVec[ii];
         int pointnum=bin*rank+ii;
-        f_ofs << pointnum << " " 
+        out << pointnum << " " 
              << Sigma(0,0) << " " << Sigma(1,0) << " " << Sigma(2,0) << " " 
              << Sigma(1,1) << " " << Sigma(2,1) << " " << Sigma(2,2) 
              << std::endl;
