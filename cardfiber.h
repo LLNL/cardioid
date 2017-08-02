@@ -58,5 +58,8 @@ void calcGradient(GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction&
         Vector& fiberAngles, Vector& q, int eleIndex, DenseMatrix& QPfib, Phi& phi);
 
 void getAnatomy(anatomy& anat, DenseMatrix& QPfib, Vector& conduct, Phi& phi);
+
+bool findPtEle(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
+        vector<vector<int> >& vert2Elements, Vector& fiberAngles, Vector& q, int vertex, std::string& elemnum, ostream& out);
 #endif	/* CARDFIBER_H */
 

@@ -178,6 +178,40 @@ void getAnatomy(anatomy& anat, DenseMatrix& QPfib, Vector& conduct, Phi& phi){
     anat.sigma[5]=s[8];      
 }
 
+
+bool findPtEle(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
+        vector<vector<int> >& vert2Elements, Vector& fiberAngles, Vector& q, int vertex, std::string& elemnum, ostream& out){
+    
+         vector<int> elements = vert2Elements[vertex];          
+         bool findPt=false;        
+         for (unsigned e = 0; e < elements.size(); e++)
+         {
+            int eleIndex = elements[e];
+
+            if (isInTetElement(q, mesh, eleIndex))
+            {
+                DenseMatrix QPfib(dim3, dim3);
+                Phi phi;
+                calcGradient(x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv, fiberAngles, q, eleIndex, QPfib, phi);  
+                
+               out << elemnum << " ";
+               for(int ii=0; ii<dim3; ii++){
+                  for(int jj=0; jj<dim3; jj++){
+                     out << QPfib(ii, jj) << " ";
+                  }
+               }
+               out << endl;
+               
+               findPt=true;
+               break; // If the point is found in an element, don't need to check next one in the list. 
+
+            }
+                    
+         }
+         return findPt;
+    
+}
+
 void getCardEleGrads(GridFunction& x, const Vector& q, int eleIndex, Vector& grad_ele, double& xVal) {
     //initialize xVal grad_ele to 0.0;
     xVal=0.0;

@@ -83,6 +83,8 @@ int main(int argc, char *argv[]) {
     double gT = 0.0000176062*1000; // mS/mm
     double gN = 0.0000176062*1000; // mS/mm   
 
+    // cutoff for kdtree point range search rangeCutoff=rcut*maxEdgeLen
+    double rcut=1.0;
        
     OptionsParser args(argc, argv);
     args.AddOption(&mesh_file, "-m", "--mesh",
@@ -111,6 +113,7 @@ int main(int argc, char *argv[]) {
     args.AddOption(&gL, "-gl", "--gL", "Conductivity gL mS/mm.");
     args.AddOption(&gT, "-gt", "--gT", "Conductivity gT mS/mm.");
     args.AddOption(&gN, "-gn", "--gN", "Conductivity gN mS/mm.");
+    args.AddOption(&rcut, "-rc", "--rcut", "rangeCutoff=rcut*maxEdgeLen (default rcut=1.0).");
     args.Parse();
     if (!args.Good()) {
         args.PrintUsage(cout);
@@ -328,8 +331,9 @@ int main(int argc, char *argv[]) {
     
     if(omar_task){
        cout << "\nGet Omar's rotation matrix ...\n";
+       double rangeCutoff=rcut*maxEdgeLen;
        getRotMatrix(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
-          kdtree, vert2Elements, fiberAngles, fiblocs);
+          kdtree, vert2Elements, fiberAngles, rangeCutoff, fiblocs);
        
     }
     

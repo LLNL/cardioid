@@ -319,174 +319,142 @@ void readlines(MPI_File *in, const int rank, const int size, const int overlap,
 }
 
 void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-                   tree_type& kdtree, vector<vector<int> >& vert2Elements, Vector& fiberAngles, const char *fiblocs, int size, int rank)
-{
+        tree_type& kdtree, vector<vector<int> >& vert2Elements, Vector& fiberAngles, double rangeCutoff, const char *fiblocs, int size, int rank) {
 
-   long long totalCardPoints = 0;
-   
-   //f_ofs << "# elementnum mat11 mat12 mat13 mat21 mat22 mat23 mat31 mat32 mat33" << endl;
+    long long totalCardPoints = 0;
+
+    //f_ofs << "# elementnum mat11 mat12 mat13 mat21 mat22 mat23 mat31 mat32 mat33" << endl;
 
 
-   MPI_File in;
+    MPI_File in;
 
-   int ierr = MPI_File_open(MPI_COMM_WORLD, (char *)fiblocs, MPI_MODE_RDONLY, MPI_INFO_NULL, &in);
-   if (ierr)
-   {
-      if (rank == 0) fprintf(stderr, "Couldn't open file %s\n", fiblocs);
-      MPI_Finalize();
-      exit(2);
-   }
+    int ierr = MPI_File_open(MPI_COMM_WORLD, (char *) fiblocs, MPI_MODE_RDONLY, MPI_INFO_NULL, &in);
+    if (ierr) {
+        if (rank == 0) fprintf(stderr, "Couldn't open file %s\n", fiblocs);
+        MPI_Finalize();
+        exit(2);
+    }
 
-   const int overlap = 200;
-   char **lines;
-   int nlines;
-   readlines(&in, rank, size, overlap, &lines, &nlines);
-   printf("Rank %d has %d lines\n", rank, nlines);
+    const int overlap = 200;
+    char **lines;
+    int nlines;
+    readlines(&in, rank, size, overlap, &lines, &nlines);
+    printf("Rank %d has %d lines\n", rank, nlines);
 
-   std::string fileLine;
+    std::string fileLine;
 
-   const std::string comment = "#";
+    const std::string comment = "#";
 
-   vector<string> outLines;
+    vector<string> outLines;
 
-   for (int i = 0; i < nlines; i++)
-   {
-      fileLine = lines[i];
-      if (fileLine.compare(0, 1, comment) == 0) continue;
-      std::vector<std::string> tokens;
-      tokenize(fileLine, tokens);
-      if (tokens.size() > 3)
-      {
-         double x = atof(tokens[1].c_str());
-         double y = atof(tokens[2].c_str());
-         double z = atof(tokens[3].c_str());
-         triplet pt(x, y, z, 0);
-         std::pair<tree_type::const_iterator, double> found = kdtree.find_nearest(pt);
-         assert(found.first != kdtree.end());
-         triplet vetexNearPt = *found.first;
-         int vertex = vetexNearPt.getIndex();
-         vector<int> elements = vert2Elements[vertex];
-         
-        //For barycentric
-        Vector q(4);
-        q(0) = x;
-        q(1) = y;
-        q(2) = z;
-        q(3) = 1.0;
-            
-         bool findPt=false;
-         for (unsigned e = 0; e < elements.size(); e++)
-         {
-            int eleIndex = elements[e];
+    for (int i = 0; i < nlines; i++) {
+        fileLine = lines[i];
+        if (fileLine.compare(0, 1, comment) == 0) continue;
+        std::vector<std::string> tokens;
+        tokenize(fileLine, tokens);
+        if (tokens.size() > 3) {
+            double x = atof(tokens[1].c_str());
+            double y = atof(tokens[2].c_str());
+            double z = atof(tokens[3].c_str());
+            triplet pt(x, y, z, 0);
+            std::pair<tree_type::const_iterator, double> found = kdtree.find_nearest(pt);
+            assert(found.first != kdtree.end());
+            triplet vetexNearPt = *found.first;
+            int vertex = vetexNearPt.getIndex();
+            vector<int> elements = vert2Elements[vertex];
 
-            if (isInTetElement(q, mesh, eleIndex))
-            {
-               DenseMatrix QPfib(dim3, dim3);
-               Phi phi;
-               calcGradient(x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv, fiberAngles, q, eleIndex, QPfib, phi);  
+            //For barycentric
+            Vector q(4);
+            q(0) = x;
+            q(1) = y;
+            q(2) = z;
+            q(3) = 1.0;
 
-               stringstream f_ofs;
-               f_ofs << tokens[0] << " ";
-               for (int ii = 0; ii < dim3; ii++)
-               {
-                  for (int jj = 0; jj < dim3; jj++)
-                  {
-                     f_ofs << QPfib(ii, jj) << " ";
-                  }
-               }
-               f_ofs << endl;
-               outLines.push_back(f_ofs.str());
+            stringstream f_ofs;
 
-               totalCardPoints++;
+            bool findPt = findPtEle(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
+                    vert2Elements, fiberAngles, q, vertex, tokens[0], f_ofs);
+
+            if (!findPt) {
+                // Expand to a range if element is not find from nearest point
+                std::vector<triplet> v;
+                kdtree.find_within_range(pt, rangeCutoff, std::back_inserter(v));
+
+                std::vector<triplet>::const_iterator ci = v.begin();
+                for (; ci != v.end(); ++ci) {
+                    if (findPt) break;
+                    vertex = ci->getIndex();
+                    //cout << "Range point " << *ci << endl;
+                    findPt = findPtEle(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
+                            vert2Elements, fiberAngles, q, vertex, tokens[0], f_ofs);
+                }
+            }
+
+            if (findPt) {
+                outLines.push_back(f_ofs.str());
+                totalCardPoints++;
                 if (totalCardPoints % 10000 == 0) {
-                    cout << "Processor " << rank << " finish " << totalCardPoints << " points." << endl;
+                    cout << "Finish " << totalCardPoints << " points." << endl;
                     cout.flush();
                 }
-               findPt=true;
-               break; // If the point is found in an element, don't need to check next one in the list. 
-
+            } else {
+                cout << "Need to increase the range cutoff for point" << pt << endl;
             }
-         }
-         
-         if(!findPt){
-               stringstream f_ofs;
-               f_ofs << tokens[0] << " ";
-               for (int ii = 0; ii < dim3; ii++)
-               {
-                  for (int jj = 0; jj < dim3; jj++)
-                  {
-                     f_ofs << "999 ";
-                  }
-               }
-               f_ofs << endl;
-               outLines.push_back(f_ofs.str());            
-         }
-         
-         
-      }
-   }
-   
-   cout << "Processor " << rank << " has " << outLines.size() << " lines." << endl;
+        }
+    }
 
-//    // Parallel I/O
-//    string fullname = "omar";
-//    if (rank == 0) {
-//        DirTestCreate(fullname.c_str());
-//    }
-//    
-//    fullname += "/rotmatrix";
-//    int lrec = 80;
-//    heap_allocate(lrec*totalCardPoints*64 + 4096);
-//    
-//    PFILE* file = Popen(fullname.c_str(), "w", MPI_COMM_WORLD);
-//    PioReserve(file, lrec*totalCardPoints*64 + 4096);
-//
-//    for (unsigned i = 0; i < outLines.size(); i++) {
-//        string line = outLines[i];
-//        Pprintf(file, "%s", line.c_str());
-//    }
-//
-//    Pclose(file);   
-   
-   int file_free = 0;
-   MPI_Status status;
+    cout << "Processor " << rank << " has " << outLines.size() << " lines." << endl;
 
-   if (rank == 0)
-   {
-      file_free = 1;
-   }
-   else
-   {
-      MPI_Recv(&file_free, 1, MPI_INT, rank - 1, 1, MPI_COMM_WORLD, &status);
-   }
+    //    // Parallel I/O
+    //    string fullname = "omar";
+    //    if (rank == 0) {
+    //        DirTestCreate(fullname.c_str());
+    //    }
+    //    
+    //    fullname += "/rotmatrix";
+    //    int lrec = 80;
+    //    heap_allocate(lrec*totalCardPoints*64 + 4096);
+    //    
+    //    PFILE* file = Popen(fullname.c_str(), "w", MPI_COMM_WORLD);
+    //    PioReserve(file, lrec*totalCardPoints*64 + 4096);
+    //
+    //    for (unsigned i = 0; i < outLines.size(); i++) {
+    //        string line = outLines[i];
+    //        Pprintf(file, "%s", line.c_str());
+    //    }
+    //
+    //    Pclose(file);   
 
-   if (file_free == 1)
-   {
-      ofstream out;
-      
-      if (rank == 0)
-      {
-         out.open("rotmatrix.txt");
-         out << "# elementnum mat11 mat12 mat13 mat21 mat22 mat23 mat31 mat32 mat33" << endl;
+    int file_free = 0;
+    MPI_Status status;
 
-      }
-      else
-      {
-         out.open("rotmatrix.txt", std::fstream::app);
-      }
-      
-      for (int ii = 0; ii < outLines.size(); ii++)
-      {
-         out << outLines[ii];
-      }
-      out.close();
+    if (rank == 0) {
+        file_free = 1;
+    } else {
+        MPI_Recv(&file_free, 1, MPI_INT, rank - 1, 1, MPI_COMM_WORLD, &status);
+    }
 
-   }
+    if (file_free == 1) {
+        ofstream out;
 
-   if (rank != size - 1)
-   {
-      MPI_Send(&file_free, 1, MPI_INT, rank + 1, 1, MPI_COMM_WORLD);
-   }
+        if (rank == 0) {
+            out.open("rotmatrix.txt");
+            out << "# elementnum mat11 mat12 mat13 mat21 mat22 mat23 mat31 mat32 mat33" << endl;
+
+        } else {
+            out.open("rotmatrix.txt", std::fstream::app);
+        }
+
+        for (int ii = 0; ii < outLines.size(); ii++) {
+            out << outLines[ii];
+        }
+        out.close();
+
+    }
+
+    if (rank != size - 1) {
+        MPI_Send(&file_free, 1, MPI_INT, rank + 1, 1, MPI_COMM_WORLD);
+    }
 
 
 }

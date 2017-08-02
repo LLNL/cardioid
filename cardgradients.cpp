@@ -122,103 +122,77 @@ void tokenize(const std::string& str, ContainerT& tokens,
     }
 };
 
-
-
 void getRotMatrix(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-        tree_type& kdtree, vector<vector<int> >& vert2Elements, Vector& fiberAngles, const char *fiblocs){
+        tree_type& kdtree, vector<vector<int> >& vert2Elements, Vector& fiberAngles, double rangeCutoff, const char *fiblocs) {
 
-    long long totalCardPoints=0;
+    long long totalCardPoints = 0;
 
     ofstream f_ofs("rotmatrix.txt");
     f_ofs << "# elementnum mat11 mat12 mat13 mat21 mat22 mat23 mat31 mat32 mat33" << endl;
-    
+
     ifstream f_ifs;
-    try{
-       f_ifs.open(fiblocs);
-    }
-    catch(...)
-    {
-       std::cout << "Cannot open file: " << fiblocs << std::endl;
-       return;
+    try {
+        f_ifs.open(fiblocs);
+    }    catch (...) {
+        std::cout << "Cannot open file: " << fiblocs << std::endl;
+        return;
     }
 
     std::string fileLine;
-    
-    const std::string comment="#";
 
-   while (f_ifs)
-   {
-      std::getline(f_ifs, fileLine);
-      if (fileLine.compare(0, 1, comment) == 0) continue;
-      std::vector<std::string> tokens;
-      tokenize(fileLine, tokens);
-      if (tokens.size() > 3)
-      {
-         double x = atof(tokens[1].c_str());
-         double y = atof(tokens[2].c_str());
-         double z = atof(tokens[3].c_str());
-         triplet pt(x, y, z, 0);
-         std::pair<tree_type::const_iterator, double> found = kdtree.find_nearest(pt);
-         assert(found.first != kdtree.end());
-         triplet vetexNearPt = *found.first;
-         int vertex = vetexNearPt.getIndex();
-         vector<int> elements = vert2Elements[vertex];
-         
-        //For barycentric
-        Vector q(4);
-        q(0) = x;
-        q(1) = y;
-        q(2) = z;
-        q(3) = 1.0;          
-         
-         bool findPt=false;        
-         for (unsigned e = 0; e < elements.size(); e++)
-         {
-            int eleIndex = elements[e];
+    const std::string comment = "#";
 
-            if (isInTetElement(q, mesh, eleIndex))
-            {
-                DenseMatrix QPfib(dim3, dim3);
-                Phi phi;
-                calcGradient(x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv, fiberAngles, q, eleIndex, QPfib, phi);  
-                
-               f_ofs << tokens[0] << " ";
-               for(int ii=0; ii<dim3; ii++){
-                  for(int jj=0; jj<dim3; jj++){
-                     f_ofs << QPfib(ii, jj) << " ";
-                  }
-               }
-               f_ofs << endl;
-               
-               totalCardPoints++;
-               if (totalCardPoints % 10000 == 0)
-               {
-                  cout << "Finish " << totalCardPoints << " points." << endl;
-                  cout.flush();
-               }
-               findPt=true;
-               break; // If the point is found in an element, don't need to check next one in the list. 
+    while (f_ifs) {
+        std::getline(f_ifs, fileLine);
+        if (fileLine.compare(0, 1, comment) == 0) continue;
+        std::vector<std::string> tokens;
+        tokenize(fileLine, tokens);
+        if (tokens.size() > 3) {
+            double x = atof(tokens[1].c_str());
+            double y = atof(tokens[2].c_str());
+            double z = atof(tokens[3].c_str());
+            triplet pt(x, y, z, 0);
+            std::pair<tree_type::const_iterator, double> found = kdtree.find_nearest(pt);
+            assert(found.first != kdtree.end());
+            triplet vetexNearPt = *found.first;
+            int vertex = vetexNearPt.getIndex();
 
+            //For barycentric
+            Vector q(4);
+            q(0) = x;
+            q(1) = y;
+            q(2) = z;
+            q(3) = 1.0;
+
+            bool findPt = findPtEle(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
+                    vert2Elements, fiberAngles, q, vertex, tokens[0], f_ofs);
+
+            if (!findPt) {
+                // Expand to a range if element is not find from nearest point
+                std::vector<triplet> v;
+                kdtree.find_within_range(pt, rangeCutoff, std::back_inserter(v));
+
+                std::vector<triplet>::const_iterator ci = v.begin();
+                for (; ci != v.end(); ++ci) {
+                    if (findPt) break;
+                    vertex = ci->getIndex();
+                    //cout << "Range point " << *ci << endl;
+                    findPt = findPtEle(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
+                            vert2Elements, fiberAngles, q, vertex, tokens[0], f_ofs);
+                }
             }
-                    
-         }
-         if(!findPt){
 
-                f_ofs << tokens[0] << " ";
-               for (int ii = 0; ii < dim3; ii++)
-               {
-                  for (int jj = 0; jj < dim3; jj++)
-                  {
-                     f_ofs << "999 ";
-                  }
-               }
-               f_ofs << endl;            
-                  
-         }
-      }
-   }
-
-          
+            if (findPt) {
+                totalCardPoints++;
+                if (totalCardPoints % 10000 == 0) {
+                    cout << "Finish " << totalCardPoints << " points." << endl;
+                    cout.flush();
+                }                
+            } else {
+                cout << "Need to increase the range cutoff for point" << pt << endl;
+            }
+        }
+    }
 }
 
 
