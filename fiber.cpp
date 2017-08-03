@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
     args.AddOption(&options.gL, "-gl", "--gL", "Conductivity gL mS/mm.");
     args.AddOption(&options.gT, "-gt", "--gT", "Conductivity gT mS/mm.");
     args.AddOption(&options.gN, "-gn", "--gN", "Conductivity gN mS/mm.");
-    args.AddOption(&options.rcut, "-rc", "--rcut", "rangeCutoff=rcut*maxEdgeLen (default rcut=1.0).");
+    args.AddOption(&options.rcut, "-rc", "--rcut", "rangeCutoff=rcut*maxEdgeLen.");
     args.Parse();
     if (!args.Good()) {
         args.PrintUsage(cout);
