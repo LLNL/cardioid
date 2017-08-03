@@ -1,5 +1,6 @@
 #include "solver.h"
 #include "constants.h"
+#include "option.h"
 
 void getVert2Elements(Mesh *mesh, vector<vector<int> >& vert2Elements) {
 
@@ -30,7 +31,7 @@ void getVert2Elements(Mesh *mesh, vector<vector<int> >& vert2Elements) {
 }
 
 
-GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, int order, bool static_cond, int myid){
+GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, Option& options, int myid){
     
     int dim = mesh->Dimension();
     cout << "Dimension =" << dim << endl;    
@@ -38,13 +39,13 @@ GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_es
     //    Lagrange finite elements of the specified order. If order < 1, we
     //    instead use an isoparametric/isogeometric space.
     FiniteElementCollection *fec;
-    if (order > 0) {
-        fec = new H1_FECollection(order, dim);
+    if (options.order > 0) {
+        fec = new H1_FECollection(options.order, dim);
     } else if (mesh->GetNodes()) {
         fec = mesh->GetNodes()->OwnFEC();
         cout << "Using isoparametric FEs: " << fec->Name() << endl;
     } else {
-        fec = new H1_FECollection(order = 1, dim);
+        fec = new H1_FECollection(options.order = 1, dim);
     }
     FiniteElementSpace *fespace = new FiniteElementSpace(mesh, fec);
     if (myid == 0) {
@@ -94,7 +95,7 @@ GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_es
     //    applying any necessary transformations such as: eliminating boundary
     //    conditions, applying conforming constraints for non-conforming AMR,
     //    static condensation, etc.
-    if (static_cond) {
+    if (options.static_cond) {
         a->EnableStaticCondensation();
     }
     a->Assemble();

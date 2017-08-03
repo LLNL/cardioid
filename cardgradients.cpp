@@ -8,8 +8,7 @@
 #include "cardgradients.h"
 
 void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-        tree_type& kdtree, vector<vector<int> >& vert2Elements, vector<Vector>& boundingbox, double dd,  
-        Vector& conduct, Vector& fiberAngles, double maxEdgeLen){
+        tree_type& kdtree, vector<vector<int> >& vert2Elements, vector<Vector>& boundingbox, Option& options){
     Vector min=boundingbox[0];
     Vector max=boundingbox[1];
     
@@ -21,7 +20,7 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
     double y_dim=max(1)-ymin;
     double z_dim=max(2)-zmin;
     
-    double dd10=dd*10; 
+    double dd10=options.dd*10; 
     
     double dx=x_dim/(int(x_dim/(dd10))*10-1);
     double dy=y_dim/(int(y_dim/(dd10))*10-1);
@@ -34,11 +33,11 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
     long long totalCardPoints=0;
     vector<anatomy> anatVectors;
     
-    double cutoff=maxEdgeLen*0.6124;  //Radius of circumsphere sqrt(6)/4 
+    double cutoff=options.maxEdgeLen*0.6124;  //Radius of circumsphere sqrt(6)/4 
     cout << "\nCutoff for nearest point is " << cutoff << std::endl;
-    double rangeCutoff=maxEdgeLen;
-    if(rangeCutoff<dd){
-        rangeCutoff=dd;
+    double rangeCutoff=options.maxEdgeLen;
+    if(rangeCutoff<options.dd){
+        rangeCutoff=options.dd;
     }
        
     for(int i=0; i<nx; i++){
@@ -67,7 +66,7 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                 ThreeInts nns={nx, ny, nz};
                 
                 bool findPt = findPtEleAnat(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
-                        vert2Elements, conduct, fiberAngles, q, vertex, inds, nns, anatVectors);
+                        vert2Elements, options, q, vertex, inds, nns, anatVectors);
 
                 if (!findPt) {
                     // Expand to a range if element is not find from nearest point
@@ -80,7 +79,7 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                         vertex = ci->getIndex();
                         //cout << "Range point " << *ci << endl;
                         findPt = findPtEleAnat(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
-                            vert2Elements, conduct, fiberAngles, q, vertex, inds, nns, anatVectors);
+                            vert2Elements, options, q, vertex, inds, nns, anatVectors);
                     }
                 }
 
@@ -138,7 +137,7 @@ void tokenize(const std::string& str, ContainerT& tokens,
 };
 
 void getRotMatrix(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-        tree_type& kdtree, vector<vector<int> >& vert2Elements, Vector& fiberAngles, double rangeCutoff, const char *fiblocs) {
+        tree_type& kdtree, vector<vector<int> >& vert2Elements, Option& options) {
 
     long long totalCardPoints = 0;
 
@@ -147,12 +146,14 @@ void getRotMatrix(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, G
 
     ifstream f_ifs;
     try {
-        f_ifs.open(fiblocs);
+        f_ifs.open(options.fiblocs);
     }    catch (...) {
-        std::cout << "Cannot open file: " << fiblocs << std::endl;
+        std::cout << "Cannot open file: " << options.fiblocs << std::endl;
         return;
     }
 
+    double rangeCutoff=options.rcut*options.maxEdgeLen;
+    
     std::string fileLine;
 
     const std::string comment = "#";
@@ -180,7 +181,7 @@ void getRotMatrix(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, G
             q(3) = 1.0;
 
             bool findPt = findPtEle(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
-                    vert2Elements, fiberAngles, q, vertex, tokens[0], f_ofs);
+                    vert2Elements, options, q, vertex, tokens[0], f_ofs);
 
             if (!findPt) {
                 // Expand to a range if element is not find from nearest point
@@ -193,7 +194,7 @@ void getRotMatrix(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, G
                     vertex = ci->getIndex();
                     //cout << "Range point " << *ci << endl;
                     findPt = findPtEle(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
-                            vert2Elements, fiberAngles, q, vertex, tokens[0], f_ofs);
+                            vert2Elements, options, q, vertex, tokens[0], f_ofs);
                 }
             }
 
@@ -212,7 +213,7 @@ void getRotMatrix(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, G
 
 
 void getRotMatrixFast(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-        vector<vector<int> >& vert2Elements, Vector& fiberAngles, const char *fiblocs){
+        vector<vector<int> >& vert2Elements, Option& options){
 
     long long totalCardPoints=0;
 
@@ -221,11 +222,11 @@ void getRotMatrixFast(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
     
     ifstream f_ifs;
     try{
-       f_ifs.open(fiblocs);
+       f_ifs.open(options.fiblocs);
     }
     catch(...)
     {
-       std::cout << "Cannot open file: " << fiblocs << std::endl;
+       std::cout << "Cannot open file: " << options.fiblocs << std::endl;
        return;
     }
 
@@ -274,7 +275,7 @@ void getRotMatrixFast(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
 
                DenseMatrix QPfib(dim3, dim3);
                biSlerpCombo(QPfib, psi_ab, psi_ab_vec, phi_epi, phi_epi_vec,
-                            phi_lv, phi_lv_vec, phi_rv, phi_rv_vec, fiberAngles);
+                            phi_lv, phi_lv_vec, phi_rv, phi_rv_vec, options);
                
                f_ofs << tokens[0] << " ";
                for(int ii=0; ii<dim3; ii++){

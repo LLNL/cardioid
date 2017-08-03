@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 #include "triplet.h"
+#include "option.h"
 
 using namespace std;
 using namespace mfem;
@@ -57,20 +58,20 @@ double getMaxEdgeLen(Mesh *mesh);
 double det4X4(DenseMatrix& matrix);
 bool isInTetElement(const Vector& q, Mesh* mesh, int eleIndex);
 void getCardEleGrads(GridFunction& x, const Vector& q, int eleIndex, Vector& grad_ele, double& xVal);
-void calcSigma(DenseMatrix& Sigma, DenseMatrix& Q, Vector& conduct);
-int getCellType(double phi_epi, double phi_lv, double phi_rv);
+void calcSigma(DenseMatrix& Sigma, DenseMatrix& Q, Option& options);
+int getCellType(Phi& phi);
 
 void calcGradient(GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-        Vector& fiberAngles, Vector& q, int eleIndex, DenseMatrix& QPfib, Phi& phi);
+        Option& options, Vector& q, int eleIndex, DenseMatrix& QPfib, Phi& phi);
 
-void getAnatomy(anatomy& anat, DenseMatrix& QPfib, Vector& conduct, Phi& phi,
+void getAnatomy(anatomy& anat, DenseMatrix& QPfib, Option& options, Phi& phi,
         ThreeInts& inds, ThreeInts& nns);
 
 bool findPtEle(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-        vector<vector<int> >& vert2Elements, Vector& fiberAngles, Vector& q, int vertex, std::string& elemnum, ostream& out);
+        vector<vector<int> >& vert2Elements, Option& options, Vector& q, int vertex, std::string& elemnum, ostream& out);
 
 bool findPtEleAnat(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-        vector<vector<int> >& vert2Elements, Vector& conduct, Vector& fiberAngles, 
+        vector<vector<int> >& vert2Elements, Option& options, 
         Vector& q, int vertex, ThreeInts& inds, ThreeInts& nns, vector<anatomy>& anatVectors);
 
 #endif	/* CARDFIBER_H */

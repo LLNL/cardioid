@@ -56,76 +56,81 @@
 #include "cardfiber.h"
 #include "cardgradients.h"
 #include "triplet.h"
+#include "option.h"
 
 using namespace std;
 using namespace mfem;
 
 int main(int argc, char *argv[]) {
     // 1. Parse command-line options.
-    const char *mesh_file = "./human.vtk";
-    int order = 1;
-    bool static_cond = false;
-    bool visualization = 1;
+    Option options;
+    
+    options.mesh_file = "./heart.vtk";
+    options.order = 1;
+    options.static_cond = false;
+    options.visualization = 1;
     // run omar's task
-    bool omar_task=false;
-    bool omar_fast=false;
-    const char *fiblocs="";
+    options.omar_task=false;
+    options.omar_fast=false;
+    options.fiblocs="";
 
-    double a_endo=40;
-    double a_epi=-50;
-    double b_endo=-65;
-    double b_epi=25;
+    options.angle=20;
+    
+    options.a_endo=40;
+    options.a_epi=-50;
+    options.b_endo=-65;
+    options.b_epi=25;
     
     // grid spacing
-    double dd=5;
+    options.dd=5;
     // conductivity
-    double gL = 0.0001334177*1000; // mS/mm
-    double gT = 0.0000176062*1000; // mS/mm
-    double gN = 0.0000176062*1000; // mS/mm   
+    options.gL = 0.0001334177*1000; // mS/mm
+    options.gT = 0.0000176062*1000; // mS/mm
+    options.gN = 0.0000176062*1000; // mS/mm   
 
     // cutoff for kdtree point range search rangeCutoff=rcut*maxEdgeLen
-    double rcut=1.0;
+    options.rcut=1.0;
        
     OptionsParser args(argc, argv);
-    args.AddOption(&mesh_file, "-m", "--mesh",
+    args.AddOption(&options.mesh_file, "-m", "--mesh",
             "Mesh file to use.");
-    args.AddOption(&order, "-o", "--order",
+    args.AddOption(&options.order, "-o", "--order",
             "Finite element order (polynomial degree) or -1 for"
             " isoparametric space.");
-    args.AddOption(&static_cond, "-sc", "--static-condensation", "-no-sc",
+    args.AddOption(&options.static_cond, "-sc", "--static-condensation", "-no-sc",
             "--no-static-condensation", "Enable static condensation.");
-    args.AddOption(&visualization, "-vis", "--visualization", "-no-vis",
+    args.AddOption(&options.visualization, "-vis", "--visualization", "-no-vis",
             "--no-visualization",
             "Enable or disable GLVis visualization.");
-    args.AddOption(&omar_task, "-omar", "--omar_task", "-no-omar",
+    args.AddOption(&options.omar_task, "-omar", "--omar_task", "-no-omar",
             "--no-omar_task",
             "Enable or disable Omar task.");  
-    args.AddOption(&omar_fast, "-ofast", "--omar_fast", "-no-ofast",
+    args.AddOption(&options.omar_fast, "-ofast", "--omar_fast", "-no-ofast",
             "--no-omar_fast",
             "Enable or disable Omar fast task.");    
-    args.AddOption(&fiblocs, "-fl", "--fiblocs",
+    args.AddOption(&options.fiblocs, "-fl", "--fiblocs",
             "Fiber locagtion file to use.");    
-    args.AddOption(&a_endo, "-ao", "--aendo", "Fiber angle alpha endo.");
-    args.AddOption(&a_epi, "-ai", "--aepi", "Fiber angle alpha epi.");
-    args.AddOption(&b_endo, "-bo", "--bendo", "Fiber angle beta endo.");
-    args.AddOption(&b_epi, "-bi", "--bepi", "Fiber angle beta epi."); 
-    args.AddOption(&dd, "-dd", "--dspacing", "Grid spacing for ddcMD gid.");
-    args.AddOption(&gL, "-gl", "--gL", "Conductivity gL mS/mm.");
-    args.AddOption(&gT, "-gt", "--gT", "Conductivity gT mS/mm.");
-    args.AddOption(&gN, "-gn", "--gN", "Conductivity gN mS/mm.");
-    args.AddOption(&rcut, "-rc", "--rcut", "rangeCutoff=rcut*maxEdgeLen (default rcut=1.0).");
+    args.AddOption(&options.a_endo, "-ao", "--aendo", "Fiber angle alpha endo.");
+    args.AddOption(&options.a_epi, "-ai", "--aepi", "Fiber angle alpha epi.");
+    args.AddOption(&options.b_endo, "-bo", "--bendo", "Fiber angle beta endo.");
+    args.AddOption(&options.b_epi, "-bi", "--bepi", "Fiber angle beta epi."); 
+    args.AddOption(&options.dd, "-dd", "--dspacing", "Grid spacing for ddcMD gid.");
+    args.AddOption(&options.gL, "-gl", "--gL", "Conductivity gL mS/mm.");
+    args.AddOption(&options.gT, "-gt", "--gT", "Conductivity gT mS/mm.");
+    args.AddOption(&options.gN, "-gn", "--gN", "Conductivity gN mS/mm.");
+    args.AddOption(&options.rcut, "-rc", "--rcut", "rangeCutoff=rcut*maxEdgeLen (default rcut=1.0).");
     args.Parse();
     if (!args.Good()) {
         args.PrintUsage(cout);
         return 1;
     }
-    if(omar_task && strlen(fiblocs)==0){
+    if(options.omar_task && strlen(options.fiblocs)==0){
        std::cout << "The program runs Omar task but missing fiber location file!" << std::endl;
        args.PrintUsage(cout);
        return 1; 
     }
     
-    if(omar_fast && strlen(fiblocs)==0){
+    if(options.omar_fast && strlen(options.fiblocs)==0){
        std::cout << "The program runs Omar fast task but missing fiber location file!" << std::endl;
        args.PrintUsage(cout);
        return 1;
@@ -133,19 +138,19 @@ int main(int argc, char *argv[]) {
     args.PrintOptions(cout);
 
     // Keep fiber angles in a Vector.
-    Vector fiberAngles(4);
-    fiberAngles(0)=a_endo;
-    fiberAngles(1)=a_epi;
-    fiberAngles(2)=b_endo;
-    fiberAngles(3)=b_epi;    
+//    Vector fiberAngles(4);
+//    fiberAngles(0)=a_endo;
+//    fiberAngles(1)=a_epi;
+//    fiberAngles(2)=b_endo;
+//    fiberAngles(3)=b_epi;    
     // 2. Read the mesh from the given mesh file. We can handle triangular,
     //    quadrilateral, tetrahedral, hexahedral, surface and volume meshes with
     //    the same code.
-    Mesh *mesh = new Mesh(mesh_file, 1, 1);
+    Mesh *mesh = new Mesh(options.mesh_file, 1, 1);
     
     vector<Vector> boundingbox;
     // Set the surfaces for the mesh: 0-Apex, 1-Base, 2-EPI, 3-LV, 4-RV.
-    setSurfaces(mesh, boundingbox, 20); // use 30 degrees for determining the base surface.
+    setSurfaces(mesh, boundingbox, options.angle); // use 30 degrees for determining the base surface.
 //    for(unsigned i = 0; i < boundingbox.size(); i++) {
 //        Vector vec=boundingbox[i];     
 //        cout << "Bounding Box " << i;
@@ -196,7 +201,7 @@ int main(int argc, char *argv[]) {
     string output="psi_ab";
     vector<double> psi_ab;
     vector<Vector> psi_ab_grads;
-    GridFunction x_psi_ab=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, order, static_cond);
+    GridFunction x_psi_ab=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, options);
     getVetecesGradients(mesh, x_psi_ab, vert2Elements, psi_ab,psi_ab_grads, output);
     MFEM_ASSERT(psi_ab.size()==nv, "size of psi_ab does not match number of vertices.");
     MFEM_ASSERT(psi_ab_grads.size()==nv, "size of psi_ab_grads does not match number of vertices.");
@@ -219,7 +224,7 @@ int main(int argc, char *argv[]) {
     vector<Vector> phi_epi_grads;
 
     //laplace(mesh, vert2Elements, phi_epi, phi_epi_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
-    GridFunction x_phi_epi=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, order, static_cond);
+    GridFunction x_phi_epi=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, options);
     getVetecesGradients(mesh, x_phi_epi, vert2Elements, phi_epi,phi_epi_grads, output);
     MFEM_ASSERT(phi_epi.size()==nv, "size of phi_epi does not match number of vertices.");
     MFEM_ASSERT(phi_epi_grads.size()==nv, "size of phi_epi_grads does not match number of vertices.");
@@ -241,7 +246,7 @@ int main(int argc, char *argv[]) {
     vector<Vector> phi_lv_grads;
 
     //laplace(mesh, vert2Elements, phi_lv, phi_lv_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
-    GridFunction x_phi_lv=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, order, static_cond);
+    GridFunction x_phi_lv=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, options);
     getVetecesGradients(mesh, x_phi_lv, vert2Elements, phi_lv,phi_lv_grads, output);    
     MFEM_ASSERT(phi_lv.size()==nv, "size of phi_lv does not match number of vertices.");
     MFEM_ASSERT(phi_lv_grads.size()==nv, "size of phi_lv_grads does not match number of vertices.");        
@@ -263,7 +268,7 @@ int main(int argc, char *argv[]) {
     vector<Vector> phi_rv_grads;
 
     //laplace(mesh, vert2Elements, phi_rv, phi_rv_grads, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, output, order, static_cond);
-    GridFunction x_phi_rv=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, order, static_cond);
+    GridFunction x_phi_rv=laplace(mesh, all_ess_bdr, nonzero_ess_bdr, zero_ess_bdr, options);
     getVetecesGradients(mesh, x_phi_rv, vert2Elements, phi_rv,phi_rv_grads, output);
     MFEM_ASSERT(phi_rv.size()==nv, "size of phi_rv does not match number of vertices.");
     MFEM_ASSERT(phi_rv_grads.size()==nv, "size of phi_rv_grads does not match number of vertices.");
@@ -280,7 +285,7 @@ int main(int argc, char *argv[]) {
     
     vector<DenseMatrix> QPfibVectors;   
     genfiber(QPfibVectors, psi_ab, psi_ab_grads, phi_epi, phi_epi_grads, 
-        phi_lv, phi_lv_grads, phi_rv, phi_rv_grads, fiberAngles);
+        phi_lv, phi_lv_grads, phi_rv, phi_rv_grads, options);
     
     cout << "\nCalculate fiber on the nodes ...\n";
     calcNodeFiber(QPfibVectors); 
@@ -309,19 +314,19 @@ int main(int argc, char *argv[]) {
     printFiberVTK(mesh, svectors, s_ofs);
     printFiberVTK(mesh, tvectors, t_ofs); 
     
-    if(omar_fast){
+    if(options.omar_fast){
       
       cout << "\nGet Omar's rotation matrix in fast way ...\n";
       getRotMatrixFast(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
-          vert2Elements, fiberAngles, fiblocs);  
+          vert2Elements, options);  
       
       delete mesh;
 
       return 0;       
     }
     
-    double maxEdgeLen=getMaxEdgeLen(mesh);
-    cout << "\nThe maximum edge length in the mesh is "<< maxEdgeLen <<"\n";
+    options.maxEdgeLen=getMaxEdgeLen(mesh);
+    cout << "\nThe maximum edge length in the mesh is "<< options.maxEdgeLen <<"\n";
     cout.flush();     
       
     cout << "\nStart to build k-D tree for the mesh...\n";
@@ -329,23 +334,21 @@ int main(int argc, char *argv[]) {
     tree_type kdtree(std::ptr_fun(tac));
     buildKDTree(mesh, kdtree);
     
-    if(omar_task){
+    if(options.omar_task){
        cout << "\nGet Omar's rotation matrix ...\n";
-       double rangeCutoff=rcut*maxEdgeLen;
        getRotMatrix(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
-          kdtree, vert2Elements, fiberAngles, rangeCutoff, fiblocs);
+          kdtree, vert2Elements, options);
        
     }
     
     cout << "\nGet cardioid point gradients ...\n";
     cout.flush();
-    Vector conduct(3);
-    conduct(0)=gL;
-    conduct(1)=gT;
-    conduct(2)=gN;
+//    Vector conduct(3);
+//    conduct(0)=gL;
+//    conduct(1)=gT;
+//    conduct(2)=gN;
     getCardGradients(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
-        kdtree, vert2Elements, boundingbox, dd,  
-        conduct, fiberAngles, maxEdgeLen);
+        kdtree, vert2Elements, boundingbox, options);
          
     delete mesh;
 

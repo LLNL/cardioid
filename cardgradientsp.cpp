@@ -24,8 +24,7 @@ using namespace std;
 using namespace mfem;
 
 void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-        tree_type& kdtree, vector<vector<int> >& vert2Elements, vector<Vector>& boundingbox, double dd,
-        Vector& conduct, Vector& fiberAngles, double maxEdgeLen, int num_procs, int myid) {
+        tree_type& kdtree, vector<vector<int> >& vert2Elements, vector<Vector>& boundingbox, Option& options, int num_procs, int myid) {
     Vector min = boundingbox[0];
     Vector max = boundingbox[1];
 
@@ -37,7 +36,7 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
     double y_dim = max(1) - ymin;
     double z_dim = max(2) - zmin;
 
-    double dd10 = dd * 10;
+    double dd10 = options.dd * 10;
 
     const double dx = x_dim / (int(x_dim / (dd10))*10 - 1);
     const double dy = y_dim / (int(y_dim / (dd10))*10 - 1);
@@ -50,14 +49,14 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
     int totalCardPoints = 0;
     vector<anatomy> anatVectors;
     
-    double cutoff=maxEdgeLen*0.6124;  //Radius of circumsphere sqrt(6)/4 
+    double cutoff=options.maxEdgeLen*0.6124;  //Radius of circumsphere sqrt(6)/4 
     if(myid==0){
         cout << "\nCutoff for nearest point is " << cutoff << std::endl;    
     }
     
-    double rangeCutoff=maxEdgeLen;
-    if(rangeCutoff<dd){
-        rangeCutoff=dd;
+    double rangeCutoff=options.maxEdgeLen;
+    if(rangeCutoff<options.dd){
+        rangeCutoff=options.dd;
     }    
         
     long long gid_dim = nx * ny*nz;
@@ -89,7 +88,7 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
         ThreeInts nns={nx, ny, nz};
 
         bool findPt = findPtEleAnat(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
-                vert2Elements, conduct, fiberAngles, q, vertex, inds, nns, anatVectors);
+                vert2Elements, options, q, vertex, inds, nns, anatVectors);
 
         if (!findPt) {
             // Expand to a range if element is not find from nearest point
@@ -102,7 +101,7 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
                 vertex = ci->getIndex();
                 //cout << "Range point " << *ci << endl;
                 findPt = findPtEleAnat(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
-                    vert2Elements, conduct, fiberAngles, q, vertex, inds, nns, anatVectors);
+                    vert2Elements, options, q, vertex, inds, nns, anatVectors);
             }
         }
 
@@ -332,7 +331,7 @@ void readlines(MPI_File *in, const int rank, const int size, const int overlap,
 }
 
 void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-        tree_type& kdtree, vector<vector<int> >& vert2Elements, Vector& fiberAngles, double rangeCutoff, const char *fiblocs, int size, int rank) {
+        tree_type& kdtree, vector<vector<int> >& vert2Elements, Option& options, int size, int rank) {
 
     long long totalCardPoints = 0;
 
@@ -341,9 +340,9 @@ void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
 
     MPI_File in;
 
-    int ierr = MPI_File_open(MPI_COMM_WORLD, (char *) fiblocs, MPI_MODE_RDONLY, MPI_INFO_NULL, &in);
+    int ierr = MPI_File_open(MPI_COMM_WORLD, (char *) options.fiblocs, MPI_MODE_RDONLY, MPI_INFO_NULL, &in);
     if (ierr) {
-        if (rank == 0) fprintf(stderr, "Couldn't open file %s\n", fiblocs);
+        if (rank == 0) fprintf(stderr, "Couldn't open file %s\n", options.fiblocs);
         MPI_Finalize();
         exit(2);
     }
@@ -358,6 +357,8 @@ void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
 
     const std::string comment = "#";
 
+    double rangeCutoff=options.rcut*options.maxEdgeLen;
+    
     vector<string> outLines;
 
     for (int i = 0; i < nlines; i++) {
@@ -386,7 +387,7 @@ void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
             stringstream f_ofs;
 
             bool findPt = findPtEle(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
-                    vert2Elements, fiberAngles, q, vertex, tokens[0], f_ofs);
+                    vert2Elements, options, q, vertex, tokens[0], f_ofs);
 
             if (!findPt) {
                 // Expand to a range if element is not find from nearest point
@@ -399,7 +400,7 @@ void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
                     vertex = ci->getIndex();
                     //cout << "Range point " << *ci << endl;
                     findPt = findPtEle(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
-                            vert2Elements, fiberAngles, q, vertex, tokens[0], f_ofs);
+                            vert2Elements, options, q, vertex, tokens[0], f_ofs);
                 }
             }
 
@@ -473,7 +474,7 @@ void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
 }
 
 void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-                   vector<vector<int> >& vert2Elements, Vector& fiberAngles, const char *fiblocs, int size, int rank)
+                   vector<vector<int> >& vert2Elements, Option& options, int size, int rank)
 {
 
    long long totalCardPoints = 0;
@@ -483,7 +484,7 @@ void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
 
    MPI_File in;
 
-   int ierr = MPI_File_open(MPI_COMM_WORLD, (char *)fiblocs, MPI_MODE_RDONLY, MPI_INFO_NULL, &in);
+   int ierr = MPI_File_open(MPI_COMM_WORLD, (char *) options.fiblocs, MPI_MODE_RDONLY, MPI_INFO_NULL, &in);
    if (ierr)
    {
       if (rank == 0) fprintf(stderr, "Couldn't open file %s\n", fiblocs);
@@ -544,7 +545,7 @@ void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
 
                DenseMatrix QPfib(dim3, dim3);
                biSlerpCombo(QPfib, psi_ab, psi_ab_vec, phi_epi, phi_epi_vec,
-                            phi_lv, phi_lv_vec, phi_rv, phi_rv_vec, fiberAngles);
+                            phi_lv, phi_lv_vec, phi_rv, phi_rv_vec, options);
 
                stringstream f_ofs;
                f_ofs << tokens[0] << " ";

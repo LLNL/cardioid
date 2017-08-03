@@ -2,6 +2,7 @@
 #include "constants.h"
 #include "utils.h"
 #include "io.h"
+#include "option.h"
 
 void cross(Vector &e_0, Vector &e_1, Vector &e_2){
     MFEM_ASSERT(e_1.Size()==3, "size of e_1 should be 3");
@@ -330,7 +331,7 @@ void biSlerpCombo(DenseMatrix& QPfib,
         double phi_epi, Vector& phi_epi_vec,
         double phi_lv, Vector& phi_lv_vec,
         double phi_rv, Vector& phi_rv_vec,
-        Vector& fiberAngles) {
+        Option& options) {
 
    // Initialize big values for QPfib so we will know it is a wrong one.
    Vector nonVal(3);
@@ -339,10 +340,10 @@ void biSlerpCombo(DenseMatrix& QPfib,
        QPfib.SetCol(i, nonVal);
    }   
    
-    double a_endo=fiberAngles(0);
-    double a_epi=fiberAngles(1);
-    double b_endo=fiberAngles(2);
-    double b_epi=fiberAngles(3);    
+    double a_endo=options.a_endo;
+    double a_epi=options.a_epi;
+    double b_endo=options.b_endo;
+    double b_epi=options.b_epi;    
 
     double phi_v = phi_lv + phi_rv;
     double frac = 0.5;
@@ -462,7 +463,7 @@ void genfiber(vector<DenseMatrix>& QPfibVectors,
         vector<double>& phi_epi, vector<Vector>& phi_epi_grads,
         vector<double>& phi_lv, vector<Vector>& phi_lv_grads,
         vector<double>& phi_rv, vector<Vector>& phi_rv_grads,
-        Vector& fiberAngles
+        Option& options
         ){
     
     unsigned nv=psi_ab.size();
@@ -483,7 +484,7 @@ void genfiber(vector<DenseMatrix>& QPfibVectors,
         Vector phi_epi_vec=phi_epi_grads[i];
         DenseMatrix QPfib(dim3,dim3);
         
-        biSlerpCombo(QPfib, psi_ab[i], psi_ab_vec, phi_epi[i], phi_epi_vec, phi_lv[i], phi_lv_vec, phi_rv[i], phi_rv_vec, fiberAngles);
+        biSlerpCombo(QPfib, psi_ab[i], psi_ab_vec, phi_epi[i], phi_epi_vec, phi_lv[i], phi_lv_vec, phi_rv[i], phi_rv_vec, options);
 
         QPfibVectors.push_back(QPfib);
 //        vector<Vector> qpVecs;

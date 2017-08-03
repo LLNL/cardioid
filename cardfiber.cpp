@@ -135,7 +135,7 @@ bool isInTetElement(const Vector& q, Mesh* mesh, int eleIndex){
 }
 
 void calcGradient(GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-        Vector& fiberAngles, Vector& q, int eleIndex, DenseMatrix& QPfib, Phi& phi){
+        Option& options, Vector& q, int eleIndex, DenseMatrix& QPfib, Phi& phi){
     
     Vector psi_ab_vec(3);                        
     double psi_ab=0.0;
@@ -158,20 +158,20 @@ void calcGradient(GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction&
     phi.rv=phi_rv;
     
     biSlerpCombo(QPfib, psi_ab, psi_ab_vec, phi_epi, phi_epi_vec,
-        phi_lv, phi_lv_vec, phi_rv, phi_rv_vec, fiberAngles); 
+        phi_lv, phi_lv_vec, phi_rv, phi_rv_vec, options); 
 
  
 }
 
-void getAnatomy(anatomy& anat, DenseMatrix& QPfib, Vector& conduct, Phi& phi,
+void getAnatomy(anatomy& anat, DenseMatrix& QPfib, Option& options, Phi& phi,
         ThreeInts& inds, ThreeInts& nns){
     DenseMatrix Sigma(dim3, dim3);
-    calcSigma(Sigma, QPfib, conduct);
+    calcSigma(Sigma, QPfib, options);
 
     double *s=Sigma.Data();
     
     anat.gid=inds.i + inds.j*nns.i + inds.k*nns.i*nns.j;
-    anat.celltype=getCellType(phi.epi, phi.lv, phi.rv);
+    anat.celltype=getCellType(phi);
     anat.sigma[0]=s[0];
     anat.sigma[1]=s[3];
     anat.sigma[2]=s[6];
@@ -182,7 +182,7 @@ void getAnatomy(anatomy& anat, DenseMatrix& QPfib, Vector& conduct, Phi& phi,
 
 
 bool findPtEle(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-        vector<vector<int> >& vert2Elements, Vector& fiberAngles, Vector& q, int vertex, std::string& elemnum, ostream& out){
+        vector<vector<int> >& vert2Elements, Option& options, Vector& q, int vertex, std::string& elemnum, ostream& out){
     
          vector<int> elements = vert2Elements[vertex];          
          bool findPt=false;        
@@ -194,7 +194,7 @@ bool findPtEle(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, Grid
             {
                 DenseMatrix QPfib(dim3, dim3);
                 Phi phi;
-                calcGradient(x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv, fiberAngles, q, eleIndex, QPfib, phi);  
+                calcGradient(x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv, options, q, eleIndex, QPfib, phi);  
                 
                out << elemnum << " ";
                for(int ii=0; ii<dim3; ii++){
@@ -215,7 +215,7 @@ bool findPtEle(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, Grid
 }
 
 bool findPtEleAnat(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-        vector<vector<int> >& vert2Elements, Vector& conduct, Vector& fiberAngles, 
+        vector<vector<int> >& vert2Elements, Option& options, 
         Vector& q, int vertex, ThreeInts& inds, ThreeInts& nns, vector<anatomy>& anatVectors){
     vector<int> elements = vert2Elements[vertex];
     bool foundPt=false;
@@ -224,10 +224,10 @@ bool findPtEleAnat(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
         if(isInTetElement(q, mesh, eleIndex)){
             DenseMatrix QPfib(dim3, dim3);
             Phi phi;
-            calcGradient(x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv, fiberAngles, q, eleIndex, QPfib, phi);  
+            calcGradient(x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv, options, q, eleIndex, QPfib, phi);  
             anatomy anat;
             
-            getAnatomy(anat, QPfib, conduct, phi, inds, nns);
+            getAnatomy(anat, QPfib, options, phi, inds, nns);
             anatVectors.push_back(anat);    
             foundPt=true;
             break; // If the point is found in an element, don't need to check next one in the list. 
@@ -268,8 +268,11 @@ void getCardEleGrads(GridFunction& x, const Vector& q, int eleIndex, Vector& gra
     
 }
 
-void calcSigma(DenseMatrix& Sigma, DenseMatrix& Q, Vector& conduct){
-
+void calcSigma(DenseMatrix& Sigma, DenseMatrix& Q, Option& options){
+    Vector conduct(3);
+    conduct(0)=options.gL;
+    conduct(1)=options.gT;
+    conduct(2)=options.gN;
     DenseMatrix diag(dim3, dim3);
     //Get Diag (conductivity)).
     for(int i=0; i<dim3; i++){
@@ -287,9 +290,9 @@ void calcSigma(DenseMatrix& Sigma, DenseMatrix& Q, Vector& conduct){
     
 }
 
-int getCellType(double phi_epi, double phi_lv, double phi_rv){
-    if(phi_epi>0.66) return 102;                // EPI_CELL=102
-    if(phi_lv>0.66 || phi_rv >0.66) return 100; // ENDO_CELL=100
+int getCellType(Phi& phi){
+    if(phi.epi>0.66) return 102;                // EPI_CELL=102
+    if(phi.lv>0.66 || phi.rv >0.66) return 100; // ENDO_CELL=100
     return 101;                                 // M_CELL=101
 }
 

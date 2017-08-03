@@ -10,6 +10,7 @@
 
 #include "solver.h"
 #include "io.h"
+#include "option.h"
 
 using namespace std;
 using namespace mfem;
@@ -20,17 +21,19 @@ using namespace mfem;
 int main(int argc, char** argv)
 {
     // 1. Parse command-line options.
-    const char *mesh_file = "./human.vtk";
-    int order = 1;
-    bool static_cond = false;
+    Option options;
+    
+    options.mesh_file = "./human.vtk";
+    options.order = 1;
+    options.static_cond = false;
     
     OptionsParser args(argc, argv);
-    args.AddOption(&mesh_file, "-m", "--mesh",
+    args.AddOption(&options.mesh_file, "-m", "--mesh",
             "Surface Mesh file to use.");
-    args.AddOption(&order, "-o", "--order",
+    args.AddOption(&options.order, "-o", "--order",
             "Finite element order (polynomial degree) or -1 for"
             " isoparametric space.");
-    args.AddOption(&static_cond, "-sc", "--static-condensation", "-no-sc",
+    args.AddOption(&options.static_cond, "-sc", "--static-condensation", "-no-sc",
             "--no-static-condensation", "Enable static condensation.");    
     
     args.Parse();
@@ -43,7 +46,7 @@ int main(int argc, char** argv)
     // 2. Read the mesh from the given mesh file. We can handle triangular,
     //    quadrilateral, tetrahedral, hexahedral, surface and volume meshes with
     //    the same code.
-    Mesh *surface = new Mesh(mesh_file, 0, 0, false);  
+    Mesh *surface = new Mesh(options.mesh_file, 0, 0, false);  
     setSurf4Surf(surface);
     
     ofstream surf_ofs("surf4surf.vtk");
