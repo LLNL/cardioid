@@ -487,7 +487,7 @@ void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
    int ierr = MPI_File_open(MPI_COMM_WORLD, (char *) options.fiblocs, MPI_MODE_RDONLY, MPI_INFO_NULL, &in);
    if (ierr)
    {
-      if (rank == 0) fprintf(stderr, "Couldn't open file %s\n", fiblocs);
+      if (rank == 0) fprintf(stderr, "Couldn't open file %s\n", options.fiblocs);
       MPI_Finalize();
       exit(2);
    }
