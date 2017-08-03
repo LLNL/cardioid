@@ -216,7 +216,7 @@ int main(int argc, char *argv[]) {
     
     
     // 3b. Apex, Epi → 1, LV, RV→ 0, Base→ no flux
-    cout << "\n3b. Apex, Epi → 1, LV, RV→ 0, Base→ no flux...\n\n";
+    cout << "\n3b. Apex, Epi → 1, LV, RV→ 0, Base→ no flux...\n";
     all_ess_bdr = 1;
     all_ess_bdr[1]=0;
     
