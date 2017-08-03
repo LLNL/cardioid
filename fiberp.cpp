@@ -395,7 +395,7 @@ int main(int argc, char *argv[]) {
 
     options.maxEdgeLen=getMaxEdgeLen(mesh);
     if (myid == 0) {
-        cout << "\nThe maximum edge length in the mesh is "<< options.maxEdgeLen <<"\n";
+        cout << "\n\tThe maximum edge length in the mesh is "<< options.maxEdgeLen <<"\n";
         cout.flush();     
     }
     

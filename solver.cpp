@@ -124,14 +124,14 @@ GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_es
     //     solve the system A X = B with PCG.
     GSSmoother M(A);
     if (myid == 0) {
-        int printLevel=0;
+        int printLevel=-1;
         if(options.verbose){
               printLevel=1;  
         }            
         PCG(A, M, B, X, printLevel, 1000, 1e-12, 0.0);
     }else{
         // always turn of print out for rank>0
-        PCG(A, M, B, X, 0, 1000, 1e-12, 0.0);
+        PCG(A, M, B, X, -1, 1000, 1e-12, 0.0);
     }
 #else
     // 10. If MFEM was compiled with SuiteSparse, use UMFPACK to solve the system.
