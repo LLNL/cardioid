@@ -162,6 +162,15 @@ void simulationLoop(Simulate& sim)
    printData(sim);
    loopIO(sim, 1);
    profileStart(simulationLoopTimer);
+
+   double* recvBuf = voltageExchange.recvBuf_;
+   int recvBufSize = voltageExchange.commTable_->recvSize();
+   #if _OPENMP >= 201511
+   if (recvBufSize > 0)
+   {
+      #pragma omp target enter data map(alloc:recvBuf[0:recvBufSize])
+   }
+   #endif
    while (sim.loop_ < sim.maxLoop_)
    {
       int nLocal = sim.anatomy_.nLocal();
@@ -186,9 +195,13 @@ void simulationLoop(Simulate& sim)
          const VectorDouble32& vmarray(vdata.VmTransport_.readOnDevice());
          VectorDouble32& dVmDiffusion(vdata.dVmDiffusionTransport_.modifyOnDevice());
          sim.diffusion_->updateLocalVoltage(&(vmarray[0]));
-         double* recvBuf = voltageExchange.recvBuf_;
-         #pragma omp target update to(recvBuf[0:voltageExchange.width_])
-         sim.diffusion_->updateRemoteVoltage(voltageExchange.getRecvBuf());
+         #if _OPENMP >= 201511
+         if (recvBufSize > 0)
+         {
+            #pragma omp target update to(recvBuf[0:recvBufSize])
+         }
+         #endif
+         sim.diffusion_->updateRemoteVoltage(recvBuf);
          sim.diffusion_->calc(dVmDiffusion);
             }
       stopTimer(diffusionCalcTimer);
