@@ -89,9 +89,7 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                         cout << "Finish " << totalCardPoints << " points." << endl;
                         cout.flush();
                     }                
-                } else {
-                    cout << "Need to increase the range cutoff for point" << pt << endl;
-                }                
+                }                 
                 
             }
         }
@@ -206,7 +204,7 @@ void getRotMatrix(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, G
                 }                
             } else {
                 cout << "Need to increase the range cutoff for point" << pt << endl;
-            }
+            } 
         }
     }
 }
