@@ -34,7 +34,9 @@ void getVert2Elements(Mesh *mesh, vector<vector<int> >& vert2Elements) {
 GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_ess_bdr, Array<int> &zero_ess_bdr, Option& options, int myid){
     
     int dim = mesh->Dimension();
-    cout << "Dimension =" << dim << endl;    
+    if(options.verbose){
+        cout << "\tDimension =" << dim << endl;    
+    }
     // 4. Define a finite element space on the mesh. Here we use continuous
     //    Lagrange finite elements of the specified order. If order < 1, we
     //    instead use an isoparametric/isogeometric space.
@@ -43,13 +45,13 @@ GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_es
         fec = new H1_FECollection(options.order, dim);
     } else if (mesh->GetNodes()) {
         fec = mesh->GetNodes()->OwnFEC();
-        cout << "Using isoparametric FEs: " << fec->Name() << endl;
+        cout << "\tUsing isoparametric FEs: " << fec->Name() << endl;
     } else {
         fec = new H1_FECollection(options.order = 1, dim);
     }
     FiniteElementSpace *fespace = new FiniteElementSpace(mesh, fec);
-    if (myid == 0) {
-        cout << "Number of finite element unknowns: "
+    if (myid == 0 && options.verbose) {
+        cout << "\tNumber of finite element unknowns: "
                 << fespace->GetTrueVSize() << endl;
     }
 
@@ -77,9 +79,9 @@ GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_es
     GridFunction x(fespace);
     x = 0.0;
 
-    if (myid == 0) {
-        cout << "all_ess_bdr size=" << all_ess_bdr.Size() << endl;
-        cout << "x size " << x.Size() << endl;
+    if (myid == 0 && options.verbose) {
+        cout << "\tall_ess_bdr size=" << all_ess_bdr.Size() << endl;
+        cout << "\tx size " << x.Size() << endl;
     }
 
     // 8. Set up the bilinear form a(.,.) on the finite element space
@@ -114,8 +116,8 @@ GridFunction laplace(Mesh *mesh, Array<int> &all_ess_bdr, Array<int> &nonzero_es
     // Form the linear system using ALL of the essential boundary dofs (from all_ess_bdr)
     a->FormLinearSystem(ess_tdof_list, x, *b, A, X, B);
 
-    if (myid == 0) {
-        cout << "Size of linear system: " << A.Height() << endl;
+    if (myid == 0 && options.verbose) {
+        cout << "\tSize of linear system: " << A.Height() << endl;
     }
 #ifndef MFEM_USE_SUITESPARSE
     // 10. Define a simple symmetric Gauss-Seidel preconditioner and use it to //ILU
@@ -146,7 +148,7 @@ void getVetecesGradients(Mesh *mesh, GridFunction& x, vector<vector<int> >& vert
     for(int i=0; i<x.Size(); i++){         
         //pot.push_back(x_data[i]);
         pot.push_back(x(i));
-        if(i<5) cout << "pot " << x(i) << endl;
+        //if(i<5) cout << "pot " << x(i) << endl;
     }
     
     const FiniteElementSpace *fes=x.FESpace();
@@ -358,10 +360,10 @@ void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle, int myid
     double zTop5=coord_max[2]-(coord_max[2]-coord_min[2])*0.05;
 
     if (myid == 0) {
-        cout << "Min: " << coord_min(0) << " " << coord_min(1) << " " << coord_min(2) << endl;
-        cout << "Max: " << coord_max(0) << " " << coord_max(1) << " " << coord_max(2) << endl;
-        cout << "Apex: " << coord[0] << " " << coord[1] << " " << coord[2] << endl;
-        cout << "Top 5% z coordinate: " << zTop5 << endl;
+        cout << "\tMin: " << coord_min(0) << " " << coord_min(1) << " " << coord_min(2) << endl;
+        cout << "\tMax: " << coord_max(0) << " " << coord_max(1) << " " << coord_max(2) << endl;
+        cout << "\tApex: " << coord[0] << " " << coord[1] << " " << coord[2] << endl;
+        cout << "\tTop 5% z coordinate: " << zTop5 << endl;
     }
     // Initialization the attributes to 0 and set attribute of apex
     for(int i=0; i<nbe; i++){

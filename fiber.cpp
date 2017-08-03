@@ -73,6 +73,8 @@ int main(int argc, char *argv[]) {
     options.omar_task=false;
     options.omar_fast=false;
     options.fiblocs="";
+    
+    options.verbose=false;
 
     options.angle=20;
     
@@ -109,7 +111,10 @@ int main(int argc, char *argv[]) {
             "--no-omar_fast",
             "Enable or disable Omar fast task.");    
     args.AddOption(&options.fiblocs, "-fl", "--fiblocs",
-            "Fiber locagtion file to use.");    
+            "Fiber locagtion file to use."); 
+    args.AddOption(&options.verbose, "-vv", "--verbose", "-novv",
+            "--no-verbose",
+            "Enable verbose output.");        
     args.AddOption(&options.a_endo, "-ao", "--aendo", "Fiber angle alpha endo.");
     args.AddOption(&options.a_epi, "-ai", "--aepi", "Fiber angle alpha epi.");
     args.AddOption(&options.b_endo, "-bo", "--bendo", "Fiber angle beta endo.");
@@ -146,10 +151,12 @@ int main(int argc, char *argv[]) {
     // 2. Read the mesh from the given mesh file. We can handle triangular,
     //    quadrilateral, tetrahedral, hexahedral, surface and volume meshes with
     //    the same code.
+    cout << "\n1. Read the mesh from the given mesh file ...\n";
     Mesh *mesh = new Mesh(options.mesh_file, 1, 1);
     
     vector<Vector> boundingbox;
     // Set the surfaces for the mesh: 0-Apex, 1-Base, 2-EPI, 3-LV, 4-RV.
+    cout << "\n2. Set the surfaces for the mesh: 0-Apex, 1-Base, 2-EPI, 3-LV, 4-RV ...\n";
     setSurfaces(mesh, boundingbox, options.angle); // use 30 degrees for determining the base surface.
 //    for(unsigned i = 0; i < boundingbox.size(); i++) {
 //        Vector vec=boundingbox[i];     
@@ -187,6 +194,7 @@ int main(int argc, char *argv[]) {
     // 3a. Base → 1, Apex→ 0, Epi, LV, RV → no flux
      // Mark ALL boundaries as essential. This does not set what the actual Dirichlet
     // values are
+    cout << "\n3a. Base → 1, Apex→ 0, Epi, LV, RV → no flux...\n";
     all_ess_bdr = 1;
     all_ess_bdr[2]=0;
     all_ess_bdr[3]=0;
@@ -208,6 +216,7 @@ int main(int argc, char *argv[]) {
     
     
     // 3b. Apex, Epi → 1, LV, RV→ 0, Base→ no flux
+    cout << "\n3b. Apex, Epi → 1, LV, RV→ 0, Base→ no flux...\n\n";
     all_ess_bdr = 1;
     all_ess_bdr[1]=0;
     
@@ -230,6 +239,7 @@ int main(int argc, char *argv[]) {
     MFEM_ASSERT(phi_epi_grads.size()==nv, "size of phi_epi_grads does not match number of vertices.");
     
     //3c. LV → 1, Apex, Epi, RV→ 0, Base→ no flux
+    cout << "\n3c. LV → 1, Apex, Epi, RV→ 0, Base→ no flux...\n";
     all_ess_bdr = 1;
     all_ess_bdr[1]=0;
     
@@ -252,6 +262,7 @@ int main(int argc, char *argv[]) {
     MFEM_ASSERT(phi_lv_grads.size()==nv, "size of phi_lv_grads does not match number of vertices.");        
     
     //3d. RV → 1, Apex, Epi, LV→ 0, Base→ no flux
+    cout << "\n3d. RV → 1, Apex, Epi, LV→ 0, Base→ no flux...\n";
     all_ess_bdr = 1;
     all_ess_bdr[1]=0;
     
@@ -283,11 +294,12 @@ int main(int argc, char *argv[]) {
     printFiberVTK(mesh, phi_lv_grads, phil_ofs);    
     printFiberVTK(mesh, phi_rv_grads, phir_ofs);
     
+    cout << "\n4. Working on fiber angles with the bislerp method...\n";
     vector<DenseMatrix> QPfibVectors;   
     genfiber(QPfibVectors, psi_ab, psi_ab_grads, phi_epi, phi_epi_grads, 
         phi_lv, phi_lv_grads, phi_rv, phi_rv_grads, options);
     
-    cout << "\nCalculate fiber on the nodes ...\n";
+    cout << "\n5. Calculate fiber on the nodes ...\n";
     calcNodeFiber(QPfibVectors); 
         
     vector<Vector> fvectors;
@@ -316,7 +328,7 @@ int main(int argc, char *argv[]) {
     
     if(options.omar_fast){
       
-      cout << "\nGet Omar's rotation matrix in fast way ...\n";
+      cout << "\n6. Get Omar's rotation matrix in fast way ...\n";
       getRotMatrixFast(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
           vert2Elements, options);  
       
@@ -326,22 +338,22 @@ int main(int argc, char *argv[]) {
     }
     
     options.maxEdgeLen=getMaxEdgeLen(mesh);
-    cout << "\nThe maximum edge length in the mesh is "<< options.maxEdgeLen <<"\n";
+    cout << "\n\tThe maximum edge length in the mesh is "<< options.maxEdgeLen <<"\n";
     cout.flush();     
       
-    cout << "\nStart to build k-D tree for the mesh...\n";
+    cout << "\n6. Start to build k-D tree for the mesh...\n";
     cout.flush();
     tree_type kdtree(std::ptr_fun(tac));
     buildKDTree(mesh, kdtree);
     
     if(options.omar_task){
-       cout << "\nGet Omar's rotation matrix ...\n";
+       cout << "\n7.a Get Omar's rotation matrix ...\n";
        getRotMatrix(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
           kdtree, vert2Elements, options);
        
     }
     
-    cout << "\nGet cardioid point gradients ...\n";
+    cout << "\n7.b Get cardioid point gradients ...\n";
     cout.flush();
 //    Vector conduct(3);
 //    conduct(0)=gL;

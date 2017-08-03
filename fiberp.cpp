@@ -79,6 +79,8 @@ int main(int argc, char *argv[]) {
     options.omar_task=false;
     options.omar_fast=false;
     options.fiblocs="";
+    
+    options.verbose=false;
 
     options.angle=20;
     
@@ -115,7 +117,10 @@ int main(int argc, char *argv[]) {
             "--no-omar_fast",
             "Enable or disable Omar fast task.");      
     args.AddOption(&options.fiblocs, "-fl", "--fiblocs",
-            "Fiber locagtion file to use.");     
+            "Fiber locagtion file to use."); 
+    args.AddOption(&options.verbose, "-vv", "--verbose", "-novv",
+            "--no-verbose",
+            "Enable verbose output.");     
     args.AddOption(&options.a_endo, "-ao", "--aendo", "Fiber angle alpha endo.");
     args.AddOption(&options.a_epi, "-ai", "--aepi", "Fiber angle alpha epi.");
     args.AddOption(&options.b_endo, "-bo", "--bendo", "Fiber angle beta endo.");
@@ -166,10 +171,18 @@ int main(int argc, char *argv[]) {
     // 2. Read the mesh from the given mesh file. We can handle triangular,
     //    quadrilateral, tetrahedral, hexahedral, surface and volume meshes with
     //    the same code.
+    if (myid == 0) {
+        cout << "\n1. Read the mesh from the given mesh file ...\n";
+        cout.flush();
+    }     
     Mesh *mesh = new Mesh(options.mesh_file, 1, 1);
     
     vector<Vector> boundingbox;
     // Set the surfaces for the mesh: 0-Apex, 1-Base, 2-EPI, 3-LV, 4-RV.
+    if (myid == 0) {
+        cout << "\n2. Set the surfaces for the mesh: 0-Apex, 1-Base, 2-EPI, 3-LV, 4-RV ...\n";
+        cout.flush();
+    }    
     setSurfaces(mesh, boundingbox, options.angle, myid); // use 30 degrees for determining the base surface.
 //    for(unsigned i = 0; i < boundingbox.size(); i++) {
 //        Vector vec=boundingbox[i];     
@@ -326,7 +339,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (myid == 0) {
-        cout << "\nWorking on fiber angles with the bislerp method...\n";
+        cout << "\n4. Working on fiber angles with the bislerp method...\n";
         cout.flush();
     }    
     vector<DenseMatrix> QPfibVectors;   
@@ -335,7 +348,7 @@ int main(int argc, char *argv[]) {
     
     MPI_Barrier(MPI_COMM_WORLD);
     if (myid == 0) {    
-        cout << "\nCalculate fiber on the nodes ...\n";
+        cout << "\n5. Calculate fiber on the nodes ...\n";
         cout.flush();
     }     
     calcNodeFiberP(QPfibVectors, num_procs, myid);     
@@ -370,7 +383,7 @@ int main(int argc, char *argv[]) {
     
     if(options.omar_fast){
       if (myid == 0) {
-         cout << "\nGet Omar's rotation matrix in fast way ...\n";
+         cout << "\n6. Get Omar's rotation matrix in fast way ...\n";
       }
       getRotMatrixFastp(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
           vert2Elements, options, num_procs, myid);  
@@ -387,7 +400,7 @@ int main(int argc, char *argv[]) {
     }
     
     if (myid == 0) {
-        cout << "\nStart to build k-D tree for the mesh...\n";
+        cout << "\n6. Start to build k-D tree for the mesh...\n";
         cout.flush();
     }
     tree_type kdtree(std::ptr_fun(tac));
@@ -396,7 +409,7 @@ int main(int argc, char *argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
     if(options.omar_task){
        if (myid == 0) {
-         cout << "\nGet Omar's rotation matrix ...\n";
+         cout << "\n7.a Get Omar's rotation matrix ...\n";
        }
        getRotMatrixp(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
           kdtree, vert2Elements, options, num_procs, myid);
@@ -404,7 +417,7 @@ int main(int argc, char *argv[]) {
     }    
         
     if (myid == 0) {
-        cout << "\nGet cardioid point gradients ...\n";
+        cout << "\n7.b Get cardioid point gradients ...\n";
         cout.flush();
     }
 //    Vector conduct(3);

@@ -350,8 +350,10 @@ void biSlerpCombo(DenseMatrix& QPfib,
     if (phi_v != 0) {
         frac = phi_rv / phi_v;
     } else {
-        cout << "Warning: phi_v ==0";
-        cout << " phi_lv[i]=" << phi_lv << " phi_rv[i]=" << phi_rv << " phi_epi[i]=" << phi_epi << " psi_ab[i]=" << psi_ab << endl;
+        if(options.verbose){
+            cout << "\tWarning: phi_v ==0";
+            cout << " phi_lv[i]=" << phi_lv << " phi_rv[i]=" << phi_rv << " phi_epi[i]=" << phi_epi << " psi_ab[i]=" << psi_ab << endl;       
+        }
     }
     double frac_epi = phi_epi;
     //stringstream ss;
@@ -370,7 +372,9 @@ void biSlerpCombo(DenseMatrix& QPfib,
     DenseMatrix QPendo(dim3, dim3);
 
     if (!vecisnonzero(psi_ab_vec)) {
-        cout << "Warning psi_ab gradient is zero" << endl;
+        if(options.verbose){
+            cout << "\tWarning psi_ab gradient is zero" << endl;
+        }
         return;
     }
 
@@ -382,7 +386,9 @@ void biSlerpCombo(DenseMatrix& QPfib,
         phi_lv_vec_neg.Neg();
         DenseMatrix Qlv(dim3, dim3);
         if (vecdot(psi_ab_vec, phi_lv_vec_neg)) {
-            cout << "psi_ab_vec equal to phi_lv_vec_neg" << endl;
+            if(options.verbose){
+                cout << "\tpsi_ab_vec equal to phi_lv_vec_neg" << endl;
+            }
             phi_lv_isnonzero = false;
         } else {
             axis(Qlv, psi_ab_vec, phi_lv_vec_neg);
@@ -396,7 +402,9 @@ void biSlerpCombo(DenseMatrix& QPfib,
         //Line 9
         DenseMatrix Qrv(dim3, dim3);
         if (vecdot(psi_ab_vec, phi_rv_vec)) {
-            cout << "psi_ab_vec equal to phi_rv_vec" << endl;
+            if(options.verbose){
+                cout << "\tpsi_ab_vec equal to phi_rv_vec" << endl;
+            }
             phi_rv_isnonzero = false;
         } else {
             axis(Qrv, psi_ab_vec, phi_rv_vec);
@@ -409,7 +417,9 @@ void biSlerpCombo(DenseMatrix& QPfib,
         //Line 11
         DenseMatrix Qepi(dim3, dim3);
         if (vecdot(psi_ab_vec, phi_epi_vec)) {
-            cout << "psi_ab_vec equal to phi_epi_vec" << endl;
+            if(options.verbose){
+                cout << "\tpsi_ab_vec equal to phi_epi_vec" << endl;
+            }
             phi_epi_isnonzero = false;
         } else {
             axis(Qepi, psi_ab_vec, phi_epi_vec);

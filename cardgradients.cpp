@@ -34,7 +34,7 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
     vector<anatomy> anatVectors;
     
     double cutoff=options.maxEdgeLen*0.6124;  //Radius of circumsphere sqrt(6)/4 
-    cout << "\nCutoff for nearest point is " << cutoff << std::endl;
+    cout << "\n\tCutoff for nearest point is " << cutoff << "\n\n";
     double rangeCutoff=options.maxEdgeLen;
     if(rangeCutoff<options.dd){
         rangeCutoff=options.dd;
@@ -86,7 +86,7 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                 if (findPt) {
                     totalCardPoints++;
                     if (totalCardPoints % 10000 == 0) {
-                        cout << "Finish " << totalCardPoints << " points." << endl;
+                        cout << "\tFinish " << totalCardPoints << " points." << endl;
                         cout.flush();
                     }                
                 }                 
@@ -199,11 +199,11 @@ void getRotMatrix(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, G
             if (findPt) {
                 totalCardPoints++;
                 if (totalCardPoints % 10000 == 0) {
-                    cout << "Finish " << totalCardPoints << " points." << endl;
+                    cout << "\tFinish " << totalCardPoints << " points." << endl;
                     cout.flush();
                 }                
             } else {
-                cout << "Need to increase the range cutoff for point" << pt << endl;
+                cout << "\tNeed to increase the range cutoff for point" << pt << endl;
             } 
         }
     }
@@ -286,7 +286,7 @@ void getRotMatrixFast(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                totalCardPoints++;
                if (totalCardPoints % 10000 == 0)
                {
-                  cout << "Finish " << totalCardPoints << " points." << endl;
+                  cout << "\tFinish " << totalCardPoints << " points." << endl;
                   cout.flush();
                }
 

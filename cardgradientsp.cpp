@@ -51,7 +51,7 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
     
     double cutoff=options.maxEdgeLen*0.6124;  //Radius of circumsphere sqrt(6)/4 
     if(myid==0){
-        cout << "\nCutoff for nearest point is " << cutoff << std::endl;    
+        cout << "\n\tCutoff for nearest point is " << cutoff << "\n\n";    
     }
     
     double rangeCutoff=options.maxEdgeLen;
@@ -108,7 +108,7 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
         if (findPt) {
             totalCardPoints++;
             if (totalCardPoints % 10000 == 0) {
-                cout << "Finish " << totalCardPoints << " points." << endl;
+                cout << "\tFinish " << totalCardPoints << " points." << endl;
                 cout.flush();
             }                
         }          
@@ -407,16 +407,16 @@ void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
                 outLines.push_back(f_ofs.str());
                 totalCardPoints++;
                 if (totalCardPoints % 10000 == 0) {
-                    cout << "Finish " << totalCardPoints << " points." << endl;
+                    cout << "\tFinish " << totalCardPoints << " points." << endl;
                     cout.flush();
                 }
             } else {
-                cout << "Need to increase the range cutoff for point" << pt << endl;
+                cout << "\tNeed to increase the range cutoff for point" << pt << endl;
             }
         }
     }
 
-    cout << "Processor " << rank << " has " << outLines.size() << " lines." << endl;
+    cout << "\tProcessor " << rank << " has " << outLines.size() << " lines." << endl;
 
     //    // Parallel I/O
     //    string fullname = "omar";
@@ -560,7 +560,7 @@ void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
 
                totalCardPoints++;
                 if (totalCardPoints % 10000 == 0) {
-                    cout << "Processor " << rank << " finish " << totalCardPoints << " points." << endl;
+                    cout << "\tProcessor " << rank << " finish " << totalCardPoints << " points." << endl;
                     cout.flush();
                 }
 
@@ -574,7 +574,7 @@ void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
       }
    }
    
-   cout << "Processor " << rank << " has " << outLines.size() << " lines." << endl;
+   cout << "\tProcessor " << rank << " has " << outLines.size() << " lines." << endl;
 
 //    // Parallel I/O
 //    string fullname = "omar";

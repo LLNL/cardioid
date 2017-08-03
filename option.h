@@ -18,6 +18,9 @@ struct Option{
     bool omar_fast;
     const char *fiblocs;
     
+    // verbose print out
+    bool verbose;
+    
     // Base angle
     double angle;
     
