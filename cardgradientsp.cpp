@@ -50,11 +50,16 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
     int totalCardPoints = 0;
     vector<anatomy> anatVectors;
     
-    double cutoff=maxEdgeLen*0.6123724356957945;  //Radius of circumsphere sqrt(6)/4 
+    double cutoff=maxEdgeLen*0.6124;  //Radius of circumsphere sqrt(6)/4 
     if(myid==0){
         cout << "\nCutoff for nearest point is " << cutoff << std::endl;    
     }
     
+    double rangeCutoff=maxEdgeLen;
+    if(rangeCutoff<dd){
+        rangeCutoff=dd;
+    }    
+        
     long long gid_dim = nx * ny*nz;
     // MPI Parallel
     for (long long g = myid; g < gid_dim; g += num_procs) {
@@ -80,28 +85,36 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
         
         triplet vetexNearPt = *found.first;
         int vertex = vetexNearPt.getIndex();
-        
-        vector<int> elements = vert2Elements[vertex];
-        for (unsigned e = 0; e < elements.size(); e++) {
-            int eleIndex = elements[e];
+        ThreeInts inds={i, j, k};
+        ThreeInts nns={nx, ny, nz};
 
-            if (isInTetElement(q, mesh, eleIndex)) {  
-                DenseMatrix QPfib(dim3, dim3);
-                Phi phi;
-                calcGradient(x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv, fiberAngles, q, eleIndex, QPfib, phi);                  
-                anatomy anat;
-                anat.gid = g;
-                getAnatomy(anat, QPfib, conduct, phi);                
-                anatVectors.push_back(anat);
+        bool findPt = findPtEleAnat(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
+                vert2Elements, conduct, fiberAngles, q, vertex, inds, nns, anatVectors);
 
-                totalCardPoints++;
-                if (totalCardPoints % 10000 == 0) {
-                    cout << "Processor " << myid << " finish " << totalCardPoints << " points." << endl;
-                    cout.flush();
-                }
-                break; // If the point is found in an element, don't need to check next one in the list. 
+        if (!findPt) {
+            // Expand to a range if element is not find from nearest point
+            std::vector<triplet> v;
+            kdtree.find_within_range(pt, rangeCutoff, std::back_inserter(v));
+
+            std::vector<triplet>::const_iterator ci = v.begin();
+            for (; ci != v.end(); ++ci) {
+                if (findPt) break;
+                vertex = ci->getIndex();
+                //cout << "Range point " << *ci << endl;
+                findPt = findPtEleAnat(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
+                    vert2Elements, conduct, fiberAngles, q, vertex, inds, nns, anatVectors);
             }
         }
+
+        if (findPt) {
+            totalCardPoints++;
+            if (totalCardPoints % 10000 == 0) {
+                cout << "Finish " << totalCardPoints << " points." << endl;
+                cout.flush();
+            }                
+        } else {
+            cout << "Need to increase the range cutoff for point" << pt << endl;
+        }         
 
     }
     filerheader header;

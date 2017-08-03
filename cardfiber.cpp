@@ -163,12 +163,14 @@ void calcGradient(GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction&
  
 }
 
-void getAnatomy(anatomy& anat, DenseMatrix& QPfib, Vector& conduct, Phi& phi){
+void getAnatomy(anatomy& anat, DenseMatrix& QPfib, Vector& conduct, Phi& phi,
+        ThreeInts& inds, ThreeInts& nns){
     DenseMatrix Sigma(dim3, dim3);
     calcSigma(Sigma, QPfib, conduct);
 
     double *s=Sigma.Data();
     
+    anat.gid=inds.i + inds.j*nns.i + inds.k*nns.i*nns.j;
     anat.celltype=getCellType(phi.epi, phi.lv, phi.rv);
     anat.sigma[0]=s[0];
     anat.sigma[1]=s[3];
@@ -210,6 +212,29 @@ bool findPtEle(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, Grid
          }
          return findPt;
     
+}
+
+bool findPtEleAnat(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
+        vector<vector<int> >& vert2Elements, Vector& conduct, Vector& fiberAngles, 
+        Vector& q, int vertex, ThreeInts& inds, ThreeInts& nns, vector<anatomy>& anatVectors){
+    vector<int> elements = vert2Elements[vertex];
+    bool foundPt=false;
+    for (unsigned e = 0; e < elements.size(); e++) {
+        int eleIndex=elements[e];                   
+        if(isInTetElement(q, mesh, eleIndex)){
+            DenseMatrix QPfib(dim3, dim3);
+            Phi phi;
+            calcGradient(x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv, fiberAngles, q, eleIndex, QPfib, phi);  
+            anatomy anat;
+            
+            getAnatomy(anat, QPfib, conduct, phi, inds, nns);
+            anatVectors.push_back(anat);    
+            foundPt=true;
+            break; // If the point is found in an element, don't need to check next one in the list. 
+        } 
+    }
+    
+    return foundPt;
 }
 
 void getCardEleGrads(GridFunction& x, const Vector& q, int eleIndex, Vector& grad_ele, double& xVal) {

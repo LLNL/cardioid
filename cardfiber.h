@@ -44,6 +44,12 @@ struct Phi{
     double rv;
 };
 
+struct ThreeInts{
+    int i;
+    int j;
+    int k;    
+};
+
 void buildKDTree(Mesh *mesh, tree_type& kdtree);
 
 double getMaxEdgeLen(Mesh *mesh);
@@ -57,9 +63,15 @@ int getCellType(double phi_epi, double phi_lv, double phi_rv);
 void calcGradient(GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
         Vector& fiberAngles, Vector& q, int eleIndex, DenseMatrix& QPfib, Phi& phi);
 
-void getAnatomy(anatomy& anat, DenseMatrix& QPfib, Vector& conduct, Phi& phi);
+void getAnatomy(anatomy& anat, DenseMatrix& QPfib, Vector& conduct, Phi& phi,
+        ThreeInts& inds, ThreeInts& nns);
 
 bool findPtEle(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
         vector<vector<int> >& vert2Elements, Vector& fiberAngles, Vector& q, int vertex, std::string& elemnum, ostream& out);
+
+bool findPtEleAnat(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
+        vector<vector<int> >& vert2Elements, Vector& conduct, Vector& fiberAngles, 
+        Vector& q, int vertex, ThreeInts& inds, ThreeInts& nns, vector<anatomy>& anatVectors);
+
 #endif	/* CARDFIBER_H */
 
