@@ -108,7 +108,7 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
         if (findPt) {
             totalCardPoints++;
             if (totalCardPoints % 10000 == 0) {
-                cout << "\tFinish " << totalCardPoints << " points." << endl;
+                cout << "\tProcessor " << myid <<" finish " << totalCardPoints << " points." << endl;
                 cout.flush();
             }                
         }          
@@ -407,7 +407,7 @@ void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
                 outLines.push_back(f_ofs.str());
                 totalCardPoints++;
                 if (totalCardPoints % 10000 == 0) {
-                    cout << "\tFinish " << totalCardPoints << " points." << endl;
+                    cout << "\tProcessor " << rank <<" finish " << totalCardPoints << " points." << endl;
                     cout.flush();
                 }
             } else {
