@@ -136,11 +136,12 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
     fullname += "/anatomy";
     int lrec = 88;
 //     int lrec = 80;
-    heap_allocate(lrec*totalCardPoints*128 + 4096);
+    //heap_allocate(lrec*totalCardPoints*128 + 4096);
+    heap_allocate(lrec*globalTotCardPoints*64 + 4096);
     
     Pio_setNumWriteFiles(num_procs);
     PFILE* file = Popen(fullname.c_str(), "w", MPI_COMM_WORLD);
-    PioReserve(file, lrec*totalCardPoints*64 + 4096);
+    //PioReserve(file, lrec*totalCardPoints*64 + 4096);
     //int nFiles_ = num_procs;
 //    if (nFiles_ > 0)
 //        PioSet(file, "ngroup", nFiles_);  
