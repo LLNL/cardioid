@@ -7,21 +7,22 @@ The fiber generation algorithm mainly comes from the following paper with some m
 Bayer, J. D.; Blake, R. C.; Plank, G.; Trayanova, N. A., A Novel Rule-Based Algorithm for Assigning Myocardial Fiber Orientation to Computational Heart Models. Ann. Biomed. Eng. 2012, 40, 2243-2254.
 
 The whole work can be divided up into the following steps:
-
-    - 1. Find all the requisite surfaces for the algorithm
-    - 2. Solve the laplacian problem
-    - 3. Interpolate the laplacian solutions to some number of points
-    - 4. Use the interpolated laplacian solutions to compute fiber orientations.
-    - 5. Repeat 2-4 for four different Dirichlet boundary conditions 
-        * a. Base → 1, Apex→ 0, Epi, LV, RV → no flux
-        * b. Apex, Epi → 1, LV, RV→ 0, Base→ no flux
-        * c. LV → 1, Apex, Epi, RV→ 0, Base→ no flux
-        * d. RV → 1, Apex, Epi, LV→ 0, Base→ no flux
-    - 6. Working on fiber angles with the bislerp method
-    - 7. Calculate fiber on the nodes
-    - 8. Start to build k-D tree for the mesh
-    - 9. Calcualte Omar's rotation matrix
-    - 10.Calculate anatomy files
+```
+    1. Find all the requisite surfaces for the algorithm
+    2. Solve the laplacian problem
+    3. Interpolate the laplacian solutions to some number of points
+    4. Use the interpolated laplacian solutions to compute fiber orientations.
+    5. Repeat 2-4 for four different Dirichlet boundary conditions 
+         a. Base → 1, Apex→ 0, Epi, LV, RV → no flux
+         b. Apex, Epi → 1, LV, RV→ 0, Base→ no flux
+         c. LV → 1, Apex, Epi, RV→ 0, Base→ no flux
+         d. RV → 1, Apex, Epi, LV→ 0, Base→ no flux
+    6. Working on fiber angles with the bislerp method
+    7. Calculate fiber on the nodes
+    8. Start to build k-D tree for the mesh
+    9. Calcualte Omar's rotation matrix
+    10.Calculate anatomy files
+```
 
 ## 2. Dependent Libraries
 
