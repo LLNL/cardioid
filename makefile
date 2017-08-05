@@ -10,7 +10,7 @@
 # Software Foundation) version 2.1 dated February 1999.
 
 # Use the MFEM build directory
-MFEM_DIR = ..
+#MFEM_DIR=../mfem-3.3
 CONFIG_MK = $(MFEM_DIR)/config/config.mk
 TEST_MK = $(MFEM_DIR)/config/test.mk
 # Use the MFEM install directory
