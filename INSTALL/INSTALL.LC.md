@@ -55,6 +55,10 @@ echo 'export TMPDIR=/tmp' >> ~/.profile && source ~/.profile
 tar -xf ddcMD_files_r2265.tgz
 sed -i -e 's/matinv/matinv_g/g' ddcMD_files/src/three_algebra.c 
 sed -i -e 's/matinv/matinv_g/g' ddcMD_files/src/three_algebra.h
+# make sure the $MFEM_DIR point to the right MFEM installation path 
+cd ../mfem-3.3
+export MFEM_DIR=`pwd`
+cd -
 make -j4
 make surface
 make -C ply2vtk
