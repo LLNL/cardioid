@@ -157,7 +157,7 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
     
     strftime(buffer, sizeof(buffer), "%a %b %d %H:%M:%S %Y", timePtr);
     string myline(buffer);
-    myline = "  created_time = " + myline + "\n";  
+    myline = "  created_time = " + myline + ";\n";  
     
     int nfiles=file->nfiles;
     if(nfiles>num_procs){
