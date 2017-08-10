@@ -427,45 +427,30 @@ void biSlerpCombo(DenseMatrix& QPfib,
         }
     }
 
-    if (phi_lv_isnonzero) {
-
-        if (phi_rv_isnonzero) {
-
-            if (phi_epi_isnonzero) {
-                // if all three phi gradients are non-zero, use the original algorithm in paper. 
-                //Line 10
-                bislerp(QPendo, QPlv, QPrv, frac);
-                //QPendo=QPlv;
-                //Line 12 
-                bislerp(QPfib, QPendo, QPepi, frac_epi);
-                //QPfib=QPendo;
-            } else {
-                // if phi_epi gradients are zero, phi_lv and phi are nonzero. use QPlv, QPrv, frac 
-                bislerp(QPfib, QPlv, QPrv, frac);
-                //QPfib=QPlv;
-            }
-
-        } else {
-            if (phi_epi_isnonzero) {
-                // if phi_rv is zero, phi_lv and phi_epi is nonzero
-                bislerp(QPfib, QPlv, QPepi, frac_epi);
-                //QPfib=QPlv;
-            } else {
-                // if gradients of phi_lv, phi_rv are zero, then phi_epi is zero 
-                vectorEigen(psi_ab_vec, QPfib);
-            }
-        }
+    if (phi_lv_isnonzero && phi_rv_isnonzero && phi_epi_isnonzero) {
+       // if all three phi gradients are non-zero, use the original algorithm in paper. 
+       //Line 10
+       bislerp(QPendo, QPlv, QPrv, frac);
+       //QPendo=QPlv;
+       //Line 12 
+       bislerp(QPfib, QPendo, QPepi, frac_epi);
+       //QPfib=QPendo;
+    } else if (!phi_lv_isnonzero && phi_rv_isnonzero && phi_epi_isnonzero) {
+       // if phi_lv is zero, phi_rv and phi_epi is nonzero
+       bislerp(QPfib, QPrv, QPepi, frac_epi);
+       //QPfib=QPrv;
+    } else if (phi_lv_isnonzero && !phi_rv_isnonzero && phi_epi_isnonzero) {
+       // if phi_rv is zero, phi_lv and phi_epi is nonzero
+       bislerp(QPfib, QPlv, QPepi, frac_epi);
+       //QPfib=QPlv;
+    } else if (phi_lv_isnonzero && phi_rv_isnonzero && !phi_epi_isnonzero) {
+       // if phi_epi gradients are zero, phi_lv and phi are nonzero. use QPlv, QPrv, frac 
+       bislerp(QPfib, QPlv, QPrv, frac);
+       //QPfib=QPlv;
     } else {
-        if (phi_rv_isnonzero && phi_epi_isnonzero) {
-            // if phi_lv is zero, phi_rv and phi_epi is nonzero
-            bislerp(QPfib, QPrv, QPepi, frac_epi);
-            //QPfib=QPrv;
-        } else {
-            // if gradients of phi_lv, phi_rv are zero, then phi_epi is zero 
-            vectorEigen(psi_ab_vec, QPfib);
-        }
-    }
-                    
+       // if gradients of phi_lv, phi_rv are zero, then phi_epi is zero 
+       vectorEigen(psi_ab_vec, QPfib);
+    }               
 }
 
 void genfiber(vector<DenseMatrix>& QPfibVectors,
