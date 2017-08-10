@@ -119,7 +119,7 @@ if nbatch <= 1:
     print 'Removing '+dirname+'/'+fb+'#000000ORIG'
     os.system('rm '+dirname+'/'+fb+'#000000ORIG') 
     
-    if (ct % nbatch == 0):
+    if (ct % nbatch == 0) and (len(files)>1):
       dirname = 'dir'+str(int(math.floor(ct/nbatch)))
       print '\nMaking directory '+dirname+' and corresponding ddcMD header file '+dirname+'.ddcMD\n'
       os.system('mkdir '+dirname)
@@ -136,7 +136,7 @@ for myf in files:
     newf = fb+'#%06d' % int(ct - 1 - math.floor((ct-1)/nbatch)*nbatch)
     print '\nCopying file '+myf+' to '+dirname+'/'+newf+'\n'
     os.system('cp -p '+myf+' '+dirname+'/'+newf)
-  if ct%nbatch == 0 or (ct%nbatch != 0 and ct >= len(files)):
+  if (len(files)>1) and (ct%nbatch == 0 or (ct%nbatch != 0 and ct >= len(files))):
     print '\nMaking modifications to '+dirname+'/'+fb+'#000000'+', so copied it to '+dirname+'/'+fb+'#000000'+'ORIG before making changes\n'
     os.system('mv '+dirname+'/'+fb+'#000000'+' '+dirname+'/'+fb+'#000000'+'ORIG')
     print '\nReading '+dirname+'/'+fb+'#000000ORIG and writing it to the file'+dirname+'/'+fb+'000000\n'
