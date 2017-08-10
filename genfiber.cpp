@@ -163,6 +163,7 @@ void rot2quat(Vector &q, DenseMatrix& Q){
     }
     if(!vecisnorm(q)){
         //cout << "Warning rot2quat: quaternion is not normalized" << endl;
+        // This matrix to quaternion method is numerical instable when w is small.
         quatNormalized(q);
     }
 //    quatNormalized(q);
