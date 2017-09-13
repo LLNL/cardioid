@@ -246,6 +246,8 @@ ThisReaction::ThisReaction(const Anatomy& anatomy)
    state.dVK_i=new double[nCells_];
    state.R_prime=new double[nCells_];    
    
+   state.nCells=nCells_;
+   
    stateTransport_.setup(std::move(state));
    
    assertStateOrderAndVarNamesAgree();

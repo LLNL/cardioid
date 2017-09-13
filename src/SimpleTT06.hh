@@ -14,7 +14,6 @@ namespace SimpleTT06
    
 struct State 
 {
-    int nCells;
    //EDIT_STATE
    double *f2Gate;
    double *fGate;
@@ -35,6 +34,9 @@ struct State
    double *fCass;
    double *dVK_i;
    double *R_prime;
+   
+   // mov nCells to the end
+   int nCells;
 };
 
 struct PerCellFlags 
