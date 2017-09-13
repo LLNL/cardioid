@@ -119,7 +119,7 @@ void assertStateOrderAndVarNamesAgree(void)
 inline void copyToHost(const State& data) {
 #if _OPENMP >= 201511  
 const State* rawData=&data;    
-#pragma omp target update from(rawData)
+//#pragma omp target update from(rawData)
 #pragma omp target update from(data.f2Gate[0:data.nCells])
 #pragma omp target update from(data.fGate[0:data.nCells])
 #pragma omp target update from(data.dGate[0:data.nCells])
@@ -145,7 +145,7 @@ const State* rawData=&data;
 inline void copyToDevice(const State& data) {
 #if _OPENMP >= 201511    
 const State* rawData=&data;    
-#pragma omp target update to(rawData)
+//#pragma omp target update to(rawData)
 #pragma omp target update to(data.f2Gate[0:data.nCells])
 #pragma omp target update to(data.fGate[0:data.nCells])
 #pragma omp target update to(data.dGate[0:data.nCells])
