@@ -262,9 +262,11 @@ ThisReaction::ThisReaction(const Anatomy& anatomy)
    
 void actualCalc(const double dt, const int nCells_, const double Vm[], const double iStim[], double dVm[], State state)
 {
+   printf("CPU state.Ca_i = %p\n", state.Ca_i);
 #pragma omp target teams distribute parallel for
    for (int ii=0; ii<nCells_; ++ii)
    {
+
 
       //set Vm
       const double thisVm = Vm[ii];
@@ -449,7 +451,13 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
       double I_K1,I_Kr,I_Ks,I_Na,I_bNa,I_CaL,I_bCa,I_to,I_NaK,I_NaCa,I_pCa,I_pK,I_NaL,I_leak,I_up,I_rel,I_xfer;
       double I_sum,I_delta;
 
-
+#if 0
+#elif 1
+      //if (ii==0) {
+         printf("GPU state.Ca_i = %p\n", state.Ca_i);
+         //}
+      state.Ca_i[ii] += 0.0000000001;      
+#else
       //  Update Ca concentration;
       {
          double fv1; {
@@ -571,6 +579,7 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
          state.Na_i[ii] = _Na_i + (dt * c9) * iNa;
       }
 
+
       //  Update Ca_SS, Ca_SR, R_prime concentrations and fCass gate;
       {
          double fv3; {
@@ -631,6 +640,7 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
 
          dVR += I_CaL;
       }
+
 
       dVm[ii] = dVR;
       
@@ -838,7 +848,8 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
          };
          ratPolyGate();
          ForwardEuler(sGate);
-      }   
+      }
+#endif
    }   
 }
 

@@ -14,11 +14,11 @@ INCLUDE =
 CFLAGS_BASE = $(INCLUDE) $(DFLAGS)
 CXXFLAGS_BASE = $(INCLUDE) $(DFLAGS)
 
-CFLAGS_OPT =   $(CFLAGS_BASE) -g -O3 -ffp-contract=fast -fopenmp-nonaliased-maps
+CFLAGS_OPT =   $(CFLAGS_BASE)  -O3 -ffp-contract=fast -fopenmp-nonaliased-maps
 CFLAGS_DEBUG = $(CFLAGS_BASE) -g -ggdb -O0 -fno-inline
 CFLAGS_PROF =  $(CFLAGS_BASE) -g -pg -O3 -DPROFILE
 
-CXXFLAGS_OPT =   $(CXXFLAGS_BASE) -g -O3 -ffp-contract=fast -fopenmp-nonaliased-maps
+CXXFLAGS_OPT =   $(CXXFLAGS_BASE)  -O3 -ffp-contract=fast -fopenmp-nonaliased-maps
 CXXFLAGS_DEBUG = $(CXXFLAGS_BASE) -g -ggdb -O0 -fno-inline
 CXXFLAGS_PROF =  $(CXXFLAGS_BASE) -g -pg -O3 -DPROFILE
 
