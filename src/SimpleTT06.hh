@@ -2,37 +2,39 @@
 #include "object.h"
 #include "TransportCoordinator.hh"
 #include <vector>
+#include <string>
 
 class Anatomy;
 
-#define SIMD_WIDTH 2
+//#define SIMD_WIDTH 2
 
 namespace SimpleTT06 
 {
 
    
-struct alignas(sizeof(double)*SIMD_WIDTH) State 
+struct State 
 {
+    int nCells;
    //EDIT_STATE
-   double f2Gate[SIMD_WIDTH];
-   double fGate[SIMD_WIDTH];
-   double dGate[SIMD_WIDTH];
-   double mGate[SIMD_WIDTH];
-   double jGate[SIMD_WIDTH];
-   double hGate[SIMD_WIDTH];
-   double rGate[SIMD_WIDTH];
-   double sGate[SIMD_WIDTH];
-   double Xr1Gate[SIMD_WIDTH];
-   double Xr2Gate[SIMD_WIDTH];
-   double XsGate[SIMD_WIDTH];
-   double jLGate[SIMD_WIDTH];
-   double Na_i[SIMD_WIDTH];
-   double Ca_i[SIMD_WIDTH];
-   double Ca_ss[SIMD_WIDTH];
-   double Ca_sr[SIMD_WIDTH];
-   double fCass[SIMD_WIDTH];
-   double dVK_i[SIMD_WIDTH];
-   double R_prime[SIMD_WIDTH];
+   double *f2Gate;
+   double *fGate;
+   double *dGate;
+   double *mGate;
+   double *jGate;
+   double *hGate;
+   double *rGate;
+   double *sGate;
+   double *Xr1Gate;
+   double *Xr2Gate;
+   double *XsGate;
+   double *jLGate;
+   double *Na_i;
+   double *Ca_i;
+   double *Ca_ss;
+   double *Ca_sr;
+   double *fCass;
+   double *dVK_i;
+   double *R_prime;
 };
 
 struct PerCellFlags 
@@ -75,7 +77,7 @@ class ThisReaction : public Reaction
 
  private:
    unsigned nCells_;
-   TransportCoordinator<std::vector<State> > stateTransport_;
+   TransportCoordinator<State> stateTransport_;
 };
 
 }
