@@ -48,9 +48,6 @@ endif
 ifeq ($(HOSTNAME),aztec)  
   ARCHGUESS = peloton
 endif
-ifeq ($(HOSTNAME),hera)  
-  ARCHGUESS = peloton
-endif
 ifeq ($(HOSTNAME),cab)  
   ARCHGUESS = peloton
 endif
@@ -58,6 +55,9 @@ ifeq ($(HOSTNAME),syrah)
   ARCHGUESS = peloton
 endif
 ifeq ($(HOSTNAME),surface)
+  ARCHGUESS = peloton
+endif
+ifeq ($(HOSTNAME),quartz)
   ARCHGUESS = peloton
 endif
 ifeq ($(HOSTNAME),edge)  
