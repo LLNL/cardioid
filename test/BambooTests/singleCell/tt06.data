@@ -1,0 +1,4 @@
+tt06 REACTION
+{
+   method = TT06Opt;
+}
