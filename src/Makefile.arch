@@ -57,6 +57,9 @@ endif
 ifeq ($(HOSTNAME),syrah)
   ARCHGUESS = peloton
 endif
+ifeq ($(HOSTNAME),surface)
+  ARCHGUESS = peloton
+endif
 ifeq ($(HOSTNAME),edge)  
   ARCHGUESS = peloton
 endif
