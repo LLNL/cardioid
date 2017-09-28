@@ -117,107 +117,99 @@ void assertStateOrderAndVarNamesAgree(void)
    }
 
 inline void copyToHost(const State& data) {
-#if _OPENMP >= 201511  
 const State* rawData=&data;    
-//#pragma omp target update from(rawData)
-#pragma omp target update from(data.f2Gate[0:data.nCells])
-#pragma omp target update from(data.fGate[0:data.nCells])
-#pragma omp target update from(data.dGate[0:data.nCells])
-#pragma omp target update from(data.mGate[0:data.nCells])
-#pragma omp target update from(data.jGate[0:data.nCells])
-#pragma omp target update from(data.hGate[0:data.nCells])
-#pragma omp target update from(data.rGate[0:data.nCells])
-#pragma omp target update from(data.sGate[0:data.nCells])
-#pragma omp target update from(data.Xr1Gate[0:data.nCells])
-#pragma omp target update from(data.Xr2Gate[0:data.nCells])
-#pragma omp target update from(data.XsGate[0:data.nCells])
-#pragma omp target update from(data.jLGate[0:data.nCells])
-#pragma omp target update from(data.Na_i[0:data.nCells])
-#pragma omp target update from(data.Ca_i[0:data.nCells])
-#pragma omp target update from(data.Ca_ss[0:data.nCells])
-#pragma omp target update from(data.Ca_sr[0:data.nCells])
-#pragma omp target update from(data.fCass[0:data.nCells])
-#pragma omp target update from(data.dVK_i[0:data.nCells])
-#pragma omp target update from(data.R_prime[0:data.nCells])
-#endif
+#pragma omp target update from(rawData[0:1])
+#pragma omp target update from(rawData->f2Gate[0:rawData->nCells])
+#pragma omp target update from(rawData->fGate[0:rawData->nCells])
+#pragma omp target update from(rawData->dGate[0:rawData->nCells])
+#pragma omp target update from(rawData->mGate[0:rawData->nCells])
+#pragma omp target update from(rawData->jGate[0:rawData->nCells])
+#pragma omp target update from(rawData->hGate[0:rawData->nCells])
+#pragma omp target update from(rawData->rGate[0:rawData->nCells])
+#pragma omp target update from(rawData->sGate[0:rawData->nCells])
+#pragma omp target update from(rawData->Xr1Gate[0:rawData->nCells])
+#pragma omp target update from(rawData->Xr2Gate[0:rawData->nCells])
+#pragma omp target update from(rawData->XsGate[0:rawData->nCells])
+#pragma omp target update from(rawData->jLGate[0:rawData->nCells])
+#pragma omp target update from(rawData->Na_i[0:rawData->nCells])
+#pragma omp target update from(rawData->Ca_i[0:rawData->nCells])
+#pragma omp target update from(rawData->Ca_ss[0:rawData->nCells])
+#pragma omp target update from(rawData->Ca_sr[0:rawData->nCells])
+#pragma omp target update from(rawData->fCass[0:rawData->nCells])
+#pragma omp target update from(rawData->dVK_i[0:rawData->nCells])
+#pragma omp target update from(rawData->R_prime[0:rawData->nCells])
 }
 
 inline void copyToDevice(const State& data) {
-#if _OPENMP >= 201511    
 const State* rawData=&data;    
-//#pragma omp target update to(rawData)
-#pragma omp target update to(data.f2Gate[0:data.nCells])
-#pragma omp target update to(data.fGate[0:data.nCells])
-#pragma omp target update to(data.dGate[0:data.nCells])
-#pragma omp target update to(data.mGate[0:data.nCells])
-#pragma omp target update to(data.jGate[0:data.nCells])
-#pragma omp target update to(data.hGate[0:data.nCells])
-#pragma omp target update to(data.rGate[0:data.nCells])
-#pragma omp target update to(data.sGate[0:data.nCells])
-#pragma omp target update to(data.Xr1Gate[0:data.nCells])
-#pragma omp target update to(data.Xr2Gate[0:data.nCells])
-#pragma omp target update to(data.XsGate[0:data.nCells])
-#pragma omp target update to(data.jLGate[0:data.nCells])
-#pragma omp target update to(data.Na_i[0:data.nCells])
-#pragma omp target update to(data.Ca_i[0:data.nCells])
-#pragma omp target update to(data.Ca_ss[0:data.nCells])
-#pragma omp target update to(data.Ca_sr[0:data.nCells])
-#pragma omp target update to(data.fCass[0:data.nCells])
-#pragma omp target update to(data.dVK_i[0:data.nCells])
-#pragma omp target update to(data.R_prime[0:data.nCells])
-#endif 
+#pragma omp target update to(rawData[0:1])
+#pragma omp target update to(rawData->f2Gate[0:rawData->nCells])
+#pragma omp target update to(rawData->fGate[0:rawData->nCells])
+#pragma omp target update to(rawData->dGate[0:rawData->nCells])
+#pragma omp target update to(rawData->mGate[0:rawData->nCells])
+#pragma omp target update to(rawData->jGate[0:rawData->nCells])
+#pragma omp target update to(rawData->hGate[0:rawData->nCells])
+#pragma omp target update to(rawData->rGate[0:rawData->nCells])
+#pragma omp target update to(rawData->sGate[0:rawData->nCells])
+#pragma omp target update to(rawData->Xr1Gate[0:rawData->nCells])
+#pragma omp target update to(rawData->Xr2Gate[0:rawData->nCells])
+#pragma omp target update to(rawData->XsGate[0:rawData->nCells])
+#pragma omp target update to(rawData->jLGate[0:rawData->nCells])
+#pragma omp target update to(rawData->Na_i[0:rawData->nCells])
+#pragma omp target update to(rawData->Ca_i[0:rawData->nCells])
+#pragma omp target update to(rawData->Ca_ss[0:rawData->nCells])
+#pragma omp target update to(rawData->Ca_sr[0:rawData->nCells])
+#pragma omp target update to(rawData->fCass[0:rawData->nCells])
+#pragma omp target update to(rawData->dVK_i[0:rawData->nCells])
+#pragma omp target update to(rawData->R_prime[0:rawData->nCells])
 }
 
 inline void allocOnDevice(const State& data) {
-#if _OPENMP >= 201511  
 const State* rawData=&data;       
-#pragma omp target enter data map(alloc: rawData)
-#pragma omp target enter data map(alloc: data.f2Gate[0:data.nCells])
-#pragma omp target enter data map(alloc: data.fGate[0:data.nCells])
-#pragma omp target enter data map(alloc: data.dGate[0:data.nCells])
-#pragma omp target enter data map(alloc: data.mGate[0:data.nCells])
-#pragma omp target enter data map(alloc: data.jGate[0:data.nCells])
-#pragma omp target enter data map(alloc: data.hGate[0:data.nCells])
-#pragma omp target enter data map(alloc: data.rGate[0:data.nCells])
-#pragma omp target enter data map(alloc: data.sGate[0:data.nCells])
-#pragma omp target enter data map(alloc: data.Xr1Gate[0:data.nCells])
-#pragma omp target enter data map(alloc: data.Xr2Gate[0:data.nCells])
-#pragma omp target enter data map(alloc: data.XsGate[0:data.nCells])
-#pragma omp target enter data map(alloc: data.jLGate[0:data.nCells])
-#pragma omp target enter data map(alloc: data.Na_i[0:data.nCells])
-#pragma omp target enter data map(alloc: data.Ca_i[0:data.nCells])
-#pragma omp target enter data map(alloc: data.Ca_ss[0:data.nCells])
-#pragma omp target enter data map(alloc: data.Ca_sr[0:data.nCells])
-#pragma omp target enter data map(alloc: data.fCass[0:data.nCells])
-#pragma omp target enter data map(alloc: data.dVK_i[0:data.nCells])
-#pragma omp target enter data map(alloc: data.R_prime[0:data.nCells])
-#endif   
+#pragma omp target enter data map(alloc: rawData[0:1])
+#pragma omp target enter data map(alloc: rawData->f2Gate[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->fGate[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->dGate[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->mGate[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->jGate[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->hGate[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->rGate[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->sGate[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->Xr1Gate[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->Xr2Gate[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->XsGate[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->jLGate[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->Na_i[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->Ca_i[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->Ca_ss[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->Ca_sr[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->fCass[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->dVK_i[0:rawData->nCells])
+#pragma omp target enter data map(alloc: rawData->R_prime[0:rawData->nCells])
 }
 
 inline void freeOnDevice(const State& data) {
-#if _OPENMP >= 201511    
-#pragma omp target exit data map(release: data.f2Gate[0:data.nCells])
-#pragma omp target exit data map(release: data.fGate[0:data.nCells])
-#pragma omp target exit data map(release: data.dGate[0:data.nCells])
-#pragma omp target exit data map(release: data.mGate[0:data.nCells])
-#pragma omp target exit data map(release: data.jGate[0:data.nCells])
-#pragma omp target exit data map(release: data.hGate[0:data.nCells])
-#pragma omp target exit data map(release: data.rGate[0:data.nCells])
-#pragma omp target exit data map(release: data.sGate[0:data.nCells])
-#pragma omp target exit data map(release: data.Xr1Gate[0:data.nCells])
-#pragma omp target exit data map(release: data.Xr2Gate[0:data.nCells])
-#pragma omp target exit data map(release: data.XsGate[0:data.nCells])
-#pragma omp target exit data map(release: data.jLGate[0:data.nCells])
-#pragma omp target exit data map(release: data.Na_i[0:data.nCells])
-#pragma omp target exit data map(release: data.Ca_i[0:data.nCells])
-#pragma omp target exit data map(release: data.Ca_ss[0:data.nCells])
-#pragma omp target exit data map(release: data.Ca_sr[0:data.nCells])
-#pragma omp target exit data map(release: data.fCass[0:data.nCells])
-#pragma omp target exit data map(release: data.dVK_i[0:data.nCells])
-#pragma omp target exit data map(release: data.R_prime[0:data.nCells])
 const State* rawData=&data;       
-#pragma omp target exit data map(release: rawData)    
-#endif 
+#pragma omp target exit data map(release: rawData->f2Gate[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->fGate[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->dGate[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->mGate[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->jGate[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->hGate[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->rGate[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->sGate[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->Xr1Gate[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->Xr2Gate[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->XsGate[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->jLGate[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->Na_i[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->Ca_i[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->Ca_ss[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->Ca_sr[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->fCass[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->dVK_i[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData->R_prime[0:rawData->nCells])
+#pragma omp target exit data map(release: rawData[0:1])    
 }
 
 
@@ -260,12 +252,19 @@ ThisReaction::ThisReaction(const Anatomy& anatomy)
 #define sigm(x)   ((x)/(1+(x)))
 #define logSeries(x)    (log(1+(x)) )
    
-void actualCalc(const double dt, const int nCells_, const double Vm[], const double iStim[], double dVm[], State state)
+void actualCalc(const double dt, const int nCells_, const double Vm[], const double iStim[], double dVm[], State* state)
 {
-   printf("CPU state.Ca_i = %p\n", state.Ca_i);
+   //printf("CPU state = %p\n", &state);
+   //printf("CPU state->Ca_i = %p\n", state->Ca_i);
+   //printf("CPU state->nCells = %d\n", state->nCells);
+   //printf("CPU istim[0] = %g\n", iStim[0]);
 #pragma omp target teams distribute parallel for
    for (int ii=0; ii<nCells_; ++ii)
    {
+      //printf("CPU state = %p\n", &state);
+      //printf("CPU state->Ca_i = %p\n", state->Ca_i);
+      //printf("CPU state->nCells = %d\n", state->nCells);
+      //printf("GPU istim[0] = %g\n", iStim[0]);
 
 
       //set Vm
@@ -274,25 +273,25 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
 
       //set all state variables
       //EDIT_STATE
-      const double f2Gate=state.f2Gate[ii];
-      const double fGate=state.fGate[ii];
-      const double dGate=state.dGate[ii];
-      const double mGate=state.mGate[ii];
-      const double jGate=state.jGate[ii];
-      const double hGate=state.hGate[ii];
-      const double rGate=state.rGate[ii];
-      const double sGate=state.sGate[ii];
-      const double Xr1Gate=state.Xr1Gate[ii];
-      const double Xr2Gate=state.Xr2Gate[ii];
-      const double XsGate=state.XsGate[ii];
-      const double jLGate=state.jLGate[ii];
-      const double _Na_i=state.Na_i[ii];
-      const double _Ca_i=state.Ca_i[ii];
-      const double _Ca_ss=state.Ca_ss[ii];
-      const double _Ca_SR=state.Ca_sr[ii];
-      const double _fCass=state.fCass[ii];
-      const double _dVK_i=state.dVK_i[ii];
-      const double _R_prime=state.R_prime[ii];
+      const double f2Gate=state->f2Gate[ii];
+      const double fGate=state->fGate[ii];
+      const double dGate=state->dGate[ii];
+      const double mGate=state->mGate[ii];
+      const double jGate=state->jGate[ii];
+      const double hGate=state->hGate[ii];
+      const double rGate=state->rGate[ii];
+      const double sGate=state->sGate[ii];
+      const double Xr1Gate=state->Xr1Gate[ii];
+      const double Xr2Gate=state->Xr2Gate[ii];
+      const double XsGate=state->XsGate[ii];
+      const double jLGate=state->jLGate[ii];
+      const double _Na_i=state->Na_i[ii];
+      const double _Ca_i=state->Ca_i[ii];
+      const double _Ca_ss=state->Ca_ss[ii];
+      const double _Ca_SR=state->Ca_sr[ii];
+      const double _fCass=state->fCass[ii];
+      const double _dVK_i=state->dVK_i[ii];
+      const double _R_prime=state->R_prime[ii];
 
       //set per-cell flags
       //EDIT_PERCELL_FLAGS
@@ -451,13 +450,6 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
       double I_K1,I_Kr,I_Ks,I_Na,I_bNa,I_CaL,I_bCa,I_to,I_NaK,I_NaCa,I_pCa,I_pK,I_NaL,I_leak,I_up,I_rel,I_xfer;
       double I_sum,I_delta;
 
-#if 0
-#elif 1
-      //if (ii==0) {
-         printf("GPU state.Ca_i = %p\n", state.Ca_i);
-         //}
-      state.Ca_i[ii] += 0.0000000001;      
-#else
       //  Update Ca concentration;
       {
          double fv1; {
@@ -500,7 +492,7 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
          I_xfer = c23 * (_Ca_ss - _Ca_i);
          I_delta = I_leak - I_up; // I_detal = -itmp5
          I_sum =   I_bCa + I_pCa; // itmp4 =I_bCa+I_pCa;
-         state.Ca_i[ii]   = _Ca_i + (dt * c9) * (sigm3 * (0.5 * I_sum - I_NaCa + I_xfer * c15 + I_delta*c16));
+         state->Ca_i[ii]   = _Ca_i + (dt * c9) * (sigm3 * (0.5 * I_sum - I_NaCa + I_xfer * c15 + I_delta*c16));
          dVR  -= I_sum;
          //if (ii %4 ==0) printf("\n%d dVR=%14.12f ", ii,dVR);
          //else printf("%14.12f ", ii,I_sum);
@@ -574,9 +566,9 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
          iK =  I_Ks + I_NaK + I_pK + I_K1 + I_to + I_Kr;
 
 
-         state.dVK_i[ii] += dt * iK;
+         state->dVK_i[ii] += dt * iK;
          dVR    -=  iNa + iK - 2.0 * I_NaCa;
-         state.Na_i[ii] = _Na_i + (dt * c9) * iNa;
+         state->Na_i[ii] = _Na_i + (dt * c9) * iNa;
       }
 
 
@@ -619,9 +611,9 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
          double O = SQ(_Ca_ss) * _R_prime / (tmp8 * c17 + SQ(_Ca_ss));
          I_rel =c40 * O * (_Ca_SR - _Ca_ss);
 
-         state.Ca_ss[ii]   = _Ca_ss   + (dt * c9) * sigm6 * (I_xfer + I_rel * c14 + I_CaL * c13);
-         state.Ca_sr[ii]   = _Ca_SR   - (dt * c9) * sigm5 * (I_delta + I_rel);
-         state.R_prime[ii] = _R_prime + (dt * c9) * (c36 - tmp9 * _R_prime);
+         state->Ca_ss[ii]   = _Ca_ss   + (dt * c9) * sigm6 * (I_xfer + I_rel * c14 + I_CaL * c13);
+         state->Ca_sr[ii]   = _Ca_SR   - (dt * c9) * sigm5 * (I_delta + I_rel);
+         state->R_prime[ii] = _R_prime + (dt * c9) * (c36 - tmp9 * _R_prime);
 
          //#if fCassForm == TT06
          double t1 = 1.0/(1.0 + SQ(20 * _Ca_ss));
@@ -636,7 +628,7 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
          double tauR   = 0.005/mhu;
          #endif
          */
-         state.fCass[ii]   = _fCass   + dt*(mhu - _fCass) * tauR;
+         state->fCass[ii]   = _fCass   + dt*(mhu - _fCass) * tauR;
 
          dVR += I_CaL;
       }
@@ -668,8 +660,8 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
          sum2 = Tau_a[j] + x * sum2;            \
       double tauR = sum1/sum2*dt
 
-#define RushLarsen(name) state.name[ii] -= (mhu - state.name[ii])*expm1(-tauR);
-#define ForwardEuler(name) state.name[ii] += (mhu - state.name[ii])*tauR
+#define RushLarsen(name) state->name[ii] -= (mhu - state->name[ii])*expm1(-tauR);
+#define ForwardEuler(name) state->name[ii] += (mhu - state->name[ii])*tauR
       //0
       {
       const int Mhu_l = 10;
@@ -849,7 +841,6 @@ void actualCalc(const double dt, const int nCells_, const double Vm[], const dou
          ratPolyGate();
          ForwardEuler(sGate);
       }
-#endif
    }   
 }
 
@@ -857,7 +848,7 @@ void ThisReaction::calc(double dt, const VectorDouble32& Vm,
                        const vector<double>& iStim , VectorDouble32& dVm)
 {
    State& state(stateTransport_.modifyOnDevice());
-   actualCalc(dt, nCells_, &Vm[0], &iStim[0], &dVm[0], state);
+   actualCalc(dt, nCells_, &Vm[0], &iStim[0], &dVm[0], &state);
 }
    
 void ThisReaction::initializeMembraneVoltage(VectorDouble32& Vm)
