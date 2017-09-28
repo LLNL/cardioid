@@ -301,13 +301,11 @@ int main(int argc, char* argv[])
       }
       {
          vector<double>& iStim(iStimTransport.modifyOnHost());
-         for (int ii=0; ii<nCells; ii++)
+         double stimAmount = 0;
+         if (timestepsLeftInStimulus > 0)
          {
-            iStim[ii]=0;
-            if (timestepsLeftInStimulus > 0)
-            {
             /* Check the negative sign here.  Look at:
-
+               
                startTimer(stimulusTimer);
                // add stimulus to dVmDiffusion
                for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
@@ -321,9 +319,12 @@ int main(int argc, char* argv[])
                up negative.
 
             */
-               iStim[ii] = -params.stim_strength_arg;
-               timestepsLeftInStimulus--;
-            }
+            stimAmount = -params.stim_strength_arg;
+            timestepsLeftInStimulus--;
+         }
+         for (int ii=0; ii<nCells; ii++)
+         {
+            iStim[ii]=stimAmount;
          }
       }
 
