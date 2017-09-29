@@ -15,28 +15,11 @@ namespace SimpleTT06
 struct State 
 {
    //EDIT_STATE
-   double *f2Gate;
-   double *fGate;
-   double *dGate;
-   double *mGate;
-   double *jGate;
-   double *hGate;
-   double *rGate;
-   double *sGate;
-   double *Xr1Gate;
-   double *Xr2Gate;
-   double *XsGate;
-   double *jLGate;
-   double *Na_i;
-   double *Ca_i;
-   double *Ca_ss;
-   double *Ca_sr;
-   double *fCass;
-   double *dVK_i;
-   double *R_prime;
+   double *data;
    
    // mov nCells to the end
    int nCells;
+   int nStates;
 };
 
 struct PerCellFlags 
