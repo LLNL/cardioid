@@ -50,6 +50,7 @@ HEARTSRC= \
 	FGRDiffusionOverlap.cc \
 	FGRDiffusionStrip.cc \
 	OpenmpGpuRedblackDiffusion.cc \
+	OpenmpGpuFlatDiffusion.cc \
 	CUDADiffusion.cc \
 	CUDADiffusion_ker.cu \
 	FGRUtils.cc \
