@@ -118,26 +118,34 @@ void assertStateOrderAndVarNamesAgree(void)
 
 inline void copyToHost(const State& data) {
 const State* rawData=&data;    
+#if _OPENMP >= 201511
 #pragma omp target update from(rawData[0:1])
-#pragma omp target update from(rawData->data[0:rawData->nCells*rawData->nStates])
+#pragma omp target update from(data.data[0:rawData->nCells*rawData->nStates])
+#endif
 }
 
 inline void copyToDevice(const State& data) {
 const State* rawData=&data;    
+#if _OPENMP >= 201511
 #pragma omp target update to(rawData[0:1])
-#pragma omp target update to(rawData->data[0:rawData->nCells*rawData->nStates])
+#pragma omp target update to(data.data[0:rawData->nCells*rawData->nStates])
+#endif
 }
 
 inline void allocOnDevice(const State& data) {
 const State* rawData=&data;       
+#if _OPENMP >= 201511
 #pragma omp target enter data map(alloc: rawData[0:1])
-#pragma omp target enter data map(alloc: rawData->data[0:rawData->nCells*rawData->nStates])
+#pragma omp target enter data map(alloc: data.data[0:rawData->nCells*rawData->nStates])
+#endif
 }
 
 inline void freeOnDevice(const State& data) {
 const State* rawData=&data;       
-#pragma omp target exit data map(release: rawData->data[0:rawData->nCells*rawData->nStates])
+#if _OPENMP >= 201511
+#pragma omp target exit data map(release: data.data[0:rawData->nCells*rawData->nStates])
 #pragma omp target exit data map(release: rawData[0:1])    
+#endif
 }
 
 enum StateOffset {
