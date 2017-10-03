@@ -1,5 +1,5 @@
-#ifndef GPU_DIFFUSION_HH
-#define GPU_DIFFUSION_HH
+#ifndef OPENMPGPUREDBLACKDIFFUSION_HH
+#define OPENMPGPUREDBLACKDIFFUSION_HH
 
 #include "Diffusion.hh"
 #include "TransportCoordinator.hh"
@@ -7,10 +7,10 @@
 #include "LocalGrid.hh"
 #include <vector>
 
-class GPUDiffusion : public Diffusion
+class OpenmpGpuRedblackDiffusion : public Diffusion
 {
  public:
-   GPUDiffusion(const Anatomy& anatomy, int simLoopType);
+   OpenmpGpuRedblackDiffusion(const Anatomy& anatomy, int simLoopType);
 
    void updateLocalVoltage(const double* VmLocal);
    void updateRemoteVoltage(const double* VmRemote);
@@ -42,8 +42,8 @@ class GPUDiffusion : public Diffusion
    TransportCoordinator<std::vector<int> > cellFromRed_;
    TransportCoordinator<std::vector<int> > cellLookup_;
    
-   friend void actualCalc(GPUDiffusion& self, VectorDouble32& dVm);
+   friend void actualCalc(OpenmpGpuRedblackDiffusion& self, VectorDouble32& dVm);
 };
 
-void actualCalc(GPUDiffusion& self, VectorDouble32& dVm);
+void actualCalc(OpenmpGpuRedblackDiffusion& self, VectorDouble32& dVm);
 #endif

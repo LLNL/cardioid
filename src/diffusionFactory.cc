@@ -11,7 +11,7 @@
 #include "FGRDiffusionStrip.hh"
 #include "FGRDiffusionOverlap.hh"
 #include "NullDiffusion.hh"
-#include "GPUDiffusion.hh"
+#include "OpenmpGpuRedblackDiffusion.hh"
 #include "CUDADiffusion.hh"
 #include "Simulate.hh"
 
@@ -47,8 +47,8 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
       assert(1==0);
    else if (method == "FGR")
       return fgrDiffusionFactory(obj, anatomy, threadInfo, reactionThreadInfo, simLoopType, variantHint);
-   else if (method == "gpu")
-      return new GPUDiffusion(anatomy, simLoopType);
+   else if (method == "gpu" || method == "OpenmpGpuRedblack")
+      return new OpenmpGpuRedblackDiffusion(anatomy, simLoopType);
    else if (method == "cuda")
       return new CUDADiffusion(anatomy, simLoopType); 
    else if (method == "null")

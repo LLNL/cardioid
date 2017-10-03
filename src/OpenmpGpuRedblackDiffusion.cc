@@ -1,4 +1,4 @@
-#include "GPUDiffusion.hh"
+#include "OpenmpGpuRedblackDiffusion.hh"
 #include "DiffusionUtils.hh"
 #include "SymmetricTensor.hh"
 #include <vector>
@@ -31,7 +31,7 @@ using namespace std;
  *
  */
 
-GPUDiffusion::GPUDiffusion(const Anatomy& anatomy, int simLoopType)
+OpenmpGpuRedblackDiffusion::OpenmpGpuRedblackDiffusion(const Anatomy& anatomy, int simLoopType)
 : simLoopType_(simLoopType),
   localGrid_(DiffusionUtils::findBoundingBox(anatomy, false))
 {
@@ -137,7 +137,7 @@ GPUDiffusion::GPUDiffusion(const Anatomy& anatomy, int simLoopType)
    }
 }
 
-void GPUDiffusion::updateLocalVoltage(const double* VmLocal)
+void OpenmpGpuRedblackDiffusion::updateLocalVoltage(const double* VmLocal)
 {
    vector<double>& VmBlockVec(VmBlock_.modifyOnDevice());
    const vector<int>& blockFromRedVec(blockFromRed_.readOnDevice());
@@ -162,7 +162,7 @@ void GPUDiffusion::updateLocalVoltage(const double* VmLocal)
    
 }
 
-void GPUDiffusion::updateRemoteVoltage(const double* VmRemote)
+void OpenmpGpuRedblackDiffusion::updateRemoteVoltage(const double* VmRemote)
 {
    vector<double>& VmBlockVec(VmBlock_.modifyOnDevice());
    const vector<int>& blockFromRedVec(blockFromRed_.readOnDevice());
@@ -179,11 +179,11 @@ void GPUDiffusion::updateRemoteVoltage(const double* VmRemote)
    }
 }
 
-void GPUDiffusion::calc(VectorDouble32& dVm){
+void OpenmpGpuRedblackDiffusion::calc(VectorDouble32& dVm){
    actualCalc(*this, dVm);
 }
 
-void actualCalc(GPUDiffusion& self, VectorDouble32& dVm)
+void actualCalc(OpenmpGpuRedblackDiffusion& self, VectorDouble32& dVm)
 {
       int self_nLocal_ = self.nLocal_;
       int self_nCells_ = self.nCells_;
@@ -259,8 +259,8 @@ void actualCalc(GPUDiffusion& self, VectorDouble32& dVm)
    }
 }
 
-unsigned* GPUDiffusion::blockIndex() {return NULL;}
-double* GPUDiffusion::VmBlock() {return NULL;}
-double* GPUDiffusion::dVmBlock() {return NULL;}
+unsigned* OpenmpGpuRedblackDiffusion::blockIndex() {return NULL;}
+double* OpenmpGpuRedblackDiffusion::VmBlock() {return NULL;}
+double* OpenmpGpuRedblackDiffusion::dVmBlock() {return NULL;}
 
 
