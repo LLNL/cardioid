@@ -244,21 +244,20 @@ void actualCalc(OpenmpGpuFlatDiffusion& self, VectorDouble32& dVm)
 
    int iterateMax = (self.nx_-1)*(self.ny_-1)*(self.nz_-1);
    
-   #pragma omp target teams distribute parallel for firstprivate(self_nx_, self_ny_, iterateMax)
-   for (int ii=0; ii<iterateMax; ii+=2)
+   #pragma unroll(3)
+   for (int idim=0; idim<3; idim++)
    {
-      const int offset[3] = {1, self_nx_, self_nx_*self_ny_};
-
-      int sigmaNx=self_nx_-1;
-      int sigmaNy=self_ny_-1;
-      
-      #pragma unroll(3)
-      for (int idim=0; idim<3; idim++)
+      #pragma unroll(2)
+      for (int red=0; red<=1; red++)
       {
-         #pragma unroll(2)
-         for (int red=0; red<=1 && ii+red<iterateMax; red++)
+         #pragma omp target teams distribute parallel for firstprivate(self_nx_, self_ny_, iterateMax)
+         for (int ired=red; ired<iterateMax; ired+=2)
          {
-            int ired = ii+red;
+            const int offset[3] = {1, self_nx_, self_nx_*self_ny_};
+
+            int sigmaNx=self_nx_-1;
+            int sigmaNy=self_ny_-1;
+      
             int iz = ired / (sigmaNy*sigmaNx);
             int rzo = ired % (sigmaNy*sigmaNx);
             
@@ -300,7 +299,6 @@ void actualCalc(OpenmpGpuFlatDiffusion& self, VectorDouble32& dVm)
             }
             dVmBlockRaw[iblock] -= flux;
             dVmBlockRaw[iblock-offset[idim]] += flux;
-            #pragma omp barrier
          }
       }
    }
