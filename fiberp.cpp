@@ -121,6 +121,7 @@ int main(int argc, char *argv[]) {
     args.AddOption(&options.verbose, "-vv", "--verbose", "-novv",
             "--no-verbose",
             "Enable verbose output.");     
+    args.AddOption(&options.angle, "-al", "--angle", "Base plannar angle.");
     args.AddOption(&options.a_endo, "-ao", "--aendo", "Fiber angle alpha endo.");
     args.AddOption(&options.a_epi, "-ai", "--aepi", "Fiber angle alpha epi.");
     args.AddOption(&options.b_endo, "-bo", "--bendo", "Fiber angle beta endo.");
