@@ -26,6 +26,7 @@ int main(int argc, char** argv)
     options.mesh_file = "./human.vtk";
     options.order = 1;
     options.static_cond = false;
+    options.angle=20;
     
     OptionsParser args(argc, argv);
     args.AddOption(&options.mesh_file, "-m", "--mesh",
@@ -35,6 +36,7 @@ int main(int argc, char** argv)
             " isoparametric space.");
     args.AddOption(&options.static_cond, "-sc", "--static-condensation", "-no-sc",
             "--no-static-condensation", "Enable static condensation.");    
+    args.AddOption(&options.angle, "-al", "--angle", "Base plannar angle.");
     
     args.Parse();
     if (!args.Good()) {
@@ -47,7 +49,7 @@ int main(int argc, char** argv)
     //    quadrilateral, tetrahedral, hexahedral, surface and volume meshes with
     //    the same code.
     Mesh *surface = new Mesh(options.mesh_file, 0, 0, false);  
-    setSurf4Surf(surface);
+    setSurf4Surf(surface, options.angle);
     
     ofstream surf_ofs("surf4surf.vtk");
     printSurf4SurfVTK(surface, surf_ofs);  
