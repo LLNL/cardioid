@@ -7,14 +7,13 @@
 //#include "options.h"
 //#include "cudautil.h"
 
+#define XTILE 20
 typedef double Real;
 
 
 __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sigmaX, const Real* d_sigmaY, const Real* d_sigmaZ,int Lii, int Ljj, int Lkk)
 {
 
-  //rough sizing may be needed
-  //e.g. 512x512x512 per GPU
   //map z dir to threads
   //z is the fastest varying direction
 
@@ -39,15 +38,21 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
   //shift for each tile
 //  d_psi    += 30 * blockIdx.x + Lkk * ( 30 * blockIdx.y );
 //  d_npsi   += 30 * blockIdx.x + Lkk * ( 30 * blockIdx.y );
-  d_psi    = &(psi(30*blockIdx.x, 30*blockIdx.y, 30*blockIdx.z));
-  d_npsi   = &(npsi(30*blockIdx.x, 30*blockIdx.y, 30*blockIdx.z));
+  d_psi    = &(psi(XTILE*blockIdx.x, 30*blockIdx.y, 30*blockIdx.z));
+  d_npsi   = &(npsi(XTILE*blockIdx.x, 30*blockIdx.y, 30*blockIdx.z));
 
-  d_sigmaX  = &(sigmaX(30*blockIdx.x, 30*blockIdx.y, 30*blockIdx.z, 0));
-  d_sigmaY  = &(sigmaY(30*blockIdx.x, 30*blockIdx.y, 30*blockIdx.z, 0));
-  d_sigmaZ  = &(sigmaZ(30*blockIdx.x, 30*blockIdx.y, 30*blockIdx.z, 0));
+  d_sigmaX  = &(sigmaX(XTILE*blockIdx.x, 30*blockIdx.y, 30*blockIdx.z, 0));
+  d_sigmaY  = &(sigmaY(XTILE*blockIdx.x, 30*blockIdx.y, 30*blockIdx.z, 0));
+  d_sigmaZ  = &(sigmaZ(XTILE*blockIdx.x, 30*blockIdx.y, 30*blockIdx.z, 0));
 
-  int Last_x=31;
-  if (blockIdx.x == gridDim.x-1) Last_x = Lii-2 - 30 * blockIdx.x + 1;
+  int Last_x=XTILE+1; int nLast_y=31; int nLast_z=31;
+  if (blockIdx.x == gridDim.x-1) Last_x = Lii-2 - XTILE * blockIdx.x + 1;
+  if (blockIdx.y == gridDim.y-1) Last_y = Ljj-2 - 30 * blockIdx.y + 1;
+  if (blockIdx.z == gridDim.z-1) Last_z = Lkk-2 - 30 * blockIdx.z + 1;
+
+  if(tjj>Last_y) return;
+  if(tkk>Last_z) return;
+
 //  d_sigmaX += 30 * blockIdx.x + (Lkk-2) * ( 31 * blockIdx.y );
 //  d_sigmaY += 30 * blockIdx.x + (Lkk-2) * ( 31 * blockIdx.y );
 //  d_sigmaZ += 31 * blockIdx.x + (Lkk-1) * ( 31 * blockIdx.y );
@@ -64,7 +69,7 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
 
   __syncthreads();
   //initial
-  if ((tkk>0) && (tkk<31) && (tjj>0) && (tjj<31))
+  if ((tkk>0) && (tkk<nLast_z) && (tjj>0) && (tjj<nLast_y))
   {
     Real xd=-V1(tjj,tkk) + V2(tjj,tkk);
     Real yd=(-V1(-1 + tjj,tkk) + V1(1 + tjj,tkk) - V2(-1 + tjj,tkk) + V2(1 + tjj,tkk))/4.;
@@ -85,7 +90,7 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
     // y face current
     // tjj=0 calc face at 0-1 and tjj=30 calc face at 30-31
   
-    if ((tkk>0) && (tkk<31) && (tjj<31))
+    if ((tkk>0) && (tkk<nLast_z) && (tjj<nLast_y))
     {
       Real xd=(-V0(tjj,tkk) - V0(1 + tjj,tkk) + V2(tjj,tkk) + V2(1 + tjj,tkk))/4.;
       Real yd=-V1(tjj,tkk) + V1(1 + tjj,tkk);
@@ -97,14 +102,14 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
     }
     __syncthreads();
 
-    if ((tkk>0) && (tkk<31) && (tjj>0) && (tjj<31))
-      dV -= sm_psi[3][tjj-1][tkk];
+    if ((tkk>0) && (tkk<nLast_z) && (tjj>0) && (tjj<nLast_y))
+      dV -= sm_psi[3][tjj-1][tkk];  //bring from left
 
     __syncthreads();
 
     // z face current
     // tkk=0 calc face at 0-1 and tkk=30 calc face at 30-31
-    if ((tkk<31) && (tjj>0) && (tjj<31))
+    if ((tkk<nLast_z) && (tjj>0) && (tjj<nLast_y))
     {
 
       Real xd=(-V0(tjj,tkk) - V0(tjj,1 + tkk) + V2(tjj,tkk) + V2(tjj,1 + tkk))/4.;
@@ -118,13 +123,13 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
 
     __syncthreads();
 
-    if ((tkk>0) && (tkk<31) && (tjj>0) && (tjj<30))
+    if ((tkk>0) && (tkk<nLast_z) && (tjj>0) && (tjj<nLast_y))
       dV -= sm_psi[3][tjj][tkk-1];
 
     //__syncthreads();
 
     // x face current
-    if ((tkk>0) && (tkk<31) && (tjj>0) && (tjj<31))
+    if ((tkk>0) && (tkk<nLast_z) && (tjj>0) && (tjj<nLast_y))
     {
       Real xd=-V1(tjj,tkk) + V2(tjj,tkk);
       Real yd=(-V1(-1 + tjj,tkk) + V1(1 + tjj,tkk) - V2(-1 + tjj,tkk) + V2(1 + tjj,tkk))/4.;
@@ -162,7 +167,13 @@ extern "C"
 {
 void call_cuda_kernels(const Real *VmRaw, Real *dVmRaw, const Real *sigmaRaw, int nx, int ny, int nz, Real *dVmOut, const int *lookup,int nCells)
 {
-   diff_6face_v1<<<dim3(10,10,10),dim3(32,32,1)>>>(VmRaw,dVmRaw,sigmaRaw,sigmaRaw+3*nx*ny*nz,sigmaRaw+6*nx*ny*nz,nx,ny,nz);
+   //determine block dim
+   //1. blockdim.z and blockdim.y are determined in a simple way.
+   int bdimz = (int)((nz-2)/30) + (nz-2)%30==0?0:1;
+   int bdimy = (int)((ny-2)/30) + (ny-2)%30==0?0:1;
+   int bdimx = (int)((nx-2)/XTILE) + (nx-2)%XTILE==0?0:1;
+   
+   diff_6face_v1<<<dim3(bdimx,bdimy,bdimz),dim3(32,32,1)>>>(VmRaw,dVmRaw,sigmaRaw,sigmaRaw+3*nx*ny*nz,sigmaRaw+6*nx*ny*nz,nx,ny,nz);
    map_dVm<<<112,512>>>(dVmRaw,dVmOut,lookup,nCells);
 }
 }
