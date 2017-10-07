@@ -47,11 +47,11 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
 
   int Last_x=XTILE+1; int nLast_y=31; int nLast_z=31;
   if (blockIdx.x == gridDim.x-1) Last_x = Lii-2 - XTILE * blockIdx.x + 1;
-  if (blockIdx.y == gridDim.y-1) Last_y = Ljj-2 - 30 * blockIdx.y + 1;
-  if (blockIdx.z == gridDim.z-1) Last_z = Lkk-2 - 30 * blockIdx.z + 1;
+  if (blockIdx.y == gridDim.y-1) nLast_y = Ljj-2 - 30 * blockIdx.y + 1;
+  if (blockIdx.z == gridDim.z-1) nLast_z = Lkk-2 - 30 * blockIdx.z + 1;
 
-  if(tjj>Last_y) return;
-  if(tkk>Last_z) return;
+  if(tjj>nLast_y) return;
+  if(tkk>nLast_z) return;
 
 //  d_sigmaX += 30 * blockIdx.x + (Lkk-2) * ( 31 * blockIdx.y );
 //  d_sigmaY += 30 * blockIdx.x + (Lkk-2) * ( 31 * blockIdx.y );
