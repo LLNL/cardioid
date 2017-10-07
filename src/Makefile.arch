@@ -108,7 +108,10 @@ endif
 ifeq ($(HOSTNAME),prince)
   ARCHGUESS = osx
 endif
+ifeq ($(HOSTNAME),clogin)
+  ARCHGUESS = r92
+endif
 
 ifndef ARCHGUESS
-   $(error Unrecognized build host.  Edit Makefile.arch)
+   $(error Unrecognized build host(${HOSTNAME}).  Edit Makefile.arch)
 endif
