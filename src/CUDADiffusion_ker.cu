@@ -6,6 +6,7 @@
 
 //#include "options.h"
 //#include "cudautil.h"
+#include <stdio.h>
 
 #define XTILE 20
 typedef double Real;
@@ -29,8 +30,8 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
   #define sigmaY(x,y,z,dir) d_sigmaY[ z + Lkk * ( y + Ljj * ( x + Lii * dir ) ) ]
   #define sigmaZ(x,y,z,dir) d_sigmaZ[ z + Lkk * ( y + Ljj * ( x + Lii * dir ) ) ]
 
-  #define psi(x,y,z) d_psi[ z + Lkk * ( y + Ljj * x ) ]
-  #define npsi(x,y,z) d_npsi[ z + Lkk * ( y + Ljj * x ) ]
+  #define psi(x,y,z) d_psi[ z + Lkk * ( (y) + Ljj * (x) ) ]
+  #define npsi(x,y,z) d_npsi[ z + Lkk * ( (y) + Ljj * (x) ) ]
 
   int tjj = threadIdx.y;
   int tkk = threadIdx.x;
@@ -49,6 +50,8 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
   if (blockIdx.x == gridDim.x-1) Last_x = Lii-2 - XTILE * blockIdx.x + 1;
   if (blockIdx.y == gridDim.y-1) nLast_y = Ljj-2 - 30 * blockIdx.y + 1;
   if (blockIdx.z == gridDim.z-1) nLast_z = Lkk-2 - 30 * blockIdx.z + 1;
+
+//  if (blockIdx.x==0 && blockIdx.y==0 && blockIdx.z==0) printf("b(%d,%d,%d) t(%d,%d,%d) LastX:%d nLast_y:%d nLast_z:%d %p %p %p %p %p\n",blockIdx.x,blockIdx.y,blockIdx.z,threadIdx.x,threadIdx.y,threadIdx.z,Last_x,nLast_y,nLast_z,&(psi(0,tjj,tkk)),&(npsi(0,tjj,tkk)),&(sigmaX(0,tjj,tkk,0)),&(sigmaY(0,tjj,tkk,0)),&(sigmaZ(0,tjj,tkk,0)));
 
   if(tjj>nLast_y) return;
   if(tkk>nLast_z) return;
@@ -169,11 +172,17 @@ void call_cuda_kernels(const Real *VmRaw, Real *dVmRaw, const Real *sigmaRaw, in
 {
    //determine block dim
    //1. blockdim.z and blockdim.y are determined in a simple way.
-   int bdimz = (int)((nz-2)/30) + (nz-2)%30==0?0:1;
-   int bdimy = (int)((ny-2)/30) + (ny-2)%30==0?0:1;
-   int bdimx = (int)((nx-2)/XTILE) + (nx-2)%XTILE==0?0:1;
+   int bdimz = (int)((nz-2)/30) + ((nz-2)%30==0?0:1);
+   int bdimy = (int)((ny-2)/30) + ((ny-2)%30==0?0:1);
+   int bdimx = (int)((nx-2)/XTILE) + ((nx-2)%XTILE==0?0:1);
    
+//   printf("Vm=%p dVm=%p sigma=%p \n",VmRaw,dVmRaw,sigmaRaw);
+//   printf("call_cuda_kernels %d,%d,%d (%d,%d,%d)\n",nx,ny,nz,bdimx,bdimy,bdimz);
+#ifdef GPU_SM_70
+   cudaFuncSetAttribute(diff_6face_v1, cudaFuncAttributePreferredSharedMemoryCarveout, 50);
+#endif
+
    diff_6face_v1<<<dim3(bdimx,bdimy,bdimz),dim3(32,32,1)>>>(VmRaw,dVmRaw,sigmaRaw,sigmaRaw+3*nx*ny*nz,sigmaRaw+6*nx*ny*nz,nx,ny,nz);
-   map_dVm<<<112,512>>>(dVmRaw,dVmOut,lookup,nCells);
+//   map_dVm<<<112,512>>>(dVmRaw,dVmOut,lookup,nCells);
 }
 }
