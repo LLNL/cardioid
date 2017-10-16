@@ -53,8 +53,8 @@ class PressureBoundaryNLFIntegrator : public BlockNonlinearFormIntegrator
 {
 private:
    Coefficient &function;
-   mutable DenseMatrix DSh_u, DS_u, J0i, J, Jinv, PMatI_u;
-   Vector shape, nor, fnor;
+   mutable DenseMatrix DSh_u, DS_u, J0i, J, Jinv, JinvT, PMatI_u;
+   mutable Vector shape, nor, fnor, Sh_p, Sh_u;
    
 public:
    PressureBoundaryNLFIntegrator(Coefficient &f) : function(f) { }
@@ -68,6 +68,11 @@ public:
                                          FaceElementTransformations &Tr,
                                          Array<Vector *> &elfun, 
                                          Array<Vector *> &elvec);
+
+   virtual void AssembleRHSElementGrad(Array<const FiniteElement*> &el,
+                                       FaceElementTransformations &Tr,
+                                       Array<Vector *> &elfun, 
+                                       Array2D<DenseMatrix *> &elmats);
 
    virtual ~PressureBoundaryNLFIntegrator();
 };
