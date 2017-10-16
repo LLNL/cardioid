@@ -12,7 +12,7 @@ class CardiacModel
 protected:
    double C_1, b_ff, b_ss, b_nn, b_fs, b_fn, b_ns;
 
-   mutable DenseMatrix C, E, I, JT, PK2, FinvT, B;
+   mutable DenseMatrix C, E, I, JT, PK2, FinvT, B, orth, orth_transpose;
 
 public:
    CardiacModel(double _C_1, double _b_ff, double _b_ss, double _b_nn,
@@ -24,6 +24,7 @@ public:
 
    virtual void AssembleH(const DenseMatrix &J, const double pres, const Vector &fiber, const DenseMatrix &DS, const Vector Sh_p, const double weight, Array2D<DenseMatrix *>&elmats) const;
 
+   virtual void GenerateTransform(const Vector &fiber, DenseMatrix &Q, DenseMatrix &QT) const;
 
 };
 
@@ -52,7 +53,7 @@ class PressureBoundaryNLFIntegrator : public BlockNonlinearFormIntegrator
 {
 private:
    Coefficient &function;
-   DenseMatrix DSh_u, DS_u, J0i, J, Jinv, PMatI_u;
+   mutable DenseMatrix DSh_u, DS_u, J0i, J, Jinv, PMatI_u;
    Vector shape, nor, fnor;
    
 public:
@@ -100,8 +101,8 @@ class ActiveTensionNLFIntegrator : public BlockNonlinearFormIntegrator
 {
 private:
    MatrixCoefficient &function;
-   DenseMatrix DSh_u, DS_u, J0i, J, P, PMatI_u, PMatO_u, PMatO_p, Qshap, AStress, AStress_current;
-   Vector Sh_p, shape;
+   mutable DenseMatrix DSh_u, DS_u, J0i, J, P, PMatI_u, PMatO_u, PMatO_p, Qshap, AStress, AStress_current;
+   mutable Vector Sh_p, shape;
    
 public:
    ActiveTensionNLFIntegrator(MatrixCoefficient &f) : function(f) { }
@@ -119,8 +120,8 @@ class CardiacNLFIntegrator : public BlockNonlinearFormIntegrator
 {
 private:
    CardiacModel *model;
-   DenseMatrix DSh_u, DS_u, J0i, J, P, PMatI_u, PMatO_u, PMatO_p, F, Finv, FinvT, B;
-   Vector Sh_p, Qvec;
+   mutable DenseMatrix DSh_u, DS_u, J0i, J, P, PMatI_u, PMatO_u, PMatO_p, F, Finv, FinvT, B;
+   mutable Vector Sh_p, Qvec;
    VectorCoefficient *Q;
 
 public:

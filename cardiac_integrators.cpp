@@ -4,28 +4,12 @@
 namespace mfem
 {
 
-void CardiacModel::EvalP(const DenseMatrix &J, const double pres, const Vector &fiber, DenseMatrix &P) const
+void CardiacModel::GenerateTransform(const Vector &fiber, DenseMatrix &Q, DenseMatrix &QT) const
 {
-   int dim = J.Width();
-   double dJ = J.Det();
-
-   E.SetSize(dim);
-   C.SetSize(dim);
-   JT.SetSize(dim);
-   I.SetSize(dim);
-   P.SetSize(dim);
-   PK2.SetSize(dim);
-   FinvT.SetSize(dim);
-
-   I = 0.0;
-   for (int d=0; d<dim; d++) {
-      I(d,d) = 1.0;
-   }
-
-   JT = J;
-   JT.Transpose();
-
-   // Determine orthonormal fiber coordinate system
+   Q.SetSize(3);
+   QT.SetSize(3);
+   
+  // Determine orthonormal fiber coordinate system
    Vector fib = fiber;
    fib /= fib.Norml2();
 
@@ -52,19 +36,42 @@ void CardiacModel::EvalP(const DenseMatrix &J, const double pres, const Vector &
    DenseMatrix orth(3); 
 
    for (int i=0; i<3; i++) {
-      orth(i,0) = fib(i);
-      orth(i,1) = orth1(i);
-      orth(i,2) = orth2(i);
+      Q(i,0) = fib(i);
+      Q(i,1) = orth1(i);
+      Q(i,2) = orth2(i);
    }
 
-   DenseMatrix orth_transpose(3);
-   orth_transpose.Transpose(orth);
+   QT.Transpose(Q);
+}
+
+void CardiacModel::EvalP(const DenseMatrix &J, const double pres, const Vector &fiber, DenseMatrix &P) const
+{
+   int dim = J.Width();
+   double dJ = J.Det();
+
+   E.SetSize(dim);
+   C.SetSize(dim);
+   JT.SetSize(dim);
+   I.SetSize(dim);
+   P.SetSize(dim);
+   PK2.SetSize(dim);
+   FinvT.SetSize(dim);
+
+   I = 0.0;
+   for (int d=0; d<dim; d++) {
+      I(d,d) = 1.0;
+   }
+
+   JT = J;
+   JT.Transpose();
 
    Mult(JT, J, C);
 
    CalcInverseTranspose(J, FinvT);
 
    Add(0.5, C, -0.5, I, E);
+
+   GenerateTransform(fiber, orth, orth_transpose);
 
    // Transform E into fiber coordinates
    // E' = Q^T E Q
@@ -133,40 +140,7 @@ void CardiacModel::AssembleH(const DenseMatrix &J, const double pres, const Vect
    JT = J;
    JT.Transpose();
    
-   // Determine orthonormal fiber coordinate system
-   Vector fib = fiber;
-   fib /= fib.Norml2();
-
-   Vector orth1(3);
-   Vector orth2(3);
-   
-   Vector test(3);
-   test = 0.0;
-   test(2) = -1.0;
-      
-   cross(fib, test, orth1);
-
-   if (orth1.Norml2() < 1.0e-8) {
-      test = 0.0;
-      test(1) = 1.0;
-      cross(fib, test, orth1);
-   }
-   
-   orth1 /= orth1.Norml2();
-   cross(fib, orth1, orth2);
-   orth2 /= orth2.Norml2();
-      
-   // Compute transformation tensor to fiber coordinates
-   DenseMatrix orth(3); 
-      
-   for (int i=0; i<3; i++) {
-      orth(i,0) = fib(i);
-      orth(i,1) = orth1(i);
-      orth(i,2) = orth2(i);
-   }
-
-   DenseMatrix orth_transpose(3);
-   orth_transpose.Transpose(orth);
+   GenerateTransform(fiber, orth, orth_transpose);
    
    Mult(JT, J, C);
    
@@ -198,63 +172,41 @@ void CardiacModel::AssembleH(const DenseMatrix &J, const double pres, const Vect
 
          // m = j_dim;
          // k = i_dim;
-         for (int m=0; m<dim; m++) {
-         for (int k=0; k<dim; k++) {
          for (int n=0; n<dim; n++) {
          for (int l=0; l<dim; l++) {
 
-            if (m==j_dim && k==i_dim) {
-               for (int i=0; i<dim; i++) {
-                  if (k==m && i==n) {
-                     (*elmats(0,0))(i_u + k*dof_u, j_u + m*dof_u) += fact * B(i,l) * E(i,l) * DS_u(i_u,l) * DS_u(j_u,n) * weight;
-                  }
-
-                  for (int a=0; a<dim; a++) {
-                  for (int b=0; b<dim; b++) {
-                     for (int c=0; c<dim; c++) {
-                        if (c==m && a==n) {
-                           (*elmats(0,0))(i_u + k*dof_u, j_u + m*dof_u) += fact * J(k,i) * B(a,b) * E(a,b) * J(c,b) * B(i,l) * E(i,l) * DS_u(i_u,l) * DS_u(j_u,n) * weight;                     
-                        }
-                        if (c==m && b==n) {
-                           (*elmats(0,0))(i_u + k*dof_u, j_u + m*dof_u) += fact * J(k,i) * B(a,b) * E(a,b) * J(c,a) * B(i,l) * E(i,l) * DS_u(i_u,l) * DS_u(j_u,n) * weight;                     
-                        }
-                     }
-                  }
-                  }
-
-                  for (int f=0; f<dim; f++) {
-                     if (f==m && i==n) {
-                        (*elmats(0,0))(i_u + k*dof_u, j_u + m*dof_u) += fact * J(k,i) * B(i,l) * 0.5 * J(f,l) * DS_u(i_u,l) * DS_u(j_u,n) * weight;                     
-                     }
-                     if (f==m && l==n) {
-                        (*elmats(0,0))(i_u + k*dof_u, j_u + m*dof_u) += fact * J(k,i) * B(i,l) * 0.5 * J(f,i) * DS_u(i_u,l) * DS_u(j_u,n) * weight;                     
-                     }
-                  }
-                  
+            for (int i=0; i<dim; i++) {
+               if (i_dim==j_dim && i==n) {
+                  (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * B(i,l) * E(i,l) * DS_u(i_u,l) * DS_u(j_u,n) * weight;
                }
-               
-               (*elmats(0,0))(i_u + k*dof_u, j_u + m*dof_u) -= dJ * pres * FinvT(k,l) * FinvT(m,n) * DS_u(i_u,l) * DS_u(j_u,n) * weight;
-               
-               // a = n;
-               // b = m;
+
                for (int a=0; a<dim; a++) {
-                  for (int b=0; b<dim; b++) {
-                     if (a==n && b==m) {
-                        (*elmats(0,0))(i_u + k*dof_u, j_u + b*dof_u) += dJ * pres * FinvT(k,a) * FinvT(b,l) * DS_u(i_u,l) * DS_u(j_u,a) * weight;
-                     }
-                  }
+                  (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * J(i_dim,i) * B(n,a) * E(n,a) * J(j_dim,a) * B(i,l) * E(i,l) * DS_u(i_u,l) * DS_u(j_u,n) * weight;                     
+                  (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * J(i_dim,i) * B(a,n) * E(a,n) * J(j_dim,a) * B(i,l) * E(i,l) * DS_u(i_u,l) * DS_u(j_u,n) * weight;                     
                }
-               
+                  
+               if (i==n) {
+                  (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * J(i_dim,i) * B(i,l) * 0.5 * J(j_dim,l) * DS_u(i_u,l) * DS_u(j_u,n) * weight;                     
+               }
+               if (l==n) {
+                  (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * J(i_dim,i) * B(i,l) * 0.5 * J(j_dim,i) * DS_u(i_u,l) * DS_u(j_u,n) * weight;                     
+               }
+            
+                  
             }
-         }
-         }
+               
+            (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) -= dJ * pres * FinvT(i_dim,l) * FinvT(j_dim,n) * DS_u(i_u,l) * DS_u(j_u,n) * weight;
+               
+            // a = n;
+            // b = m;
+            (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += dJ * pres * FinvT(i_dim,n) * FinvT(j_dim,l) * DS_u(i_u,l) * DS_u(j_u,n) * weight;
+            
          }
          }
       }
       }
    }
    }
-
    // u,p and p,u blocks
    for (int i_p = 0; i_p < dof_p; i_p++) {
       for (int j_u = 0; j_u < dof_u; j_u++) {
