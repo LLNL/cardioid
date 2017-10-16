@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
    // Parse command-line options.
-   const char *mesh_file = "../../data/beam-hex.mesh";
+   const char *mesh_file = "./beam-hex-rescaled.mesh";
    int ser_ref_levels = 0;
    int par_ref_levels = 0;
    bool heart_mesh = false;
@@ -143,11 +143,18 @@ int main(int argc, char *argv[])
 
    Array<int> ess_bdr_u(R_space.GetMesh()->bdr_attributes.Max());
    Array<int> ess_bdr_p(W_space.GetMesh()->bdr_attributes.Max());
-      
+   Array<int> pres_bdr(R_space.GetMesh()->bdr_attributes.Max());
+   Array<int> trac_bdr(R_space.GetMesh()->bdr_attributes.Max());
+     
    ess_bdr_p = 0;
    ess_bdr_u = 0;
    ess_bdr_u[0] = 1;
-   ess_bdr_u[1] = 0;
+
+   pres_bdr = 0;
+   pres_bdr[3] = 1;
+
+   trac_bdr = 0;
+   trac_bdr[2] = 1;
 
    ess_bdr[0] = &ess_bdr_u;
    ess_bdr[1] = &ess_bdr_p;
@@ -197,7 +204,7 @@ int main(int argc, char *argv[])
    p_gf.GetTrueDofs(xp.GetBlock(1));
 
    // Initialize the cardiac mechanics operator
-   CardiacOperator oper(spaces, ess_bdr, slu_solver, block_trueOffsets,
+   CardiacOperator oper(spaces, ess_bdr, pres_bdr, trac_bdr, slu_solver, block_trueOffsets,
                         newton_rel_tol, newton_abs_tol, newton_iter);
 
    // Solve the Newton system 
@@ -259,15 +266,10 @@ int main(int argc, char *argv[])
    return 0;
 }
 
-   // Define the forcing function coefficients
-VectorFunctionCoefficient bf(3, BodyForceFunction);
-MatrixFunctionCoefficient at(3, ActiveTensionFunction);
-VectorFunctionCoefficient trac(3, TractionFunction);
-VectorFunctionCoefficient fib(3, FiberFunction);
-FunctionCoefficient pres(PressureFunction);
-
 CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
                                  Array<Array<int> *>&ess_bdr,
+                                 Array<int> &pres_bdr,
+                                 Array<int> &trac_bdr,
                                  bool slu,
                                  Array<int> &block_trueOffsets,
                                  double rel_tol,
@@ -283,24 +285,31 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
 
    fes.Copy(spaces);
 
+   // Define the forcing function coefficients
+   bf = new VectorFunctionCoefficient(3, BodyForceFunction);
+   at = new MatrixFunctionCoefficient(3, ActiveTensionFunction);
+   trac = new VectorFunctionCoefficient(3, TractionFunction);
+   fib = new VectorFunctionCoefficient(3, FiberFunction);
+   pres = new FunctionCoefficient(PressureFunction);
+
    // Initialize the Cardiac model (transversely isotropic)
-   model = new CardiacModel (0.88, 8.0, 6.0, 3.0, 12.0, 3.0, 3.0);
+   model = new CardiacModel (2.0, 8.0, 2.0, 2.0, 4.0, 4.0, 2.0);
 
    // Define the mixed nonlinear form 
    Hform = new ParBlockNonlinearForm(spaces);
 
    // Add the passive stress integrator
-   Hform->AddDomainIntegrator(new CardiacNLFIntegrator(model, fib));
+   Hform->AddDomainIntegrator(new CardiacNLFIntegrator(model, *fib));
 
    // Add the body force integrator
-   Hform->AddDomainIntegrator(new BodyForceNLFIntegrator(bf));
+   //Hform->AddDomainIntegrator(new BodyForceNLFIntegrator(*bf));
 
    // Add the active tension integrator
-   Hform->AddDomainIntegrator(new ActiveTensionNLFIntegrator(at));
+   //Hform->AddDomainIntegrator(new ActiveTensionNLFIntegrator(*at));
 
    // Add the pressure and traction boundary integrators
-   Hform->AddBdrFaceIntegrator(new PressureBoundaryNLFIntegrator(pres), *ess_bdr[1]);
-   Hform->AddBdrFaceIntegrator(new TractionBoundaryNLFIntegrator(trac), *ess_bdr[1]);
+   Hform->AddBdrFaceIntegrator(new PressureBoundaryNLFIntegrator(*pres), pres_bdr);
+   //Hform->AddBdrFaceIntegrator(new TractionBoundaryNLFIntegrator(*trac), trac_bdr);
 
    // Set the essential boundary conditions
    Hform->SetEssentialBC(ess_bdr, rhs);
@@ -368,6 +377,11 @@ Operator &CardiacOperator::GetGradient(const Vector &xp) const
 CardiacOperator::~CardiacOperator()
 {
    delete J_solver;
+   delete bf;
+   delete at;
+   delete trac;
+   delete fib;
+   delete pres;
    if (J_prec != NULL) {
       delete J_prec;
    }

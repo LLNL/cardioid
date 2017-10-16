@@ -33,8 +33,14 @@ protected:
 
    bool slu_solver;
 
+   VectorFunctionCoefficient *bf;
+   MatrixFunctionCoefficient *at;
+   VectorFunctionCoefficient *trac;
+   VectorFunctionCoefficient *fib;
+   FunctionCoefficient *pres;
+
 public:
-   CardiacOperator(Array<ParFiniteElementSpace *> &fes, Array<Array<int>*> &ess_bdr, bool slu, Array<int> &block_trueOffsets, double rel_tol, double abs_tol, int iter);
+   CardiacOperator(Array<ParFiniteElementSpace *> &fes, Array<Array<int>*> &ess_bdr, Array<int> &pres_bdr, Array<int> &trac_bdr, bool slu, Array<int> &block_trueOffsets, double rel_tol, double abs_tol, int iter);
 
    /// Required to use the native newton solver
    virtual Operator &GetGradient(const Vector &xp) const;

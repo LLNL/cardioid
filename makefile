@@ -12,7 +12,7 @@
 # Use the MFEM build directory
 MFEM_DIR ?= ../..
 MFEM_BUILD_DIR ?= ../..
-SRC = $(if $(MFEM_DIR:../..=),$(MFEM_DIR)/examples/cardioid/,)
+SRC = $(if $(MFEM_DIR:../..=),$(MFEM_DIR)/miniapps/cardioid/,)
 CONFIG_MK = $(MFEM_BUILD_DIR)/config/config.mk
 TEST_MK = $(MFEM_DIR)/config/test.mk
 

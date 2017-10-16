@@ -12,7 +12,7 @@ class CardiacModel
 protected:
    double C_1, b_ff, b_ss, b_nn, b_fs, b_fn, b_ns;
 
-   mutable DenseMatrix C, E, I, JT, PK2, FinvT;
+   mutable DenseMatrix C, E, I, JT, PK2, FinvT, B;
 
 public:
    CardiacModel(double _C_1, double _b_ff, double _b_ss, double _b_nn,
@@ -22,12 +22,7 @@ public:
 
    virtual void EvalP(const DenseMatrix &J, const double pres, const Vector &fiber, DenseMatrix &P) const;
 
-   virtual double EvalW(const DenseMatrix &J) const;
-
-   virtual void EvalP(const DenseMatrix &J, DenseMatrix &P) const;
-
-   virtual void AssembleH(const DenseMatrix &J, const DenseMatrix &DS,
-                          const double weight, DenseMatrix &A) const;
+   virtual void AssembleH(const DenseMatrix &J, const double pres, const Vector &fiber, const DenseMatrix &DS, const Vector Sh_p, const double weight, Array2D<DenseMatrix *>&elmats) const;
 
 
 };
@@ -124,7 +119,7 @@ class CardiacNLFIntegrator : public BlockNonlinearFormIntegrator
 {
 private:
    CardiacModel *model;
-   DenseMatrix DSh_u, DS_u, J0i, J, P, PMatI_u, PMatO_u, PMatO_p;
+   DenseMatrix DSh_u, DS_u, J0i, J, P, PMatI_u, PMatO_u, PMatO_p, F, Finv, FinvT, B;
    Vector Sh_p, Qvec;
    VectorCoefficient *Q;
 
@@ -135,6 +130,11 @@ public:
                                       ElementTransformation &Tr,
                                       Array<Vector *> &elfun, 
                                       Array<Vector *> &elvec);
+
+   virtual void AssembleElementGrad(Array<const FiniteElement*> &el,
+                                    ElementTransformation &Tr,
+                                    Array<Vector *> &elfun, 
+                                    Array2D<DenseMatrix *> &elmats);
 
    virtual ~CardiacNLFIntegrator();
 };
