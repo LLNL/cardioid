@@ -237,16 +237,6 @@ $(BINDIR)/$(EXENAME): $(CARDIOIDOBJS) Version.cc
 	-DTARGET=$(EXENAME) \
 	-DARCH=$(ARCH) 
 
-#OHaraRudy.cc : OHaraRudy.h  $(CONSTRUCTED_INCLUDES) mkCompInclude   mkCompInclude.awk
-
-$(CONSTRUCTED_INCLUDES) :  mkCompInclude mkCompInclude.awk 
-	./mkCompInclude $@
-
-#Grandi.cc : Grandi.h  $(GRANDI_CONSTRUCTED_INCLUDES) mkCompInclude_Grandi   mkCompInclude_Grandi.awk
-
-$(GRANDI_CONSTRUCTED_INCLUDES) :  mkCompInclude_Grandi mkCompInclude_Grandi.awk 
-	./mkCompInclude_Grandi $@
-
 testLoadBalancer:
 	@$(MAKE) --no-print-directory makedirs testLoadBalancer-target \
 	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH) \
