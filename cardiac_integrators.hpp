@@ -74,6 +74,15 @@ public:
                                        Array<Vector *> &elfun, 
                                        Array2D<DenseMatrix *> &elmats);
 
+   virtual double GetArea(Array<const FiniteElement *> &el,
+                          FaceElementTransformations &Tr,
+                          Array<Vector *> &elfun);
+   
+   virtual void GetAreaGradient(Array<const FiniteElement *> &el,
+                                FaceElementTransformations &Tr,
+                                Array<Vector *> &elfun,
+                                Array<Vector *> &elvec);
+
    virtual ~PressureBoundaryNLFIntegrator();
 };
 

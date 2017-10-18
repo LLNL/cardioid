@@ -502,6 +502,125 @@ void PressureBoundaryNLFIntegrator::AssembleRHSElementVector(Array<const FiniteE
    }
 }
 
+double PressureBoundaryNLFIntegrator::GetArea(Array<const FiniteElement *> &el,
+                                              FaceElementTransformations &Tr,
+                                              Array<Vector *> &elfun)
+{
+
+   int dim = el[0]->GetDim();
+   int dof_u = el[0]->GetDof();
+   int dof_p = el[1]->GetDof();
+
+   shape.SetSize (dof_u);
+   nor.SetSize (dim);
+   fnor.SetSize (dim);
+
+   DSh_u.SetSize(dof_u, dim);
+   DS_u.SetSize(dof_u, dim);
+   J0i.SetSize(dim);
+   J.SetSize(dim);
+   Jinv.SetSize(dim);
+
+   PMatI_u.UseExternalData(elfun[0]->GetData(), dof_u, dim);
+
+   int intorder = 2*el[0]->GetOrder() + 3; 
+   const IntegrationRule &ir = IntRules.Get(Tr.FaceGeom, intorder);
+
+   double area = 0.0;
+
+   for (int i = 0; i < ir.GetNPoints(); i++)
+   {
+      const IntegrationPoint &ip = ir.IntPoint(i);
+      IntegrationPoint eip;
+      Tr.Loc1.Transform(ip, eip);
+
+      Tr.Face->SetIntPoint(&ip);
+      CalcOrtho(Tr.Face->Jacobian(), nor);
+
+      Tr.Elem1->SetIntPoint(&eip);
+      CalcInverse(Tr.Elem1->Jacobian(), J0i);
+
+      el[0]->CalcDShape(eip, DSh_u);
+      Mult(DSh_u, J0i, DS_u);
+      MultAtB(PMatI_u, DS_u, J);
+
+      CalcInverse(J, Jinv);
+      
+      Jinv.MultTranspose(nor, fnor);
+      
+      area += ip.weight * Tr.Face->Weight() * fnor.Norml2();
+
+   }
+}
+   
+void PressureBoundaryNLFIntegrator::GetAreaGradient(Array<const FiniteElement *> &el,
+                                                    FaceElementTransformations &Tr,
+                                                    Array<Vector *> &elfun,
+                                                    Array<Vector *> &elvec)
+{
+   int dof_u = el[0]->GetDof();
+   int dof_p = el[1]->GetDof();
+
+   int dim = el[0]->GetDim();
+
+   elvec[0]->SetSize(dof_u*dim);
+   elvec[1]->SetSize(dof_p);
+
+   *elvec[0] = 0.0;
+   *elvec[1] = 0.0;
+
+   nor.SetSize (dim);
+   fnor.SetSize (dim);
+   
+   DSh_u.SetSize(dof_u, dim);
+   DS_u.SetSize(dof_u, dim);
+   J0i.SetSize(dim);
+   J.SetSize(dim);
+   Jinv.SetSize(dim);
+   JinvT.SetSize(dim);
+
+   PMatI_u.UseExternalData(elfun[0]->GetData(), dof_u, dim);
+
+   int intorder = 2*el[0]->GetOrder() + 3; 
+   const IntegrationRule &ir = IntRules.Get(Tr.FaceGeom, intorder);
+
+   double dJ, norm; 
+
+   for (int i = 0; i < ir.GetNPoints(); i++)
+   {
+      const IntegrationPoint &ip = ir.IntPoint(i);
+      IntegrationPoint eip;
+      Tr.Loc1.Transform(ip, eip);
+
+      Tr.Face->SetIntPoint(&ip);
+      CalcOrtho(Tr.Face->Jacobian(), nor);
+
+      Tr.Elem1->SetIntPoint(&eip);
+      CalcInverse(Tr.Elem1->Jacobian(), J0i);
+
+      el[0]->CalcDShape(eip, DSh_u);
+      el[0]->CalcShape(eip, Sh_u);
+      Mult(DSh_u, J0i, DS_u);
+      MultAtB(PMatI_u, DS_u, J);
+
+      CalcInverse(J, Jinv);
+      CalcInverseTranspose(J, JinvT);
+
+      // u block
+      for (int j_u = 0; j_u < dof_u; j_u++) {
+      for (int j_dim = 0; j_dim < dim; j_dim++) {
+         for (int n=0; n<dim; n++) {
+         for (int l=0; l<dim; l++) {
+            (*elvec[0])(j_u + j_dim*dof_u) += JinvT(j_dim,n) * nor(n) * DS_u(j_u,n) * ip.weight * Tr.Face->Weight();        
+         }
+         }
+            
+      }
+      }      
+   }
+ 
+}
+
 void PressureBoundaryNLFIntegrator::AssembleRHSElementGrad(Array<const FiniteElement*> &el,
                                                            FaceElementTransformations &Tr,
                                                            Array<Vector *> &elfun, 

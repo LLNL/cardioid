@@ -371,6 +371,8 @@ Operator &CardiacOperator::GetGradient(const Vector &xp) const
 {
    Jacobian = &Hform->GetGradient(xp);
 
+   std::cout << "Area = " << Hform->GetArea(xp) << std::endl;
+
    return *Jacobian;
 }
 
