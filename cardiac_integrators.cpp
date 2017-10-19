@@ -125,6 +125,7 @@ void CardiacModel::AssembleH(const DenseMatrix &J, const double pres, const Vect
    C.SetSize(3);
    E.SetSize(3);
    JT.SetSize(3);
+   N.SetSize(3);
 
    B(0,0) = b_ff;
    B(0,1) = b_fs;
@@ -161,8 +162,17 @@ void CardiacModel::AssembleH(const DenseMatrix &J, const double pres, const Vect
       b_ns * (E(1,2) * E(1,2) + E(2,1) * E(2,1));
    
 
+   for (int i=0; i<dim; i++) {
+      for (int j=0; j<dim; j++) {
+         N(i,j) = B(i,j) * E(i,j);
+      }
+   }
+
    double fact = (C_1/2.0) * exp(Q);
    double dJ = J.Det();
+
+   Mult(orth, N, dummy);
+   Mult(dummy, orth_transpose, N);
 
    // u,u block
    for (int i_u = 0; i_u < dof_u; i_u++) {
@@ -489,7 +499,7 @@ void PressureBoundaryNLFIntegrator::AssembleRHSElementVector(Array<const FiniteE
       MultAtB(PMatI_u, DS_u, J);
 
       CalcInverse(J, Jinv);
-      
+
       Jinv.MultTranspose(nor, fnor);
 
       el[0]->CalcShape (eip, shape);
@@ -537,6 +547,8 @@ double PressureBoundaryNLFIntegrator::GetArea(Array<const FiniteElement *> &el,
       Tr.Face->SetIntPoint(&ip);
       CalcOrtho(Tr.Face->Jacobian(), nor);
 
+      nor /= nor.Norml2();
+
       Tr.Elem1->SetIntPoint(&eip);
       CalcInverse(Tr.Elem1->Jacobian(), J0i);
 
@@ -548,7 +560,7 @@ double PressureBoundaryNLFIntegrator::GetArea(Array<const FiniteElement *> &el,
       
       Jinv.MultTranspose(nor, fnor);
       
-      area += ip.weight * Tr.Face->Weight() * fnor.Norml2();
+      area += J.Det() * ip.weight * Tr.Face->Weight() * fnor.Norml2();
 
    }
 }
@@ -606,17 +618,8 @@ void PressureBoundaryNLFIntegrator::GetAreaGradient(Array<const FiniteElement *>
       CalcInverse(J, Jinv);
       CalcInverseTranspose(J, JinvT);
 
-      // u block
-      for (int j_u = 0; j_u < dof_u; j_u++) {
-      for (int j_dim = 0; j_dim < dim; j_dim++) {
-         for (int n=0; n<dim; n++) {
-         for (int l=0; l<dim; l++) {
-            (*elvec[0])(j_u + j_dim*dof_u) += JinvT(j_dim,n) * nor(n) * DS_u(j_u,n) * ip.weight * Tr.Face->Weight();        
-         }
-         }
-            
-      }
-      }      
+      dJ = J.Det();
+      
    }
  
 }
