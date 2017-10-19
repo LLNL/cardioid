@@ -547,8 +547,6 @@ double PressureBoundaryNLFIntegrator::GetArea(Array<const FiniteElement *> &el,
       Tr.Face->SetIntPoint(&ip);
       CalcOrtho(Tr.Face->Jacobian(), nor);
 
-      nor /= nor.Norml2();
-
       Tr.Elem1->SetIntPoint(&eip);
       CalcInverse(Tr.Elem1->Jacobian(), J0i);
 
