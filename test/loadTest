@@ -1,0 +1,69 @@
+#!/bin/bash
+
+export build=$1
+export profile=$2
+export test=$3
+
+function realpath {
+    echo "$(cd "$(dirname "$1")"; pwd)/$(basename "$1")"
+}
+function quiet {
+    "$@" >> /dev/null 2>&1
+}
+export testroot=$(dirname $(realpath ${BASH_SOURCE}))
+
+###################################################
+
+function new {
+    echo $testroot/scratch/$build/$profile/$test/$1
+}
+
+function old {
+    echo $testroot/results/$build/$profile/$test/$1
+}
+
+function numCompare {
+    python $testroot/numCompare.py $(old $1) $(new $1) $2
+}
+
+function compare {
+    diff -wbBu $(old $1) $(new $1)
+}
+
+function save {
+    mv -f $(new $1) $(old $1)
+}
+
+#source builds/$build
+
+###################################################
+#default values for these profile functions
+mkdir -p "$testroot/scratch/$build/$profile"
+mkdir -p "$testroot/results/$build/$profile"
+
+function beginTest { :;}
+function endTest { :;}
+function runBinary {
+    exe=$1; shift
+    $testroot/../bin/$exe-$build "$@"
+}
+
+source $testroot/profiles/$profile
+###################################################
+mkdir -p "$testroot/scratch/$build/$profile/$test" 
+mkdir -p "$testroot/results/$build/$profile/$test" 
+
+quiet ln -s $testroot/tests/$test/* $testroot/scratch/$build/$profile/$test
+
+function checkpoint { :;}
+function run { :;}
+function clean { :;}
+source $testroot/tests/$test/definition
+
+####################################################
+
+quiet pushd $testroot/scratch/$build/$profile/$test
+
+function unloadTest {
+    popd
+}

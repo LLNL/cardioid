@@ -1,0 +1,18 @@
+#!/bin/bash
+## runtime=0s
+## tags=seq
+
+function checkpoint {
+    save stdOut
+}
+    
+function clean {
+    rm -f stdOut
+}
+
+function run {
+    beginTest
+    runBinary singleCell -o tt06.data >| stdOut 2>&1
+    numCompare stdOut 1e-7 >| result 2>&1
+    endTest
+}

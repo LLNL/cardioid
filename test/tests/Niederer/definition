@@ -1,0 +1,18 @@
+#!/bin/bash
+## runtime=0s
+## tags=seq
+
+function checkpoint {
+    save data
+}
+    
+function clean {
+    rm -f stdOut data
+}
+
+function run {
+    beginTest
+    runBinary cardioid >| stdOut 2>&1 
+    numCompare data 1e-14 >| result 2>&1
+    endTest
+}

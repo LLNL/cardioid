@@ -8,6 +8,8 @@ include Makefile.arch
 ARCH ?= $(ARCHGUESS)
 include arch/$(ARCH).mk
 
+TEST_PROFILE ?= sequential
+
 SVNVERSION := $(shell svnversion ./ )
 
 #------------------------------------------------------------------------------
@@ -276,9 +278,15 @@ singleCell:
 singleCell-target: $(HEARTOBJS) $(OBJDIR)/singleCell.o $(OBJDIR)/singleCellOptions.o singleCellOptions.h Version.cc
 	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(OBJDIR)/singleCell.o $(OBJDIR)/singleCellOptions.o $(LDFLAGS)
 
+test: opt singleCell
+	python ../test/tester.py -b $(ARCH) -p $(TEST_PROFILE) singleCell
+
 makedirs:
 	@if [ ! -d $(OBJDIR) ]; then mkdir -p $(OBJDIR) ; fi
 	@if [ ! -d $(BINDIR) ]; then mkdir -p $(BINDIR) ; fi
+
+getArch:
+	@echo $(ARCH)
 
 #------------------------------------------------------------------------------
 # generate dependencies in makefile: use -Y to avoid library header files

@@ -107,5 +107,7 @@ ifeq ($(HOSTNAME),prince)
 endif
 
 ifndef ARCHGUESS
+ifndef ARCH
    $(error Unrecognized build host.  Edit Makefile.arch)
+endif
 endif
