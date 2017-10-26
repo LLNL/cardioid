@@ -1,8 +1,10 @@
 #include <stdio.h>
-#include "types.h"
+//#include "types.h"
 #include <stdlib.h>
 
 #define CUDA_VERIFY(call) (call)
+
+typedef double Real;
 
 __global__ void setV(long n,Real* tar)
 {
