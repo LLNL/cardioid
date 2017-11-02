@@ -127,7 +127,8 @@ int main(int argc, char** argv)
    profileSetPrintOrder("DiffusionLoop");
    profileSetPrintOrder("ReactionLoop");
    profileSetPrintOrder("Dummy");
-   profileSetPrintOrder("HaloExchMove2Buf");
+   profileSetPrintOrder("HaloExchange");
+   //profileSetPrintOrder("HaloExchMove2Buf");
    profileSetPrintOrder("Integrator");
    profileSetPrintOrder("ReactionWait");
    profileSetPrintOrder("reactionL2Arrive");
