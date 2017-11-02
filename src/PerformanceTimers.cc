@@ -365,7 +365,7 @@ void profileDumpTimes(ostream& out)
       {
          const string& name = outputOrder[iName];
          unsigned ii = handleMap_[name];
-         if (timers_[ii].total[counter]*tick < 0.0001) continue; 
+         //if (timers_[ii].total[counter]*tick < 0.0001) continue; 
          if (name.empty())
          {
             out << "--------------------------------------------------------------------------------" << endl;
@@ -537,7 +537,7 @@ void profileDumpStats(ostream& out)
             out << "--------------------------------------------------------------------------------------------------" << endl;
             for (unsigned ii=0; ii<nTimers; ++ii)
             {
-               if (aveCount[ii]*tick < 0.0001) continue;
+               //if (aveCount[ii]*tick < 0.0001) continue;
                if (outputOrder[ii].empty())
                {
                   out << "--------------------------------------------------------------------------------------------------" << endl;
