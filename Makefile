@@ -1,5 +1,5 @@
 
-ARCHES ?= $(shell $(MAKE) -C --no-print-directory src getArch)
+ARCHES ?= $(shell $(MAKE) --no-print-directory -C src getArch)
 TESTS ?= seq
 PYTHON ?= python
 
