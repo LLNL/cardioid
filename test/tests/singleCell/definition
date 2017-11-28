@@ -2,17 +2,34 @@
 ## runtime=0s
 ## tags=seq
 
+models="TT06Opt Grandi OHaraRudy TT06_CellML"
+
 function checkpoint {
-    save stdOut
+    for model in $models
+    do
+        save $model.stdOut
+    done
 }
     
 function clean {
-    rm -f stdOut
+    for model in $models
+    do
+        rm -f $model.stdOut
+    done
 }
 
 function run {
     beginTest
-    runBinary singleCell -o tt06.data >| stdOut 2>&1
-    numCompare stdOut 1e-7 >| result 2>&1
+    for model in $models
+    do
+        cat > $model.data <<EOF
+$model REACTION
+{
+   method = $model;
+}
+EOF
+        runBinary singleCell -o $model.data -h 0.01 >| $model.stdOut 2>&1
+        numCompare $model.stdOut 1e-7 >> result 2>&1
+    done
     endTest
 }
