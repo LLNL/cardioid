@@ -5,6 +5,13 @@
 #include <map>
 //#include <iostream>
 
+//update is called before calc
+//dVm is combined with Vm from reaction without any rearrangement
+//
+//Hence
+//'update' must rearrange the dVmBlock
+//activate map_dVm
+
 using namespace std;
 
 #define CONTAINS(container, item) (container.find(item) != container.end())
@@ -37,20 +44,18 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType)
    //vector<int>& cellFromRedVec(cellFromRed_.modifyOnHost());
    map<int,int> cellFromBlock;
    vector<int>& cellLookupVec(cellLookup_.modifyOnHost());
+   vector<int>& blockLookupVec(blockLookup_.modifyOnHost());
 
-   //nRed_ = 0;
-   //int nBlack = 0;
-   //nRedLocal_ = 0;
    for (int icell=0; icell<nCells_; icell++)
    {
       //index to coordinate 
       Tuple ll = localGrid_.localTuple(anatomy.globalTuple(icell));
-      int iblock = ll.x()+nx_*(ll.y()+ny_*ll.z());
+      int iblock = ll.z() + nz_ * ( ll.y() + ny_ * ll.x() );
       cellFromBlock[iblock] = icell;
       cellLookupVec[icell] = iblock;
    }
 
-   const int offsets[3] = {1, nx_, nx_*ny_};
+   const int offsets[3] = {ny_*nz_, nz_ , 1};
    const double areas[3] =
       {
          anatomy.dy()*anatomy.dz(),
@@ -68,7 +73,7 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType)
       //int iblock = blockFromRedVec[ired];
       Tuple ll = localGrid_.localTuple(anatomy.globalTuple(icell));
       int xx[3] ={ ll.x() , ll.y() , ll.z() };
-      int iblock = ll.x()+nx_*(ll.y()+ny_*ll.z());
+      int iblock = ll.z()+nz_*(ll.y()+ny_*ll.x());
 
       const SymmetricTensor& sss(anatomy.conductivity(icell));
       double thisSigma[3][3] = {{sss.a11, sss.a12, sss.a13},
@@ -165,7 +170,7 @@ void actualCalc(CUDADiffusion& self, VectorDouble32& dVm)
    const vector<double>& sigmaFaceNormalVec(self.sigmaFaceNormal_.readOnDevice());
    const vector<int>& cellLookupVec(self.cellLookup_.readOnDevice());
    
-   const double* VmRaw=&VmBlockVec[0];
+   const double* VmBlockRaw=&VmBlockVec[0];
    //double* dVmRaw=&dVmBlocVec[0];
    const double* sigmaRaw=&sigmaFaceNormalVec[0];
    const int*    lookupRaw=&cellLookupVec[0];

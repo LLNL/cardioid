@@ -165,6 +165,13 @@ __global__ void map_dVm(double * dVmT, double* dVm, const int *remap,int nCells)
       dVmT[idx] = dVm[remap[idx]];
 }
 
+//__global__ void map_V(double * VT, double* V, const int *remap,int nCells)
+//{
+//  int idx0 = threadIdx.x + blockDim.x*blockIdx.x;
+//  int stride = blockDim.x * gridDim.x;
+//  for(int idx = idx0 ; idx<nCells ; idx+=stride)
+//      VT[remap[idx]] = V[idx];
+//}
 
 extern "C"
 {
@@ -182,7 +189,8 @@ void call_cuda_kernels(const Real *VmRaw, Real *dVmRaw, const Real *sigmaRaw, in
    cudaFuncSetAttribute(diff_6face_v1, cudaFuncAttributePreferredSharedMemoryCarveout, 50);
 #endif
 
+   //map_V<<<112,512>>>(VmBlockRaw,VmRaw,lookup,nCells);
    diff_6face_v1<<<dim3(bdimx,bdimy,bdimz),dim3(32,32,1)>>>(VmRaw,dVmRaw,sigmaRaw,sigmaRaw+3*nx*ny*nz,sigmaRaw+6*nx*ny*nz,nx,ny,nz);
-//   map_dVm<<<112,512>>>(dVmRaw,dVmOut,lookup,nCells);
+   map_dVm<<<112,512>>>(dVmRaw,dVmOut,lookup,nCells);
 }
 }
