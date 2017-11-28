@@ -15,6 +15,7 @@ cleanbuild-%:
 define TEST_RULE
 .PRECIOUS: test/scratch/$1/$2/results.tap
 test/scratch/$1/$2/results.tap : build-$1
+	mkdir -p test/scratch/$1/$2
 	$$(PYTHON) test/runner.py -b $1 -p $2 >| $$@ 2>&1
 test-$1-$2 : test/scratch/$1/$2/results.tap
 	@cat $$<
