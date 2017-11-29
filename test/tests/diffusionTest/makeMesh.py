@@ -104,7 +104,7 @@ def main():
         quaternion[3] = math.sqrt(1-quaternion[0]**2-quaternion[1]**2-quaternion[2]**2)
         V = quat2rot(quaternion)
         cond = V.dot(numpy.diag([gil, git, gin]).dot(V.transpose()))
-        print "%d 101 %g %g %g %g %g %g" % (
+        print "%10d 101 %21.16g %21.16g %21.16g %21.16g %21.16g %21.16g" % (
             gid, cond[0,0], cond[0,1], cond[0,2], cond[1,1], cond[1,2], cond[2,2],
             )
 
