@@ -1,0 +1,54 @@
+simulate SIMULATE 
+{
+   anatomy = cuboid;
+   diffusion = diff1;
+   decomposition = grid;
+   reaction = null;
+   loop = 0;            // in timesteps
+   maxLoop = 2;     // in timesteps
+   dt = 1;       // msec
+   time = 0;            // msec
+   printRate    = 1;  // in timesteps
+   checkpointRate = 1;
+}
+
+grid DECOMPOSITION
+{
+    method = grid;
+    nx = 16;
+    ny = 16;
+    nz = 16;
+    minimize = volume;
+    threshold = 4;
+    printStats = 0;
+    visgrid = 0;
+}
+
+cuboid ANATOMY 
+{
+   method = pio;
+   //fileName = anatomy#;
+   cellType = -1;
+   dx = 0.2 mm;   // pi/16.
+   dy = 0.2 mm;   // pi/16.
+   dz = 0.2 mm;   // pi/16.
+   conductivity = conductivity;
+}
+
+diff1 DIFFUSION
+{
+   method = FGR;
+   diffusionScale = 1. mm^3/mF;
+}
+
+conductivity CONDUCTIVITY
+{
+    method = pio;
+}
+
+null REACTION
+{
+    method = null;
+    initialVoltage = 0;
+}
+
