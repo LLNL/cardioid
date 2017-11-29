@@ -31,6 +31,7 @@ function compare {
 }
 
 function save {
+    mkdir -p $(dirname $(old $1))
     mv -f $(new $1) $(old $1)
 }
 
