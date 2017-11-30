@@ -44,7 +44,7 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType)
    //vector<int>& cellFromRedVec(cellFromRed_.modifyOnHost());
    map<int,int> cellFromBlock;
    vector<int>& cellLookupVec(cellLookup_.modifyOnHost());
-   vector<int>& blockLookupVec(blockLookup_.modifyOnHost());
+//   vector<int>& blockLookupVec(blockLookup_.modifyOnHost());
 
    for (int icell=0; icell<nCells_; icell++)
    {
@@ -170,7 +170,7 @@ void actualCalc(CUDADiffusion& self, VectorDouble32& dVm)
    const vector<double>& sigmaFaceNormalVec(self.sigmaFaceNormal_.readOnDevice());
    const vector<int>& cellLookupVec(self.cellLookup_.readOnDevice());
    
-   const double* VmBlockRaw=&VmBlockVec[0];
+   const double* VmRaw=&VmBlockVec[0];
    //double* dVmRaw=&dVmBlocVec[0];
    const double* sigmaRaw=&sigmaFaceNormalVec[0];
    const int*    lookupRaw=&cellLookupVec[0];
