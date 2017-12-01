@@ -26,10 +26,7 @@ if __name__=='__main__':
             iy = (gid/nx) % ny
             iz = (gid/nx)/ny
 
-            if (ix+iy+iz) % 2:
-                out = 1
-            else:
-                out = 0
+            remainder = (ix+iy+iz) % 3
 
             printstring = "%%%dd %%d" % (lrec-3)
-            print printstring % (gid,out)
+            print printstring % (gid,remainder)
