@@ -371,7 +371,7 @@ double fv6(double dV0, void *p)
 
 #define logSeries(x)    (log(1+(x)) )
 
-void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct CellTypeParms *cellTypeParms, int nCells, int *cellTypeVector, double *VM, int offset, double **state, double *dVdt)
+void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *VM, int offset, double **state, double *dVdt)
 {
   double *f2Gate = state[f2_gate]+offset; 
   double *fGate = state[f_gate]+offset; 
@@ -402,7 +402,6 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
   fv05Func = fv05General; 
   fv6Func  = fv6General; 
   double fv[6];
- int cellType=-1; 
  double  c_K1   =  currentScales->K1; 
  double  c_Na   =  currentScales->Na *cnst.c20; 
  double  c_bNa  =  currentScales->bNa*cnst.c21; 
@@ -417,28 +416,24 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
  double  c_rel  = currentScales->rel  *cnst.c40;
  //CURRENT_SCALES *cS = currentScales; 
  //printf("%e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n",cS->K1,cS->Na,cS->bNa,cS->CaL,cS->bCa,cS->NaCa,cS->pCa,cS->pK,cS->NaK,cS->Ks,cS->Kr,cS->to,cS->NaL,cS->up,cS->leak,cS->xfer,cS->rel); 
+ double c_NaK,c_Ks,c_Kr,c_to,c_NaL;
+
+ double midK_i,midNa_i,alphaK_i,alphaNa_i,cK_i,cNa_i; 
+ c_NaK = currentScales->NaK*cellTypeParms->P_NaK; 
+ c_Ks  = currentScales->Ks *cellTypeParms->g_Ks; 
+ c_Kr  = currentScales->Kr *cellTypeParms->g_Kr; 
+ c_to  = currentScales->to *cellTypeParms->g_to; 
+ c_NaL = currentScales->NaL*cellTypeParms->g_NaL; 
+ 
+ midK_i = cellTypeParms->midK_i; 
+ midNa_i = cellTypeParms->midNa_i; 
+ alphaK_i = 1.0/midK_i; 
+ alphaNa_i = 1.0/midNa_i; 
+ cK_i=  +cnst.c3*log(alphaK_i) -cnst.c5;
+ cNa_i= +cnst.c3*log(alphaNa_i)-cnst.c4;
+
  for (int ii=0;ii<nCells;ii++) 
  {
-   double c_NaK,c_Ks,c_Kr,c_to,c_NaL;
-
-   double midK_i,midNa_i,alphaK_i,alphaNa_i,cK_i,cNa_i; 
-   if (cellType != cellTypeVector[ii])
-   {
-   cellType = cellTypeVector[ii]; 
-   c_NaK = currentScales->NaK*cellTypeParms[cellType].P_NaK; 
-   c_Ks  = currentScales->Ks *cellTypeParms[cellType].g_Ks; 
-   c_Kr  = currentScales->Kr *cellTypeParms[cellType].g_Kr; 
-   c_to  = currentScales->to *cellTypeParms[cellType].g_to; 
-   c_NaL = currentScales->NaL*cellTypeParms[cellType].g_NaL; 
-
-   midK_i = cellTypeParms[cellType].midK_i; 
-   midNa_i = cellTypeParms[cellType].midNa_i; 
-   alphaK_i = 1.0/midK_i; 
-   alphaNa_i = 1.0/midNa_i; 
-   cK_i=  +cnst.c3*log(alphaK_i) -cnst.c5;
-   cNa_i= +cnst.c3*log(alphaNa_i)-cnst.c4;
-
-   }
 
    double Vm = VM[ii]; 
    fv05Func(fit, Vm,fv); 

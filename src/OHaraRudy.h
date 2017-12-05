@@ -39,7 +39,7 @@ static double AfFast=0.6;
 
 #define CELLPARMS double
 
-enum CELLTYPES {ENDO_CELL, EPI_CELL, M_CELL};
+typedef enum {ENDO_CELL, EPI_CELL, M_CELL} CELLTYPES;
 enum varTypes { PARAMETER_TYPE,PSTATE_TYPE,END_VARINFO}; 
 enum accessTypes { READ, WRITE}; 
 typedef struct voltage_st 
@@ -122,7 +122,7 @@ typedef struct componentInfo_st
 extern "C" 
 {
 #endif 
-void OHaraRudyInit(double dt, int nCells, int *cellType);
+void OHaraRudyInit(double dt, int nCells, CELLTYPES cellType);
 int OHaraRudyGet_nComp(); 
 COMPONENTINFO* OHaraRudyGet_compInfo(); 
 void OHaraRudySetValue(int, int handle, double cell); 

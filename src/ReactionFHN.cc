@@ -3,8 +3,8 @@
 
 using namespace std;
 
-ReactionFHN::ReactionFHN(const Anatomy& anatomy)
-: nCells_(anatomy.nLocal())
+ReactionFHN::ReactionFHN(const int numPoints)
+: nCells_(numPoints)
 {
    // Model Parameters
    double a = 0.13;

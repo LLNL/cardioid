@@ -32,7 +32,7 @@ namespace  scanReaction
       *valuePtr = value; 
       return ptr; 
    }
-   Reaction* scanOHaraRudy(OBJECT* obj, const Anatomy& anatomy)
+   Reaction* scanOHaraRudy(OBJECT* obj, const int numPoints)
    {
       const char *defaultCurrentNames[]={"INaCai","INaCass","INaK","INab","ICab","IKb","IpCa","INaFast","INaL","Ito","IKr","IKs","IK1","ICa"};
       OHaraRudy_Parms parms; 
@@ -51,10 +51,28 @@ namespace  scanReaction
          parms.currentNames.push_back(name); 
          parms.currentModels.push_back(value); 
       }
-      Reaction *reaction = new OHaraRudy_Reaction(anatomy,parms);
-         char *ptr = obj->value;
-         while (*ptr != '\0')
-         {
+      string cellType;
+      objectGet(obj, "cellTypeName", cellType, "endo");
+      if (cellType == "endo")
+      {
+         parms.cellType = ENDO_CELL;
+      }
+      else if (cellType == "mid")
+      {
+         parms.cellType = M_CELL;
+      }
+      else if (cellType == "epi")
+      {
+         parms.cellType = EPI_CELL;
+      }
+      else
+      {
+         assert(0 && "Unrecognized cell type for OHaraRudy");
+      }
+      Reaction *reaction = new OHaraRudy_Reaction(numPoints,parms);
+      char *ptr = obj->value;
+      while (*ptr != '\0')
+      {
          char *keyword;
          char *valueString;
          ptr = getKeywordValue(ptr,&keyword,&valueString);
@@ -63,19 +81,21 @@ namespace  scanReaction
          int handle = reaction->getVarHandle(Keyword);
          if (handle != -1)
          {
-         double value0;
-         double value = atof(valueString);
-         int iComp = handle >> 16;
-         int iVar  = handle & 0xffff;
-         value0=reaction->getValue(0,handle);
-         printf("%8x %2d %2d %s %g %g\n",handle,iComp,iVar,keyword,value,value0);
-         reaction->setValue(0,handle,value);
-         value0=reaction->getValue(0,handle);
-         printf("%8x %2d %2d %s %g %g\n",handle,iComp,iVar,keyword,value,value0);
+            double value0;
+            double value = atof(valueString);
+            int iComp = handle >> 16;
+            int iVar  = handle & 0xffff;
+            value0=reaction->getValue(0,handle);
+            printf("%8x %2d %2d %s %g %g\n",handle,iComp,iVar,keyword,value,value0);
+            reaction->setValue(0,handle,value);
+            value0=reaction->getValue(0,handle);
+            printf("%8x %2d %2d %s %g %g\n",handle,iComp,iVar,keyword,value,value0);
          }
          free(keyword);
          free(valueString);
-         }
-      return  reaction; 
+      }
+      return  reaction;
+
+      //allow setting of parameters
    }
 }

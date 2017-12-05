@@ -79,7 +79,7 @@ static double kon_na=0.1e-3;        // [1/mM/ms]
 
 #define CELLPARMS double
 
-enum CELLTYPES {RA_SR, LA_SR, RA_AF, LA_AF};
+typedef enum {RA_SR, LA_SR, RA_AF, LA_AF} CELLTYPES;
 enum varTypes { PARAMETER_TYPE,PSTATE_TYPE,END_VARINFO}; 
 enum accessTypes { READ, WRITE}; 
 typedef struct voltage_st 
@@ -178,7 +178,7 @@ typedef struct componentInfo_st
 extern "C" 
 {
 #endif 
-void GrandiInit(double dt, int nCells, int *cellType);
+void GrandiInit(double dt, int nCells, CELLTYPES cellType);
 int GrandiGet_nComp(); 
 COMPONENTINFO* GrandiGet_compInfo(); 
 void GrandiSetValue(int, int handle, double cell); 

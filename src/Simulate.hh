@@ -11,9 +11,10 @@
 #include "Anatomy.hh"
 #include "ThreadServer.hh"
 #include "VectorDouble32.hh"
+#include "slow_fix.hh"
 
 class Diffusion;
-class Reaction;
+class ReactionManager;
 class Stimulus;
 class Sensor;
 class Drug;
@@ -36,16 +37,8 @@ class PotentialData
       VmArray_     = VectorDouble32(anatomy.size(), 0.);
       dVmDiffusion_= VectorDouble32(anatomy.nLocal(), 0.);
       dVmReaction_ = VectorDouble32(anatomy.nLocal(), 0.);
-      unsigned paddedSize = 4*((anatomy.nLocal()+3)/4);
-//#include "slow_fix.hh"
-//#ifdef SLOW_FIX
-      {
-	int nFourVecs = paddedSize>>2;
-	if(0) paddedSize += 4*((10 - (nFourVecs % 8)) % 8);
-	else  paddedSize += ((10 - (nFourVecs & 7)) & 7) << 2;
-	VmArray_.reserve(paddedSize);
-      }
-//#endif
+      unsigned paddedSize = convertActualSizeToBufferSize(anatomy.nLocal());
+      VmArray_.reserve(paddedSize);
       dVmDiffusion_.reserve(paddedSize);
       dVmReaction_.reserve(paddedSize);
 
@@ -120,8 +113,7 @@ class Simulate
 
    Anatomy anatomy_;
    Diffusion* diffusion_;
-   Reaction* reaction_;
-   std::string reactionName_;
+   ReactionManager* reaction_;
    std::vector<Stimulus*> stimulus_;
    std::vector<Sensor*> sensor_;
    std::vector<Drug*> drug_;

@@ -1,3 +1,6 @@
+#ifndef SLOW_FIX_HH
+#define SLOW_FIX_HH
+
 #ifndef SLOW_FIX
 //#define SLOW_FIX
 #endif
@@ -30,6 +33,46 @@
    the first iteration, and generates for each node, three
    lines of output for each thread.
 */
+
+inline int
+convertActualSizeToBufferSize(int localSize) {
+   //FIXME FIXME FIXME
+   /* This code is to fix the buffer sizes to match the sizes created
+      by both TT06 and Simulate classes.  The code was first
+      introduced in 0b947032b9876b89fdf124c4ef0259c96e98ebaf, r1100
+      with this commit.
+      
+    Added code in Simulate.hh and TT06Dev_Reaction.cc to change the
+    memory allocation sizes so that the problem of nodes with
+    particular numbers of cells running slowly.
+
+    The new code is guarded by a macro defined in the new file slow_fix.hh.
+    As of checkin, the macro definition is commented out, so that the new
+    code is turned off. Enable by uncommenting the SLOW_FIX macro definition.
+
+    The new code, when turned on, is expected to improve nonGate-times for
+    nodes with unfavourable numbers of cells by 4us, assuming about 5300
+    cells per node.
+
+      Author: Tomas Oppelstrup
+
+      blake14: this code sends 0-8 -> 8, 9-40 -> 40, 41-72 -> 72 and
+      so on.  This seems awfully strange, and I don't know why it's
+      needed.
+   */
+      int paddedSize = 4*((localSize+3)/4);
+      {
+	int nFourVecs = paddedSize>>2;
+	if(0) paddedSize += 4*((10 - (nFourVecs % 8)) % 8);
+	else  paddedSize += ((10 - (nFourVecs & 7)) & 7) << 2;
+       
+      }
+      return paddedSize;
+}
+
+
 #ifndef PRINT_WP
 #define PRINT_WP 0
+#endif
+
 #endif

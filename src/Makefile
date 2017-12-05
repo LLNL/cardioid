@@ -53,6 +53,7 @@ HEARTSRC= \
 	FGRDiffusionStrip.cc \
 	FGRUtils.cc \
 	Reaction.cc \
+	ReactionManager.cc \
 	ReactionFHN.cc \
 	TT04_CellML_Reaction.cc \
 	TT06_CellML_Reaction.cc  \
@@ -62,6 +63,7 @@ HEARTSRC= \
 	SimpleOHaraRudy.cc \
 	Grandi_Reaction.cc \
 	SimpleGrandi.cc \
+	Passive.cc \
 	TT06Tau.cc \
 	TT06Func.cc \
 	pade.cc \
@@ -278,8 +280,20 @@ singleCell:
 singleCell-target: $(HEARTOBJS) $(OBJDIR)/singleCell.o $(OBJDIR)/singleCellOptions.o singleCellOptions.h Version.cc
 	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(OBJDIR)/singleCell.o $(OBJDIR)/singleCellOptions.o $(LDFLAGS)
 
-test: opt singleCell
-	python ../test/tester.py -b $(ARCH) -p $(TEST_PROFILE) singleCell
+modifyAnatomyFile:
+	@$(MAKE) --no-print-directory makedirs $@-target \
+	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH) \
+	CFLAGS="$(CFLAGS_OPT)" CXXFLAGS="$(CXXFLAGS_OPT)" \
+	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=$@-$(ARCH)
+
+modifyAnatomyFile-target: $(HEARTOBJS) $(OBJDIR)/modifyAnatomyFile.o Version.cc
+	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(OBJDIR)/modifyAnatomyFile.o $(LDFLAGS) -llapack
+
+$(DDCMD_FILES):
+	./mkLinks_ddcMD.sh $@
+
+ddcMD_dist:
+	./mkDist_ddcMD.sh $(DDCMD_FILES)
 
 makedirs:
 	@if [ ! -d $(OBJDIR) ]; then mkdir -p $(OBJDIR) ; fi

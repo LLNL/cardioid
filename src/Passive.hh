@@ -3,52 +3,12 @@
 #include <vector>
 class Anatomy;
 
-namespace SimpleOHaraRudy 
+namespace Passive
 {
 
 struct State 
 {
    //EDIT_STATE
-   double nai;
-   double nass;
-   double ki;
-   double kss;
-   double cai;
-   double cass;
-   double cansr;
-   double cajsr;
-   double m;
-   double hf;
-   double hs;
-   double j;
-   double hsp;
-   double jp;
-   double mL;
-   double hL;
-   double hLp;
-   double a;
-   double iF;
-   double iS;
-   double ap;
-   double iFp;
-   double iSp;
-   double d;
-   double ff;
-   double fs;
-   double fcaf;
-   double fcas;
-   double jca;
-   double nca;
-   double ffp;
-   double fcafp;
-   double xrf;
-   double xrs;
-   double xs1;
-   double xs2;
-   double xk1;
-   double Jrelnp;
-   double Jrelp;
-   double CaMKt;
 };
 
 struct PerCellFlags 
@@ -78,16 +38,15 @@ class ThisReaction : public Reaction
    virtual void setValue(int iCell, int varHandle, double value);
    virtual double getValue(int iCell, int varHandle) const;
    virtual const std::string getUnit(const std::string& varName) const;
-
+   virtual void updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR);
+   
  public:
    //constant flags
    //EDIT_FLAGS
-   int celltype;
-   int useINaFromTT06;
 
    //EDIT_PARAMETERS
-   double GCaB;
-   double JrelStiffConst;
+   double G;
+   double E_R;
 
    //per-cell flags
    std::vector<PerCellFlags> perCellFlags_;
@@ -102,5 +61,5 @@ class ThisReaction : public Reaction
 
 namespace scanReaction 
 {
-   Reaction* scanSimpleOHaraRudy(OBJECT* obj, const int numPoints);
+   Reaction* scanPassive(OBJECT* obj, const int numPoints);
 }

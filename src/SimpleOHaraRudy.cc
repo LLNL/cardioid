@@ -25,9 +25,9 @@ namespace scanReaction
 
 #define setDefault(name, value) objectGet(obj, #name, reaction->name, #value)
    
-   Reaction* scanSimpleOHaraRudy(OBJECT* obj, const Anatomy& anatomy)
+   Reaction* scanSimpleOHaraRudy(OBJECT* obj, const int numPoints)
    {
-      SimpleOHaraRudy::ThisReaction* reaction = new SimpleOHaraRudy::ThisReaction(anatomy);
+      SimpleOHaraRudy::ThisReaction* reaction = new SimpleOHaraRudy::ThisReaction(numPoints);
 
       //override the defaults
       //EDIT_FLAGS
@@ -180,8 +180,8 @@ void assertStateOrderAndVarNamesAgree(void)
 }
 
    
-ThisReaction::ThisReaction(const Anatomy& anatomy)
-: nCells_(anatomy.nLocal())
+ThisReaction::ThisReaction(const int numPoints)
+: nCells_(numPoints)
 {
    assertStateOrderAndVarNamesAgree();
    state_.resize(nCells_);

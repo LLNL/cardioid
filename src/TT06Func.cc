@@ -61,7 +61,7 @@ void initCnst()
 }
 // Update Gates; 
 
-void updateGate(double dt, int nCellsTotal, int *cellTypeVector, double *VM, int offset, double **gate, PADE *fit, WORK &work)
+void updateGate(double dt, int nCellsTotal, int s_switch, double *VM, int offset, double **gate, PADE *fit, WORK &work)
 {
    
   int offsetCell = work.offsetCell; 
@@ -124,30 +124,36 @@ void updateGate(double dt, int nCellsTotal, int *cellTypeVector, double *VM, int
      break; 
      case 11:
      {
-        double *g = gate[eq]; 
-        mhuParms  = (gatefit[2*eq+0].aparms); 
-        tauRParms = (gatefit[2*eq+1].aparms); 
-        mhuFunc   = (gatefit[2*eq+0].afunc); 
-        tauRFunc  = (gatefit[2*eq+1].afunc); 
-        int ii=offsetCell; 
-        for (;ii<offsetCell+nCell;ii++) 
+        if (s_switch == 0)
         {
-          if (cellTypeVector[ii] != 0) break; 
-          double Vm = VM[ii]; 
-          double mhu =mhuFunc (Vm,mhuParms); 
-          double tauR=tauRFunc(Vm,tauRParms); 
-          g[ii] +=  dt*(mhu - g[ii])*tauR;     //sGate
+           double *g = gate[eq]; 
+           mhuParms  = (gatefit[2*eq+0].aparms); 
+           tauRParms = (gatefit[2*eq+1].aparms); 
+           mhuFunc   = (gatefit[2*eq+0].afunc); 
+           tauRFunc  = (gatefit[2*eq+1].afunc); 
+           int ii=offsetCell; 
+           for (;ii<offsetCell+nCell;ii++) 
+           {
+              double Vm = VM[ii]; 
+              double mhu =mhuFunc (Vm,mhuParms); 
+              double tauR=tauRFunc(Vm,tauRParms); 
+              g[ii] +=  dt*(mhu - g[ii])*tauR;     //sGate
+           }
         }
-        mhuParms  = (gatefit[2*eq+2].aparms); 
-        tauRParms = (gatefit[2*eq+3].aparms); 
-        mhuFunc   = (gatefit[2*eq+2].afunc); 
-        tauRFunc  = (gatefit[2*eq+3].afunc); 
-        for (;ii<offsetCell+nCell;ii++) 
+        else
         {
-           double Vm = VM[ii]; 
-           double mhu =mhuFunc (Vm,mhuParms); 
-           double tauR=tauRFunc(Vm,tauRParms); 
-           g[ii] +=  dt*(mhu - g[ii])*tauR;     //sGate
+           mhuParms  = (gatefit[2*eq+2].aparms); 
+           tauRParms = (gatefit[2*eq+3].aparms); 
+           mhuFunc   = (gatefit[2*eq+2].afunc); 
+           tauRFunc  = (gatefit[2*eq+3].afunc); 
+           int ii=offsetCell; 
+           for (;ii<offsetCell+nCell;ii++) 
+           {
+              double Vm = VM[ii]; 
+              double mhu =mhuFunc (Vm,mhuParms); 
+              double tauR=tauRFunc(Vm,tauRParms); 
+              g[ii] +=  dt*(mhu - g[ii])*tauR;     //sGate
+           }
         }
       }
       break; 
@@ -163,7 +169,7 @@ UPDATEGATE updateGateFuncs0[]={ update_mGate, update_hGate, update_jGate, update
 UPDATEGATE updateGateFuncs1[]={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, update_rGate_v1, update_dGate_v1, 
                           update_fGate_v1, update_f2Gate_v1, update_jLGate_v1, update_s0Gate_v1, update_s1Gate_v1} ;
 */
-void updateGateFast(double dt, int nCellsTotal, int *cellTypeVector, double *Vm, int offset, double **gate, PADE *fit,  WORK &work)
+void updateGateFast(double dt, int nCellsTotal, int s_switch, double *Vm, int offset, double **gate, PADE *fit,  WORK &work)
 {
 #ifdef BGQ
      UPDATEGATE updateGateFuncs[]={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, 
@@ -192,45 +198,19 @@ void updateGateFast(double dt, int nCellsTotal, int *cellTypeVector, double *Vm,
        }
        else 
        {
-            int cell=0;
-            int nCell1 = nCell; 
-            int rCell1=0; 
-            int nCell0=0; 
-            int rCell0=0; 
-
-            double *mhu  = gatefit[2*eq+0].coef;
-            double *tauR = gatefit[2*eq+1].coef;
-
-            if (cellTypeVector[offsetCell] == 0) 
-            {
-
-            for (;cell<nCell;cell+=4) if (cellTypeVector[cell+offsetCell+3] != 0) break;
-            int nCell0=cell; 
-
-            for (;cell<nCell;cell++) if (cellTypeVector[cell+offsetCell] != 0) break;
-            rCell0 = cell-nCell0; ; 
-            rCell1 = (4-rCell0)%4; 
-            nCell1 = nCell-cell; 
-
-            if (nCell0 > 0) updateGateFuncs[11](dt, nCell0 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
-            offsetCell+=nCell0;
-
-            if (rCell0 > 0) update_s0Gate(dt, rCell0 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
-            offsetCell+=rCell0;
-            }
-
-            mhu  = gatefit[2*eq+2].coef;
-            tauR = gatefit[2*eq+3].coef;
-
-            if (rCell1 >  0) update_s1Gate(dt, rCell1 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
-            offsetCell+=rCell1;
-
-            if (nCell1 > 0) updateGateFuncs[12](dt, nCell1 , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
-            int   sum=nCell0+rCell0+rCell1+nCell1;
-            //printf("nCell = %d %d\n",nCell,sum);  fflush(stdout); 
-            //printf("nCell all  = %d %d %d %d\n",nCell0,rCell0,rCell1,nCell1);  fflush(stdout); 
+          if (s_switch == 0)
+          {
+             double *mhu  = gatefit[2*eq+0].coef;
+             double *tauR = gatefit[2*eq+1].coef;
+             updateGateFuncs[11](dt, nCell , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+          }
+          else
+          {
+             double *mhu  = gatefit[2*eq+2].coef;
+             double *tauR = gatefit[2*eq+3].coef;
+             updateGateFuncs[12](dt, nCell , &Vm[offsetCell], gate[eq]+offsetCell, mhu, tauR);
+          }
        }
-
     }
 }
 void updateGateFast0(double dt, int nCellsTotal, int *cellTypeVector, double *Vm, int offset, double **gate, PADE *fit,  WORK &work)
@@ -449,7 +429,6 @@ map<string,CellTypeParmsFull>getStandardCellTypes()
       int indices[] = {30,31,100} ;
       name ="endoCellML"; 
       cellTypes[name].name=name;
-      cellTypes[name].anatomyIndices.assign(indices,indices+3); 
       cellTypes[name].s_switch=0; 
       cellTypes[name].P_NaK=2.724;
       cellTypes[name].g_Ks = 0.392; 
@@ -481,7 +460,6 @@ map<string,CellTypeParmsFull>getStandardCellTypes()
       int indices[] = { 76,101} ;
       name="midCellML";
       cellTypes[name].name=name;
-      cellTypes[name].anatomyIndices.assign(indices,indices+2);
       cellTypes[name].s_switch=1; 
       cellTypes[name].P_NaK=2.724;
       cellTypes[name].g_Ks = 0.098; 
@@ -513,7 +491,6 @@ map<string,CellTypeParmsFull>getStandardCellTypes()
       int indices[] = {77,102} ;
       name="epiCellML";
       cellTypes[name].name=name;
-      cellTypes[name].anatomyIndices.assign(indices,indices+2);
       cellTypes[name].s_switch=1; 
       cellTypes[name].P_NaK=2.724;
       cellTypes[name].g_Ks = 0.392; 
@@ -545,7 +522,6 @@ map<string,CellTypeParmsFull>getStandardCellTypes()
       int indices[] = {30,31,100} ;
       name ="endoRRG"; 
       cellTypes[name].name=name;
-      cellTypes[name].anatomyIndices.assign(indices,indices+3); 
       cellTypes[name].s_switch=0; 
       cellTypes[name].P_NaK=3.000;
       cellTypes[name].g_Ks = 0.392; 
@@ -577,7 +553,6 @@ map<string,CellTypeParmsFull>getStandardCellTypes()
       int indices[] = { 76,101} ;
       name="midRRG";
       cellTypes[name].name=name;
-      cellTypes[name].anatomyIndices.assign(indices,indices+2);
       cellTypes[name].s_switch=1; 
       cellTypes[name].P_NaK=3.100;
       cellTypes[name].g_Ks = 0.098; 
@@ -609,7 +584,6 @@ map<string,CellTypeParmsFull>getStandardCellTypes()
       int indices[] = {77,102} ;
       name="epiRRG";
       cellTypes[name].name=name;
-      cellTypes[name].anatomyIndices.assign(indices,indices+2);
       cellTypes[name].s_switch=1; 
       cellTypes[name].P_NaK=3.000;
       cellTypes[name].g_Ks = 0.392; 

@@ -12,7 +12,6 @@ class AnatomyCell;
 void setConductivity(const std::string& name,
                      const BucketOfBits& data,
                      const Tuple& globalGridSize,
-                     const std::set<int> typeSet,
                      std::vector<AnatomyCell>& cell);
 
 #endif

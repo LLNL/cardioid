@@ -10,7 +10,7 @@
 #include "initializeAnatomy.hh"
 #include "assignCellsToTasks.hh"
 #include "diffusionFactory.hh"
-#include "reactionFactory.hh"
+#include "ReactionManager.hh"
 #include "stimulusFactory.hh"
 #include "drugFactory.hh"
 #include "Drug.hh"
@@ -238,9 +238,14 @@ void initializeSimulate(const string& name, Simulate& sim)
    timestampBarrier("finished building drug objects", MPI_COMM_WORLD);
 
    timestampBarrier("building reaction object", MPI_COMM_WORLD);
-   objectGet(obj, "reaction", nameTmp, "reaction");
-   sim.reaction_ = reactionFactory(nameTmp, sim.dt_, sim.anatomy_, sim.reactionThreads_, scaleCurrents);
-   sim.reactionName_ = nameTmp;
+   vector<string> reactionNames;
+   objectGet(obj, "reaction", reactionNames);
+   sim.reaction_ = new ReactionManager;
+   for (int ii=0; ii<reactionNames.size(); ++ii) {
+      const string& reactionName(reactionNames[ii]);
+      sim.reaction_->addReaction(reactionName);
+   }
+   sim.reaction_->create(sim.dt_, sim.anatomy_, sim.reactionThreads_, scaleCurrents);
    timestampBarrier("finished building reaction object", MPI_COMM_WORLD);
 
    sim.printIndex_ = -1;

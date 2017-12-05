@@ -10,7 +10,7 @@
 #include "ioUtils.h"
 #include "Simulate.hh"
 #include "Anatomy.hh"
-#include "Reaction.hh"
+#include "ReactionManager.hh"
 #include "Long64.hh"
 #include "BucketOfBits.hh"
 #include "stateLoader.hh"
@@ -147,7 +147,7 @@ void writeCheckpoint(const Simulate& sim, MPI_Comm comm)
    headerData.lRec_ = lRec;
    headerData.loop_ = sim.loop_;
    headerData.time_ = sim.time_;
-   headerData.reactionMethod_ = sim.reaction_->methodName();
+   headerData.reactionMethod_ = sim.reaction_->stateDescription();
    headerData.nFields_ = 2+ fieldNames.size();
    headerData.fieldNames_ = "gid Vm " + concat(fieldNames);
    headerData.fieldTypes_ = "u f " + concat(vector<string>(fieldNames.size(), "f"));

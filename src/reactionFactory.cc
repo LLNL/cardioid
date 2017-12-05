@@ -27,22 +27,22 @@ using namespace std;
 
 namespace  scanReaction
 {
-   Reaction* scanTT04_CellML(OBJECT* obj, const Anatomy& anatomy);
-   Reaction* scanTT06_CellML(OBJECT* obj, const Anatomy& anatomy);
-   Reaction* scanTT06Dev(OBJECT* obj, double dt, Anatomy& anatomy, const ThreadTeam& group, const vector<string>& scaleCurrents);
-   Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy);
-   Reaction* scanOHaraRudy(OBJECT* obj, const Anatomy& anatomy);
-   Reaction* scanSimpleOHaraRudy(OBJECT* obj, const Anatomy& anatomy);
-   Reaction* scanGrandi(OBJECT* obj, const Anatomy& anatomy);
-   Reaction* scanSimpleGrandi(OBJECT* obj, const Anatomy& anatomy);
-   Reaction* scanFHN(OBJECT* obj, const Anatomy& anatomy);
+   Reaction* scanTT04_CellML(OBJECT* obj, const int numPoints);
+   Reaction* scanTT06_CellML(OBJECT* obj, const int numPoints);
+   Reaction* scanTT06Dev(OBJECT* obj, double dt, const int numPoints, const ThreadTeam& group, const vector<string>& scaleCurrents);
+   Reaction* scanTT06_RRG(OBJECT* obj, const int numPoints);
+   Reaction* scanOHaraRudy(OBJECT* obj, const int numPoints);
+   Reaction* scanSimpleOHaraRudy(OBJECT* obj, const int numPoints);
+   Reaction* scanGrandi(OBJECT* obj, const int numPoints);
+   Reaction* scanSimpleGrandi(OBJECT* obj, const int numPoints);
+   Reaction* scanFHN(OBJECT* obj, const int numPoints);
+   Reaction* scanPassive(OBJECT* obj, const int numPoints);
    Reaction* scanNull(OBJECT* obj);
    Reaction* scanTest(OBJECT* obj);
-   Reaction* scanConstant(OBJECT* obj, const Anatomy& anatomy);
 }
 
 
-Reaction* reactionFactory(const string& name, double dt, Anatomy& anatomy,
+Reaction* reactionFactory(const string& name, double dt, const int numPoints,
                           const ThreadTeam& group, const vector<string>& scaleCurrents)
 {
    int myRank;
@@ -52,31 +52,31 @@ Reaction* reactionFactory(const string& name, double dt, Anatomy& anatomy,
    string method; objectGet(obj, "method", method, "undefined");
 
    if (method == "TT04_CellML" || method == "tenTusscher04_CellML")
-      return scanReaction::scanTT04_CellML(obj, anatomy);
+      return scanReaction::scanTT04_CellML(obj, numPoints);
    else if (method == "TT06_CellML" || method == "tenTusscher06_CellML")
-      return scanReaction::scanTT06_CellML(obj, anatomy);
+      return scanReaction::scanTT06_CellML(obj, numPoints);
    else if (method == "TT06Dev" )
-      return scanReaction::scanTT06Dev(obj, dt, anatomy, group, scaleCurrents);
+      return scanReaction::scanTT06Dev(obj, dt, numPoints, group, scaleCurrents);
    else if (method == "TT06Opt" )
-      return scanReaction::scanTT06Dev(obj, dt, anatomy, group, scaleCurrents);
+      return scanReaction::scanTT06Dev(obj, dt, numPoints, group, scaleCurrents);
    else if (method == "TT06_RRG" )
-      return scanReaction::scanTT06_RRG(obj, anatomy);
+      return scanReaction::scanTT06_RRG(obj, numPoints);
    else if (method == "OHaraRudy" )
-      return scanReaction::scanOHaraRudy(obj, anatomy);
+      return scanReaction::scanOHaraRudy(obj, numPoints);
    else if (method == "SimpleOHaraRudy" )
-      return scanReaction::scanSimpleOHaraRudy(obj, anatomy);
+      return scanReaction::scanSimpleOHaraRudy(obj, numPoints);
    else if (method == "Grandi" )
-      return scanReaction::scanGrandi(obj, anatomy);
+      return scanReaction::scanGrandi(obj, numPoints);
    else if (method == "SimpleGrandi" )
-      return scanReaction::scanSimpleGrandi(obj, anatomy);
+      return scanReaction::scanSimpleGrandi(obj, numPoints);
    else if (method == "FHN" || method == "FitzhughNagumo")
-      return scanReaction::scanFHN(obj, anatomy);
+      return scanReaction::scanFHN(obj, numPoints);
+   else if (method == "Passive")
+      return scanReaction::scanPassive(obj, numPoints);
    else if (method == "null")
       return scanReaction::scanNull(obj);
    else if (method == "test")
       return scanReaction::scanTest(obj);
-   else if (method == "constant")
-      return scanReaction::scanConstant(obj, anatomy);
    
    if (myRank == 0)
       cerr<<"ERROR: Undefined reaction model in reactionFactory"<<endl;
@@ -86,7 +86,7 @@ Reaction* reactionFactory(const string& name, double dt, Anatomy& anatomy,
 
 namespace  scanReaction
 {
-   Reaction* scanTT04_CellML(OBJECT* obj, const Anatomy& anatomy)
+   Reaction* scanTT04_CellML(OBJECT* obj, const int numPoints)
    {
       TT04_CellML_Reaction::IntegratorType integrator;
       string tmp;
@@ -94,15 +94,17 @@ namespace  scanReaction
       if      (tmp == "rushLarsen")   integrator = TT04_CellML_Reaction::rushLarsen;
       else if (tmp == "rushLarson")   integrator = TT04_CellML_Reaction::rushLarsen;
       else if (tmp == "forwardEuler") integrator = TT04_CellML_Reaction::forwardEuler;
-      else    assert(false);    
+      else    assert(false);
+      int ttType;
+      objectGet(obj, "ttType", ttType, "0");
       
-      return new TT04_CellML_Reaction(anatomy, integrator);
+      return new TT04_CellML_Reaction(numPoints, ttType, integrator);
    }
 }
 
 namespace  scanReaction
 {
-   Reaction* scanTT06_CellML(OBJECT* obj, const Anatomy& anatomy)
+   Reaction* scanTT06_CellML(OBJECT* obj, const int numPoints)
    {
       TT06_CellML_Reaction::IntegratorType integrator;
       string tmp;
@@ -110,7 +112,9 @@ namespace  scanReaction
       if      (tmp == "rushLarsen")   integrator = TT06_CellML_Reaction::rushLarsen;
       else if (tmp == "forwardEuler") integrator = TT06_CellML_Reaction::forwardEuler;
       else    assert(false);    
-      return new TT06_CellML_Reaction(anatomy, integrator);
+      int ttType;
+      objectGet(obj, "ttType", ttType, "0");
+      return new TT06_CellML_Reaction(numPoints, ttType, integrator);
    }
 }
 
@@ -142,10 +146,10 @@ namespace  scanReaction
       }
       return fit; 
    }
-    Reaction* scanTT06Dev(OBJECT* obj, double dt, Anatomy& anatomy, const ThreadTeam& group, const vector<string>& scaleCurrents)
+    Reaction* scanTT06Dev(OBJECT* obj, double dt, const int numPoints, const ThreadTeam& group, const vector<string>& scaleCurrents)
    {
       TT06Dev_ReactionParms parms;
-      parms.cellTypeParms=TT06Func::getStandardCellTypes(); 
+      map<string,TT06Func::CellTypeParmsFull> cellTypeParms = TT06Func::getStandardCellTypes(); 
       int fastGate =-1; 
       int fastNonGate =-1; 
       TT06Func::initCnst(); 
@@ -189,55 +193,45 @@ namespace  scanReaction
          if (fastNonGate ==  -1 )  fastNonGate=0; 
          parms.fastReaction = fastGate+256*fastNonGate; 
       }
-      objectGet(obj, "cellTypes", parms.cellTypeNames) ;
-      if (parms.cellTypeNames.size() == 0)
-      {
-         parms.cellTypeNames.push_back("endoCellML");
-         parms.cellTypeNames.push_back("midCellML");
-         parms.cellTypeNames.push_back("epiCellML");
-      }
-      for (int ii=0;ii<parms.cellTypeNames.size();ii++) 
-      {
-         string name = parms.cellTypeNames[ii]; 
-         if (parms.cellTypeParms.count(name) == 0)
-            parms.cellTypeParms[name] = parms.cellTypeParms["endoCellML"]; 
+      string cellTypeName;
+      objectGet(obj, "cellTypeName", cellTypeName, "endoCellML");
 
-         OBJECT* cellobj = object_find2(name.c_str(), "CELLTYPE", IGNORE_IF_NOT_FOUND);
-         if (! cellobj)
-            continue;
-        
+      OBJECT* cellobj = object_find2(cellTypeName.c_str(), "CELLTYPE", IGNORE_IF_NOT_FOUND);
+      if (cellobj) {
          string clone; 
          objectGet(cellobj, "clone", clone, "") ;
          if (clone != "")
          {
-            assert(name != clone); 
-            assert(parms.cellTypeParms.count(clone) != 0); 
-            parms.cellTypeParms[name]=parms.cellTypeParms[clone]; 
-            parms.cellTypeParms[name].name=name;
+            assert(cellTypeName != clone); 
+            assert(cellTypeParms.count(clone) != 0);
+            cellTypeParms[cellTypeName]=cellTypeParms[clone]; 
+            cellTypeParms[cellTypeName].name=cellTypeName;
          }
-         if (object_testforkeyword(cellobj, "anatomyIndices") ) objectGet(cellobj,"anatomyIndices",parms.cellTypeParms[name].anatomyIndices); 
-         if (object_testforkeyword(cellobj, "s_switch")       ) objectGet(cellobj,"s_switch"      ,parms.cellTypeParms[name].s_switch,"0"); 
-         if (object_testforkeyword(cellobj, "P_NaK")          ) objectGet(cellobj,"P_NaK"         ,parms.cellTypeParms[name].P_NaK,"0.0"); 
-         if (object_testforkeyword(cellobj, "g_NaL")          ) objectGet(cellobj,"g_NaL"         ,parms.cellTypeParms[name].g_NaL,"0.0"); 
-         if (object_testforkeyword(cellobj, "g_Ks")           ) objectGet(cellobj,"g_Ks"        ,parms.cellTypeParms[name].g_Ks,"0.0"); 
-         if (object_testforkeyword(cellobj, "g_Kr")           ) objectGet(cellobj,"g_Kr"        ,parms.cellTypeParms[name].g_Kr,"0.0"); 
-         if (object_testforkeyword(cellobj, "g_to")           ) objectGet(cellobj,"g_to"        ,parms.cellTypeParms[name].g_to,"0.0"); 
-         
+         if (object_testforkeyword(cellobj, "s_switch")       ) objectGet(cellobj,"s_switch"      ,cellTypeParms[cellTypeName].s_switch,"0"); 
+         if (object_testforkeyword(cellobj, "P_NaK")          ) objectGet(cellobj,"P_NaK"         ,cellTypeParms[cellTypeName].P_NaK,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_NaL")          ) objectGet(cellobj,"g_NaL"         ,cellTypeParms[cellTypeName].g_NaL,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_Ks")           ) objectGet(cellobj,"g_Ks"        ,cellTypeParms[cellTypeName].g_Ks,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_Kr")           ) objectGet(cellobj,"g_Kr"        ,cellTypeParms[cellTypeName].g_Kr,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_to")           ) objectGet(cellobj,"g_to"        ,cellTypeParms[cellTypeName].g_to,"0.0"); 
       }
+      parms.cellTypeParm = cellTypeParms[cellTypeName];
+
       parms.currentNames = scaleCurrents;
       
-      Reaction *reaction = new TT06Dev_Reaction(dt, anatomy, parms, group);
+      Reaction *reaction = new TT06Dev_Reaction(dt, numPoints, parms, group);
       return  reaction; 
    }
 }
 
 namespace  scanReaction
 {
-   Reaction* scanTT06_RRG(OBJECT* obj, const Anatomy& anatomy)
+   Reaction* scanTT06_RRG(OBJECT* obj, const int numPoints)
    {
       TT06_RRG_ReactionParms parms;
       objectGet(obj, "Ko",    parms.Ko, "-1") ;
-      Reaction *reaction = new TT06_RRG_Reaction(anatomy,parms);
+      int ttType;
+      objectGet(obj, "ttType", ttType, "0");
+      Reaction *reaction = new TT06_RRG_Reaction(numPoints,ttType,parms);
       return  reaction; 
    }
 }
@@ -245,11 +239,11 @@ namespace  scanReaction
 
 namespace  scanReaction
 {
-   Reaction* scanFHN(OBJECT* obj, const Anatomy& anatomy)
+   Reaction* scanFHN(OBJECT* obj, const int numPoints)
    {
       // None of the FHN model parameters are currently wired to the
       // input deck.
-      return new ReactionFHN(anatomy);
+      return new ReactionFHN(numPoints);
    }
 }
 
@@ -276,7 +270,8 @@ namespace  scanReaction
 
 namespace  scanReaction
 {
-   Reaction* scanConstant(OBJECT* obj, const Anatomy& anatomy)
+/*
+   Reaction* scanConstant(OBJECT* obj, const int numPoints)
    {
       vector<double> eta;
       objectGet(obj, "eta", eta);
@@ -320,10 +315,11 @@ namespace  scanReaction
       sigma3.a33=buffer[5];
       free(buffer);
 
-      return new ConstantReaction(anatomy,
+      return new ConstantReaction(numPoints,
                                   eta,
                                   sigma1, sigma2, sigma3,
                                   alpha, beta, gamma,
                                   printRate);
    }
+*/
 }

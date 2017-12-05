@@ -6,7 +6,7 @@
 
 #include <string>
 
-class Reaction;
+class ReactionManager;
 class Anatomy;
 
 class CaAverageSensor : public Sensor
@@ -17,7 +17,7 @@ private:
    std::string filename_;
    unsigned nFiles_;
 
-   const Reaction& reaction_;
+   const ReactionManager& reaction_;
 
    VectorDouble32 buffer_val_;
    int loop_buffer_;
@@ -49,7 +49,7 @@ public:
                    unsigned nFiles,
                    const Anatomy& anatomy,
                    std::vector<Long64>& gid,
-                   const Reaction& reaction,
+                   const ReactionManager& reaction,
                    const CommTable* commtable);
    ~CaAverageSensor(){};
    

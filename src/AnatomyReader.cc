@@ -15,12 +15,12 @@ using std::vector;
 
 namespace
 {
-   void readBucket(Anatomy& anatomy, const set<int>& typeSet,
+   void readBucket(Anatomy& anatomy,
                    BucketOfBits* bucketP);
 }
 
 BucketOfBits* readAnatomy(const string& filename, MPI_Comm comm,
-                          Anatomy& anatomy, const set<int>& typeSet)
+                          Anatomy& anatomy)
 {
    PFILE* file = Popen(filename.c_str(), "r", comm);
 
@@ -41,13 +41,13 @@ BucketOfBits* readAnatomy(const string& filename, MPI_Comm comm,
    BucketOfBits* bucketP = readPioFile(file);
    Pclose(file);
 
-   readBucket(anatomy, typeSet, bucketP);
+   readBucket(anatomy, bucketP);
    return bucketP;
 }
 
 namespace
 {
-   void readBucket(Anatomy& anatomy, const set<int>& typeSet,
+   void readBucket(Anatomy& anatomy,
                    BucketOfBits* bucketP)
    {
       vector<AnatomyCell>& cells = anatomy.cellArray();
@@ -64,8 +64,7 @@ namespace
          BucketOfBits::Record rr = bucketP->getRecord(ii);
          rr.getValue(gidIndex, tmp.gid_);
          rr.getValue(typeIndex, tmp.cellType_);
-         if (typeSet.count(tmp.cellType_) != 0)
-            cells.push_back(tmp);
+         cells.push_back(tmp);
       }
    }
 }
