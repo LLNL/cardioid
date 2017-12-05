@@ -1,0 +1,19 @@
+#!/bin/bash
+## runtime=30s
+##
+
+function checkpoint {
+    save traces
+}
+    
+function clean {
+    rm -f stdOut data traces
+}
+
+function run {
+    beginTest
+    runBinary cardioid >| stdOut 2>&1
+    ./traceVoltage.py $(sed -e 's/^/-g /' sensor.txt) >| traces
+    numCompare traces 1e-14 >| result 2>&1
+    endTest
+}

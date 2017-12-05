@@ -1,0 +1,104 @@
+simulate SIMULATE 
+{
+   anatomy = niederer;
+   decomposition = grid;
+   diffusion = fgr;
+   reaction = tt06;
+   stimulus = s1;
+   sensor = Vm;
+   loop = 0;            // in timesteps
+   maxLoop = 30000;     // in timesteps
+   dt = 0.01;       // msec
+   time = 0;            // msec
+   printRate = 100;      // in timesteps
+   parallelDiffusionReaction = 0;
+}
+
+niederer ANATOMY 
+{
+   method = pio;
+}
+
+grid DECOMPOSITION 
+{
+    method = grid;
+    nx = 4;
+    ny = 4;
+    nz = 4;
+}
+
+fgr DIFFUSION
+{
+   //method = cuda;
+   //method = gpu;
+   method = FGR;
+   diffusionScale = 714.2857143;      // mm^3/mF
+}
+
+conductivity CONDUCTIVITY
+{
+    method = pio;
+}
+
+tt06 REACTION
+{
+    method = TT06Opt;
+   tolerance = 0.0001;
+   mod = 1;
+   fitFile = fit.data;
+   fastGate = 1;
+   fastNonGate = 3;
+   cellTypes = endo mid epi;
+}
+
+endo CELLTYPE
+{
+  clone = endoRRG;
+  g_NaL = 0.15;
+  g_Ks  = 0.392;
+  g_Kr  = 0.45;
+  g_to  = 0.073;
+  P_NaK = 3.0;
+}
+
+mid CELLTYPE
+{
+  clone = midRRG;
+  g_NaL = 0.3;
+  g_Ks  = 0.196;
+  g_Kr  = 0.45;
+  g_to  = 0.294;
+  P_NaK = 3.0;
+}
+
+epi CELLTYPE
+{
+  clone = epiRRG;
+  g_NaL = 0.15;
+  g_Ks  = 0.392;
+  g_Kr  = 0.45;
+  g_to  = 0.294;
+  P_NaK = 3.0;
+}
+
+s1 STIMULUS
+{
+   method = box;
+   xMax = 15;
+   yMax = 15;
+   zMax = 15;
+   vStim = -35.71429;
+   tStart = 0;
+   duration = 2;
+   period = 10000;
+}
+
+Vm SENSOR
+{
+   method = stateVariable;
+   cellList = "sensor.txt";
+   filename = Vm;
+   fields = Vm;
+   printRate = 200;
+   evalRate = 200;
+}
