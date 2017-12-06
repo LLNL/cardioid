@@ -67,7 +67,7 @@ void TT06_CellML_Reaction::calc(double dt,
                                 const vector<double>& iStim,
                                 VectorDouble32& dVm)
 {
-   assert(nCells_ == dVm.size());
+   assert(nCells_ <= dVm.size());
 
    switch (integrator_)
    {

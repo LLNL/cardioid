@@ -8,7 +8,7 @@ build: $(foreach ARCH,$(ARCHES),build-$(ARCH))
 clean: $(foreach ARCH,$(ARCHES),$(foreach TEST,$(TESTS),clean-$(ARCH)-$(TEST)))
 
 build-%:
-	$(MAKE) -C src ARCH=$(patsubst build-%,%,$@) opt singleCell
+	$(MAKE) -C src ARCH=$(patsubst build-%,%,$@) opt singleCell modifyAnatomyFile
 cleanbuild-%:
 	$(MAKE) -C src ARCH=$(patsubst cleanbuild-%,%,$@) clean
 

@@ -3,7 +3,7 @@ simulate SIMULATE
    anatomy = niederer;
    decomposition = grid;
    diffusion = fgr;
-   reaction = tt06;
+   reaction = tt06Endo tt06Mid tt06Epi;
    stimulus = s1;
    sensor = Vm;
    loop = 0;            // in timesteps
@@ -40,7 +40,7 @@ conductivity CONDUCTIVITY
     method = pio;
 }
 
-tt06 REACTION
+tt06Endo REACTION
 {
     method = TT06Opt;
    tolerance = 0.0001;
@@ -48,9 +48,9 @@ tt06 REACTION
    fitFile = fit.data;
    fastGate = 1;
    fastNonGate = 3;
-   cellTypes = endo mid epi;
+   cellTypes = 100;
+   cellTypeName = endo;
 }
-
 endo CELLTYPE
 {
   clone = endoRRG;
@@ -61,6 +61,17 @@ endo CELLTYPE
   P_NaK = 3.0;
 }
 
+tt06Mid REACTION
+{
+    method = TT06Opt;
+   tolerance = 0.0001;
+   mod = 1;
+   fitFile = fit.data;
+   fastGate = 1;
+   fastNonGate = 3;
+   cellTypes = 101;
+   cellTypeName = mid;
+}
 mid CELLTYPE
 {
   clone = midRRG;
@@ -71,6 +82,17 @@ mid CELLTYPE
   P_NaK = 3.0;
 }
 
+tt06Epi REACTION
+{
+    method = TT06Opt;
+   tolerance = 0.0001;
+   mod = 1;
+   fitFile = fit.data;
+   fastGate = 1;
+   fastNonGate = 3;
+   cellTypes = 102;
+   cellTypeName = epi;
+}
 epi CELLTYPE
 {
   clone = epiRRG;

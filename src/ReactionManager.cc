@@ -234,7 +234,25 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
       }
    }
 
+   //go through the anatomy looking for cell types with no reaction
    vector<AnatomyCell>& cellArray(anatomy.cellArray());
+   {
+      set<int> missingReactions;
+      for (int icell=0; icell<cellArray.size(); icell++)
+      {
+         if (allCellTypes_.find(cellArray[icell].cellType_) == allCellTypes_.end()) {
+            missingReactions.insert(cellArray[icell].cellType_);
+         }
+      }
+      for (set<int>::iterator iter=missingReactions.begin();
+           iter != missingReactions.end();
+           ++iter)
+      {
+         printf("Found cell type %d, which isn't claimed by any reaction model.\n", *iter);
+      }
+      assert(missingReactions.empty());
+   }
+
    //sort the anatomy in the correct order.
    {
       SortByRidxThenAnatomyThenGid cmpFunc(ridxFromCellType);
@@ -399,8 +417,14 @@ void ReactionManager::getCheckpointInfo(std::vector<std::string>& fieldNames,
 }
 int ReactionManager::getVarHandle(const std::string& varName) const
 {
-   assert(handleFromVarname_.find(varName) != handleFromVarname_.end());
-   return handleFromVarname_.find(varName)->second;
+   if (handleFromVarname_.find(varName) == handleFromVarname_.end())
+   {
+      return -1;
+   }
+   else
+   {
+      return handleFromVarname_.find(varName)->second;
+   }
 }
 
 vector<int> ReactionManager::getVarHandle(const vector<string>& varName) const

@@ -213,6 +213,8 @@ namespace  scanReaction
          if (object_testforkeyword(cellobj, "g_Ks")           ) objectGet(cellobj,"g_Ks"        ,cellTypeParms[cellTypeName].g_Ks,"0.0"); 
          if (object_testforkeyword(cellobj, "g_Kr")           ) objectGet(cellobj,"g_Kr"        ,cellTypeParms[cellTypeName].g_Kr,"0.0"); 
          if (object_testforkeyword(cellobj, "g_to")           ) objectGet(cellobj,"g_to"        ,cellTypeParms[cellTypeName].g_to,"0.0"); 
+      } else {
+         assert(cellTypeName == cellTypeParms[cellTypeName].name);
       }
       parms.cellTypeParm = cellTypeParms[cellTypeName];
 

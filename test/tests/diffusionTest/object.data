@@ -28,7 +28,7 @@ cuboid ANATOMY
 {
    method = pio;
    //fileName = anatomy#;
-   cellType = -1;
+   cellType = 100;
    dx = 0.2 mm;   // pi/16.
    dy = 0.2 mm;   // pi/16.
    dz = 0.2 mm;   // pi/16.
@@ -49,6 +49,7 @@ conductivity CONDUCTIVITY
 null REACTION
 {
     method = null;
+    cellTypes = 100;
     initialVoltage = 0;
 }
 

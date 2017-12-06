@@ -14,7 +14,7 @@ function run {
     rm -f restart
     ln -s snapshot.000000000001/restart .
     runBinary cardioid
-    tail -n +20 snapshot.000000000002/state#000000 >| state
+    tail -n +20 snapshot.000000000002/state#000000 | sort -n >| state
     numCompare state 1e-14 >| result 2>&1
     endTest
 }

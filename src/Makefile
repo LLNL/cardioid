@@ -277,6 +277,12 @@ singleCell:
 	CFLAGS="$(CFLAGS_OPT)" CXXFLAGS="$(CXXFLAGS_OPT)" \
 	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=$@-$(ARCH)
 
+singleCell-debug: 
+	@$(MAKE) --no-print-directory makedirs singleCell-target \
+	BUILD_SUFFIX=$(ARCH) OBJDIR=objs-$(ARCH)-debug \
+	CFLAGS="$(CFLAGS_DEBUG)" CXXFLAGS="$(CXXFLAGS_DEBUG)" \
+	LDFLAGS="$(LDFLAGS_DEBUG)"  EXENAME=singleCell-$(ARCH)-debug
+
 singleCell-target: $(HEARTOBJS) $(OBJDIR)/singleCell.o $(OBJDIR)/singleCellOptions.o singleCellOptions.h Version.cc
 	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(OBJDIR)/singleCell.o $(OBJDIR)/singleCellOptions.o $(LDFLAGS)
 
