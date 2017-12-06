@@ -70,7 +70,6 @@ void updateGate(double dt, int nCellsTotal, int s_switch, double *VM, int offset
   int nEq =  work.nEq; 
 
   PADE *gatefit = fit + gateFitOffset; 
-  double *g; 
 
   void *mhuParms ; 
   void *tauRParms ; 
@@ -78,11 +77,11 @@ void updateGate(double dt, int nCellsTotal, int s_switch, double *VM, int offset
   double (*tauRFunc)(double V,void *parms);
   for (int eq=offsetEq;eq<offsetEq+nEq;eq++) 
   {
+   double *g = gate[eq];
    switch (eq)
    {
      case  0:
      {
-        double *g = gate[eq]; 
         mhuParms  = (gatefit[2*eq+0].aparms); 
         tauRParms = (gatefit[2*eq+1].aparms); 
         mhuFunc =gatefit[2*eq+0].afunc; 
@@ -108,7 +107,6 @@ void updateGate(double dt, int nCellsTotal, int s_switch, double *VM, int offset
      case  9:
      case 10:
      {
-        double *g = gate[eq]; 
         mhuParms  = (gatefit[2*eq].aparms); 
         tauRParms = (gatefit[2*eq+1].aparms); 
         mhuFunc   = (gatefit[2*eq].afunc); 
@@ -126,7 +124,6 @@ void updateGate(double dt, int nCellsTotal, int s_switch, double *VM, int offset
      {
         if (s_switch == 0)
         {
-           double *g = gate[eq]; 
            mhuParms  = (gatefit[2*eq+0].aparms); 
            tauRParms = (gatefit[2*eq+1].aparms); 
            mhuFunc   = (gatefit[2*eq+0].afunc); 
