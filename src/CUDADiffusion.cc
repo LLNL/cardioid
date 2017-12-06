@@ -63,9 +63,6 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType)
          anatomy.dx()*anatomy.dy()
       };
    const double disc[3] = {anatomy.dx(), anatomy.dy(), anatomy.dz()};
-   //initialize the array of diffusion coefficients
-   sigmaFaceNormal_.setup(vector<double>(nx_*ny_*nz_*9));
-   vector<double>& sigmaFaceNormalVec(sigmaFaceNormal_.modifyOnHost());
 
    //initialize the array of diffusion coefficients
    int sigmaNx=nx_-1;
