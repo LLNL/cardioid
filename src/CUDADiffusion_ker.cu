@@ -26,9 +26,9 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
   #define V1(y,z) sm_psi[cii][y][z]
   #define V2(y,z) sm_psi[nii][y][z]
 
-  #define sigmaX(x,y,z,dir) d_sigmaX[ z + (Lkk-1) * ( y + (Ljj-1) * ( x + (Lii-1) * dir ) ) ]
-  #define sigmaY(x,y,z,dir) d_sigmaY[ z + (Lkk-1) * ( y + (Ljj-1) * ( x + (Lii-1) * dir ) ) ]
-  #define sigmaZ(x,y,z,dir) d_sigmaZ[ z + (Lkk-1) * ( y + (Ljj-1) * ( x + (Lii-1) * dir ) ) ]
+  #define sigmaX(x,y,z,dir) d_sigmaX[ z + Lkk * ( y + Ljj * ( x + Lii * dir ) ) ]
+  #define sigmaY(x,y,z,dir) d_sigmaY[ z + Lkk * ( y + Ljj * ( x + Lii * dir ) ) ]
+  #define sigmaZ(x,y,z,dir) d_sigmaZ[ z + Lkk * ( y + Ljj * ( x + Lii * dir ) ) ]
 
   #define psi(x,y,z) d_psi[ z + Lkk * ( (y) + Ljj * (x) ) ]
   #define npsi(x,y,z) d_npsi[ z + Lkk * ( (y) + Ljj * (x) ) ]
@@ -42,9 +42,9 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
   d_psi    = &(psi(XTILE*blockIdx.x, 30*blockIdx.y, 30*blockIdx.z));
   d_npsi   = &(npsi(XTILE*blockIdx.x, 30*blockIdx.y, 30*blockIdx.z));
 
-  d_sigmaX  = &(sigmaX(XTILE*blockIdx.x-1, 30*blockIdx.y-1, 30*blockIdx.z-1, 0));
-  d_sigmaY  = &(sigmaY(XTILE*blockIdx.x-1, 30*blockIdx.y-1, 30*blockIdx.z-1, 0));
-  d_sigmaZ  = &(sigmaZ(XTILE*blockIdx.x-1, 30*blockIdx.y-1, 30*blockIdx.z-1, 0));
+  d_sigmaX  = &(sigmaX(XTILE*blockIdx.x, 30*blockIdx.y, 30*blockIdx.z, 0));
+  d_sigmaY  = &(sigmaY(XTILE*blockIdx.x, 30*blockIdx.y, 30*blockIdx.z, 0));
+  d_sigmaZ  = &(sigmaZ(XTILE*blockIdx.x, 30*blockIdx.y, 30*blockIdx.z, 0));
 
   int Last_x=XTILE+1; int nLast_y=31; int nLast_z=31;
   if (blockIdx.x == gridDim.x-1) Last_x = Lii-2 - XTILE * blockIdx.x + 1;
@@ -190,7 +190,7 @@ void call_cuda_kernels(const Real *VmRaw, Real *dVmRaw, const Real *sigmaRaw, in
 #endif
 
    //map_V<<<112,512>>>(VmBlockRaw,VmRaw,lookup,nCells);
-   diff_6face_v1<<<dim3(bdimx,bdimy,bdimz),dim3(32,32,1)>>>(VmRaw,dVmRaw,sigmaRaw,sigmaRaw+3*(nx-1)*(ny-1)*(nz-1),sigmaRaw+6*(nx-1)*(ny-1)*(nz-1),nx,ny,nz);
+   diff_6face_v1<<<dim3(bdimx,bdimy,bdimz),dim3(32,32,1)>>>(VmRaw,dVmRaw,sigmaRaw,sigmaRaw+3*nx*ny*nz,sigmaRaw+6*nx*ny*nz,nx,ny,nz);
    map_dVm<<<112,512>>>(dVmRaw,dVmOut,lookup,nCells);
 }
 }

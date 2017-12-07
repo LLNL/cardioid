@@ -63,74 +63,55 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType)
          anatomy.dx()*anatomy.dy()
       };
    const double disc[3] = {anatomy.dx(), anatomy.dy(), anatomy.dz()};
-
    //initialize the array of diffusion coefficients
-   int sigmaNx=nx_-1;
-   int sigmaNy=ny_-1;
-   int sigmaNz=nz_-1;
-   sigmaFaceNormal_.setup(vector<double>(sigmaNx*sigmaNy*sigmaNz*9));
+   sigmaFaceNormal_.setup(vector<double>(nx_*ny_*nz_*9));
    vector<double>& sigmaFaceNormalVec(sigmaFaceNormal_.modifyOnHost());
-   for (int iz=0; iz<nz_-1; iz++)
+
+   for (int icell=0; icell<nCells_; icell++)
    {
-      for (int iy=0; iy<ny_-1; iy++)
+      //int icell = cellFromRedVec[ired];
+      //int iblock = blockFromRedVec[ired];
+      Tuple ll = localGrid_.localTuple(anatomy.globalTuple(icell));
+      int xx[3] ={ ll.x() , ll.y() , ll.z() };
+      int iblock = ll.z()+nz_*(ll.y()+ny_*ll.x());
+
+      const SymmetricTensor& sss(anatomy.conductivity(icell));
+      double thisSigma[3][3] = {{sss.a11, sss.a12, sss.a13},
+                                {sss.a12, sss.a22, sss.a23},
+                                {sss.a13, sss.a23, sss.a33}};
+      for (int idim=0; idim<3; idim++)
       {
-         for (int ix=0; ix<nx_-1; ix++)
+         int otherBlock = iblock-offsets[idim];
+         if (CONTAINS(cellFromBlock, otherBlock)) //if my left cell block exists
          {
-            //int iblock = ix+1 + nx_*(iy+1 + ny_*(iz+1));
-            //int isigma = ix + sigmaNx*(iy + sigmaNy*iz);
-
-            int iblock = iz+1 + nz_*(iy+1 + nx_*(ix+1));
-            int isigma = iz + sigmaNz*(iy + sigmaNy*ix);
-
-            if (CONTAINS(cellFromBlock, iblock))
+            for (int jdim=0; jdim<3; jdim++)
             {
-               int icell = cellFromBlock[iblock];
-               const SymmetricTensor& sss(anatomy.conductivity(icell));
-               double thisSigma[3][3] = {{sss.a11, sss.a12, sss.a13},
-                                         {sss.a12, sss.a22, sss.a23},
-                                         {sss.a13, sss.a23, sss.a33}};
-               for (int idim=0; idim<3; idim++)
+               //int sigmaIndex = jdim +3*(idim +3*ired);
+               int sigmaIndex = xx[2] + nz_ * ( xx[1] + ny_ * ( xx[0] + nx_ * ( jdim + 3 * idim)));
+               double sigmaValue = thisSigma[idim][jdim]*areas[idim]/disc[jdim];
+               if (idim != jdim)
                {
-                  int otherBlock = iblock-offsets[idim];
-                  if (CONTAINS(cellFromBlock, otherBlock))
+                  bool canComputeGradient=
+                        CONTAINS(cellFromBlock, iblock              -offsets[jdim])
+                     && CONTAINS(cellFromBlock, iblock              +offsets[jdim])
+                     && CONTAINS(cellFromBlock, iblock-offsets[idim]-offsets[jdim])
+                     && CONTAINS(cellFromBlock, iblock-offsets[idim]+offsets[jdim])
+                     ;
+                  if (! canComputeGradient)
                   {
-                     for (int jdim=0; jdim<3; jdim++)
-                     {
-                        double sigmaValue = thisSigma[idim][jdim]*areas[idim]/disc[jdim];
-                        if (idim != jdim)
-                        {
-                           bool canComputeGradient=
-                                 CONTAINS(cellFromBlock, iblock              -offsets[jdim])
-                              && CONTAINS(cellFromBlock, iblock              +offsets[jdim])
-                              && CONTAINS(cellFromBlock, iblock-offsets[idim]-offsets[jdim])
-                              && CONTAINS(cellFromBlock, iblock-offsets[idim]+offsets[jdim])
-                              ;
-                           if (! canComputeGradient)
-                           {
-                              sigmaValue = 0;
-                           }
-                        }
-                        sigmaFaceNormalVec[isigma + sigmaNx*sigmaNy*sigmaNz*(jdim +3*idim)] = sigmaValue;
-                     }
-                  }
-                  else
-                  {
-                     for (int jdim=0; jdim<3; jdim++)
-                     {
-                        sigmaFaceNormalVec[jdim +3*(idim + 3*isigma)] = 0;
-                     }
+                     sigmaValue = 0;
                   }
                }
+               sigmaFaceNormalVec[sigmaIndex] = sigmaValue;
             }
-            else
+         }
+         else
+         {
+            //cellLookupVec[lookup] = -1;
+            for (int jdim=0; jdim<3; jdim++)
             {
-               for (int idim=0; idim<3; idim++)
-               {
-                  for (int jdim=0; jdim<3; jdim++)
-                  {
-                     sigmaFaceNormalVec[jdim +3*(idim + 3*isigma)] = 0;
-                  }
-               }
+               int sigmaIndex = xx[2] + nz_ * ( xx[1] + ny_ * ( xx[0] + nx_ * ( jdim + 3 * idim)));
+               sigmaFaceNormalVec[sigmaIndex] = 0;
             }
          }
       }
