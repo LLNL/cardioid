@@ -78,7 +78,8 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
     Real yd=(-V1(-1 + tjj,tkk) + V1(1 + tjj,tkk) - V2(-1 + tjj,tkk) + V2(1 + tjj,tkk))/4.;
     Real zd=(-V1(tjj,-1 + tkk) + V1(tjj,1 + tkk) - V2(tjj,-1 + tkk) + V2(tjj,1 + tkk))/4.;
 
-    dV = sigmaX(0,tjj,tkk,0) * xd + sigmaX(0,tjj,tkk,1) * yd + sigmaX(0,tjj,tkk,2) * zd ; 
+    dV = 0;
+    dV -= sigmaX(0,tjj,tkk,0) * xd + sigmaX(0,tjj,tkk,1) * yd + sigmaX(0,tjj,tkk,2) * zd ; 
   }
 
   tii=pii; pii=cii; cii=nii; nii=tii;
