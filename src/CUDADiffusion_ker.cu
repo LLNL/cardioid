@@ -66,8 +66,8 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
   int pii,cii,nii,tii;
   pii=0; cii=1; nii=2;
 
-  sm_psi[cii][tkk][tjj] = psi(0,tjj,tkk);
-  sm_psi[nii][tkk][tjj] = psi(1,tjj,tkk);
+  sm_psi[cii][tjj][tkk] = psi(0,tjj,tkk);
+  sm_psi[nii][tjj][tkk] = psi(1,tjj,tkk);
   Real xcharge,ycharge,zcharge,dV;
 
   __syncthreads();
@@ -78,6 +78,10 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
     Real yd=(-V1(-1 + tjj,tkk) + V1(1 + tjj,tkk) - V2(-1 + tjj,tkk) + V2(1 + tjj,tkk))/4.;
     Real zd=(-V1(tjj,-1 + tkk) + V1(tjj,1 + tkk) - V2(tjj,-1 + tkk) + V2(tjj,1 + tkk))/4.;
 
+    #ifdef flux_dump
+    printf("x=%d y=%d z=%d xflux=(%f,%f,%f)\n",XTILE*blockIdx.x,30*blockIdx.y+tjj,30*blockIdx.z+tkk,xd,yd,zd);
+    #endif
+
     dV = 0;
     dV -= sigmaX(0,tjj,tkk,0) * xd + sigmaX(0,tjj,tkk,1) * yd + sigmaX(0,tjj,tkk,2) * zd ; 
   }
@@ -86,7 +90,7 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
 
   for(int ii=1;ii<Last_x;ii++)
   {
-    sm_psi[nii][tkk][tjj] = psi(ii+1,tjj,tkk);
+    sm_psi[nii][tjj][tkk] = psi(ii+1,tjj,tkk);
     __syncthreads();
 
     // contribution to (ii-1)
@@ -99,6 +103,10 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
       Real xd=(-V0(tjj,tkk) - V0(1 + tjj,tkk) + V2(tjj,tkk) + V2(1 + tjj,tkk))/4.;
       Real yd=-V1(tjj,tkk) + V1(1 + tjj,tkk);
       Real zd=(-V1(tjj,-1 + tkk) + V1(tjj,1 + tkk) - V1(1 + tjj,-1 + tkk) + V1(1 + tjj,1 + tkk))/4.;
+
+      #ifdef flux_dump
+      printf("x=%d y=%d z=%d yflux=(%f,%f,%f)\n",XTILE*blockIdx.x+ii,30*blockIdx.y+tjj,30*blockIdx.z+tkk,xd,yd,zd);
+      #endif
 
       ycharge = sigmaY(ii,tjj,tkk,0) * xd + sigmaY(ii,tjj,tkk,1) * yd + sigmaY(ii,tjj,tkk,2) * zd ; 
       dV += ycharge;
@@ -120,6 +128,10 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
       Real yd=(-V1(-1 + tjj,tkk) - V1(-1 + tjj,1 + tkk) + V1(1 + tjj,tkk) + V1(1 + tjj,1 + tkk))/4.;
       Real zd=-V1(tjj,tkk) + V1(tjj,1 + tkk);
 
+      #ifdef flux_dump
+      printf("x=%d y=%d z=%d zflux=(%f,%f,%f)\n",XTILE*blockIdx.x+ii,30*blockIdx.y+tjj,30*blockIdx.z+tkk,xd,yd,zd);
+      #endif
+
       zcharge = sigmaZ(ii,tjj,tkk,0) * xd + sigmaZ(ii,tjj,tkk,1) * yd + sigmaZ(ii,tjj,tkk,2) * zd ; 
       dV += zcharge;
       sm_psi[3][tjj][tkk]=zcharge;
@@ -139,6 +151,10 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
       Real yd=(-V1(-1 + tjj,tkk) + V1(1 + tjj,tkk) - V2(-1 + tjj,tkk) + V2(1 + tjj,tkk))/4.;
       Real zd=(-V1(tjj,-1 + tkk) + V1(tjj,1 + tkk) - V2(tjj,-1 + tkk) + V2(tjj,1 + tkk))/4.;
  
+      #ifdef flux_dump
+      printf("x=%d y=%d z=%d xflux=(%f,%f,%f)\n",XTILE*blockIdx.x+ii,30*blockIdx.y+tjj,30*blockIdx.z+tkk,xd,yd,zd);
+      #endif
+
       xcharge = sigmaX(ii,tjj,tkk,0) * xd + sigmaX(ii,tjj,tkk,1) * yd + sigmaX(ii,tjj,tkk,2) * zd ; 
       dV += xcharge;
       //store dV

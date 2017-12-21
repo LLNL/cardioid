@@ -63,12 +63,11 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
 //  printf("tjj tkk bx by = %d %d %d %d\n",tjj,tkk,blockIdx.x,blockIdx.y);
 
 
-  #if 1
   int pii,cii,nii,tii;
   pii=0; cii=1; nii=2;
 
-  sm_psi[cii][tkk][tjj] = psi(0,tjj,tkk);
-  sm_psi[nii][tkk][tjj] = psi(1,tjj,tkk);
+  sm_psi[cii][tjj][tkk] = psi(0,tjj,tkk);
+  sm_psi[nii][tjj][tkk] = psi(1,tjj,tkk);
   Real xcharge,ycharge,zcharge,dV;
 
   __syncthreads();
@@ -79,14 +78,19 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
     Real yd=(-V1(-1 + tjj,tkk) + V1(1 + tjj,tkk) - V2(-1 + tjj,tkk) + V2(1 + tjj,tkk))/4.;
     Real zd=(-V1(tjj,-1 + tkk) + V1(tjj,1 + tkk) - V2(tjj,-1 + tkk) + V2(tjj,1 + tkk))/4.;
 
-    dV = sigmaX(0,tjj,tkk,0) * xd + sigmaX(0,tjj,tkk,1) * yd + sigmaX(0,tjj,tkk,2) * zd ; 
+    #ifdef flux_dump
+    printf("x=%d y=%d z=%d xflux=(%f,%f,%f)\n",XTILE*blockIdx.x,30*blockIdx.y+tjj,30*blockIdx.z+tkk,xd,yd,zd);
+    #endif
+
+    dV = 0;
+    dV -= sigmaX(0,tjj,tkk,0) * xd + sigmaX(0,tjj,tkk,1) * yd + sigmaX(0,tjj,tkk,2) * zd ; 
   }
 
   tii=pii; pii=cii; cii=nii; nii=tii;
 
   for(int ii=1;ii<Last_x;ii++)
   {
-    sm_psi[nii][tkk][tjj] = psi(ii+1,tjj,tkk);
+    sm_psi[nii][tjj][tkk] = psi(ii+1,tjj,tkk);
     __syncthreads();
 
     // contribution to (ii-1)
@@ -99,6 +103,10 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
       Real xd=(-V0(tjj,tkk) - V0(1 + tjj,tkk) + V2(tjj,tkk) + V2(1 + tjj,tkk))/4.;
       Real yd=-V1(tjj,tkk) + V1(1 + tjj,tkk);
       Real zd=(-V1(tjj,-1 + tkk) + V1(tjj,1 + tkk) - V1(1 + tjj,-1 + tkk) + V1(1 + tjj,1 + tkk))/4.;
+
+      #ifdef flux_dump
+      printf("x=%d y=%d z=%d yflux=(%f,%f,%f)\n",XTILE*blockIdx.x+ii,30*blockIdx.y+tjj,30*blockIdx.z+tkk,xd,yd,zd);
+      #endif
 
       ycharge = sigmaY(ii,tjj,tkk,0) * xd + sigmaY(ii,tjj,tkk,1) * yd + sigmaY(ii,tjj,tkk,2) * zd ; 
       dV += ycharge;
@@ -120,6 +128,10 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
       Real yd=(-V1(-1 + tjj,tkk) - V1(-1 + tjj,1 + tkk) + V1(1 + tjj,tkk) + V1(1 + tjj,1 + tkk))/4.;
       Real zd=-V1(tjj,tkk) + V1(tjj,1 + tkk);
 
+      #ifdef flux_dump
+      printf("x=%d y=%d z=%d zflux=(%f,%f,%f)\n",XTILE*blockIdx.x+ii,30*blockIdx.y+tjj,30*blockIdx.z+tkk,xd,yd,zd);
+      #endif
+
       zcharge = sigmaZ(ii,tjj,tkk,0) * xd + sigmaZ(ii,tjj,tkk,1) * yd + sigmaZ(ii,tjj,tkk,2) * zd ; 
       dV += zcharge;
       sm_psi[3][tjj][tkk]=zcharge;
@@ -139,6 +151,10 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
       Real yd=(-V1(-1 + tjj,tkk) + V1(1 + tjj,tkk) - V2(-1 + tjj,tkk) + V2(1 + tjj,tkk))/4.;
       Real zd=(-V1(tjj,-1 + tkk) + V1(tjj,1 + tkk) - V2(tjj,-1 + tkk) + V2(tjj,1 + tkk))/4.;
  
+      #ifdef flux_dump
+      printf("x=%d y=%d z=%d xflux=(%f,%f,%f)\n",XTILE*blockIdx.x+ii,30*blockIdx.y+tjj,30*blockIdx.z+tkk,xd,yd,zd);
+      #endif
+
       xcharge = sigmaX(ii,tjj,tkk,0) * xd + sigmaX(ii,tjj,tkk,1) * yd + sigmaX(ii,tjj,tkk,2) * zd ; 
       dV += xcharge;
       //store dV
@@ -156,7 +172,6 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
 //  #undef sigmaZ(x,y,z,dir) 
 //  #undef psi(x,y,z) 
 //  #undef npsi(x,y,z) 
-  #endif
 }
 
 __global__ void map_dVm(double * dVmT, double* dVm, const int *remap,int nCells)
@@ -167,6 +182,13 @@ __global__ void map_dVm(double * dVmT, double* dVm, const int *remap,int nCells)
       dVmT[idx] = dVm[remap[idx]];
 }
 
+//__global__ void map_V(double * VT, double* V, const int *remap,int nCells)
+//{
+//  int idx0 = threadIdx.x + blockDim.x*blockIdx.x;
+//  int stride = blockDim.x * gridDim.x;
+//  for(int idx = idx0 ; idx<nCells ; idx+=stride)
+//      VT[remap[idx]] = V[idx];
+//}
 
 extern "C"
 {
@@ -178,76 +200,14 @@ void call_cuda_kernels(const Real *VmRaw, Real *dVmRaw, const Real *sigmaRaw, in
    int bdimy = (int)((ny-2)/30) + ((ny-2)%30==0?0:1);
    int bdimx = (int)((nx-2)/XTILE) + ((nx-2)%XTILE==0?0:1);
    
-   printf("Vm=%p dVm=%p sigma=%p \n",VmRaw,dVmRaw,sigmaRaw);
-   printf("call_cuda_kernels %d,%d,%d (%d,%d,%d)\n",nx,ny,nz,bdimx,bdimy,bdimz);
+//   printf("Vm=%p dVm=%p sigma=%p \n",VmRaw,dVmRaw,sigmaRaw);
+//   printf("call_cuda_kernels %d,%d,%d (%d,%d,%d)\n",nx,ny,nz,bdimx,bdimy,bdimz);
+#ifdef GPU_SM_70
    cudaFuncSetAttribute(diff_6face_v1, cudaFuncAttributePreferredSharedMemoryCarveout, 50);
+#endif
 
+   //map_V<<<112,512>>>(VmBlockRaw,VmRaw,lookup,nCells);
    diff_6face_v1<<<dim3(bdimx,bdimy,bdimz),dim3(32,32,1)>>>(VmRaw,dVmRaw,sigmaRaw,sigmaRaw+3*nx*ny*nz,sigmaRaw+6*nx*ny*nz,nx,ny,nz);
-//   map_dVm<<<112,512>>>(dVmRaw,dVmOut,lookup,nCells);
+   map_dVm<<<112,512>>>(dVmRaw,dVmOut,lookup,nCells);
 }
-}
-
-int main()
-{
-  int nx=252;
-  int ny=82;
-  int nz=52;
-
-  Real *VmRaw,*dVmRaw,*sigmaRaw,*dVmOut;
-  Real *h_sigma, *h_dVm;
-  cudaMalloc(&VmRaw,sizeof(double)*nx*ny*nz);
-  cudaMalloc(&dVmRaw,sizeof(double)*nx*ny*nz);
-  cudaMalloc(&sigmaRaw,sizeof(double)*nx*ny*nz*9);
-  h_sigma=(Real*)malloc(sizeof(double)*nx*ny*nz*9);
-  h_dVm=(Real*)malloc(sizeof(double)*nx*ny*nz);
-
-  cudaMemset(VmRaw,1,sizeof(double)*nx*ny*nz);
-  cudaMemset(dVmRaw,1,sizeof(double)*nx*ny*nz);
-  cudaMemset(sigmaRaw,1,sizeof(double)*nx*ny*nz*9);
-
-  printf("running with nx=%d ny=%d nz=%d\n",nx,ny,nz);
-  call_cuda_kernels(VmRaw,dVmRaw,sigmaRaw,nx,ny,nz,0,0,nx*ny*nz);
-
-  cudaMemset(VmRaw,0,sizeof(double)*nx*ny*nz);
-  cudaMemset(dVmRaw,0,sizeof(double)*nx*ny*nz);
-  cudaMemset(sigmaRaw,0,sizeof(double)*nx*ny*nz*9);
-
-  //test 1
-  //set 1 at ii,jj,kk
-  //set sigmaXYZ 1
-  Real value=1.;
-  int ii=jj=kk=3;
-  cudaMemcpy( &(VmRaw[ kk + nz*( jj + ny* ii ) ]) , &value, sizeof(double), , cudaMemcpyHostToDevice );
-
-  #define sigmaX(x,y,z,dir) h_sigma[ z + Lkk * ( y + Ljj * ( x + Lii * dir ) ) ]
-  #define sigmaY(x,y,z,dir) h_sigma[ z + Lkk * ( y + Ljj * ( x + Lii * dir ) ) + 3*nx*ny*nz ]
-  #define sigmaZ(x,y,z,dir) h_sigma[ z + Lkk * ( y + Ljj * ( x + Lii * dir ) ) + 6*nx*ny*nz ]
-
-  for(int ii=0;ii<nx;ii++)
-  for(int jj=0;jj<ny;jj++)
-  for(int kk=0;kk<nz;kk++)
-  {
-      sigmaX(ii,jj,kk,0) = 1;
-      sigmaY(ii,jj,kk,1) = 1;
-      sigmaZ(ii,jj,kk,2) = 1;
-  }
-      
-  cudaMemcpy( sigmaRaw, h_sigma, sizeof(double) * 9 * nx*ny*nz , cudaMemcpyHostToDevice );
-
-  call_cuda_kernels(VmRaw,dVmRaw,sigmaRaw,nx,ny,nz,0,0,nx*ny*nz);
-
-  cudaMemcpy( h_dVm, dVmRaw, sizeof(double)  * nx*ny*nz , cudaMemcpyDeviceToHost );
-
-  for(int ii=2;ii<5;ii++)
-  for(int jj=2;jj<5;jj++)
-  for(int kk=2;kk<5;kk++)
-  {
-     printf("(%d,%d,%d) = %f\n",ii,jj,kk,h_dVm[ kk + nz*(jj + ny*ii)]);
-  }
-  
-  cudaFree(VmRaw);
-  cudaFree(dVmRaw);
-  cudaFree(sigmaRaw);
-  free(h_dVm);
-  free(h_sigma);
 }
