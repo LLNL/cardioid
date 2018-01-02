@@ -49,7 +49,7 @@ conductivity CONDUCTIVITY
 null REACTION
 {
     method = null;
-    cellTypes = 100;
+    cellTypes = 101;
     initialVoltage = 0;
 }
 
