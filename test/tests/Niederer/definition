@@ -7,11 +7,12 @@ function checkpoint {
 }
     
 function clean {
-    rm -f stdOut data
+    rm -rf stdOut data snapshot.0*
 }
 
 function run {
     beginTest
+    clean
     rm -f data
     runBinary cardioid >| stdOut 2>&1 
     numCompare data 1e-14 >| result 2>&1
