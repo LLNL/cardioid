@@ -1,4 +1,5 @@
 TT06Opt REACTION
 {
    method = TT06Opt;
+   cellTypeName = epiCellML;
 }

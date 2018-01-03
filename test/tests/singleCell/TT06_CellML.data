@@ -1,4 +1,5 @@
 TT06_CellML REACTION
 {
    method = TT06_CellML;
+   ttType = 2;
 }
