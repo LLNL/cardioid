@@ -7,7 +7,7 @@ function checkpoint {
 }
     
 function clean {
-    rm -f stdOut data traces
+    rm -rf stdOut data traces snapshot.0*
 }
 
 function run {
