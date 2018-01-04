@@ -1,0 +1,10 @@
+{
+   osx_strnlen_1
+   Memcheck:Cond
+   fun:strnlen
+   fun:strncat
+   fun:Pfgets
+   fun:_ZN12_GLOBAL__N_19readAsciiEP8pfile_stjP12BucketOfBits
+   fun:_Z11readPioFileP8pfile_st
+   ...
+}
