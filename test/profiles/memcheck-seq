@@ -4,12 +4,15 @@ tags=seq
 
 
 function beginTest {
+    touch $testroot/results/$build/$profile/suppressions
     rm -f memcheck-*.log
 }
 
 function runBinary {
     exe=$1; shift
-    valgrind --error-markers=--BEGIN--,--END-- --log-file=memcheck-%n.log $testroot/../bin/$exe-$build "$@"
+    valgrind --error-markers=--BEGIN--,--END-- --log-file=memcheck-%n.log \
+             --suppressions=$testroot/results/$build/$profile/suppressions \
+             $testroot/../bin/$exe-$build "$@"
 }
 
 function endTest {
