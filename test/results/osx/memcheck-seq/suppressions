@@ -8,10 +8,3 @@
    fun:_Z11readPioFileP8pfile_st
    ...
 }
-{
-   osx_nSquads_undefined
-   Memcheck:Cond
-   fun:_ZN16TT06Dev_Reaction14mkWorkBundles_ER21TT06Dev_ReactionParms
-   fun:_ZN16TT06Dev_ReactionC1EdR7AnatomyR21TT06Dev_ReactionParmsRK10ThreadTeam
-   ...
-}
