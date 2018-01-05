@@ -1,1 +1,3 @@
-* binary
+* -text -merge -diff
+.git* text merge diff
+*/*/suppressions text merge diff
