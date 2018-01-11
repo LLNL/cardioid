@@ -19,9 +19,12 @@ void DVThreshSensor::eval(double time, int loop)
 {
    double maxdVdt=-10000.;
    double mindVdt= 10000.;
+   const VectorDouble32& dVmDiffusion(vdata_.dVmDiffusionTransport_.readOnHost());
+   const VectorDouble32& dVmReaction(vdata_.dVmReactionTransport_.readOnHost());
+
    for (unsigned ii=0; ii<nlocal_; ++ii)
    {
-      double dVdt=vdata_.dVmReaction_[ii]+vdata_.dVmDiffusion_[ii];
+      double dVdt=dVmReaction[ii]+dVmDiffusion[ii];
       if( dVdt>maxdVdt )
       {
          maxdVdt=dVdt;

@@ -31,10 +31,9 @@ namespace  scanReaction
    Reaction* scanTT06_CellML(OBJECT* obj, const int numPoints);
    Reaction* scanTT06Dev(OBJECT* obj, double dt, const int numPoints, const ThreadTeam& group, const vector<string>& scaleCurrents);
    Reaction* scanTT06_RRG(OBJECT* obj, const int numPoints);
-   Reaction* scanOHaraRudy(OBJECT* obj, const int numPoints);
    Reaction* scanSimpleOHaraRudy(OBJECT* obj, const int numPoints);
-   Reaction* scanGrandi(OBJECT* obj, const int numPoints);
    Reaction* scanSimpleGrandi(OBJECT* obj, const int numPoints);
+   Reaction* scanSimpleTT06(OBJECT* obj, const int numPoints);
    Reaction* scanFHN(OBJECT* obj, const int numPoints);
    Reaction* scanPassive(OBJECT* obj, const int numPoints);
    Reaction* scanNull(OBJECT* obj);
@@ -61,14 +60,12 @@ Reaction* reactionFactory(const string& name, double dt, const int numPoints,
       return scanReaction::scanTT06Dev(obj, dt, numPoints, group, scaleCurrents);
    else if (method == "TT06_RRG" )
       return scanReaction::scanTT06_RRG(obj, numPoints);
-   else if (method == "OHaraRudy" )
-      return scanReaction::scanOHaraRudy(obj, numPoints);
    else if (method == "SimpleOHaraRudy" )
       return scanReaction::scanSimpleOHaraRudy(obj, numPoints);
-   else if (method == "Grandi" )
-      return scanReaction::scanGrandi(obj, numPoints);
    else if (method == "SimpleGrandi" )
       return scanReaction::scanSimpleGrandi(obj, numPoints);
+   else if (method == "SimpleTT06" )
+      return scanReaction::scanSimpleTT06(obj, numPoints);
    else if (method == "FHN" || method == "FitzhughNagumo")
       return scanReaction::scanFHN(obj, numPoints);
    else if (method == "Passive")

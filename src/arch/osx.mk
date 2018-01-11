@@ -3,6 +3,7 @@
 CXX=mpicxx -fopenmp
 CC =mpicc --std=gnu99
 LD=$(CXX)
+NVCC = nvcc
 
 DFLAGS = -DOSX -DWITH_PIO -DWITH_MPI \
 	-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
@@ -12,8 +13,8 @@ INCLUDE = -I/opt/local/include/
 CFLAGS_BASE =   $(INCLUDE) $(DFLAGS)
 CXXFLAGS_BASE = $(INCLUDE) $(DFLAGS)
 
-#DFLAGS += -DHAVE_LAPACK
-#LDFLAGS_BASE = -llapack -lblas
+DFLAGS += -DHAVE_LAPACK
+LDFLAGS_BASE = -L/Developer/NVIDIA/CUDA-8.0/lib -lcudart -llapack -lblas
 
 CFLAGS_OPT =   $(CFLAGS_BASE) -g -O3
 CFLAGS_DEBUG = $(CFLAGS_BASE) -g -ggdb -O0 

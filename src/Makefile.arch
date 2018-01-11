@@ -102,12 +102,19 @@ endif
 ifeq ($(HOSTNAME),sierra)
   ARCHGUESS = peloton
 endif
+ifeq ($(HOSTNAME),rzmanta)
+  ARCHGUESS = ray-openmp
+endif
+ifeq ($(HOSTNAME),ray)
+  ARCHGUESS = ray-openmp
+endif
 ifeq ($(HOSTNAME),prince)
   ARCHGUESS = osx
 endif
+ifeq ($(HOSTNAME),clogin)
+  ARCHGUESS = r92
+endif
 
 ifndef ARCHGUESS
-ifndef ARCH
-   $(error Unrecognized build host.  Edit Makefile.arch)
-endif
+   $(error Unrecognized build host(${HOSTNAME}).  Edit Makefile.arch)
 endif

@@ -51,6 +51,10 @@ HEARTSRC= \
 	FGRDiffusionThreads.cc \
 	FGRDiffusionOverlap.cc \
 	FGRDiffusionStrip.cc \
+	OpenmpGpuRedblackDiffusion.cc \
+	OpenmpGpuFlatDiffusion.cc \
+	CUDADiffusion.cc \
+	CUDADiffusion_ker.cu \
 	FGRUtils.cc \
 	Reaction.cc \
 	ReactionManager.cc \
@@ -59,19 +63,16 @@ HEARTSRC= \
 	TT06_CellML_Reaction.cc  \
 	TT06Dev_Reaction.cc \
 	TT06_RRG_Reaction.cc \
-	OHaraRudy_Reaction.cc \
 	SimpleOHaraRudy.cc \
-	Grandi_Reaction.cc \
 	SimpleGrandi.cc \
 	Passive.cc \
+	SimpleTT06.cc \
 	TT06Tau.cc \
 	TT06Func.cc \
 	pade.cc \
    TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc \
    TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc \
 	TT06_RRG.cc \
-   OHaraRudyScan.cc \
-   GrandiScan.cc  \
 	TestStimulus.cc PointStimulus.cc BoxStimulus.cc \
 	PeriodicPulse.cc RandomPulse.cc \
 	PointListSensor.cc ActivationTimeSensor.cc \
@@ -82,32 +83,9 @@ HEARTSRC= \
 	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc DVThreshSensor.cc \
    StateVariableSensor.cc Interpolation.cc
 
-OHaraRudySRC= OHaraRudy.c OHaraRudy_Voltage.c OHaraRudy_Concent.c OHaraRudy_INaCai.c OHaraRudy_INaCass.c  \
-              OHaraRudy_INaK.c OHaraRudy_INab.c OHaraRudy_ICab.c OHaraRudy_IKb.c \
-              OHaraRudy_IpCa.c OHaraRudy_INaFast.c OHaraRudy_INaL.c OHaraRudy_Ito.c \
-              OHaraRudy_IKr.c OHaraRudy_IKs.c OHaraRudy_IK1.c OHaraRudy_ICa.c null_INull.c\
-              OHaraRudy_Fluxes.c OHaraRudy_CaMKtrap.c reversalPotentials.c
-RTYSC14ASRC = OHaraRudyMod_INaFast.c RTYSC14A_IKr.c  MYBGBKC_INa.c
-
-GrandiSRC=    Grandi.c         Grandi_IClCa.c   Grandi_IKs.c     Grandi_INaL.c    Grandi_Revpots.c \
-              Grandi_Concent.c Grandi_IClb.c    Grandi_IKur.c    Grandi_INab.c    Grandi_Voltage.c \
-              Grandi_Fluxes.c  Grandi_IK1.c     Grandi_INCX.c    Grandi_INull.c \
-              Grandi_ICa.c     Grandi_IKp.c     Grandi_INa.c     Grandi_IpCa.c \
-              Grandi_ICab.c    Grandi_IKr.c     Grandi_INaK.c    Grandi_Ito.c
-
 SPISRC=	 spi_impl.c
-SIMDSRC=  clooper.c TT06GatesSimd.c TT06GatesSimd2.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c $(OHaraRudySRC) $(RTYSC14ASRC) $(GrandiSRC)
+SIMDSRC=  clooper.c TT06GatesSimd.c TT06GatesSimd2.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c 
 
-CONSTRUCTED_INCLUDES=\
-OHaraRudy_Voltage.h OHaraRudy_Ito.h OHaraRudy_IpCa.h OHaraRudy_INab.h OHaraRudy_INaL.h OHaraRudy_INaK.h OHaraRudy_INaCass.h \
-OHaraRudy_INaCai.h OHaraRudy_IKs.h OHaraRudy_IKr.h OHaraRudy_IKb.h OHaraRudy_IK1.h OHaraRudy_ICab.h OHaraRudy_ICa.h \
-OHaraRudy_Fluxes.h OHaraRudy_Concent.h OHaraRudy_CaMKtrap.h OHaraRudy_INaFast.h OHaraRudyMod_INaFast.h RTYSC14A_IKr.h \
-MYBGBKC_INa.h null_INull.h
-
-GRANDI_CONSTRUCTED_INCLUDES=\
-Grandi_ICa.h Grandi_IKp.h Grandi_INa.h Grandi_IpCa.h Grandi_ICab.h Grandi_IKr.h Grandi_INaK.h Grandi_Ito.h \
-Grandi_IClCa.h Grandi_IKs.h Grandi_INaL.h Grandi_Voltage.h Grandi_Concent.h Grandi_IClb.h Grandi_IKur.h Grandi_INab.h \
-Grandi_Fluxes.h Grandi_IK1.h Grandi_INCX.h Grandi_INull.h
 
 DDCMD_FILES = \
 	codata.h \
@@ -153,14 +131,15 @@ DDCMD_FILES = \
 	utilities.h 
 
 DDCMDSRC = $(filter %.c, $(DDCMD_FILES))
-
-HEARTOBJS = $(HEARTSRC:%.cc=$(OBJDIR)/%.o)
+HEARTOBJS0 = $(HEARTSRC:%.cc=$(OBJDIR)/%.o)
+HEARTOBJS = $(HEARTOBJS0:%.cu=$(OBJDIR)/%.o)
 HEARTOBJS += $(DDCMDSRC:%.c=$(OBJDIR)/%.o)
 HEARTOBJS += $(SPISRC:%.c=$(OBJDIR)/%.o)
 HEARTOBJS += $(SIMDSRC:%.c=$(OBJDIR)/%.o)
 
 CARDIOIDSRC = $(HEARTSRC) cardioid.cc 
-CARDIOIDOBJS = $(CARDIOIDSRC:%.cc=$(OBJDIR)/%.o)
+CARDIOIDOBJS0 = $(CARDIOIDSRC:%.cc=$(OBJDIR)/%.o)
+CARDIOIDOBJS = $(CARDIOIDOBJS0:%.cu=$(OBJDIR)/%.o)
 CARDIOIDOBJS += $(DDCMDSRC:%.c=$(OBJDIR)/%.o)
 CARDIOIDOBJS += $(SPISRC:%.c=$(OBJDIR)/%.o)
 CARDIOIDOBJS += $(SIMDSRC:%.c=$(OBJDIR)/%.o)
@@ -222,10 +201,13 @@ gengetopt:
 	$(GENGETOPT) -i singleCellOptions.ggo -F singleCellOptions 
 
 $(OBJDIR)/%.o: %.cc
-	$(CXX) $(CXXFLAGS) -o $@ -c $<
+	$(CXX) $(CXXFLAGS) -o $@ -c -std=c++11 $<
 
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
+
+$(OBJDIR)/%.o: %.cu
+	$(NVCC) $(NVCFLAGS) -o $@ -c $<
 
 $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $<

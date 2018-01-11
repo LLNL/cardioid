@@ -175,7 +175,7 @@ void writeCheckpoint(const Simulate& sim, MPI_Comm comm)
    
    char buf[lRec+1];
    vector<double> value(handle.size(), 0.0);
-   const VectorDouble32& vmarray=(sim.vdata_.VmArray_);
+   const VectorDouble32& vmarray=(sim.vdata_.VmTransport_.readOnHost());
    for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
    {
       if (sim.asciiCheckpoints_)
@@ -259,7 +259,7 @@ void readCheckpoint(const string& filename, Simulate& sim, MPI_Comm comm)
    }
 
    // Load membrane voltage from checkpoint file into VmArray.
-   VectorDouble32& vmarray=(sim.vdata_.VmArray_);
+   VectorDouble32& vmarray(sim.vdata_.VmTransport_.modifyOnHost());
    unsigned vmIndex = data->getIndex("Vm");
    if (vmIndex != data->nFields())
       for (unsigned ii=0; ii<data->nRecords(); ++ii)

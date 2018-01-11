@@ -21,7 +21,7 @@ ECGSensor::ECGSensor(const SensorParms& sp,
   stencilSize_(p.stencilSize),
   filename_(p.filename),
   nEval_(0),
-  Vm_(sim.vdata_.VmArray_)
+  VmTransport_(sim.vdata_.VmTransport_)
 {
    unsigned nLocal = sim.anatomy_.nLocal();
    nSensorPoints_ = min(nSensorPoints_, nLocal);
@@ -68,6 +68,7 @@ void ECGSensor::print(double time, int loop)
 
 void ECGSensor::eval(double time, int loop)
 {
+   const VectorDouble32& Vm(VmTransport_.readOnHost());
    startTimer(sensorEvalTimer);
    int index = 0;
    int dataIndex = (nEval_+2)*3;
@@ -78,7 +79,7 @@ void ECGSensor::eval(double time, int loop)
          float sum = 0.0;
          for (unsigned kk=0; kk<stencilSize_; ++kk)
          {
-            sum += weight_[index] * Vm_[VmOffset_[index]];
+            sum += weight_[index] * Vm[VmOffset_[index]];
             ++index;
          }
          data_[dataIndex+jj] = sum;

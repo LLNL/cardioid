@@ -52,7 +52,7 @@ class HaloExchangeBase
    T* getSendBuf() {return sendBuf_;}
    const vector<int>& getSendMap() const {return sendMap_;}
    
-   void fillSendBuffer(std::vector<T, Allocator>& data)
+   void fillSendBuffer(const std::vector<T, Allocator>& data)
    {
       startTimer(PerformanceTimers::haloMove2BufTimer);
       // fill send buffer

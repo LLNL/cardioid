@@ -1,0 +1,438 @@
+Cardioid v1.0
+Unclassified/Code in development Distribution
+LLNL-CODE-508771
+Do not redistribute without permission
+
+Version info:
+-------------
+  hostname      ray5
+  user          kim70
+  svn revision: Unversioned directory
+  compile time: Oct 31 2017 13:06:18
+  source path:  /g/g90/kim70/project/cardioid/src
+  build target: cardioid-ray-openmp
+  build arch:   ray-openmp
+  CXXFLAGS:     -DPELOTON -DWITH_PIO -DWITH_MPI -DADD_ -DUSE_CSTDIO_LFS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DDiff_Weight_Type_Single -O3 -ffp-contract=fast -fopenmp-nonaliased-maps
+  CFLAGS:       -DPELOTON -DWITH_PIO -DWITH_MPI -DADD_ -DUSE_CSTDIO_LFS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DDiff_Weight_Type_Single -O3 -ffp-contract=fast -fopenmp-nonaliased-maps
+  LDFLAGS:      -DPELOTON -DWITH_PIO -DWITH_MPI -DADD_ -DUSE_CSTDIO_LFS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DDiff_Weight_Type_Single -O3 -ffp-contract=fast -fopenmp-nonaliased-maps -DPELOTON -DWITH_PIO -DWITH_MPI -DADD_ -DUSE_CSTDIO_LFS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DDiff_Weight_Type_Single -O3 -ffp-contract=fast -fopenmp-nonaliased-maps -L/usr/local/cuda/lib -lcudart
+_________________________________________________________________
+
+FILE: restart does not exist
+
+Contents of object database:
+----------------------------------------------------------------------
+simulate SIMULATE
+{
+   anatomy=niederer;
+   decomposition=grid;
+   diffusion=fgr;
+   reaction=tt06;
+   stimulus=s1 s2;
+   sensor=arTime;
+   loop=0;
+   maxLoop=1000;
+   dt=0.01;
+   time=0;
+   printRate=50;
+   parallelDiffusionReaction=0;
+}
+
+niederer ANATOMY
+{
+   method=brick;
+   cellType=102;
+   dx=0.10;
+   dy=0.05;
+   dz=0.05;
+   xSize=25;
+   ySize=8;
+   zSize=5;
+   conductivity=conductivity;
+}
+
+grid DECOMPOSITION
+{
+   method=grid;
+   nx=1;
+   ny=2;
+   nz=2;
+}
+
+fgr DIFFUSION
+{
+   method=cuda;
+   diffusionScale=714.2857143;
+}
+
+conductivity CONDUCTIVITY
+{
+   method=uniform;
+   sigma11=0.0001334177;
+   sigma22=0.0000176062;
+   sigma33=0.0000176062;
+   sigma13=0;
+   sigma23=0;
+}
+
+tt06 REACTION
+{
+   method=SimpleTT06;
+   integrator=rushLarsen;
+}
+
+s1 STIMULUS
+{
+   method=box;
+   xMax=15;
+   yMax=15;
+   zMax=15;
+   vStim=-35.71429;
+   tStart=0;
+   duration=2;
+   period=10000;
+}
+
+s2 STIMULUS
+{
+   method=box;
+   xMin=14;
+   yMin=54;
+   zMin=184;
+   vStim=-35.71429;
+   tStart=565;
+   duration=2;
+   period=10000;
+}
+
+arTime SENSOR
+{
+   method=activationAndRecovery;
+   filename=arTime;
+   printRate=100000;
+   evalRate=1;
+   nFiles=1;
+}
+
+----------------------------------------------------------------------
+End of object database
+
+Thu Nov  2 08:42:50 2017: Starting initializeSimulate
+Thu Nov  2 08:42:50 2017: initializing anatomy
+Thu Nov  2 08:42:50 2017: assigning cells to tasks
+GDLoadBalancer:  global grid 250 x 160 x 100, process grid 1 x 2 x 2
+Grid load balance starting with relative diffusion cost diffCost = 0.1
+Thu Nov  2 08:42:50 2017: computing grid load assignment
+Pre-distributing plane 0, tkpmin = 0, tkpmax = 3, tkpzwork = 160000
+Pre-distributing plane 1, tkpmin = 4, tkpmax = 7, tkpzwork = 160000
+Pre-distributing plane 2, tkpmin = 8, tkpmax = 11, tkpzwork = 160000
+Pre-distributing plane 3, tkpmin = 12, tkpmax = 15, tkpzwork = 160000
+Pre-distributing plane 4, tkpmin = 16, tkpmax = 19, tkpzwork = 160000
+Pre-distributing plane 5, tkpmin = 20, tkpmax = 23, tkpzwork = 160000
+Pre-distributing plane 6, tkpmin = 24, tkpmax = 27, tkpzwork = 160000
+Pre-distributing plane 7, tkpmin = 28, tkpmax = 31, tkpzwork = 160000
+Pre-distributing plane 8, tkpmin = 32, tkpmax = 35, tkpzwork = 160000
+Pre-distributing plane 9, tkpmin = 36, tkpmax = 39, tkpzwork = 160000
+Pre-distributing plane 10, tkpmin = 40, tkpmax = 43, tkpzwork = 160000
+Pre-distributing plane 11, tkpmin = 44, tkpmax = 47, tkpzwork = 160000
+Pre-distributing plane 12, tkpmin = 48, tkpmax = 51, tkpzwork = 160000
+Pre-distributing plane 13, tkpmin = 52, tkpmax = 55, tkpzwork = 160000
+Pre-distributing plane 14, tkpmin = 56, tkpmax = 59, tkpzwork = 160000
+Pre-distributing plane 15, tkpmin = 60, tkpmax = 63, tkpzwork = 160000
+Pre-distributing plane 16, tkpmin = 64, tkpmax = 67, tkpzwork = 160000
+Pre-distributing plane 17, tkpmin = 68, tkpmax = 71, tkpzwork = 160000
+Pre-distributing plane 18, tkpmin = 72, tkpmax = 75, tkpzwork = 160000
+Pre-distributing plane 19, tkpmin = 76, tkpmax = 79, tkpzwork = 160000
+Pre-distributing plane 20, tkpmin = 80, tkpmax = 83, tkpzwork = 160000
+Pre-distributing plane 21, tkpmin = 84, tkpmax = 87, tkpzwork = 160000
+Pre-distributing plane 22, tkpmin = 88, tkpmax = 91, tkpzwork = 160000
+Pre-distributing plane 23, tkpmin = 92, tkpmax = 95, tkpzwork = 160000
+Pre-distributing plane 24, tkpmin = 96, tkpmax = 99, tkpzwork = 160000
+Redistributing process plane 0, kpmin_z = 0, kpmax_z = 49, starting work = 96000
+Redistributing process plane 1, kpmin_z = 50, kpmax_z = 99, starting work = 96000
+Thu Nov  2 08:43:05 2017: computing load histograms
+load balance histogram (ncells):  
+  1000000 - 1000001:    4
+total # of non-zero grid points = 4000000, avg. # per task = 1e+06, max pe = 0 (1000000 cells)
+
+load balance histogram (volume):  
+  1000000 - 1000001:    4
+total assigned volume = 4000000, avg. volume = 1e+06, max volume = 1000000 (pe 0)
+
+load balance histogram (work):  
+  1.1e+06 - 1.1e+06:    4
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+  1.1e+06 - 1.1e+06:    0
+total assigned work = 4416000, avg. work = 1104000, max work = 1104000 (pe 0)
+
+Thu Nov  2 08:43:05 2017: building drug objects
+Thu Nov  2 08:43:05 2017: finished building drug objects
+Thu Nov  2 08:43:05 2017: building reaction object
+Thu Nov  2 08:43:05 2017: finished building reaction object
+#   Loop     Time         gid            Vm(t)              dVm_r(t-h)             dVm_d(t-h)
+Thu Nov  2 08:43:09 2017: building diffusion object
+Thu Nov  2 08:43:11 2017: building stimulus object
+# of tissue compute cells within box stimulus "s1" = 3375 (# cells should be (lx-1)x(ly-1)x(lz-1) b/c of fencepost condition, where lx, ly, and lz are length of box in discrete points in x, y, and z, respectively)
+# of tissue compute cells within box stimulus "s2" = 0 (# cells should be (lx-1)x(ly-1)x(lz-1) b/c of fencepost condition, where lx, ly, and lz are length of box in discrete points in x, y, and z, respectively)
+Thu Nov  2 08:43:11 2017: building sensor object
+Thu Nov  2 08:43:11 2017: Finished initializeSimulate
+Thu Nov  2 08:43:11 2017: Starting Simulation Loop
+ omp simulation 
+ omp simulation 
+ omp simulation 
+ omp simulation 
+       0    0.000            0   -86.709000000000003     0.000000000000000     0.000000000000000
+      50    0.500            0   -86.590502135056354     0.219473360476318     0.000000000306385
+     100    1.000            0   -86.488707414681826     0.189297297640500     0.000000000305275
+     150    1.500            0   -86.400618998137446     0.164309154082557    -0.000000000509937
+     200    2.000            0   -86.323961181548754     0.143332699387301    -0.000000002142258
+     250    2.500            0   -86.256950980721683     0.125537776014515    -0.000000003699886
+     300    3.000            0   -86.198160796742684     0.110313429534273    -0.000000005029426
+     350    3.500            0   -86.146428454277341     0.097196924003059    -0.000000006177724
+     400    4.000            0   -86.100795049831163     0.085830039294354    -0.000000007173433
+     450    4.500            0   -86.060460462187109     0.075930472189596    -0.000000008040826
+     500    5.000            0   -86.024750660138551     0.067272350439844    -0.000000008800079
+     550    5.500            0   -85.993093167052393     0.059672562729126    -0.000000009467820
+     600    6.000            0   -85.964998313881878     0.052980944695407    -0.000000010057648
+     650    6.500            0   -85.940044688118462     0.047073094709607    -0.000000010580640
+     700    7.000            0   -85.917867680395034     0.041845024149342    -0.000000011045925
+     750    7.500            0   -85.898150355280677     0.037209112302839    -0.000000011461051
+     800    8.000            0   -85.880616091585267     0.033091005004263    -0.000000011832202
+     850    8.500            0   -85.865022587896277     0.029427206487644    -0.000000012164262
+     900    9.000            0   -85.851156934333062     0.026163187618790    -0.000000012460375
+     950    9.500            0   -85.838831526366221     0.023251883754642    -0.000000012718620
+    1000   10.000            0   -85.827880650574926     0.020652490105923    -0.000000012930887
+Thu Nov  2 08:43:25 2017: Finished Simulation Loop
+        Time                   #Calls  |   Average     Total      %Loop
+--------------------------------------------------------------------------------
+00:Total                 :       1.00  |     35.72     35.72     248.35
+00:Assignment            :       1.00  |     15.55     15.55     108.12
+00:Loop                  :       1.00  |     14.38     14.38     100.00
+00:DiffusionLoop         :       0.00  |       nan      0.00       0.00
+00:ReactionLoop          :       0.00  |       nan      0.00       0.00
+00:Dummy                 :       0.00  |       nan      0.00       0.00
+00:HaloExchange          :    1000.00  |      0.00      0.11       0.76
+00:HaloExchangeLaunch    :       0.00  |       nan      0.00       0.00
+00:HaloExchangeWait      :       0.00  |       nan      0.00       0.00
+00:HaloExchMove2Buf      :    1001.00  |      0.00      0.05       0.32
+00:Integrator            :    1000.00  |      0.00      3.83      26.64
+00:ReactionWait          :       0.00  |       nan      0.00       0.00
+00:reactionL2Arrive      :       0.00  |       nan      0.00       0.00
+00:Reaction              :    1000.00  |      0.00      2.71      18.83
+00:Reaction_nonGate      :       0.00  |       nan      0.00       0.00
+00:GateNonGateBarrier    :       0.00  |       nan      0.00       0.00
+00:Reaction_Gate         :       0.00  |       nan      0.00       0.00
+00:Barrier1              :       0.00  |       nan      0.00       0.00
+00:Barrier2              :       0.00  |       nan      0.00       0.00
+00:Barrier3              :       0.00  |       nan      0.00       0.00
+00:Barrier4              :       0.00  |       nan      0.00       0.00
+00:Barrier5              :       0.00  |       nan      0.00       0.00
+00:DiffL2BarrHalo1       :       0.00  |       nan      0.00       0.00
+00:DiffL2BarrHalo2       :       0.00  |       nan      0.00       0.00
+00:DiffdVmReactionCopy   :       0.00  |       nan      0.00       0.00
+00:DiffusionCalc         :    1000.00  |      0.00      1.21       8.38
+00:DiffusionImbalance    :       0.00  |       nan      0.00       0.00
+00:DiffusionStall        :       0.00  |       nan      0.00       0.00
+00:DiffusionWait         :       0.00  |       nan      0.00       0.00
+00:FGR_2D_Stencil        :       0.00  |       nan      0.00       0.00
+00:FGR_ALocal2Matrix     :       0.00  |       nan      0.00       0.00
+00:FGR_ARemote2Matrix    :       0.00  |       nan      0.00       0.00
+00:FGR_AlignCopy         :       0.00  |       nan      0.00       0.00
+00:FGR_Barrier           :       0.00  |       nan      0.00       0.00
+00:FGR_Barrier2          :       0.00  |       nan      0.00       0.00
+00:FGR_Matrix2Array      :       0.00  |       nan      0.00       0.00
+00:FGR_Stencil           :       0.00  |       nan      0.00       0.00
+00:Imbalance             :    1000.00  |      0.00      1.37       9.50
+00:LoopIO                :    1000.00  |      0.00      0.00       0.00
+00:PrintData             :      21.00  |      0.00      0.02       0.12
+00:RangeCheck            :       0.00  |       nan      0.00       0.00
+00:ReactionMisc          :       0.00  |       nan      0.00       0.00
+00:Reaction_GateRL       :       0.00  |       nan      0.00       0.00
+00:Reaction_nonGateRL    :       0.00  |       nan      0.00       0.00
+00:SensorCompColorCenter :       0.00  |       nan      0.00       0.00
+00:SensorComputeLS       :       0.00  |       nan      0.00       0.00
+00:SensorSetupLS         :       0.00  |       nan      0.00       0.00
+00:Sensors               :    1000.00  |      0.00      3.55      24.68
+00:SensorsEval           :       0.00  |       nan      0.00       0.00
+00:SensorsPrint          :       0.00  |       nan      0.00       0.00
+00:SimulationLoop        :       1.00  |     14.32     14.32      99.59
+00:Stimulus              :    1000.00  |      0.00      1.53      10.66
+00:TimingBarrier         :       0.00  |       nan      0.00       0.00
+00:gd_assign_init        :       1.00  |     15.38     15.38     106.93
+00:rangeCheck            :       0.00  |       nan      0.00       0.00
+00:reactionL2Reset       :       0.00  |       nan      0.00       0.00
+00:stencilOverlap        :       0.00  |       nan      0.00       0.00
+00:zerodVmDArray         :       0.00  |       nan      0.00       0.00
+
+
+      Time                 nTasks |   minTime ( rank )   maxTime ( rank )     sigma   aveTime
+--------------------------------------------------------------------------------------------------
+00:Total                 :   4.00 |    35.718 (     0)    35.719 (     1)     0.000    35.719
+00:Assignment            :  4.000 |    15.550 (     0)    15.550 (     2)     0.000    15.550
+00:Loop                  :  4.000 |    14.379 (     1)    14.382 (     0)     0.001    14.381
+00:HaloExchange          :  4.000 |     0.104 (     1)     0.111 (     3)     0.003     0.108
+00:HaloExchMove2Buf      :  4.000 |     0.046 (     1)     0.049 (     2)     0.001     0.047
+00:Integrator            :  4.000 |     3.694 (     1)     4.252 (     2)     0.212     3.957
+00:Reaction              :  4.000 |     2.668 (     1)     3.478 (     2)     0.325     2.931
+00:DiffusionCalc         :  4.000 |     1.156 (     1)     1.241 (     2)     0.032     1.195
+00:Imbalance             :  4.000 |     0.523 (     2)     2.404 (     1)     0.673     1.486
+00:LoopIO                :  4.000 |     0.000 (     2)     0.000 (     3)     0.000     0.000
+00:PrintData             :  4.000 |     0.000 (     2)     0.018 (     0)     0.008     0.004
+00:Sensors               :  4.000 |     3.549 (     0)     3.678 (     3)     0.059     3.619
+00:SimulationLoop        :  4.000 |    14.320 (     1)    14.325 (     2)     0.002    14.323
+00:Stimulus              :  4.000 |     0.719 (     1)     1.533 (     0)     0.320     1.019
+00:gd_assign_init        :  4.000 |    15.379 (     2)    15.379 (     1)     0.000    15.379
+Thu Nov  2 08:43:25 2017: Creating Directory: snapshot.000000001000
+
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@ray5>
+Subject: Job 6435: <#BSUB -o %J.out;#BSUB -e %J.err;#BSUB -R "span[ptile=4]";#BSUB -R "affinity[core(5):distribute=pack]";#BSUB -n 4;#BSUB -x;#BSUB -G guests;#BSUB -q pdebug;#BSUB -W 15;#---------------------------------------;export BIND_THREADS=yes;export OMP_NUM_THREADS=1;ulimit -s 10240;mpirun -mxm -np 4  ../../../bin/cardioid-ray-openmp ;#mpirun -mxm -np 4  ../../bin/cardioid-ray-openmp ;#mpirun -np 1 nvprof -o cardioid-cuda-tl.%q{OMPI_COMM_WORLD_RANK}.nvprof ../../bin/cardioid-ray-openmp > in cluster <ray> Done
+
+Job <#BSUB -o %J.out;#BSUB -e %J.err;#BSUB -R "span[ptile=4]";#BSUB -R "affinity[core(5):distribute=pack]";#BSUB -n 4;#BSUB -x;#BSUB -G guests;#BSUB -q pdebug;#BSUB -W 15;#---------------------------------------;export BIND_THREADS=yes;export OMP_NUM_THREADS=1;ulimit -s 10240;mpirun -mxm -np 4  ../../../bin/cardioid-ray-openmp ;#mpirun -mxm -np 4  ../../bin/cardioid-ray-openmp ;#mpirun -np 1 nvprof -o cardioid-cuda-tl.%q{OMPI_COMM_WORLD_RANK}.nvprof ../../bin/cardioid-ray-openmp > was submitted from host <ray23> by user <kim70> in cluster <ray>.
+Job was executed on host(s) <4*ray5>, in queue <pdebug>, as user <kim70> in cluster <ray>.
+</g/g90/kim70> was used as the home directory.
+</g/g90/kim70/project/cardioid/test/NiedererTest/ray-cuda> was used as the working directory.
+Started at Results reported on 
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#BSUB -o %J.out
+#BSUB -e %J.err
+#BSUB -R "span[ptile=4]"
+#BSUB -R "affinity[core(5):distribute=pack]"
+#BSUB -n 4
+#BSUB -x
+#BSUB -G guests
+#BSUB -q pdebug
+#BSUB -W 15
+#---------------------------------------
+export BIND_THREADS=yes
+export OMP_NUM_THREADS=1
+ulimit -s 10240
+mpirun -mxm -np 4  ../../../bin/cardioid-ray-openmp 
+#mpirun -mxm -np 4  ../../bin/cardioid-ray-openmp 
+#mpirun -np 1 nvprof -o cardioid-cuda-tl.%q{OMPI_COMM_WORLD_RANK}.nvprof ../../bin/cardioid-ray-openmp 
+
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   143.45 sec.
+    Max Memory :                                 3486 MB
+    Average Memory :                             1629.00 MB
+    Total Requested Memory :                     -
+    Delta Memory :                               -
+    Max Swap :                                   -
+    Max Processes :                              8
+    Max Threads :                                33
+    Run time :                                   39 sec.
+    Turnaround time :                            41 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <6435.err> for stderr output of this job.
+

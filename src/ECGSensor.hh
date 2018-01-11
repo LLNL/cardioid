@@ -3,6 +3,7 @@
 
 #include "Sensor.hh"
 #include "VectorDouble32.hh"
+#include "TransportCoordinator.hh"
 
 struct ECGSensorParms
 {
@@ -33,7 +34,7 @@ class ECGSensor : public Sensor
    int nEval_;
    int dataOffset_;
 
-   const VectorDouble32& Vm_;
+   const TransportCoordinator<VectorDouble32>& VmTransport_;
    
    std::string filename_;
    std::vector<float> weight_;

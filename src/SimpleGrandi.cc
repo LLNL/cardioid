@@ -53,10 +53,7 @@ namespace scanReaction
 
 }
 
-namespace SimpleGrandi 
-{
-
-inline double pow(const double x, const int p)
+static inline double pow(const double x, const int p)
 {
    double ret=1;
    if (p > 0) 
@@ -75,7 +72,10 @@ inline double pow(const double x, const int p)
    }
    return ret;
 }
-   
+
+namespace SimpleGrandi 
+{
+
 string ThisReaction::methodName() const
 {
    return "SimpleGrandi";
