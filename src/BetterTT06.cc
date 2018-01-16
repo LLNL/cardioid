@@ -1372,20 +1372,15 @@ void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
 {
    vector<double>& state(stateTransport_.modifyOnDevice());
 
-   const double* VmRaw=&__Vm[0];
-   double* dVmRaw=&__dVm[0];
-   const double* iStimRaw=&__iStim[0];
-   double* stateDataRaw=&state[0];
-
-   #if _OPENMP >= 201511
-   #pragma omp target data use_device_ptr(VmRaw, dVmRaw, iStimRaw, stateDataRaw)
-   #endif
    {
       int errorCode=-1;
       if (blockSize_ == -1) { blockSize_ = 1024; }
       while(1)
       {
-         void* args[] = { &VmRaw, &iStimRaw, &dVmRaw, &stateDataRaw };
+         void* args[] = { ledger_lookup(&__Vm[0]),
+                          ledger_lookup(&__iStim[0]),
+                          ledger_lookup(&__dVm[0]),
+                          ledger_lookup(&state[0])};
          int errorCode = cuLaunchKernel(_kernel,
                                         (nCells_+blockSize_-1)/blockSize_, 1, 1,
                                         blockSize_,1,1,

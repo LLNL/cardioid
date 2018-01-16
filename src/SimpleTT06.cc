@@ -118,35 +118,21 @@ void assertStateOrderAndVarNamesAgree(void)
    }
 
 inline void copyToHost(const State& data) {
-const State* rawData=&data;    
-#if _OPENMP >= 201511
-#pragma omp target update from(rawData[0:1])
-#pragma omp target update from(data.data[0:rawData->nCells*rawData->nStates])
-#endif
+   assert(0);
 }
 
 inline void copyToDevice(const State& data) {
-const State* rawData=&data;    
-#if _OPENMP >= 201511
-#pragma omp target update to(rawData[0:1])
-#pragma omp target update to(data.data[0:rawData->nCells*rawData->nStates])
-#endif
+   assert(0);
 }
 
 inline void allocOnDevice(const State& data) {
-const State* rawData=&data;       
-#if _OPENMP >= 201511
-#pragma omp target enter data map(alloc: rawData[0:1])
-#pragma omp target enter data map(alloc: data.data[0:rawData->nCells*rawData->nStates])
-#endif
+   ledger_alloc(&data, sizeof(State));
+   ledger_alloc(&data.data[0], sizeof(double)*data.nCells*data.nStates);
 }
 
 inline void freeOnDevice(const State& data) {
-const State* rawData=&data;       
-#if _OPENMP >= 201511
-#pragma omp target exit data map(release: data.data[0:rawData->nCells*rawData->nStates])
-#pragma omp target exit data map(release: rawData[0:1])    
-#endif
+   ledger_free(&data.data[0]);
+   ledger_free(&data);
 }
 
 enum StateOffset {
@@ -200,12 +186,11 @@ void ThisReaction::calc(double dt, const VectorDouble32& Vm,
    const double* iStimRaw=&iStim[0];
    double* stateDataRaw=state.data;
    
-   #if _OPENMP >= 201511
-   #pragma omp target data use_device_ptr(VmRaw, dVmRaw, iStimRaw, stateDataRaw)
-   #endif
-   {
-      actualCalcJitify(dt, nCells_, VmRaw, iStimRaw, dVmRaw, stateDataRaw);
-   }
+   actualCalcJitify(dt, nCells_,
+                    (double*)ledger_lookup(VmRaw),
+                    (double*)ledger_lookup(iStimRaw),
+                    (double*)ledger_lookup(dVmRaw),
+                    (double*)ledger_lookup(stateDataRaw));
 }
    
 void ThisReaction::initializeMembraneVoltage(VectorDouble32& Vm)
