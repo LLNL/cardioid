@@ -209,21 +209,13 @@ int main(int argc, char* argv[])
    for (int iextra=0; iextra<extraColumns.size(); ++iextra) 
    {
       //find the state name
-      int foundState = -1;
-      for (int istate=0; istate<fieldNames.size(); ++istate) 
-      {
-         if (fieldNames[istate] == params.add_column_arg[iextra]) 
-         {
-            foundState = istate;
-            break;
-         }
-      }
+      int foundState = reaction->getVarHandle(params.add_column_arg[iextra]);
       if (foundState == -1)
       {
          fprintf(stderr, "Couldn't find state '%s' in the model\n", params.add_column_arg[iextra]);
          return __LINE__;
       }
-      extraColumns[iextra] = fieldHandles[foundState];
+      extraColumns[iextra] = foundState;
    }
    
    //using a forever loop here so we can repeat outputs on the last iteration.
@@ -251,7 +243,7 @@ int main(int argc, char* argv[])
             {
                fprintf(file, "  %s = %.17g %s;\n",
                        fieldNames[istate].c_str(),
-                       reaction->getValue(0,fieldHandles[istate]),
+                       reaction->getValue(0,fieldHandles[istate], Vm[0]),
                        fieldUnits[istate].c_str()
                       );
             }
@@ -268,7 +260,7 @@ int main(int argc, char* argv[])
          printf("%21.17g %21.17g", timeline.realTimeFromTimestep(itime), Vm[0]);
          for (int iextra=0; iextra<extraColumns.size(); ++iextra) 
          {
-            printf(" %21.17g", reaction->getValue(0,extraColumns[iextra]));
+            printf(" %21.17g", reaction->getValue(0,extraColumns[iextra],Vm[0]));
          }
          printf("\n");
       }

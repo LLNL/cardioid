@@ -66,7 +66,9 @@ HEARTSRC= \
 	SimpleOHaraRudy.cc \
 	SimpleGrandi.cc \
 	Passive.cc \
+	BetterTT06.cc \
 	SimpleTT06.cc \
+	SimpleTT06_ker.cu \
 	TT06Tau.cc \
 	TT06Func.cc \
 	pade.cc \

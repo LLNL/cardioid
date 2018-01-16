@@ -33,6 +33,7 @@ class Reaction
    std::vector<int> getVarHandle(const std::vector<std::string>& varName) const;
    virtual void setValue(int iCell, int varHandle, double value);
    virtual double getValue(int iCell, int varHandle) const;
+   virtual double getValue(int iCell, int varHandle, double V) const;
    virtual void getValue(int iCell,
                          const std::vector<int>& handle,
                          std::vector<double>& value) const;

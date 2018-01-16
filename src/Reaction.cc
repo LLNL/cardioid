@@ -90,6 +90,11 @@ void Reaction::setValue(int iCell, int varHandle, double value)
 }
 
 
+double Reaction::getValue(int iCell, int handle, double V) const
+{
+   return getValue(iCell, handle);
+}
+
 double Reaction::getValue(int iCell, int handle) const
 {
    assert(false);

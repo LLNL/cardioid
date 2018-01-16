@@ -38,6 +38,7 @@ namespace  scanReaction
    Reaction* scanPassive(OBJECT* obj, const int numPoints);
    Reaction* scanNull(OBJECT* obj);
    Reaction* scanTest(OBJECT* obj);
+   Reaction* scanBetterTT06(OBJECT* obj, const int numPoints, const double __dt);
 }
 
 
@@ -60,6 +61,8 @@ Reaction* reactionFactory(const string& name, double dt, const int numPoints,
       return scanReaction::scanTT06Dev(obj, dt, numPoints, group, scaleCurrents);
    else if (method == "TT06_RRG" )
       return scanReaction::scanTT06_RRG(obj, numPoints);
+   else if (method == "BetterTT06" )
+      return scanReaction::scanBetterTT06(obj, numPoints, dt);
    else if (method == "SimpleOHaraRudy" )
       return scanReaction::scanSimpleOHaraRudy(obj, numPoints);
    else if (method == "SimpleGrandi" )

@@ -108,6 +108,9 @@ endif
 ifeq ($(HOSTNAME),ray)
   ARCHGUESS = ray-openmp
 endif
+ifeq ($(HOSTNAME),surface)
+  ARCHGUESS = ray-openmp
+endif
 ifeq ($(HOSTNAME),prince)
   ARCHGUESS = osx
 endif
