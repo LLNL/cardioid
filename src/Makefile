@@ -83,7 +83,8 @@ HEARTSRC= \
 	CaAverageSensor.cc \
 	ECGSensor.cc \
 	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc DVThreshSensor.cc \
-   StateVariableSensor.cc Interpolation.cc
+	StateVariableSensor.cc Interpolation.cc \
+	Ledger.cc
 
 SPISRC=	 spi_impl.c
 SIMDSRC=  clooper.c TT06GatesSimd.c TT06GatesSimd2.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c 
