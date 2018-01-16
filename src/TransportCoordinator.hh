@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cassert>
+#include "Ledger.hh"
 
 template <typename TTT>
 inline void copyToHost(const TTT& data) {};
@@ -16,17 +17,15 @@ inline void freeOnDevice(const TTT& data) {};
 template <typename TTT,typename AAA>
 inline void copyToDevice(const std::vector<TTT, AAA>& data)
 {
-   const TTT* dataAlias = &data[0];
-#pragma omp target update to(dataAlias[0:data.size()])
+   ledger_copyToDevice(&data[0]);
    for (const TTT& item : data) {
       copyToDevice(item);
    }
 }
 template <typename TTT,typename AAA>
-inline void copyToHost(const std::vector<TTT, AAA>& data)
+inline void copyToHost(std::vector<TTT, AAA>& data)
 {
-   const TTT* dataAlias = &data[0];
-#pragma omp target update from(dataAlias[0:data.size()])
+   ledger_copyToHost(&data[0]);
    for (const TTT& item : data) {
       copyToHost(item);
    }
@@ -34,10 +33,7 @@ inline void copyToHost(const std::vector<TTT, AAA>& data)
 template <typename TTT, typename AAA>
 inline void allocOnDevice(const std::vector<TTT, AAA>& data)
 {
-   const TTT* dataAlias = &data[0];
-#if _OPENMP >= 201511
-#pragma omp target enter data map(alloc: dataAlias[0:data.size()])
-#endif
+   ledger_alloc(&data[0], data.size()*sizeof(TTT));
    for (const TTT& item : data) {
       allocOnDevice(item);
    }
@@ -48,10 +44,7 @@ inline void freeOnDevice(const std::vector<TTT,AAA>& data)
    for (const TTT& item : data) {
       freeOnDevice(item);
    }
-   const TTT* dataAlias = &data[0];
-#if _OPENMP >= 201511
-#pragma omp target exit data map(release: dataAlias[0:data.size()])
-#endif   
+   ledger_free(&data[0]);
 }
 
 template <typename TTT>
@@ -106,7 +99,7 @@ class TransportCoordinator {
       if (isHostValid_==false)
       {
          assert(isDeviceValid_ == true);
-         copyToHost(data_);
+         copyToHost(const_cast<TTT&>(data_));
          const_cast<bool&>(isHostValid_) = true;
       }
       return data_;
