@@ -107,8 +107,6 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "globalSyncRate", sim.globalSyncRate_, "-1");
    objectGet(obj, "printGid", sim.printGid_, "-1");
    objectGet(obj, "checkpointRate", sim.checkpointRate_, "-1");
-   sim.findVrest_= object_testforkeyword(obj, "Vrest"); 
-   if (sim.findVrest_) objectGet(obj,"Vrest",sim.Vrest_,"-100.0"); 
    {
       int tmp; objectGet(obj, "profileAllCounters", tmp, "0");
       if (tmp == 1)

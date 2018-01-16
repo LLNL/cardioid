@@ -23,6 +23,7 @@
 #include "fastBarrier.hh"
 #include "mpiUtils.h"
 #include "ReactionManager.hh"
+#include "simulationLoopCuda.hh"
 
 /*
    This follwing header, fastBarrier_nosync.hh, contains barrier code
@@ -166,12 +167,7 @@ void simulationLoop(Simulate& sim)
 
    double* recvBuf = voltageExchange.recvBuf_;
    int recvBufSize = voltageExchange.commTable_->recvSize();
-   #if _OPENMP >= 201511
-   if (recvBufSize > 0)
-   {
-      #pragma omp target enter data map(alloc:recvBuf[0:recvBufSize])
-   }
-   #endif
+   ledger_alloc(recvBuf, sizeof(double)*recvBufSize);
    while (sim.loop_ < sim.maxLoop_)
    {
       int nLocal = sim.anatomy_.nLocal();
@@ -196,12 +192,7 @@ void simulationLoop(Simulate& sim)
          const VectorDouble32& vmarray(vdata.VmTransport_.readOnDevice());
          VectorDouble32& dVmDiffusion(vdata.dVmDiffusionTransport_.modifyOnDevice());
          sim.diffusion_->updateLocalVoltage(&(vmarray[0]));
-         #if _OPENMP >= 201511
-         if (recvBufSize > 0)
-         {
-            #pragma omp target update to(recvBuf[0:recvBufSize])
-         }
-         #endif
+         ledger_copyToDevice(recvBuf);
          sim.diffusion_->updateRemoteVoltage(recvBuf);
          sim.diffusion_->calc(dVmDiffusion);
             }
@@ -221,11 +212,7 @@ void simulationLoop(Simulate& sim)
             vector<double>& iStim(iStimTransport.modifyOnDevice());
             double* iStimRaw=&iStim[0];
             double* dVmDiffusionRaw=&dVmDiffusion[0];
-            #pragma omp target teams distribute parallel for
-            for (unsigned ii = 0; ii < nLocal; ++ii)
-            {
-               iStimRaw[ii] = -(dVmDiffusionRaw[ii]);
-            }
+            setStimulus(iStimRaw,dVmDiffusionRaw,nLocal);
          }
       }
       stopTimer(stimulusTimer);
@@ -259,14 +246,7 @@ void simulationLoop(Simulate& sim)
          double* vmarrayRaw=&vmarray[0];
          const double* dVmReactionRaw=&dVmReaction[0];
          const double* dVmDiffusionRaw=&dVmDiffusion[0];            
-         #pragma omp target teams distribute parallel for
-         for (int ii = 0; ii < nLocal; ++ii)
-         {
-            double dVm = dVmReactionRaw[ii] + dVmDiffusionRaw[ii];
-            vmarrayRaw[ii] += sim.dt_*dVm;
-            if (sim.findVrest_) { vmarrayRaw[ii] = sim.Vrest_; }
-         }
-         
+         integrateVoltage(vmarrayRaw, dVmReactionRaw, dVmDiffusionRaw, nLocal, sim.dt_);         
       }
 
       sim.time_ += sim.dt_;

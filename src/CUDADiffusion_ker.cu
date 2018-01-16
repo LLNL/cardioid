@@ -7,6 +7,7 @@
 //#include "options.h"
 //#include "cudautil.h"
 #include <stdio.h>
+#include "Ledger.hh"
 
 #define XTILE 20
 typedef double Real;
@@ -172,8 +173,14 @@ __global__ void map_dVm(double * dVmOut, double* dVmRaw, const int *remap,int nC
 
 extern "C"
 {
-void call_cuda_kernels(const Real *VmRaw, Real *dVmRaw, const Real *sigmaRaw, int nx, int ny, int nz, Real *dVmOut, const int *lookup,int nCells)
+void call_cuda_kernels(const Real *VmCPU, Real *dVmCPU, const Real *sigmaCPU, int nx, int ny, int nz, Real *dVmOutCPU, const int *lookupCPU,int nCells)
 {
+   const Real* VmRaw = (Real*)ledger_lookup(VmCPU);
+   Real* dVmRaw = (Real*)ledger_lookup(dVmCPU);
+   const Real* sigmaRaw = (Real*)ledger_lookup(sigmaCPU);
+   Real* dVmOut = (Real*)ledger_lookup(dVmOutCPU);
+   const int* lookup = (int*)ledger_lookup(lookupCPU);
+   
    //determine block dim
    //1. blockdim.z and blockdim.y are determined in a simple way.
    int bdimz = (int)((nz-2)/30) + ((nz-2)%30==0?0:1);

@@ -104,8 +104,6 @@ class Simulate
    
    double dt_;
    double time_;
-   int findVrest_; 
-   double Vrest_;
    
    int nx_, ny_, nz_; // global size of grid
 
