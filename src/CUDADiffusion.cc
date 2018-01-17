@@ -153,11 +153,7 @@ void actualCalc(CUDADiffusion& self, VectorDouble32& dVm)
    double* dVmOut=&dVm[0];
    if (self.simLoopType_ == 0) // it is a hard coded of enum LoopType {omp, pdr}  
    {
-      #pragma omp target teams distribute parallel for firstprivate(self_nLocal_)
-      for (int icell=0; icell<self_nLocal_; icell++)
-      {
-         dVmOut[icell] = 0;
-      }
+      ledger_deviceZero(&dVm[0]);
    }
    
    vector<double>& dVmBlockVec(self.dVmBlock_.modifyOnDevice());

@@ -41,5 +41,11 @@ void* ledger_lookup(const void* host)
 {
    map<const void*, pair<size_t, void* > >::iterator iter = ledgerMap_.find(host);
    assert(iter != ledgerMap_.end());
-   return ledgerMap_.find(host)->second.second;
+   return iter->second.second;
+}
+void ledger_deviceZero(const void* host)
+{
+   map<const void*, pair<size_t, void* > >::iterator iter = ledgerMap_.find(host);
+   assert(iter != ledgerMap_.end());
+   cudaMemset(iter->second.second, 0, iter->second.first);
 }
