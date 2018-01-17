@@ -187,10 +187,10 @@ void ThisReaction::calc(double dt, const VectorDouble32& Vm,
    double* stateDataRaw=state.data;
    
    actualCalcJitify(dt, nCells_,
-                    (double*)ledger_lookup(VmRaw),
-                    (double*)ledger_lookup(iStimRaw),
-                    (double*)ledger_lookup(dVmRaw),
-                    (double*)ledger_lookup(stateDataRaw));
+                    ledger_lookup(VmRaw),
+                    ledger_lookup(iStimRaw),
+                    ledger_lookup(dVmRaw),
+                    ledger_lookup(stateDataRaw));
 }
    
 void ThisReaction::initializeMembraneVoltage(VectorDouble32& Vm)

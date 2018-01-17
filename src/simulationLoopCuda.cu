@@ -12,8 +12,8 @@ void setStimulus(double* iStimRaw,const double* dVmDiffusionRaw, const int nLoca
 {
    int blockSize = 1024;
    setStimulusKernel<<<(nLocal+blockSize-1)/blockSize,blockSize>>>
-      ((double*)ledger_lookup(iStimRaw),
-       (double*)ledger_lookup(dVmDiffusionRaw),
+      (ledger_lookup(iStimRaw),
+       ledger_lookup(dVmDiffusionRaw),
        nLocal);
 }
 
@@ -29,9 +29,9 @@ void integrateVoltage(double* vmarrayRaw, const double* dVmReactionRaw, const do
 {
    int blockSize = 1024;
    integrateVoltageKernel<<<(nLocal+blockSize-1)/blockSize,blockSize>>>
-      ((double*)ledger_lookup(vmarrayRaw),
-       (double*)ledger_lookup(dVmReactionRaw),
-       (double*)ledger_lookup(dVmDiffusionRaw),
+      (ledger_lookup(vmarrayRaw),
+       ledger_lookup(dVmReactionRaw),
+       ledger_lookup(dVmDiffusionRaw),
        nLocal, dt);
 }
 

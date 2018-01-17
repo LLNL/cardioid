@@ -175,11 +175,11 @@ extern "C"
 {
 void call_cuda_kernels(const Real *VmCPU, Real *dVmCPU, const Real *sigmaCPU, int nx, int ny, int nz, Real *dVmOutCPU, const int *lookupCPU,int nCells)
 {
-   const Real* VmRaw = (Real*)ledger_lookup(VmCPU);
-   Real* dVmRaw = (Real*)ledger_lookup(dVmCPU);
-   const Real* sigmaRaw = (Real*)ledger_lookup(sigmaCPU);
-   Real* dVmOut = (Real*)ledger_lookup(dVmOutCPU);
-   const int* lookup = (int*)ledger_lookup(lookupCPU);
+   const Real* VmRaw = ledger_lookup(VmCPU);
+   Real* dVmRaw = ledger_lookup(dVmCPU);
+   const Real* sigmaRaw = ledger_lookup(sigmaCPU);
+   Real* dVmOut = ledger_lookup(dVmOutCPU);
+   const int* lookup = ledger_lookup(lookupCPU);
    
    //determine block dim
    //1. blockdim.z and blockdim.y are determined in a simple way.
@@ -219,9 +219,9 @@ void copy_to_block(double* blockCPU, const int* lookupCPU, const double* sourceC
 {
    int blockSize = 1024;
    copy_to_block_kernel<<<(end-begin+blockSize-1)/blockSize,blockSize>>>
-      ((double*)ledger_lookup(blockCPU),
-       (int*)ledger_lookup(lookupCPU),
-       (double*)ledger_lookup(sourceCPU),
+      (ledger_lookup(blockCPU),
+       ledger_lookup(lookupCPU),
+       ledger_lookup(sourceCPU),
        begin,
        end);
 }

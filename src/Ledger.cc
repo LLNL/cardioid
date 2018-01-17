@@ -37,7 +37,8 @@ void ledger_copyToHost(void* host)
    assert(iter != ledgerMap_.end());
    cudaMemcpy(host, iter->second.second, iter->second.first, cudaMemcpyDeviceToHost);   
 }
-void* ledger_lookup(const void* host)
+template<>
+void* ledger_lookup<void>(const void* host)
 {
    map<const void*, pair<size_t, void* > >::iterator iter = ledgerMap_.find(host);
    assert(iter != ledgerMap_.end());
