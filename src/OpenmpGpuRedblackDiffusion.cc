@@ -146,14 +146,14 @@ void OpenmpGpuRedblackDiffusion::updateLocalVoltage(const double* VmLocal)
    double* VmBlockVecRaw=&VmBlockVec[0];
    const int* blockFromRedVecRaw=&blockFromRedVec[0];
    const int* cellFromRedVecRaw=&cellFromRedVec[0];
-   #pragma omp target teams distribute parallel for
+   //#pragma omp target teams distribute parallel for
    for (int ired=0; ired<nRedLocal_; ired++)
    {
       int icell = cellFromRedVecRaw[ired];
       VmBlockVecRaw[blockFromRedVecRaw[ired]] = VmLocal[icell];
    }
 
-   #pragma omp target teams distribute parallel for
+   //#pragma omp target teams distribute parallel for
    for (int ired=nRedLocal_+nRemote_; ired<nCells_; ired++)
    {
       int icell = cellFromRedVecRaw[ired];
@@ -171,7 +171,7 @@ void OpenmpGpuRedblackDiffusion::updateRemoteVoltage(const double* VmRemote)
    double* VmBlockVecRaw=&VmBlockVec[0];
    const int* blockFromRedVecRaw=&blockFromRedVec[0];
    const int* cellFromRedVecRaw=&cellFromRedVec[0];   
-   #pragma omp target teams distribute parallel for
+   //#pragma omp target teams distribute parallel for
    for (int ired=nRedLocal_; ired<nRedLocal_+nRemote_; ired++)
    {
       int icell = cellFromRedVecRaw[ired];
@@ -193,7 +193,7 @@ void actualCalc(OpenmpGpuRedblackDiffusion& self, VectorDouble32& dVm)
    double* dVmRaw=&dVm[0];
    if (self.simLoopType_ == 0) // it is a hard coded of enum LoopType {omp, pdr}  
    {
-      #pragma omp target teams distribute parallel for firstprivate(self_nLocal_)
+      //#pragma omp target teams distribute parallel for firstprivate(self_nLocal_)
       for (int icell=0; icell<self_nLocal_; icell++)
       {
          dVmRaw[icell] = 0;

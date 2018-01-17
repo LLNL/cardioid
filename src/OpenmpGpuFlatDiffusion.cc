@@ -159,7 +159,7 @@ void OpenmpGpuFlatDiffusion::updateLocalVoltage(const double* VmLocal)
       const vector<int>& blockFromCellVec(blockFromCell_.readOnDevice());
       const int* blockFromCellRaw=&blockFromCellVec[0];
 
-      #pragma omp target teams distribute parallel for
+      //#pragma omp target teams distribute parallel for
       for (int icell=0; icell<nLocal_; icell++)
       {
          VmBlockRaw[blockFromCellRaw[icell]] = VmLocal[icell];
@@ -181,7 +181,7 @@ void OpenmpGpuFlatDiffusion::updateRemoteVoltage(const double* VmRemote)
       const vector<int>& blockFromCellVec(blockFromCell_.readOnDevice());
       const int* blockFromCellRaw=&blockFromCellVec[0];
       
-      #pragma omp target teams distribute parallel for
+      //#pragma omp target teams distribute parallel for
       for (int icell=nLocal_; icell<nCells_; icell++)
       {
          VmBlockRaw[blockFromCellRaw[icell]] = VmRemote[icell-nLocal_];
@@ -212,7 +212,7 @@ void actualCalc(OpenmpGpuFlatDiffusion& self, VectorDouble32& dVm)
    {
       if (self.simLoopType_ == 0) // it is a hard coded of enum LoopType {omp, pdr}  
       {
-         #pragma omp target teams distribute parallel for firstprivate(self_nLocal_)
+         //#pragma omp target teams distribute parallel for firstprivate(self_nLocal_)
          for (int icell=0; icell<self_nLocal_; icell++)
          {
             dVmRaw[icell] = 0;
@@ -220,7 +220,7 @@ void actualCalc(OpenmpGpuFlatDiffusion& self, VectorDouble32& dVm)
       }
  
 
-      #pragma omp target teams distribute parallel for firstprivate(self_nx_,self_ny_,self_nz_)
+      //#pragma omp target teams distribute parallel for firstprivate(self_nx_,self_ny_,self_nz_)
       for (int ii=0; ii<(self_nx_-2)*(self_ny_-2)*(self_nz_-2); ii++)
       {
          int iz = ii / ((self_nx_-2)*(self_ny_-2));
@@ -250,7 +250,7 @@ void actualCalc(OpenmpGpuFlatDiffusion& self, VectorDouble32& dVm)
       #pragma unroll(2)
       for (int red=0; red<=1; red++)
       {
-         #pragma omp target teams distribute parallel for firstprivate(self_nx_, self_ny_, iterateMax)
+         //#pragma omp target teams distribute parallel for firstprivate(self_nx_, self_ny_, iterateMax)
          for (int ired=red; ired<iterateMax; ired+=2)
          {
             const int offset[3] = {1, self_nx_, self_nx_*self_ny_};
@@ -311,7 +311,7 @@ void actualCalc(OpenmpGpuFlatDiffusion& self, VectorDouble32& dVm)
    {
       const vector<int>& blockFromCellVec(self.blockFromCell_.readOnDevice());   
       const int* blockFromCellRaw=&blockFromCellVec[0];
-      #pragma omp target teams distribute parallel for
+      //#pragma omp target teams distribute parallel for
       for (int icell=0; icell<self_nLocal_; icell++)
       {
          dVmRaw[icell] += dVmBlockRaw[blockFromCellRaw[icell]];

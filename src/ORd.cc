@@ -1045,7 +1045,7 @@ void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
    double* stateDataRaw=&state[0];
 
    #if _OPENMP >= 201511
-   #pragma omp target data use_device_ptr(VmRaw, dVmRaw, iStimRaw, stateDataRaw)
+   //#pragma omp target data use_device_ptr(VmRaw, dVmRaw, iStimRaw, stateDataRaw)
    #endif
    {
       jitify::Program _program = _kernel_cache.program(_kernel_program, 0);
