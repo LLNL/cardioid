@@ -20,3 +20,19 @@ void integrateVoltage(double* Vm, const double* dVm, const double* iStim, const 
       dt,
       nCells);
 }
+
+__global__ void setStimulusKernel(double* iStim, const int nCells, const double stimAmount) {
+   int ii = threadIdx.x + blockIdx.x*blockDim.x;
+   if (ii >= nCells) { return; }
+   //use a negative sign here to undo the negative we had above.
+   iStim[ii] = stimAmount;
+}
+
+void setStimulus(double* iStim, const int nCells, const double stimAmount) {
+   int blockSize = 1024;
+   
+   setStimulusKernel<<<(nCells+blockSize-1)/blockSize,blockSize>>>(
+      ledger_lookup(iStim),
+      nCells,
+      stimAmount);
+}

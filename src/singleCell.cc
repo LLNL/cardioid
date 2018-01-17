@@ -281,7 +281,7 @@ int main(int argc, char* argv[])
          }
       }
       {
-         vector<double>& iStim(iStimTransport.modifyOnHost());
+         vector<double>& iStim(iStimTransport.modifyOnDevice());
          double stimAmount = 0;
          if (timestepsLeftInStimulus > 0)
          {
@@ -303,10 +303,8 @@ int main(int argc, char* argv[])
             stimAmount = -params.stim_strength_arg;
             timestepsLeftInStimulus--;
          }
-         for (int ii=0; ii<nCells; ii++)
-         {
-            iStim[ii]=stimAmount;
-         }
+         void setStimulus(double* iStim, const int nCells, const double stimAmount);         
+         setStimulus(&iStim[0], nCells, stimAmount);
       }
 
       {
