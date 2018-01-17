@@ -188,13 +188,13 @@ void call_cuda_kernels(const Real *VmRaw, Real *dVmRaw, const Real *sigmaRaw, in
 
    double * tmp;
    cudaMallocHost(&tmp,nx*ny*nz*sizeof(double));
-   cudaMemcpy(tmp,dVmRaw,nx*ny*nz*sizeof(double), cudaMemcpyDeviceToHost);
-   for(int ii=0;ii<nx;ii++)
-   for(int jj=0;jj<ny;jj++)
-   for(int kk=0;kk<nz;kk++)
-   {
-     printf("mcp (%d,%d,%d)=%e\n",ii,jj,kk,tmp[kk+nz*(jj+ny*ii)]);
-   }
+//   cudaMemcpy(tmp,dVmRaw,nx*ny*nz*sizeof(double), cudaMemcpyDeviceToHost);
+//   for(int ii=0;ii<nx;ii++)
+//   for(int jj=0;jj<ny;jj++)
+//   for(int kk=0;kk<nz;kk++)
+//   {
+//     printf("mcp (%d,%d,%d)=%e\n",ii,jj,kk,tmp[kk+nz*(jj+ny*ii)]);
+//   }
    map_dVm<<<112,512>>>(dVmOut,dVmRaw,lookup,nCells);
    cudaMemcpy(tmp,dVmOut,nCells*sizeof(double), cudaMemcpyDeviceToHost);
    cudaFreeHost(tmp);
