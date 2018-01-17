@@ -1377,10 +1377,14 @@ void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
       if (blockSize_ == -1) { blockSize_ = 1024; }
       while(1)
       {
-         void* args[] = { ledger_lookup(&__Vm[0]),
-                          ledger_lookup(&__iStim[0]),
-                          ledger_lookup(&__dVm[0]),
-                          ledger_lookup(&state[0])};
+         const double* Vm = ledger_lookup(&__Vm[0]);
+         const double* iStim = ledger_lookup(&__iStim[0]);
+         double* dVm = ledger_lookup(&__dVm[0]);
+         double* statePtr = ledger_lookup(&state[0]);
+         void* args[] = { &Vm,
+                          &iStim,
+                          &dVm,
+                          &statePtr};
          int errorCode = cuLaunchKernel(_kernel,
                                         (nCells_+blockSize_-1)/blockSize_, 1, 1,
                                         blockSize_,1,1,
