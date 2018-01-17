@@ -3,7 +3,8 @@
 #include "SymmetricTensor.hh"
 #include <vector>
 #include <map>
-//#include <iostream>
+#include <iostream>
+#include <stdio.h>
 
 //update is called before calc
 //dVm is combined with Vm from reaction without any rearrangement
@@ -79,6 +80,7 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType)
       double thisSigma[3][3] = {{sss.a11, sss.a12, sss.a13},
                                 {sss.a12, sss.a22, sss.a23},
                                 {sss.a13, sss.a23, sss.a33}};
+
       for (int idim=0; idim<3; idim++)
       {
          int otherBlock = iblock-offsets[idim];
@@ -86,7 +88,6 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType)
          {
             for (int jdim=0; jdim<3; jdim++)
             {
-               //int sigmaIndex = jdim +3*(idim +3*ired);
                int sigmaIndex = xx[2] + nz_ * ( xx[1] + ny_ * ( xx[0] + nx_ * ( jdim + 3 * idim)));
                double sigmaValue = thisSigma[idim][jdim]*areas[idim]/disc[jdim];
                if (idim != jdim)
@@ -155,28 +156,26 @@ void actualCalc(CUDADiffusion& self, VectorDouble32& dVm)
    int nx = self.nx_;
    int ny = self.ny_;
    int nz = self.nz_;
-   double* dVmRaw=&dVm[0];
+   double* dVmOut=&dVm[0];
    if (self.simLoopType_ == 0) // it is a hard coded of enum LoopType {omp, pdr}  
    {
       #pragma omp target teams distribute parallel for firstprivate(self_nLocal_)
       for (int icell=0; icell<self_nLocal_; icell++)
       {
-         dVmRaw[icell] = 0;
+         dVmOut[icell] = 0;
       }
    }
    
-   const vector<double>& dVmBlockVec(self.dVmBlock_.modifyOnDevice());
+   vector<double>& dVmBlockVec(self.dVmBlock_.modifyOnDevice());
    const vector<double>& VmBlockVec(self.VmBlock_.readOnDevice());
    const vector<double>& sigmaFaceNormalVec(self.sigmaFaceNormal_.readOnDevice());
    const vector<int>& cellLookupVec(self.cellLookup_.readOnDevice());
    
    const double* VmRaw=&VmBlockVec[0];
-   //double* dVmRaw=&dVmBlocVec[0];
+   double* dVmRaw=&dVmBlockVec[0];
    const double* sigmaRaw=&sigmaFaceNormalVec[0];
    const int*    lookupRaw=&cellLookupVec[0];
-   double* dVmOut=&dVm[0];
    double* temp=dVmOut;
- //   cout << "call cuda kernel" << endl;
    
 #if _OPENMP >= 201511
 #pragma omp target data map(from: temp[:self_nLocal_]) use_device_ptr(VmRaw, dVmRaw, sigmaRaw, dVmOut, lookupRaw)
@@ -184,8 +183,6 @@ void actualCalc(CUDADiffusion& self, VectorDouble32& dVm)
    {
       call_cuda_kernels(VmRaw,dVmRaw,sigmaRaw,nx,ny,nz,dVmOut,lookupRaw,self_nCells_);
    }
-   //diff_6face_v1<<<dim3(10,10,10),dim3(32,32,1)>>>(VmRaw,dVmRaw,sigmaRaw,sigmaRaw+3*nx*ny*nz,sigmaRaw+6*nx*ny*nz,nx,ny,nz);
-   //map_dVm<<<self_nCells_>>>(dVmRaw,dVmOut,lookupRaw);
 
 }
 
