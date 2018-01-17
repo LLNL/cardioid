@@ -19,6 +19,8 @@
 
 using namespace std;
 
+void integrateVoltage(double* Vm, const double* dVm, const double* iStim, const double dt, const int nCells);
+
 MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
 
 /*!
@@ -327,12 +329,7 @@ int main(int argc, char* argv[])
          double* VmRaw = &Vm[0];
          const double* iStimRaw = &iStim[0];
          const double* dVmRaw = &dVm[0];
-         #pragma omp target teams distribute parallel for
-         for (int ii=0; ii<nCells; ii++)
-         {
-            //use a negative sign here to undo the negative we had above.
-            VmRaw[ii] += (dVmRaw[ii] - iStimRaw[ii]) * dt;
-         }
+         integrateVoltage(VmRaw, dVmRaw, iStimRaw, dt, nCells);
       }
       itime++;
    }
