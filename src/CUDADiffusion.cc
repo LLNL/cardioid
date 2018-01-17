@@ -22,6 +22,8 @@ typedef double Real;
 extern "C"
 void call_cuda_kernels(const Real *VmRaw, Real *dVmRaw, const Real *sigmaRaw, int nx, int ny, int nz, Real *dVmOut, const int *lookup,int nCells);
 
+void copy_to_block(double* blockCPU, const int* lookupCPU, const double* sourceCPU, const int begin, const int end);
+
 CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType)
 : anatomy_(anatomy), simLoopType_(simLoopType),
   localGrid_(DiffusionUtils::findBoundingBox(anatomy, false))
@@ -125,11 +127,7 @@ void CUDADiffusion::updateLocalVoltage(const double* VmLocal)
    double* VmBlockVecRaw=&VmBlockVec[0];
    const vector<int>& cellLookupVec(cellLookup_.readOnDevice());
    const int* lookupRaw=&cellLookupVec[0];
-   #pragma omp target teams distribute parallel for
-   for (int icell=0; icell<nLocal_; icell++)
-   {
-      VmBlockVecRaw[lookupRaw[icell]] = VmLocal[icell];
-   }
+   copy_to_block(VmBlockVecRaw, lookupRaw, VmLocal, 0, nLocal_);
 }
 
 void CUDADiffusion::updateRemoteVoltage(const double* VmRemote)
@@ -138,11 +136,7 @@ void CUDADiffusion::updateRemoteVoltage(const double* VmRemote)
    double* VmBlockVecRaw=&VmBlockVec[0];
    const vector<int>& cellLookupVec(cellLookup_.readOnDevice());
    const int* lookupRaw=&cellLookupVec[0];
-   #pragma omp target teams distribute parallel for
-   for (int icell=nLocal_; icell<nCells_; icell++)
-   {
-      VmBlockVecRaw[lookupRaw[icell]] = VmRemote[icell];
-   }
+   copy_to_block(VmBlockVecRaw, lookupRaw, VmRemote, nLocal_, nCells_);
 }
 
 void CUDADiffusion::calc(VectorDouble32& dVm){

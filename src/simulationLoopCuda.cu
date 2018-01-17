@@ -4,7 +4,7 @@
 __global__ void setStimulusKernel(double* iStimRaw,const double* dVmDiffusionRaw, const int nLocal)
 {
    int ii = threadIdx.x + blockIdx.x*blockDim.x;
-   if (ii > nLocal) { return; }
+   if (ii >= nLocal) { return; }
    iStimRaw[ii] = -dVmDiffusionRaw[ii];
 }
 
@@ -21,7 +21,7 @@ void setStimulus(double* iStimRaw,const double* dVmDiffusionRaw, const int nLoca
 __global__ void integrateVoltageKernel(double* vmarrayRaw, const double* dVmReactionRaw, const double* dVmDiffusionRaw, const int nLocal, const double dt)
 {
    int ii = threadIdx.x + blockIdx.x*blockDim.x;
-   if (ii > nLocal) { return; }
+   if (ii >= nLocal) { return; }
    vmarrayRaw[ii] += dt*(dVmReactionRaw[ii] + dVmDiffusionRaw[ii]);
 }
 

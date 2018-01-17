@@ -207,3 +207,21 @@ void call_cuda_kernels(const Real *VmCPU, Real *dVmCPU, const Real *sigmaCPU, in
    cudaFreeHost(tmp);
 }
 }
+
+__global__ void copy_to_block_kernel(double* blockGPU, const int* lookupGPU, const double* sourceGPU, const int begin, const int end)
+{
+   int ii = threadIdx.x + blockIdx.x*blockDim.x  +begin;
+   if (ii >= end) { return; }
+   blockGPU[lookupGPU[ii]] = sourceGPU[ii];
+}
+
+void copy_to_block(double* blockCPU, const int* lookupCPU, const double* sourceCPU, const int begin, const int end)
+{
+   int blockSize = 1024;
+   copy_to_block_kernel<<<(end-begin+blockSize-1)/blockSize,blockSize>>>
+      ((double*)ledger_lookup(blockCPU),
+       (int*)ledger_lookup(lookupCPU),
+       (double*)ledger_lookup(sourceCPU),
+       begin,
+       end);
+}
