@@ -47,9 +47,13 @@ void ledger_copyToHost(void* host)
 template<>
 void* ledger_lookup<void>(const void* host)
 {
-   map<const void*, pair<size_t, void* > >::iterator iter = ledgerMap_.find(host);
-   assert(iter != ledgerMap_.end());
-   return iter->second.second;
+   assert(ledgerMap_.size() >= 1);
+   map<const void*, pair<size_t, void* > >::iterator iter = ledgerMap_.upper_bound(host);
+   assert(iter != ledgerMap_.begin());
+   --iter;
+   size_t diff = (char*)(host) - (char*)(iter->first);
+   assert(diff < iter->second.first);
+   return (void*)((char*)iter->second.second + diff);
 }
 void ledger_deviceZero(const void* host)
 {

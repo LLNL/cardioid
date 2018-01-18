@@ -1,6 +1,8 @@
 
 #include <set>
 #include <algorithm>
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 #include "ReactionManager.hh"
 #include "Reaction.hh"
 #include "object_cc.hh"
@@ -11,6 +13,10 @@
 
 using namespace std;
 
+void copyNumbers(const double* src, const int size, double* dest) {
+cudaError_t ret =  cudaMemcpy(ledger_lookup(dest), ledger_lookup(src), sizeof(double)*size, cudaMemcpyDeviceToDevice);
+   assert(ret == cudaSuccess);
+}
 
 ///pass through routines.
 void ReactionManager::calc(double dt,
@@ -20,28 +26,37 @@ void ReactionManager::calc(double dt,
 {
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
-      copy(&Vm[extents_[ii]], &Vm[extents_[ii+1]], &VmPerReaction_[ii][0]);
-      copy(&iStim[extents_[ii]], &iStim[extents_[ii+1]], &iStimPerReaction_[ii][0]);
-      reactions_[ii]->calc(dt, VmPerReaction_[ii], iStimPerReaction_[ii], dVmPerReaction_[ii]);
-      copy(&dVmPerReaction_[ii][0], &dVmPerReaction_[ii][extents_[ii+1]-extents_[ii]], &dVm[extents_[ii]]);
+      VectorDouble32& localVm(VmTransportPerReaction_[ii].modifyOnDevice());
+      vector<double>& localIStim(iStimTransportPerReaction_[ii].modifyOnDevice());
+      VectorDouble32& localDVm(dVmTransportPerReaction_[ii].modifyOnDevice());
+      int localSize = extents_[ii+1]-extents_[ii];
+      copyNumbers(&Vm[extents_[ii]], localSize, &localVm[0]);
+      copyNumbers(&iStim[extents_[ii]], localSize, &localIStim[0]);
+      reactions_[ii]->calc(dt, localVm, localIStim, localDVm);
+      copyNumbers(&localDVm[0], localSize, &dVm[extents_[ii]]);
    }
 }
    
-void ReactionManager::updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR)
+void ReactionManager::updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVm)
 {
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
-      copy(&Vm[extents_[ii]], &Vm[extents_[ii+1]], &VmPerReaction_[ii][0]);
-      reactions_[ii]->updateNonGate(dt, VmPerReaction_[ii], dVmPerReaction_[ii]);
-      copy(&dVmPerReaction_[ii][0], &dVmPerReaction_[ii][extents_[ii+1]-extents_[ii]], &dVR[extents_[ii]]);
+      VectorDouble32& localVm(VmTransportPerReaction_[ii].modifyOnDevice());
+      VectorDouble32& localDVm(dVmTransportPerReaction_[ii].modifyOnDevice());
+      int localSize = extents_[ii+1]-extents_[ii];
+      copyNumbers(&Vm[extents_[ii]], localSize, &localVm[0]);
+      reactions_[ii]->updateNonGate(dt, localVm, localDVm);
+      copyNumbers(&localDVm[0], localSize, &dVm[extents_[ii]]);
    }
 }
 void ReactionManager::updateGate(double dt, const VectorDouble32& Vm)
 {
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
-      copy(&Vm[extents_[ii]], &Vm[extents_[ii+1]], &VmPerReaction_[ii][0]);
-      reactions_[ii]->updateGate(dt, VmPerReaction_[ii]);
+      VectorDouble32& localVm(VmTransportPerReaction_[ii].modifyOnDevice());
+      int localSize = extents_[ii+1]-extents_[ii];
+      copyNumbers(&Vm[extents_[ii]], localSize, &localVm[0]);
+      reactions_[ii]->updateGate(dt, localVm);
    }
 }
 
@@ -62,8 +77,10 @@ void ReactionManager::initializeMembraneState(VectorDouble32& Vm)
    {
       Reaction* reaction = reactions_[ii];
       string objectName = objectNameFromRidx_[ii];
-      ::initializeMembraneState(reaction, objectName, VmPerReaction_[ii]);
-      copy(&VmPerReaction_[ii][0], &VmPerReaction_[ii][extents_[ii+1]-extents_[ii]], &Vm[extents_[ii]]);
+      VectorDouble32& localVm(VmTransportPerReaction_[ii].modifyOnHost());
+      int localSize = extents_[ii+1]-extents_[ii];
+      ::initializeMembraneState(reaction, objectName, localVm);
+      copy(&localVm[0], &localVm[localSize], &Vm[extents_[ii]]);
    }
 }
 
@@ -278,18 +295,18 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    reactions_.resize(numReactions);
    extents_.resize(numReactions+1);
    extents_[0] = 0;
-   VmPerReaction_.resize(numReactions);
-   iStimPerReaction_.resize(numReactions);
-   dVmPerReaction_.resize(numReactions);
+   VmTransportPerReaction_.resize(numReactions);
+   iStimTransportPerReaction_.resize(numReactions);
+   dVmTransportPerReaction_.resize(numReactions);
    for (int ireaction=0; ireaction<numReactions; ++ireaction)
    {
       int localSize = countFromRidx[ireaction];
       reactions_[ireaction] = reactionFactory(objectNameFromRidx_[ireaction], dt, localSize, group, scaleCurrents);
       extents_[ireaction+1] = extents_[ireaction]+localSize;
       int bufferSize = convertActualSizeToBufferSize(localSize);
-      VmPerReaction_[ireaction].resize(bufferSize);
-      iStimPerReaction_[ireaction].resize(bufferSize);
-      dVmPerReaction_[ireaction].resize(bufferSize);
+      VmTransportPerReaction_[ireaction].setup(VectorDouble32(bufferSize));
+      iStimTransportPerReaction_[ireaction].setup(std::vector<double>(bufferSize));
+      dVmTransportPerReaction_[ireaction].setup(VectorDouble32(bufferSize));
    }
 
    //Ok, now we've created the reaction objects.  Now we need to

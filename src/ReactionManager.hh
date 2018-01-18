@@ -7,6 +7,7 @@
 #include "VectorDouble32.hh"
 #include "ThreadUtils.hh"
 #include "Anatomy.hh"
+#include "TransportCoordinator.hh"
 
 class Reaction;
 
@@ -49,9 +50,9 @@ class ReactionManager
    std::vector<Reaction*> reactions_;
    std::vector<int> extents_;
    
-   std::vector<VectorDouble32> VmPerReaction_;
-   std::vector<std::vector<double> > iStimPerReaction_;
-   std::vector<VectorDouble32> dVmPerReaction_;
+   std::vector<TransportCoordinator<VectorDouble32> > VmTransportPerReaction_;
+   std::vector<TransportCoordinator<std::vector<double> > > iStimTransportPerReaction_;
+   std::vector<TransportCoordinator<VectorDouble32> > dVmTransportPerReaction_;
 
    std::vector<std::string> unitFromHandle_;
    std::map<std::string, int> handleFromVarname_;
