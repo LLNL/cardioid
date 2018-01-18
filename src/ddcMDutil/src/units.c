@@ -149,6 +149,7 @@ static SYMBOL symbol_table[] =
    {"molar",    -3.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0e3}, // 1 molar = 1mol/liter
    {"M",        -3.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0e3}, // 1 M = 1 molar
    {"mM",       -3.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0},   // 1 mM = 1 mol/meter^3
+   {"uM",       -3.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0e-3},   
    {"GPa",      -1.0, 1.0,-2.0, 0.0, 0.0, 0.0, 0.0, 1e9},
    {"K",         0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0},
    {"volt",      2.0, 1.0,-3.0,-1.0, 0.0, 0.0, 0.0, 1.0},
@@ -363,7 +364,8 @@ double units_parse(const char* unit_string, double* expSum)
    char* orig_string = strdup(unit_string);
    char* mod_string = orig_string;
    if (!parse_expression(&mod_string, expSum, &retVal) || mod_string[0] != '\0') {
-      assert(0 && printf("Couldn't understand unit %s\n", orig_string));
+      printf("Couldn't understand unit %s\n", orig_string);
+      assert(0);
    }
    free(orig_string);
    return retVal;
