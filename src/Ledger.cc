@@ -52,7 +52,7 @@ void* ledger_lookup<void>(const void* host)
    assert(iter != ledgerMap_.begin());
    --iter;
    size_t diff = (char*)(host) - (char*)(iter->first);
-   assert(diff < iter->second.first);
+   assert(diff <= iter->second.first);
    return (void*)((char*)iter->second.second + diff);
 }
 void ledger_deviceZero(const void* host)
