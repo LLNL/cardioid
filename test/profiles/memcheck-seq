@@ -1,0 +1,21 @@
+#!/bin/bash
+
+tags=seq
+
+
+function beginTest {
+    touch $testroot/results/$build/$profile/suppressions
+    rm -f memcheck-*.log
+}
+
+function runBinary {
+    exe=$1; shift
+    valgrind --error-markers=--BEGIN--,--END-- --log-file=memcheck-%n.log \
+             --suppressions=$testroot/results/$build/$profile/suppressions \
+             $testroot/../bin/$exe-$build "$@"
+}
+
+function endTest {
+    perl -e '$inBlock = 0; while (<>) { if (not $inBlock and $_ =~ /--BEGIN--/) { $inBlock = 1;} elsif ($inBlock and $_ =~ /--END--/) { $inBlock = 0; } elsif ($inBlock) { print; } }' memcheck-*.log >> result
+
+}
