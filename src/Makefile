@@ -293,7 +293,7 @@ modifyAnatomyFile:
 	LDFLAGS="$(LDFLAGS_OPT)"  EXENAME=$@-$(ARCH)
 
 modifyAnatomyFile-target: $(HEARTOBJS) $(OBJDIR)/modifyAnatomyFile.o Version.cc
-	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(OBJDIR)/modifyAnatomyFile.o $(LDFLAGS) -llapack
+	$(LD) Version.cc $(DFLAGS) -o $(BINDIR)/$(EXENAME) $(HEARTOBJS) $(OBJDIR)/modifyAnatomyFile.o $(LDFLAGS)
 
 $(DDCMD_FILES):
 	./mkLinks_ddcMD.sh $@
