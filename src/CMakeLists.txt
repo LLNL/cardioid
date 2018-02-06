@@ -1,0 +1,137 @@
+
+project(cardioid_elec)
+cmake_minimum_required(VERSION 3.0)
+
+# Set a default build type if none was specified
+set(default_build_type "Release")
+#if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
+#  set(default_build_type "Debug")
+#endif()
+ 
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
+  set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
+      STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+    "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
+find_package(OpenMP)
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+
+add_definitions(-DDiff_Weight_Type_Single)
+add_definitions(-DWITH_PIO -DWITH_MPI)
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/src)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/include)
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+find_library(BLAS_LIB blas)
+find_library(LAPACK_LIB lapack)
+
+if (BLAS_LIB AND LAPACK_LIB)
+   add_definitions(-DHAVE_LAPACK)
+endif()
+
+set (heart_src 
+	ThreadServer.cc
+	ThreadUtils.cc
+	stringUtils.cc
+	readCellList.cc
+	PioHeaderData.cc
+	Vector.cc SymmetricTensor.cc ConstantModel.cc ConstantReaction.cc
+	PerformanceTimers.cc unionOfStrings.cc getUserInfo.cc
+        GDLoadBalancer.cc BlockLoadBalancer.cc workBoundBalancer.cc
+	pioBalancer.cc
+	CommTable.cc
+	BucketOfBits.cc
+	stateLoader.cc
+	readPioFile.cc
+	AnatomyReader.cc object_cc.cc
+	Koradi.cc GridRouter.cc Grid3DStencil.cc writeCells.cc
+	checkpointIO.cc
+	DomainInfo.cc
+	BoundingBox.cc
+	initializeSimulate.cc
+	Simulate.cc
+	initializeAnatomy.cc setConductivity.cc assignCellsToTasks.cc
+	getRemoteCells.cc
+	simulationLoop.cc
+	diffusionFactory.cc reactionFactory.cc
+	stimulusFactory.cc sensorFactory.cc drugFactory.cc
+   Drug.cc DrugChannel.cc
+	FibreConductivity.cc JHUConductivity.cc
+	DiffusionUtils.cc
+	FGRDiffusion.cc
+	FGRDiffusionOMP.cc
+	FGRDiffusionThreads.cc
+	FGRDiffusionOverlap.cc
+	FGRDiffusionStrip.cc
+	FGRUtils.cc
+	Reaction.cc
+	ReactionManager.cc
+        ReactionFHN.cc
+	TT04_CellML_Reaction.cc
+	TT06_CellML_Reaction.cc 
+	TT06Dev_Reaction.cc
+	TT06_RRG_Reaction.cc
+	OHaraRudy_Reaction.cc
+	SimpleOHaraRudy.cc
+	Grandi_Reaction.cc
+	SimpleGrandi.cc
+        Passive.cc
+	TT06Tau.cc
+	TT06Func.cc
+	pade.cc
+   TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc
+   TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc
+	TT06_RRG.cc
+   OHaraRudyScan.cc
+   GrandiScan.cc 
+	TestStimulus.cc PointStimulus.cc BoxStimulus.cc
+	PeriodicPulse.cc RandomPulse.cc
+	PointListSensor.cc ActivationTimeSensor.cc
+	ActivationAndRecoverySensor.cc
+	VoronoiCoarsening.cc DataVoronoiCoarsening.cc GradientVoronoiCoarsening.cc
+	CaAverageSensor.cc
+	ECGSensor.cc
+	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc DVThreshSensor.cc
+   StateVariableSensor.cc Interpolation.cc
+   Version.cc
+   spi_impl.c
+   clooper.c TT06GatesSimd2.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c
+   OHaraRudy.c OHaraRudy_Voltage.c OHaraRudy_Concent.c OHaraRudy_INaCai.c OHaraRudy_INaCass.c
+              OHaraRudy_INaK.c OHaraRudy_INab.c OHaraRudy_ICab.c OHaraRudy_IKb.c
+              OHaraRudy_IpCa.c OHaraRudy_INaFast.c OHaraRudy_INaL.c OHaraRudy_Ito.c
+              OHaraRudy_IKr.c OHaraRudy_IKs.c OHaraRudy_IK1.c OHaraRudy_ICa.c null_INull.c
+              OHaraRudy_Fluxes.c OHaraRudy_CaMKtrap.c reversalPotentials.c
+        OHaraRudyMod_INaFast.c RTYSC14A_IKr.c  MYBGBKC_INa.c
+        Grandi.c         Grandi_IClCa.c   Grandi_IKs.c     Grandi_INaL.c    Grandi_Revpots.c
+              Grandi_Concent.c Grandi_IClb.c    Grandi_IKur.c    Grandi_INab.c    Grandi_Voltage.c
+              Grandi_Fluxes.c  Grandi_IK1.c     Grandi_INCX.c    Grandi_INull.c
+              Grandi_ICa.c     Grandi_IKp.c     Grandi_INa.c     Grandi_IpCa.c
+              Grandi_ICab.c    Grandi_IKr.c     Grandi_INaK.c    Grandi_Ito.c
+)
+if (NOT use_precompiled)
+  list(APPEND heart_src TT06GatesSimd.c)
+endif()
+add_library(heart
+            ${heart_src})
+target_link_libraries(heart ddcMDutil ${extra_libs})
+if (BLAS_LIB AND LAPACK_LIB)
+  target_link_libraries(heart ${LAPACK_LIB} ${BLAS_LIB})
+endif()
+
+add_executable(cardioid cardioid.cc)
+target_link_libraries(cardioid heart)
+
+add_executable(singleCell singleCell.cc singleCellOptions.c)
+target_link_libraries(singleCell heart)
+
+if (LAPACK_LIB)
+   add_executable(modifyAnatomyFile modifyAnatomyFile.cc)
+   target_link_libraries(modifyAnatomyFile heart)
+endif ()

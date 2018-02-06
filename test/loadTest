@@ -46,7 +46,7 @@ function beginTest { :;}
 function endTest { :;}
 function runBinary {
     exe=$1; shift
-    $testroot/../bin/$exe-$build "$@"
+    $testroot/../bin/$build/$exe "$@"
 }
 
 source $testroot/profiles/$profile

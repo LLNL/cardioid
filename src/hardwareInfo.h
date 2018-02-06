@@ -1,1 +1,0 @@
-ddcMDutil/include/hardwareInfo.h
