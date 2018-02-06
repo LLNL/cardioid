@@ -39,7 +39,8 @@ class ThreadTeam
    const ThreadRankInfo& rankInfo()          const {return rankInfo_[omp_get_thread_num()];}
    const ThreadRankInfo& rankInfo(int ompID) const {return rankInfo_[ompID];}
    const ThreadHardwareInfo& hwInfo(int ii) const {return threads_[ii];} // not ranked by ompId or teamRank
-
+   ThreadTeam() { nSquads_ = 0; }
+   
  private:
    void buildRankInfo();
    int nSquads_;

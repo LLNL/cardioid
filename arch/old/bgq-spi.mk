@@ -15,8 +15,8 @@ CC=$(BGQ_SDK_PATH)/comm/xl/bin/mpixlc_r
 LD=$(CXX)
 
 DFLAGS = -DWITH_PIO -DWITH_MPI -DBGQ -DSPI \
-	 -DADD_ -DUSE_CSTDIO_LFS -DMPICH_IGNORE_CXX_SEEK
-LDFLAGS_BASE = -lc -lnss_files -lnss_dns -lresolv -L/usr/local/tools/mpitrace/lib  -L/bgsys/drivers/ppcfloor/bgpm/lib -lbgpm
+	 -DADD_ -DUSE_CSTDIO_LFS -DMPICH_IGNORE_CXX_SEEK -DHAVE_LAPACK
+LDFLAGS_BASE = -lc -lnss_files -lnss_dns -lresolv -L/usr/local/tools/mpitrace/lib  -L/bgsys/drivers/ppcfloor/bgpm/lib -lbgpm /usr/local/tools/lapack/lib/liblapack-3.6.0_gfortran-4.4.7.a /usr/local/tools/blas/lib/libblas-3.6.0_gfortran-4.4.7.a -lgfortran
 #LDFLAGS_BASE = -lnss_files -lnss_dns -lresolv -L/bgsys/drivers/ppcfloor/bgpm/lib -lbgpm
 
 INCLUDE = -I$(SPI_PATH)/include

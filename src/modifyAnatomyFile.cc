@@ -32,10 +32,16 @@ string printToWidth(const double value, const int width) {
    return ss.str();
 }
 
+//#ifdef BGQ
+//#define sym(name) name
+//#else
+#define sym(name) name ## _
+//#endif
+
 extern "C" {
-   void dsytrd_(const char* uplo, const int* n, double* A, const int* lda, double* d, double* e, double* tau, double* work, const int* lwork, int* info);
-   void dorgtr_(const char* uplo, const int* n, double* A, const int* lda, const double* tau, double* work, const int* lwork, int* info);
-   void dsteqr_(const char* compz, const int* n, double* d, double* e, double* Z, const int* ldz, double* work, int* info);
+   void sym(dsytrd)(const char* uplo, const int* n, double* A, const int* lda, double* d, double* e, double* tau, double* work, const int* lwork, int* info);
+   void sym(dorgtr)(const char* uplo, const int* n, double* A, const int* lda, const double* tau, double* work, const int* lwork, int* info);
+   void sym(dsteqr)(const char* compz, const int* n, double* d, double* e, double* Z, const int* ldz, double* work, int* info);
 }
 
 void symmetricTensorDecomp(const double inputT[3][3], double vT[3][3], double diag[3])
@@ -57,30 +63,30 @@ void symmetricTensorDecomp(const double inputT[3][3], double vT[3][3], double di
    {
       lwork = -1;
       double work[1];
-      dsytrd_(&uplo,&n, &vT[0][0], &n, diag, e, tau, work, &lwork, &info);
+      sym(dsytrd)(&uplo,&n, &vT[0][0], &n, diag, e, tau, work, &lwork, &info);
       assert(info == 0);
       lwork = work[0];
    }
    {
       double work[lwork];
-      dsytrd_(&uplo,&n, &vT[0][0], &n, diag, e, tau, work, &lwork, &info);
+      sym(dsytrd)(&uplo,&n, &vT[0][0], &n, diag, e, tau, work, &lwork, &info);
       assert(info == 0);
    }
    {
       lwork = -1;
       double work[1];
-      dorgtr_(&uplo,&n, &vT[0][0], &n, tau, work, &lwork, &info);
+      sym(dorgtr)(&uplo,&n, &vT[0][0], &n, tau, work, &lwork, &info);
       assert(info == 0);
       lwork = work[0];
    }
    {
       double work[lwork];
-      dorgtr_(&uplo,&n, &vT[0][0], &n, tau, work, &lwork, &info);
+      sym(dorgtr)(&uplo,&n, &vT[0][0], &n, tau, work, &lwork, &info);
       assert(info == 0);
    }
    {
       double work[2*n-1];
-      dsteqr_(&compz, &n, diag, e, &vT[0][0], &n, work, &info);
+      sym(dsteqr)(&compz, &n, diag, e, &vT[0][0], &n, work, &info);
       assert(info == 0);
    }
 }
