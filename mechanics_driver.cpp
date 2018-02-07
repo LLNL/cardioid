@@ -1,7 +1,6 @@
 #include "mfem.hpp"
 #include "cardiac_physics.hpp"
 #include "cardiac_integrators.hpp"
-#include "mesh_tools.hpp"
 #include "mechanics_driver.hpp"
 #include <memory>
 #include <iostream>
@@ -19,8 +18,6 @@ int main(int argc, char *argv[])
    const char *mesh_file = "./beam-hex-rescaled.mesh";
    int ser_ref_levels = 0;
    int par_ref_levels = 0;
-   bool heart_mesh = false;
-   bool print_mesh = false;
    int order = 2;
    bool slu_solver = true;
    bool visualization = true;
@@ -35,10 +32,6 @@ int main(int argc, char *argv[])
                   "Number of times to refine the mesh uniformly in serial.");
    args.AddOption(&par_ref_levels, "-rp", "--refine-parallel",
                   "Number of times to refine the mesh uniformly in parallel.");
-   args.AddOption(&heart_mesh, "-hm", "--heart-mesh", "-no-hm",
-                  "--no-heart-mesh", "Use the heart mesh boundary conditions.");
-   args.AddOption(&print_mesh, "-pm", "--print-mesh", "-no-pm",
-                  "--no-print-mesh", "Print the computed heart mesh attributes.");
    args.AddOption(&order, "-o", "--order",
                   "Order (degree) of the finite elements.");
    args.AddOption(&slu_solver, "-slu", "--superlu", "-no-slu",
@@ -68,14 +61,6 @@ int main(int argc, char *argv[])
       args.PrintOptions(cout);
    }
 
-   // Use the known heart mesh if requested
-   if (heart_mesh && print_mesh) {
-      mesh_file = "./mechmesh.vtk";
-   }
-   else if (heart_mesh && !print_mesh) {
-      mesh_file = "./mechmesh.mesh";
-   }
-
    // Open the mesh
    Mesh *mesh;
    ifstream imesh(mesh_file);
@@ -92,35 +77,15 @@ int main(int argc, char *argv[])
    imesh.close();
    ParMesh *pmesh = NULL;
 
-   // If using the heart mesh, set the surface attributes, print and exit if requested
-   if (heart_mesh) {
-      if (print_mesh) {
-         setSurfaces(mesh);
-         if (myid == 0) {
-            ofstream surfh;
-            surfh.open("surfaces.vtk");            
-            printSurfVTK(mesh, surfh);
-
-            ofstream annotated_mesh;
-            annotated_mesh.open("mechmesh.mesh");            
-            mesh->Print(annotated_mesh);
-            return 0;
-         }
+   for (int lev = 0; lev < ser_ref_levels; lev++)
+      {
+         mesh->UniformRefinement();
       }
-      pmesh = new ParMesh(MPI_COMM_WORLD, *mesh);
-   }
-   // Otherwise, use the standard uniform refinements
-   else {
-      for (int lev = 0; lev < ser_ref_levels; lev++)
-         {
-            mesh->UniformRefinement();
-         }
-      pmesh = new ParMesh(MPI_COMM_WORLD, *mesh);
-      for (int lev = 0; lev < par_ref_levels; lev++)
-         {
-            pmesh->UniformRefinement();
-         }
-   }
+   pmesh = new ParMesh(MPI_COMM_WORLD, *mesh);
+   for (int lev = 0; lev < par_ref_levels; lev++)
+      {
+         pmesh->UniformRefinement();
+      }
 
    delete mesh;
    int dim = pmesh->Dimension();
@@ -141,6 +106,11 @@ int main(int argc, char *argv[])
    // Define the Dirichlet conditions (set to boundary attribute 1)
    Array<Array<int> *> ess_bdr(2);
 
+   // Boundary condition markers
+   // 1 - Dirichlet/Essential
+   // 2 - Free surface
+   // 3 - Traction
+   // 4 - Pressure
    Array<int> ess_bdr_u(R_space.GetMesh()->bdr_attributes.Max());
    Array<int> ess_bdr_p(W_space.GetMesh()->bdr_attributes.Max());
    Array<int> pres_bdr(R_space.GetMesh()->bdr_attributes.Max());
@@ -171,12 +141,6 @@ int main(int argc, char *argv[])
    }
 
    // Define the block structure of the solution vector (u then p)
-   Array<int> block_offsets(3); 
-   block_offsets[0] = 0;
-   block_offsets[1] = R_space.GetVSize();
-   block_offsets[2] = W_space.GetVSize();
-   block_offsets.PartialSum();
-
    Array<int> block_trueOffsets(3); 
    block_trueOffsets[0] = 0;
    block_trueOffsets[1] = R_space.TrueVSize();
@@ -198,6 +162,7 @@ int main(int argc, char *argv[])
   
    x_gf.ProjectCoefficient(deform);
    x_ref.ProjectCoefficient(refconfig);
+   p_gf = 0.0;
    
    // Set up the block solution vectors
    x_gf.GetTrueDofs(xp.GetBlock(0));
@@ -279,9 +244,7 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
      newton_solver(fes[0]->GetComm()), slu_solver(slu)
 {
    Array<Vector *> rhs(2);
-
-   rhs[0] = NULL;
-   rhs[1] = NULL;
+   rhs = NULL;
 
    fes.Copy(spaces);
 
@@ -369,12 +332,7 @@ void CardiacOperator::Mult(const Vector &k, Vector &y) const
 // Compute the Jacobian from the nonlinear form
 Operator &CardiacOperator::GetGradient(const Vector &xp) const
 {
-   Jacobian = &Hform->GetGradient(xp);
-
-   double area = Hform->GetArea(xp);
-   std::cout << "Area: "<< area << std::endl;
-
-   return *Jacobian;
+   return Hform->GetGradient(xp);
 }
 
 CardiacOperator::~CardiacOperator()

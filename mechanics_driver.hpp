@@ -19,8 +19,6 @@ protected:
    Array<ParFiniteElementSpace *> spaces;
 
    ParBlockNonlinearForm *Hform;
-   mutable Operator *Jacobian;
-   const BlockVector *x;
 
    /// Newton solver for the hyperelastic operator
    NewtonSolver newton_solver;

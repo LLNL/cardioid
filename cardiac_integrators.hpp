@@ -22,9 +22,11 @@ public:
 
    virtual void EvalP(const DenseMatrix &J, const double pres, const Vector &fiber, DenseMatrix &P) const;
 
-   virtual void AssembleH(const DenseMatrix &J, const double pres, const Vector &fiber, const DenseMatrix &DS, const Vector Sh_p, const double weight, Array2D<DenseMatrix *>&elmats) const;
+   virtual void AssembleH(const DenseMatrix &J, const double pres, const Vector &fiber, const DenseMatrix &DS, const Vector Sh_p, const double weight, const Array2D<DenseMatrix *>&elmats) const;
 
    virtual void GenerateTransform(const Vector &fiber, DenseMatrix &Q, DenseMatrix &QT) const;
+
+   virtual ~CardiacModel();
 
 };
 
@@ -40,10 +42,10 @@ public:
    BodyForceNLFIntegrator(VectorCoefficient &f) : function(f) { }
 
 
-   virtual void AssembleElementVector(Array<const FiniteElement *> &el,
+   virtual void AssembleElementVector(const Array<const FiniteElement *> &el,
                                       ElementTransformation &Tr,
-                                      Array<Vector *> &elfun, 
-                                      Array<Vector *> &elvec);
+                                      const Array<const Vector *> &elfun, 
+                                      const Array<Vector *> &elvec);
 
    virtual ~BodyForceNLFIntegrator();
 };
@@ -59,29 +61,22 @@ private:
 public:
    PressureBoundaryNLFIntegrator(Coefficient &f) : function(f) { }
 
-   virtual void AssembleElementVector(Array<const FiniteElement *> &el,
+   virtual void AssembleElementVector(const Array<const FiniteElement *> &el,
                                       ElementTransformation &Tr,
-                                      Array<Vector *> &elfun, 
-                                      Array<Vector *> &elvec);
+                                      const Array<const Vector *> &elfun, 
+                                      const Array<Vector *> &elvec);
 
-   virtual void AssembleRHSElementVector(Array<const FiniteElement *> &el,
-                                         FaceElementTransformations &Tr,
-                                         Array<Vector *> &elfun, 
-                                         Array<Vector *> &elvec);
+   virtual void AssembleFaceVector(const Array<const FiniteElement *> &el1,
+                                   const Array<const FiniteElement *> &el2,
+                                   FaceElementTransformations &Tr,
+                                   const Array<const Vector *> &elfun, 
+                                   const Array<Vector *> &elvec);
 
-   virtual void AssembleRHSElementGrad(Array<const FiniteElement*> &el,
-                                       FaceElementTransformations &Tr,
-                                       Array<Vector *> &elfun, 
-                                       Array2D<DenseMatrix *> &elmats);
-
-   virtual double GetArea(Array<const FiniteElement *> &el,
-                          FaceElementTransformations &Tr,
-                          Array<Vector *> &elfun);
-   
-   virtual void GetAreaGradient(Array<const FiniteElement *> &el,
-                                FaceElementTransformations &Tr,
-                                Array<Vector *> &elfun,
-                                Array<Vector *> &elvec);
+   virtual void AssembleFaceGrad(const Array<const FiniteElement*> &el1,
+                                 const Array<const FiniteElement *> &el2,
+                                 FaceElementTransformations &Tr,
+                                 const Array<const Vector *> &elfun, 
+                                 const Array2D<DenseMatrix *> &elmats);
 
    virtual ~PressureBoundaryNLFIntegrator();
 };
@@ -97,15 +92,16 @@ private:
 public:
    TractionBoundaryNLFIntegrator(VectorCoefficient &f) : function(f) { }
 
-   virtual void AssembleElementVector(Array<const FiniteElement *> &el,
+   virtual void AssembleElementVector(const Array<const FiniteElement *> &el,
                                       ElementTransformation &Tr,
-                                      Array<Vector *> &elfun, 
-                                      Array<Vector *> &elvec);
+                                      const Array<const Vector *> &elfun, 
+                                      const Array<Vector *> &elvec);
 
-   virtual void AssembleRHSElementVector(Array<const FiniteElement *> &el,
-                                         FaceElementTransformations &Tr,
-                                         Array<Vector *> &elfun, 
-                                         Array<Vector *> &elvec);
+   virtual void AssembleFaceVector(const Array<const FiniteElement *> &el1,
+                                   const Array<const FiniteElement *> &el2,
+                                   FaceElementTransformations &Tr,
+                                   const Array<const Vector *> &elfun, 
+                                   const Array<Vector *> &elvec);
 
    virtual ~TractionBoundaryNLFIntegrator();
 };
@@ -121,10 +117,10 @@ private:
 public:
    ActiveTensionNLFIntegrator(MatrixCoefficient &f) : function(f) { }
 
-   virtual void AssembleElementVector(Array<const FiniteElement *> &el,
+   virtual void AssembleElementVector(const Array<const FiniteElement *> &el,
                                       ElementTransformation &Tr,
-                                      Array<Vector *> &elfun, 
-                                      Array<Vector *> &elvec);
+                                      const Array<const Vector *> &elfun, 
+                                      const Array<Vector *> &elvec);
 
    virtual ~ActiveTensionNLFIntegrator();
 };
@@ -141,15 +137,15 @@ private:
 public:
    CardiacNLFIntegrator(CardiacModel *m, VectorCoefficient &fib) : model(m), Q(&fib) { }
 
-   virtual void AssembleElementVector(Array<const FiniteElement *> &el,
+   virtual void AssembleElementVector(const Array<const FiniteElement *> &el,
                                       ElementTransformation &Tr,
-                                      Array<Vector *> &elfun, 
-                                      Array<Vector *> &elvec);
+                                      const Array<const Vector *> &elfun, 
+                                      const Array<Vector *> &elvec);
 
-   virtual void AssembleElementGrad(Array<const FiniteElement*> &el,
+   virtual void AssembleElementGrad(const Array<const FiniteElement*> &el,
                                     ElementTransformation &Tr,
-                                    Array<Vector *> &elfun, 
-                                    Array2D<DenseMatrix *> &elmats);
+                                    const Array<const Vector *> &elfun, 
+                                    const Array2D<DenseMatrix *> &elmats);
 
    virtual ~CardiacNLFIntegrator();
 };
