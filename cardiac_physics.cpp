@@ -20,7 +20,7 @@ void InitialDeformation(const Vector &x, Vector &y)
    // set the initial configuration. Having this different from the
    // reference configuration can help convergence
    y = x;
-   y[1] = x[1] + 0.0*x[0];
+   y[1] = x[1] - 0.5*x[0];
 }
                               
 void BodyForceFunction(const Vector &x, Vector &y)
