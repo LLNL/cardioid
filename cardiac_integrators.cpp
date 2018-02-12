@@ -120,13 +120,27 @@ void CardiacModel::AssembleH(const DenseMatrix &J, const double pres, const Vect
    int dof_u = DS_u.Height();
    int dim = DS_u.Width();
    int dof_p = Sh_p.Size();
-   
-   B.SetSize(3);
-   C.SetSize(3);
-   E.SetSize(3);
-   JT.SetSize(3);
-   N.SetSize(3);
 
+   dP_dF.SetSize(dim, dim, dim, dim);
+   dFtilde_dF.SetSize(dim, dim, dim, dim);
+   dE_dFtilde.SetSize(dim, dim, dim, dim);
+   dNtilde_dF.SetSize(dim, dim, dim, dim);
+   
+   B.SetSize(dim);
+   C.SetSize(dim);
+   E.SetSize(dim);
+   I.SetSize(dim);
+   JT.SetSize(dim);
+   FinvT.SetSize(dim);
+   N.SetSize(dim);
+   Ftilde.SetSize(dim);
+   orth.SetSize(dim);
+   orth_transpose.SetSize(dim);
+   dq_dE.SetSize(dim);
+   dq_dF.SetSize(dim);
+   Ftilde.SetSize(dim);
+   Ntilde.SetSize(dim);
+   
    B(0,0) = b_ff;
    B(0,1) = b_fs;
    B(0,2) = b_fn;
@@ -154,27 +168,94 @@ void CardiacModel::AssembleH(const DenseMatrix &J, const double pres, const Vect
    Mult(dummy, orth, E);
    
    // Apply cardiac constitutive model
-   double Q = b_ff * E(0,0) * E(0,0) +
-      b_ss * E(1,1) * E(1,1) +
-      b_nn * E(2,2) * E(2,2) +
-      b_fs * (E(0,1) * E(0,1) + E(1,0) * E(1,0)) +
-      b_fn * (E(0,2) * E(0,2) + E(2,0) * E(2,0)) +
-      b_ns * (E(1,2) * E(1,2) + E(2,1) * E(2,1));
-   
+   double bigQ = 0.0;
 
    for (int i=0; i<dim; i++) {
-      for (int j=0; j<dim; j++) {
-         N(i,j) = B(i,j) * E(i,j);
-      }
+   for (int j=0; j<dim; j++) {
+      bigQ += B(i,j) * E(i,j) * E(i,j);
+      Ntilde(i,j) = B(i,j) * E(i,j);
+      dq_dE(i,j) = 2.0 * B(i,j) * E(i,j);
    }
-
-   double fact = (C_1/2.0) * exp(Q);
+   }
+   
+   double fact = (C_1/2.0) * exp(bigQ);
    double dJ = J.Det();
 
-   Mult(orth, N, dummy);
-   Mult(dummy, orth_transpose, N);
+   dE_dFtilde = 0.0;
+   
+   for (int p=0; p<dim; ++p) {
+   for (int q=0; q<dim; ++q) {
+      for (int n=0; n<dim; ++n) {
+      for (int m=0; m<dim; ++m) {
+         dFtilde_dF(p,q,n,m) = orth(n,p) * orth(m,q);
+         if (p==m) {
+            dE_dFtilde(p,q,n,m) += Ftilde(n,q);
+         }
+         if (m==q) {
+            dE_dFtilde(p,q,n,m) += Ftilde(n,p);
+         }
+      }
+      }
+   }
+   }
+   
+   Mult(orth_transpose, J, dummy);
+   Mult(dummy, orth, Ftilde);
 
-   // u,u block
+   Mult(orth, Ntilde, dummy);
+   Mult(dummy, orth_transpose, N);
+   
+   dq_dF = 0.0;
+   dNtilde_dF = 0.0;
+   
+   for (int i=0; i<dim; ++i) {
+   for (int j=0; j<dim; ++j) {
+      for (int n=0; n<dim; ++n) {
+      for (int m=0; m<dim; ++m) {
+         for (int x=0; x<dim; ++x) {
+         for (int y=0; y<dim; ++y) {
+            dq_dF(n,m) += dq_dE(i,j) * dE_dFtilde(i,j,x,y) * dFtilde_dF(x,y,n,m);
+            dNtilde_dF(i,j,n,m) += B(i,j) * dE_dFtilde(i,j,x,y) * dFtilde_dF(x,y,n,m);
+         }
+         }
+      }
+      }
+   }
+   }
+
+   // u,u block displacement terms
+   for (int i_u = 0; i_u < dof_u; i_u++) {
+   for (int i_dim = 0; i_dim < dim; i_dim++) {
+      for (int j_u = 0; j_u < dof_u; j_u++) {
+      for (int j_dim = 0; j_dim < dim; j_dim++) {
+
+         // n == j_dim
+         // k == i_dim
+         for (int a = 0; a < dim; ++a) {
+         for (int m=0; m < dim; ++m) {
+         for (int l=0; l < dim ; ++l) {                                           
+
+            (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * dq_dF(j_dim,m) * J(i_dim,a) * N(a,l) * DS_u(i_u,l) * DS_u(j_u,m) * weight;
+
+            if ( i_dim == j_dim && a == m) {
+               (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * N(a,l) * DS_u(i_u,l) * DS_u(j_u,m) * weight;
+            }
+
+            for (int b=0; b<dim; b++) {
+            for (int c=0; c<dim; c++) {
+               (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * J(i_dim, a) * orth(a,b) * dNtilde_dF(b,c,j_dim,m) * orth_transpose(c,l)
+                  * DS_u(i_u,l) * DS_u(j_u,m) * weight;               
+            }
+            }
+         }
+         }
+         }
+      }
+      }
+   }
+   }
+         
+   // u,u block pressure terms
    for (int i_u = 0; i_u < dof_u; i_u++) {
    for (int i_dim = 0; i_dim < dim; i_dim++) {
       for (int j_u = 0; j_u < dof_u; j_u++) {
@@ -184,26 +265,6 @@ void CardiacModel::AssembleH(const DenseMatrix &J, const double pres, const Vect
          // k = i_dim;
          for (int n=0; n<dim; n++) {
          for (int l=0; l<dim; l++) {
-
-            for (int i=0; i<dim; i++) {
-               if (i_dim==j_dim && i==n) {
-                  (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * B(i,l) * E(i,l) * DS_u(i_u,l) * DS_u(j_u,n) * weight;
-               }
-
-               for (int a=0; a<dim; a++) {
-                  (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * J(i_dim,i) * B(n,a) * E(n,a) * J(j_dim,a) * B(i,l) * E(i,l) * DS_u(i_u,l) * DS_u(j_u,n) * weight;                     
-                  (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * J(i_dim,i) * B(a,n) * E(a,n) * J(j_dim,a) * B(i,l) * E(i,l) * DS_u(i_u,l) * DS_u(j_u,n) * weight;                     
-               }
-                  
-               if (i==n) {
-                  (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * J(i_dim,i) * B(i,l) * 0.5 * J(j_dim,l) * DS_u(i_u,l) * DS_u(j_u,n) * weight;                     
-               }
-               if (l==n) {
-                  (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * J(i_dim,i) * B(i,l) * 0.5 * J(j_dim,i) * DS_u(i_u,l) * DS_u(j_u,n) * weight;                     
-               }
-            
-                  
-            }
                
             (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) -= dJ * pres * FinvT(i_dim,l) * FinvT(j_dim,n) * DS_u(i_u,l) * DS_u(j_u,n) * weight;
                

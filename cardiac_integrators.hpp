@@ -12,8 +12,10 @@ class CardiacModel
 protected:
    double C_1, b_ff, b_ss, b_nn, b_fs, b_fn, b_ns;
 
-   mutable DenseMatrix C, E, I, JT, PK2, FinvT, B, orth, orth_transpose, N;
-
+   mutable DenseMatrix C, E, I, JT, PK2, FinvT, B, orth, orth_transpose, dq_dE, dq_dF;
+   mutable DenseMatrix Ftilde, Ntilde, N;
+   mutable Array4D<double> dP_dF, dFtilde_dF, dE_dFtilde, dNtilde_dF;
+   
 public:
    CardiacModel(double _C_1, double _b_ff, double _b_ss, double _b_nn,
                 double _b_fs, double _b_fn, double _b_ns)
