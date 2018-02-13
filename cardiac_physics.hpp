@@ -16,5 +16,9 @@ void ActiveTensionFunction(const Vector &x, DenseMatrix &y);
 void TractionFunction(const Vector &x, Vector &y);
 double PressureFunction(const Vector &x);
 void FiberFunction(const Vector &x, Vector &y);
+void setSurfaces(Mesh *mesh);
+void printSurfVTK(Mesh *mesh, std::ostream &out);
+void findNeighbor(Element* ele, vector<Element*>& elements, int attr);
+bool isPlanar(double *coor0, double *coor1, double *coor2, double cosTheta);
 
 #endif

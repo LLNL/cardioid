@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
    double newton_rel_tol = 1.0e-12;
    double newton_abs_tol = 1.0e-12;
    int newton_iter = 500;
+   bool ball_mesh = false;
 
    OptionsParser args(argc, argv);
    args.AddOption(&mesh_file, "-m", "--mesh",
@@ -36,6 +37,8 @@ int main(int argc, char *argv[])
                   "Order (degree) of the finite elements.");
    args.AddOption(&slu_solver, "-slu", "--superlu", "-no-slu",
                   "--no-superlu", "Use the SuperLU Solver.");
+   args.AddOption(&ball_mesh, "-b", "--use_ball_mesh", "-nb", "--no-ball-mesh",
+                  "Use the ball verification mesh.");
    args.AddOption(&visualization, "-vis", "--visualization", "-no-vis",
                   "--no-visualization",
                   "Enable or disable GLVis visualization.");
@@ -60,21 +63,16 @@ int main(int argc, char *argv[])
    {
       args.PrintOptions(cout);
    }
-
+   
    // Open the mesh
-   Mesh *mesh;
-   ifstream imesh(mesh_file);
-   if (!imesh)
-   {
-      if (myid == 0)
-      {
-         cerr << "\nCan not open mesh file: " << mesh_file << '\n' << endl;
-      }
-      MPI_Finalize();
-      return 2;
+   Mesh *mesh = new Mesh(mesh_file, 1, 1);
+
+   if (ball_mesh) {
+      setSurfaces(mesh);
+      ofstream surf_ofs("surfaces.vtk");
+      printSurfVTK(mesh, surf_ofs);
    }
-   mesh = new Mesh(imesh, 1, 1);
-   imesh.close();
+
    ParMesh *pmesh = NULL;
 
    for (int lev = 0; lev < ser_ref_levels; lev++)
@@ -90,6 +88,7 @@ int main(int argc, char *argv[])
    delete mesh;
    int dim = pmesh->Dimension();
 
+   
    // Definie the finite element spaces for displacement and pressure (Stokes elements)
    H1_FECollection quad_coll(order, dim);
    H1_FECollection lin_coll(order-1, dim);

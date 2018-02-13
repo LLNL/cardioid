@@ -228,26 +228,20 @@ void CardiacModel::AssembleH(const DenseMatrix &J, const double pres, const Vect
    for (int i_dim = 0; i_dim < dim; i_dim++) {
       for (int j_u = 0; j_u < dof_u; j_u++) {
       for (int j_dim = 0; j_dim < dim; j_dim++) {
-
-         // n == j_dim
-         // k == i_dim
-         for (int a = 0; a < dim; ++a) {
          for (int m=0; m < dim; ++m) {
          for (int l=0; l < dim ; ++l) {                                           
-
-            (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * dq_dF(j_dim,m) * J(i_dim,a) * N(a,l) * DS_u(i_u,l) * DS_u(j_u,m) * weight;
-
-            if ( i_dim == j_dim && a == m) {
-               (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * N(a,l) * DS_u(i_u,l) * DS_u(j_u,m) * weight;
+            for (int a = 0; a < dim; ++a) {            
+               (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * dq_dF(j_dim,m) * J(i_dim,a) * N(a,l) * DS_u(i_u,l) * DS_u(j_u,m) * weight;
+               if ( i_dim == j_dim && a == m) {
+                  (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * N(a,l) * DS_u(i_u,l) * DS_u(j_u,m) * weight;
+               }
+               for (int b=0; b<dim; b++) {
+               for (int c=0; c<dim; c++) {
+                  (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * J(i_dim, a) * orth(a,b) * dNtilde_dF(b,c,j_dim,m) * orth_transpose(c,l)
+                     * DS_u(i_u,l) * DS_u(j_u,m) * weight;               
+               }
+               }
             }
-
-            for (int b=0; b<dim; b++) {
-            for (int c=0; c<dim; c++) {
-               (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += fact * J(i_dim, a) * orth(a,b) * dNtilde_dF(b,c,j_dim,m) * orth_transpose(c,l)
-                  * DS_u(i_u,l) * DS_u(j_u,m) * weight;               
-            }
-            }
-         }
          }
          }
       }
@@ -260,16 +254,10 @@ void CardiacModel::AssembleH(const DenseMatrix &J, const double pres, const Vect
    for (int i_dim = 0; i_dim < dim; i_dim++) {
       for (int j_u = 0; j_u < dof_u; j_u++) {
       for (int j_dim = 0; j_dim < dim; j_dim++) {
-
-         // m = j_dim;
-         // k = i_dim;
          for (int n=0; n<dim; n++) {
          for (int l=0; l<dim; l++) {
                
             (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) -= dJ * pres * FinvT(i_dim,l) * FinvT(j_dim,n) * DS_u(i_u,l) * DS_u(j_u,n) * weight;
-               
-            // a = n;
-            // b = m;
             (*elmats(0,0))(i_u + i_dim*dof_u, j_u + j_dim*dof_u) += dJ * pres * FinvT(i_dim,n) * FinvT(j_dim,l) * DS_u(i_u,l) * DS_u(j_u,n) * weight;
             
          }
@@ -278,15 +266,16 @@ void CardiacModel::AssembleH(const DenseMatrix &J, const double pres, const Vect
       }
    }
    }
+   
    // u,p and p,u blocks
    for (int i_p = 0; i_p < dof_p; i_p++) {
       for (int j_u = 0; j_u < dof_u; j_u++) {
-         for (int dim_u = 0; dim_u < dim; dim_u++) {
-            for (int l=0; l<dim; l++) {
-               (*elmats(1,0))(i_p, j_u + dof_u * dim_u) += dJ * FinvT(dim_u,l) * DS_u(j_u,l) * Sh_p(i_p) * weight; 
-               (*elmats(0,1))(j_u + dof_u * dim_u, i_p) -= dJ * FinvT(dim_u,l) * DS_u(j_u,l) * Sh_p(i_p) * weight;
-            }               
-         }
+      for (int dim_u = 0; dim_u < dim; dim_u++) {
+         for (int l=0; l<dim; l++) {
+            (*elmats(1,0))(i_p, j_u + dof_u * dim_u) += dJ * FinvT(dim_u,l) * DS_u(j_u,l) * Sh_p(i_p) * weight; 
+            (*elmats(0,1))(j_u + dof_u * dim_u, i_p) -= dJ * FinvT(dim_u,l) * DS_u(j_u,l) * Sh_p(i_p) * weight;
+         }               
+      }
       }
    }   
 }
