@@ -21,7 +21,7 @@ void InitialDeformation(const Vector &x, Vector &y)
    // set the initial configuration. Having this different from the
    // reference configuration can help convergence
    y = x;
-   //y[1] = x[1] - 0.5*x[0];
+   //y[1] = x[1] - 0.05*x[0];
 }
                               
 void BodyForceFunction(const Vector &x, Vector &y)
@@ -72,7 +72,7 @@ void TractionFunction(const Vector &x, Vector &y)
 
 double PressureFunction(const Vector &x)
 {
-   return 4.0e-1;
+   return 2.0;
    //return 0.0;
 }
 
@@ -107,8 +107,8 @@ void findNeighbor(Element* ele, vector<Element*>& elements, int attr){
 
 void setSurfaces(Mesh *mesh){
     // Attributes for different surface
-    const int apexAttr=1;
-    const int baseAttr=2;
+    const int apexAttr=2;
+    const int baseAttr=1;
     const int epiAttr=2;    
     const int vAttr=4;
        

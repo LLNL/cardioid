@@ -255,7 +255,8 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
    pres = new FunctionCoefficient(PressureFunction);
 
    // Initialize the Cardiac model (transversely isotropic)
-   model = new CardiacModel (2.0, 8.0, 2.0, 2.0, 4.0, 4.0, 2.0);
+   model = new CardiacModel (10, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+   // model = new CardiacModel (2.0, 8.0, 2.0, 2.0, 4.0, 4.0, 2.0);
 
    // Define the mixed nonlinear form 
    Hform = new ParBlockNonlinearForm(spaces);
