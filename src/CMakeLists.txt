@@ -3,7 +3,7 @@ project(cardioid_elec)
 cmake_minimum_required(VERSION 3.1)
 
 macro(use_c99)
-  if (CMAKE_VERSION VERSION_LESS "3.1")
+  if (CMAKE_VERSION VERSION_LESS "3.1.3")
     if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
       set (CMAKE_C_FLAGS "-std=gnu99 ${CMAKE_C_FLAGS}")
     endif ()
