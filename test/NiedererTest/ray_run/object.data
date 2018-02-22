@@ -12,6 +12,7 @@ simulate SIMULATE
    time = 0;            // msec
    printRate = 50;      // in timesteps
    parallelDiffusionReaction = 0;
+   checkRanges=0;
 }
 
 niederer ANATOMY 
@@ -22,8 +23,8 @@ niederer ANATOMY
    dy = 0.10;   // in mm
    dz = 0.10;   // in mm
    xSize = 25; 
-   ySize = 8;
-   zSize = 5;
+   ySize = 16;
+   zSize = 10;
    conductivity = conductivity;
 }
 
