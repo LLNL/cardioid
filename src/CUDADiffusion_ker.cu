@@ -210,9 +210,9 @@ void call_cuda_kernels(const Real *VmCPU, Real *dVmCPU, const Real *sigmaCPU, in
 
 __global__ void copy_to_block_kernel(double* blockGPU, const int* lookupGPU, const double* sourceGPU, const int begin, const int end)
 {
-   int ii = threadIdx.x + blockIdx.x*blockDim.x  +begin;
-   if (ii >= end) { return; }
-   blockGPU[lookupGPU[ii]] = sourceGPU[ii];
+   int ii = threadIdx.x + blockIdx.x*blockDim.x;
+   if (ii >= end-begin) { return; }
+   blockGPU[lookupGPU[ii+begin]] = sourceGPU[ii];
 }
 
 void copy_to_block(double* blockCPU, const int* lookupCPU, const double* sourceCPU, const int begin, const int end)

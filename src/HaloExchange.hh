@@ -32,6 +32,8 @@ using namespace std;
  *  exchange. 
  */
 
+void fillSendBufferCUDA(const double* sendBufRaw, const double* dataRaw, const int* sendMapRaw, const int begin, const int end);
+
 template <class T, class Allocator = std::allocator<T> >
 class HaloExchangeBase
 {
@@ -254,6 +256,56 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
    std::vector<MPI_Request> recvReq_;
    std::vector<MPI_Request> sendReq_;
    
+};
+
+template <class T, class Allocator = std::allocator<T> >
+class HaloExchangeCUDA : public HaloExchange<T, Allocator>
+{
+ public:
+   HaloExchangeCUDA(const std::vector<int>& sendMap, const CommTable* comm)
+     : HaloExchange<T, Allocator>(sendMap, comm)
+   {
+  	 int arraySize =sendMap.size();
+         sendMap_.setup(vector<int>(arraySize));
+         sendBuf_.setup(vector<double>(arraySize));
+	 vector<int>& sendMapVec(sendMap_.modifyOnHost());
+         for(int i=0; i<arraySize; i++)
+	 {
+	     sendMapVec[i]=sendMap[i];
+	 }
+   };
+
+   ~HaloExchangeCUDA()
+   {
+
+   };
+
+   const vector<int>& getSendMap() const {
+        const vector<int>& sendMap(sendMap_.readOnHost());
+        return sendMap;
+   };
+   
+   void fillSendBuffer(const std::vector<T, Allocator>& data)
+   {
+      startTimer(PerformanceTimers::haloMove2BufTimer);
+      const T* dataRaw = &data[0];
+      const vector<int>& sendMap(sendMap_.readOnDevice());
+      const int* sendMapRaw = &sendMap[0];
+
+      vector<T>& sendBuf(sendBuf_.modifyOnDevice());
+      const T* sendBufRaw=&sendBuf[0];
+      int size=sendMap.size();
+      fillSendBufferCUDA(sendBufRaw, dataRaw, sendMapRaw, 0, size);
+
+      stopTimer(PerformanceTimers::haloMove2BufTimer);
+   };
+
+
+ protected:
+
+   TransportCoordinator<std::vector<int> > sendMap_;  
+   TransportCoordinator<std::vector<T> > sendBuf_;	
+
 };
 
 #endif // ifdef SPI

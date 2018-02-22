@@ -106,7 +106,7 @@ set (heart_src
 	ECGSensor.cc
 	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc DVThreshSensor.cc
    StateVariableSensor.cc Interpolation.cc
-   Ledger.cc simulationLoopCuda.cu singleCellCuda.cu BoxStimulusCuda.cu
+   Ledger.cc simulationLoopCuda.cu singleCellCuda.cu BoxStimulusCuda.cu HaloExchange.cu
    Version.cc
    spi_impl.c
    clooper.c TT06GatesSimd2.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c

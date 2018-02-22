@@ -151,7 +151,7 @@ void simulationLoop(Simulate& sim)
    TransportCoordinator<vector<double> > iStimTransport;
    iStimTransport.setup(vector<double>(sim.anatomy_.nLocal(), 0.0));
    simulationProlog(sim);
-   HaloExchange<double, AlignedAllocator<double> > voltageExchange(sim.sendMap_, (sim.commTable_));
+   HaloExchangeCUDA<double, AlignedAllocator<double> > voltageExchange(sim.sendMap_, (sim.commTable_));
 
    PotentialData& vdata = sim.vdata_;
 
@@ -179,7 +179,7 @@ void simulationLoop(Simulate& sim)
 
       startTimer(haloTimer);
       {
-         const VectorDouble32& vmarray(vdata.VmTransport_.readOnHost());
+         const VectorDouble32& vmarray(vdata.VmTransport_.readOnDevice());
          voltageExchange.fillSendBuffer(vmarray);
          voltageExchange.startComm();
          voltageExchange.wait();
