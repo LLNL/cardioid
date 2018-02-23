@@ -26,9 +26,8 @@ TARGETS=ecg
 all: $(SOURCE) $(TARGETS)
 
 
-MPI_FLAGS=-I/usr/local/Cellar/mpich/3.2.1_1/include -L/usr/local/Cellar/mpich/3.2.1_1/lib -lmpicxx -lmpi -lpmpi	
 ecg: $(OBJECTS)
-	clang++ -std=c++11 -stdlib=libc++ $(MFEM_FLAGS) $(OBJECTS) ecg.cpp -o $@ $(MFEM_LIBS) $(MPI_FLAGS)
+	$(MFEM_CXX) $(MFEM_FLAGS) $(OBJECTS) ecg.cpp -o $@ $(MFEM_LIBS)
 	
 %.o : %.cpp
 	$(MFEM_CXX) $(MFEM_FLAGS) -c $(<) -o $(@)
@@ -38,7 +37,7 @@ ecg: $(OBJECTS)
 clean: clean-build clean-exec clean-test
 
 clean-build:
-	rm -f *.o *~ $(EXAMPLES)
+	rm -f *.o *~ $(TARGETS)
 
 clean-exec:
 	@rm -f sphere_refined.* sol.* sol_u.* sol_p.*
