@@ -24,9 +24,11 @@ TEST_MK = $(MFEM_DIR)/test.mk
 TARGETS=ecg
 
 all: $(SOURCE) $(TARGETS)
-	
+
+
+MPI_FLAGS=-I/usr/local/Cellar/mpich/3.2.1_1/include -L/usr/local/Cellar/mpich/3.2.1_1/lib -lmpicxx -lmpi -lpmpi	
 ecg: $(OBJECTS)
-	$(MFEM_CXX) $(MFEM_FLAGS) $(OBJECTS) ecg.cpp -o $@ $(MFEM_LIBS) -lc++
+	clang++ -std=c++11 -stdlib=libc++ $(MFEM_FLAGS) $(OBJECTS) ecg.cpp -o $@ $(MFEM_LIBS) $(MPI_FLAGS)
 	
 %.o : %.cpp
 	$(MFEM_CXX) $(MFEM_FLAGS) -c $(<) -o $(@)
