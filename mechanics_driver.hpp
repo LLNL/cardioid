@@ -14,7 +14,7 @@ using namespace mfem;
  *     0=H(x)
  *  where x is the block vector representing the deformation and pressure
  *  and H(x) is the nonlinear cardiac operator. */
-class CardiacOperator : public Operator
+class CardiacOperator : public TimeDependentOperator
 {
 protected:
    Array<ParFiniteElementSpace *> spaces;
@@ -32,9 +32,7 @@ protected:
 
    bool slu_solver;
 
-   VectorFunctionCoefficient *bf;
    MatrixFunctionCoefficient *at;
-   VectorFunctionCoefficient *trac;
    VectorFunctionCoefficient *fib;
    FunctionCoefficient *pres;
    VectorFunctionCoefficient *vol;
@@ -48,7 +46,7 @@ public:
 
    /// Driver for the newton solver
    void Solve(Vector &xp) const;
-
+   
    virtual ~CardiacOperator();
 };
 

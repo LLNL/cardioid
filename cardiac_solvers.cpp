@@ -7,26 +7,32 @@ namespace mfem
 double CardiacNewtonSolver::ComputeScalingFactor(const Vector &x,
                                                  const Vector &b) const
 {
+   
    Vector x_out(x.Size());
    Vector test(x.Size());
    double scale = 1.0;
    double norm0 = Norm(r);
 
+   double m = Dot(c,c);
+
+   double arm_c = 0.0;
+   
    add(x, -scale, c, x_out);
    oper->Mult(x_out, test);
 
    double norm = Norm(test);
 
-   int myid;
-   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
    
-   // Decreases the scaling of the update until the new mesh is valid.
-   while (norm > 1.2 * norm0 || isnan(norm) != 0) {
+   while (isnan(norm) != 0 || (norm > 1.2 * (norm0 - scale * arm_c * m) && scale > 0.001)) {
+
       scale *= factor;
       add(x, -scale, c, x_out);
       oper->Mult(x_out, test);
       norm = Norm(test);
+      
    }
+   
+
    return scale;
 }
 

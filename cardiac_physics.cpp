@@ -8,6 +8,8 @@
 using namespace std;
 using namespace mfem;
 
+int run_mode = 1;
+
 void ReferenceConfiguration(const Vector &x, Vector &y)
 {
    // set the reference, stress
@@ -21,18 +23,14 @@ void InitialDeformation(const Vector &x, Vector &y)
    // set the initial configuration. Having this different from the
    // reference configuration can help convergence
    y = x;
-   //y(2) = x(2) + 1.05*x(2);
-   //y[1] = x[1] - 0.01*x[0];
+
+   if (run_mode == 1) {
+      y(1) = x(1) - 0.05 * x(0);
+   }
+   
 }
                               
-void BodyForceFunction(const Vector &x, Vector &y)
-{
-   y = 0.0;
-   //y(1) = -1.0e0;
-   //y(2) = -1.0e0;
-}
-
-void ActiveTensionFunction(const Vector &x, DenseMatrix &y)
+void ActiveTensionFunction(const Vector &x, DenseMatrix &y, double t)
 {
    Vector dir(3);
    double tension_strength = 0.0;
@@ -58,23 +56,20 @@ void FiberFunction(const Vector &x, Vector &y)
 
 }
 
-void TractionFunction(const Vector &x, Vector &y)
+double PressureFunction(const Vector &x, double t)
 {
-   y = 0.0;
 
-   
-   //y(1) = -1.0e-3;
+   // Assume final time of 1
 
-   //y(1) = (x(2) - 0.0005) * 0.8;
-   //y(2) = (x(1) - 0.0005) * -0.8;
+   double pres = 0.0;
 
-
-}
-
-double PressureFunction(const Vector &x)
-{
-   return 10.0;
-   //return 0.0;
+   if (run_mode == 1) {
+      pres =  4.0e-3 * (t / 1.0);
+   }
+   else {
+      pres =  10.0 * (t / 1.0);
+   }
+   return pres;
 }
 
 void VolumeFunction(const Vector &x, Vector &y)

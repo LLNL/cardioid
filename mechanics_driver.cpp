@@ -5,6 +5,8 @@
 #include <memory>
 #include <iostream>
 #include <fstream>
+#include <sys/stat.h>
+#include <cerrno>
 
 int main(int argc, char *argv[])
 {
@@ -15,20 +17,21 @@ int main(int argc, char *argv[])
    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
    // Parse command-line options.
-   const char *mesh_file = "./beam-hex-rescaled.mesh";
+   const char *mesh_file = "./beam-hex.mesh";
    int ser_ref_levels = 0;
    int par_ref_levels = 0;
    int order = 2;
    bool slu_solver = true;
    bool visualization = true;
-   double newton_rel_tol = 1.0e-12;
+   double newton_rel_tol = 1.0e-2;
    double newton_abs_tol = 1.0e-12;
    int newton_iter = 500;
-   bool ball_mesh = false;
+   double tf = 1.0;
+   double dt = 1.0;
 
    OptionsParser args(argc, argv);
-   args.AddOption(&mesh_file, "-m", "--mesh",
-                  "Mesh file to use.");
+   args.AddOption(&run_mode, "-rm", "--run-mode",
+                  "Run mode. 1 is cantilever beam and 2 is inflated ventricle.");   
    args.AddOption(&ser_ref_levels, "-rs", "--refine-serial",
                   "Number of times to refine the mesh uniformly in serial.");
    args.AddOption(&par_ref_levels, "-rp", "--refine-parallel",
@@ -37,8 +40,6 @@ int main(int argc, char *argv[])
                   "Order (degree) of the finite elements.");
    args.AddOption(&slu_solver, "-slu", "--superlu", "-no-slu",
                   "--no-superlu", "Use the SuperLU Solver.");
-   args.AddOption(&ball_mesh, "-b", "--use_ball_mesh", "-nb", "--no-ball-mesh",
-                  "Use the ball verification mesh.");
    args.AddOption(&visualization, "-vis", "--visualization", "-no-vis",
                   "--no-visualization",
                   "Enable or disable GLVis visualization.");
@@ -48,7 +49,11 @@ int main(int argc, char *argv[])
                   "Absolute tolerance for the Newton solve.");
    args.AddOption(&newton_iter, "-it", "--newton-iterations",
                   "Maximum iterations for the Newton solve.");
-
+   args.AddOption(&tf, "-tf", "--t-final",
+                  "Final time.");
+   args.AddOption(&dt, "-dt", "--time-step",
+                  "Length of time step.");
+   
    args.Parse();
    if (!args.Good())
    {
@@ -65,12 +70,15 @@ int main(int argc, char *argv[])
    }
    
    // Open the mesh
-   Mesh *mesh = new Mesh(mesh_file, 1, 1);
-
-   if (ball_mesh) {
+   Mesh *mesh = NULL;
+   if (run_mode == 1) {
+      const char *mesh_file = "./beam-hex.mesh";
+      mesh = new Mesh(mesh_file, 1, 1);
+   }
+   if (run_mode == 2) {
+      const char *mesh_file = "./hollow-ball.vtk";
+      mesh = new Mesh(mesh_file, 1, 1);
       setSurfaces(mesh);
-      ofstream surf_ofs("surfaces.vtk");
-      printSurfVTK(mesh, surf_ofs);
    }
 
    ParMesh *pmesh = NULL;
@@ -171,9 +179,19 @@ int main(int argc, char *argv[])
    CardiacOperator oper(spaces, ess_bdr, pres_bdr, trac_bdr, slu_solver, block_trueOffsets,
                         newton_rel_tol, newton_abs_tol, newton_iter);
 
-   // Solve the Newton system 
-   oper.Solve(xp);
+   bool last_step = false;
+   for (double t = 0.0; t<tf; t += dt) {
 
+      // Solve the Newton system       
+      oper.SetTime(t + dt);
+      oper.Solve(xp);
+      if (myid == 0) {
+         std::cout << "***********************************************************\n";         
+         std::cout << "Solve at time " << t + dt << " complete\n";
+         std::cout << "***********************************************************\n";         
+      }
+   }
+      
    // Distribute the ghost dofs
    x_gf.Distribute(xp.GetBlock(0));
    p_gf.Distribute(xp.GetBlock(1));
@@ -203,10 +221,20 @@ int main(int argc, char *argv[])
       int owns_nodes = 0;
       pmesh->SwapNodes(nodes, owns_nodes);
 
+      if (myid == 0)
+      {
+         int err = mkdir("output", 0777);
+         err = (err && (errno != EEXIST)) ? 1 : 0;
+
+         if (err == 1) {
+            std::cout << "Error creating output directory!\n";
+         }         
+      }
+      
       ostringstream mesh_name, pressure_name, deformation_name;
-      mesh_name << "mesh." << setfill('0') << setw(6) << myid;
-      pressure_name << "pressure." << setfill('0') << setw(6) << myid;
-      deformation_name << "deformation." << setfill('0') << setw(6) << myid;
+      mesh_name << "output/mesh." << setfill('0') << setw(6) << myid;
+      pressure_name << "output/pressure." << setfill('0') << setw(6) << myid;
+      deformation_name << "output/deformation." << setfill('0') << setw(6) << myid;
 
       ofstream mesh_ofs(mesh_name.str().c_str());
       mesh_ofs.precision(8);
@@ -239,8 +267,8 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
                                  double rel_tol,
                                  double abs_tol,
                                  int iter)
-   : Operator(fes[0]->TrueVSize() + fes[1]->TrueVSize()), 
-     newton_solver(fes[0]->GetComm()), slu_solver(slu)
+   : TimeDependentOperator(fes[0]->TrueVSize() + fes[1]->TrueVSize(), 0.0), 
+     newton_solver(fes[0]->GetComm(), 0.8), slu_solver(slu)
 {
    Array<Vector *> rhs(2);
    rhs = NULL;
@@ -248,16 +276,19 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
    fes.Copy(spaces);
 
    // Define the forcing function coefficients
-   bf = new VectorFunctionCoefficient(3, BodyForceFunction);
    at = new MatrixFunctionCoefficient(3, ActiveTensionFunction);
-   trac = new VectorFunctionCoefficient(3, TractionFunction);
    fib = new VectorFunctionCoefficient(3, FiberFunction);
    pres = new FunctionCoefficient(PressureFunction);
    vol = new VectorFunctionCoefficient(3, VolumeFunction);
    
    // Initialize the Cardiac model (transversely isotropic)
-   model = new CardiacModel (10, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
-   // model = new CardiacModel (2.0, 8.0, 2.0, 2.0, 4.0, 4.0, 2.0);
+
+   if (run_mode == 1) {
+      model = new CardiacModel (2.0, 8.0, 2.0, 2.0, 4.0, 4.0, 2.0);
+   }
+   else {
+      model = new CardiacModel (10, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+   }
 
    // Define the mixed nonlinear form 
    Hform = new ParBlockNonlinearForm(spaces);
@@ -265,15 +296,13 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
    // Add the passive stress integrator
    Hform->AddDomainIntegrator(new CardiacNLFIntegrator(model, *fib));
 
-   // Add the body force integrator
-   //Hform->AddDomainIntegrator(new BodyForceNLFIntegrator(*bf));
-
-   // Add the active tension integrator
-   //Hform->AddDomainIntegrator(new ActiveTensionNLFIntegrator(*at));
-
+   // Add the active tension integrator (only mode 3)
+   if (run_mode == 3) {
+      Hform->AddDomainIntegrator(new ActiveTensionNLFIntegrator(*at));
+   }
+      
    // Add the pressure and traction boundary integrators
    Hform->AddBdrFaceIntegrator(new PressureBoundaryNLFIntegrator(*pres, *vol), pres_bdr);
-   //Hform->AddBdrFaceIntegrator(new TractionBoundaryNLFIntegrator(*trac), trac_bdr);
 
    // Set the essential boundary conditions
    Hform->SetEssentialBC(ess_bdr, rhs);
@@ -326,6 +355,7 @@ void CardiacOperator::Mult(const Vector &k, Vector &y) const
 {
 
    // Apply the nonlinear form
+   pres->SetTime(this->GetTime());
    Hform->Mult(k, y);
 
 }
@@ -336,11 +366,6 @@ Operator &CardiacOperator::GetGradient(const Vector &xp) const
    Vector xg;
    /*
    double volume = Hform->GetVolume(xp);
-   int myid;
-   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-   if (myid == 0) {
-      std::cout << "volume = " << volume << "\n";
-   }
    */
    return Hform->GetGradient(xp);
 }
