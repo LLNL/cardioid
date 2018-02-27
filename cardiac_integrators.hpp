@@ -57,11 +57,12 @@ class PressureBoundaryNLFIntegrator : public BlockNonlinearFormIntegrator
 {
 private:
    Coefficient &function;
+   VectorCoefficient &vol_function;
    mutable DenseMatrix DSh_u, DS_u, J0i, J, Jinv, JinvT, PMatI_u;
    mutable Vector shape, nor, fnor, Sh_p, Sh_u;
    
 public:
-   PressureBoundaryNLFIntegrator(Coefficient &f) : function(f) { }
+   PressureBoundaryNLFIntegrator(Coefficient &f, VectorCoefficient &vf) : function(f), vol_function(vf) { }
 
    virtual void AssembleElementVector(const Array<const FiniteElement *> &el,
                                       ElementTransformation &Tr,
@@ -80,6 +81,16 @@ public:
                                  const Array<const Vector *> &elfun, 
                                  const Array2D<DenseMatrix *> &elmats);
 
+   virtual double GetElementVolume(const Array<const FiniteElement *>&el,
+                                   FaceElementTransformations &Tr,
+                                   const Array<const Vector *>&elfun);
+   
+   virtual void AssembleVolumeGradient(const Array<const FiniteElement *> &el1,
+                                       FaceElementTransformations &Tr,
+                                       const Array<const Vector *> &elfun,
+                                       const Array<Vector *> &elvect);
+   
+   
    virtual ~PressureBoundaryNLFIntegrator();
 };
 

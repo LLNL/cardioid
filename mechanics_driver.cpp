@@ -253,7 +253,8 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
    trac = new VectorFunctionCoefficient(3, TractionFunction);
    fib = new VectorFunctionCoefficient(3, FiberFunction);
    pres = new FunctionCoefficient(PressureFunction);
-
+   vol = new VectorFunctionCoefficient(3, VolumeFunction);
+   
    // Initialize the Cardiac model (transversely isotropic)
    model = new CardiacModel (10, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
    // model = new CardiacModel (2.0, 8.0, 2.0, 2.0, 4.0, 4.0, 2.0);
@@ -271,7 +272,7 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
    //Hform->AddDomainIntegrator(new ActiveTensionNLFIntegrator(*at));
 
    // Add the pressure and traction boundary integrators
-   Hform->AddBdrFaceIntegrator(new PressureBoundaryNLFIntegrator(*pres), pres_bdr);
+   Hform->AddBdrFaceIntegrator(new PressureBoundaryNLFIntegrator(*pres, *vol), pres_bdr);
    //Hform->AddBdrFaceIntegrator(new TractionBoundaryNLFIntegrator(*trac), trac_bdr);
 
    // Set the essential boundary conditions
@@ -332,6 +333,15 @@ void CardiacOperator::Mult(const Vector &k, Vector &y) const
 // Compute the Jacobian from the nonlinear form
 Operator &CardiacOperator::GetGradient(const Vector &xp) const
 {
+   Vector xg;
+   /*
+   double volume = Hform->GetVolume(xp);
+   int myid;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+   if (myid == 0) {
+      std::cout << "volume = " << volume << "\n";
+   }
+   */
    return Hform->GetGradient(xp);
 }
 

@@ -4,6 +4,7 @@
 #include "mfem.hpp"
 #include "cardiac_physics.hpp"
 #include "cardiac_integrators.hpp"
+#include "cardiac_solvers.hpp"
 
 using namespace std;
 using namespace mfem;
@@ -21,7 +22,7 @@ protected:
    ParBlockNonlinearForm *Hform;
 
    /// Newton solver for the hyperelastic operator
-   NewtonSolver newton_solver;
+   CardiacNewtonSolver newton_solver;
    /// Solver for the Jacobian solve in the Newton method
    Solver *J_solver;
    /// Preconditioner for the Jacobian
@@ -36,7 +37,8 @@ protected:
    VectorFunctionCoefficient *trac;
    VectorFunctionCoefficient *fib;
    FunctionCoefficient *pres;
-
+   VectorFunctionCoefficient *vol;
+   
 public:
    CardiacOperator(Array<ParFiniteElementSpace *> &fes, Array<Array<int>*> &ess_bdr, Array<int> &pres_bdr, Array<int> &trac_bdr, bool slu, Array<int> &block_trueOffsets, double rel_tol, double abs_tol, int iter);
 

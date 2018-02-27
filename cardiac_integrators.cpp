@@ -565,15 +565,13 @@ void PressureBoundaryNLFIntegrator::AssembleFaceVector(const Array<const FiniteE
    }
 }
 
-/*
-double PressureBoundaryNLFIntegrator::GetArea(Array<const FiniteElement *> &el,
-                                              FaceElementTransformations &Tr,
-                                              Array<Vector *> &elfun)
-{
 
+double PressureBoundaryNLFIntegrator::GetElementVolume(const Array<const FiniteElement *> &el,
+                                                       FaceElementTransformations &Tr,
+                                                       const Array<const Vector *> &elfun)
+{
    int dim = el[0]->GetDim();
    int dof_u = el[0]->GetDof();
-   int dof_p = el[1]->GetDof();
 
    shape.SetSize (dof_u);
    nor.SetSize (dim);
@@ -592,6 +590,8 @@ double PressureBoundaryNLFIntegrator::GetArea(Array<const FiniteElement *> &el,
 
    double area = 0.0;
 
+   Vector function;
+   
    for (int i = 0; i < ir.GetNPoints(); i++)
    {
       const IntegrationPoint &ip = ir.IntPoint(i);
@@ -601,6 +601,10 @@ double PressureBoundaryNLFIntegrator::GetArea(Array<const FiniteElement *> &el,
       Tr.Face->SetIntPoint(&ip);
       CalcOrtho(Tr.Face->Jacobian(), nor);
 
+      //Normalize vector
+      double norm = nor.Norml2();
+      nor /= norm;
+
       Tr.Elem1->SetIntPoint(&eip);
       CalcInverse(Tr.Elem1->Jacobian(), J0i);
 
@@ -609,73 +613,46 @@ double PressureBoundaryNLFIntegrator::GetArea(Array<const FiniteElement *> &el,
       MultAtB(PMatI_u, DS_u, J);
 
       CalcInverse(J, Jinv);
-      
+
       Jinv.MultTranspose(nor, fnor);
-      
-      area += J.Det() * ip.weight * Tr.Face->Weight() * fnor.Norml2();
 
+      double fnorm = fnor.Norml2();
+      fnor /= fnorm;
+
+      fnor *= -1.0 * J.Det() * Tr.Face->Weight() * ip.weight;
+      vol_function.Eval(function, *Tr.Face, ip);
+      area += fnor * function;      
    }
+   return area;
 }
-   
-void PressureBoundaryNLFIntegrator::GetAreaGradient(Array<const FiniteElement *> &el,
-                                                    FaceElementTransformations &Tr,
-                                                    Array<Vector *> &elfun,
-                                                    Array<Vector *> &elvec)
+
+void PressureBoundaryNLFIntegrator::AssembleVolumeGradient(const Array<const FiniteElement *> &el,
+                                                           FaceElementTransformations &Tr,
+                                                           const Array<const Vector *> &elfun,
+                                                           const Array<Vector *> &elvec)
 {
-   int dof_u = el[0]->GetDof();
-   int dof_p = el[1]->GetDof();
-
-   int dim = el[0]->GetDim();
-
-   elvec[0]->SetSize(dof_u*dim);
-   elvec[1]->SetSize(dof_p);
-
-   *elvec[0] = 0.0;
-   *elvec[1] = 0.0;
-
-   nor.SetSize (dim);
-   fnor.SetSize (dim);
+   double diff_step = 1.0e-8;
+   Array<Vector *> temps(el.Size());
+   double temp_out_1, temp_out_2;
    
-   DSh_u.SetSize(dof_u, dim);
-   DS_u.SetSize(dof_u, dim);
-   J0i.SetSize(dim);
-   J.SetSize(dim);
-   Jinv.SetSize(dim);
-   JinvT.SetSize(dim);
-
-   PMatI_u.UseExternalData(elfun[0]->GetData(), dof_u, dim);
-
-   int intorder = 2*el[0]->GetOrder() + 3; 
-   const IntegrationRule &ir = IntRules.Get(Tr.FaceGeom, intorder);
-
-   double dJ, norm; 
-
-   for (int i = 0; i < ir.GetNPoints(); i++)
-   {
-      const IntegrationPoint &ip = ir.IntPoint(i);
-      IntegrationPoint eip;
-      Tr.Loc1.Transform(ip, eip);
-
-      Tr.Face->SetIntPoint(&ip);
-      CalcOrtho(Tr.Face->Jacobian(), nor);
-
-      Tr.Elem1->SetIntPoint(&eip);
-      CalcInverse(Tr.Elem1->Jacobian(), J0i);
-
-      el[0]->CalcDShape(eip, DSh_u);
-      el[0]->CalcShape(eip, Sh_u);
-      Mult(DSh_u, J0i, DS_u);
-      MultAtB(PMatI_u, DS_u, J);
-
-      CalcInverse(J, Jinv);
-      CalcInverseTranspose(J, JinvT);
-
-      dJ = J.Det();
-      
+   for (int s1=0; s1<el.Size(); s1++) {
+      temps[s1] = new Vector(elfun[s1]->GetData(), elfun[s1]->Size());
+      elvec[s1]->SetSize(elfun[s1]->Size());
    }
- 
+
+   for (int s1=0; s1<el.Size(); s1++) {
+      for (int j=0; j<temps[s1]->Size(); j++) {
+         (*temps[s1])[j] += diff_step;
+         temp_out_1 = GetElementVolume(el, Tr, temps);
+         (*temps[s1])[j] -= 2.0*diff_step;
+         temp_out_2 = GetElementVolume(el, Tr, temps);
+
+         (*elvec[s1])[j] = (temp_out_1 - temp_out_2) / (2.0 * diff_step);
+         (*temps[s1])[j] = (*elfun[s1])[j];
+      }
+   }
 }
-*/
+
 
 void PressureBoundaryNLFIntegrator::AssembleFaceGrad(const Array<const FiniteElement*> &el1,
                                                      const Array<const FiniteElement*> &el2,

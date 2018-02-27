@@ -21,7 +21,8 @@ void InitialDeformation(const Vector &x, Vector &y)
    // set the initial configuration. Having this different from the
    // reference configuration can help convergence
    y = x;
-   //y[1] = x[1] - 0.05*x[0];
+   //y(2) = x(2) + 1.05*x(2);
+   //y[1] = x[1] - 0.01*x[0];
 }
                               
 void BodyForceFunction(const Vector &x, Vector &y)
@@ -72,8 +73,16 @@ void TractionFunction(const Vector &x, Vector &y)
 
 double PressureFunction(const Vector &x)
 {
-   return 2.0;
+   return 10.0;
    //return 0.0;
+}
+
+void VolumeFunction(const Vector &x, Vector &y)
+{
+   y(2) = 0.0;
+
+   y(0) = 0.5 * x(0);
+   y(1) = 0.5 * x(1);
 }
 
 void findNeighbor(Element* ele, vector<Element*>& elements, int attr){
