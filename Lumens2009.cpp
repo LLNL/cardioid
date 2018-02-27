@@ -1,4 +1,4 @@
-#include "Lumens2009.hh"
+#include "Lumens2009.hpp"
 #include <cassert>
 #include <cmath>
 

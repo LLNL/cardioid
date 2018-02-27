@@ -1,4 +1,4 @@
-#include "ExcitationContraction.hh"
+#include "ExcitationContraction.hpp"
 #include <vector>
 #include <string>
 

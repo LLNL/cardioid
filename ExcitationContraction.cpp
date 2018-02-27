@@ -1,4 +1,4 @@
-#include "ExcitationContraction.hh"
+#include "ExcitationContraction.hpp"
 
 using namespace std;
 

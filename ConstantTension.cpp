@@ -1,4 +1,4 @@
-#include "ConstantTension.hh"
+#include "ConstantTension.hpp"
 #include <cassert>
 #include <cmath>
 
