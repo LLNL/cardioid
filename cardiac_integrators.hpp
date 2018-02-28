@@ -2,6 +2,7 @@
 #define CARDIAC_INTEG
 
 #include "mfem.hpp"
+#include "cardiac_coefficients.hpp"
 
 namespace mfem
 {
@@ -32,25 +33,6 @@ public:
 
 };
 
-
-/// Body force integrator 
-class BodyForceNLFIntegrator : public BlockNonlinearFormIntegrator
-{
-private:
-   VectorCoefficient &function;
-   Vector shape, Qvec;
-   
-public:
-   BodyForceNLFIntegrator(VectorCoefficient &f) : function(f) { }
-
-
-   virtual void AssembleElementVector(const Array<const FiniteElement *> &el,
-                                      ElementTransformation &Tr,
-                                      const Array<const Vector *> &elfun, 
-                                      const Array<Vector *> &elvec);
-
-   virtual ~BodyForceNLFIntegrator();
-};
 
 /// Pressure boundary integrator 
 class PressureBoundaryNLFIntegrator : public BlockNonlinearFormIntegrator
@@ -94,47 +76,29 @@ public:
    virtual ~PressureBoundaryNLFIntegrator();
 };
 
-/// Traction boundary integrator 
-class TractionBoundaryNLFIntegrator : public BlockNonlinearFormIntegrator
-{
-private:
-   VectorCoefficient &function;
-   DenseMatrix DSh_u, DS_u, J0i, J, Jinv, PMatI_u;
-   Vector shape, nor, fnor;
-   
-public:
-   TractionBoundaryNLFIntegrator(VectorCoefficient &f) : function(f) { }
-
-   virtual void AssembleElementVector(const Array<const FiniteElement *> &el,
-                                      ElementTransformation &Tr,
-                                      const Array<const Vector *> &elfun, 
-                                      const Array<Vector *> &elvec);
-
-   virtual void AssembleFaceVector(const Array<const FiniteElement *> &el1,
-                                   const Array<const FiniteElement *> &el2,
-                                   FaceElementTransformations &Tr,
-                                   const Array<const Vector *> &elfun, 
-                                   const Array<Vector *> &elvec);
-
-   virtual ~TractionBoundaryNLFIntegrator();
-};
 
 /// Active tension integrator 
 class ActiveTensionNLFIntegrator : public BlockNonlinearFormIntegrator
 {
 private:
-   MatrixCoefficient &function;
+   QuadratureFunctionCoefficient &function;
+   VectorCoefficient &Q;
    mutable DenseMatrix DSh_u, DS_u, J0i, J, P, PMatI_u, PMatO_u, PMatO_p, Qshap, AStress, AStress_current;
    mutable Vector Sh_p, shape;
    
 public:
-   ActiveTensionNLFIntegrator(MatrixCoefficient &f) : function(f) { }
+   ActiveTensionNLFIntegrator(QuadratureFunctionCoefficient &fq, VectorCoefficient &fv) : function(fq), Q(fv) { }
 
    virtual void AssembleElementVector(const Array<const FiniteElement *> &el,
                                       ElementTransformation &Tr,
                                       const Array<const Vector *> &elfun, 
                                       const Array<Vector *> &elvec);
 
+   virtual void AssembleElementGrad(const Array<const FiniteElement*> &el,
+                                    ElementTransformation &Tr,
+                                    const Array<const Vector *> &elfun, 
+                                    const Array2D<DenseMatrix *> &elmats);
+   
    virtual ~ActiveTensionNLFIntegrator();
 };
 

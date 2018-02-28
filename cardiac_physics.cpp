@@ -24,7 +24,7 @@ void InitialDeformation(const Vector &x, Vector &y)
    // reference configuration can help convergence
    y = x;
 
-   if (run_mode == 1) {
+   if (run_mode == 1 || run_mode == 3) {
       y(1) = x(1) - 0.05 * x(0);
    }
    
@@ -47,10 +47,13 @@ void FiberFunction(const Vector &x, Vector &y)
 {
    y = 0.0;
 
-   y(0) = 1.0;
-
-   //y(1) = 1.0;
-   //y(0) = 1.0;
+   if (run_mode == 3) {
+      y(1) = 1.0;
+      y(2) = 1.0;
+   }
+   else {
+      y(0) = 1.0;
+   }
 
    y /= y.Norml2();
 

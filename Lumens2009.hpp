@@ -1,3 +1,6 @@
+#ifndef LUMENS
+#define LUMENS
+
 #include "ExcitationContraction.hpp"
 #include <vector>
 #include <string>
@@ -60,3 +63,4 @@ class ThisModel : public ExcitationContraction
 }
    
 
+#endif

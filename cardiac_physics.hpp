@@ -13,9 +13,6 @@ extern int run_mode;
 
 void ReferenceConfiguration(const Vector &x, Vector &y);
 void InitialDeformation(const Vector &x, Vector &y);
-void BodyForceFunction(const Vector &x, Vector &y);
-void ActiveTensionFunction(const Vector &x, DenseMatrix &y);
-void TractionFunction(const Vector &x, Vector &y);
 double PressureFunction(const Vector &x, double t);
 void FiberFunction(const Vector &x, Vector &y);
 void VolumeFunction(const Vector &x, Vector &y);

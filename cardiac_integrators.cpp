@@ -317,7 +317,6 @@ void CardiacNLFIntegrator::AssembleElementVector(const Array<const FiniteElement
    *elvec[1] = 0.0;
 
    double pres;
-
    Vector fiber;
 
    for (int i = 0; i < ir.GetNPoints(); i++)
@@ -404,51 +403,6 @@ void CardiacNLFIntegrator::AssembleElementGrad(const Array<const FiniteElement*>
 CardiacNLFIntegrator::~CardiacNLFIntegrator()
 { }
 
-void BodyForceNLFIntegrator::AssembleElementVector(const Array<const FiniteElement *> &el,
-                                                   ElementTransformation &Tr,
-                                                   const Array<const Vector *> &elfun, 
-                                                   const Array<Vector *> &elvec)
-{
-   int dof_u = el[0]->GetDof();
-   int dim_u = el[0]->GetDim();   
-
-   shape.SetSize(dof_u);
-   elvec[0]->SetSize(dof_u*dim_u);
-
-   elvec[1]->SetSize(el[1]->GetDof());
-
-
-   int intorder = 2*el[0]->GetOrder() + 3; 
-   const IntegrationRule &ir = IntRules.Get(el[0]->GetGeomType(), intorder);
-
-   *elvec[0] = 0.0;
-   *elvec[1] = 0.0;
-
-   double val, cf;
-
-   for (int i = 0; i < ir.GetNPoints(); i++)
-   {
-      const IntegrationPoint &ip = ir.IntPoint(i);
-
-      Tr.SetIntPoint(&ip);
-      val = Tr.Weight();
-
-      el[0]->CalcShape(ip, shape);
-      function.Eval(Qvec, Tr, ip);
-
-      for (int k = 0; k < dim_u; k++) {
-         cf = -1.0 * val * Qvec(k);
-
-         for (int s = 0; s < dof_u; s++) {
-            (*elvec[0])(dof_u*k + s) += ip.weight * cf * shape(s);
-         }
-      }
-   }
-
-}
-
-BodyForceNLFIntegrator::~BodyForceNLFIntegrator()
-{ }
 
 void ActiveTensionNLFIntegrator::AssembleElementVector(const Array<const FiniteElement *> &el,
                                                        ElementTransformation &Tr,
@@ -477,6 +431,9 @@ void ActiveTensionNLFIntegrator::AssembleElementVector(const Array<const FiniteE
    *(elvec[0]) = 0.0;
    *(elvec[1]) = 0.0;
 
+   double tension;
+   Vector fib(3);
+   
    for (int i = 0; i < ir.GetNPoints(); i++)
    {
 
@@ -488,13 +445,61 @@ void ActiveTensionNLFIntegrator::AssembleElementVector(const Array<const FiniteE
       Mult(DSh_u, J0i, DS_u);
       MultAtB(PMatI_u, DS_u, J);
 
-      function.Eval(AStress, Tr, ip);
+      tension = function.EvalQ(Tr, i);
+      AStress = 0.0;
+
+      Q.Eval(fib, Tr, ip);      
+      MultVVt(fib, AStress);
+      AStress *= tension;
+
       Mult(J, AStress, AStress_current);
 
       AStress_current *= ip.weight*Tr.Weight();
       AddMultABt(DS_u, AStress_current, PMatO_u);
    }
 }
+
+void ActiveTensionNLFIntegrator::AssembleElementGrad(const Array<const FiniteElement*> &el,
+                                                     ElementTransformation &Tr,
+                                                     const Array<const Vector *> &elfun, 
+                                                     const Array2D<DenseMatrix *> &elmats)
+{
+   double diff_step = 1.0e-8;
+   Array<Vector *> temps(el.Size());
+   Array<Vector *> temp_out_1(el.Size());
+   Array<Vector *> temp_out_2(el.Size());
+   Array<int> dofs(el.Size());
+
+   for (int s1=0; s1<el.Size(); s1++) {
+      temps[s1] = new Vector(elfun[s1]->GetData(), elfun[s1]->Size());
+      temp_out_1[s1] = new Vector();
+      temp_out_2[s1] = new Vector();
+      dofs[s1] = elfun[s1]->Size();
+   }
+
+   for (int s1=0; s1<el.Size(); s1++) {
+      for (int s2=0; s2<el.Size(); s2++) {
+         elmats(s1,s2)->SetSize(dofs[s1],dofs[s2]);
+      }
+   }
+
+   for (int s1=0; s1<el.Size(); s1++) {
+      for (int j=0; j<temps[s1]->Size(); j++) {
+         (*temps[s1])[j] += diff_step;
+         AssembleElementVector(el, Tr, temps, temp_out_1);
+         (*temps[s1])[j] -= 2.0*diff_step;
+         AssembleElementVector(el, Tr, temps, temp_out_2);
+
+         for (int s2=0; s2<el.Size(); s2++) {
+            for (int k=0; k<temps[s2]->Size(); k++) {
+               (*elmats(s2,s1))(k,j) = ((*temp_out_1[s2])[k] - (*temp_out_2[s2])[k]) / (2.0*diff_step);
+            }
+         }
+         (*temps[s1])[j] = (*elfun[s1])[j];
+      }
+   }   
+}
+   
 
 ActiveTensionNLFIntegrator::~ActiveTensionNLFIntegrator()
 { }
@@ -760,78 +765,5 @@ void PressureBoundaryNLFIntegrator::AssembleElementVector(const Array<const Fini
 PressureBoundaryNLFIntegrator::~PressureBoundaryNLFIntegrator()
 { }
 
-void TractionBoundaryNLFIntegrator::AssembleFaceVector(const Array<const FiniteElement *> &el1,
-                                                       const Array<const FiniteElement *> &el2,
-                                                       FaceElementTransformations &Tr,
-                                                       const Array<const Vector *> &elfun, 
-                                                       const Array<Vector *> &elvec)
-{
-   int dim = el1[0]->GetDim();
-   int dof_u = el1[0]->GetDof();
-   int dof_p = el1[1]->GetDof();
-
-   shape.SetSize (dof_u);
-   nor.SetSize (dim);
-   fnor.SetSize (dim);
-   elvec[0]->SetSize (dim*dof_u);
-   elvec[1]->SetSize (dof_p);
-
-   DSh_u.SetSize(dof_u, dim);
-   DS_u.SetSize(dof_u, dim);
-   J0i.SetSize(dim);
-   J.SetSize(dim);
-   Jinv.SetSize(dim);
-
-   PMatI_u.UseExternalData(elfun[0]->GetData(), dof_u, dim);
-
-   int intorder = 2*el1[0]->GetOrder() + 3; 
-   const IntegrationRule &ir = IntRules.Get(Tr.FaceGeom, intorder);
-
-   *(elvec[0]) = 0.0;
-   *(elvec[1]) = 0.0;
-
-   for (int i = 0; i < ir.GetNPoints(); i++)
-   {
-      const IntegrationPoint &ip = ir.IntPoint(i);
-      IntegrationPoint eip;
-      Tr.Loc1.Transform(ip, eip);
-
-      Tr.Face->SetIntPoint(&ip);
-
-      Tr.Elem1->SetIntPoint(&eip);
-      CalcInverse(Tr.Elem1->Jacobian(), J0i);
-
-      el1[0]->CalcDShape(eip, DSh_u);
-      Mult(DSh_u, J0i, DS_u);
-      MultAtB(PMatI_u, DS_u, J);
-
-      CalcInverse(J, Jinv);
-
-      function.Eval(nor, *Tr.Face, ip);
-      Jinv.MultTranspose(nor, fnor);
-
-      el1[0]->CalcShape (eip, shape);
-      fnor *= J.Det(); 
-      for (int j = 0; j < dof_u; j++)
-         for (int k = 0; k < dim; k++)
-         {
-            (*elvec[0])(dof_u*k+j) -= ip.weight * Tr.Face->Weight() * fnor(k) * shape(j);
-         }
-   }
-}
-
-void TractionBoundaryNLFIntegrator::AssembleElementVector(const Array<const FiniteElement *> &el,
-                                                          ElementTransformation &Tr,
-                                                          const Array<const Vector *> &elfun, 
-                                                          const Array<Vector *> &elvec)
-
-{
-   mfem_error("TractionBoundaryNLFIntegrator::AssembleElementVector"
-              " is not overloaded!");
-}
-
-
-TractionBoundaryNLFIntegrator::~TractionBoundaryNLFIntegrator()
-{ }
 
 }

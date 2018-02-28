@@ -2,6 +2,8 @@
 #include "cardiac_physics.hpp"
 #include "cardiac_integrators.hpp"
 #include "mechanics_driver.hpp"
+#include "ConstantTension.hpp"
+#include "Lumens2009.hpp"
 #include <memory>
 #include <iostream>
 #include <fstream>
@@ -31,7 +33,7 @@ int main(int argc, char *argv[])
 
    OptionsParser args(argc, argv);
    args.AddOption(&run_mode, "-rm", "--run-mode",
-                  "Run mode. 1 is cantilever beam and 2 is inflated ventricle.");   
+                  "Run mode. 1 is cantilever beam, 2 is inflated ventricle, and 3 is active tension beam.");   
    args.AddOption(&ser_ref_levels, "-rs", "--refine-serial",
                   "Number of times to refine the mesh uniformly in serial.");
    args.AddOption(&par_ref_levels, "-rp", "--refine-parallel",
@@ -71,7 +73,7 @@ int main(int argc, char *argv[])
    
    // Open the mesh
    Mesh *mesh = NULL;
-   if (run_mode == 1) {
+   if (run_mode == 1 || run_mode == 3) {
       const char *mesh_file = "./beam-hex.mesh";
       mesh = new Mesh(mesh_file, 1, 1);
    }
@@ -97,7 +99,7 @@ int main(int argc, char *argv[])
    int dim = pmesh->Dimension();
 
    
-   // Definie the finite element spaces for displacement and pressure (Stokes elements)
+   // Define the finite element spaces for displacement and pressure (Stokes elements)
    H1_FECollection quad_coll(order, dim);
    H1_FECollection lin_coll(order-1, dim);
    ParFiniteElementSpace R_space(pmesh, &quad_coll, dim);
@@ -121,7 +123,6 @@ int main(int argc, char *argv[])
    Array<int> ess_bdr_u(R_space.GetMesh()->bdr_attributes.Max());
    Array<int> ess_bdr_p(W_space.GetMesh()->bdr_attributes.Max());
    Array<int> pres_bdr(R_space.GetMesh()->bdr_attributes.Max());
-   Array<int> trac_bdr(R_space.GetMesh()->bdr_attributes.Max());
      
    ess_bdr_p = 0;
    ess_bdr_u = 0;
@@ -129,9 +130,6 @@ int main(int argc, char *argv[])
 
    pres_bdr = 0;
    pres_bdr[3] = 1;
-
-   trac_bdr = 0;
-   trac_bdr[2] = 1;
 
    ess_bdr[0] = &ess_bdr_u;
    ess_bdr[1] = &ess_bdr_p;
@@ -176,10 +174,10 @@ int main(int argc, char *argv[])
    p_gf.GetTrueDofs(xp.GetBlock(1));
 
    // Initialize the cardiac mechanics operator
-   CardiacOperator oper(spaces, ess_bdr, pres_bdr, trac_bdr, slu_solver, block_trueOffsets,
-                        newton_rel_tol, newton_abs_tol, newton_iter);
+   CardiacOperator oper(spaces, ess_bdr, pres_bdr, slu_solver, block_trueOffsets,
+                        newton_rel_tol, newton_abs_tol, newton_iter, dt);
 
-   bool last_step = false;
+   // Loop over the timesteps
    for (double t = 0.0; t<tf; t += dt) {
 
       // Solve the Newton system       
@@ -252,7 +250,7 @@ int main(int argc, char *argv[])
 
    // Free the used memory.
    delete pmesh;
-
+   
    MPI_Finalize();
 
    return 0;
@@ -261,26 +259,41 @@ int main(int argc, char *argv[])
 CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
                                  Array<Array<int> *>&ess_bdr,
                                  Array<int> &pres_bdr,
-                                 Array<int> &trac_bdr,
                                  bool slu,
                                  Array<int> &block_trueOffsets,
                                  double rel_tol,
                                  double abs_tol,
-                                 int iter)
+                                 int iter,
+                                 double timestep)
    : TimeDependentOperator(fes[0]->TrueVSize() + fes[1]->TrueVSize(), 0.0), 
-     newton_solver(fes[0]->GetComm(), 0.8), slu_solver(slu)
+     newton_solver(fes[0]->GetComm(), 0.8), slu_solver(slu), dt(timestep)
 {
    Array<Vector *> rhs(2);
    rhs = NULL;
-
+   tension_func = NULL;
+   qat = NULL;
+   
    fes.Copy(spaces);
 
+   // Define the quadrature space for the active tension coefficient
+   Q_space = new QuadratureSpace(fes[0]->GetMesh(), 2*(fes[0]->GetOrder(0))+3);
+
+   // Define and initialize the quadrature function for the active tension coefficient
+   if (run_mode == 3) {
+      tension_func = new ActiveTensionFunction(Q_space, fes[0]);
+      tension_func->Initialize();
+      (*tension_func) = 1.0;
+   }
+   
    // Define the forcing function coefficients
-   at = new MatrixFunctionCoefficient(3, ActiveTensionFunction);
    fib = new VectorFunctionCoefficient(3, FiberFunction);
    pres = new FunctionCoefficient(PressureFunction);
    vol = new VectorFunctionCoefficient(3, VolumeFunction);
-   
+
+   if (run_mode == 3) {
+      qat = new QuadratureFunctionCoefficient(tension_func);
+   }
+      
    // Initialize the Cardiac model (transversely isotropic)
 
    if (run_mode == 1) {
@@ -298,12 +311,13 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
 
    // Add the active tension integrator (only mode 3)
    if (run_mode == 3) {
-      Hform->AddDomainIntegrator(new ActiveTensionNLFIntegrator(*at));
+      Hform->AddDomainIntegrator(new ActiveTensionNLFIntegrator(*qat, *fib));
    }
       
    // Add the pressure and traction boundary integrators
-   Hform->AddBdrFaceIntegrator(new PressureBoundaryNLFIntegrator(*pres, *vol), pres_bdr);
-
+   if (run_mode == 1 || run_mode == 2) {
+      Hform->AddBdrFaceIntegrator(new PressureBoundaryNLFIntegrator(*pres, *vol), pres_bdr);
+   }
    // Set the essential boundary conditions
    Hform->SetEssentialBC(ess_bdr, rhs);
 
@@ -347,17 +361,21 @@ void CardiacOperator::Solve(Vector &xp) const
 {
    Vector zero;
    newton_solver.Mult(zero, xp);
+   if (run_mode == 3) {
+      tension_func->CommitStep(dt);
+   }
    MFEM_VERIFY(newton_solver.GetConverged(), "Newton Solver did not converge.");
 }
 
 // compute: y = H(x,p)
 void CardiacOperator::Mult(const Vector &k, Vector &y) const
 {
-
    // Apply the nonlinear form
    pres->SetTime(this->GetTime());
+   if (run_mode == 3) {
+      tension_func->TryStep(k, dt);
+   }
    Hform->Mult(k, y);
-
 }
 
 // Compute the Jacobian from the nonlinear form
@@ -373,11 +391,15 @@ Operator &CardiacOperator::GetGradient(const Vector &xp) const
 CardiacOperator::~CardiacOperator()
 {
    delete J_solver;
-   delete bf;
-   delete at;
-   delete trac;
    delete fib;
    delete pres;
+   if (qat != NULL) {
+      delete qat;
+   }
+   if (tension_func != NULL) {
+      delete tension_func;
+   }
+   delete Q_space;
    if (J_prec != NULL) {
       delete J_prec;
    }

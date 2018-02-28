@@ -5,6 +5,7 @@
 #include "cardiac_physics.hpp"
 #include "cardiac_integrators.hpp"
 #include "cardiac_solvers.hpp"
+#include "cardiac_coefficients.hpp"
 
 using namespace std;
 using namespace mfem;
@@ -19,6 +20,9 @@ class CardiacOperator : public TimeDependentOperator
 protected:
    Array<ParFiniteElementSpace *> spaces;
 
+   ActiveTensionFunction *tension_func;
+   QuadratureSpace *Q_space;
+   
    ParBlockNonlinearForm *Hform;
 
    /// Newton solver for the hyperelastic operator
@@ -32,13 +36,15 @@ protected:
 
    bool slu_solver;
 
-   MatrixFunctionCoefficient *at;
    VectorFunctionCoefficient *fib;
    FunctionCoefficient *pres;
    VectorFunctionCoefficient *vol;
+   QuadratureFunctionCoefficient *qat;
+
+   double dt;
    
 public:
-   CardiacOperator(Array<ParFiniteElementSpace *> &fes, Array<Array<int>*> &ess_bdr, Array<int> &pres_bdr, Array<int> &trac_bdr, bool slu, Array<int> &block_trueOffsets, double rel_tol, double abs_tol, int iter);
+   CardiacOperator(Array<ParFiniteElementSpace *> &fes, Array<Array<int>*> &ess_bdr, Array<int> &pres_bdr, bool slu, Array<int> &block_trueOffsets, double rel_tol, double abs_tol, int iter, double timestep);
 
    /// Required to use the native newton solver
    virtual Operator &GetGradient(const Vector &xp) const;
