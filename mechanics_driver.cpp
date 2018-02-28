@@ -393,12 +393,6 @@ CardiacOperator::~CardiacOperator()
    delete J_solver;
    delete fib;
    delete pres;
-   if (qat != NULL) {
-      delete qat;
-   }
-   if (tension_func != NULL) {
-      delete tension_func;
-   }
    delete Q_space;
    if (J_prec != NULL) {
       delete J_prec;
