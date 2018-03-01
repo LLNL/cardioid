@@ -139,11 +139,11 @@ void ActiveTensionFunction::TryStep(const Vector &x, const double dt)
 {
    CalcStretch(x, dt);
    tester.tryTimestep(dt, inArrays);
+   tester.outputForNextTimestep(dt, inArrays, outArrays);
 }
 
 void ActiveTensionFunction::CommitStep(const double dt)
 {
-   tester.outputForNextTimestep(dt, inArrays, outArrays);
    tester.commitTimestep();
    swap(stretch,nextStretch);
    

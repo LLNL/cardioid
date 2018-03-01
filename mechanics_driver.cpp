@@ -106,24 +106,30 @@ int main(int argc, char *argv[])
    HYPRE_Int glob_W_size = W_space.GlobalTrueVSize();
 
    // Define the Dirichlet conditions (set to boundary attribute 1)
+   // Outer index is varible (u or p)
+   // Inner index denotes whether boundary is a Dirichlet type.
    Array<Array<int> *> ess_bdr(2);
 
    // Boundary condition markers
    // 1 - Dirichlet/Essential
    // 2 - Free surface
    // 3 - Traction (not currently used)
-   // 4 - Pressure
+   // 4 - Pressure (also for volume computation and constraint)
    Array<int> ess_bdr_u(R_space.GetMesh()->bdr_attributes.Max());
    Array<int> ess_bdr_p(W_space.GetMesh()->bdr_attributes.Max());
    Array<int> pres_bdr(R_space.GetMesh()->bdr_attributes.Max());
-     
+   // (Max is really size)
+
+   // These are bools for whether the boundary is Dirichlet
    ess_bdr_p = 0;
    ess_bdr_u = 0;
    ess_bdr_u[0] = 1;
 
+   // These are bools for whether the boundary has a pressure load
    pres_bdr = 0;
    pres_bdr[3] = 1;
 
+   // Setting up the array of arrays for both variables
    ess_bdr[0] = &ess_bdr_u;
    ess_bdr[1] = &ess_bdr_p;
 
@@ -163,6 +169,7 @@ int main(int argc, char *argv[])
    p_gf = 0.0;
    
    // Set up the block solution vectors
+   // Assigning to each xp region with the appropriate grid function
    x_gf.GetTrueDofs(xp.GetBlock(0));
    p_gf.GetTrueDofs(xp.GetBlock(1));
 
@@ -184,6 +191,7 @@ int main(int argc, char *argv[])
    }
       
    // Distribute the ghost dofs
+   // Assogm to the grid functions
    x_gf.Distribute(xp.GetBlock(0));
    p_gf.Distribute(xp.GetBlock(1));
 
@@ -315,6 +323,10 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
 void CardiacOperator::Solve(Vector &xp) const
 {
    Vector zero;
+   // Apply and find the root of the nonlinear operator
+   // Zero is the right hand size
+   // xp is already initialized with the first guess.
+   // This method updates it to the solution.
    newton_solver.Mult(zero, xp);
    if (run_mode == 3) {
       tension_func->CommitStep(dt);
@@ -331,6 +343,7 @@ void CardiacOperator::Mult(const Vector &k, Vector &y) const
    if (run_mode == 3) {
       tension_func->TryStep(k, dt);
    }
+   // This is the actual residual evaluation
    Hform->Mult(k, y);
 }
 

@@ -114,11 +114,13 @@ private:
 public:
    CardiacNLFIntegrator(CardiacModel *m, VectorCoefficient &fib) : model(m), Q(&fib) { }
 
+   // Assemble the element residual
    virtual void AssembleElementVector(const Array<const FiniteElement *> &el,
                                       ElementTransformation &Tr,
                                       const Array<const Vector *> &elfun, 
                                       const Array<Vector *> &elvec);
 
+   // Assemble the element gradient
    virtual void AssembleElementGrad(const Array<const FiniteElement*> &el,
                                     ElementTransformation &Tr,
                                     const Array<const Vector *> &elfun, 

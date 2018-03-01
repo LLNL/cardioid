@@ -54,7 +54,9 @@ public:
    CardiacOperator(Array<ParFiniteElementSpace *> &fes, Array<Array<int>*> &ess_bdr, Array<int> &pres_bdr, Array<int> &block_trueOffsets, double rel_tol, double abs_tol, int iter, double timestep);
 
    /// Required to use the native newton solver
+   /// Returns the Jacobian matrix (gradient of the residual vector)
    virtual Operator &GetGradient(const Vector &xp) const;
+   /// Computes the residual vector
    virtual void Mult(const Vector &k, Vector &y) const;
 
    /// Driver for the newton solver
