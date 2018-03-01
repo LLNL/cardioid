@@ -23,8 +23,6 @@ int main(int argc, char *argv[])
    int ser_ref_levels = 0;
    int par_ref_levels = 0;
    int order = 2;
-   bool slu_solver = true;
-   bool visualization = true;
    double newton_rel_tol = 1.0e-2;
    double newton_abs_tol = 1.0e-12;
    int newton_iter = 500;
@@ -40,11 +38,6 @@ int main(int argc, char *argv[])
                   "Number of times to refine the mesh uniformly in parallel.");
    args.AddOption(&order, "-o", "--order",
                   "Order (degree) of the finite elements.");
-   args.AddOption(&slu_solver, "-slu", "--superlu", "-no-slu",
-                  "--no-superlu", "Use the SuperLU Solver.");
-   args.AddOption(&visualization, "-vis", "--visualization", "-no-vis",
-                  "--no-visualization",
-                  "Enable or disable GLVis visualization.");
    args.AddOption(&newton_rel_tol, "-rel", "--relative-tolerance",
                   "Relative tolerance for the Newton solve.");
    args.AddOption(&newton_abs_tol, "-abs", "--absolute-tolerance",
@@ -118,7 +111,7 @@ int main(int argc, char *argv[])
    // Boundary condition markers
    // 1 - Dirichlet/Essential
    // 2 - Free surface
-   // 3 - Traction
+   // 3 - Traction (not currently used)
    // 4 - Pressure
    Array<int> ess_bdr_u(R_space.GetMesh()->bdr_attributes.Max());
    Array<int> ess_bdr_p(W_space.GetMesh()->bdr_attributes.Max());
@@ -174,7 +167,7 @@ int main(int argc, char *argv[])
    p_gf.GetTrueDofs(xp.GetBlock(1));
 
    // Initialize the cardiac mechanics operator
-   CardiacOperator oper(spaces, ess_bdr, pres_bdr, slu_solver, block_trueOffsets,
+   CardiacOperator oper(spaces, ess_bdr, pres_bdr, block_trueOffsets,
                         newton_rel_tol, newton_abs_tol, newton_iter, dt);
 
    // Loop over the timesteps
@@ -196,22 +189,6 @@ int main(int argc, char *argv[])
 
    // Set the final deformation
    subtract(x_gf, x_ref, x_def);
-
-   // Visualize the results if requested
-   socketstream vis_u, vis_p;
-   if (visualization) {
-      char vishost[] = "localhost";
-      int  visport   = 19916;
-      vis_u.open(vishost, visport);
-      vis_u.precision(8);
-      visualize(vis_u, pmesh, &x_gf, &x_def, "Deformation", true);
-      // Make sure all ranks have sent their 'u' solution before initiating
-      // another set of GLVis connections (one from each rank):
-      MPI_Barrier(pmesh->GetComm());
-      vis_p.open(vishost, visport);
-      vis_p.precision(8);
-      visualize(vis_p, pmesh, &x_gf, &p_gf, "Pressure", true);
-   }
 
    // Save the displaced mesh, the final deformation, and the pressure
    {
@@ -259,14 +236,13 @@ int main(int argc, char *argv[])
 CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
                                  Array<Array<int> *>&ess_bdr,
                                  Array<int> &pres_bdr,
-                                 bool slu,
                                  Array<int> &block_trueOffsets,
                                  double rel_tol,
                                  double abs_tol,
                                  int iter,
                                  double timestep)
    : TimeDependentOperator(fes[0]->TrueVSize() + fes[1]->TrueVSize(), 0.0), 
-     newton_solver(fes[0]->GetComm(), 0.8), slu_solver(slu), dt(timestep)
+     newton_solver(fes[0]->GetComm(), 0.8), dt(timestep)
 {
    Array<Vector *> rhs(2);
    rhs = NULL;
@@ -283,15 +259,14 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
    pres = new FunctionCoefficient(PressureFunction);
    vol = new VectorFunctionCoefficient(3, VolumeFunction);
 
+   // Define the active tension coefficients
    if (run_mode == 3) {
       tension_func = new ActiveTensionFunction(Q_space, fes[0], *fib);
       tension_func->Initialize();
       qat = new QuadratureFunctionCoefficient(tension_func);
-      //(*tension_func) = 1.0;
    }
       
    // Initialize the Cardiac model (transversely isotropic)
-
    if (run_mode == 1) {
       model = new CardiacModel (2.0, 8.0, 2.0, 2.0, 4.0, 4.0, 2.0);
    }
@@ -310,37 +285,21 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
       Hform->AddDomainIntegrator(new ActiveTensionNLFIntegrator(*qat, *fib));
    }
       
-   // Add the pressure and traction boundary integrators
+   // Add the pressure boundary integrators
    if (run_mode == 1 || run_mode == 2) {
       Hform->AddBdrFaceIntegrator(new PressureBoundaryNLFIntegrator(*pres, *vol), pres_bdr);
    }
    // Set the essential boundary conditions
    Hform->SetEssentialBC(ess_bdr, rhs);
 
-   // Set the solver parameters (only dsuperlu works currently)
-   if (slu_solver) {
-      SuperLUSolver *superlu = NULL;
-      superlu = new SuperLUSolver(MPI_COMM_WORLD);
-      superlu->SetPrintStatistics(false);
-      superlu->SetSymmetricPattern(false);
-      superlu->SetColumnPermutation(superlu::PARMETIS);
-      
-      J_solver = superlu;
-      J_prec = NULL;
-   }
-   else {
-      HypreIdentity *invU, *invP;
-      invU = new HypreIdentity;
-      invP = new HypreIdentity;
-
-      MINRESSolver *J_minres = new MINRESSolver(MPI_COMM_WORLD);
-      J_minres->SetRelTol(rel_tol);
-      J_minres->SetAbsTol(0.0);
-      J_minres->SetMaxIter(300);
-      J_minres->SetPrintLevel(-1);
-      J_minres->SetPreconditioner(*J_prec);
-      J_solver = J_minres;  
-   }
+   SuperLUSolver *superlu = NULL;
+   superlu = new SuperLUSolver(MPI_COMM_WORLD);
+   superlu->SetPrintStatistics(false);
+   superlu->SetSymmetricPattern(false);
+   superlu->SetColumnPermutation(superlu::PARMETIS);
+   
+   J_solver = superlu;
+   J_prec = NULL;
 
    // Set the newton solve parameters
    newton_solver.iterative_mode = true;
@@ -366,7 +325,9 @@ void CardiacOperator::Solve(Vector &xp) const
 void CardiacOperator::Mult(const Vector &k, Vector &y) const
 {
    // Apply the nonlinear form
-   pres->SetTime(this->GetTime());
+   if (run_mode == 1 || run_mode == 2) {
+      pres->SetTime(this->GetTime());
+   }
    if (run_mode == 3) {
       tension_func->TryStep(k, dt);
    }
@@ -395,38 +356,4 @@ CardiacOperator::~CardiacOperator()
    delete model;
 }
 
-// In line visualization
-void visualize(ostream &out, ParMesh *mesh, ParGridFunction *deformed_nodes,
-               ParGridFunction *field, const char *field_name, bool init_vis)
-{
-   if (!out)
-   {
-      return;
-   }
-
-   GridFunction *nodes = deformed_nodes;
-   int owns_nodes = 0;
-
-   mesh->SwapNodes(nodes, owns_nodes);
-
-   out << "parallel " << mesh->GetNRanks() << " " << mesh->GetMyRank() << "\n";
-   out << "solution\n" << *mesh << *field;
-
-   mesh->SwapNodes(nodes, owns_nodes);
-
-   if (init_vis)
-   {
-      out << "window_size 800 800\n";
-      out << "window_title '" << field_name << "'\n";
-      if (mesh->SpaceDimension() == 2)
-      {
-         out << "view 0 0\n"; // view from top
-         out << "keys jl\n";  // turn off perspective and light
-      }
-      out << "keys cm\n";         // show colorbar and mesh
-      out << "autoscale value\n"; // update value-range; keep mesh-extents fixed
-      out << "pause\n";
-   }
-   out << flush;
-}
 

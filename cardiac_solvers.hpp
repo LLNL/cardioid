@@ -16,7 +16,8 @@ private:
 public:
    CardiacNewtonSolver(MPI_Comm _comm, double _fac = 0.5)
       : NewtonSolver(_comm), factor(_fac) { }
-   
+
+   // Backtracing line search with (currently disabled) Armijo condition
    virtual double ComputeScalingFactor(const Vector &x, const Vector &b) const;
 
 };

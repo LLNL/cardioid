@@ -29,31 +29,15 @@ void InitialDeformation(const Vector &x, Vector &y)
    }
    
 }
-                              
-void ActiveTensionFunction(const Vector &x, DenseMatrix &y, double t)
-{
-   Vector dir(3);
-   double tension_strength = 0.0;
-   //double tension_strength = 1.0e0;
-   y.SetSize(3);
-   y = 0.0;
 
-   FiberFunction(x, dir);
-   MultVVt(dir, y);
-   y *= tension_strength;
-}
-
+// Define the fiber directions. This will probably become either
+// a grid function or quadrature based coefficient depending on the
+// output of fiber gen.
 void FiberFunction(const Vector &x, Vector &y)
 {
    y = 0.0;
 
-   if (run_mode == 3) {
-      y(1) = 1.0;
-      y(2) = 1.0;
-   }
-   else {
-      y(0) = 1.0;
-   }
+   y(0) = 1.0;
 
    y /= y.Norml2();
 
@@ -75,6 +59,7 @@ double PressureFunction(const Vector &x, double t)
    return pres;
 }
 
+// Surface integral function used to calculate volume
 void VolumeFunction(const Vector &x, Vector &y)
 {
    y(2) = 0.0;
@@ -83,6 +68,7 @@ void VolumeFunction(const Vector &x, Vector &y)
    y(1) = 0.5 * x(1);
 }
 
+// Mesh helper functions from fiber gen to correctly label a heart-like mesh
 void findNeighbor(Element* ele, vector<Element*>& elements, int attr){
     const int *v = ele->GetVertices();
     const int nv = ele->GetNVertices(); 

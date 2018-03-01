@@ -9,6 +9,7 @@
 using namespace std;
 using namespace mfem;
 
+/// Standard coefficient evaluation is not valid
 double QuadratureFunctionCoefficient::Eval(ElementTransformation &T,
                                            const IntegrationPoint &ip)
 {
@@ -18,6 +19,7 @@ double QuadratureFunctionCoefficient::Eval(ElementTransformation &T,
 
 }
 
+/// Evaluate the function coefficient at a specific quadrature point
 double QuadratureFunctionCoefficient::EvalQ(ElementTransformation &T,
                                             const int num_ip)
 {
@@ -137,8 +139,6 @@ void ActiveTensionFunction::TryStep(const Vector &x, const double dt)
 {
    CalcStretch(x, dt);
    tester.tryTimestep(dt, inArrays);
-   tester.outputForNextTimestep(dt, inArrays, outArrays);
-   tester.commitTimestep();
 }
 
 void ActiveTensionFunction::CommitStep(const double dt)

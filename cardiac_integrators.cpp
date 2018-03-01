@@ -459,6 +459,9 @@ void ActiveTensionNLFIntegrator::AssembleElementVector(const Array<const FiniteE
    }
 }
 
+
+// Active tension gradient is currently calculated using finite difference. An analytical
+// version needs to be implememented.
 void ActiveTensionNLFIntegrator::AssembleElementGrad(const Array<const FiniteElement*> &el,
                                                      ElementTransformation &Tr,
                                                      const Array<const Vector *> &elfun, 
@@ -571,6 +574,7 @@ void PressureBoundaryNLFIntegrator::AssembleFaceVector(const Array<const FiniteE
 }
 
 
+/// Volume and gradient calculation routines. These will be used once the constraint framework is in place.
 double PressureBoundaryNLFIntegrator::GetElementVolume(const Array<const FiniteElement *> &el,
                                                        FaceElementTransformations &Tr,
                                                        const Array<const Vector *> &elfun)
