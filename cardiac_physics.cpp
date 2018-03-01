@@ -24,7 +24,7 @@ void InitialDeformation(const Vector &x, Vector &y)
    // reference configuration can help convergence
    y = x;
 
-   if (run_mode == 1 || run_mode == 3) {
+   if (run_mode == 1) {
       y(1) = x(1) - 0.05 * x(0);
    }
    

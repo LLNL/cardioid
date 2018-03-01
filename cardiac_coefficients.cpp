@@ -25,8 +25,8 @@ double QuadratureFunctionCoefficient::EvalQ(ElementTransformation &T,
    return QuadF->GetElementValue(elem_no, num_ip);
 }
 
-ActiveTensionFunction::ActiveTensionFunction(QuadratureSpace *qs, FiniteElementSpace *f)
-   : QuadratureFunction(qs), QuadS(qs), fes(f), tester(nCells)
+ActiveTensionFunction::ActiveTensionFunction(QuadratureSpace *qs, FiniteElementSpace *f, VectorCoefficient &fib)
+   : QuadratureFunction(qs), QuadS(qs), fes(f), tester(qs->GetSize()), Q(&fib)
 {
    nCells = this->Size();
 
@@ -67,19 +67,67 @@ void ActiveTensionFunction::Initialize()
    for (int icell=0; icell<nCells; icell++)
    {
       stretch[icell] = 1;
-      stretchVel[icell] = 1;
+      stretchVel[icell] = 0;
       actTime[icell] = 0;
    }
    
    tester.initialize(inArrays);
 
-   //this->SetData(tension.data());   
+   this->SetData(tension.data());   
 }
 
 void ActiveTensionFunction::CalcStretch(const Vector &x, const double dt)
 {
+   Vector xs_true(x.GetData(), fes->GetTrueVSize());
+   Vector xs(fes->GetVSize());
+   fes->GetProlongationMatrix()->Mult(xs_true, xs);
+
+   ElementTransformation *T;
+   const FiniteElement *fe;
+   Vector el_x;
+   Array<int> vdofs;
+   Vector fib(3);
+   Vector fib_out(3);
+   
+   DenseMatrix J0i(3);
+   DenseMatrix DSh_u;
+   DenseMatrix DS_u;
+   DenseMatrix J(3);
+   DenseMatrix PMatI_u;
+
+   int dof;
+   
+   for (int i = 0; i < fes->GetNE(); ++i) {
+      T = fes->GetElementTransformation(i);
+      fes->GetElementVDofs(i, vdofs);
+      fe = fes->GetFE(i);
+      xs.GetSubVector(vdofs, el_x);
+
+      dof = fe->GetDof();
+      PMatI_u.UseExternalData(xs.GetData(), dof, 3);
+      DSh_u.SetSize(dof, 3);
+      DS_u.SetSize(dof, 3);
+            
+      int intorder = 2*fe->GetOrder() + 3; 
+      const IntegrationRule &ir = IntRules.Get(fe->GetGeomType(), intorder);
+      
+      for (int i_num=0; i_num<ir.GetNPoints(); i_num++) {
+
+         const IntegrationPoint &ip = ir.IntPoint(i_num);
+         T->SetIntPoint(&ip);
+         CalcInverse(T->Jacobian(), J0i);
+
+         fe->CalcDShape(ip, DSh_u);
+         Mult(DSh_u, J0i, DS_u);
+         MultAtB(PMatI_u, DS_u, J);
+         Q->Eval(fib, *T, ip);
+         fib /= fib.Norml2();
+         J.Mult(fib, fib_out);         
+         nextStretch[(this)->GetElementOffset(i) + i_num] =  fib_out.Norml2();                  
+      }
+   }
+      
    for (int icell=0; icell<nCells; icell++) {
-      nextStretch[icell] = 1;
       stretchVel[icell] = (nextStretch[icell]-stretch[icell])/dt;
    }
 

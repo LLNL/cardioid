@@ -23,7 +23,7 @@ double CardiacNewtonSolver::ComputeScalingFactor(const Vector &x,
    double norm = Norm(test);
 
    
-   while (isnan(norm) != 0 || (norm > 1.2 * (norm0 - scale * arm_c * m) && scale > 0.001)) {
+   while (isnan(norm) != 0 || (norm > (norm0 - scale * arm_c * m) && scale > 0.0001)) {
 
       scale *= factor;
       add(x, -scale, c, x_out);

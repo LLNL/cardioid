@@ -55,11 +55,13 @@ private:
    int nCells;
    
    Lumens2009::ThisModel tester;
+
+   VectorCoefficient *Q;
    
-   void CalcStretch(const Vector &x, const double dt);
+   void CalcStretch(const Vector &x, const double dt);   
    
 public:
-   ActiveTensionFunction(QuadratureSpace *qs, FiniteElementSpace *f);
+   ActiveTensionFunction(QuadratureSpace *qs, FiniteElementSpace *f, VectorCoefficient &fib);
    
    void Initialize();
    

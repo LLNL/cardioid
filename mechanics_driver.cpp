@@ -277,13 +277,6 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
 
    // Define the quadrature space for the active tension coefficient
    Q_space = new QuadratureSpace(fes[0]->GetMesh(), 2*(fes[0]->GetOrder(0))+3);
-
-   // Define and initialize the quadrature function for the active tension coefficient
-   if (run_mode == 3) {
-      tension_func = new ActiveTensionFunction(Q_space, fes[0]);
-      tension_func->Initialize();
-      (*tension_func) = 1.0;
-   }
    
    // Define the forcing function coefficients
    fib = new VectorFunctionCoefficient(3, FiberFunction);
@@ -291,7 +284,10 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
    vol = new VectorFunctionCoefficient(3, VolumeFunction);
 
    if (run_mode == 3) {
+      tension_func = new ActiveTensionFunction(Q_space, fes[0], *fib);
+      tension_func->Initialize();
       qat = new QuadratureFunctionCoefficient(tension_func);
+      //(*tension_func) = 1.0;
    }
       
    // Initialize the Cardiac model (transversely isotropic)
@@ -364,7 +360,6 @@ void CardiacOperator::Solve(Vector &xp) const
    if (run_mode == 3) {
       tension_func->CommitStep(dt);
    }
-   MFEM_VERIFY(newton_solver.GetConverged(), "Newton Solver did not converge.");
 }
 
 // compute: y = H(x,p)
