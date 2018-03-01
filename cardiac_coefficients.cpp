@@ -68,9 +68,9 @@ void ActiveTensionFunction::Initialize()
 
    for (int icell=0; icell<nCells; icell++)
    {
-      stretch[icell] = 1;
-      stretchVel[icell] = 0;
-      actTime[icell] = 0;
+      stretch[icell] = 1.0;
+      stretchVel[icell] = 0.0;
+      actTime[icell] = 0.0;
    }
    
    tester.initialize(inArrays);
@@ -106,7 +106,7 @@ void ActiveTensionFunction::CalcStretch(const Vector &x, const double dt)
       xs.GetSubVector(vdofs, el_x);
 
       dof = fe->GetDof();
-      PMatI_u.UseExternalData(xs.GetData(), dof, 3);
+      PMatI_u.UseExternalData(el_x.GetData(), dof, 3);
       DSh_u.SetSize(dof, 3);
       DS_u.SetSize(dof, 3);
             
@@ -125,7 +125,7 @@ void ActiveTensionFunction::CalcStretch(const Vector &x, const double dt)
          Q->Eval(fib, *T, ip);
          fib /= fib.Norml2();
          J.Mult(fib, fib_out);         
-         nextStretch[(this)->GetElementOffset(i) + i_num] =  fib_out.Norml2();                  
+         nextStretch[(this)->GetElementOffset(T->ElementNo) + i_num] =  fib_out.Norml2();                  
       }
    }
       
