@@ -104,7 +104,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(const double dt, const int numPoints, TT06Dev
    mkState_(parms);
    currentMap_.resize(parms.currentNames.size()); 
    int nCurrents=0; 
-   while (TT06currentNames[nCurrents] != "") {nCurrents++;}
+   while (std::string(TT06currentNames[nCurrents]).empty()) {nCurrents++;}
    //printf("current sizes: %d %d %d\n",nCurrents,sizeof(double),sizeof(currentScales_)); 
    assert(nCurrents*sizeof(double) == sizeof(currentScales_)); 
    currentScales_=currentScalesDefault; 
@@ -125,7 +125,7 @@ TT06Dev_Reaction::TT06Dev_Reaction(const double dt, const int numPoints, TT06Dev
 
 
    fastReaction_ = 0; 
-   if (parms.fastReaction >= 0) ;
+   //if (parms.fastReaction >= 0) ;
    {
       if ( (fabs(parms.tolerance/1e-4 - 1.0) < 1e-12) && parms.jhTauSmooth == 1 )fastReaction_ = parms.fastReaction; 
    }
@@ -419,8 +419,14 @@ int TT06Dev_Reaction::nonGateWorkPartition_(int& offset)
    return size;
 }
 
-void TT06Dev_Reaction::calc(double dt, const VectorDouble32& Vm, const vector<double>& iStim, VectorDouble32& dVm)
+void TT06Dev_Reaction::calc(double dt,
+                            const Managed<ArrayView<double>> Vm_m,
+                            const Managed<ArrayView<double>> iStim_m,
+                            Managed<ArrayView<double>> dVm_m)
 {
+   ConstArrayView<double> Vm = Vm_m;
+   ConstArrayView<double> iStim = iStim_m;
+   ArrayView<double> dVm = dVm_m;
    WORK work ={ 0,static_cast<int>(nCells_),0,12}; 
    if (nCells_ > 0) 
    {
@@ -428,10 +434,13 @@ void TT06Dev_Reaction::calc(double dt, const VectorDouble32& Vm, const vector<do
       update_gate_(dt, nCells_, cellTypeParm_.s_switch, const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],fit_,work);
    }
 }
-void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR)
+void TT06Dev_Reaction::updateNonGate(double dt, const Managed<ArrayView<double>> Vm_m, Managed<ArrayView<double>> dVR_m)   
 {
    int offset,nCells; 
 
+   ConstArrayView<double> Vm = Vm_m;
+   ArrayView<double> dVR = dVR_m;
+   
 #ifdef LEGACY_NG_WORKPARTITION
    nCells = nonGateWorkPartition(offset);
 #else
@@ -489,9 +498,11 @@ void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, Vector
       stopTimer(nonGateTimer);
    }
 }
-void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)
+void TT06Dev_Reaction::updateGate   (double dt, const Managed<ArrayView<double>> Vm_m)
 {
    int teamRank = group_.teamRank();
+
+   ConstArrayView<double> Vm = Vm_m;
 
    TT06Func::WORK work = gateWork_[teamRank]; 
    int nCell=work.nCell; 
@@ -511,7 +522,7 @@ void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)
    stopTimer(gateTimer);
 }
 
-void TT06Dev_Reaction::initializeMembraneVoltage(VectorDouble32& Vm)
+void TT06Dev_Reaction::initializeMembraneVoltage(ArrayView<double> Vm)
 {
    assert(Vm.size() >= nCells_);
    for (unsigned ii=0; ii<Vm.size(); ++ii) Vm[ii] = XXXinitialVm_;

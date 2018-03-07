@@ -59,8 +59,8 @@ Reaction* reactionFactory(const string& name, double dt, const int numPoints,
       return scanReaction::scanTT06Dev(obj, dt, numPoints, group, scaleCurrents);
    else if (method == "TT06Opt" )
       return scanReaction::scanTT06Dev(obj, dt, numPoints, group, scaleCurrents);
-   else if (method == "TT06_RRG" )
-      return scanReaction::scanTT06_RRG(obj, numPoints);
+   //else if (method == "TT06_RRG" )
+   //   return scanReaction::scanTT06_RRG(obj, numPoints);
    else if (method == "BetterTT06" )
       return scanReaction::scanBetterTT06(obj, numPoints, dt);
    else if (method == "SimpleOHaraRudy" )
@@ -69,14 +69,14 @@ Reaction* reactionFactory(const string& name, double dt, const int numPoints,
       return scanReaction::scanSimpleGrandi(obj, numPoints);
    else if (method == "SimpleTT06" )
       return scanReaction::scanSimpleTT06(obj, numPoints);
-   else if (method == "FHN" || method == "FitzhughNagumo")
-      return scanReaction::scanFHN(obj, numPoints);
+   //else if (method == "FHN" || method == "FitzhughNagumo")
+   //   return scanReaction::scanFHN(obj, numPoints);
    else if (method == "Passive")
       return scanReaction::scanPassive(obj, numPoints);
-   else if (method == "null")
-      return scanReaction::scanNull(obj);
-   else if (method == "test")
-      return scanReaction::scanTest(obj);
+   //else if (method == "null")
+   //   return scanReaction::scanNull(obj);
+   //else if (method == "test")
+   //   return scanReaction::scanTest(obj);
    
    if (myRank == 0)
       cerr<<"ERROR: Undefined reaction model in reactionFactory"<<endl;
@@ -227,6 +227,7 @@ namespace  scanReaction
 
 namespace  scanReaction
 {
+   /*
    Reaction* scanTT06_RRG(OBJECT* obj, const int numPoints)
    {
       TT06_RRG_ReactionParms parms;
@@ -236,17 +237,20 @@ namespace  scanReaction
       Reaction *reaction = new TT06_RRG_Reaction(numPoints,ttType,parms);
       return  reaction; 
    }
+   */
 }
 
 
 namespace  scanReaction
 {
+/*
    Reaction* scanFHN(OBJECT* obj, const int numPoints)
    {
       // None of the FHN model parameters are currently wired to the
       // input deck.
       return new ReactionFHN(numPoints);
    }
+*/
 }
 
 namespace  scanReaction

@@ -33,10 +33,10 @@ class TestReaction : public Reaction
    std::string methodName() const {return "test";}
 
    void calc(double dt,
-             const VectorDouble32& Vm,
-             const std::vector<double>& iStim,
-             VectorDouble32& dVm){};
-   void initializeMembraneVoltage(VectorDouble32& Vm)
+             const Managed<ArrayView<double>> Vm,
+             const Managed<ArrayView<double>> iStim,
+             Managed<ArrayView<double>> dVm) {}
+   void initializeMembraneVoltage(ArrayView<double> Vm)
    {
       for (unsigned ii=0; ii< Vm.size(); ++ii)
          Vm[ii] = V0_ + delta_ * (2*drand48() - 1.0);

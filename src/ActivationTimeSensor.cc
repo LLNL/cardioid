@@ -98,7 +98,7 @@ void ActivationTimeSensor::print(double time, int loop)
 
 void ActivationTimeSensor::eval(double time, int loop)
 {
-   const VectorDouble32& VmArray(vdata_.VmTransport_.readOnHost());
+   ConstArrayView<double> VmArray = vdata_.VmTransport_;
    for (unsigned ii=0; ii<nLocal_; ++ii)
    {
       if (activated_[ii]) continue;

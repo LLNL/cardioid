@@ -39,17 +39,17 @@ OpenmpGpuRedblackDiffusion::OpenmpGpuRedblackDiffusion(const Anatomy& anatomy, i
    nx_ = localGrid_.nx();
    ny_ = localGrid_.ny();
    nz_ = localGrid_.nz();
-   VmBlock_.setup(vector<double>(nx_*ny_*nz_));
+   VmBlock_.setup(PinnedVector<double>(nx_*ny_*nz_));
 
    nLocal_ = anatomy.nLocal();
    nRemote_ = anatomy.nRemote();
    nCells_ = anatomy.size();
    
    //initialize the block index as well.
-   cellFromRed_.setup(vector<int>(anatomy.size()));
-   blockFromRed_.setup(vector<int>(anatomy.size()));
-   vector<int>& blockFromRedVec(blockFromRed_.modifyOnHost());
-   vector<int>& cellFromRedVec(cellFromRed_.modifyOnHost());
+   cellFromRed_.setup(PinnedVector<int>(anatomy.size()));
+   blockFromRed_.setup(PinnedVector<int>(anatomy.size()));
+   ArrayView<int> blockFromRedVec = blockFromRed_;
+   ArrayView<int> cellFromRedVec = cellFromRed_;
    map<int,int> cellFromBlock;
 
    nRed_ = 0;
@@ -84,10 +84,10 @@ OpenmpGpuRedblackDiffusion::OpenmpGpuRedblackDiffusion(const Anatomy& anatomy, i
       };
    const double disc[3] = {anatomy.dx(), anatomy.dy(), anatomy.dz()};
    //initialize the array of diffusion coefficients
-   cellLookup_.setup(vector<int>(anatomy.size()*3));
-   vector<int>& cellLookupVec(cellLookup_.modifyOnHost());
-   sigmaFaceNormal_.setup(vector<double>(anatomy.size()*9));
-   vector<double>& sigmaFaceNormalVec(sigmaFaceNormal_.modifyOnHost());
+   cellLookup_.setup(PinnedVector<int>(anatomy.size()*3));
+   ArrayView<int> cellLookupVec = cellLookup_;
+   sigmaFaceNormal_.setup(PinnedVector<double>(anatomy.size()*9));
+   ArrayView<double> sigmaFaceNormalVec = sigmaFaceNormal_;
    for (int ired=0; ired<nCells_; ired++)
    {
       int icell = cellFromRedVec[ired];
@@ -137,11 +137,12 @@ OpenmpGpuRedblackDiffusion::OpenmpGpuRedblackDiffusion(const Anatomy& anatomy, i
    }
 }
 
-void OpenmpGpuRedblackDiffusion::updateLocalVoltage(const double* VmLocal)
+void OpenmpGpuRedblackDiffusion::updateLocalVoltage(const Managed<ArrayView<double>> VmLocal_managed)
 {
-   vector<double>& VmBlockVec(VmBlock_.modifyOnDevice());
-   const vector<int>& blockFromRedVec(blockFromRed_.readOnDevice());
-   const vector<int>& cellFromRedVec(cellFromRed_.readOnDevice());
+   ConstArrayView<double> VmLocal = VmLocal_managed;
+   ArrayView<double> VmBlockVec = VmBlock_; 
+   ConstArrayView<int> blockFromRedVec = blockFromRed_;
+   ConstArrayView<int> cellFromRedVec = cellFromRed_;
    
    double* VmBlockVecRaw=&VmBlockVec[0];
    const int* blockFromRedVecRaw=&blockFromRedVec[0];
@@ -162,11 +163,12 @@ void OpenmpGpuRedblackDiffusion::updateLocalVoltage(const double* VmLocal)
    
 }
 
-void OpenmpGpuRedblackDiffusion::updateRemoteVoltage(const double* VmRemote)
+void OpenmpGpuRedblackDiffusion::updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote_managed)
 {
-   vector<double>& VmBlockVec(VmBlock_.modifyOnDevice());
-   const vector<int>& blockFromRedVec(blockFromRed_.readOnDevice());
-   const vector<int>& cellFromRedVec(cellFromRed_.readOnDevice());
+   ConstArrayView<double> VmRemote = VmRemote_managed;
+   ArrayView<double> VmBlockVec = VmBlock_; 
+   ConstArrayView<int> blockFromRedVec = blockFromRed_;
+   ConstArrayView<int> cellFromRedVec = cellFromRed_;
    
    double* VmBlockVecRaw=&VmBlockVec[0];
    const int* blockFromRedVecRaw=&blockFromRedVec[0];
@@ -179,17 +181,18 @@ void OpenmpGpuRedblackDiffusion::updateRemoteVoltage(const double* VmRemote)
    }
 }
 
-void OpenmpGpuRedblackDiffusion::calc(VectorDouble32& dVm){
-   actualCalc(*this, dVm);
+void OpenmpGpuRedblackDiffusion::calc(Managed<ArrayView<double>> dVm_managed)
+{
+   actualCalc(*this, dVm_managed);
 }
 
-void actualCalc(OpenmpGpuRedblackDiffusion& self, VectorDouble32& dVm)
+void actualCalc(OpenmpGpuRedblackDiffusion& self, ArrayView<double> dVm)
 {
-      int self_nLocal_ = self.nLocal_;
-      int self_nCells_ = self.nCells_;
-      int self_nRed_ = self.nRed_;
-      int self_nx_ = self.nx_;
-      int self_ny_ = self.ny_;
+   int self_nLocal_ = self.nLocal_;
+   int self_nCells_ = self.nCells_;
+   int self_nRed_ = self.nRed_;
+   int self_nx_ = self.nx_;
+   int self_ny_ = self.ny_;
    double* dVmRaw=&dVm[0];
    if (self.simLoopType_ == 0) // it is a hard coded of enum LoopType {omp, pdr}  
    {
@@ -200,11 +203,11 @@ void actualCalc(OpenmpGpuRedblackDiffusion& self, VectorDouble32& dVm)
       }
    }
    
-   const vector<double>& VmBlockVec(self.VmBlock_.readOnDevice());
-   const vector<double>& sigmaFaceNormalVec(self.sigmaFaceNormal_.readOnDevice());
-   const vector<int>& cellLookupVec(self.cellLookup_.readOnDevice());
-   const vector<int>& blockFromRedVec(self.blockFromRed_.readOnDevice());
-   const vector<int>& cellFromRedVec(self.cellFromRed_.readOnDevice());
+   ConstArrayView<double> VmBlockVec = self.VmBlock_;
+   ConstArrayView<double> sigmaFaceNormalVec = self.sigmaFaceNormal_;
+   ConstArrayView<int> cellLookupVec = self.cellLookup_;
+   ConstArrayView<int> blockFromRedVec = self.blockFromRed_;
+   ConstArrayView<int> cellFromRedVec = self.cellFromRed_;
    
    const double* VmBlockVecRaw=&VmBlockVec[0];
    const double* sigmaFaceNormalVecRaw=&sigmaFaceNormalVec[0];

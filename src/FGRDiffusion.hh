@@ -22,9 +22,9 @@ class FGRDiffusion : public Diffusion
       const ThreadTeam& threadInfo,
       const ThreadTeam& reactionThreadInfo);
    
-   void updateLocalVoltage(const double* VmLocal);
-   void updateRemoteVoltage(const double* VmRemote);
-   void calc(VectorDouble32& dVm);
+   void updateLocalVoltage(const Managed<ArrayView<double>> VmLocal);
+   void updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote);
+   void calc(Managed<ArrayView<double>> dVm);
    unsigned* blockIndex(){return &blockIndex_[0];}
    double* VmBlock() {return VmBlock_.cBlock();}
    double* dVmBlock(){return dVmBlock_.cBlock();}

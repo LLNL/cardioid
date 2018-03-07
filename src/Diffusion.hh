@@ -1,7 +1,7 @@
 #ifndef DIFFUSION_HH
 #define DIFFUSION_HH
 
-#include "VectorDouble32.hh"
+#include "TransportCoordinator.hh"
 
 /**
  *  We have managed to do something exceptionally stupid in this class.
@@ -20,10 +20,10 @@ class Diffusion
 {
  public:
    virtual ~Diffusion(){};
-   virtual void updateLocalVoltage(const double* VmLocal) = 0;
-   virtual void updateRemoteVoltage(const double* VmRemote) = 0;
-   virtual void calc(VectorDouble32& dVm) = 0;
-   virtual void calc_overlap(VectorDouble32& dVm) {};
+   virtual void updateLocalVoltage(const Managed<ArrayView<double>> VmLocal) = 0;
+   virtual void updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote) = 0;
+   virtual void calc(Managed<ArrayView<double>> dVm) = 0;
+   virtual void calc_overlap(Managed<ArrayView<double>> dVm) {};
    virtual unsigned* blockIndex(){return 0;}
    virtual double* VmBlock(){return 0;}
    virtual double* dVmBlock(){return 0;}

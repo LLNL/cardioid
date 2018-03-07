@@ -12,10 +12,10 @@ class OpenmpGpuRedblackDiffusion : public Diffusion
  public:
    OpenmpGpuRedblackDiffusion(const Anatomy& anatomy, int simLoopType);
 
-   void updateLocalVoltage(const double* VmLocal);
-   void updateRemoteVoltage(const double* VmRemote);
+   void updateLocalVoltage(const Managed<ArrayView<double>> VmLocal);
+   void updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote);
    /** omp loop must assign dVm, parallel loop need to increment dVm */
-   void calc(VectorDouble32& dVm);
+   void calc(Managed<ArrayView<double>> dVm);
 
    unsigned* blockIndex();
    double* VmBlock();
@@ -36,14 +36,14 @@ class OpenmpGpuRedblackDiffusion : public Diffusion
    double Vm_;
    double dVm_;
    LocalGrid localGrid_;
-   TransportCoordinator<std::vector<double> > VmBlock_;
-   TransportCoordinator<std::vector<double> > sigmaFaceNormal_;
-   TransportCoordinator<std::vector<int> > blockFromRed_;
-   TransportCoordinator<std::vector<int> > cellFromRed_;
-   TransportCoordinator<std::vector<int> > cellLookup_;
+   TransportCoordinator<PinnedVector<double> > VmBlock_;
+   TransportCoordinator<PinnedVector<double> > sigmaFaceNormal_;
+   TransportCoordinator<PinnedVector<int> > blockFromRed_;
+   TransportCoordinator<PinnedVector<int> > cellFromRed_;
+   TransportCoordinator<PinnedVector<int> > cellLookup_;
    
-   friend void actualCalc(OpenmpGpuRedblackDiffusion& self, VectorDouble32& dVm);
+   friend void actualCalc(OpenmpGpuRedblackDiffusion& self, ArrayView<double> dVm);
 };
 
-void actualCalc(OpenmpGpuRedblackDiffusion& self, VectorDouble32& dVm);
+void actualCalc(OpenmpGpuRedblackDiffusion& self, ArrayView<double> dVm);
 #endif

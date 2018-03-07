@@ -89,10 +89,10 @@ int getVarOffset(const std::string& varName)
 
 void assertStateOrderAndVarNamesAgree(void)
 {
-   State s;
-#define checkVarOrder(x) assert(reinterpret_cast<double*>(&s)+getVarOffset(#x) == &s . x)
+   //State s;
+//#define checkVarOrder(x) assert(reinterpret_cast<double*>(&s)+getVarOffset(#x) == &s . x)
 
-   int STATIC_ASSERT_checkAllDouble[(NUMVARS == sizeof(s)/sizeof(double))? 1: 0];
+   //int STATIC_ASSERT_checkAllDouble[(NUMVARS == sizeof(s)/sizeof(double))? 1: 0];
 
    //EDIT_STATE
 /*   checkVarOrder(f2Gate);
@@ -116,24 +116,6 @@ void assertStateOrderAndVarNamesAgree(void)
    checkVarOrder(R_prime);
 */
    }
-
-inline void copyToHost(const State& data) {
-   assert(0);
-}
-
-inline void copyToDevice(const State& data) {
-   assert(0);
-}
-
-inline void allocOnDevice(const State& data) {
-   ledger_alloc(&data, sizeof(State));
-   ledger_alloc(&data.data[0], sizeof(double)*data.nCells*data.nStates);
-}
-
-inline void freeOnDevice(const State& data) {
-   ledger_free(&data.data[0]);
-   ledger_free(&data);
-}
 
 enum StateOffset {
    f2Gate_off,
@@ -160,40 +142,29 @@ enum StateOffset {
    
 ThisReaction::ThisReaction(const int numPoints)
 : nCells_(numPoints)
-{
-    State state;
-
-    state.nCells=nCells_;
-    state.nStates = NUMSTATES;
-    state.data = new double[nCells_*NUMSTATES];
-   
-   stateTransport_.setup(std::move(state));
+{   
+   stateTransport_.setup(PinnedVector<double>(nCells_*NUMSTATES));
    
    assertStateOrderAndVarNamesAgree();
    perCellFlags_.resize(nCells_);
    perCellParameters_.resize(nCells_);   
 }
    
-void actualCalcJitify(const double dt, const int nCells_, const double Vm[], const double iStim[], double dVm[], double* stateData);
+   void actualCalcJitify(const double dt, OnDevice<ConstArrayView<double>> Vm, OnDevice<ConstArrayView<double>> iStim, OnDevice<ArrayView<double>> dVm, OnDevice<ArrayView<double>> stateData);
    
-void ThisReaction::calc(double dt, const VectorDouble32& Vm,
-                       const vector<double>& iStim , VectorDouble32& dVm)
-{
-   State& state(stateTransport_.modifyOnDevice());
-
-   const double* VmRaw=&Vm[0];
-   double* dVmRaw=&dVm[0];
-   const double* iStimRaw=&iStim[0];
-   double* stateDataRaw=state.data;
-   
-   actualCalcJitify(dt, nCells_,
-                    ledger_lookup(VmRaw),
-                    ledger_lookup(iStimRaw),
-                    ledger_lookup(dVmRaw),
-                    ledger_lookup(stateDataRaw));
+void ThisReaction::calc(double dt,
+                const Managed<ArrayView<double>> Vm,
+                const Managed<ArrayView<double>> iStim,
+                Managed<ArrayView<double>> dVm)
+{   
+   actualCalcJitify(dt,
+                    Vm,
+                    iStim,
+                    dVm,
+                    stateTransport_);
 }
    
-void ThisReaction::initializeMembraneVoltage(VectorDouble32& Vm)
+void ThisReaction::initializeMembraneVoltage(ArrayView<double> Vm)
 {
    assert(Vm.size() >= nCells_);
    const double initVm = -86.709;
@@ -201,34 +172,34 @@ void ThisReaction::initializeMembraneVoltage(VectorDouble32& Vm)
    //State initState;
    //EDIT_STATE
 
-   State& state(stateTransport_.modifyOnHost());
+   ArrayView<double> stateData = stateTransport_;
 
-   for (int ii=0; ii<state.nCells; ii++)
+   for (int ii=0; ii<nCells_; ii++)
    {
       const double pcnst_2 = 96485.3415;
       const double pcnst_3 = 0.185;
       const double pcnst_4 = 0.016404;
       const double c9 = -pcnst_3/(pcnst_4*pcnst_2);
       const double K_i = 138.4;
-      state.data[dVK_i_off*nCells_+ii] = K_i/c9+initVm;
-      state.data[Na_i_off*nCells_+ii]     =10.355;
-      state.data[Ca_i_off*nCells_+ii]     =0.00013;
-      state.data[Ca_ss_off*nCells_+ii]    =0.00036 ;
-      state.data[Ca_sr_off*nCells_+ii]    =3.715   ;
-      state.data[R_prime_off*nCells_+ii]  =0.9068  ;
-      state.data[fCass_off*nCells_+ii]    =0.9953  ;
-      state.data[Xr1Gate_off*nCells_+ii]  =0.00448 ;
-      state.data[Xr2Gate_off*nCells_+ii]  =0.476   ;
-      state.data[XsGate_off*nCells_+ii]   =0.0087  ;
-      state.data[mGate_off*nCells_+ii]    =0.00155 ;
-      state.data[hGate_off*nCells_+ii]    =0.7573  ;
-      state.data[jGate_off*nCells_+ii]    =0.7225  ;
-      state.data[rGate_off*nCells_+ii]    =2.235e-8;
-      state.data[dGate_off*nCells_+ii]    =3.164e-5;
-      state.data[fGate_off*nCells_+ii]    =0.8009  ;
-      state.data[f2Gate_off*nCells_+ii]   =0.9778  ;
-      state.data[sGate_off*nCells_+ii]    =0.3212  ;
-      state.data[jLGate_off*nCells_+ii]   =0.066   ;
+      stateData[dVK_i_off*nCells_+ii] = K_i/c9+initVm;
+      stateData[Na_i_off*nCells_+ii]     =10.355;
+      stateData[Ca_i_off*nCells_+ii]     =0.00013;
+      stateData[Ca_ss_off*nCells_+ii]    =0.00036 ;
+      stateData[Ca_sr_off*nCells_+ii]    =3.715   ;
+      stateData[R_prime_off*nCells_+ii]  =0.9068  ;
+      stateData[fCass_off*nCells_+ii]    =0.9953  ;
+      stateData[Xr1Gate_off*nCells_+ii]  =0.00448 ;
+      stateData[Xr2Gate_off*nCells_+ii]  =0.476   ;
+      stateData[XsGate_off*nCells_+ii]   =0.0087  ;
+      stateData[mGate_off*nCells_+ii]    =0.00155 ;
+      stateData[hGate_off*nCells_+ii]    =0.7573  ;
+      stateData[jGate_off*nCells_+ii]    =0.7225  ;
+      stateData[rGate_off*nCells_+ii]    =2.235e-8;
+      stateData[dGate_off*nCells_+ii]    =3.164e-5;
+      stateData[fGate_off*nCells_+ii]    =0.8009  ;
+      stateData[f2Gate_off*nCells_+ii]   =0.9778  ;
+      stateData[sGate_off*nCells_+ii]    =0.3212  ;
+      stateData[jLGate_off*nCells_+ii]   =0.066   ;
    }
    
    //state.assign(state.size(), initState);
@@ -254,19 +225,19 @@ int ThisReaction::getVarHandle(const std::string& varName) const
 
 void ThisReaction::setValue(int iCell, int varHandle, double value) 
 {
-   State& state(stateTransport_.modifyOnHost());
+   ArrayView<double> stateData = stateTransport_;
    int var=varHandle-HANDLE_OFFSET;
 
-   state.data[var*nCells_+iCell] = value;
+   stateData[var*nCells_+iCell] = value;
 }
 
 
 double ThisReaction::getValue(int iCell, int varHandle) const
 {
-   const State& state(stateTransport_.readOnHost());
-  int var=varHandle-HANDLE_OFFSET;
-
-  return state.data[var*nCells_+iCell]; 
+   ConstArrayView<double> stateData = stateTransport_;
+   int var=varHandle-HANDLE_OFFSET;
+  
+   return stateData[var*nCells_+iCell]; 
 }
 
 void ThisReaction::getCheckpointInfo(vector<string>& fieldNames,

@@ -381,6 +381,7 @@ FGRDiffusionOverlap::FGRDiffusionOverlap(const FGRDiffusionParms& parms,
 
 void FGRDiffusionOverlap::test()
 {
+   /*
   int tid = threadInfo_.teamRank();
   VectorDouble32 tVD32;
   //prepare Voltage
@@ -422,11 +423,13 @@ void FGRDiffusionOverlap::test()
   L2_BarrierWithSync_Barrier(fgrBarrier_, &barrierHandle_[tid], threadInfo_.nThreads());
   if(tid==0) compareVoltage(dVmBlock_,VmTmp);
   printf("end of test\n");
+   */
 }
 
-void FGRDiffusionOverlap::updateLocalVoltage(const double* VmLocal)
+void FGRDiffusionOverlap::updateLocalVoltage(const Managed<ArrayView<double>> VmLocal_managed)
 {
    startTimer(FGR_ArrayLocal2MatrixTimer);
+   ConstArrayView<double> VmLocal = VmLocal_managed;
    int tid = reactionThreadInfo_.teamRank();
    unsigned begin = localCopyOffset_[tid];
    unsigned end   = localCopyOffset_[tid+1];
@@ -465,9 +468,10 @@ void FGRDiffusionOverlap::updateLocalVoltage(const double* VmLocal)
 //
 //}
 
-void FGRDiffusionOverlap::updateRemoteVoltage(const double* VmRemote)
+void FGRDiffusionOverlap::updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote_managed)
 {
    startTimer(FGR_ArrayRemote2MatrixTimer);
+   ConstArrayView<double> VmRemote = VmRemote_managed;
    int tid = threadInfo_.teamRank();
    unsigned begin = remoteCopyOffset_[tid];
    unsigned end   = remoteCopyOffset_[tid+1];
@@ -504,6 +508,7 @@ void FGRDiffusionOverlap::buildSlabIndex(const Anatomy& anatomy)
 }
 
 
+/*
 void FGRDiffusionOverlap::updateRemoteVoltageOld(const double* VmRemote)
 {
    startTimer(FGR_ArrayRemote2MatrixTimer);
@@ -518,9 +523,10 @@ void FGRDiffusionOverlap::updateRemoteVoltageOld(const double* VmRemote)
    }
    stopTimer(FGR_ArrayRemote2MatrixTimer);
 }
+*/
 
 //stencil on boundary
-void FGRDiffusionOverlap::calc(VectorDouble32& dVm)
+void FGRDiffusionOverlap::calc(Managed<ArrayView<double>> dVm_managed)
 {
    int tid = threadInfo_.teamRank();
    int tid2 = threadInfo_.teamRank()/2;
@@ -590,7 +596,7 @@ void FGRDiffusionOverlap::calc(VectorDouble32& dVm)
 }
 
 /** threaded simd version */
-void FGRDiffusionOverlap::calc_overlap(VectorDouble32& dVm)
+void FGRDiffusionOverlap::calc_overlap(Managed<ArrayView<double>> dVm_managed)
 {
    int tid = threadInfo_.teamRank();
 

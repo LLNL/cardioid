@@ -30,10 +30,10 @@ class TT06_CellML_Reaction : public Reaction
    std::string methodName() const {return "TT06_CellML";}
 
    void calc(double dt,
-             const VectorDouble32& Vm,
-             const std::vector<double>& iStim,
-             VectorDouble32& dVm);
-   void initializeMembraneVoltage(VectorDouble32& Vm);
+             const Managed<ArrayView<double>> Vm,
+             const Managed<ArrayView<double>> iStim,
+             Managed<ArrayView<double>> dVm);
+   void initializeMembraneVoltage(ArrayView<double> Vm);
 
    /** Functions needed for checkpoint/restart */
    void getCheckpointInfo(std::vector<std::string>& fieldNames,
@@ -49,10 +49,10 @@ class TT06_CellML_Reaction : public Reaction
  private:
 
    HandleMap& getHandleMap() const;
-   void forwardEulerIntegrator(double dt, const VectorDouble32& Vm,
-      const std::vector<double>& iStim, VectorDouble32& dVm);
-   void rushLarsenIntegrator(double dt, const VectorDouble32& Vm,
-      const std::vector<double>& iStim, VectorDouble32& dVm);
+   void forwardEulerIntegrator(double dt, ConstArrayView<double> Vm,
+                               ConstArrayView<double> iStim, ArrayView<double> dVm);
+   void rushLarsenIntegrator(double dt, ConstArrayView<double> Vm,
+                             ConstArrayView<double> iStim, ArrayView<double> dVm);
 
    // copy constructor and assignment operator intentionally
    // left unimplemented.

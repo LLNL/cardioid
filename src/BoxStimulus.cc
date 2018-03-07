@@ -12,7 +12,7 @@ BoxStimulus::BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy, Puls
 {
    // Loop through local points and store the indices of any that are in
    // the stimulated region.
-   vector<int> stimList;
+   PinnedVector<int> stimList;
    for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
    {
       Tuple gt = anatomy.globalTuple(ii);
@@ -37,22 +37,18 @@ BoxStimulus::BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy, Puls
 }
 
 int BoxStimulus::subClassStim(double time,
-                              VectorDouble32& dVmDiffusion)
+                              Managed<ArrayView<double>> dVmDiffusion)
 {
    double value = pulse_->eval(time);
    if (value == 0)
       return 0;
-   const vector<int>& stimList(stimListTransport_.readOnDevice());
-   const int stimListSize=stimList.size();
-   const int* stimListRaw=&stimList[0];
-   double* dVmDiffusionRaw=&dVmDiffusion[0];
-   void addStimulus(double* dVmDiffusionRaw, const int* stimListRaw, const int stimListSize, const double value);
-   addStimulus(dVmDiffusionRaw, stimListRaw, stimListSize, value);
+   void addStimulus(OnDevice<ArrayView<double>> dVmDiffusion, OnDevice<ConstArrayView<int>> stimListRaw, const double value);
+   addStimulus(dVmDiffusion, stimListTransport_, value);
    return 1;
 }
 
 int BoxStimulus::nStim()
 {
-   const vector<int>& stimList(stimListTransport_.readOnHost());
+   ConstArrayView<int> stimList = stimListTransport_.raw();
    return stimList.size();
 }

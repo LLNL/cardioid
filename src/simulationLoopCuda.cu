@@ -1,37 +1,34 @@
 #include "simulationLoopCuda.hh"
-#include "Ledger.hh"
 
-__global__ void setStimulusKernel(double* iStimRaw,const double* dVmDiffusionRaw, const int nLocal)
+__global__ void setStimulusKernel(ArrayView<double> iStimRaw,ConstArrayView<double> dVmDiffusionRaw)
 {
    int ii = threadIdx.x + blockIdx.x*blockDim.x;
-   if (ii >= nLocal) { return; }
+   if (ii >= iStimRaw.size()) { return; }
    iStimRaw[ii] = -dVmDiffusionRaw[ii];
 }
 
-void setStimulus(double* iStimRaw,const double* dVmDiffusionRaw, const int nLocal)
+void setStimulus(OnDevice<ArrayView<double>> iStim,OnDevice<ConstArrayView<double>> dVmDiffusionRaw)
 {
    int blockSize = 1024;
-   setStimulusKernel<<<(nLocal+blockSize-1)/blockSize,blockSize>>>
-      (ledger_lookup(iStimRaw),
-       ledger_lookup(dVmDiffusionRaw),
-       nLocal);
+   setStimulusKernel<<<(iStim.size()+blockSize-1)/blockSize,blockSize>>>
+      (iStim,
+       dVmDiffusionRaw);
 }
 
 
-__global__ void integrateVoltageKernel(double* vmarrayRaw, const double* dVmReactionRaw, const double* dVmDiffusionRaw, const int nLocal, const double dt)
+__global__ void integrateVoltageKernel(ArrayView<double> vmarrayRaw, ConstArrayView<double> dVmReactionRaw, ConstArrayView<double> dVmDiffusionRaw, const double dt)
 {
    int ii = threadIdx.x + blockIdx.x*blockDim.x;
-   if (ii >= nLocal) { return; }
+   if (ii >= vmarrayRaw.size()) { return; }
    vmarrayRaw[ii] += dt*(dVmReactionRaw[ii] + dVmDiffusionRaw[ii]);
 }
 
-void integrateVoltage(double* vmarrayRaw, const double* dVmReactionRaw, const double* dVmDiffusionRaw, const int nLocal, const double dt)
+void integrateVoltage(OnDevice<ArrayView<double>> vmarrayRaw, OnDevice<ConstArrayView<double>> dVmReactionRaw, OnDevice<ConstArrayView<double>> dVmDiffusionRaw,const double dt)
 {
    int blockSize = 1024;
-   integrateVoltageKernel<<<(nLocal+blockSize-1)/blockSize,blockSize>>>
-      (ledger_lookup(vmarrayRaw),
-       ledger_lookup(dVmReactionRaw),
-       ledger_lookup(dVmDiffusionRaw),
-       nLocal, dt);
+   integrateVoltageKernel<<<(vmarrayRaw.size()+blockSize-1)/blockSize,blockSize>>>
+      (vmarrayRaw,
+       dVmReactionRaw,
+       dVmDiffusionRaw,
+       dt);
 }
-

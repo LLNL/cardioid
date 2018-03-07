@@ -19,7 +19,10 @@
 
 using namespace std;
 
-void integrateVoltage(double* Vm, const double* dVm, const double* iStim, const double dt, const int nCells);
+void integrateVoltage(OnDevice<ArrayView<double>> Vm,
+                      OnDevice<ConstArrayView<double>> dVm,
+                      OnDevice<ConstArrayView<double>> iStim,
+                      const double dt);
 
 MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
 
@@ -186,16 +189,14 @@ int main(int argc, char* argv[])
                                         vector<string>());
 
    //initialize the ionic model
-   TransportCoordinator<VectorDouble32> VmTransport;
-   VmTransport.setup(VectorDouble32(nCells));
-   TransportCoordinator<vector<double> > iStimTransport;
-   iStimTransport.setup(vector<double>(nCells));
-   TransportCoordinator<VectorDouble32> dVmTransport;
-   dVmTransport.setup(VectorDouble32(nCells));
-   {
-      VectorDouble32& Vm(VmTransport.modifyOnHost());
-      initializeMembraneState(reaction, objectName, Vm);
-   }
+   TransportCoordinator<PinnedVector<double>> VmTransport;
+   VmTransport.setup(PinnedVector<double>(nCells));
+   TransportCoordinator<PinnedVector<double> > iStimTransport;
+   iStimTransport.setup(PinnedVector<double>(nCells));
+   TransportCoordinator<PinnedVector<double>> dVmTransport;
+   dVmTransport.setup(PinnedVector<double>(nCells));
+
+   initializeMembraneState(reaction, objectName, VmTransport);
 
    //prepare for checkpoint output and extra columns
    vector<string> fieldNames;
@@ -235,7 +236,7 @@ int main(int argc, char* argv[])
          }
          else
          {
-            const VectorDouble32& Vm(VmTransport.readOnHost());
+            ConstArrayView<double> Vm = VmTransport;
             fprintf(file, "%s REACTION { initialState = %s; }\n",
                     objectName.c_str(), objectName.c_str());
             fprintf(file, "%s SINGLECELL {\n", objectName.c_str());
@@ -258,7 +259,7 @@ int main(int argc, char* argv[])
       if ((itime % outputTimestepInterval) == 0)
       {
          //doIO();
-         const VectorDouble32& Vm(VmTransport.readOnHost());
+         ConstArrayView<double> Vm = VmTransport;
          printf("%21.17g %21.17g", timeline.realTimeFromTimestep(itime), Vm[0]);
          for (int iextra=0; iextra<extraColumns.size(); ++iextra) 
          {
@@ -281,7 +282,6 @@ int main(int argc, char* argv[])
          }
       }
       {
-         vector<double>& iStim(iStimTransport.modifyOnDevice());
          double stimAmount = 0;
          if (timestepsLeftInStimulus > 0)
          {
@@ -303,31 +303,24 @@ int main(int argc, char* argv[])
             stimAmount = -params.stim_strength_arg;
             timestepsLeftInStimulus--;
          }
-         void setStimulus(double* iStim, const int nCells, const double stimAmount);         
-         setStimulus(&iStim[0], nCells, stimAmount);
+         void setStimulus(OnDevice<ArrayView<double>> iStim, const double stimAmount);         
+         setStimulus(iStimTransport, stimAmount);
       }
 
-      {
-         VectorDouble32& Vm(VmTransport.modifyOnDevice());
-         const vector<double>& iStim(iStimTransport.readOnDevice());
-         VectorDouble32& dVm(dVmTransport.modifyOnDevice());
-         
+      {         
          //calc() dVm and update the internal states
          if (params.alternate_update_flag)
          {
-            reaction->updateNonGate(dt, Vm, dVm);
-            reaction->updateGate(dt,Vm);
+            reaction->updateNonGate(dt, VmTransport, dVmTransport);
+            reaction->updateGate(dt,VmTransport);
          }
          else
          {
-            reaction->calc(dt, Vm, iStim, dVm);
+            reaction->calc(dt, VmTransport, iStimTransport, dVmTransport);
          }
 
          //update Vm and apply stimulus
-         double* VmRaw = &Vm[0];
-         const double* iStimRaw = &iStim[0];
-         const double* dVmRaw = &dVm[0];
-         integrateVoltage(VmRaw, dVmRaw, iStimRaw, dt, nCells);
+         integrateVoltage(VmTransport, dVmTransport, iStimTransport, dt);
       }
       itime++;
    }

@@ -39,8 +39,8 @@ OpenmpGpuFlatDiffusion::OpenmpGpuFlatDiffusion(const Anatomy& anatomy, int simLo
    nx_ = localGrid_.nx();
    ny_ = localGrid_.ny();
    nz_ = localGrid_.nz();
-   VmBlock_.setup(vector<double>(nx_*ny_*nz_));
-   dVmBlock_.setup(vector<double>(nx_*ny_*nz_));
+   VmBlock_.setup(PinnedVector<double>(nx_*ny_*nz_));
+   dVmBlock_.setup(PinnedVector<double>(nx_*ny_*nz_));
    skip_reorder_ = false; // for now always set to false
    
    nLocal_ = anatomy.nLocal();
@@ -48,8 +48,8 @@ OpenmpGpuFlatDiffusion::OpenmpGpuFlatDiffusion(const Anatomy& anatomy, int simLo
    nCells_ = anatomy.size();
    
    //initialize the block index as well.
-   blockFromCell_.setup(vector<int>(anatomy.size()));   
-   vector<int>& blockFromCellVec(blockFromCell_.modifyOnHost());
+   blockFromCell_.setup(PinnedVector<int>(anatomy.size()));   
+   ArrayView<int> blockFromCellVec = blockFromCell_;
    map<int,int> cellFromBlock;
 
    for (int icell=0; icell<nCells_; icell++)
@@ -79,8 +79,8 @@ OpenmpGpuFlatDiffusion::OpenmpGpuFlatDiffusion(const Anatomy& anatomy, int simLo
    int sigmaNx=nx_-1;
    int sigmaNy=ny_-1;
    int sigmaNz=nz_-1;
-   sigmaFaceNormal_.setup(vector<double>(sigmaNx*sigmaNy*sigmaNz*9));
-   vector<double>& sigmaFaceNormalVec(sigmaFaceNormal_.modifyOnHost());
+   sigmaFaceNormal_.setup(PinnedVector<double>(sigmaNx*sigmaNy*sigmaNz*9));
+   ArrayView<double> sigmaFaceNormalVec = sigmaFaceNormal_;
    for (int iz=0; iz<nz_-1; iz++)
    {
       for (int iy=0; iy<ny_-1; iy++)
@@ -145,7 +145,7 @@ OpenmpGpuFlatDiffusion::OpenmpGpuFlatDiffusion(const Anatomy& anatomy, int simLo
    }
 }
 
-void OpenmpGpuFlatDiffusion::updateLocalVoltage(const double* VmLocal)
+void OpenmpGpuFlatDiffusion::updateLocalVoltage(const Managed<ArrayView<double>> VmLocal_managed)
 {
    if (skip_reorder_)
    {
@@ -153,10 +153,11 @@ void OpenmpGpuFlatDiffusion::updateLocalVoltage(const double* VmLocal)
    }
    else
    {
-      vector<double>& VmBlockVec(VmBlock_.modifyOnDevice());
+      ConstArrayView<double> VmLocal = VmLocal_managed;
+      ArrayView<double> VmBlockVec = VmBlock_;
       double* VmBlockRaw=&VmBlockVec[0];
 
-      const vector<int>& blockFromCellVec(blockFromCell_.readOnDevice());
+      ConstArrayView<int> blockFromCellVec = blockFromCell_;
       const int* blockFromCellRaw=&blockFromCellVec[0];
 
       //#pragma omp target teams distribute parallel for
@@ -167,7 +168,7 @@ void OpenmpGpuFlatDiffusion::updateLocalVoltage(const double* VmLocal)
    }
 }
 
-void OpenmpGpuFlatDiffusion::updateRemoteVoltage(const double* VmRemote)
+void OpenmpGpuFlatDiffusion::updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote_managed)
 {
    if (skip_reorder_)
    {
@@ -175,10 +176,11 @@ void OpenmpGpuFlatDiffusion::updateRemoteVoltage(const double* VmRemote)
    }
    else
    {
-      vector<double>& VmBlockVec(VmBlock_.modifyOnDevice());
+      ConstArrayView<double> VmRemote = VmRemote_managed;
+      ArrayView<double> VmBlockVec = VmBlock_;
       double* VmBlockRaw=&VmBlockVec[0];
       
-      const vector<int>& blockFromCellVec(blockFromCell_.readOnDevice());
+      ConstArrayView<int> blockFromCellVec = blockFromCell_;
       const int* blockFromCellRaw=&blockFromCellVec[0];
       
       //#pragma omp target teams distribute parallel for
@@ -189,11 +191,12 @@ void OpenmpGpuFlatDiffusion::updateRemoteVoltage(const double* VmRemote)
    }
 }
 
-void OpenmpGpuFlatDiffusion::calc(VectorDouble32& dVm){
-   actualCalc(*this, dVm);
+void OpenmpGpuFlatDiffusion::calc(Managed<ArrayView<double>> dVm_managed)
+{
+   actualCalc(*this, dVm_managed);
 }
 
-void actualCalc(OpenmpGpuFlatDiffusion& self, VectorDouble32& dVm)
+void actualCalc(OpenmpGpuFlatDiffusion& self, ArrayView<double> dVm)
 {
    int self_nx_ = self.nx_;
    int self_ny_ = self.ny_;
@@ -201,7 +204,7 @@ void actualCalc(OpenmpGpuFlatDiffusion& self, VectorDouble32& dVm)
    int self_nLocal_ = self.nLocal_;
    
    double* dVmRaw=&dVm[0];
-   vector<double>& dVmBlockVec(self.dVmBlock_.modifyOnDevice());
+   ArrayView<double> dVmBlockVec = self.dVmBlock_;
    double* dVmBlockRaw=&dVmBlockVec[0];
 
    if (self.skip_reorder_)
@@ -236,10 +239,10 @@ void actualCalc(OpenmpGpuFlatDiffusion& self, VectorDouble32& dVm)
       }
    }
    
-   const vector<double>& VmBlockVec(self.VmBlock_.readOnDevice());
+   ConstArrayView<double> VmBlockVec(self.VmBlock_.readOnDevice());
    const double* VmBlockRaw=&VmBlockVec[0];
 
-   const vector<double>& sigmaFaceNormalVec(self.sigmaFaceNormal_.readOnDevice());
+   ConstArrayView<double> sigmaFaceNormalVec(self.sigmaFaceNormal_.readOnDevice());
    const double* sigmaFaceNormalRaw=&sigmaFaceNormalVec[0];
 
    int iterateMax = (self.nx_-1)*(self.ny_-1)*(self.nz_-1);
@@ -268,7 +271,7 @@ void actualCalc(OpenmpGpuFlatDiffusion& self, VectorDouble32& dVm)
                   (
                      (!sigmaNx & (iy_guess^iz))
                      |
-                     ( sigmaNx & !sigmaNy & iz)
+                     ( sigmaNx & !(sigmaNy) & iz)
                   )
                   %2
                );
@@ -309,7 +312,7 @@ void actualCalc(OpenmpGpuFlatDiffusion& self, VectorDouble32& dVm)
    }
    else
    {
-      const vector<int>& blockFromCellVec(self.blockFromCell_.readOnDevice());   
+      ConstArrayView<int> blockFromCellVec = self.blockFromCell_;
       const int* blockFromCellRaw=&blockFromCellVec[0];
       //#pragma omp target teams distribute parallel for
       for (int icell=0; icell<self_nLocal_; icell++)

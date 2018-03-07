@@ -1,6 +1,7 @@
 #include "Ledger.hh"
+#include "TransportCoordinator.hh"
 
-__global__ void fillSendBuff_kernel(double* sendBufRaw, double* dataRaw, int* sendMapRaw, const int begin, const int end)
+__global__ void fillSendBuff_kernel(ArrayView<double> sendBufRaw, ConstArrayView<double> dataRaw, ConstArrayView<int> sendMapRaw, const int begin, const int end)
 {
    int ii = threadIdx.x + blockIdx.x*blockDim.x  +begin;
    if (ii >= end) { return; }
@@ -8,12 +9,18 @@ __global__ void fillSendBuff_kernel(double* sendBufRaw, double* dataRaw, int* se
 }
 
 
-void fillSendBufferCUDA(const double* sendBufRaw, const double* dataRaw, const int* sendMapRaw, const int begin, const int end){
+void fillSendBufferCUDA(OnDevice<ArrayView<double>> sendBufRaw, 
+                        OnDevice<ConstArrayView<double>> dataRaw, 
+                        OnDevice<ConstArrayView<int>> sendMapRaw)
+{
    int blockSize = 1024;
+   ConstArrayView<int> temp = sendMapRaw;
+   int begin=0;
+   int end=temp.size();
    fillSendBuff_kernel<<<(end-begin+blockSize-1)/blockSize,blockSize>>>
-      (ledger_lookup(sendBufRaw),
-       ledger_lookup(dataRaw),
-       ledger_lookup(sendMapRaw),
+      (sendBufRaw,
+       dataRaw,
+       sendMapRaw,
        begin,
        end);
 }

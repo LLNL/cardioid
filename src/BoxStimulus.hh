@@ -26,12 +26,12 @@ class BoxStimulus : public Stimulus
    BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy,
                Pulse* pulse, const std::string& name);
    int subClassStim(double time,
-		    VectorDouble32& dVmDiffusion);
+		    Managed<ArrayView<double>> dVmDiffusion);
    int nStim();
    
  private:
    Pulse* pulse_;
-   TransportCoordinator<std::vector<int> > stimListTransport_;
+   TransportCoordinator<PinnedVector<int> > stimListTransport_;
 };
 
 #endif

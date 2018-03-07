@@ -79,12 +79,12 @@ set (heart_src
 	FGRUtils.cc
 	Reaction.cc
 	ReactionManager.cc
-        ReactionFHN.cc
+        #ReactionFHN.cc
 	TT04_CellML_Reaction.cc
 	TT06_CellML_Reaction.cc 
 	TT06Dev_Reaction.cc
-	TT06_RRG_Reaction.cc
-	OHaraRudy_Reaction.cc
+	#TT06_RRG_Reaction.cc
+	#OHaraRudy_Reaction.cc
 	SimpleOHaraRudy.cc
 	SimpleGrandi.cc
         BetterTT06.cc

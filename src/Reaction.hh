@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <string>
-#include "VectorDouble32.hh"
+#include "TransportCoordinator.hh"
 
 class BucketOfBits;
 
@@ -13,16 +13,16 @@ class Reaction
    virtual ~Reaction(){};
    virtual std::string methodName() const = 0;
    virtual void calc(double dt,
-                     const VectorDouble32& Vm,
-                     const std::vector<double>& iStim,
-                     VectorDouble32& dVm) = 0;
-   virtual void updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR) {};
-   virtual void updateGate   (double dt, const VectorDouble32& Vm) {};
+                     const Managed<ArrayView<double>> Vm,
+                     const Managed<ArrayView<double>> iStim,
+                     Managed<ArrayView<double>> dVm) = 0;
+   virtual void updateNonGate(double dt, const Managed<ArrayView<double>> Vm, Managed<ArrayView<double>> dVR) {};
+   virtual void updateGate   (double dt, const Managed<ArrayView<double>> Vm) {};
 
    /** Populates the Vm array with some sensible default initial
     * membrane voltage.  Vm will be the parallel to the local cells in
     * the anatomy that was used to create the concrete reaction class. */
-   virtual void initializeMembraneVoltage(VectorDouble32& Vm) = 0;
+   virtual void initializeMembraneVoltage(ArrayView<double> Vm) = 0;
 
    virtual void scaleCurrents(std::vector<double>);  
 
@@ -41,6 +41,6 @@ class Reaction
 };
 
 //! Call this instead of initializeMembraneVoltage directly.
-void initializeMembraneState(Reaction* reaction, const std::string& objectName, VectorDouble32& Vm);
+void initializeMembraneState(Reaction* reaction, const std::string& objectName, ArrayView<double> Vm);
 
 #endif

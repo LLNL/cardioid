@@ -20,17 +20,17 @@ class TT04_CellML_Reaction : public Reaction
    ~TT04_CellML_Reaction();
 
    void calc(double dt,
-             const VectorDouble32& Vm,
-             const std::vector<double>& iStim,
-             VectorDouble32& dVm);
-   void initializeMembraneVoltage(VectorDouble32& Vm);
+             const Managed<ArrayView<double>> Vm,
+             const Managed<ArrayView<double>> iStim,
+             Managed<ArrayView<double>> dVm);
+   void initializeMembraneVoltage(ArrayView<double> Vm);
 
  private:
 
-   void forwardEulerIntegrator(double dt, const VectorDouble32& Vm,
-      const std::vector<double>& iStim, VectorDouble32& dVm);
-   void rushLarsenIntegrator(double dt, const VectorDouble32& Vm,
-      const std::vector<double>& iStim, VectorDouble32& dVm);
+   void forwardEulerIntegrator(double dt, ConstArrayView<double> Vm,
+                               ConstArrayView<double> iStim, ArrayView<double> dVm);
+   void rushLarsenIntegrator(double dt, ConstArrayView<double> Vm,
+                             ConstArrayView<double> iStim, ArrayView<double> dVm);
 
    unsigned nCells_;
    IntegratorType integrator_;

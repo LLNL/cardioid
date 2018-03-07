@@ -19,7 +19,7 @@ class PointStimulus : public Stimulus
    PointStimulus(const PointStimulusParms& p, const Anatomy& anatomy, 
                  Pulse* pulse);
    int subClassStim(double time,
-		    VectorDouble32& dVmDiffusion);
+		    Managed<ArrayView<double>> dVmDiffusion);
    int nStim();
    
  private:

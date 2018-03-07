@@ -68,7 +68,7 @@ void ECGSensor::print(double time, int loop)
 
 void ECGSensor::eval(double time, int loop)
 {
-   const VectorDouble32& Vm(VmTransport_.readOnHost());
+   ConstArrayView<double> Vm = VmTransport_;
    startTimer(sensorEvalTimer);
    int index = 0;
    int dataIndex = (nEval_+2)*3;

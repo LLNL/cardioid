@@ -631,7 +631,7 @@ void VoronoiCoarsening::exchangeAndSum(vector<LocalSums*> valcolors)
    if( ndata2recv>0 )delete[] remotepackeddata;
 }
 
-void VoronoiCoarsening::accumulateValues(const VectorDouble32& val, LocalSums& valcolors)
+void VoronoiCoarsening::accumulateValues(ConstArrayView<double> val, LocalSums& valcolors)
 {
    valcolors.clear();
    const int nLocal = cell_colors_.size();

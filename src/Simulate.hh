@@ -35,9 +35,9 @@ class PotentialData
    
    void setup(const Anatomy& anatomy)
    {
-      VectorDouble32 VmArray(anatomy.size(), 0.);
-      VectorDouble32 dVmDiffusion(anatomy.nLocal(), 0.);
-      VectorDouble32 dVmReaction(anatomy.nLocal(), 0.);
+      PinnedVector<double> VmArray(anatomy.size(), 0.);
+      PinnedVector<double> dVmDiffusion(anatomy.nLocal(), 0.);
+      PinnedVector<double> dVmReaction(anatomy.nLocal(), 0.);
       unsigned paddedSize = convertActualSizeToBufferSize(anatomy.nLocal());
       VmArray.reserve(paddedSize);
       dVmDiffusion.reserve(paddedSize);
@@ -53,9 +53,9 @@ class PotentialData
    }
    
    // use pointers to vector so that they can be swapped
-   TransportCoordinator<VectorDouble32> VmTransport_; // local and remote
-   TransportCoordinator<VectorDouble32> dVmDiffusionTransport_;
-   TransportCoordinator<VectorDouble32> dVmReactionTransport_;
+   TransportCoordinator<PinnedVector<double>> VmTransport_; // local and remote
+   TransportCoordinator<PinnedVector<double>> dVmDiffusionTransport_;
+   TransportCoordinator<PinnedVector<double>> dVmReactionTransport_;
 };
 
 // Kitchen sink class for heart simulation.  This is probably a great
@@ -74,12 +74,12 @@ class Simulate
    enum LoopType {omp, pdr};
    
    void checkRanges(int begin, int end,
-                    const VectorDouble32& Vm,
-                    const VectorDouble32& dVmReaction,
-                    const VectorDouble32& dVmDiffusion);
-   void checkRanges(const VectorDouble32& Vm,
-                    const VectorDouble32& dVmReaction,
-                    const VectorDouble32& dVmDiffusion);
+                    ConstArrayView<double> Vm,
+                    ConstArrayView<double> dVmReaction,
+                    ConstArrayView<double> dVmDiffusion);
+   void checkRanges(ConstArrayView<double> Vm,
+                    ConstArrayView<double> dVmReaction,
+                    ConstArrayView<double> dVmDiffusion);
    
 
    bool checkIO(int loop=-1)const;

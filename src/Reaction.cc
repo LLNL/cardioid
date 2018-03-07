@@ -4,7 +4,7 @@
 
 using namespace std;
 
-void initializeMembraneState(Reaction* reaction, const string& objectName, VectorDouble32& Vm)
+void initializeMembraneState(Reaction* reaction, const string& objectName, ArrayView<double> Vm)
 {
    reaction->initializeMembraneVoltage(Vm);
    OBJECT* reactionObj = objectFind(objectName, "REACTION");

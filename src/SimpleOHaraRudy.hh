@@ -68,10 +68,10 @@ class ThisReaction : public Reaction
    std::string methodName() const;
    
    void calc(double dt,
-             const VectorDouble32& Vm,
-             const std::vector<double>& iStim,
-             VectorDouble32& dVm);
-   void initializeMembraneVoltage(VectorDouble32& Vm);
+             const Managed<ArrayView<double>> Vm,
+             const Managed<ArrayView<double>> iStim,
+             Managed<ArrayView<double>> dVm);
+   void initializeMembraneVoltage(ArrayView<double> Vm);
    virtual void getCheckpointInfo(std::vector<std::string>& fieldNames,
                                   std::vector<std::string>& fieldUnits) const;
    virtual int getVarHandle(const std::string& varName) const;

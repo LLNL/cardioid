@@ -459,7 +459,7 @@ enum StateOffset {
 ThisReaction::ThisReaction(const int numPoints, const double __dt)
 : nCells_(numPoints)
 {
-   stateTransport_.setup(std::vector<double>(nCells_*NUMSTATES));
+   stateTransport_.setup(PinnedVector<double>(nCells_*NUMSTATES));
    __cachedDt = __dt;
    blockSize_ = -1;
    _program = NULL;
@@ -1367,24 +1367,29 @@ void ThisReaction::createInterpolants(const double _dt) {
    }
 }
 
-void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
-                       const vector<double>& __iStim , VectorDouble32& __dVm)
+void ThisReaction::calc(double dt,
+                const Managed<ArrayView<double>> Vm_m,
+                const Managed<ArrayView<double>> iStim_m,
+                Managed<ArrayView<double>> dVm_m)
 {
-   vector<double>& state(stateTransport_.modifyOnDevice());
+   ArrayView<double> state = stateTransport_.modifyOnDevice();
 
    {
       int errorCode=-1;
       if (blockSize_ == -1) { blockSize_ = 1024; }
       while(1)
       {
-         const double* Vm = ledger_lookup(&__Vm[0]);
-         const double* iStim = ledger_lookup(&__iStim[0]);
-         double* dVm = ledger_lookup(&__dVm[0]);
-         double* statePtr = ledger_lookup(&state[0]);
-         void* args[] = { &Vm,
-                          &iStim,
-                          &dVm,
-                          &statePtr};
+         ConstArrayView<double> Vm = Vm_m.readOnDevice();
+         ConstArrayView<double> iStim = iStim_m.readOnDevice();
+         ArrayView<double> dVm = dVm_m.modifyOnDevice();
+         double* VmRaw = const_cast<double*>(&Vm[0]);
+         double* iStimRaw = const_cast<double*>(&iStim[0]);
+         double* dVmRaw = &dVm[0];
+         double* stateRaw= &state[0];
+         void* args[] = { &VmRaw,
+                          &iStimRaw,
+                          &dVmRaw,
+                          &stateRaw};
          int errorCode = cuLaunchKernel(_kernel,
                                         (nCells_+blockSize_-1)/blockSize_, 1, 1,
                                         blockSize_,1,1,
@@ -1409,7 +1414,7 @@ void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
    }
 }
 
-void ThisReaction::initializeMembraneVoltage(VectorDouble32& __Vm)
+void ThisReaction::initializeMembraneVoltage(ArrayView<double> __Vm)
 {
    assert(__Vm.size() >= nCells_);
 
@@ -1453,8 +1458,8 @@ void ThisReaction::initializeMembraneVoltage(VectorDouble32& __Vm)
    double s_init = 0.601200000000000;
    double s = s_init;
       
-   
-   vector<double>& stateData(stateTransport_.modifyOnHost());
+
+   ArrayView<double> stateData = stateTransport_;
    
    for (int iCell=0; iCell<nCells_; iCell++)
    {
@@ -1605,7 +1610,7 @@ int ThisReaction::getVarHandle(const std::string& varName) const
 
 void ThisReaction::setValue(int iCell, int varHandle, double value) 
 {
-   vector<double>& stateData(stateTransport_.modifyOnHost());
+   ArrayView<double> stateData = stateTransport_;
    
    if (0) {}
    else if (varHandle == Ca_SR_handle) { stateData[_Ca_SR_off*nCells_+iCell] = value; }
@@ -1631,7 +1636,7 @@ void ThisReaction::setValue(int iCell, int varHandle, double value)
 
 double ThisReaction::getValue(int iCell, int varHandle) const
 {
-   const vector<double>& stateData(stateTransport_.readOnHost());
+   ConstArrayView<double> stateData = stateTransport_;
 
    if (0) {}
    else if (varHandle == Ca_SR_handle) { return stateData[_Ca_SR_off*nCells_+iCell]; }
@@ -1657,7 +1662,7 @@ double ThisReaction::getValue(int iCell, int varHandle) const
 
 double ThisReaction::getValue(int iCell, int varHandle, double V) const
 {
-   const vector<double>& stateData(stateTransport_.readOnHost());
+   ConstArrayView<double> stateData = stateTransport_;
 
    const double Ca_SR=stateData[_Ca_SR_off*nCells_+iCell];
    const double Ca_i=stateData[_Ca_i_off*nCells_+iCell];

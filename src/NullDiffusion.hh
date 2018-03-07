@@ -15,13 +15,19 @@ class NullDiffusion : public Diffusion
      dVm_(0)
    {};
    
-   void updateLocalVoltage(const double* VmLocal){};
-   void updateRemoteVoltage(const double* VmRemote){};
+   void updateLocalVoltage(const Managed<ArrayView<double>> VmLocal) {}
+   void updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote) {}
    /** omp loop must assign dVm, parallel loop need to increment dVm */
-   void calc(VectorDouble32& dVm)
+   void calc(Managed<ArrayView<double>> dVm)
    {
       if (simLoopType_ == 0)
-         dVm.assign(dVm.size(), 0.0);
+      {
+         ArrayView<double> dVmHost = dVm.modifyOnHost();
+         for (int ii=0; ii<dVmHost.size(); ++ii)
+         {
+            dVmHost[ii] = 0;
+         }
+      }
    };
 
    unsigned* blockIndex() {return &blockIndex_[0];}

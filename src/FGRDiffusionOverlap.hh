@@ -22,11 +22,10 @@ class FGRDiffusionOverlap : public Diffusion
       const ThreadTeam& threadInfo,
       const ThreadTeam& reactionThreadInfo);
    
-   void updateLocalVoltage(const double* VmLocal);
-   void updateRemoteVoltage(const double* VmRemote);
-   void updateRemoteVoltageOld(const double* VmRemote);
-   void calc_overlap(VectorDouble32& dVm);
-   void calc(VectorDouble32& dVm);
+   void updateLocalVoltage(const Managed<ArrayView<double>> VmLocal);
+   void updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote);
+   void calc(Managed<ArrayView<double>> dVm);
+   void calc_overlap(Managed<ArrayView<double>> dVm);
    void test();
    unsigned* blockIndex(){return &blockIndex_[0];}
    double* VmBlock() {return VmBlock_.cBlock();}

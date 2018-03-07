@@ -8,6 +8,8 @@
 #include <mpi.h>
 #include <cstdlib>
 #include <sstream>
+#include "cuda.h"
+#include "cuda_runtime.h"
 
 #include "Simulate.hh"
 #include "PerformanceTimers.hh"
@@ -67,6 +69,8 @@ int main(int argc, char** argv)
    MPI_Init(&argc,&argv);
    MPI_Comm_size(MPI_COMM_WORLD, &npes);
    MPI_Comm_rank(MPI_COMM_WORLD, &mype);  
+
+   cudaSetDevice(mype % 4);
 
    // See units above.
    units_internal(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);

@@ -28,17 +28,17 @@ class ThisReaction : public Reaction
    std::string methodName() const;
    
    void calc(double dt,
-             const VectorDouble32& Vm,
-             const std::vector<double>& iStim,
-             VectorDouble32& dVm);
-   void initializeMembraneVoltage(VectorDouble32& Vm);
+             const Managed<ArrayView<double>> Vm_m,
+             const Managed<ArrayView<double>> iStim_m,
+             Managed<ArrayView<double>> dVm_m);
+   void initializeMembraneVoltage(ArrayView<double> Vm);
    virtual void getCheckpointInfo(std::vector<std::string>& fieldNames,
                                   std::vector<std::string>& fieldUnits) const;
    virtual int getVarHandle(const std::string& varName) const;
    virtual void setValue(int iCell, int varHandle, double value);
    virtual double getValue(int iCell, int varHandle) const;
    virtual const std::string getUnit(const std::string& varName) const;
-   virtual void updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR);
+   virtual void updateNonGate(double dt, const Managed<ArrayView<double>> Vm_m, Managed<ArrayView<double>> dVm_m);
    
  public:
    //constant flags

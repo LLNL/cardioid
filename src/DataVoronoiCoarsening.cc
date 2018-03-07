@@ -41,7 +41,7 @@ DataVoronoiCoarsening::DataVoronoiCoarsening(const SensorParms& sp,
    clear();	//AT-HACK, function that sets active to false and AT to -1000 ms for all select gids in sensor.txt
 }
 
-void DataVoronoiCoarsening::computeColorAverages(const VectorDouble32& val)
+void DataVoronoiCoarsening::computeColorAverages(ConstArrayView<double> val)
 {
    // calculate local sums
    coarsening_.accumulateValues(val,avg_valcolors_);
@@ -231,7 +231,7 @@ void DataVoronoiCoarsening::eval(double time, int loop)			// AT-HACK, evaluates/
    
    times_.push_back(time);
 
-   const VectorDouble32& VmArray(vdata_.VmTransport_.readOnHost());
+   ConstArrayView<double> VmArray = vdata_.VmTransport_;
    computeColorAverages(VmArray);
    
    

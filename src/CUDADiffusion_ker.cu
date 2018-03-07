@@ -7,7 +7,7 @@
 //#include "options.h"
 //#include "cudautil.h"
 #include <stdio.h>
-#include "Ledger.hh"
+#include "TransportCoordinator.hh"
 
 #define XTILE 20
 typedef double Real;
@@ -152,7 +152,7 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
 //  #undef npsi(x,y,z) 
 }
 
-__global__ void map_dVm(double * dVmOut, double* dVmRaw, const int *remap,int nCells)
+__global__ void map_dVm(ArrayView<Real> dVmOut, ConstArrayView<Real> dVmRaw, ConstArrayView<int> remap,int nCells)
 {
   int idx0 = threadIdx.x + blockDim.x*blockIdx.x;
   int stride = blockDim.x * gridDim.x;
@@ -171,16 +171,8 @@ __global__ void map_dVm(double * dVmOut, double* dVmRaw, const int *remap,int nC
 //      VT[remap[idx]] = V[idx];
 //}
 
-extern "C"
-{
-void call_cuda_kernels(const Real *VmCPU, Real *dVmCPU, const Real *sigmaCPU, int nx, int ny, int nz, Real *dVmOutCPU, const int *lookupCPU,int nCells)
-{
-   const Real* VmRaw = ledger_lookup(VmCPU);
-   Real* dVmRaw = ledger_lookup(dVmCPU);
-   const Real* sigmaRaw = ledger_lookup(sigmaCPU);
-   Real* dVmOut = ledger_lookup(dVmOutCPU);
-   const int* lookup = ledger_lookup(lookupCPU);
-   
+void call_cuda_kernels(OnDevice<ConstArrayView<Real>> Vm, OnDevice<ArrayView<Real>> dVm, OnDevice<ConstArrayView<Real>> sigma, int nx, int ny, int nz, OnDevice<ArrayView<Real>> dVmOut, OnDevice<ConstArrayView<int>> lookup,int nCells)
+{   
    //determine block dim
    //1. blockdim.z and blockdim.y are determined in a simple way.
    int bdimz = (int)((nz-2)/30) + ((nz-2)%30==0?0:1);
@@ -191,10 +183,8 @@ void call_cuda_kernels(const Real *VmCPU, Real *dVmCPU, const Real *sigmaCPU, in
    cudaFuncSetAttribute(diff_6face_v1, cudaFuncAttributePreferredSharedMemoryCarveout, 50);
 #endif
    //map_V<<<112,512>>>(VmBlockRaw,VmRaw,lookup,nCells);
-   diff_6face_v1<<<dim3(bdimx,bdimy,bdimz),dim3(32,32,1)>>>(VmRaw,dVmRaw,sigmaRaw,sigmaRaw+3*nx*ny*nz,sigmaRaw+6*nx*ny*nz,nx,ny,nz);
+   diff_6face_v1<<<dim3(bdimx,bdimy,bdimz),dim3(32,32,1)>>>(&Vm[0],&dVm[0],&sigma[0],&sigma[0]+3*nx*ny*nz,&sigma[0]+6*nx*ny*nz,nx,ny,nz);
 
-   double * tmp;
-   cudaMallocHost(&tmp,nx*ny*nz*sizeof(double));
 //   cudaMemcpy(tmp,dVmRaw,nx*ny*nz*sizeof(double), cudaMemcpyDeviceToHost);
 //   for(int ii=0;ii<nx;ii++)
 //   for(int jj=0;jj<ny;jj++)
@@ -202,26 +192,23 @@ void call_cuda_kernels(const Real *VmCPU, Real *dVmCPU, const Real *sigmaCPU, in
 //   {
 //     printf("mcp (%d,%d,%d)=%e\n",ii,jj,kk,tmp[kk+nz*(jj+ny*ii)]);
 //   }
-   map_dVm<<<112,512>>>(dVmOut,dVmRaw,lookup,nCells);
-   cudaMemcpy(tmp,dVmOut,nCells*sizeof(double), cudaMemcpyDeviceToHost);
-   cudaFreeHost(tmp);
-}
+   map_dVm<<<112,512>>>(dVmOut,dVm,lookup,nCells);
 }
 
-__global__ void copy_to_block_kernel(double* blockGPU, const int* lookupGPU, const double* sourceGPU, const int begin, const int end)
+__global__ void copy_to_block_kernel(ArrayView<double> blockGPU, ConstArrayView<int> lookupGPU, ConstArrayView<double> sourceGPU, const int begin, const int end)
 {
    int ii = threadIdx.x + blockIdx.x*blockDim.x;
    if (ii >= end-begin) { return; }
    blockGPU[lookupGPU[ii+begin]] = sourceGPU[ii];
 }
 
-void copy_to_block(double* blockCPU, const int* lookupCPU, const double* sourceCPU, const int begin, const int end)
+void copy_to_block(OnDevice<ArrayView<double>> block, OnDevice<ConstArrayView<int>> lookup, OnDevice<ConstArrayView<double>> source, const int begin, const int end)
 {
    int blockSize = 1024;
    copy_to_block_kernel<<<(end-begin+blockSize-1)/blockSize,blockSize>>>
-      (ledger_lookup(blockCPU),
-       ledger_lookup(lookupCPU),
-       ledger_lookup(sourceCPU),
+      (block,
+       lookup,
+       source,
        begin,
        end);
 }

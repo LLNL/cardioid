@@ -44,7 +44,7 @@ namespace ORd
       double JrelStiffConst;
       double celltype;
       unsigned nCells_;
-      TransportCoordinator<std::vector<double> > stateTransport_;
+      TransportCoordinator<PinnedVector<double> > stateTransport_;
       double __cachedDt;
       jitify::JitCache _kernel_cache;
       std::string _kernel_program;

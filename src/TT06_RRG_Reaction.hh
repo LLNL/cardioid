@@ -20,11 +20,11 @@ class TT06_RRG_Reaction : public Reaction
    std::string methodName() const {return "TT06_RRG";}
 
    void calc(double dt,
-             const VectorDouble32& Vm,
-             const std::vector<double>& iStim,
-             VectorDouble32& dVm);
-   void initializeMembraneVoltage(VectorDouble32& Vm);
-
+             const Managed<ArrayView<double>> Vm,
+             const Managed<ArrayView<double>> iStim,
+             Managed<ArrayView<double>> dVm);
+   void initializeMembraneVoltage(ArrayView<double> Vm);
+   
    /** Functions needed for checkpoint/restart */
    void getCheckpointInfo(std::vector<std::string>& fieldNames,
                           std::vector<std::string>& fieldUnits) const;

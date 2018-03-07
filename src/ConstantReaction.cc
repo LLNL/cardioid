@@ -26,19 +26,13 @@ ConstantReaction::ConstantReaction(const Anatomy& anatomy,
 }
 
 void ConstantReaction::calc(double dt,
-                         const VectorDouble32& Vm,
-                         const vector<double>& iStim,
-                         VectorDouble32& dVm)
+                            const Managed<ArrayView<double>> Vm_,
+                            const Managed<ArrayView<double>> iStim_,
+                            Managed<ArrayView<double>> dVm_)
 {
    assert( cellModel_!=0 );
-   
-   static int count = 0;
-   
-   if( printRate_>0 )
-   if( count % printRate_ == 0)
-      compareWithExactSol(Vm);
-   count++;
 
+   ArrayView<double> dVm(dVm_);
    //double sum=0.;
    for (unsigned ii=0; ii<anatomy_.nLocal(); ++ii)
    {
@@ -52,50 +46,7 @@ void ConstantReaction::calc(double dt,
    }
 }
 
-void ConstantReaction::compareWithExactSol(const VectorDouble32& Vm)const
-{
-   const double alpha=cellModel_->getAlpha();
-   const double beta =cellModel_->getBeta();
-   const double gamma=cellModel_->getGamma();
-
-   double avg1=0.;
-   double avg2=0.;
-   for (unsigned ii=0; ii<anatomy_.nLocal(); ++ii)
-   {
-      Tuple globalTuple = anatomy_.globalTuple(ii);
-      const double x=((double)globalTuple.x()+0.5)*anatomy_.dx();
-      const double y=((double)globalTuple.y()+0.5)*anatomy_.dy();
-      const double z=((double)globalTuple.z()+0.5)*anatomy_.dz();
-      avg1+=alpha*x+beta*y+gamma*z;
-      avg2+=Vm[ii];
-   }
-   double tmp=0.;
-   MPI_Allreduce(&avg1,&tmp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-   avg1=tmp/anatomy_.nGlobal();
-   MPI_Allreduce(&avg2,&tmp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-   avg2=tmp/anatomy_.nGlobal();
-
-
-   double diff2=0.;
-   for (unsigned ii=0; ii<anatomy_.nLocal(); ++ii)
-   {
-      Tuple globalTuple = anatomy_.globalTuple(ii);
-      const double x=((double)globalTuple.x()+0.5)*anatomy_.dx();
-      const double y=((double)globalTuple.y()+0.5)*anatomy_.dy();
-      const double z=((double)globalTuple.z()+0.5)*anatomy_.dz();
-      const double diff = Vm[ii]-avg2 - (alpha*x+beta*y+gamma*z-avg1);
-      diff2+=diff*diff;
-   }
-   double gdiff2=0.;
-   MPI_Allreduce(&diff2,&gdiff2, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-   int myRank;
-   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-   gdiff2=sqrt(gdiff2/anatomy_.nGlobal());
-   if( myRank==0 )
-      cout<<"Diff. with exact solution = "<<gdiff2<<endl;
-}
-
-void ConstantReaction::initializeMembraneVoltage(VectorDouble32& Vm)
+void ConstantReaction::initializeMembraneVoltage(ArrayView<double> Vm)
 {
 #if 0
    for (unsigned ii=0; ii<Vm.size(); ++ii)

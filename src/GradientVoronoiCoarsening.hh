@@ -111,8 +111,8 @@ class GradientVoronoiCoarsening : public Sensor
    void writeGradients(const std::string& filename,
                        const double current_time,
                        const int current_loop)const;
-   void setupLSsystem(const VectorDouble32& val);
-   void computeColorCenterValues(const VectorDouble32& val);
+   void setupLSsystem(ConstArrayView<double> val);
+   void computeColorCenterValues(ConstArrayView<double> val);
    void setupLSmatrix();
    void prologComputeLeastSquareGradients();
    int solve3x3(const double s[6], const double r[3], double x[3], const int color);

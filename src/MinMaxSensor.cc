@@ -44,7 +44,7 @@ MinMaxSensor::~MinMaxSensor()
 void MinMaxSensor::print(double time, int /*loop*/)
 {
    // find local min/max voltages
-   const VectorDouble32& VmArray(vdata_.VmTransport_.readOnHost());
+   ConstArrayView<double> VmArray = vdata_.VmTransport_;
    double vmin_loc = VmArray[0];
    double vmax_loc = VmArray[0];
    for (unsigned ii=1; ii<nLocal_; ++ii)

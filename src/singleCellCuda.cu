@@ -1,38 +1,18 @@
 
-#include "Ledger.hh"
+#include "TransportCoordinator.hh"
 
-__global__ void integrateVoltageKernel(double* Vm, const double* dVm, const double* iStim, const double dt, const int nCells)
-{
+__global__ void setStimulusKernel(ArrayView<double> iStim, const double stimAmount) {
    int ii = threadIdx.x + blockIdx.x*blockDim.x;
-   if (ii >= nCells) { return; }
-   //use a negative sign here to undo the negative we had above.
-   Vm[ii] += (dVm[ii] - iStim[ii]) * dt;
-}
-
-void integrateVoltage(double* Vm, const double* dVm, const double* iStim, const double dt, const int nCells)
-{
-   int blockSize = 1024;
-   
-   integrateVoltageKernel<<<(nCells+blockSize-1)/blockSize,blockSize>>>(
-      ledger_lookup(Vm),
-      ledger_lookup(dVm),
-      ledger_lookup(iStim),
-      dt,
-      nCells);
-}
-
-__global__ void setStimulusKernel(double* iStim, const int nCells, const double stimAmount) {
-   int ii = threadIdx.x + blockIdx.x*blockDim.x;
-   if (ii >= nCells) { return; }
+   if (ii >= iStim.size()) { return; }
    //use a negative sign here to undo the negative we had above.
    iStim[ii] = stimAmount;
 }
 
-void setStimulus(double* iStim, const int nCells, const double stimAmount) {
+void setStimulus(OnDevice<ArrayView<double>> iStim, const double stimAmount) {
    int blockSize = 1024;
+   int nCells = iStim.size();
    
    setStimulusKernel<<<(nCells+blockSize-1)/blockSize,blockSize>>>(
-      ledger_lookup(iStim),
-      nCells,
+      iStim,
       stimAmount);
 }

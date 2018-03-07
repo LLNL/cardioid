@@ -15,17 +15,17 @@ class ReactionManager
 {
  public:
    void calc(double dt,
-             const VectorDouble32& Vm,
-             const std::vector<double>& iStim,
-             VectorDouble32& dVm);
-   void updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR);
-   void updateGate   (double dt, const VectorDouble32& Vm);
+             const Managed<ArrayView<double>> Vm,
+             const Managed<ArrayView<double>> iStim,
+             Managed<ArrayView<double>> dVm);
+   void updateNonGate(double dt, const Managed<ArrayView<double>> Vm, Managed<ArrayView<double>> dVR);
+   void updateGate   (double dt, const Managed<ArrayView<double>> Vm);
    std::string stateDescription() const;
 
    /** Populates the Vm array with some sensible default initial
     * membrane voltage.  Vm will be the parallel to the local cells in
     * the anatomy that was used to create the concrete reaction class. */
-   void initializeMembraneState(VectorDouble32& Vm);
+   void initializeMembraneState(ArrayView<double> Vm);
 
    void scaleCurrents(std::vector<double>);  
 
@@ -50,9 +50,9 @@ class ReactionManager
    std::vector<Reaction*> reactions_;
    std::vector<int> extents_;
    
-   std::vector<TransportCoordinator<VectorDouble32> > VmTransportPerReaction_;
-   std::vector<TransportCoordinator<std::vector<double> > > iStimTransportPerReaction_;
-   std::vector<TransportCoordinator<VectorDouble32> > dVmTransportPerReaction_;
+   std::vector<TransportCoordinator<PinnedVector<double>>> VmTransportPerReaction_;
+   std::vector<TransportCoordinator<PinnedVector<double>>> iStimTransportPerReaction_;
+   std::vector<TransportCoordinator<PinnedVector<double>>> dVmTransportPerReaction_;
 
    std::vector<std::string> unitFromHandle_;
    std::map<std::string, int> handleFromVarname_;

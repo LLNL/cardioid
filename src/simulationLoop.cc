@@ -70,9 +70,9 @@ void printData(const Simulate& sim)
    int pi = sim.printIndex_;
    if (pi >= 0)
    {
-      const VectorDouble32 & VmArray(sim.vdata_.VmTransport_.readOnHost());
-      const VectorDouble32 & dVmReaction(sim.vdata_.dVmReactionTransport_.readOnHost());
-      const VectorDouble32 & dVmDiffusion(sim.vdata_.dVmDiffusionTransport_.readOnHost());
+      ConstArrayView<double> VmArray = sim.vdata_.VmTransport_;
+      ConstArrayView<double> dVmReaction = sim.vdata_.dVmReactionTransport_;
+      ConstArrayView<double> dVmDiffusion = sim.vdata_.dVmDiffusionTransport_;
       const unsigned* const blockIndex = sim.diffusion_->blockIndex();
       double dVd = dVmDiffusion[pi];
       if (blockIndex)
@@ -100,8 +100,8 @@ void simulationProlog(Simulate& sim)
    // initialize membrane voltage with default value from the reaction
    // model.  Initialize with zero for remote cells
    sim.vdata_.setup(sim.anatomy_);
-   VectorDouble32 & VmArray(sim.vdata_.VmTransport_.modifyOnHost());
-   sim.reaction_->initializeMembraneState(VmArray);
+   sim.reaction_->initializeMembraneState(sim.vdata_.VmTransport_);
+   ArrayView<double> VmArray = sim.vdata_.VmTransport_;
    for (unsigned ii = sim.anatomy_.nLocal(); ii < sim.anatomy_.size(); ++ii)
    {
       VmArray[ii] = 0;
@@ -148,8 +148,8 @@ void loopIO(const Simulate& sim, int firstCall)
 
 void simulationLoop(Simulate& sim)
 {
-   TransportCoordinator<vector<double> > iStimTransport;
-   iStimTransport.setup(vector<double>(sim.anatomy_.nLocal(), 0.0));
+   TransportCoordinator<PinnedVector<double> > iStimTransport;
+   iStimTransport.setup(PinnedVector<double>(sim.anatomy_.nLocal(), 0.0));
    simulationProlog(sim);
    HaloExchangeCUDA<double, AlignedAllocator<double> > voltageExchange(sim.sendMap_, (sim.commTable_));
 
@@ -165,9 +165,6 @@ void simulationLoop(Simulate& sim)
    loopIO(sim, 1);
    profileStart(simulationLoopTimer);
 
-   double* recvBuf = voltageExchange.recvBuf_;
-   int recvBufSize = voltageExchange.commTable_->recvSize();
-   ledger_alloc(recvBuf, sizeof(double)*recvBufSize);
    while (sim.loop_ < sim.maxLoop_)
    {
       int nLocal = sim.anatomy_.nLocal();
@@ -179,74 +176,54 @@ void simulationLoop(Simulate& sim)
 
       startTimer(haloTimer);
       {
-         const VectorDouble32& vmarray(vdata.VmTransport_.readOnDevice());
-         voltageExchange.fillSendBuffer(vmarray);
+         voltageExchange.fillSendBuffer(vdata.VmTransport_);
          voltageExchange.startComm();
-         voltageExchange.wait();
       }
       stopTimer(haloTimer);
 
-      // DIFFUSION
-      startTimer(diffusionCalcTimer);
-      {
-         const VectorDouble32& vmarray(vdata.VmTransport_.readOnDevice());
-         VectorDouble32& dVmDiffusion(vdata.dVmDiffusionTransport_.modifyOnDevice());
-         sim.diffusion_->updateLocalVoltage(&(vmarray[0]));
-         ledger_copyToDevice(recvBuf);
-         sim.diffusion_->updateRemoteVoltage(recvBuf);
-         sim.diffusion_->calc(dVmDiffusion);
-            }
-      stopTimer(diffusionCalcTimer);
-
-      startTimer(stimulusTimer);
-      {
-         VectorDouble32& dVmDiffusion(sim.vdata_.dVmDiffusionTransport_.modifyOnDevice());
-         // add stimulus to dVmDiffusion
-//         #pragma omp target teams distribute parallel for
-         for (unsigned ii = 0; ii < sim.stimulus_.size(); ++ii)
-         {
-            sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
-         }
-
-         {
-            vector<double>& iStim(iStimTransport.modifyOnDevice());
-            double* iStimRaw=&iStim[0];
-            double* dVmDiffusionRaw=&dVmDiffusion[0];
-            setStimulus(iStimRaw,dVmDiffusionRaw,nLocal);
-         }
-      }
-      stopTimer(stimulusTimer);
 
       // REACTION
       startTimer(reactionTimer);
       {
-         const VectorDouble32& vmarray(vdata.VmTransport_.readOnDevice());
-         const vector<double>& iStim(iStimTransport.readOnDevice());
-         VectorDouble32& dVmReaction(vdata.dVmReactionTransport_.modifyOnDevice());
-
-         sim.reaction_->calc(sim.dt_, vmarray, iStim, dVmReaction);
+         sim.reaction_->calc(sim.dt_, vdata.VmTransport_, iStimTransport, vdata.dVmReactionTransport_);
       }
       stopTimer(reactionTimer);
+      // DIFFUSION
+      startTimer(diffusionCalcTimer);
+      {
+         sim.diffusion_->updateLocalVoltage(vdata.VmTransport_);
+         voltageExchange.wait();
+         sim.diffusion_->updateRemoteVoltage(voltageExchange.getRecvManaged());
+         sim.diffusion_->calc(vdata.dVmDiffusionTransport_);
+      }
+      stopTimer(diffusionCalcTimer);
+
+      startTimer(stimulusTimer);
+      {
+//         #pragma omp target teams distribute parallel for
+         for (unsigned ii = 0; ii < sim.stimulus_.size(); ++ii)
+         {
+            sim.stimulus_[ii]->stim(sim.time_, sim.vdata_.dVmDiffusionTransport_);
+         }
+
+         {
+            setStimulus(iStimTransport,vdata.dVmDiffusionTransport_);
+         }
+      }
+      stopTimer(stimulusTimer);
 
       startTimer(integratorTimer);
       if (sim.checkRange_.on)
       {
-         const VectorDouble32 & vmarray(vdata.VmTransport_.readOnHost());
-         const VectorDouble32 & dVmDiffusion(vdata.dVmDiffusionTransport_.readOnHost());
-         const VectorDouble32 & dVmReaction(vdata.dVmReactionTransport_.readOnHost());
-         sim.checkRanges(vmarray, dVmReaction, dVmDiffusion);
+         sim.checkRanges(vdata.VmTransport_, vdata.dVmReactionTransport_, vdata.dVmDiffusionTransport_);
       }
       // no special BGQ integrator is this loop.  More bang for buck
       // from OMP threading.
       {
-         VectorDouble32 & vmarray(vdata.VmTransport_.modifyOnDevice());
-         const VectorDouble32 & dVmDiffusion(vdata.dVmDiffusionTransport_.readOnDevice());
-         const VectorDouble32 & dVmReaction(vdata.dVmReactionTransport_.readOnDevice());
-         
-         double* vmarrayRaw=&vmarray[0];
-         const double* dVmReactionRaw=&dVmReaction[0];
-         const double* dVmDiffusionRaw=&dVmDiffusion[0];            
-         integrateVoltage(vmarrayRaw, dVmReactionRaw, dVmDiffusionRaw, nLocal, sim.dt_);         
+         integrateVoltage(vdata.VmTransport_,
+                          vdata.dVmReactionTransport_,
+                          vdata.dVmDiffusionTransport_,
+                          sim.dt_);         
       }
 
       sim.time_ += sim.dt_;
@@ -340,7 +317,7 @@ struct SimLoopData
 #endif
 
       int nLocal = sim.anatomy_.nLocal();
-      const vector<int>& haloSendMap = voltageExchange.getSendMap();
+      ConstArrayView<int> haloSendMap = voltageExchange.getSendMap();
 #ifndef PER_SQUAD_BARRIER
       mkOffsets(integratorOffset, sim.anatomy_.nLocal(), sim.reactionThreads_);
 #endif
@@ -396,7 +373,7 @@ void diffusionLoop(Simulate& sim,
 
    vector<int> zeroDiffusionOffset(nThreads + 1);
    {
-      const VectorDouble32 & dVmDiffusion(sim.vdata_.dVmDiffusionTransport_.readOnHost());
+      ConstArrayView<double> dVmDiffusion = sim.vdata_.dVmDiffusionTransport_;
       mkOffsets(zeroDiffusionOffset, dVmDiffusion.size(), sim.diffusionThreads_);
    }
    int zdoBegin = zeroDiffusionOffset[tid];
@@ -444,7 +421,7 @@ void diffusionLoop(Simulate& sim,
       // stimulus
       startTimer(initializeDVmDTimer);
       {
-         VectorDouble32 dVmDiffusion(sim.vdata_.dVmDiffusionTransport_.modifyOnHost());
+         ArrayView<double> dVmDiffusion(sim.vdata_.dVmDiffusionTransport_);
          if (loopData.stimIsNonZero > 0)
          {
             // we has a non-zero stimulus in the last time step so we
@@ -463,7 +440,6 @@ void diffusionLoop(Simulate& sim,
       }
       stopTimer(initializeDVmDTimer);
       {
-         VectorDouble32 dVmDiffusion(sim.vdata_.dVmDiffusionTransport_.readOnDevice());
          if (sim.stimulus_.size() > 0)
          {
             if (tid == 0)
@@ -471,7 +447,7 @@ void diffusionLoop(Simulate& sim,
                startTimer(stimulusTimer);
                for (unsigned ii = 0; ii < sim.stimulus_.size(); ++ii)
                {
-                  loopData.stimIsNonZero += sim.stimulus_[ii]->stim(sim.time_, dVmDiffusion);
+                  loopData.stimIsNonZero += sim.stimulus_[ii]->stim(sim.time_, sim.vdata_.dVmDiffusionTransport_);
                }
                stopTimer(stimulusTimer);
             }
@@ -482,8 +458,7 @@ void diffusionLoop(Simulate& sim,
       //L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle, sim.diffusionThreads_.nThreads());
       startTimer(stencilOverlapTimer);
       {
-         VectorDouble32 dVmDiffusion(sim.vdata_.dVmDiffusionTransport_.readOnDevice());
-         sim.diffusion_->calc_overlap(dVmDiffusion); //DelayTimeBase(160000);
+         sim.diffusion_->calc_overlap(sim.vdata_.dVmDiffusionTransport_); //DelayTimeBase(160000);
       }
       stopTimer(stencilOverlapTimer);
 
@@ -504,14 +479,16 @@ void diffusionLoop(Simulate& sim,
 
       startTimer(diffusionCalcTimer);
       // copy remote
+      
+      #if 0 //TEMPORARY
       sim.diffusion_->updateRemoteVoltage(loopData.voltageExchange.getRecvBuf());
+      #endif
       // temporary barrier
       L2_BarrierWithSync_Barrier(loopData.diffMiscBarrier, &diffMiscBarrierHandle,
                                  sim.diffusionThreads_.nThreads());
       //stencil
       {
-         VectorDouble32 dVmDiffusion(sim.vdata_.dVmDiffusionTransport_.modifyOnDevice());
-         sim.diffusion_->calc(dVmDiffusion);
+         sim.diffusion_->calc(sim.vdata_.dVmDiffusionTransport_);
       }
       stopTimer(diffusionCalcTimer);
 
@@ -583,9 +560,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       startTimer(nonGateRLTimer);
 
       {
-         VectorDouble32 VmArray(sim.vdata_.VmTransport_.modifyOnDevice());
-         VectorDouble32 dVmReaction(sim.vdata_.dVmReactionTransport_.modifyOnDevice());
-         sim.reaction_->updateNonGate(sim.dt_, VmArray, dVmReaction);
+         sim.reaction_->updateNonGate(sim.dt_, sim.vdata_.VmTransport_, sim.vdata_.dVmReactionTransport_);
       }
       stopTimer(nonGateRLTimer);
 
@@ -602,8 +577,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       stopTimer(GateNonGateTimer);
       startTimer(gateRLTimer);
       {
-         const VectorDouble32 & VmArray(sim.vdata_.VmTransport_.modifyOnDevice());
-         sim.reaction_->updateGate(sim.dt_, VmArray);
+         sim.reaction_->updateGate(sim.dt_, sim.vdata_.VmTransport_);
       }
       stopTimer(gateRLTimer);
       stopTimer(reactionTimer);
@@ -695,9 +669,9 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       }
 
       {
-         VectorDouble32 VmArray(sim.vdata_.VmTransport_.modifyOnDevice());
-         VectorDouble32 dVmReaction(sim.vdata_.dVmReactionTransport_.modifyOnDevice());
-         VectorDouble32 dVmDiffusion(sim.vdata_.dVmDiffusionTransport_.modifyOnDevice());
+         ArrayView<double> VmArray = sim.vdata_.VmTransport_;
+         ArrayView<double> dVmReaction = sim.vdata_.dVmReactionTransport_;
+         ArrayView<double> dVmDiffusion = sim.vdata_.dVmDiffusionTransport_;
          integrate(begin, end, sim.dt_, &dVmReaction[0], &dVmDiffusion[0],
                    sim.diffusion_->blockIndex(),
                    sim.diffusion_->dVmBlock(),
@@ -710,10 +684,10 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
       startTimer(rangeCheckTimer);
 #ifndef NTIMING
       {
-         const VectorDouble32 & VmArray(sim.vdata_.VmTransport_.readOnDevice());
-         const VectorDouble32 & dVmReaction(sim.vdata_.dVmReactionTransport_.readOnDevice());
-         const VectorDouble32 & dVmDiffusion(sim.vdata_.dVmDiffusionTransport_.readOnDevice());
-         if (sim.checkRange_.on) { sim.checkRanges(begin, end, VmArray, dVmReaction, dVmDiffusion); }
+         if (sim.checkRange_.on) { sim.checkRanges(begin, end,
+                                                   sim.vdata_.VmTransport_,
+                                                   sim.vdata_.dVmReactionTransport_,
+                                                   sim.vdata_.dVmDiffusionTransport_); }
       }
 #endif
       stopTimer(rangeCheckTimer);
@@ -744,7 +718,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
          const double* const dVdMatrix = sim.diffusion_->dVmBlock();
          const double diffusionScale = sim.diffusion_->diffusionScale();
          {
-            VectorDouble32 dVmDiffusion(sim.vdata_.dVmDiffusionTransport_.modifyOnHost());
+            ArrayView<double> dVmDiffusion(sim.vdata_.dVmDiffusionTransport_);
             for (unsigned ii = begin; ii < end; ++ii)
             {
                const int index = blockIndex[ii];
@@ -765,11 +739,11 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 
       startTimer(haloMove2BufTimer);
       {
-         const vector<int>& haloSendMap = loopData.voltageExchange.getSendMap();
+         ConstArrayView<int> haloSendMap = loopData.voltageExchange.getSendMap();
          unsigned begin = loopData.fillSendBufOffset[tid];
          unsigned end = loopData.fillSendBufOffset[tid + 1];
          double* sendBuf = loopData.voltageExchange.getSendBuf();
-         const VectorDouble32 & VmArray(sim.vdata_.VmTransport_.readOnHost());
+         ConstArrayView<double> VmArray = sim.vdata_.VmTransport_;
          for (unsigned ii = begin; ii < end; ++ii)
          {
             sendBuf[ii] = VmArray[haloSendMap[ii]];
@@ -814,13 +788,13 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
 
       // setup matrix voltages for first timestep.
       {
-         VectorDouble32 VmArray(sim.vdata_.VmTransport_.modifyOnHost());
          if (sim.reactionThreads_.teamRank() >= 0)
          {
-            sim.diffusion_->updateLocalVoltage(&VmArray[0]);
+            sim.diffusion_->updateLocalVoltage(sim.vdata_.VmTransport_);
          }
          if (sim.reactionThreads_.teamRank() == 0)
          {
+            ArrayView<double> VmArray(sim.vdata_.VmTransport_);
             loopData.voltageExchange.fillSendBuffer(VmArray);
          }
       }

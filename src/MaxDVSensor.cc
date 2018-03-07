@@ -61,8 +61,8 @@ void MaxDVSensor::print(double time, int loop)
    
    double maxdVdt=-10000.;
    double mindVdt= 10000.;
-   const VectorDouble32& dVmDiffusion(vdata_.dVmDiffusionTransport_.readOnHost());
-   const VectorDouble32& dVmReaction(vdata_.dVmReactionTransport_.readOnHost());
+   ConstArrayView<double> dVmDiffusion = vdata_.dVmDiffusionTransport_;
+   ConstArrayView<double> dVmReaction = vdata_.dVmReactionTransport_;
 
    for (unsigned ii=0; ii<nlocal_; ++ii)
    {

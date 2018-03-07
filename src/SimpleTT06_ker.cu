@@ -1,5 +1,6 @@
 
 //#include "jitifyDecl.hpp"
+#include "TransportCoordinator.hh"
 
 namespace SimpleTT06 {
    
@@ -1252,21 +1253,8 @@ const char* SimpleTT06_ker = "SimpleTT06_ker\n"
 "\n"
 ;
 
-void actualCalcJitify(const double dt, const int nCells_, const double Vm[], const double iStim[], double dVm[], double* stateData) {
-   const int blockSize=512;
-
-/*
-   static jitify::JitCache kernel_cache;
-   jitify::Program program = kernel_cache.program(SimpleTT06_ker,0);
-
-   program
-      .kernel("actualCalcCudaJitify")
-      .instantiate()
-      .configure(dim3((nCells_+blockSize-1)/blockSize,1,1),dim3(blockSize,1,1))
-      .launch(dt,nCells_,Vm,iStim,dVm,stateData);
-*/
+void actualCalcJitify(const double dt, OnDevice<ConstArrayView<double>> Vm, OnDevice<ConstArrayView<double>> iStim, OnDevice<ArrayView<double>> dVm, OnDevice<ArrayView<double>> stateData)
+{
 }
 
-
-   
 }

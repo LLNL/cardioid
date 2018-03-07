@@ -42,10 +42,14 @@ class TT06Dev_Reaction : public Reaction
    TT06Dev_Reaction& operator=(const TT06Dev_Reaction&);
    ~TT06Dev_Reaction();
 
-   void updateNonGate(double dt, const VectorDouble32&Vm, VectorDouble32&dVR);
-   void updateGate   (double dt, const VectorDouble32&Vm) ;
-   void calc(double dt, const VectorDouble32& Vm, const std::vector<double>& iStim, VectorDouble32& dVm);
-   void initializeMembraneVoltage(VectorDouble32& Vm);
+   void calc(double dt,
+             const Managed<ArrayView<double>> Vm,
+             const Managed<ArrayView<double>> iStim,
+             Managed<ArrayView<double>> dVm);
+   void updateNonGate(double dt, const Managed<ArrayView<double>> Vm, Managed<ArrayView<double>> dVR);
+   void updateGate   (double dt, const Managed<ArrayView<double>> Vm);
+   void initializeMembraneVoltage(ArrayView<double> Vm);
+
    void writeStateDev(int loop);
    void scaleCurrents(std::vector<double>);
 

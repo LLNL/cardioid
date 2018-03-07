@@ -22,12 +22,12 @@ namespace BetterTT06
       
       void createInterpolants(const double _dt);
       void calc(double dt,
-                const VectorDouble32& Vm,
-                const std::vector<double>& iStim,
-                VectorDouble32& dVm);
+                const Managed<ArrayView<double>> Vm_m,
+                const Managed<ArrayView<double>> iStim_m,
+                Managed<ArrayView<double>> dVm_m);
       //void updateNonGate(double dt, const VectorDouble32&Vm, VectorDouble32&dVR);
       //void updateGate   (double dt, const VectorDouble32&Vm) ;
-      void initializeMembraneVoltage(VectorDouble32& Vm);
+      void initializeMembraneVoltage(ArrayView<double> Vm);
       virtual void getCheckpointInfo(std::vector<std::string>& fieldNames,
                                      std::vector<std::string>& fieldUnits) const;
       virtual int getVarHandle(const std::string& varName) const;
@@ -44,7 +44,7 @@ namespace BetterTT06
 
       //PARAMETERS
       unsigned nCells_;
-      TransportCoordinator<std::vector<double> > stateTransport_;
+      TransportCoordinator<PinnedVector<double> > stateTransport_;
       double __cachedDt;
       std::string _program_code;
       nvrtcProgram _program;

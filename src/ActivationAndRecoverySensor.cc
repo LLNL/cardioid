@@ -75,7 +75,7 @@ void ActivationAndRecoverySensor::print(double time, int loop)
 
 void ActivationAndRecoverySensor::eval(double time, int loop)
 {
-   const VectorDouble32& VmArray(vdata_.VmTransport_.readOnHost());
+   ConstArrayView<double> VmArray = vdata_.VmTransport_;
    for (unsigned ii=0; ii<nLocal_; ++ii)
    {
       if (active_[ii] && VmArray[ii] < threshhold_ )

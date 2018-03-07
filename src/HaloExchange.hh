@@ -32,7 +32,9 @@ using namespace std;
  *  exchange. 
  */
 
-void fillSendBufferCUDA(const double* sendBufRaw, const double* dataRaw, const int* sendMapRaw, const int begin, const int end);
+void fillSendBufferCUDA(OnDevice<ArrayView<double>> sendBufRaw, 
+                        OnDevice<ConstArrayView<double>> dataRaw, 
+                        OnDevice<ConstArrayView<int>> sendMapRaw);   
 
 template <class T, class Allocator = std::allocator<T> >
 class HaloExchangeBase
@@ -52,9 +54,9 @@ class HaloExchangeBase
    };
 
    T* getSendBuf() {return sendBuf_;}
-   const vector<int>& getSendMap() const {return sendMap_;}
+   ConstArrayView<int> getSendMap() const {return sendMap_;}
    
-   void fillSendBuffer(const std::vector<T, Allocator>& data)
+   void fillSendBuffer(ConstArrayView<T> data)
    {
       startTimer(PerformanceTimers::haloMove2BufTimer);
       // fill send buffer
@@ -65,6 +67,8 @@ class HaloExchangeBase
 
 //   void set_recv_buf(int bw) { for (unsigned ii=0; ii<commTable_->recvSize();++ii) {recv_buf_[ii+bw*commTable_->recvSize()]=-1;} }
 
+   int recvSize() { return commTable_->recvSize(); }
+   
    void dumpRecvBuf()
    {
       cout << " recv is : ";
@@ -133,12 +137,11 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
 #pragma omp critical 
      execute_spi_alter(&spiHdl_,commTable_->_putTask.size(),bw_);
    }
-   
-   
-   void execute(vector<T, Allocator>& data, int nLocal)
+
+   void execute(ArrayView<T> data, const int nLocal)
    {
       fillSendBuffer(data);
-      data.resize(nLocal + commTable_->recvSize());
+      assert(data.size() == nLocal+commTable_->recvSize());
       startComm();
       wait();
       for (int ii=0; ii<commTable_->recvSize(); ++ii)
@@ -191,24 +194,24 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
    {};
 
    T* getRecvBuf() {return recvBuf_;}
-   void execute(vector<T>& data, int nLocal)
+   void execute(ArrayView<T> data, int nLocal)
    {
       this->fillSendBuffer(data);
       T* tmp = recvBuf_;
-      data.resize(nLocal + commTable_->recvSize());
+      assert(data.size() == nLocal+commTable_->recvSize());
       recvBuf_ = (&data[nLocal]);
       startComm();
       wait();
       recvBuf_ = tmp;
    }
    
-   void startComm()
+   void startComm(const T* sendBufArg, T* recvBufArg)
    {
 #pragma omp critical 
       {
          
-      char* sendBuf = (char*)sendBuf_;
-      char* recvBuf = (char*)recvBuf_;
+      const char* sendBuf = (const char*)sendBufArg;
+      char* recvBuf = (char*)recvBufArg;
 
       MPI_Request* recvReq = &recvReq_[0];
       const int tag = 151515;
@@ -229,13 +232,18 @@ class HaloExchange : public HaloExchangeBase<T, Allocator>
          unsigned target = commTable_->_sendTask[ii];
          unsigned nItems = commTable_->_sendOffset[ii+1] - commTable_->_sendOffset[ii];
          unsigned len = nItems * width_;
-         char* sendPtr = sendBuf + commTable_->_sendOffset[ii]*width_;
+         const char* sendPtr = sendBuf + commTable_->_sendOffset[ii]*width_;
          MPI_Isend(sendPtr, len, MPI_CHAR, target, tag, commTable_->_comm, sendReq+ii);
       }
       }
       
    };
 
+   void startComm()
+   {
+      startComm(sendBuf_, recvBuf_);
+   }
+   
    void wait()
    {
 #pragma omp critical              
@@ -266,9 +274,11 @@ class HaloExchangeCUDA : public HaloExchange<T, Allocator>
      : HaloExchange<T, Allocator>(sendMap, comm)
    {
   	 int arraySize =sendMap.size();
-         sendMap_.setup(vector<int>(arraySize));
-         sendBuf_.setup(vector<double>(arraySize));
-	 vector<int>& sendMapVec(sendMap_.modifyOnHost());
+         int recvSize = comm->recvSize();
+         sendMapTransport_.setup(PinnedVector<int>(arraySize));
+         sendBufTransport_.setup(PinnedVector<double>(arraySize));
+         recvBufTransport_.setup(PinnedVector<double>(recvSize));
+	 ArrayView<int> sendMapVec(sendMapTransport_.modifyOnHost());
          for(int i=0; i<arraySize; i++)
 	 {
 	     sendMapVec[i]=sendMap[i];
@@ -280,31 +290,37 @@ class HaloExchangeCUDA : public HaloExchange<T, Allocator>
 
    };
 
-   const vector<int>& getSendMap() const {
-        const vector<int>& sendMap(sendMap_.readOnHost());
-        return sendMap;
+   ConstArrayView<int> getSendMap() const {
+      return sendMapTransport_.readOnHost();
+
    };
+
+   Managed<ArrayView<T>> getRecvManaged() {
+      return recvBufTransport_;
+   }
    
-   void fillSendBuffer(const std::vector<T, Allocator>& data)
+   void fillSendBuffer(Managed<ArrayView<T>> data)
    {
       startTimer(PerformanceTimers::haloMove2BufTimer);
-      const T* dataRaw = &data[0];
-      const vector<int>& sendMap(sendMap_.readOnDevice());
-      const int* sendMapRaw = &sendMap[0];
 
-      vector<T>& sendBuf(sendBuf_.modifyOnDevice());
-      const T* sendBufRaw=&sendBuf[0];
-      int size=sendMap.size();
-      fillSendBufferCUDA(sendBufRaw, dataRaw, sendMapRaw, 0, size);
+      fillSendBufferCUDA(sendBufTransport_, data, sendMapTransport_);
 
       stopTimer(PerformanceTimers::haloMove2BufTimer);
    };
 
+   void startComm()
+   {
+      ConstArrayView<T> sendBuf = sendBufTransport_.readOnHost();
+      ArrayView<T> recvBuf = recvBufTransport_.modifyOnHost();
+      HaloExchange<T, Allocator>::startComm(sendBuf,recvBuf);
+   }
+   
 
  protected:
 
-   TransportCoordinator<std::vector<int> > sendMap_;  
-   TransportCoordinator<std::vector<T> > sendBuf_;	
+   TransportCoordinator<PinnedVector<int> > sendMapTransport_;  
+   TransportCoordinator<PinnedVector<T> > sendBufTransport_;
+   TransportCoordinator<PinnedVector<T> > recvBufTransport_;
 
 };
 

@@ -62,12 +62,10 @@ TT04_CellML_Reaction::~TT04_CellML_Reaction()
 }
 
 void TT04_CellML_Reaction::calc(double dt,
-                                const VectorDouble32& Vm,
-                                const vector<double>& iStim,
-                                VectorDouble32& dVm)
+                                const Managed<ArrayView<double>> Vm,
+                                const Managed<ArrayView<double>> iStim,
+                                Managed<ArrayView<double>> dVm)
 {
-   assert(nCells_ == dVm.size());
-
    switch (integrator_)
    {
      case forwardEuler:
@@ -80,7 +78,7 @@ void TT04_CellML_Reaction::calc(double dt,
       assert(false);
    }
 }
-void TT04_CellML_Reaction::initializeMembraneVoltage(VectorDouble32& Vm)
+void TT04_CellML_Reaction::initializeMembraneVoltage(ArrayView<double> Vm)
 {
    assert(Vm.size() >= s_.size());
    for (unsigned ii=0; ii<s_.size(); ++ii)
@@ -89,11 +87,8 @@ void TT04_CellML_Reaction::initializeMembraneVoltage(VectorDouble32& Vm)
 
 
    
-void TT04_CellML_Reaction::forwardEulerIntegrator(
-   double dt,
-   const VectorDouble32& Vm,
-   const vector<double>& iStim,
-   VectorDouble32& dVm)
+void TT04_CellML_Reaction::forwardEulerIntegrator(double dt, ConstArrayView<double> Vm,
+                               ConstArrayView<double> iStim, ArrayView<double> dVm)
 {
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
@@ -108,11 +103,8 @@ void TT04_CellML_Reaction::forwardEulerIntegrator(
    }
 }
 
-void TT04_CellML_Reaction::rushLarsenIntegrator(
-   double dt,
-   const VectorDouble32& Vm,
-   const vector<double>& iStim,
-   VectorDouble32& dVm)
+void TT04_CellML_Reaction::rushLarsenIntegrator(double dt, ConstArrayView<double> Vm,
+                             ConstArrayView<double> iStim, ArrayView<double> dVm)
 {
    for (unsigned ii=0; ii<nCells_; ++ii)
    {

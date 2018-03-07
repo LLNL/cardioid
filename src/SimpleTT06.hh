@@ -11,17 +11,6 @@ class Anatomy;
 namespace SimpleTT06 
 {
 
-   
-struct State 
-{
-   //EDIT_STATE
-   double *data;
-   
-   // mov nCells to the end
-   int nCells;
-   int nStates;
-};
-
 struct PerCellFlags 
 {
    //EDIT_PERCELL_FLAGS
@@ -39,10 +28,10 @@ class ThisReaction : public Reaction
    std::string methodName() const;
    
    void calc(double dt,
-             const VectorDouble32& Vm,
-             const std::vector<double>& iStim,
-             VectorDouble32& dVm);
-   void initializeMembraneVoltage(VectorDouble32& Vm);
+             const Managed<ArrayView<double>> Vm_m,
+             const Managed<ArrayView<double>> iStim_m,
+             Managed<ArrayView<double>> dVm_m);
+   void initializeMembraneVoltage(ArrayView<double> Vm);
    virtual void getCheckpointInfo(std::vector<std::string>& fieldNames,
                                   std::vector<std::string>& fieldUnits) const;
    virtual int getVarHandle(const std::string& varName) const;
@@ -62,7 +51,7 @@ class ThisReaction : public Reaction
 
  private:
    unsigned nCells_;
-   TransportCoordinator<State> stateTransport_;
+   TransportCoordinator<PinnedVector<double>> stateTransport_;
 };
 
 }

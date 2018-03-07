@@ -19,10 +19,9 @@ using namespace std;
 
 typedef double Real;
 
-extern "C"
-void call_cuda_kernels(const Real *VmRaw, Real *dVmRaw, const Real *sigmaRaw, int nx, int ny, int nz, Real *dVmOut, const int *lookup,int nCells);
+void call_cuda_kernels(OnDevice<ConstArrayView<Real>> VmRaw, OnDevice<ArrayView<Real>> dVmRaw, OnDevice<ConstArrayView<Real>> sigmaRaw, int nx, int ny, int nz, OnDevice<ArrayView<Real>> dVmOut, OnDevice<ConstArrayView<int>> lookup,int nCells);
 
-void copy_to_block(double* blockCPU, const int* lookupCPU, const double* sourceCPU, const int begin, const int end);
+void copy_to_block(OnDevice<ArrayView<double>> blockCPU, OnDevice<ConstArrayView<int>> lookupCPU, OnDevice<ConstArrayView<double>> sourceCPU, const int begin, const int end);
 
 CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType)
 : anatomy_(anatomy), simLoopType_(simLoopType),
@@ -32,23 +31,21 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType)
    nx_ = localGrid_.nx();
    ny_ = localGrid_.ny();
    nz_ = localGrid_.nz();
-   VmBlock_.setup(vector<double>(nx_*ny_*nz_));
-   dVmBlock_.setup(vector<double>(nx_*ny_*nz_));
-   cellLookup_.setup(vector<int>(anatomy.size()));
+   VmBlock_.setup(PinnedVector<double>(nx_*ny_*nz_));
+   dVmBlock_.setup(PinnedVector<double>(nx_*ny_*nz_));
+   cellLookup_.setup(PinnedVector<int>(anatomy.size()));
 
    nLocal_ = anatomy.nLocal();
    nRemote_ = anatomy.nRemote();
    nCells_ = anatomy.size();
    
    //initialize the block index as well.
-   //cellFromRed_.setup(vector<int>(anatomy.size()));
-   //blockFromRed_.setup(vector<int>(anatomy.size()));
+   //cellFromRed_.setup(PinnedVector<int>(anatomy.size()));
+   //blockFromRed_.setup(PinnedVector<int>(anatomy.size()));
    //vector<int>& blockFromRedVec(blockFromRed_.modifyOnHost());
    //vector<int>& cellFromRedVec(cellFromRed_.modifyOnHost());
    map<int,int> cellFromBlock;
-   vector<int>& cellLookupVec(cellLookup_.modifyOnHost());
-//   vector<int>& blockLookupVec(blockLookup_.modifyOnHost());
-
+   ArrayView<int> cellLookupVec(cellLookup_.modifyOnHost());
    for (int icell=0; icell<nCells_; icell++)
    {
       //index to coordinate 
@@ -67,8 +64,8 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType)
       };
    const double disc[3] = {anatomy.dx(), anatomy.dy(), anatomy.dz()};
    //initialize the array of diffusion coefficients
-   sigmaFaceNormal_.setup(vector<double>(nx_*ny_*nz_*9));
-   vector<double>& sigmaFaceNormalVec(sigmaFaceNormal_.modifyOnHost());
+   sigmaFaceNormal_.setup(PinnedVector<double>(nx_*ny_*nz_*9));
+   ArrayView<double> sigmaFaceNormalVec(sigmaFaceNormal_.modifyOnHost());
 
    for (int icell=0; icell<nCells_; icell++)
    {
@@ -121,62 +118,26 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType)
    }
 }
 
-void CUDADiffusion::updateLocalVoltage(const double* VmLocal)
+void CUDADiffusion::updateLocalVoltage(const Managed<ArrayView<double>> VmLocal)
 {
-   vector<double>& VmBlockVec(VmBlock_.modifyOnDevice());
-   double* VmBlockVecRaw=&VmBlockVec[0];
-   const vector<int>& cellLookupVec(cellLookup_.readOnDevice());
-   const int* lookupRaw=&cellLookupVec[0];
-   copy_to_block(VmBlockVecRaw, lookupRaw, VmLocal, 0, nLocal_);
+   copy_to_block(VmBlock_, cellLookup_, VmLocal, 0, nLocal_);
 }
 
-void CUDADiffusion::updateRemoteVoltage(const double* VmRemote)
+void CUDADiffusion::updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote)
 {
-   vector<double>& VmBlockVec(VmBlock_.modifyOnDevice());
-   double* VmBlockVecRaw=&VmBlockVec[0];
-   const vector<int>& cellLookupVec(cellLookup_.readOnDevice());
-   const int* lookupRaw=&cellLookupVec[0];
-   copy_to_block(VmBlockVecRaw, lookupRaw, VmRemote, nLocal_, nCells_);
+   copy_to_block(VmBlock_, cellLookup_, VmRemote, nLocal_, nCells_);
 }
 
-void CUDADiffusion::calc(VectorDouble32& dVm){
-   actualCalc(*this, dVm);
-}
-
-void actualCalc(CUDADiffusion& self, VectorDouble32& dVm)
-{
-   int self_nLocal_ = self.nLocal_;
-   int self_nCells_ = self.nCells_;
-   int nx = self.nx_;
-   int ny = self.ny_;
-   int nz = self.nz_;
-   double* dVmOut=&dVm[0];
-   if (self.simLoopType_ == 0) // it is a hard coded of enum LoopType {omp, pdr}  
+void CUDADiffusion::calc(Managed<ArrayView<double>> dVm){
+   if (simLoopType_ == 0) // it is a hard coded of enum LoopType {omp, pdr}  
    {
-      ledger_deviceZero(&dVm[0]);
-   }
-   
-   vector<double>& dVmBlockVec(self.dVmBlock_.modifyOnDevice());
-   const vector<double>& VmBlockVec(self.VmBlock_.readOnDevice());
-   const vector<double>& sigmaFaceNormalVec(self.sigmaFaceNormal_.readOnDevice());
-   const vector<int>& cellLookupVec(self.cellLookup_.readOnDevice());
-   
-   const double* VmRaw=&VmBlockVec[0];
-   double* dVmRaw=&dVmBlockVec[0];
-   const double* sigmaRaw=&sigmaFaceNormalVec[0];
-   const int*    lookupRaw=&cellLookupVec[0];
-   double* temp=dVmOut;
-   
-   {
-      call_cuda_kernels(VmRaw,
-                        dVmRaw,
-                        sigmaRaw,
-                        nx,ny,nz,
-                        dVmOut,
-                        lookupRaw,
-                        self_nCells_);
+      ArrayView<double> deviceArray = dVm.modifyOnDevice();
+      //ledger_deviceZero(&deviceArray[0]);
+      ledger_deviceZero(&(dVm.raw()[0]));
    }
 
+   call_cuda_kernels(VmBlock_,dVmBlock_,sigmaFaceNormal_,nx_,ny_,nz_,
+                     dVm,cellLookup_,nCells_);
 }
 
 unsigned* CUDADiffusion::blockIndex() {return NULL;}

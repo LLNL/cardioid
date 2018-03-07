@@ -198,9 +198,14 @@ ThisReaction::ThisReaction(const int numPoints)
    perCellParameters_.resize(nCells_);
 }
 
-void ThisReaction::calc(double dt, const VectorDouble32& Vm,
-                       const vector<double>& iStim , VectorDouble32& dVm)
+void ThisReaction::calc(double dt,
+             const Managed<ArrayView<double>> Vm_m,
+             const Managed<ArrayView<double>> iStim_m,
+             Managed<ArrayView<double>> dVm_m)
 {
+   ConstArrayView<double> Vm = Vm_m;
+   ConstArrayView<double> iStim = iStim_m;
+   ArrayView<double> dVm = dVm_m;
    for (unsigned ii=0; ii<nCells_; ++ii)
    {
 
@@ -716,10 +721,10 @@ void ThisReaction::calc(double dt, const VectorDouble32& Vm,
    }
 }
 
-void ThisReaction::initializeMembraneVoltage(VectorDouble32& Vm)
+void ThisReaction::initializeMembraneVoltage(ArrayView<double> Vm)
 {
    assert(Vm.size() >= nCells_);
-   Vm.assign(Vm.size(), -87.84);
+   Vm.fill(-87.84);
    State initState;
    //EDIT_STATE
    initState.m=0.0;

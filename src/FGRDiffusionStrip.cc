@@ -312,9 +312,10 @@ FGRDiffusionStrip::FGRDiffusionStrip(const FGRDiffusionParms& parms,
 
 }
 
-void FGRDiffusionStrip::updateLocalVoltage(const double* VmLocal)
+void FGRDiffusionStrip::updateLocalVoltage(const Managed<ArrayView<double>> VmLocal_managed)
 {
    startTimer(FGR_ArrayLocal2MatrixTimer);
+   ConstArrayView<double> VmLocal = VmLocal_managed;
    int tid = reactionThreadInfo_.teamRank();
    unsigned begin = localCopyOffset_[tid];
    unsigned end   = localCopyOffset_[tid+1];
@@ -326,9 +327,10 @@ void FGRDiffusionStrip::updateLocalVoltage(const double* VmLocal)
    stopTimer(FGR_ArrayLocal2MatrixTimer);
 }
 
-void FGRDiffusionStrip::updateRemoteVoltage(const double* VmRemote)
+void FGRDiffusionStrip::updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote_managed)
 {
    startTimer(FGR_ArrayRemote2MatrixTimer);
+   ConstArrayView<double> VmRemote = VmRemote_managed;
    int tid = threadInfo_.teamRank();
    unsigned begin = remoteCopyOffset_[tid];
    unsigned end   = remoteCopyOffset_[tid+1];
@@ -342,8 +344,9 @@ void FGRDiffusionStrip::updateRemoteVoltage(const double* VmRemote)
 }
 
 /** threaded simd version */
-void FGRDiffusionStrip::calc(VectorDouble32& dVm)
+void FGRDiffusionStrip::calc(Managed<ArrayView<double>> dVm_managed)
 {
+   ArrayView<double> dVm = dVm_managed;
    int tid = threadInfo_.teamRank();
    startTimer(FGR_AlignCopyTimer);
 

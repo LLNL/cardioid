@@ -12,9 +12,9 @@ using std::vector;
 
 /** Offsets version.  Be sure to maintain in parallel with OMP version*/
 void Simulate::checkRanges(int begin, int end,
-                           const VectorDouble32& Vm,
-                           const VectorDouble32& dVmReaction,
-                           const VectorDouble32& dVmDiffusion)
+                           ConstArrayView<double> Vm,
+                           ConstArrayView<double> dVmReaction,
+                           ConstArrayView<double> dVmDiffusion)
 {
    //const double vMax =   60.;
    //const double vMin = -110.;
@@ -29,9 +29,9 @@ void Simulate::checkRanges(int begin, int end,
 
 /** Omp version.  Be sure to maintain in parallel with offsets version.
  *  Don't call from parallel loop */
-void Simulate::checkRanges(const VectorDouble32& Vm,
-                           const VectorDouble32& dVmReaction,
-                           const VectorDouble32& dVmDiffusion)
+void Simulate::checkRanges(ConstArrayView<double> Vm,
+                           ConstArrayView<double> dVmReaction,
+                           ConstArrayView<double> dVmDiffusion)
 {
    int nLocal = anatomy_.nLocal();
    //const double vMax =   60.;

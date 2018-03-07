@@ -34,7 +34,7 @@ class ECGSensor : public Sensor
    int nEval_;
    int dataOffset_;
 
-   const TransportCoordinator<VectorDouble32>& VmTransport_;
+   const TransportCoordinator<PinnedVector<double>>& VmTransport_;
    
    std::string filename_;
    std::vector<float> weight_;
