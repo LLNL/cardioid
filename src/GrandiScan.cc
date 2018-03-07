@@ -8,8 +8,9 @@
 #include "ioUtils.h"
 #include "mpiUtils.h"
 #include "Grandi_Reaction.hh"
-namespace  scanReaction
-{
+#include "reactionFactory.hh"
+
+using namespace std;
    char *getKeywordValueGrandi(char *ptr, char **keywordPtr, char **valuePtr)
    {
       char *end; 
@@ -32,7 +33,7 @@ namespace  scanReaction
       *valuePtr = value; 
       return ptr; 
    }
-   Reaction* scanGrandi(OBJECT* obj, const int numPoints)
+REACTION_FACTORY(Grandi)(OBJECT* obj, const double, const int numPoints, const ThreadTeam&)
    {
       const char *defaultCurrentNames[]={"INa","INaL","INab","INaK","IKr","IKs","IKur","IKp","Ito","IK1","IClCa","IClb","ICa","INCX","IpCa",""};
       Grandi_Parms parms; 
@@ -99,4 +100,3 @@ namespace  scanReaction
       }
       return  reaction; 
    }
-}

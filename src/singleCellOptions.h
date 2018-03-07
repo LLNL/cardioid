@@ -44,6 +44,9 @@ struct gengetopt_args_info
   unsigned int object_min; /**< @brief Object file's minimum occurreces */
   unsigned int object_max; /**< @brief Object file's maximum occurreces */
   const char *object_help; /**< @brief Object file help description.  */
+  char * method_arg;	/**< @brief Method name (or module name).  */
+  char * method_orig;	/**< @brief Method name (or module name) original value given at command line.  */
+  const char *method_help; /**< @brief Method name (or module name) help description.  */
   char * reaction_name_arg;	/**< @brief Name of reaction in object file.  */
   char * reaction_name_orig;	/**< @brief Name of reaction in object file original value given at command line.  */
   const char *reaction_name_help; /**< @brief Name of reaction in object file help description.  */
@@ -96,6 +99,7 @@ struct gengetopt_args_info
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
   unsigned int object_given ;	/**< @brief Whether object was given.  */
+  unsigned int method_given ;	/**< @brief Whether method was given.  */
   unsigned int reaction_name_given ;	/**< @brief Whether reaction-name was given.  */
   unsigned int dt_given ;	/**< @brief Whether dt was given.  */
   unsigned int duration_given ;	/**< @brief Whether duration was given.  */

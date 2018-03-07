@@ -6,6 +6,7 @@
 #include "TT06_RRG.hh"
 #include "BucketOfBits.hh"
 #include "units.h"
+#include "object_cc.hh"
 
 using namespace std;
 
@@ -132,3 +133,16 @@ const string TT06_RRG_Reaction::getUnit(const string& varName) const
    return TT06_RRG::getUnit(varName);
 }
 
+class ThreadTeam;
+namespace  scanReaction
+{
+   Reaction* scanTT06_RRG(OBJECT* obj, const double, const int numPoints, const ThreadTeam&)
+   {
+      TT06_RRG_ReactionParms parms;
+      objectGet(obj, "Ko",    parms.Ko, "-1") ;
+      int ttType;
+      objectGet(obj, "ttType", ttType, "0");
+      Reaction *reaction = new TT06_RRG_Reaction(numPoints,ttType,parms);
+      return  reaction; 
+   }
+}

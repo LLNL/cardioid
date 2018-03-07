@@ -3,7 +3,8 @@ version "0.1"
 purpose "Run a single cell simulation"
 description "This program runs a single cell simulation of Vm' = -Iion."
 
-option      "object"             o "Object file"                                        string  required multiple
+option      "object"             o "Object file"                                        string  optional multiple
+option      "method"             m "Method name (or module name)"                       string  optional
 option      "reaction-name"      r "Name of reaction in object file"                    string  optional
 option      "dt"                 h "Timestep for the simulation"                        double  default="0.020" optional
 option      "duration"           d "Duration of the simulation"                         double  optional

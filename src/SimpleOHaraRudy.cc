@@ -14,35 +14,33 @@
 #include "SimpleOHaraRudy.hh"
 #include "object_cc.hh"
 #include "Anatomy.hh"
+#include "reactionFactory.hh"
 #include <cmath>
 
 #define pi 3.141592653589793238462643383279502884197169399375105820974944592307816406286
 
 using namespace std;
 
-namespace scanReaction 
-{
 
 #define setDefault(name, value) objectGet(obj, #name, reaction->name, #value)
    
-   Reaction* scanSimpleOHaraRudy(OBJECT* obj, const int numPoints)
-   {
-      SimpleOHaraRudy::ThisReaction* reaction = new SimpleOHaraRudy::ThisReaction(numPoints);
+REACTION_FACTORY(SimpleOHaraRudy)(OBJECT* obj, const double, const int numPoints, const ThreadTeam&)
+{
+   SimpleOHaraRudy::ThisReaction* reaction = new SimpleOHaraRudy::ThisReaction(numPoints);
 
-      //override the defaults
-      //EDIT_FLAGS
-      setDefault(celltype, 0);
-      setDefault(useINaFromTT06, 0);
+   //override the defaults
+   //EDIT_FLAGS
+   setDefault(celltype, 0);
+   setDefault(useINaFromTT06, 0);
 
-      //EDIT_PARAMETERS
-      setDefault(GCaB, 6.0643e-4);    // [uA/uF] 3
-      setDefault(JrelStiffConst, 0.005);  // ms
+   //EDIT_PARAMETERS
+   setDefault(GCaB, 6.0643e-4);    // [uA/uF] 3
+   setDefault(JrelStiffConst, 0.005);  // ms
       
-      return reaction;
-   }
+   return reaction;
+}
 #undef setDefault
 
-}
 
 namespace SimpleOHaraRudy 
 {

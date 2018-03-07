@@ -29,6 +29,12 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
+#Fixing bad default behavior for plugins on OSX
+if (CMAKE_SYSTEM_NAME MATCHES Darwin)
+  SET(CMAKE_SHARED_MODULE_CREATE_C_FLAGS "${CMAKE_SHARED_MODULE_CREATE_C_FLAGS} -undefined dynamic_lookup")
+  SET(CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS "${CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS} -undefined dynamic_lookup")
+endif()
+
 find_package(OpenMP)
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -44,9 +50,57 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 find_library(BLAS_LIB blas)
 find_library(LAPACK_LIB lapack)
 
+find_program(PERL perl)
+
 if (BLAS_LIB AND LAPACK_LIB)
    add_definitions(-DHAVE_LAPACK)
 endif()
+
+
+
+set (reaction_src
+        ReactionFHN.cc
+	TT04_CellML_Reaction.cc
+	TT06_CellML_Reaction.cc 
+	TT06Dev_Reaction.cc
+	TT06_RRG_Reaction.cc
+	OHaraRudy_Reaction.cc
+	SimpleOHaraRudy.cc
+	Grandi_Reaction.cc
+	SimpleGrandi.cc
+        Passive.cc
+	TT06Tau.cc
+	TT06Func.cc
+	pade.cc
+   TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc
+   TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc
+	TT06_RRG.cc
+   OHaraRudyScan.cc
+   GrandiScan.cc 
+   spi_impl.c
+   clooper.c TT06GatesSimd2.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c
+   OHaraRudy.c OHaraRudy_Voltage.c OHaraRudy_Concent.c OHaraRudy_INaCai.c OHaraRudy_INaCass.c
+              OHaraRudy_INaK.c OHaraRudy_INab.c OHaraRudy_ICab.c OHaraRudy_IKb.c
+              OHaraRudy_IpCa.c OHaraRudy_INaFast.c OHaraRudy_INaL.c OHaraRudy_Ito.c
+              OHaraRudy_IKr.c OHaraRudy_IKs.c OHaraRudy_IK1.c OHaraRudy_ICa.c null_INull.c
+              OHaraRudy_Fluxes.c OHaraRudy_CaMKtrap.c reversalPotentials.c
+        OHaraRudyMod_INaFast.c RTYSC14A_IKr.c  MYBGBKC_INa.c
+        Grandi.c         Grandi_IClCa.c   Grandi_IKs.c     Grandi_INaL.c    Grandi_Revpots.c
+              Grandi_Concent.c Grandi_IClb.c    Grandi_IKur.c    Grandi_INab.c    Grandi_Voltage.c
+              Grandi_Fluxes.c  Grandi_IK1.c     Grandi_INCX.c    Grandi_INull.c
+              Grandi_ICa.c     Grandi_IKp.c     Grandi_INa.c     Grandi_IpCa.c
+              Grandi_ICab.c    Grandi_IKr.c     Grandi_INaK.c    Grandi_Ito.c
+)   
+
+add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc
+        COMMAND ${PERL} ARGS registerBuiltinReactions.pl ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc ${reaction_src}
+        MAIN_DEPENDENCY registerBuiltinReactions.pl
+        DEPENDS ${reaction_src}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+ )
+
+
 
 set (heart_src 
 	ThreadServer.cc
@@ -85,24 +139,6 @@ set (heart_src
 	FGRUtils.cc
 	Reaction.cc
 	ReactionManager.cc
-        ReactionFHN.cc
-	TT04_CellML_Reaction.cc
-	TT06_CellML_Reaction.cc 
-	TT06Dev_Reaction.cc
-	TT06_RRG_Reaction.cc
-	OHaraRudy_Reaction.cc
-	SimpleOHaraRudy.cc
-	Grandi_Reaction.cc
-	SimpleGrandi.cc
-        Passive.cc
-	TT06Tau.cc
-	TT06Func.cc
-	pade.cc
-   TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc
-   TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc
-	TT06_RRG.cc
-   OHaraRudyScan.cc
-   GrandiScan.cc 
 	TestStimulus.cc PointStimulus.cc BoxStimulus.cc
 	PeriodicPulse.cc RandomPulse.cc
 	PointListSensor.cc ActivationTimeSensor.cc
@@ -113,25 +149,13 @@ set (heart_src
 	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc DVThreshSensor.cc
    StateVariableSensor.cc Interpolation.cc
    Version.cc
-   spi_impl.c
-   clooper.c TT06GatesSimd2.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c
-   OHaraRudy.c OHaraRudy_Voltage.c OHaraRudy_Concent.c OHaraRudy_INaCai.c OHaraRudy_INaCass.c
-              OHaraRudy_INaK.c OHaraRudy_INab.c OHaraRudy_ICab.c OHaraRudy_IKb.c
-              OHaraRudy_IpCa.c OHaraRudy_INaFast.c OHaraRudy_INaL.c OHaraRudy_Ito.c
-              OHaraRudy_IKr.c OHaraRudy_IKs.c OHaraRudy_IK1.c OHaraRudy_ICa.c null_INull.c
-              OHaraRudy_Fluxes.c OHaraRudy_CaMKtrap.c reversalPotentials.c
-        OHaraRudyMod_INaFast.c RTYSC14A_IKr.c  MYBGBKC_INa.c
-        Grandi.c         Grandi_IClCa.c   Grandi_IKs.c     Grandi_INaL.c    Grandi_Revpots.c
-              Grandi_Concent.c Grandi_IClb.c    Grandi_IKur.c    Grandi_INab.c    Grandi_Voltage.c
-              Grandi_Fluxes.c  Grandi_IK1.c     Grandi_INCX.c    Grandi_INull.c
-              Grandi_ICa.c     Grandi_IKp.c     Grandi_INa.c     Grandi_IpCa.c
-              Grandi_ICab.c    Grandi_IKr.c     Grandi_INaK.c    Grandi_Ito.c
+   ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc
 )
 if (NOT use_precompiled)
-  list(APPEND heart_src TT06GatesSimd.c)
+  list(APPEND reaction_src TT06GatesSimd.c)
 endif()
 add_library(heart
-            ${heart_src})
+            ${heart_src} ${reaction_src})
 target_link_libraries(heart ddcMDutil ${extra_libs})
 if (BLAS_LIB AND LAPACK_LIB)
   target_link_libraries(heart ${LAPACK_LIB} ${BLAS_LIB})
@@ -147,3 +171,51 @@ if (LAPACK_LIB)
    add_executable(modifyAnatomyFile modifyAnatomyFile.cc)
    target_link_libraries(modifyAnatomyFile heart)
 endif ()
+
+
+
+### Getting compile flags for making plugins.
+
+set(heart_compile_flags "")
+
+get_property(p_dirs TARGET heart PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${p_dirs})
+  set(heart_compile_flags "${heart_compile_flags} -I${dir}")
+endforeach()
+
+get_property(p_flags TARGET heart PROPERTY COMPILE_FLAGS)
+foreach(flag ${p_flags})
+  set(heart_compile_flags "${heart_compile_flags} ${flag}")
+endforeach()
+
+get_property(p_flags TARGET heart PROPERTY COMPILE_DEFINITIONS)
+foreach(flag ${p_flags})
+  set(heart_compile_flags "${heart_compile_flags} -D${flag}")
+endforeach()
+
+get_property(p_flags TARGET heart PROPERTY COMPILE_DEFINITIONS_RELEASE)
+foreach(flag ${p_flags})
+  set(heart_compile_flags "${heart_compile_flags} -D${flag}")
+endforeach()
+
+get_property(p_flags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIRECTORY} PROPERTY COMPILE_DEFINITIONS)
+foreach(flag ${p_flags})
+  MESSAGE(ERROR ${flag})
+  set(heart_compile_flags "${heart_compile_flags} -D${flag}")
+endforeach()
+
+get_property(p_flags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIRECTORY} PROPERTY COMPILE_FLAGS)
+foreach(flag ${p_flags})
+  MESSAGE(ERROR ${flag})
+  set(heart_compile_flags "${heart_compile_flags} ${flag}")
+endforeach()
+
+string(TOUPPER "CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE}" CMAKE_C_FLAGS_BUILDNAME)
+set(CMAKE_C_FLAGS_BUILD "${${CMAKE_C_FLAGS_BUILDNAME}}")
+
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/compileReaction.template
+               ${CMAKE_BINARY_DIR}/compileReaction
+               @ONLY
+               )
+

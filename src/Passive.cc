@@ -14,33 +14,31 @@
 #include "Passive.hh"
 #include "object_cc.hh"
 #include "Anatomy.hh"
+#include "reactionFactory.hh"
 #include <cmath>
 
 #define pi 3.141592653589793238462643383279502884197169399375105820974944592307816406286
 
 using namespace std;
 
-namespace scanReaction 
-{
 
 #define setDefault(name, value) objectGet(obj, #name, reaction->name, #value)
    
-   Reaction* scanPassive(OBJECT* obj, const int numPoints)
-   {
-      Passive::ThisReaction* reaction = new Passive::ThisReaction(numPoints);
+REACTION_FACTORY(Passive)(OBJECT* obj, const double, const int numPoints, const ThreadTeam&)
+{
+   Passive::ThisReaction* reaction = new Passive::ThisReaction(numPoints);
 
-      //override the defaults
-      //EDIT_FLAGS
+   //override the defaults
+   //EDIT_FLAGS
 
-      //EDIT_PARAMETERS
-      setDefault(G, 6.0643e-4);    // [mS/uF] 3
-      setDefault(E_R, -85.);
+   //EDIT_PARAMETERS
+   setDefault(G, 6.0643e-4);    // [mS/uF] 3
+   setDefault(E_R, -85.);
       
-      return reaction;
-   }
+   return reaction;
+}
 #undef setDefault
 
-}
 
 namespace Passive 
 {

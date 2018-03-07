@@ -284,7 +284,7 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    for (int ireaction=0; ireaction<numReactions; ++ireaction)
    {
       int localSize = countFromRidx[ireaction];
-      reactions_[ireaction] = reactionFactory(objectNameFromRidx_[ireaction], dt, localSize, group, scaleCurrents);
+      reactions_[ireaction] = reactionFactory(objectNameFromRidx_[ireaction], dt, localSize, group);
       extents_[ireaction+1] = extents_[ireaction]+localSize;
       int bufferSize = convertActualSizeToBufferSize(localSize);
       VmPerReaction_[ireaction].resize(bufferSize);

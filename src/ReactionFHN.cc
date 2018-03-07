@@ -1,5 +1,7 @@
 #include "ReactionFHN.hh"
 #include "Anatomy.hh"
+#include "object.h"
+#include "reactionFactory.hh"
 
 using namespace std;
 
@@ -43,7 +45,16 @@ void ReactionFHN::initializeMembraneVoltage(VectorDouble32& Vm)
    Vm.assign(Vm.size(), -85.0);
 }
 
-
+REACTION_FACTORY(FHN)(OBJECT*, const double, const int numPoints, const ThreadTeam&)
+{
+   // None of the FHN model parameters are currently wired to the
+   // input deck.
+   return new ReactionFHN(numPoints);
+}
+REACTION_FACTORY(FitzhughNagumo)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group)
+{
+   return reactionFactoryForFHN(obj,dt,numPoints,group);
+}
 
 
 

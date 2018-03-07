@@ -8,31 +8,33 @@
 #include "ioUtils.h"
 #include "mpiUtils.h"
 #include "OHaraRudy_Reaction.hh"    // OHara Rudy .
-namespace  scanReaction
+#include "reactionFactory.hh"
+
+using namespace std;
+
+char *getKeywordValue(char *ptr, char **keywordPtr, char **valuePtr)
 {
-   char *getKeywordValue(char *ptr, char **keywordPtr, char **valuePtr)
-   {
-      char *end; 
-      int size; 
+   char *end; 
+   int size; 
 
-      end = index(ptr,'='); 
-      size = end-ptr; 
-      char *keyword = (char *)malloc(size+1); 
-      for (int i=0;i<size;i++) (keyword)[i] = ptr[i]; 
-      keyword[size] = '\0';
-      ptr = end + 1; 
-
-      end = index(ptr,';'); 
-      size = end-ptr; 
-      char *value = (char *)malloc(size+1); 
-      for (int i=0;i<size;i++) value[i] = ptr[i]; 
-      value[size] = '\0';
-      ptr = end +1;
-      *keywordPtr = keyword; 
-      *valuePtr = value; 
-      return ptr; 
-   }
-   Reaction* scanOHaraRudy(OBJECT* obj, const int numPoints)
+   end = index(ptr,'='); 
+   size = end-ptr; 
+   char *keyword = (char *)malloc(size+1); 
+   for (int i=0;i<size;i++) (keyword)[i] = ptr[i]; 
+   keyword[size] = '\0';
+   ptr = end + 1; 
+   
+   end = index(ptr,';'); 
+   size = end-ptr; 
+   char *value = (char *)malloc(size+1); 
+   for (int i=0;i<size;i++) value[i] = ptr[i]; 
+   value[size] = '\0';
+   ptr = end +1;
+   *keywordPtr = keyword; 
+   *valuePtr = value; 
+   return ptr; 
+}
+REACTION_FACTORY(OHaraRudy)(OBJECT* obj, const double, const int numPoints, const ThreadTeam&)
    {
       const char *defaultCurrentNames[]={"INaCai","INaCass","INaK","INab","ICab","IKb","IpCa","INaFast","INaL","Ito","IKr","IKs","IK1","ICa"};
       OHaraRudy_Parms parms; 
@@ -98,4 +100,3 @@ namespace  scanReaction
 
       //allow setting of parameters
    }
-}
