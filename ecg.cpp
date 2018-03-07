@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
       fec = new H1_FECollection(order = 1, dim);
    }
    // dk: vtk file, for example -- discretizes,  Also give it "master
-   //     element template.
+   //     element" template.
    // It comes up with no. unknowns, mapping between physical elements and
    // master (how transformed the unit-side element is).
    // one tet = 4 unknowns (one per vertex).  Two tetrahedrons face-to-face
@@ -145,10 +145,14 @@ int main(int argc, char *argv[])
    // dk: if had a forcing function (source term) on RHS.
    //     In our there is none.  So replace these (later) in linear object.
    LinearForm *b = new LinearForm(fespace);
-   ConstantCoefficient one(1.0);  // coef in front of grad u grad v
-                                  // We'll change to tensor coefficient
-                                  // (sigma -- Jamie will look for this in
-                                  // MFEM, or add.
+
+   // Coefficient in front of grad u grad v.  We'll change to tensor (matrix)
+   // coefficient; either MatrixConstantCoefficient () or
+   // MatrixFunctionCoefficient ().  See fem/coefficient.hpp line 476ff.
+
+   // Note: this defines variable "one".
+   ConstantCoefficient one(1.0);
+
    b->AddDomainIntegrator(new DomainLFIntegrator(one));
    b->Assemble();
 
@@ -174,7 +178,27 @@ int main(int argc, char *argv[])
    BilinearForm *a = new BilinearForm(fespace);   // defines a.
    // this is the Laplacian: grad u . grad v with linear coefficient.
    // we defined "one" ourselves in step 6.
-   a->AddDomainIntegrator(new DiffusionIntegrator(one));
+   //a->AddDomainIntegrator(new DiffusionIntegrator(one));
+   //
+   // DenseMatrix (n): square matrix of size n.
+   DenseMatrix sigma_3by3(3);
+
+   // Create diagonal matrix (3 x 3, with diagonal elements = 1.0)
+   //sigma_3by3.Diag (1.0, 3);
+   // 3 x 3 matrix, given by columns.
+   double elem_array[] = {1.0, 0.0, 0.0,
+                          0.0, 1.1, 0.0,
+                          0.0, 0.0, 1.0};
+   sigma_3by3 = elem_array;
+
+   // DKTMP
+   //cerr << "sigma_3by3[0][1]: " << sigma_3by3.Elem (0, 1) << endl;
+   cerr << "sigma_3by3: " << endl;
+   sigma_3by3.Print (cerr);
+
+   MatrixConstantCoefficient sigma (sigma_3by3);
+
+   a->AddDomainIntegrator(new DiffusionIntegrator(sigma));
 
    // 9. Assemble the bilinear form and the corresponding linear system,
    //    applying any necessary transformations such as: eliminating boundary
@@ -217,8 +241,8 @@ int main(int argc, char *argv[])
    // 11. Recover the solution as a finite element grid function.
    a->RecoverFEMSolution(X, *b, x);
 
-   // 12. Save the refined mesh and the solution. This output can be viewed later
-   //     using GLVis: "glvis -m refined.mesh -g sol.gf".
+   // 12. Save the refined mesh and the solution. This output can be viewed
+   //     later using GLVis: "glvis -m refined.mesh -g sol.gf".
    ofstream mesh_ofs("refined.mesh");
    mesh_ofs.precision(8);
    mesh->Print(mesh_ofs);
