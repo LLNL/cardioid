@@ -57,4 +57,4 @@ clean-build:
 
 clean-exec:
 	rm -f pressure* deformation* mesh.* 
-	rm -rf refined* sol*
+	rm -rf refined* sol* output*
