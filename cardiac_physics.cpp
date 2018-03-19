@@ -53,6 +53,9 @@ double PressureFunction(const Vector &x, double t)
    if (run_mode == 1) {
       pres =  4.0e-3 * (t / 1.0);
    }
+   else if (run_mode == 4) {
+      pres =  4.0e-4 * (t / 1.0);
+   }
    else {
       pres =  10.0 * (t / 1.0);
    }

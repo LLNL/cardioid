@@ -28,7 +28,8 @@ int main(int argc, char *argv[])
    int newton_iter = 500;
    double tf = 1.0;
    double dt = 1.0;
-
+   bool slu = false;
+   
    OptionsParser args(argc, argv);
    args.AddOption(&run_mode, "-rm", "--run-mode",
                   "Run mode. 1 is cantilever beam, 2 is inflated ventricle, and 3 is active tension beam.");   
@@ -48,6 +49,9 @@ int main(int argc, char *argv[])
                   "Final time.");
    args.AddOption(&dt, "-dt", "--time-step",
                   "Length of time step.");
+   args.AddOption(&slu, "-slu", "--super-lu", "-no-slu", "--no-super-lu",
+                  "Use direct solver.");
+
    
    args.Parse();
    if (!args.Good())
@@ -75,7 +79,12 @@ int main(int argc, char *argv[])
       mesh = new Mesh(mesh_file, 1, 1);
       setSurfaces(mesh);
    }
-
+   if (run_mode == 4) {
+      const char *mesh_file = "./heart.vtk";
+      mesh = new Mesh(mesh_file, 1, 1);
+      setSurfaces(mesh);
+   }
+   
    ParMesh *pmesh = NULL;
 
    for (int lev = 0; lev < ser_ref_levels; lev++)
@@ -175,7 +184,7 @@ int main(int argc, char *argv[])
 
    // Initialize the cardiac mechanics operator
    CardiacOperator oper(spaces, ess_bdr, pres_bdr, block_trueOffsets,
-                        newton_rel_tol, newton_abs_tol, newton_iter, dt);
+                        newton_rel_tol, newton_abs_tol, newton_iter, dt, slu);
 
    // Loop over the timesteps
    for (double t = 0.0; t<tf; t += dt) {
@@ -248,9 +257,10 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
                                  double rel_tol,
                                  double abs_tol,
                                  int iter,
-                                 double timestep)
+                                 double timestep,
+                                 bool superlu)
    : TimeDependentOperator(fes[0]->TrueVSize() + fes[1]->TrueVSize(), 0.0), 
-     newton_solver(fes[0]->GetComm(), 0.8), dt(timestep)
+     newton_solver(fes[0]->GetComm(), 0.8), dt(timestep), slu(superlu)
 {
    Array<Vector *> rhs(2);
    rhs = NULL;
@@ -294,20 +304,51 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
    }
       
    // Add the pressure boundary integrators
-   if (run_mode == 1 || run_mode == 2) {
+   if (run_mode == 1 || run_mode == 2 || run_mode == 4) {
       Hform->AddBdrFaceIntegrator(new PressureBoundaryNLFIntegrator(*pres, *vol), pres_bdr);
    }
    // Set the essential boundary conditions
    Hform->SetEssentialBC(ess_bdr, rhs);
 
-   SuperLUSolver *superlu = NULL;
-   superlu = new SuperLUSolver(MPI_COMM_WORLD);
-   superlu->SetPrintStatistics(false);
-   superlu->SetSymmetricPattern(false);
-   superlu->SetColumnPermutation(superlu::PARMETIS);
+   if (slu) {
+      SuperLUSolver *superlu = NULL;
+      superlu = new SuperLUSolver(MPI_COMM_WORLD);
+      superlu->SetPrintStatistics(false);
+      superlu->SetSymmetricPattern(false);
+      superlu->SetColumnPermutation(superlu::PARMETIS);
    
-   J_solver = superlu;
-   J_prec = NULL;
+      J_solver = superlu;
+      J_prec = NULL;
+   }
+   else {
+      // Compute the pressure mass stiffness matrix
+      ParBilinearForm *a = new ParBilinearForm(spaces[1]);
+      ConstantCoefficient one(1.0);
+      OperatorHandle mass(Operator::Hypre_ParCSR);
+      a->AddDomainIntegrator(new MassIntegrator(one));
+      a->Assemble();
+      a->Finalize();
+      a->ParallelAssemble(mass);
+      delete a;
+
+      mass.SetOperatorOwner(false);
+      pressure_mass = mass.Ptr();
+
+      // Initialize the Jacobian preconditioner
+      JacobianPreconditioner *jac_prec =
+         new JacobianPreconditioner(fes, *pressure_mass, block_trueOffsets);
+      J_prec = jac_prec;
+
+      // Set up the Jacobian solver
+      GMRESSolver *j_gmres = new GMRESSolver(spaces[0]->GetComm());
+      j_gmres->iterative_mode = false;
+      j_gmres->SetRelTol(1e-12);
+      j_gmres->SetAbsTol(1e-12);
+      j_gmres->SetMaxIter(300);
+      j_gmres->SetPrintLevel(0);
+      j_gmres->SetPreconditioner(*J_prec);
+      J_solver = j_gmres;
+   }
 
    // Set the newton solve parameters
    newton_solver.iterative_mode = true;

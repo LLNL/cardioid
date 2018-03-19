@@ -29,6 +29,9 @@ protected:
    /// Nonlinear form operator
    ParBlockNonlinearForm *Hform;
 
+   /// Pressure mass for the preconditioner
+   Operator *pressure_mass;
+   
    /// Newton solver for the hyperelastic operator
    CardiacNewtonSolver newton_solver;
 
@@ -49,9 +52,12 @@ protected:
    
    /// Timestep
    double dt;
+
+   /// Direct solver flag
+   bool slu;
    
 public:
-   CardiacOperator(Array<ParFiniteElementSpace *> &fes, Array<Array<int>*> &ess_bdr, Array<int> &pres_bdr, Array<int> &block_trueOffsets, double rel_tol, double abs_tol, int iter, double timestep);
+   CardiacOperator(Array<ParFiniteElementSpace *> &fes, Array<Array<int>*> &ess_bdr, Array<int> &pres_bdr, Array<int> &block_trueOffsets, double rel_tol, double abs_tol, int iter, double timestep, bool superlu);
 
    /// Required to use the native newton solver
    /// Returns the Jacobian matrix (gradient of the residual vector)
