@@ -25,12 +25,67 @@ TARGETS=ecg
 
 all: $(SOURCE) $(TARGETS)
 
+DDCMD_FILES = \
+        ddcmdUtil/src/codata.h \
+        ddcmdUtil/src/ddcMalloc.c \
+        ddcmdUtil/src/ddcMalloc.h \
+        ddcmdUtil/src/ddcMath.h \
+        ddcmdUtil/src/error.c \
+        ddcmdUtil/src/error.h \
+        ddcmdUtil/src/external.h \
+        ddcmdUtil/src/GridAssignmentObject.c \
+        ddcmdUtil/src/GridAssignmentObject.h \
+        ddcmdUtil/src/hardwareInfo.c \
+        ddcmdUtil/src/hardwareInfo.h \
+        ddcmdUtil/src/heap.c \
+        ddcmdUtil/src/heap.h \
+        ddcmdUtil/src/ioUtils.c \
+        ddcmdUtil/src/ioUtils.h \
+        ddcmdUtil/src/intQueue.c \
+        ddcmdUtil/src/intQueue.h \
+        ddcmdUtil/src/lessThan.c \
+        ddcmdUtil/src/lessThan.h \
+        ddcmdUtil/src/match.c \
+        ddcmdUtil/src/match.h \
+        ddcmdUtil/src/mpiUtils.c \
+        ddcmdUtil/src/mpiUtils.h \
+        ddcmdUtil/src/object.c \
+        ddcmdUtil/src/object.h \
+        ddcmdUtil/src/pio.c \
+        ddcmdUtil/src/pio.h \
+        ddcmdUtil/src/pioFixedRecordHelper.c \
+        ddcmdUtil/src/pioFixedRecordHelper.h \
+        ddcmdUtil/src/pioHelper.c \
+        ddcmdUtil/src/pioHelper.h \
+        ddcmdUtil/src/pioVariableRecordHelper.c \
+        ddcmdUtil/src/pioVariableRecordHelper.h \
+        ddcmdUtil/src/tagServer.c \
+        ddcmdUtil/src/tagServer.h \
+        ddcmdUtil/src/three_algebra.c \
+        ddcmdUtil/src/three_algebra.h \
+        ddcmdUtil/src/units.c \
+        ddcmdUtil/src/units.h \
+        ddcmdUtil/src/utilities.c \
+        ddcmdUtil/src/utilities.h
 
-ecg: $(OBJECTS)
-	$(MFEM_CXX) $(MFEM_FLAGS) $(OBJECTS) ecg.cpp -o $@ $(MFEM_LIBS)
-	
+DDCMDSRC = $(filter %.c, $(DDCMD_FILES))	
+DDCMD_OBJECT = $(DDCMDSRC:.c=.o)
+OBJECTS = $(DDCMD_OBJECT)
+
+MY_FLAGS = -IddcmdUtil/include -DDiff_Weight_Type_Single -DWITH_PIO -DWITH_MPI -IddcmdUtil/include
+
+MFEM_CC := $(MFEM_CXX)
+MFEM_CC := $(MFEM_CC:%c++=%cc)
+MFEM_CC := $(MFEM_CC:%cxx=%cc)
+
+ecg: $(OBJECTS) 
+	$(MFEM_CXX) $(MFEM_FLAGS) $(MY_FLAGS) $(OBJECTS) ecg.cpp -o $@ $(MFEM_LIBS)
+
 %.o : %.cpp
-	$(MFEM_CXX) $(MFEM_FLAGS) -c $(<) -o $(@)
+	$(MFEM_CXX) $(MFEM_FLAGS) $(MY_FLAGS) -c $(<) -o $(@)
+
+ddcmdUtil/src/%.o : ddcmdUtil/src/%.c
+	$(MFEM_CC) $(MFEM_FLAGS) $(MY_FLAGS) -c $< -o $@
 
 # Testing: "test" target and mfem-test* variables are defined in config/test.mk
 
