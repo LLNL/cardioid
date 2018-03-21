@@ -450,47 +450,6 @@ void TT06Dev_Reaction::updateNonGate(double dt, const Managed<ArrayView<double>>
    nCells = nonGateWork_[tid].nCell;
 #endif
 
-   if(PRINT_WP) {
-      static int inited[64] = {0};
-      const int tid = group_.teamRank();
-
-      if(inited[tid] == 0) {
-         int pid,np;
-         const int nt = group_.nThreads();
-         static volatile int tag[64] = {0};
-
-         MPI_Comm_size(MPI_COMM_WORLD,&np);
-         MPI_Comm_rank(MPI_COMM_WORLD,&pid);	  
-
-         if(tid == 0) {
-            int i;
-
-            MPI_Barrier(MPI_COMM_WORLD);
-            for(i = 0; i<np; i++) {
-               if(i == pid) {
-                  int j;
-                  printf("@pid=%03d,tid=%02d :NGWP: offset = %6d  nCells = %6d  end = %6d\n",
-                        pid,tid,offset,nCells,offset+nCells);
-
-                  tag[tid] = 1;
-                  while(tag[nt-1] == 0) {}
-                  for(j = 0; j<nt; j++) tag[j] = 0;
-               }
-               MPI_Barrier(MPI_COMM_WORLD);
-            }
-         } else {
-            while(tag[tid-1] == 0) {}
-
-            printf("@pid=%03d,tid=%02d :NGWP: offset = %6d  nCells = %6d  end = %6d\n",
-                  pid,tid,offset,nCells,offset+nCells);
-
-            tag[tid] = 1;
-            while(tag[0] > 0) {}
-         }
-
-         inited[tid] = 1;
-      }
-   }
    if (nCells > 0) 
    {
       startTimer(nonGateTimer);
