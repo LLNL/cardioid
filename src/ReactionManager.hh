@@ -27,10 +27,8 @@ class ReactionManager
     * the anatomy that was used to create the concrete reaction class. */
    void initializeMembraneState(ArrayView<double> Vm);
 
-   void scaleCurrents(std::vector<double>);  
-
    void addReaction(const std::string& reactionName);
-   void create(const double dt, Anatomy& anatomy, const ThreadTeam &group, const std::vector<std::string>& scaleCurrents);
+   void create(const double dt, Anatomy& anatomy, const ThreadTeam &group);
 
    /** Functions needed for checkpoint/restart */
    void getCheckpointInfo(std::vector<std::string>& fieldNames,

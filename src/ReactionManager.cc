@@ -83,14 +83,6 @@ void ReactionManager::updateGate(double dt, const Managed<ArrayView<double>> Vm)
    }
 }
 
-void ReactionManager::scaleCurrents(std::vector<double> arg)
-{
-   for (int ii=0; ii<reactions_.size(); ++ii)
-   {
-      reactions_[ii]->scaleCurrents(arg);
-   }
-}
-
 /** Populates the Vm array with some sensible default initial
  * membrane voltage.  Vm will be the parallel to the local cells in
  * the anatomy that was used to create the concrete reaction class. */
@@ -148,7 +140,7 @@ class SortByRidxThenAnatomyThenGid {
    }
 };
 
-void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam &group, const std::vector<std::string>& scaleCurrents)
+void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam &group)
 {
    //construct an array of all the objects
    int numReactions=objectNameFromRidx_.size();
@@ -324,7 +316,7 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    for (int ireaction=0; ireaction<numReactions; ++ireaction)
    {
       int localSize = countFromRidx[ireaction];
-      reactions_[ireaction] = reactionFactory(objectNameFromRidx_[ireaction], dt, localSize, group, scaleCurrents);
+      reactions_[ireaction] = reactionFactory(objectNameFromRidx_[ireaction], dt, localSize, group);
       extents_[ireaction+1] = extents_[ireaction]+localSize;
       int bufferSize = convertActualSizeToBufferSize(localSize);
       VmTransportPerReaction_[ireaction].setup(PinnedVector<double>(bufferSize));

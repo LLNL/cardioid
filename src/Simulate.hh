@@ -120,8 +120,6 @@ class Simulate
    ReactionManager* reaction_;
    std::vector<Stimulus*> stimulus_;
    std::vector<Sensor*> sensor_;
-   std::vector<Drug*> drug_;
-   std::vector<double> drugRescale_;
     
    void initSensors(const std::vector<std::string>& names);
 
