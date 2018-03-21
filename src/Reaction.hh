@@ -24,8 +24,6 @@ class Reaction
     * the anatomy that was used to create the concrete reaction class. */
    virtual void initializeMembraneVoltage(ArrayView<double> Vm) = 0;
 
-   virtual void scaleCurrents(std::vector<double>);  
-
    /** Functions needed for checkpoint/restart */
    virtual void getCheckpointInfo(std::vector<std::string>& fieldNames,
                                   std::vector<std::string>& fieldUnits) const;

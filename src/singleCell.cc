@@ -185,8 +185,7 @@ int main(int argc, char* argv[])
    ThreadServer& threadServer = ThreadServer::getInstance();
    ThreadTeam threads = threadServer.getThreadTeam(vector<unsigned>());
    Reaction* reaction = reactionFactory(objectName,dt,
-                                        nCells, threads,
-                                        vector<string>());
+                                        nCells, threads);
 
    //initialize the ionic model
    TransportCoordinator<PinnedVector<double>> VmTransport;

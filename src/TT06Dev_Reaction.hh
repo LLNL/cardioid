@@ -51,7 +51,6 @@ class TT06Dev_Reaction : public Reaction
    void initializeMembraneVoltage(ArrayView<double> Vm);
 
    void writeStateDev(int loop);
-   void scaleCurrents(std::vector<double>);
 
    /** Support for checkpoint/restart */
    void getCheckpointInfo(std::vector<std::string>& fieldNames,

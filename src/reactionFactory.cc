@@ -29,7 +29,7 @@ namespace  scanReaction
 {
    Reaction* scanTT04_CellML(OBJECT* obj, const int numPoints);
    Reaction* scanTT06_CellML(OBJECT* obj, const int numPoints);
-   Reaction* scanTT06Dev(OBJECT* obj, double dt, const int numPoints, const ThreadTeam& group, const vector<string>& scaleCurrents);
+   Reaction* scanTT06Dev(OBJECT* obj, double dt, const int numPoints, const ThreadTeam& group);
    Reaction* scanTT06_RRG(OBJECT* obj, const int numPoints);
    Reaction* scanSimpleOHaraRudy(OBJECT* obj, const int numPoints);
    Reaction* scanSimpleGrandi(OBJECT* obj, const int numPoints);
@@ -43,7 +43,7 @@ namespace  scanReaction
 
 
 Reaction* reactionFactory(const string& name, double dt, const int numPoints,
-                          const ThreadTeam& group, const vector<string>& scaleCurrents)
+                          const ThreadTeam& group)
 {
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -56,9 +56,9 @@ Reaction* reactionFactory(const string& name, double dt, const int numPoints,
    else if (method == "TT06_CellML" || method == "tenTusscher06_CellML")
       return scanReaction::scanTT06_CellML(obj, numPoints);
    else if (method == "TT06Dev" )
-      return scanReaction::scanTT06Dev(obj, dt, numPoints, group, scaleCurrents);
+      return scanReaction::scanTT06Dev(obj, dt, numPoints, group);
    else if (method == "TT06Opt" )
-      return scanReaction::scanTT06Dev(obj, dt, numPoints, group, scaleCurrents);
+      return scanReaction::scanTT06Dev(obj, dt, numPoints, group);
    //else if (method == "TT06_RRG" )
    //   return scanReaction::scanTT06_RRG(obj, numPoints);
    else if (method == "BetterTT06" )
@@ -146,7 +146,7 @@ namespace  scanReaction
       }
       return fit; 
    }
-    Reaction* scanTT06Dev(OBJECT* obj, double dt, const int numPoints, const ThreadTeam& group, const vector<string>& scaleCurrents)
+    Reaction* scanTT06Dev(OBJECT* obj, double dt, const int numPoints, const ThreadTeam& group)
    {
       TT06Dev_ReactionParms parms;
       map<string,TT06Func::CellTypeParmsFull> cellTypeParms = TT06Func::getStandardCellTypes(); 
@@ -218,8 +218,6 @@ namespace  scanReaction
       }
       parms.cellTypeParm = cellTypeParms[cellTypeName];
 
-      parms.currentNames = scaleCurrents;
-      
       Reaction *reaction = new TT06Dev_Reaction(dt, numPoints, parms, group);
       return  reaction; 
    }

@@ -172,18 +172,6 @@ TT06Dev_Reaction::TT06Dev_Reaction(const double dt, const int numPoints, TT06Dev
 
    mkWorkBundles_(parms);
 }
-void TT06Dev_Reaction::scaleCurrents(vector <double> currentScales)
-{
-   //SHOWVAR(currentScales.size());
-   //SHOWVAR(currentMap_.size());
-   assert(currentScales.size() == currentMap_.size()); 
-   currentScales_=currentScalesDefault; 
-   for (int i=0;i<currentScales.size();i++) 
-   {
-      int j = currentMap_[i];
-      ((double *)&currentScales_)[j]=currentScales[i]; 
-   }
-}
 void TT06Dev_Reaction::mkCellTypeParms_(TT06Dev_ReactionParms& parms)
 {
    cellTypeParm_.s_switch = parms.cellTypeParm.s_switch;  

@@ -169,7 +169,6 @@ void simulationLoop(Simulate& sim)
    {
       int nLocal = sim.anatomy_.nLocal();
 
-      if (sim.drugRescale_.size() > 0) { sim.reaction_->scaleCurrents(sim.drugRescale_); } /*   call scaleCurrents here */
       startTimer(imbalanceTimer);
       voltageExchange.barrier();
       stopTimer(imbalanceTimer);
@@ -549,11 +548,6 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
    uint64_t loopLocal = sim.loop_;
    while (loopLocal < sim.maxLoop_)
    {
-      /*   call scaleCurrents here  Need to make sure all nonGate calculation are done*/
-      if (tid == 0 && sim.drugRescale_.size() > 0)
-      {
-         sim.reaction_->scaleCurrents(sim.drugRescale_);
-      }
       threadBarrier(timingBarrierTimer, loopData.timingBarrier, &timingHandle, nTotalThreads);
 
       startTimer(reactionTimer);
