@@ -392,14 +392,15 @@ void CardiacOperator::Mult(const Vector &k, Vector &y) const
 Operator &CardiacOperator::GetGradient(const Vector &xp) const
 {
    Vector xg;
-   
+
+   /*
    double volume = Hform->GetVolume(xp);
    int myid;
    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
    if (myid == 0) {
       std::cout << "volume: " << volume << std::endl;
    }
-   
+   */
    return Hform->GetGradient(xp);
 }
 
