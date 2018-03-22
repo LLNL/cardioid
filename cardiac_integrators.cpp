@@ -625,9 +625,6 @@ double PressureBoundaryNLFIntegrator::GetElementVolume(const Array<const FiniteE
 
       Jinv.MultTranspose(nor, fnor);
 
-      double fnorm = fnor.Norml2();
-      fnor /= fnorm;
-
       fnor *= -1.0 * J.Det() * Tr.Face->Weight() * ip.weight;
       vol_function.Eval(function, *Tr.Face, ip);
       area += fnor * function;      

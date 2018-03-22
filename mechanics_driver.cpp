@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
    int newton_iter = 500;
    double tf = 1.0;
    double dt = 1.0;
-   bool slu = false;
+   bool slu = true;
    
    OptionsParser args(argc, argv);
    args.AddOption(&run_mode, "-rm", "--run-mode",
@@ -342,10 +342,10 @@ CardiacOperator::CardiacOperator(Array<ParFiniteElementSpace *>&fes,
       // Set up the Jacobian solver
       GMRESSolver *j_gmres = new GMRESSolver(spaces[0]->GetComm());
       j_gmres->iterative_mode = false;
-      j_gmres->SetRelTol(1e-12);
-      j_gmres->SetAbsTol(1e-12);
+      j_gmres->SetRelTol(1e-10);
+      j_gmres->SetAbsTol(1e-10);
       j_gmres->SetMaxIter(300);
-      j_gmres->SetPrintLevel(0);
+      j_gmres->SetPrintLevel(1);
       j_gmres->SetPreconditioner(*J_prec);
       J_solver = j_gmres;
    }
@@ -392,9 +392,14 @@ void CardiacOperator::Mult(const Vector &k, Vector &y) const
 Operator &CardiacOperator::GetGradient(const Vector &xp) const
 {
    Vector xg;
-   /*
+   
    double volume = Hform->GetVolume(xp);
-   */
+   int myid;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+   if (myid == 0) {
+      std::cout << "volume: " << volume << std::endl;
+   }
+   
    return Hform->GetGradient(xp);
 }
 
