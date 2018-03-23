@@ -1,14 +1,41 @@
-// ecg - heart and torso
+//                                MFEM Example 1
 //
-// Compile with: make ecg
+// Compile with: make ex1
 //
-// Run:          ecg -m <mesh_file>
-
-// Modified from mfem/examples/ex1.cpp.
+// Sample runs:  ex1 -m ../data/square-disc.mesh
+//               ex1 -m ../data/star.mesh
+//               ex1 -m ../data/escher.mesh
+//               ex1 -m ../data/fichera.mesh
+//               ex1 -m ../data/square-disc-p2.vtk -o 2
+//               ex1 -m ../data/square-disc-p3.mesh -o 3
+//               ex1 -m ../data/square-disc-nurbs.mesh -o -1
+//               ex1 -m ../data/disc-nurbs.mesh -o -1
+//               ex1 -m ../data/pipe-nurbs.mesh -o -1
+//               ex1 -m ../data/star-surf.mesh
+//               ex1 -m ../data/square-disc-surf.mesh
+//               ex1 -m ../data/inline-segment.mesh
+//               ex1 -m ../data/amr-quad.mesh
+//               ex1 -m ../data/amr-hex.mesh
+//               ex1 -m ../data/fichera-amr.mesh
+//               ex1 -m ../data/mobius-strip.mesh
+//               ex1 -m ../data/mobius-strip.mesh -o -1 -sc
+//
+// Description:  This example code demonstrates the use of MFEM to define a
+//               simple finite element discretization of the Laplace problem
+//               -Delta u = 1 with homogeneous Dirichlet boundary conditions.
+//               Specifically, we discretize using a FE space of the specified
+//               order, or if order < 1 using an isoparametric/isogeometric
+//               space (i.e. quadratic for quadratic curvilinear mesh, NURBS for
+//               NURBS mesh, etc.)
+//
+//               The example highlights the use of mesh refinement, finite
+//               element grid functions, as well as linear and bilinear forms
+//               corresponding to the left-hand side and right-hand side of the
+//               discrete linear system. We also cover the explicit elimination
+//               of essential boundary conditions, static condensation, and the
+//               optional connection to the GLVis tool for visualization.
 
 #include "mfem.hpp"
-#include "pio.h"
-
 #include <fstream>
 #include <iostream>
 
@@ -16,8 +43,6 @@ using namespace std;
 using namespace mfem;
 
 MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
-
-void sigma_fct (const Vector &x, DenseMatrix &f);
 
 int main(int argc, char *argv[])
 {
@@ -51,10 +76,6 @@ int main(int argc, char *argv[])
    //    the same code.
    Mesh *mesh = new Mesh(mesh_file, 1, 1);
    int dim = mesh->Dimension();
-
-   // DKTMP
-   int n_attributes = mesh->attributes.Max ();
-   cerr << "n_attributes: " << n_attributes << endl;
 
    // 3. Refine the mesh to increase the resolution. In this example we do
    //    'ref_levels' of uniform refinement. We choose 'ref_levels' to be the
@@ -94,7 +115,7 @@ int main(int argc, char *argv[])
       fec = new H1_FECollection(order = 1, dim);
    }
    // dk: vtk file, for example -- discretizes,  Also give it "master
-   //     element" template.
+   //     element template.
    // It comes up with no. unknowns, mapping between physical elements and
    // master (how transformed the unit-side element is).
    // one tet = 4 unknowns (one per vertex).  Two tetrahedrons face-to-face
@@ -124,12 +145,12 @@ int main(int argc, char *argv[])
    //    the FEM linear system, which in this case is (1,phi_i) where phi_i are
    //    the basis functions in the finite element fespace.
    // dk: if had a forcing function (source term) on RHS.
-   //     In our case there is none.  So replace these (later) in linear object.
+   //     In our there is none.  So replace these (later) in linear object.
    LinearForm *b = new LinearForm(fespace);
-
-   // Note: this defines variable "one".
-   ConstantCoefficient one(1.0);
-
+   ConstantCoefficient one(1.0);  // coef in front of grad u grad v
+                                  // We'll change to tensor coefficient
+                                  // (sigma -- Jamie will look for this in
+                                  // MFEM, or add.
    b->AddDomainIntegrator(new DomainLFIntegrator(one));
    b->Assemble();
 
@@ -150,58 +171,12 @@ int main(int argc, char *argv[])
    //     "test function" "trial function" -- multiply A matrix by test and
    //     trial function.  "Bi-linear" - linear in each of the terms.
    //     "v" and "u".  (Not really "test" and "trial" because linear algebra
-   //     does it.)
-   //     a is finite-element-object with instructions on how to form matrix.
+   //     does it).
+   //     a is finite-element-object iwth instructions on how to form matrix.
    BilinearForm *a = new BilinearForm(fespace);   // defines a.
-
-   // _________________________________
-   // Conductance: scalar, depending on tissue type outside heart; tensor within
-   // heart.  Integrator for each, added; must return zeros outside their
-   // respective domains.
-
-   // .................................
-   // Tensor conductance.
-
-   /* Constant-matrix test.
-
-   // DenseMatrix (n): square matrix of size n.
-   DenseMatrix sigma_3by3(3);
-
-   // 3 x 3 matrix, given by columns.
-   double elem_array[] = {1.0, 0.0, 0.0,
-                          0.0, 1.0, 0.0,
-                          0.0, 0.0, 1.0};
-   sigma_3by3 = elem_array;
-
-   // DKTMP
-   cerr << "sigma_3by3[0][1]: " << sigma_3by3.Elem (0, 1) << endl;
-   cerr << "sigma_3by3: " << endl;
-   sigma_3by3.Print (cerr);
-   */
-
-   // MatrixFunctionCoefficient ().  See fem/coefficient.hpp line 476ff.
-   // sigma_fct () defined below.
-   MatrixFunctionCoefficient sigma (dim, sigma_fct);
-
-   //DKTMP Alt:
-   //MatrixConstantCoefficient sigma (sigma_3by3);
-
-   // .................................
-   // Scalar conductance.
-   int n_tissue_types = mesh->attributes.Max ();
-   Vector k(n_tissue_types);
-
-   // DKTMP: need to set k_vals(0), k(1)...
-   k = 0.0;
-   k(1) = 5.0;    // 3 x 3 x 3 - hex.small.vtk -- center cell.
-   k(0) = 0.0;
-   PWConstCoefficient k_fct (k);
-
-   // .................................
-   // Add both integrators.
-   a->AddDomainIntegrator(new DiffusionIntegrator (sigma));
-   a->AddDomainIntegrator(new DiffusionIntegrator (k_fct));
-   // _________________________________
+   // this is the Laplacian: grad u . grad v with linear coefficient.
+   // we defined "one" ourselves in step 6.
+   a->AddDomainIntegrator(new DiffusionIntegrator(one));
 
    // 9. Assemble the bilinear form and the corresponding linear system,
    //    applying any necessary transformations such as: eliminating boundary
@@ -244,8 +219,8 @@ int main(int argc, char *argv[])
    // 11. Recover the solution as a finite element grid function.
    a->RecoverFEMSolution(X, *b, x);
 
-   // 12. Save the refined mesh and the solution. This output can be viewed
-   //     later using GLVis: "glvis -m refined.mesh -g sol.gf".
+   // 12. Save the refined mesh and the solution. This output can be viewed later
+   //     using GLVis: "glvis -m refined.mesh -g sol.gf".
    ofstream mesh_ofs("refined.mesh");
    mesh_ofs.precision(8);
    mesh->Print(mesh_ofs);
@@ -271,31 +246,4 @@ int main(int argc, char *argv[])
    delete mesh;
 
    return 0;
-}
-
-int sigma_calls = 0;
-void sigma_fct (const Vector &x, DenseMatrix &f)
-{
-   //DKTMP
-   //cerr << "[sigma_fct] x: " << x(0) << " " << x(1) << " " << x(2) << endl;
-
-   // DenseMatrix (n): square matrix of size n.
-   DenseMatrix sigma_3by3(3);
-
-   // Create diagonal matrix (3 x 3, with diagonal elements = 1.0)
-   // 3 x 3 matrix, given by columns.
-   double elem_array[] = {1.00, 0.0,  0.0,
-                          0.0,  1.00, 0.0,
-                          0.0,  0.0,  0.01};
-   sigma_3by3 = elem_array;
-
-   f = sigma_3by3;
-
-   /*
-   sigma_calls++;
-   if (sigma_calls > 5) {
-      cerr << "Exiting in sigma_fct" << endl;
-      exit (1);
-   }
-   */
 }
