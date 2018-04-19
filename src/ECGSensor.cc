@@ -23,19 +23,45 @@ ECGSensor::ECGSensor(const SensorParms& sp,
   nEval_(0),
   VmTransport_(sim.vdata_.VmTransport_)
 {
-   unsigned nLocal = sim.anatomy_.nLocal();
-   nSensorPoints_ = min(nSensorPoints_, nLocal);
+    const int dim=3;
+    nEcgPoints=p.ecgPoints.size()/dim;
+    PinnedVector<double> ecgPoints(p.ecgPoints);
+    ecgPointTransport_.setup(std::move(ecgPoints));
+    calcInvR(sim);
    
-   weight_.resize(nSensorPoints_ * stencilSize_ * 3, 1.0);
-   VmOffset_.resize(weight_.size());
-   for (unsigned ii=0; ii<VmOffset_.size(); ++ii)
-      VmOffset_[ii] = drand48()*nLocal;
-   
-   unsigned spaceNeeded = printRate()/evalRate() + 2;
-   spaceNeeded *= 3;
-   dataOffset_ = spaceNeeded;
-   spaceNeeded *= nSensorPoints_;
-   data_.resize(spaceNeeded);
+    PinnedVector<double> ecgs(nEcgPoints, 0);
+    ecgsTransport_.setup(std::move(ecgs));
+}
+
+void ECGSensor::calcInvR(const Simulate& sim)
+{
+    Anatomy anatomy=sim.anatomy_;
+    unsigned nlocal=anatomy.nLocal();
+    int nx=anatomy.nx();
+    int ny=anatomy.ny();
+    int nz=anatomy.nz();
+
+    double dx=anatomy.dx();
+    double dy=anatomy.dy();
+    double dz=anatomy.dz();
+
+    TransportCoordinator<PinnedVector<Long64> > gidsTransport_;
+    PinnedVector<Long64> gids(nlocal, 0);
+    for(unsigned ii=0; ii<nlocal; ++ii){
+        gids[ii]=anatomy.gid(ii);
+    }
+    gidsTransport_.setup(std::move(gids));
+    
+    PinnedVector<double> invr(nlocal*nSensorPoints_,0.0);
+    invrTransport_.setup(std::move(invr));
+    
+    calcInvrCUDA(invrTransport_,
+                 gidsTransport_,
+                 ecgPointTransport_,
+                 nEcgPoints,
+                 nx, ny, nz,
+                 dx, dy, dz);
+        
 }
 
 void ECGSensor::print(double time, int loop)
@@ -56,9 +82,11 @@ void ECGSensor::print(double time, int loop)
  
    int nRec = nEval_+2; // Two dummy records for each sensor point.
    int lRec = 3*sizeof(float);
-   for (unsigned ii=0; ii<nSensorPoints_; ++ii)
+
+   ArrayView<double> ecgs = ecgsTransport_;
+   for (unsigned ii=0; ii<ecgs.size(); ++ii)
    {
-      float* dataStartPtr = &data_[0] + ii*dataOffset_;
+      double* dataStartPtr = &ecgs[0] + ii;
       Pwrite(dataStartPtr, lRec, nRec, file);
    }
 
@@ -70,23 +98,22 @@ void ECGSensor::eval(double time, int loop)
 {
    ConstArrayView<double> Vm = VmTransport_;
    startTimer(sensorEvalTimer);
-   int index = 0;
-   int dataIndex = (nEval_+2)*3;
-   for (unsigned ii=0; ii<nSensorPoints_; ++ii)
+   
+   calcEcgCUDA(ecgsTransport_,
+               invrTransport_,
+               VmTransport_, 
+               nEcgPoints);
+   
+   ArrayView<double> ecgs = ecgsTransport_;
+   double* ecgsSendBuf=&ecgs[0];
+   double ecgsRecvBuf[nEcgPoints];
+   MPI_Allreduce(ecgsSendBuf, ecgsRecvBuf, nEcgPoints, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);  
+
+   for(int ii=0; ii<ecgs.size(); ii++)
    {
-      for (unsigned jj=0; jj<3; ++jj)
-      {
-         float sum = 0.0;
-         for (unsigned kk=0; kk<stencilSize_; ++kk)
-         {
-            sum += weight_[index] * Vm[VmOffset_[index]];
-            ++index;
-         }
-         data_[dataIndex+jj] = sum;
-      }
-      dataIndex += dataOffset_;
+	ecgs[ii]=ecgsRecvBuf[ii];
    }
-   ++nEval_;
+ 
    stopTimer(sensorEvalTimer);
 }
 

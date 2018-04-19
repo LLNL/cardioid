@@ -18,6 +18,7 @@
 #include "ECGSensor.hh"
 #include "Simulate.hh"
 #include "readCellList.hh"
+#include "PinnedAllocator.hh"
 
 using namespace std;
 
@@ -393,9 +394,23 @@ namespace
    {
       ECGSensorParms p;
       objectGet(obj, "filename",      p.filename,      "ecgData");
-      objectGet(obj, "stencilSize",   p.stencilSize,   "4");
-      objectGet(obj, "nSensorPoints", p.nSensorPoints, "4");
+      //objectGet(obj, "stencilSize",   p.stencilSize,   "4");
+      //objectGet(obj, "nSensorPoints", p.nSensorPoints, "4");
       objectGet(obj, "nFiles",        p.nFiles,        "0");
+      std::vector<std::string> ecgNames;
+      objectGet(obj, "ecgPoints",     ecgNames);
+      
+      p.nSensorPoints=ecgNames.size();
+      const int dim=3;
+      p.ecgPoints.resize(p.nSensorPoints*dim, 0.0);
+      
+      for(int i=0; i<ecgNames.size(); ++i){
+          OBJECT* ecgObj = objectFind(ecgNames[i], "POINT");
+          objectGet(ecgObj, "x",      p.ecgPoints[i*dim],        "0.0");
+          objectGet(ecgObj, "y",      p.ecgPoints[i*dim+1],      "0.0");
+          objectGet(ecgObj, "z",      p.ecgPoints[i*dim+2],      "0.0");
+          
+      }
       return new ECGSensor(sp, p, sim);      
    }
 }
