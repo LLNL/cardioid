@@ -71,6 +71,7 @@ set (reaction_src
         Passive.cc
 	TT06Tau.cc
 	TT06Func.cc
+        VecTT06.cc
 	pade.cc
    TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc
    TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc
