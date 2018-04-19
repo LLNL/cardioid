@@ -7,10 +7,11 @@
 
 class Interpolation {
  public:
-   inline double eval(const double xx)
+   template <typename TTT>
+   inline TTT eval(const TTT xx)
    {
       double * coeffCursor = &coeff_[0];
-      double numer = coeffCursor[numNumer_-1];
+      TTT numer(coeffCursor[numNumer_-1]);
       switch (numNumer_)
       {
         case 32: numer = coeffCursor[30] + xx*numer;
@@ -47,7 +48,7 @@ class Interpolation {
         default:
          ;
       }
-      double result;
+      TTT result;
       if (numDenom_ == 1)
       {
          result = numer;
@@ -55,7 +56,7 @@ class Interpolation {
       else
       {
          coeffCursor += numNumer_;
-         double denom=coeffCursor[numDenom_-2];
+         TTT denom(coeffCursor[numDenom_-2]);
          switch (numDenom_)
          {
            case 32: denom = coeffCursor[29] + xx*denom;
