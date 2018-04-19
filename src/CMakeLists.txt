@@ -104,6 +104,7 @@ set (heart_src
 	VoronoiCoarsening.cc DataVoronoiCoarsening.cc GradientVoronoiCoarsening.cc
 	CaAverageSensor.cc
 	ECGSensor.cc
+	ECGSensor.cu
 	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc DVThreshSensor.cc
    StateVariableSensor.cc Interpolation.cc
    Ledger.cc simulationLoopCuda.cu singleCellCuda.cu BoxStimulusCuda.cu HaloExchange.cu
@@ -114,6 +115,7 @@ set (heart_src
 if (NOT use_precompiled)
   list(APPEND heart_src TT06GatesSimd.c)
 endif()
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -arch=sm_70 " )
 cuda_add_library(heart
             ${heart_src})
 target_link_libraries(heart ddcMDutil ${extra_libs})
