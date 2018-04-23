@@ -11,7 +11,7 @@ simulate SIMULATE
    maxLoop = 20;     // in timesteps
    dt = 0.02;       // msec
    time = 0;            // msec
-   printRate = 50;      // in timesteps
+   printRate = 1;      // in timesteps
    parallelDiffusionReaction = 0;
    checkRanges=0;
 }
@@ -23,9 +23,9 @@ niederer ANATOMY
    dx = 0.10;   // in mm
    dy = 0.10;   // in mm
    dz = 0.10;   // in mm
-   xSize = 25; 
-   ySize = 16;
-   zSize = 10;
+   xSize = 20; 
+   ySize = 7;
+   zSize = 3;
    conductivity = conductivity;
 }
 
@@ -89,7 +89,7 @@ arTime SENSOR
 {
    method = activationAndRecovery;
    filename = arTime;
-   printRate = 100000;
+   printRate = 1;
    evalRate = 1;
    nFiles = 1;
 }
