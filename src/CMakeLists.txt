@@ -115,7 +115,7 @@ set (heart_src
 if (NOT use_precompiled)
   list(APPEND heart_src TT06GatesSimd.c)
 endif()
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -arch=sm_70 " )
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -arch=sm_60 " )
 cuda_add_library(heart
             ${heart_src})
 target_link_libraries(heart ddcMDutil ${extra_libs})

@@ -8,6 +8,7 @@
 #include "ioUtils.h"
 #include "Simulate.hh"
 #include "PerformanceTimers.hh"
+#include "PioHeaderData.hh"
 
 using namespace std;
 using PerformanceTimers::sensorEvalTimer;
@@ -79,25 +80,77 @@ void ECGSensor::print(double time, int loop)
    PFILE* file = Popen(fullname.c_str(), "w", MPI_COMM_WORLD);
    if (nFiles_ > 0)
      PioSet(file, "ngroup", nFiles_);
- 
-   int nRec = nEval_+2; // Two dummy records for each sensor point.
-   int lRec = 3*sizeof(float);
 
-   ArrayView<double> ecgs = ecgsTransport_;
-   for (unsigned ii=0; ii<ecgs.size(); ++ii)
+   char fmt[] = "%20.8f";
+   int nFields = nEcgPoints+1;
+   int lRec = 20*nFields;
+
+   std::string fieldNames = "Loop";
+   std::string fieldTypes = "d";
+   std::string fieldUnits = "1";
+
+   for(unsigned ii=0; ii<nEcgPoints; ++ii)
    {
-      double* dataStartPtr = &ecgs[0] + ii;
-      Pwrite(dataStartPtr, lRec, nRec, file);
+	fieldNames = fieldNames +"   ecgPoint"+std::to_string(ii+1);
+        fieldTypes = fieldTypes + "  f";
+        fieldUnits = fieldUnits + "  mv";
+   }
+    
+
+   PioHeaderData header;
+   header.objectName_ = "ecgData";
+   header.className_  = "FILEHEADER";
+   header.dataType_   = PioHeaderData::ASCII;
+   header.nRecords_   = saveLoops.size();
+   header.lRec_       = lRec;
+   header.nFields_    = nFields;
+   header.fieldNames_ = fieldNames;
+   header.fieldTypes_ = fieldTypes;
+   header.fieldUnits_ = fieldUnits;
+   header.addItem("printRate", printRate());
+   header.addItem("evalRate", evalRate());
+
+   if (myRank == 0) {
+      header.writeHeader(file, loop, time);
+
+      char line[lRec+1];
+      
+      for (unsigned ii=0; ii<saveLoops.size(); ++ii)
+      {
+         int l = snprintf(line, lRec, "%10d ", saveLoops[ii]);
+
+         for(unsigned jj=0; jj<nEcgPoints; ++jj){
+            int index = ii*nEcgPoints+jj;
+            assert(index<saveEcgs.size());
+	    int ll = snprintf(line+l, lRec, fmt, saveEcgs[index]);
+            l=l+ll;
+	 }
+         //printf("l=%d, lRec=%d, ii=%d, ecgs=%f\n", l, lRec, ii, ecgs[ii]);
+         for (; l < lRec - 1; l++) line[l] = (char)' ';
+         line[l++] = (char)'\n';
+         assert (l==lRec);
+         Pwrite(line, lRec, 1, file);
+      }
+
+      // Clear up the loop and ecgs save values in vector
+      saveLoops.clear();
+      saveEcgs.clear();
+      
    }
 
    Pclose(file);
-   nEval_ = 0;
 }
 
 void ECGSensor::eval(double time, int loop)
 {
-   ConstArrayView<double> Vm = VmTransport_;
    startTimer(sensorEvalTimer);
+   {   // zero out
+   	ArrayView<double> ecgs = ecgsTransport_;
+   	for(int ii=0; ii<ecgs.size(); ii++)
+   	{
+        	ecgs[ii]=0.0;
+   	}
+   }
    
    calcEcgCUDA(ecgsTransport_,
                invrTransport_,
@@ -107,11 +160,19 @@ void ECGSensor::eval(double time, int loop)
    ArrayView<double> ecgs = ecgsTransport_;
    double* ecgsSendBuf=&ecgs[0];
    double ecgsRecvBuf[nEcgPoints];
-   MPI_Allreduce(ecgsSendBuf, ecgsRecvBuf, nEcgPoints, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);  
+   // MPI_Allreduce(ecgsSendBuf, ecgsRecvBuf, nEcgPoints, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);  
+   // Only the Rank 0 stores the total ecg values
+   MPI_Reduce(ecgsSendBuf, ecgsRecvBuf, nEcgPoints, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);  
+ 
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
-   for(int ii=0; ii<ecgs.size(); ii++)
-   {
-	ecgs[ii]=ecgsRecvBuf[ii];
+   if(myRank==0){   
+        saveLoops.push_back(loop);
+   	for(int ii=0; ii<ecgs.size(); ii++)
+   	{
+		saveEcgs.push_back(ecgsRecvBuf[ii]);
+   	}
    }
  
    stopTimer(sensorEvalTimer);
