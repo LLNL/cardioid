@@ -2,11 +2,28 @@
 #include "mfem.hpp"
 #include <fstream>
 #include <iostream>
+#include <unordered_map>
+#include <cassert>
 
 using namespace std;
 using namespace mfem;
 
 MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
+
+class MatrixElementPiecewiseCoefficient : public MatrixCoefficient
+{
+ public:
+   MatrixElementPiecewiseCoefficient() : MatrixCoefficient(3) {}
+
+   virtual void Eval(DenseMatrix &K, ElementTransformation& T, const IntegrationPoint &ip)
+   {
+      unordered_map<int,DenseMatrix>::iterator iter = sigma_lookup_.find(T.ElementNo);
+      assert(iter != sigma_lookup_.end());
+      K = iter->second;
+   }
+
+   unordered_map<int,DenseMatrix> sigma_lookup_;
+};
 
 int main(int argc, char *argv[])
 {
