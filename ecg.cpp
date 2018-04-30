@@ -76,13 +76,18 @@ int main(int argc, char *argv[])
    x = 0.0;   // essential boundary conditions are zero, so set whole thing
               // to zero.
 
+   Vector sigma_b_values(mesh->attributes.Max());
+   sigma_b_values = 1;
+   sigma_b_values(0) = 0;
+   PWConstCoefficient sigma_b_func(sigma_b_values);
+   
    // 8. Set up the bilinear form a(.,.) on the finite element space
    //    corresponding to the Laplacian operator -Delta, by adding the Diffusion
    //    domain integrator.
    BilinearForm *a = new BilinearForm(fespace);   // defines a.
    // this is the Laplacian: grad u . grad v with linear coefficient.
    // we defined "one" ourselves in step 6.
-   a->AddDomainIntegrator(new DiffusionIntegrator(one));
+   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_b_func));
 
    a->Assemble();   // This creates the loops.
 
