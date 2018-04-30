@@ -20,8 +20,14 @@ class MatrixElementPiecewiseCoefficient : public MatrixCoefficient
    virtual void Eval(DenseMatrix &K, ElementTransformation& T, const IntegrationPoint &ip)
    {
       unordered_map<int,DenseMatrix>::iterator iter = sigma_lookup_.find(T.ElementNo);
-      assert(iter != sigma_lookup_.end());
-      K = iter->second;
+      if (iter == sigma_lookup_.end())
+      {
+         K = 0.0;
+      }
+      else
+      {
+         K = iter->second;
+      }
    }
 
    unordered_map<int,DenseMatrix> sigma_lookup_;
@@ -136,6 +142,11 @@ int main(int argc, char *argv[])
    // we defined "one" ourselves in step 6.
    a->AddDomainIntegrator(new DiffusionIntegrator(sigma_b_func));
 
+   //Fill in the MatrixElementPiecewiseCoefficients
+   MatrixElementPiecewiseCoefficient sigma_i_coeffs;
+   MatrixElementPiecewiseCoefficient sigma_ie_coeffs;
+
+   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_ie_coeffs));
    a->Assemble();   // This creates the loops.
 
    SparseMatrix A;   // This is what we want.
