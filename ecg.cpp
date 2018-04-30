@@ -19,14 +19,6 @@ int main(int argc, char *argv[])
    OptionsParser args(argc, argv);
    args.AddOption(&mesh_file, "-m", "--mesh",
                   "Mesh file to use.");
-   args.AddOption(&order, "-o", "--order",
-                  "Finite element order (polynomial degree) or -1 for"
-                  " isoparametric space.");
-   args.AddOption(&static_cond, "-sc", "--static-condensation", "-no-sc",
-                  "--no-static-condensation", "Enable static condensation.");
-   args.AddOption(&visualization, "-vis", "--visualization", "-no-vis",
-                  "--no-visualization",
-                  "Enable or disable GLVis visualization.");
    args.Parse();
    if (!args.Good())
    {
@@ -39,18 +31,14 @@ int main(int argc, char *argv[])
    int dim = mesh->Dimension();
 
    FiniteElementCollection *fec;
-   if (order > 0)
-   {
-      fec = new H1_FECollection(order, dim);
-   }
-   else if (mesh->GetNodes())
+   if (mesh->GetNodes())
    {
       fec = mesh->GetNodes()->OwnFEC();
       cout << "Using isoparametric FEs: " << fec->Name() << endl;
    }
    else
    {
-      fec = new H1_FECollection(order = 1, dim);
+      fec = new H1_FECollection(order, dim);
    }
    FiniteElementSpace *fespace = new FiniteElementSpace(mesh, fec);
    cout << "Number of finite element unknowns: "
@@ -96,11 +84,6 @@ int main(int argc, char *argv[])
    // we defined "one" ourselves in step 6.
    a->AddDomainIntegrator(new DiffusionIntegrator(one));
 
-   // 9. Assemble the bilinear form and the corresponding linear system,
-   //    applying any necessary transformations such as: eliminating boundary
-   //    conditions, applying conforming constraints for non-conforming AMR,
-   //    static condensation, etc.
-   if (static_cond) { a->EnableStaticCondensation(); }
    a->Assemble();   // This creates the loops.
 
    SparseMatrix A;   // This is what we want.
@@ -137,16 +120,6 @@ int main(int argc, char *argv[])
    ofstream sol_ofs("sol.gf");
    sol_ofs.precision(8);
    x.Save(sol_ofs);
-
-   // 13. Send the solution by socket to a GLVis server.
-   if (visualization)
-   {
-      char vishost[] = "localhost";
-      int  visport   = 19916;
-      socketstream sol_sock(vishost, visport);
-      sol_sock.precision(8);
-      sol_sock << "solution\n" << *mesh << x << flush;
-   }
 
    // 14. Free the used memory.
    delete a;
