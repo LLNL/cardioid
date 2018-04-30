@@ -1,5 +1,7 @@
 
 #include "mfem.hpp"
+#include "object.h"
+#include "ddcMalloc.h"
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
@@ -25,26 +27,54 @@ class MatrixElementPiecewiseCoefficient : public MatrixCoefficient
    unordered_map<int,DenseMatrix> sigma_lookup_;
 };
 
+
+/** The object_get code doesn't handle empty strings for a default value
+ *  very well.  The problem is that object_parse attempts to tokenize
+ *  the default value and strtok_r returns a NULL pointer.  This results
+ *  in a situation where the pointer passed to object_get (i.e., tmp)
+ *  isn't set by object_get.  Fortunately, this can be detected by the
+ *  fact that object_get will return 0 instead of 1.  We can catch this
+ *  case and do the right thing with the value we return to the caller.
+ */
+void objectGet(OBJECT* obj, const string& name, string& value, const string& defVal)
+{
+   char* tmp;
+   int nFound = object_get(obj, name.c_str(), &tmp, STRING, 1, defVal.c_str());
+   if (nFound != 0)
+   {
+      value = tmp;
+      ddcFree(tmp);
+   }
+   else
+      value = "";
+}
+
+
 int main(int argc, char *argv[])
 {
    // 1. Parse command-line options.
-   const char *mesh_file = "../data/star.mesh";
    int order = 1;
-   bool static_cond = false;
-   bool visualization = 1;
 
-   OptionsParser args(argc, argv);
-   args.AddOption(&mesh_file, "-m", "--mesh",
-                  "Mesh file to use.");
-   args.Parse();
-   if (!args.Good())
+   vector<string> objectFilenames;
+   if (argc == 1)
    {
-      args.PrintUsage(cout);
-      return 1;
+      objectFilenames.push_back("ecg.data");
    }
-   args.PrintOptions(cout);
+   for (int iargCursor=1; iargCursor<argc; iargCursor++)
+   {
+      objectFilenames.push_back(argv[iargCursor]);
+   }
+   for (int ii=0; ii<objectFilenames.size(); ii++)
+   {
+      object_compilefile(objectFilenames[ii].c_str());
+   }
 
-   Mesh *mesh = new Mesh(mesh_file, 1, 1);
+   OBJECT* obj = object_find("ecg", "ECG");
+   assert(obj != NULL);
+   string mesh_file;
+   objectGet(obj, "mesh", mesh_file, "");
+
+   Mesh *mesh = new Mesh(mesh_file.c_str(), 1, 1);
    int dim = mesh->Dimension();
 
    FiniteElementCollection *fec;
