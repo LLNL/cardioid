@@ -41,11 +41,20 @@ class MatrixElementPiecewiseCoefficient : public MatrixCoefficient
       else
       {
          K=0.0;
+         unordered_map<int,double>::iterator iter = bathConductivities_.find(T.Attribute);
+         if (iter != bathConductivities_.end())
+         {
+            for (int ii=0; ii<3; ii++)
+            {
+               K(ii,ii) = iter->second;
+            }
+         }
       }
    }
 
    shared_ptr<GridFunction> p_gf_;
    unordered_map<int,Vector> heartConductivities_;
+   unordered_map<int,double> bathConductivities_;
 };
 
 
@@ -143,24 +152,18 @@ int main(int argc, char *argv[])
    GridFunction x(fespace);
    x = 0.0;   // essential boundary conditions are zero, so set whole thing
               // to zero.
-
-   Vector sigma_b_values(mesh->attributes.Max());
-   sigma_b_values = 1;
-   sigma_b_values(0) = 0;
-   PWConstCoefficient sigma_b_func(sigma_b_values);
    
+
+   //Fill in the MatrixElementPiecewiseCoefficients
+   MatrixElementPiecewiseCoefficient sigma_i_coeffs;
+   MatrixElementPiecewiseCoefficient sigma_ie_coeffs;
+
    // 8. Set up the bilinear form a(.,.) on the finite element space
    //    corresponding to the Laplacian operator -Delta, by adding the Diffusion
    //    domain integrator.
    BilinearForm *a = new BilinearForm(fespace);   // defines a.
    // this is the Laplacian: grad u . grad v with linear coefficient.
    // we defined "one" ourselves in step 6.
-   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_b_func));
-
-   //Fill in the MatrixElementPiecewiseCoefficients
-   MatrixElementPiecewiseCoefficient sigma_i_coeffs;
-   MatrixElementPiecewiseCoefficient sigma_ie_coeffs;
-
    a->AddDomainIntegrator(new DiffusionIntegrator(sigma_ie_coeffs));
    a->Assemble();   // This creates the loops.
 
