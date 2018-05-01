@@ -12,6 +12,8 @@ using namespace mfem;
 
 MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
 
+DenseMatrix quat2rot(const Vector& quat);
+
 class MatrixElementPiecewiseCoefficient : public MatrixCoefficient
 {
  public:
@@ -19,18 +21,31 @@ class MatrixElementPiecewiseCoefficient : public MatrixCoefficient
 
    virtual void Eval(DenseMatrix &K, ElementTransformation& T, const IntegrationPoint &ip)
    {
-      unordered_map<int,DenseMatrix>::iterator iter = sigma_lookup_.find(T.ElementNo);
-      if (iter == sigma_lookup_.end())
+      unordered_map<int,Vector>::iterator iter = heartConductivities_.find(T.Attribute);
+      if (iter != heartConductivities_.end())
       {
-         K = 0.0;
+         Vector direction(3);
+         p_gf_->GetVectorValue(T.ElementNo, ip, direction);
+         Vector quat(4);
+         double w2 = 1;
+         for (int ii=0; ii<3; ii++)
+         {
+            quat(ii+1) = direction(ii);
+            w2 -= direction(ii)*direction(ii);
+         }
+         quat(0) = sqrt(w2);
+         
+         DenseMatrix VVV = quat2rot(quat);
+         MultADAt(VVV,iter->second,K);
       }
       else
       {
-         K = iter->second;
+         K=0.0;
       }
    }
 
-   unordered_map<int,DenseMatrix> sigma_lookup_;
+   shared_ptr<GridFunction> p_gf_;
+   unordered_map<int,Vector> heartConductivities_;
 };
 
 
