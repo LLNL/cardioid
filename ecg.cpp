@@ -12,7 +12,41 @@ using namespace mfem;
 
 MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
 
-DenseMatrix quat2rot(const Vector& quat);
+DenseMatrix quat2rot(const Vector& q)
+{
+    MFEM_ASSERT(q.Size()==4, "quat2rot: Dimension of quaternion should be 4");
+    //MFEM_ASSERT(vecisnorm(q), "quat2rot: quaternion is not normalized");
+    DenseMatrix Q(3);
+
+    double w=q(0);
+    double x=q(1);
+    double y=q(2);
+    double z=q(3);
+
+    double x2=x*x;
+    double y2=y*y;
+    double z2=z*z;
+    double xy=x*y;
+    double xz=x*z;
+    double yz=y*z;
+    double wx=w*x;
+    double wy=w*y;
+    double wz=w*z;
+
+    Q(0,0)=1-2*y2-2*z2;
+    Q(1,0)=2*xy-2*wz;
+    Q(2,0)=2*xz+2*wy;
+
+    Q(0,1)=2*xy+2*wz;
+    Q(1,1)=1-2*x2-2*z2;
+    Q(2,1)=2*yz-2*wx;
+
+    Q(0,2)=2*xz-2*wy;
+    Q(1,2)=2*yz+2*wx;
+    Q(2,2)=1-2*x2-2*y2;
+
+    return Q;
+}
 
 class MatrixElementPiecewiseCoefficient : public MatrixCoefficient
 {
