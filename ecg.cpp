@@ -79,6 +79,27 @@ void objectGet(OBJECT* obj, const string& name, string& value, const string& def
       value = "";
 }
 
+void objectGet(OBJECT* obj, const string& name, vector<int>& value)
+{
+   value.clear();
+   int* tmp;
+   unsigned n = object_getv(obj, name.c_str(), (void**) &tmp, INT, IGNORE_IF_NOT_FOUND);
+   value.reserve(n);
+   for (unsigned ii=0; ii<n; ++ii)
+      value.push_back(tmp[ii]);
+   ddcFree(tmp);
+}
+
+void objectGet(OBJECT* obj, const string& name, vector<double>& value)
+{
+   value.clear();
+   double* tmp;
+   unsigned n = object_getv(obj, name.c_str(), (void**) &tmp, DOUBLE, IGNORE_IF_NOT_FOUND);
+   value.reserve(n);
+   for (unsigned ii=0; ii<n; ++ii)
+      value.push_back(tmp[ii]);
+   ddcFree(tmp);
+}
 
 int main(int argc, char *argv[])
 {
@@ -155,8 +176,38 @@ int main(int argc, char *argv[])
    
 
    //Fill in the MatrixElementPiecewiseCoefficients
+   vector<int> bathRegions;
+   objectGet(obj,"bath_regions",bathRegions);
+   vector<double> sigma_b;
+   objectGet(obj,"sigma_b",sigma_b);;
+   vector<int> heartRegions;
+   objectGet(obj,"heart_regions", heartRegions);
+   vector<double> sigma_i;
+   vector<double> sigma_e;
+   objectGet(obj,"sigma_i",sigma_i);
+   objectGet(obj,"sigma_e",sigma_e);
+
+   assert(bathRegions.size() == sigma_b.size());
+   assert(heartRegions.size()*3 == sigma_i.size());
+   assert(heartRegions.size()*3 == sigma_e.size());
+   
    MatrixElementPiecewiseCoefficient sigma_i_coeffs;
    MatrixElementPiecewiseCoefficient sigma_ie_coeffs;
+   for (int ii=0; ii<heartRegions.size(); ii++)
+   {
+      int heartCursor=3*ii;
+      Vector sigma_i_vec(&sigma_i[heartCursor],3);
+      Vector sigma_e_vec(&sigma_e[heartCursor],3);
+      Vector sigma_ie_vec = sigma_e_vec;
+      sigma_ie_vec += sigma_i_vec;
+      
+      sigma_i_coeffs.heartConductivities_[heartRegions[ii]] = sigma_i_vec;
+      sigma_ie_coeffs.heartConductivities_[heartRegions[ii]] = sigma_ie_vec;
+   }
+   for (int ii=0; ii<bathRegions.size(); ii++)
+   {
+      sigma_ie_coeffs.bathConductivities_[bathRegions[ii]] = sigma_b[ii];
+   }
 
    // 8. Set up the bilinear form a(.,.) on the finite element space
    //    corresponding to the Laplacian operator -Delta, by adding the Diffusion
