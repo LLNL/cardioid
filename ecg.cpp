@@ -190,17 +190,6 @@ int main(int argc, char *argv[])
       fespace->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
    }
 
-   // 6. Set up the linear form b(.) which corresponds to the right-hand side of
-   //    the FEM linear system, which in this case is (1,phi_i) where phi_i are
-   //    the basis functions in the finite element fespace.
-   LinearForm *b = new LinearForm(fespace);
-   ConstantCoefficient one(1.0);  // coef in front of grad u grad v
-                                  // We'll change to tensor coefficient
-                                  // (sigma -- Jamie will look for this in
-                                  // MFEM, or add.
-   b->AddDomainIntegrator(new DomainLFIntegrator(one));
-   b->Assemble();
-
    // 7. Define the solution vector x as a finite element grid function
    //    corresponding to fespace. Initialize x with initial guess of zero,
    //    which satisfies the boundary conditions.
@@ -252,31 +241,41 @@ int main(int argc, char *argv[])
    a->AddDomainIntegrator(new DiffusionIntegrator(sigma_ie_coeffs));
    a->Assemble();   // This creates the loops.
 
-   SparseMatrix A;   // This is what we want.
-   Vector B, X;
-   // This creates the linear algebra problem.
-   a->FormLinearSystem(ess_tdof_list, x, *b, A, X, B);
+   BilinearForm *b = new BilinearForm(fespace);
+   b->AddDomainIntegrator(new DiffusionIntegrator(sigma_i_coeffs));
+   b->Assemble();
 
-   cout << "Size of linear system: " << A.Height() << endl;
-   // true dof minus essential unknowns (we defined as known).
+   SparseMatrix torso_mat;
+   SparseMatrix heart_mat;
+   Vector phi_e;
+   Vector Vm;
+
+
+   // This creates the linear algebra problem.
+   b->FormSystemMatrix(ess_tdof_list, heart_mat);
+
+   Vector B;
+   heart_mat.Mult(B, Vm);
+
+   a->FormSystemMatrix(ess_tdof_list, torso_mat);
 
 // NOTE THE ifdef
 #ifndef MFEM_USE_SUITESPARSE
    // 10. Define a simple symmetric Gauss-Seidel preconditioner and use it to
    //     solve the system A X = B with PCG.
-   GSSmoother M(A);
-   PCG(A, M, B, X, 1, 200, 1e-12, 0.0);
+   GSSmoother M(torso_mat);
+   PCG(torso_mat, M, B, phi_e, 1, 200, 1e-12, 0.0);
 #else
    // 10. If MFEM was compiled with SuiteSparse, use UMFPACK to solve the system.
    UMFPackSolver umf_solver;
    umf_solver.Control[UMFPACK_ORDERING] = UMFPACK_ORDERING_METIS;
-   umf_solver.SetOperator(A);
-   umf_solver.Mult(B, X);
+   umf_solver.SetOperator(torso_mat);
+   umf_solver.Mult(B, phi_e);
    // See parallel version for HypreSolver - which is an LLNL package.
 #endif
 
    // 11. Recover the solution as a finite element grid function.
-   a->RecoverFEMSolution(X, *b, x);
+   a->RecoverFEMSolution(phi_e, B, x);
 
    // 12. Save the refined mesh and the solution. This output can be viewed later
    //     using GLVis: "glvis -m refined.mesh -g sol.gf".
