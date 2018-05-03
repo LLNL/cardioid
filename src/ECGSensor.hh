@@ -24,6 +24,7 @@ struct ECGSensorParms
    int nFiles;
    int nSensorPoints;
    int stencilSize;
+   double kconst;
    std::string filename;
    PinnedVector<double> ecgPoints;
 };
@@ -54,6 +55,8 @@ class ECGSensor : public Sensor
    int dataOffset_;
    
    int nEcgPoints;
+
+   double kECG;
 
    std::vector<int> saveLoops;
    std::vector<double> saveEcgs;

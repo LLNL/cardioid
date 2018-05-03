@@ -23,9 +23,9 @@ niederer ANATOMY
    dx = 0.10;   // in mm
    dy = 0.10;   // in mm
    dz = 0.10;   // in mm
-   xSize = 20; 
-   ySize = 7;
-   zSize = 3;
+   xSize = 25; 
+   ySize = 16;
+   zSize = 10;
    conductivity = conductivity;
 }
 
@@ -97,6 +97,7 @@ arTime SENSOR
 ecg SENSOR 
 {
    method = ECG;
+   kconst = 0.8;
    printRate = 10;
    filename = ecgData;
    evalRate = 1;
