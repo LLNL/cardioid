@@ -61,7 +61,7 @@ class ECGSensor : public Sensor
    std::vector<int> saveLoops;
    std::vector<double> saveEcgs;
 
-   const TransportCoordinator<PinnedVector<double>>& VmTransport_;
+   const TransportCoordinator<PinnedVector<double>>& dVmDiffusionTransport_;
    
    TransportCoordinator<PinnedVector<double> > ecgPointTransport_;
 

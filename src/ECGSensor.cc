@@ -22,7 +22,7 @@ ECGSensor::ECGSensor(const SensorParms& sp,
   stencilSize_(p.stencilSize),
   filename_(p.filename),
   nEval_(0),
-  VmTransport_(sim.vdata_.VmTransport_)
+  dVmDiffusionTransport_(sim.vdata_.dVmDiffusionTransport_)
 {
     kECG=p.kconst;
     const int dim=3;
@@ -157,7 +157,7 @@ void ECGSensor::eval(double time, int loop)
    
    calcEcgCUDA(ecgsTransport_,
                invrTransport_,
-               VmTransport_, 
+               dVmDiffusionTransport_, 
                nEcgPoints);
    
    ArrayView<double> ecgs = ecgsTransport_;

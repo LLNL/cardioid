@@ -66,7 +66,7 @@ void calcInvrCUDA(OnDevice<ArrayView<double>> invr,
 
 __global__ void calcEcg_kernel(ArrayView<double> ecgs,
                                ConstArrayView<double> invr,
-                               ConstArrayView<double> Vm,
+                               ConstArrayView<double> dVmDiffusion,
                                const int nEcgPoints,
                                const int cellPartition,
                                const int nCells)
@@ -84,7 +84,7 @@ __global__ void calcEcg_kernel(ArrayView<double> ecgs,
 
   for(int cell=cellStart;cell<cellEnd;cell += cellStride)
   {
-    tmpECG +=Vm[cell] * invr[ecgID + nEcgPoints*cell];
+    tmpECG +=dVmDiffusion[cell] * invr[ecgID + nEcgPoints*cell];
   }
 
   const unsigned int close2N = 0x80000000 >> __clz(ecgSet-1);
@@ -115,18 +115,18 @@ __global__ void calcEcg_kernel(ArrayView<double> ecgs,
 
 void calcEcgCUDA(OnDevice<ArrayView<double>> ecgs,
                  OnDevice<ConstArrayView<double>> invr,
-                 OnDevice<ConstArrayView<double>> Vm,
+                 OnDevice<ConstArrayView<double>> dVmDiffusion,
                  const int nEcgPoints)
 {
 
-    ConstArrayView<double> tmp=Vm;
+    ConstArrayView<double> tmp=dVmDiffusion;
     int nCells=tmp.size();
     const int cellPartition = (nCells+(NUM_TBLOCK-1))/(NUM_TBLOCK);
 
     calcEcg_kernel<<<NUM_TBLOCK, (nEcgPoints*CELL_PER_BLOCK)>>>
         (ecgs,
          invr,
-         Vm,
+         dVmDiffusion,
          nEcgPoints,
          cellPartition,
          nCells);
