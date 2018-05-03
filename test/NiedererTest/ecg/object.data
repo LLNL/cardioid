@@ -4,11 +4,12 @@ simulate SIMULATE
    decomposition = grid;
    diffusion = fgr;
    reaction = tt06;
-   stimulus = s1 s2;
+   //stimulus = s1 s2;
+   stimulus = s1;
    //sensor = arTime;
    sensor = ecg;
    loop = 0;            // in timesteps
-   maxLoop = 20;     // in timesteps
+   maxLoop = 50000;     // in timesteps
    dt = 0.02;       // msec
    time = 0;            // msec
    printRate = 1;      // in timesteps
@@ -98,7 +99,7 @@ ecg SENSOR
 {
    method = ECG;
    kconst = 0.8;
-   printRate = 10;
+   printRate = 50000;
    filename = ecgData;
    evalRate = 1;
    nFiles = 1;
