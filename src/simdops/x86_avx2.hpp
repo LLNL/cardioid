@@ -9,6 +9,8 @@ namespace simdops {
 typedef __m256d native_vector_type;
 
 #define SIMDOPS_FLOAT64V_WIDTH 4
+#define SIMDOPS_SIZE 4
+#define SIMDOPS_WIDTH 32
 
 inline native_vector_type load(const double* x) { return _mm256_load_pd(x); }
 inline void store(double* x, const native_vector_type y) { _mm256_store_pd(x,y); }

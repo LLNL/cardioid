@@ -14,7 +14,15 @@
 #include "AlignedAllocator.hh"
 #include "simdops/simdops.hpp"
 
+extern "C" {
+void HPM_Init(); 
+void HPM_Start(char * this_label);
+void HPM_Stop(char * this_label);
+void  HPM_Print();
+}
+
 using namespace std;
+using namespace simdops;
 
 typedef double Real;
 typedef simdops::float64v VReal;
@@ -88,7 +96,7 @@ uint64_t globalGate;
 void nonGates(const Real _dt, const int nSimd, const int simdBegin, const alignedRealPtr Vm, const alignedRealPtr iStim, alignedRealPtr dVm, alignedStatePtr state_)
 {
 
-  const VReal dt = splat(_dt);
+  const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
       //set per-cell flags
@@ -547,7 +555,7 @@ void nonGates(const Real _dt, const int nSimd, const int simdBegin, const aligne
 void mGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRealPtr Vm, const alignedRealPtr iStim, alignedRealPtr dVm, alignedVRealPtr thisState_)
 {
 
-  const VReal dt = splat(_dt);
+  const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
       const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
@@ -594,7 +602,7 @@ void mGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRe
 void hGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRealPtr Vm, const alignedRealPtr iStim, alignedRealPtr dVm, alignedVRealPtr thisState_)
 {
 
-  const VReal dt = splat(_dt);
+  const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
       const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
@@ -643,7 +651,7 @@ void hGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRe
 void jGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRealPtr Vm, const alignedRealPtr iStim, alignedRealPtr dVm, alignedVRealPtr thisState_)
 {
 
-  const VReal dt = splat(_dt);
+  const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
       const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
@@ -692,7 +700,7 @@ void jGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRe
 void Xr1Gate(const Real _dt, const int nSimd, const int simdBegin, const alignedRealPtr Vm, const alignedRealPtr iStim, alignedRealPtr dVm, alignedVRealPtr thisState_)
 {
 
-  const VReal dt = splat(_dt);
+  const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
       const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
@@ -742,7 +750,7 @@ void Xr1Gate(const Real _dt, const int nSimd, const int simdBegin, const aligned
 void Xr2Gate(const Real _dt, const int nSimd, const int simdBegin, const alignedRealPtr Vm, const alignedRealPtr iStim, alignedRealPtr dVm, alignedVRealPtr thisState_)
 {
 
-  const VReal dt = splat(_dt);
+  const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
       const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
@@ -792,7 +800,7 @@ void Xr2Gate(const Real _dt, const int nSimd, const int simdBegin, const aligned
 void XsGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRealPtr Vm, const alignedRealPtr iStim, alignedRealPtr dVm, alignedVRealPtr thisState_)
 {
 
-  const VReal dt = splat(_dt);
+  const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
       const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
@@ -841,7 +849,7 @@ void XsGate(const Real _dt, const int nSimd, const int simdBegin, const alignedR
 void rGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRealPtr Vm, const alignedRealPtr iStim, alignedRealPtr dVm, alignedVRealPtr thisState_)
 {
 
-  const VReal dt = splat(_dt);
+  const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
       const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
@@ -890,7 +898,7 @@ void rGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRe
 void dGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRealPtr Vm, const alignedRealPtr iStim, alignedRealPtr dVm, alignedVRealPtr thisState_)
 {
 
-  const VReal dt = splat(_dt);
+  const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
       const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
@@ -939,7 +947,7 @@ void dGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRe
 void fGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRealPtr Vm, const alignedRealPtr iStim, alignedRealPtr dVm, alignedVRealPtr thisState_)
 {
 
-  const VReal dt = splat(_dt);
+  const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
       const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
@@ -988,7 +996,7 @@ void fGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRe
 void f2Gate(const Real _dt, const int nSimd, const int simdBegin, const alignedRealPtr Vm, const alignedRealPtr iStim, alignedRealPtr dVm, alignedVRealPtr thisState_)
 {
 
-  const VReal dt = splat(_dt);
+  const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
       const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
@@ -1037,7 +1045,7 @@ void f2Gate(const Real _dt, const int nSimd, const int simdBegin, const alignedR
 void jLGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRealPtr Vm, const alignedRealPtr iStim, alignedRealPtr dVm, alignedVRealPtr thisState_)
 {
 
-  const VReal dt = splat(_dt);
+  const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
       const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
@@ -1086,7 +1094,7 @@ void jLGate(const Real _dt, const int nSimd, const int simdBegin, const alignedR
 void sGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRealPtr Vm, const alignedRealPtr iStim, alignedRealPtr dVm, alignedVRealPtr thisState_)
 {
 
-  const VReal dt = splat(_dt);
+  const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
       const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
@@ -1139,14 +1147,16 @@ void sGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRe
 alignedVRealPtr initState(const double initCond, const int nsize) {
   alignedVRealPtr retval = new VReal[nsize];
   for (int ii=0; ii<nsize; ii++) {
-    retval[ii] = make_float(initCond);
+    native_vector_type tmp = make_float(initCond);
+    retval[ii] = tmp;
+//    retval[ii] = make_float(initCond);
   }
   return retval;
 }
 
 int main(void) {
 
-   int nCells = (1 << 20); //approx 1M cells.
+   int nCells = (1 << 10); //approx 1M cells.
    int numThreads = omp_get_max_threads();
    int ncpu=omp_get_num_procs();
 
@@ -1233,6 +1243,8 @@ int main(void) {
    gateArray[10] = state.XsGate;
    gateArray[11] = state.jLGate;
 
+   HPM_Init();
+   HPM_Start("main");
 
    Real dt=0.02;
    int nSteps = 10000;
@@ -1347,6 +1359,12 @@ int main(void) {
    }
 
    }
+
+
+   HPM_Stop("main");
+   cout << "print hpm output" << endl;
+   HPM_Print();
+
    cout << globalNonGate << endl;
    cout << globalGate << endl;
 
