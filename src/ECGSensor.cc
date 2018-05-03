@@ -24,6 +24,7 @@ ECGSensor::ECGSensor(const SensorParms& sp,
   nEval_(0),
   VmTransport_(sim.vdata_.VmTransport_)
 {
+    kECG=p.kconst;
     const int dim=3;
     nEcgPoints=p.ecgPoints.size()/dim;
     PinnedVector<double> ecgPoints(p.ecgPoints);
@@ -45,6 +46,8 @@ void ECGSensor::calcInvR(const Simulate& sim)
     double dx=anatomy.dx();
     double dy=anatomy.dy();
     double dz=anatomy.dz();
+
+    kECG=kECG*dx*dy*dz;
 
     TransportCoordinator<PinnedVector<Long64> > gidsTransport_;
     PinnedVector<Long64> gids(nlocal, 0);
@@ -171,7 +174,8 @@ void ECGSensor::eval(double time, int loop)
         saveLoops.push_back(loop);
    	for(int ii=0; ii<ecgs.size(); ii++)
    	{
-		saveEcgs.push_back(ecgsRecvBuf[ii]);
+                double ecgValue=ecgsRecvBuf[ii]*kECG;
+		saveEcgs.push_back(ecgValue);
    	}
    }
  

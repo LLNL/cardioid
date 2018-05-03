@@ -397,6 +397,7 @@ namespace
       //objectGet(obj, "stencilSize",   p.stencilSize,   "4");
       //objectGet(obj, "nSensorPoints", p.nSensorPoints, "4");
       objectGet(obj, "nFiles",        p.nFiles,        "0");
+      objectGet(obj, "kconst",        p.kconst,        "0.8");
       std::vector<std::string> ecgNames;
       objectGet(obj, "ecgPoints",     ecgNames);
       
