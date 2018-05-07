@@ -66,6 +66,79 @@ void ECGSensor::calcInvR(const Simulate& sim)
                  nx, ny, nz,
                  dx, dy, dz);
         
+ if(0){ // DEBUG to print out r with PIO
+  int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+
+   std::string filename_r="rData";
+   int loop=0;
+   double time=0;
+   stringstream name;
+   name << "snapshot."<<setfill('0')<<setw(12)<<loop;
+   string fullname = name.str();
+   if (myRank == 0)
+      DirTestCreate(fullname.c_str());
+   fullname += "/" + filename_r;
+
+   int nFiles_r=4;
+   PFILE* file = Popen(fullname.c_str(), "w", MPI_COMM_WORLD);
+   if (nFiles_r > 0)
+     PioSet(file, "ngroup", nFiles_r);
+
+   char fmt[] = "%18.8f";
+   int nFields = nEcgPoints;
+   int lRec = 20*nFields;
+
+   std::string fieldNames = "";
+   std::string fieldTypes = "";
+   std::string fieldUnits = "";
+
+   for(unsigned ii=0; ii<nEcgPoints; ++ii)
+   {
+        fieldNames = fieldNames +"   ecgPoint"+std::to_string(ii+1);
+        fieldTypes = fieldTypes + "  f";
+        fieldUnits = fieldUnits + "  mv";
+   }
+
+
+   PioHeaderData header;
+   header.objectName_ = "rData";
+   header.className_  = "FILEHEADER";
+   header.dataType_   = PioHeaderData::ASCII;
+   header.nRecords_   = anatomy.nGlobal();
+   header.lRec_       = lRec;
+   header.nFields_    = nFields;
+   header.fieldNames_ = fieldNames;
+   header.fieldTypes_ = fieldTypes;
+   header.fieldUnits_ = fieldUnits;
+
+   if (myRank == 0) {
+      header.writeHeader(file, loop, time);
+
+   }
+   ConstArrayView<double> invrT=invrTransport_;
+
+      char line[lRec+1];
+
+      for (unsigned ii=0; ii<nlocal; ++ii)
+      {
+         int l = 0;
+
+         for(unsigned jj=0; jj<nEcgPoints; ++jj){
+            int index = ii*nEcgPoints+jj;
+            int ll = snprintf(line+l, lRec, fmt, 1.0/invrT[index]);
+            l=l+ll;
+         }
+
+         for (; l < lRec - 1; l++) line[l] = (char)' ';
+         line[l++] = (char)'\n';
+         assert (l==lRec);
+         Pwrite(line, lRec, 1, file);
+      }
+
+
+   Pclose(file);
+ }
 }
 
 void ECGSensor::print(double time, int loop)
@@ -144,6 +217,19 @@ void ECGSensor::print(double time, int loop)
    Pclose(file);
 }
 
+void calcEcg(ArrayView<double> ecgs,
+                 ConstArrayView<double> invr,
+                 ConstArrayView<double> dVmDiffusion,
+                 const int nEcgPoints) {
+    int nData=dVmDiffusion.size()/nEcgPoints;
+    for(unsigned ii=0; ii< nData; ii++){
+	for (unsigned jj=0; jj< nEcgPoints; jj++){
+            unsigned index=ii*nEcgPoints+jj;
+	    ecgs[jj]=ecgs[jj]+invr[index]*dVmDiffusion[index];
+	}
+    }
+}
+
 void ECGSensor::eval(double time, int loop)
 {
    startTimer(sensorEvalTimer);
@@ -155,6 +241,38 @@ void ECGSensor::eval(double time, int loop)
    	}
    }
    
+  if(0) { // DEBUG to print out invr and  dVmDiffusion
+   if(loop<100 || loop%100==1){
+      ConstArrayView<double> invr=invrTransport_;
+      ConstArrayView<double> dVmDiffusion=dVmDiffusionTransport_;
+
+   int myRank;
+   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+
+   if(myRank==0){
+       std::cout << "Loop "<< loop <<"\n\n\n";
+	for(int ii=0; ii<100; ii++){
+	    std::cout << invr[ii] << " ";
+	    if((ii+1)%10==0) std::cout << "\n";
+	}
+        std::cout << "\n\n\n";
+        for(int ii=0; ii<100; ii++){
+            std::cout << dVmDiffusion[ii] << " ";
+            if((ii+1)%10==0) std::cout << "\n";
+        }
+        std::cout << "\n\n\n";
+    }      
+
+   }
+  }
+
+ if(0){ // DEBUG use the CPU version
+   calcEcg(ecgsTransport_,
+               invrTransport_,
+               dVmDiffusionTransport_,
+               nEcgPoints);
+ }
+
    calcEcgCUDA(ecgsTransport_,
                invrTransport_,
                dVmDiffusionTransport_, 
