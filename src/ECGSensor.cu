@@ -22,7 +22,7 @@ __global__ void calcInvr_kernel(ArrayView<double> invr,
 
     Long64 gid=gids[ii];
     int x=gid%nx;
-    int y=gid/nx%ny;
+    int y=(gid/nx) %ny;
     int z=gid/nx/ny;
 
     double xcoor=x*dx;

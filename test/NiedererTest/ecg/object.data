@@ -24,9 +24,9 @@ niederer ANATOMY
    dx = 0.10;   // in mm
    dy = 0.10;   // in mm
    dz = 0.10;   // in mm
-   xSize = 25; 
-   ySize = 16;
-   zSize = 10;
+   xSize = 3; 
+   ySize = 7;
+   zSize = 20;
    conductivity = conductivity;
 }
 
@@ -107,39 +107,39 @@ ecg SENSOR
 }
 
 ePt1 POINT{
-   x=12.5;
-   y=8;
-   z=20;
+   x=1.5;
+   y=3.5;
+   z=30;
 }
 
 ePt2 POINT{
-   x=12.5;
-   y=8;
+   x=1.5;
+   y=3.5;
    z=-10;
 }
 
 ePt3 POINT{
-   x=12.5;
-   y=26;
-   z=5;
+   x=1.5;
+   y=17;
+   z=10;
 }
 
 ePt4 POINT{
-   x=12.5;
+   x=1.5;
    y=-10;
-   z=5;
+   z=10;
 }
 
 ePt5 POINT{
-   x=35;
-   y=8;
-   z=5;
+   x=13;
+   y=3.5;
+   z=10;
 }
 
 ePt6 POINT{
    x=-10;
-   y=8;
-   z=5;
+   y=3.5;
+   z=10;
 }
 
 tt06 REACTION { fit=BetterTT06_fit; }
