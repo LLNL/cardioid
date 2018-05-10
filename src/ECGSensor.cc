@@ -221,11 +221,12 @@ void calcEcg(ArrayView<double> ecgs,
                  ConstArrayView<double> invr,
                  ConstArrayView<double> dVmDiffusion,
                  const int nEcgPoints) {
-    int nData=dVmDiffusion.size()/nEcgPoints;
+    //int nData=dVmDiffusion.size()/nEcgPoints;
+    int nData=dVmDiffusion.size();
     for(unsigned ii=0; ii< nData; ii++){
 	for (unsigned jj=0; jj< nEcgPoints; jj++){
             unsigned index=ii*nEcgPoints+jj;
-	    ecgs[jj]=ecgs[jj]+invr[index]*dVmDiffusion[index];
+	    ecgs[jj]=ecgs[jj]+invr[index]*dVmDiffusion[ii];
 	}
     }
 }
@@ -261,6 +262,11 @@ void ECGSensor::eval(double time, int loop)
             if((ii+1)%10==0) std::cout << "\n";
         }
         std::cout << "\n\n\n";
+
+   dump_GPU_data(ecgsTransport_,
+               invrTransport_,
+               dVmDiffusionTransport_, 
+               nEcgPoints);
     }      
 
    }
@@ -272,11 +278,13 @@ void ECGSensor::eval(double time, int loop)
                dVmDiffusionTransport_,
                nEcgPoints);
  }
-
+ else
+ {
    calcEcgCUDA(ecgsTransport_,
                invrTransport_,
                dVmDiffusionTransport_, 
                nEcgPoints);
+ }
    
    ArrayView<double> ecgs = ecgsTransport_;
    double* ecgsSendBuf=&ecgs[0];

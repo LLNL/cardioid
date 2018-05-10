@@ -1,8 +1,9 @@
 #include "Ledger.hh"
 #include "TransportCoordinator.hh"
 #include "Long64.hh"
+#include <stdio.h>
 
-#define NUM_TBLOCK 160
+#define NUM_TBLOCK 112
 #define CELL_PER_BLOCK 32
 
 
@@ -78,7 +79,8 @@ __global__ void calcEcg_kernel(ArrayView<double> ecgs,
   const int cellStride = blockDim.x / nEcgPoints;
   const int cellEnd = (blockIdx.x<(NUM_TBLOCK-1))?((blockIdx.x+1)*cellPartition):(nCells);
   const int ecgID = threadIdx.x % nEcgPoints;
-  const unsigned int ecgSet = 1024 / nEcgPoints;    
+
+  const unsigned int ecgSet = blockDim.x/ nEcgPoints;    
 
   if ( threadIdx.x >= ecgSet * nEcgPoints ) return;
 
@@ -123,6 +125,7 @@ void calcEcgCUDA(OnDevice<ArrayView<double>> ecgs,
     int nCells=tmp.size();
     const int cellPartition = (nCells+(NUM_TBLOCK-1))/(NUM_TBLOCK);
 
+    if ( nEcgPoints > 32 ) printf("error:too many ECG points\n");
     calcEcg_kernel<<<NUM_TBLOCK, (nEcgPoints*CELL_PER_BLOCK)>>>
         (ecgs,
          invr,
@@ -130,4 +133,25 @@ void calcEcgCUDA(OnDevice<ArrayView<double>> ecgs,
          nEcgPoints,
          cellPartition,
          nCells);
+}
+
+__global__ void dump_kernel(ConstArrayView<double> data)
+{
+	for(int ii=0; ii<100; ii++)
+        {
+	    printf("%f ",data[ii]);
+	    if((ii+1)%10==0) printf("\n");
+        }
+}
+
+void dump_GPU_data(OnDevice<ArrayView<double>> ecgs,
+                 OnDevice<ConstArrayView<double>> invr,
+                 OnDevice<ConstArrayView<double>> dVmDiffusion,
+                 const int nEcgPoints)
+{
+
+    dump_kernel<<<1,1>>>(invr);
+    printf("\n\n\n");
+    dump_kernel<<<1,1>>>(dVmDiffusion);
+    printf("\n\n\n");
 }

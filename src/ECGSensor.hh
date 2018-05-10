@@ -18,6 +18,10 @@ void calcEcgCUDA(OnDevice<ArrayView<double>> ecgs,
                  OnDevice<ConstArrayView<double>> invr,
                  OnDevice<ConstArrayView<double>> Vm,
                  const int nEcgPoints);
+void dump_GPU_data(OnDevice<ArrayView<double>> ecgs,
+                 OnDevice<ConstArrayView<double>> invr,
+                 OnDevice<ConstArrayView<double>> Vm,
+                 const int nEcgPoints);
 
 struct ECGSensorParms
 {
