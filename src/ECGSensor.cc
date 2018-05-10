@@ -85,7 +85,7 @@ void ECGSensor::calcInvR(const Simulate& sim)
    if (nFiles_r > 0)
      PioSet(file, "ngroup", nFiles_r);
 
-   char fmt[] = "%18.8f";
+   char fmt[] = "%18.8g";
    int nFields = nEcgPoints;
    int lRec = 20*nFields;
 
@@ -157,7 +157,7 @@ void ECGSensor::print(double time, int loop)
    if (nFiles_ > 0)
      PioSet(file, "ngroup", nFiles_);
 
-   char fmt[] = "%20.8f";
+   char fmt[] = "%20.8g";
    int nFields = nEcgPoints+1;
    int lRec = 20*nFields;
 
@@ -221,7 +221,7 @@ void calcEcg(ArrayView<double> ecgs,
                  ConstArrayView<double> invr,
                  ConstArrayView<double> dVmDiffusion,
                  const int nEcgPoints) {
-    //int nData=dVmDiffusion.size()/nEcgPoints;
+
     int nData=dVmDiffusion.size();
     for(unsigned ii=0; ii< nData; ii++){
 	for (unsigned jj=0; jj< nEcgPoints; jj++){
@@ -272,7 +272,7 @@ void ECGSensor::eval(double time, int loop)
    }
   }
 
- if(0){ // DEBUG use the CPU version
+ if(1){ // DEBUG use the CPU version
    calcEcg(ecgsTransport_,
                invrTransport_,
                dVmDiffusionTransport_,

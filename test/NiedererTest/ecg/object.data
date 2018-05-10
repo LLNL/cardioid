@@ -9,10 +9,12 @@ simulate SIMULATE
    //sensor = arTime;
    sensor = ecg;
    loop = 0;            // in timesteps
+   //maxLoop = 1;     // in timesteps
    maxLoop = 50000;     // in timesteps
    dt = 0.02;       // msec
    time = 0;            // msec
    printRate = 1;      // in timesteps
+   //checkpointRate = 10;
    parallelDiffusionReaction = 0;
    checkRanges=0;
 }
@@ -49,9 +51,9 @@ fgr DIFFUSION
 conductivity CONDUCTIVITY
 {
     method = uniform;
-    sigma11 = 0.0001334177;   // units S/mm
+    sigma33 = 0.0001334177;   // units S/mm
     sigma22 = 0.0000176062;   // units S/mm
-    sigma33 = 0.0000176062;   // units S/mm
+    sigma11 = 0.0000176062;   // units S/mm
     sigma13 = 0;
     sigma23 = 0;
 }
