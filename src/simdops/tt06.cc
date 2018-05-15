@@ -10,7 +10,6 @@
 #include <sys/time.h>
 #include <cstring>
 #include <stdint.h>
-#include <omp.h>
 #include "AlignedAllocator.hh"
 #include "simdops/simdops.hpp"
 
@@ -20,6 +19,14 @@ void HPM_Start(char * this_label);
 void HPM_Stop(char * this_label);
 void  HPM_Print();
 }
+
+#if 0
+#include <omp.h>
+#else
+int omp_get_max_threads() {return 1; }
+int omp_get_num_procs() { return 1; }
+int omp_get_thread_num() { return 0; }
+#endif
 
 using namespace std;
 using namespace simdops;
@@ -32,12 +39,12 @@ typedef VReal VRealArray;
 #define mfarrayuse(x) (x)
 #define RESOLVE(x) (x)
 inline Real toDouble(const VReal x) {
-   Real SIMDOPS_ALIGN(SIMDOPS_WIDTH) el[SIMDOPS_SIZE];
+   Real SIMDOPS_ALIGN(SIMDOPS_FLOAT64V_WIDTH*sizeof(double)) el[SIMDOPS_FLOAT64V_WIDTH];
    store(el, x);
    return el[0];
 }
 
-#define vectorSimd(T) vector<T, AlignedAllocator<T, SIMDOPS_WIDTH> >
+#define vectorSimd(T) vector<T, AlignedAllocator<T, SIMDOPS_FLOAT64V_WIDTH*sizeof(double)> >
 
 
 
@@ -79,7 +86,7 @@ struct State
    VReal *fCass;
    VReal *dVK_i;
    VReal *R_prime;
-} SIMDOPS_ALIGN(SIMDOPS_WIDTH);
+} SIMDOPS_ALIGN(SIMDOPS_FLOAT64V_WIDTH*sizeof(double));
 
 #define CUBE(x) ((x)*(x)*(x))
 #define SQ(x) ((x)*(x))
@@ -321,8 +328,8 @@ void nonGates(const Real _dt, const int nSimd, const int simdBegin, const aligne
       const VReal c_NaL = make_float(_c_NaL );
 
       //set Vm
-      const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
-      const VReal istim = load(&iStim[ii*SIMDOPS_SIZE]);
+      const VReal thisVm = load(&Vm[ii*SIMDOPS_FLOAT64V_WIDTH]);
+      const VReal istim = load(&iStim[ii*SIMDOPS_FLOAT64V_WIDTH]);
 
       //set all state variables
       //EDIT_STATE
@@ -544,7 +551,7 @@ void nonGates(const Real _dt, const int nSimd, const int simdBegin, const aligne
          dVR = dVR + I_CaL;
       }
 
-      store(&dVm[ii*SIMDOPS_SIZE], dVR);
+      store(&dVm[ii*SIMDOPS_FLOAT64V_WIDTH], dVR);
 
    }
 }
@@ -558,7 +565,7 @@ void mGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRe
   const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
-      const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
+      const VReal thisVm = load(&Vm[ii*SIMDOPS_FLOAT64V_WIDTH]);
 
       //0
       {
@@ -605,7 +612,7 @@ void hGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRe
   const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
-      const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
+      const VReal thisVm = load(&Vm[ii*SIMDOPS_FLOAT64V_WIDTH]);
       //1
       {
          const int Mhu_l = 7;
@@ -654,7 +661,7 @@ void jGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRe
   const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
-      const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
+      const VReal thisVm = load(&Vm[ii*SIMDOPS_FLOAT64V_WIDTH]);
       //2
       {
          const int Mhu_l = 7;
@@ -703,7 +710,7 @@ void Xr1Gate(const Real _dt, const int nSimd, const int simdBegin, const aligned
   const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
-      const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
+      const VReal thisVm = load(&Vm[ii*SIMDOPS_FLOAT64V_WIDTH]);
       //3
       {
          const int Mhu_l = 5;
@@ -753,7 +760,7 @@ void Xr2Gate(const Real _dt, const int nSimd, const int simdBegin, const aligned
   const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
-      const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
+      const VReal thisVm = load(&Vm[ii*SIMDOPS_FLOAT64V_WIDTH]);
       //4
       {
          const int Mhu_l = 1;
@@ -803,7 +810,7 @@ void XsGate(const Real _dt, const int nSimd, const int simdBegin, const alignedR
   const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
-      const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
+      const VReal thisVm = load(&Vm[ii*SIMDOPS_FLOAT64V_WIDTH]);
       //5
       {
          const int Mhu_l = 5;
@@ -852,7 +859,7 @@ void rGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRe
   const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
-      const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
+      const VReal thisVm = load(&Vm[ii*SIMDOPS_FLOAT64V_WIDTH]);
       //6
       {
          const int Mhu_l = 5;
@@ -901,7 +908,7 @@ void dGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRe
   const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
-      const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
+      const VReal thisVm = load(&Vm[ii*SIMDOPS_FLOAT64V_WIDTH]);
       //7
       {
          const int Mhu_l = 5;
@@ -950,7 +957,7 @@ void fGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRe
   const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
-      const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
+      const VReal thisVm = load(&Vm[ii*SIMDOPS_FLOAT64V_WIDTH]);
       //8
       {
          const int Mhu_l = 5;
@@ -999,7 +1006,7 @@ void f2Gate(const Real _dt, const int nSimd, const int simdBegin, const alignedR
   const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
-      const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
+      const VReal thisVm = load(&Vm[ii*SIMDOPS_FLOAT64V_WIDTH]);
       //9
       {
          const int Mhu_l = 8;
@@ -1048,7 +1055,7 @@ void jLGate(const Real _dt, const int nSimd, const int simdBegin, const alignedR
   const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
-      const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
+      const VReal thisVm = load(&Vm[ii*SIMDOPS_FLOAT64V_WIDTH]);
       //10
       {
          const int Mhu_l = 6;
@@ -1097,7 +1104,7 @@ void sGate(const Real _dt, const int nSimd, const int simdBegin, const alignedRe
   const VReal dt = splat(&_dt);
    for (int ii=simdBegin; ii<nSimd+simdBegin; ++ii)
    {
-      const VReal thisVm = load(&Vm[ii*SIMDOPS_SIZE]);
+      const VReal thisVm = load(&Vm[ii*SIMDOPS_FLOAT64V_WIDTH]);
       //11
       {
          const int Mhu_l = 7;
@@ -1156,11 +1163,11 @@ alignedVRealPtr initState(const double initCond, const int nsize) {
 
 int main(void) {
 
-   int nCells = (1 << 10); //approx 1M cells.
+   int nCells = (1 << 8); //approx 1M cells.
    int numThreads = omp_get_max_threads();
    int ncpu=omp_get_num_procs();
 
-   nCells -= (nCells % (numThreads*SIMDOPS_SIZE));
+   nCells -= (nCells % (numThreads*SIMDOPS_FLOAT64V_WIDTH));
 
    cout << numThreads << endl;
    cout << ncpu << endl;
@@ -1195,9 +1202,9 @@ int main(void) {
    vectorSimd(Real) Vm(nCells);
    vectorSimd(Real) dVm(nCells);
    vectorSimd(Real) iStim(nCells);
-   int nState = (nCells+SIMDOPS_SIZE-1)/SIMDOPS_SIZE;
+   int nState = (nCells+SIMDOPS_FLOAT64V_WIDTH-1)/SIMDOPS_FLOAT64V_WIDTH;
    State state;
-   cout << SIMDOPS_SIZE << endl << SIMDOPS_WIDTH <<endl;
+   cout << SIMDOPS_FLOAT64V_WIDTH <<endl;
 
    {
       const Real initVm = -86.709;
@@ -1273,15 +1280,15 @@ int main(void) {
    int tidMyGate = tid - threadExtents[myGate];
    int threadsPerMyGate = threadsPerGate[myGate];
 
-   int nSimd = nCells/SIMDOPS_SIZE;
+   int nSimd = nCells/SIMDOPS_FLOAT64V_WIDTH;
    int myGateNSimd = nSimd/threadsPerMyGate + (tidMyGate < (nSimd % threadsPerMyGate)?
                                                1 : 0);
    int myGateSimdBegin = (nSimd/threadsPerMyGate) * tidMyGate
      +
      min(tidMyGate, nSimd % threadsPerMyGate)
      ;
-   int myGateNCells = myGateNSimd * SIMDOPS_SIZE;
-   int myGateCellsBegin = myGateSimdBegin * SIMDOPS_SIZE;
+   int myGateNCells = myGateNSimd * SIMDOPS_FLOAT64V_WIDTH;
+   int myGateCellsBegin = myGateSimdBegin * SIMDOPS_FLOAT64V_WIDTH;
    
    int myGateStateBegin = myGateSimdBegin;
 

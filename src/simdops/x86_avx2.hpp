@@ -9,13 +9,11 @@ namespace simdops {
 typedef __m256d native_vector_type;
 
 #define SIMDOPS_FLOAT64V_WIDTH 4
-#define SIMDOPS_SIZE 4
-#define SIMDOPS_WIDTH 32
 
 inline native_vector_type load(const double* x) { return _mm256_load_pd(x); }
 inline void store(double* x, const native_vector_type y) { _mm256_store_pd(x,y); }
-inline native_vector_type make_float(const double x) { _mm256_set_pd(x,x,x,x); }
-inline native_vector_type splat(const double* x) { _mm256_broadcast_sd(x); }
+inline native_vector_type make_float(const double x) { return _mm256_set_pd(x,x,x,x); }
+inline native_vector_type splat(const double* x) { return _mm256_broadcast_sd(x); }
 inline native_vector_type add(const native_vector_type a, const native_vector_type b) { return _mm256_add_pd(a,b); }
 inline native_vector_type sub(const native_vector_type a, const native_vector_type b) { return _mm256_sub_pd(a,b); }
 inline native_vector_type mul(const native_vector_type a, const native_vector_type b) { return _mm256_mul_pd(a,b); }
@@ -33,15 +31,15 @@ inline native_vector_type insert(const native_vector_type a, const int k, const 
 }
 */
 #if defined(SIMDOPS_INTEL_VECTOR_LIBM)
-inline VReal expm1(VReal x) {
+inline native_vector_type expm1(native_vector_type x) {
   return _mm256_expm1_pd(x);
 }
 
-inline VReal log(VReal x) {
+inline native_vector_type log(native_vector_type x) {
   return _mm256_log_pd(x);
 }
 
-inline VReal expm1(VReal x) {
+inline native_vector_type exp(native_vector_type x) {
   return _mm256_exp_pd(x);
 }
 

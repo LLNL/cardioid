@@ -21,7 +21,7 @@
 
 using namespace std;
 
-#define setDefault(name, value) objectGet(obj, #name, reaction->name, #value)
+#define setDefault(name, value) objectGet(obj, #name, name, #value)
    
    REACTION_FACTORY(VecTT06)(OBJECT* obj, const double _dt, const int numPoints, const ThreadTeam&)
    {

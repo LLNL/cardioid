@@ -6,8 +6,6 @@
 
 namespace simdops {
 
-#if !defined(SIMDOPS_COMPILER_HAS_DEFAULT_OPS)
-
 class float64v {
  public:
    inline float64v() {};
@@ -95,12 +93,6 @@ inline float64v& operator/=(float64v& a, const float64v b)
    return (a = a/b);
 }
 
-#else
-
-typedef native_vector_type float64v;
-   
-#endif 
-   
 }
 
 #define SIMDOPS_ALIGN(width)
