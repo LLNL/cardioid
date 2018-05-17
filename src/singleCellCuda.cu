@@ -5,7 +5,7 @@ __global__ void setStimulusKernel(ArrayView<double> iStim, const double stimAmou
    int ii = threadIdx.x + blockIdx.x*blockDim.x;
    if (ii >= iStim.size()) { return; }
    //use a negative sign here to undo the negative we had above.
-   iStim[ii] = stimAmount;
+   iStim[ii] = -stimAmount;
 }
 
 void setStimulus(OnDevice<ArrayView<double>> iStim, const double stimAmount) {
