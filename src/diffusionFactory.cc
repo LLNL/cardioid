@@ -43,7 +43,9 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
    checkForObsoleteKeywords(obj);
 
    string method; objectGet(obj, "method", method, "FGR");
-
+   double diffusionScale;
+   objectGet(obj, "diffusionScale", diffusionScale, "1.0", "l^3/capacitance");
+      
    if (method.empty())
       assert(1==0);
    else if (method == "FGR")
@@ -53,7 +55,7 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
    else if (method == "OpenmpGpuFlat")
       return new OpenmpGpuFlatDiffusion(anatomy, simLoopType);
    else if (method == "cuda")
-      return new CUDADiffusion(anatomy, simLoopType); 
+      return new CUDADiffusion(anatomy, simLoopType, diffusionScale); 
    else if (method == "null")
       return new NullDiffusion(anatomy, simLoopType);
    

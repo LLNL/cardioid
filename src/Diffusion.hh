@@ -19,6 +19,7 @@
 class Diffusion
 {
  public:
+   inline Diffusion(double newDiffusionScale=0) : diffusionScale_(newDiffusionScale) {}
    virtual ~Diffusion(){};
    virtual void updateLocalVoltage(const Managed<ArrayView<double>> VmLocal) = 0;
    virtual void updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote) = 0;
@@ -27,9 +28,14 @@ class Diffusion
    virtual unsigned* blockIndex(){return 0;}
    virtual double* VmBlock(){return 0;}
    virtual double* dVmBlock(){return 0;}
-   virtual double diffusionScale(){return 1;}
+   virtual double diffusionScale(){return diffusionScale_;}
+   virtual void setDiffusionScale(double newDiffusionScale) { diffusionScale_ = newDiffusionScale; }
    virtual void  dump_VmBlock(int tmp){;}
    virtual void test() {return;};
+
+ protected:
+   double diffusionScale_;
+   
 };
 
 #endif

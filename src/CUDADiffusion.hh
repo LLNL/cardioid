@@ -10,7 +10,7 @@
 class CUDADiffusion : public Diffusion
 {
  public:
-   CUDADiffusion(const Anatomy& anatomy, int simLoopType);
+   CUDADiffusion(const Anatomy& anatomy, int simLoopType, double diffusionScale);
 
    void updateLocalVoltage(const Managed<ArrayView<double>> VmLocal);
    void updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote);

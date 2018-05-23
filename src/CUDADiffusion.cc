@@ -23,8 +23,8 @@ void call_cuda_kernels(OnDevice<ConstArrayView<Real>> VmRaw, OnDevice<ArrayView<
 
 void copy_to_block(OnDevice<ArrayView<double>> blockCPU, OnDevice<ConstArrayView<int>> lookupCPU, OnDevice<ConstArrayView<double>> sourceCPU, const int begin, const int end);
 
-CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType)
-: anatomy_(anatomy), simLoopType_(simLoopType),
+CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType, double newDiffusionScale)
+: anatomy_(anatomy), simLoopType_(simLoopType), Diffusion(newDiffusionScale),
   localGrid_(DiffusionUtils::findBoundingBox(anatomy, false))
 {
    //move data into position
@@ -63,6 +63,7 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType)
          anatomy.dx()*anatomy.dy()
       };
    const double disc[3] = {anatomy.dx(), anatomy.dy(), anatomy.dz()};
+   const double gridCellVolume = disc[0]*disc[1]*disc[2];
    //initialize the array of diffusion coefficients
    sigmaFaceNormal_.setup(PinnedVector<double>(nx_*ny_*nz_*9));
    ArrayView<double> sigmaFaceNormalVec(sigmaFaceNormal_.modifyOnHost());
@@ -88,7 +89,7 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType)
             for (int jdim=0; jdim<3; jdim++)
             {
                int sigmaIndex = xx[2] + nz_ * ( xx[1] + ny_ * ( xx[0] + nx_ * ( jdim + 3 * idim)));
-               double sigmaValue = thisSigma[idim][jdim]*areas[idim]/disc[jdim];
+               double sigmaValue = thisSigma[idim][jdim]*areas[idim]/disc[jdim]*diffusionScale()/gridCellVolume;
                if (idim != jdim)
                {
                   bool canComputeGradient=
