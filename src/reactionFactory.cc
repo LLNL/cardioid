@@ -65,6 +65,10 @@ Reaction* reactionFactory(const string& name, double dt, const int numPoints,
             return factoryMethod(obj, dt, numPoints, group);
          }
       }
+      else
+      {
+         cerr << "Cant load dynamic module " << filename << ": " << dlerror() << endl;
+      }
    }
    {
       int myRank;

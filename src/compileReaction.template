@@ -11,5 +11,6 @@ reaction=${1%%.cc}
  @CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS@ \
  -DDYNAMIC_REACTION=1 \
  -o $reaction.so \
- $reaction.cc
+ $reaction.cc \
+ -L@CMAKE_CURRENT_BINARY_DIR@ -lheart
 
