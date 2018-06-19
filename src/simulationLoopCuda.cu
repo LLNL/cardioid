@@ -19,14 +19,14 @@ void setStimulus(OnDevice<ArrayView<double>> iStim,OnDevice<ConstArrayView<doubl
 __global__ void integrateVoltageKernel(ArrayView<double> vmarrayRaw, ConstArrayView<double> dVmReactionRaw, ConstArrayView<double> dVmDiffusionRaw, const double dt)
 {
    int ii = threadIdx.x + blockIdx.x*blockDim.x;
-   if (ii >= vmarrayRaw.size()) { return; }
+   if (ii >= dVmDiffusionRaw.size()) { return; }
    vmarrayRaw[ii] += dt*(dVmReactionRaw[ii] + dVmDiffusionRaw[ii]);
 }
 
 void integrateVoltage(OnDevice<ArrayView<double>> vmarrayRaw, OnDevice<ConstArrayView<double>> dVmReactionRaw, OnDevice<ConstArrayView<double>> dVmDiffusionRaw,const double dt)
 {
    int blockSize = 1024;
-   integrateVoltageKernel<<<(vmarrayRaw.size()+blockSize-1)/blockSize,blockSize>>>
+   integrateVoltageKernel<<<(dVmDiffusionRaw.size()+blockSize-1)/blockSize,blockSize>>>
       (vmarrayRaw,
        dVmReactionRaw,
        dVmDiffusionRaw,
