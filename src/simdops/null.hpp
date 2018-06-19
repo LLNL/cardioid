@@ -25,4 +25,5 @@ inline native_vector_type neg(const native_vector_type a) { return -a; }
    
 #define SIMDOPS_MATH_IS_DEFINED
 #define SIMDOPS_COMPILER_HAS_DEFAULT_OPS
+#define SIMDOPS_ARCH_NULL
 #endif

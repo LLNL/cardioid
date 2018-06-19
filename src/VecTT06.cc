@@ -1170,7 +1170,7 @@ void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
       store(state_[__jj].m, m);
       store(state_[__jj].r, r);
       store(state_[__jj].s, s);
-      store(&__dVm[__ii],-Iion_001);
+      simdops::store(&__dVm[__ii],-Iion_001);
    }
 }
    
