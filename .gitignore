@@ -1,0 +1,3 @@
+/ddcmdUtil/src/*.o
+/deps
+/ecg.data
