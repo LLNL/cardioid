@@ -3,3 +3,8 @@
 /ecg.data
 /*.core
 .nfs*
+/ecg
+/ecg.mfem.FiberQuat.gf
+/refined.mesh
+/slab.vtk
+/sol.gf
