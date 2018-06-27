@@ -1,3 +1,5 @@
 /ddcmdUtil/src/*.o
 /deps
 /ecg.data
+/*.core
+.nfs*
