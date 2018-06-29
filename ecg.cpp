@@ -61,8 +61,12 @@ class MatrixElementPiecewiseCoefficient : public MatrixCoefficient
       if (iter != heartConductivities_.end())
       {
          Vector direction(3);
-         cout << p_gf_->Size() << " " << T.ElementNo << endl;
-         p_gf_->GetVectorValue(T.ElementNo, ip, direction);
+         if (0)
+         {
+            p_gf_->GetVectorValue(T.ElementNo, ip, direction);
+         } else {
+            direction = 0.0;
+         }
          Vector quat(4);
          double w2 = 1;
          for (int ii=0; ii<3; ii++)
@@ -138,6 +142,18 @@ void objectGet(OBJECT* obj, const string& name, vector<double>& value)
    ddcFree(tmp);
 }
 
+std::set<int> readSet(std::istream& stream) {
+   std::set<int> retval;
+   while(1)
+   {
+      int value;
+      stream >> value;
+      if (!stream) {break;}
+      retval.insert(value);
+   }
+   return retval;
+}
+
 int main(int argc, char *argv[])
 {  MPI_Init(NULL,NULL);
    // 1. Parse command-line options.
@@ -162,9 +178,40 @@ int main(int argc, char *argv[])
    string mesh_file;
    objectGet(obj, "mesh", mesh_file, "");
 
+   string groundFilename;
+   objectGet(obj,"ground",groundFilename,"");
+   std::set<int> ground;
+   {
+      ifstream(groundFilename);
+      ground = readSet(groundFilename);
+   }
+
+   
    Mesh *mesh = new Mesh(mesh_file.c_str(), 1, 1);
    int dim = mesh->Dimension();
 
+   {
+      int nbe=mesh->GetNBE();
+      for(int i=0; i<nbe; i++){
+         Element *ele = mesh->GetBdrElement(i);
+         const int *v = ele->GetVertices();
+         const int nv = ele->GetNVertices();
+         bool isGround = true;
+         for( int ivert=0; ivert<nv; ivert++) {
+            if (ground.find(v[ivert]) == ground.end()) {
+               isGround = false;
+               break;
+            }
+         }
+         if (isGround) {
+            ele->SetAttribute(1);
+         } else {
+            ele->SetAttribute(0);
+         }
+      }
+   }
+   mesh->SetAttributes();
+   
    FiniteElementCollection *fec;
    if (mesh->GetNodes())
    {
@@ -178,7 +225,7 @@ int main(int argc, char *argv[])
    FiniteElementSpace *fespace = new FiniteElementSpace(mesh, fec);
    cout << "Number of finite element unknowns: "
         << fespace->GetTrueVSize() << endl;
-
+   
    // 5. Determine the list of true (i.e. conforming) essential boundary
    //    dofs.
    //    In this example, the boundary conditions are defined by marking all
@@ -189,9 +236,11 @@ int main(int argc, char *argv[])
    if (mesh->bdr_attributes.Size())
    {
       Array<int> ess_bdr(mesh->bdr_attributes.Max());
-      ess_bdr = 1;
+      ess_bdr = 0;
+      ess_bdr[1] = 1;
       fespace->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
    }
+   
 
    // 7. Define the solution vector x as a finite element grid function
    //    corresponding to fespace. Initialize x with initial guess of zero,
