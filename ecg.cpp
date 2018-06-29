@@ -6,6 +6,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <cassert>
+#include <memory>
 
 using namespace std;
 using namespace mfem;
@@ -52,6 +53,7 @@ class MatrixElementPiecewiseCoefficient : public MatrixCoefficient
 {
  public:
    MatrixElementPiecewiseCoefficient() : MatrixCoefficient(3) {}
+   MatrixElementPiecewiseCoefficient(shared_ptr<GridFunction> x) : MatrixCoefficient(3) {p_gf_=x;}
 
    virtual void Eval(DenseMatrix &K, ElementTransformation& T, const IntegrationPoint &ip)
    {
@@ -136,7 +138,7 @@ void objectGet(OBJECT* obj, const string& name, vector<double>& value)
 }
 
 int main(int argc, char *argv[])
-{
+{  MPI_Init(NULL,NULL);
    // 1. Parse command-line options.
    int order = 1;
 
@@ -193,8 +195,8 @@ int main(int argc, char *argv[])
    // 7. Define the solution vector x as a finite element grid function
    //    corresponding to fespace. Initialize x with initial guess of zero,
    //    which satisfies the boundary conditions.
-   GridFunction x(fespace);
-   x = 0.0;   // essential boundary conditions are zero, so set whole thing
+   shared_ptr<GridFunction> x = make_shared<GridFunction>(fespace);
+   *x = 0.0;  // essential boundary conditions are zero, so set whole thing
               // to zero.
    
 
@@ -214,8 +216,8 @@ int main(int argc, char *argv[])
    assert(heartRegions.size()*3 == sigma_i.size());
    assert(heartRegions.size()*3 == sigma_e.size());
    
-   MatrixElementPiecewiseCoefficient sigma_i_coeffs;
-   MatrixElementPiecewiseCoefficient sigma_ie_coeffs;
+   MatrixElementPiecewiseCoefficient sigma_i_coeffs(x);
+   MatrixElementPiecewiseCoefficient sigma_ie_coeffs(x);
    for (int ii=0; ii<heartRegions.size(); ii++)
    {
       int heartCursor=3*ii;
@@ -275,7 +277,7 @@ int main(int argc, char *argv[])
 #endif
 
    // 11. Recover the solution as a finite element grid function.
-   a->RecoverFEMSolution(phi_e, B, x);
+   a->RecoverFEMSolution(phi_e, B, *x);
 
    // 12. Save the refined mesh and the solution. This output can be viewed later
    //     using GLVis: "glvis -m refined.mesh -g sol.gf".
@@ -284,7 +286,7 @@ int main(int argc, char *argv[])
    mesh->Print(mesh_ofs);
    ofstream sol_ofs("sol.gf");
    sol_ofs.precision(8);
-   x.Save(sol_ofs);
+   x->Save(sol_ofs);
 
    // 14. Free the used memory.
    delete a;
