@@ -215,9 +215,18 @@ int main(int argc, char *argv[])
    assert(bathRegions.size() == sigma_b.size());
    assert(heartRegions.size()*3 == sigma_i.size());
    assert(heartRegions.size()*3 == sigma_e.size());
+
+   string fiberFileName;
+   objectGet(obj,"fibers",fiberFileName,"");
+
+   shared_ptr<GridFunction> fiber_quat;
+   {
+      ifstream fiberStream(fiberFileName);
+      fiber_quat = make_shared<GridFunction>(mesh, fiberStream);
+   }
    
-   MatrixElementPiecewiseCoefficient sigma_i_coeffs(x);
-   MatrixElementPiecewiseCoefficient sigma_ie_coeffs(x);
+   MatrixElementPiecewiseCoefficient sigma_i_coeffs(fiber_quat);
+   MatrixElementPiecewiseCoefficient sigma_ie_coeffs(fiber_quat);
    for (int ii=0; ii<heartRegions.size(); ii++)
    {
       int heartCursor=3*ii;
@@ -249,15 +258,20 @@ int main(int argc, char *argv[])
 
    SparseMatrix torso_mat;
    SparseMatrix heart_mat;
-   Vector phi_e;
-   Vector Vm;
+   Vector phi_e(x->Size());
 
 
    // This creates the linear algebra problem.
    b->FormSystemMatrix(ess_tdof_list, heart_mat);
 
-   Vector B;
-   heart_mat.Mult(B, Vm);
+   shared_ptr<GridFunction> Vm_gf;
+   {
+      ifstream VmStream("slab.Vm.gf");
+      Vm_gf = make_shared<GridFunction>(mesh, VmStream);
+   }
+   
+   Vector B(x->Size());
+   heart_mat.Mult(B, *Vm_gf);
 
    a->FormSystemMatrix(ess_tdof_list, torso_mat);
 
