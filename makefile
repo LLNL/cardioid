@@ -78,7 +78,7 @@ MFEM_CC := $(MFEM_CXX)
 MFEM_CC := $(MFEM_CC:%c++=%cc)
 MFEM_CC := $(MFEM_CC:%cxx=%cc)
 
-ecg: $(OBJECTS) 
+ecg: $(OBJECTS) ecg.cpp 
 	$(MFEM_CXX) $(MFEM_FLAGS) $(MY_FLAGS) $(OBJECTS) ecg.cpp -o $@ $(MFEM_LIBS)
 
 %.o : %.cpp
