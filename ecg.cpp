@@ -61,6 +61,7 @@ class MatrixElementPiecewiseCoefficient : public MatrixCoefficient
       if (iter != heartConductivities_.end())
       {
          Vector direction(3);
+         cout << p_gf_->Size() << " " << T.ElementNo << endl;
          p_gf_->GetVectorValue(T.ElementNo, ip, direction);
          Vector quat(4);
          double w2 = 1;
@@ -264,9 +265,11 @@ int main(int argc, char *argv[])
    // This creates the linear algebra problem.
    b->FormSystemMatrix(ess_tdof_list, heart_mat);
 
+   string VmFilename;
+   objectGet(obj, "Vm", VmFilename, "");
    shared_ptr<GridFunction> Vm_gf;
    {
-      ifstream VmStream("slab.Vm.gf");
+      ifstream VmStream(VmFilename);
       Vm_gf = make_shared<GridFunction>(mesh, VmStream);
    }
    
