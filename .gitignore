@@ -8,3 +8,5 @@
 /refined.mesh
 /slab.vtk
 /sol.gf
+/slab.FiberQuat.gf
+/slab.Vm.gf
