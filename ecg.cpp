@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <cassert>
 #include <memory>
+#include <set>
 
 using namespace std;
 using namespace mfem;
@@ -81,14 +82,12 @@ class MatrixElementPiecewiseCoefficient : public MatrixCoefficient
       }
       else
       {
-         K=0.0;
          unordered_map<int,double>::iterator iter = bathConductivities_.find(T.Attribute);
-         if (iter != bathConductivities_.end())
+         assert(iter != bathConductivities_.end());
+         K=0.0;
+         for (int ii=0; ii<3; ii++)
          {
-            for (int ii=0; ii<3; ii++)
-            {
-               K(ii,ii) = iter->second;
-            }
+            K(ii,ii) = iter->second;
          }
       }
    }
@@ -182,10 +181,9 @@ int main(int argc, char *argv[])
    objectGet(obj,"ground",groundFilename,"");
    std::set<int> ground;
    {
-      ifstream(groundFilename);
-      ground = readSet(groundFilename);
+      ifstream groundFile(groundFilename);
+      ground = readSet(groundFile);
    }
-
    
    Mesh *mesh = new Mesh(mesh_file.c_str(), 1, 1);
    int dim = mesh->Dimension();
@@ -204,9 +202,9 @@ int main(int argc, char *argv[])
             }
          }
          if (isGround) {
-            ele->SetAttribute(1);
+            ele->SetAttribute(2);
          } else {
-            ele->SetAttribute(0);
+            ele->SetAttribute(1);
          }
       }
    }
@@ -235,6 +233,7 @@ int main(int argc, char *argv[])
                                // "true" takes into account shared vertices.
    if (mesh->bdr_attributes.Size())
    {
+      assert(mesh->bdr_attributes.Max() > 1 && "Can't find a ground boundary!");
       Array<int> ess_bdr(mesh->bdr_attributes.Max());
       ess_bdr = 0;
       ess_bdr[1] = 1;
@@ -245,9 +244,9 @@ int main(int argc, char *argv[])
    // 7. Define the solution vector x as a finite element grid function
    //    corresponding to fespace. Initialize x with initial guess of zero,
    //    which satisfies the boundary conditions.
-   shared_ptr<GridFunction> x = make_shared<GridFunction>(fespace);
-   *x = 0.0;  // essential boundary conditions are zero, so set whole thing
-              // to zero.
+   GridFunction gf_x(fespace);
+   GridFunction gf_b(fespace);
+   gf_x = 0.0;
    
 
    //Fill in the MatrixElementPiecewiseCoefficients
@@ -291,60 +290,79 @@ int main(int argc, char *argv[])
    for (int ii=0; ii<bathRegions.size(); ii++)
    {
       sigma_ie_coeffs.bathConductivities_[bathRegions[ii]] = sigma_b[ii];
+      sigma_i_coeffs.bathConductivities_[bathRegions[ii]] = 0;
    }
 
    // 8. Set up the bilinear form a(.,.) on the finite element space
    //    corresponding to the Laplacian operator -Delta, by adding the Diffusion
    //    domain integrator.
+
+   BilinearForm *b = new BilinearForm(fespace);
+   b->AddDomainIntegrator(new DiffusionIntegrator(sigma_i_coeffs));
+   b->Assemble();
+   // This creates the linear algebra problem.
+   SparseMatrix heart_mat;
+   b->FormSystemMatrix(ess_tdof_list, heart_mat);
+   heart_mat.Finalize();
+
+   string VmFilename;
+   objectGet(obj, "Vm", VmFilename, "");
+   shared_ptr<GridFunction> gf_Vm;
+   {
+      ifstream VmStream(VmFilename);
+      gf_Vm = make_shared<GridFunction>(mesh, VmStream);
+   }
+
+
+   heart_mat.Mult(*gf_Vm, gf_b);
+   cout << heart_mat.Empty() << " "
+        << heart_mat.Finalized() << " "
+        << heart_mat.MaxNorm() << " "
+        << heart_mat.Height() << " "
+        << heart_mat.Width() << " "
+        << heart_mat.ActualWidth() << endl;
+   cout << gf_Vm->Max() << " " << gf_Vm->Min() << endl;
+   cout << gf_b.Max() << " " << gf_b.Min() << endl;
+
    BilinearForm *a = new BilinearForm(fespace);   // defines a.
    // this is the Laplacian: grad u . grad v with linear coefficient.
    // we defined "one" ourselves in step 6.
    a->AddDomainIntegrator(new DiffusionIntegrator(sigma_ie_coeffs));
    a->Assemble();   // This creates the loops.
-
-   BilinearForm *b = new BilinearForm(fespace);
-   b->AddDomainIntegrator(new DiffusionIntegrator(sigma_i_coeffs));
-   b->Assemble();
-
    SparseMatrix torso_mat;
-   SparseMatrix heart_mat;
-   Vector phi_e(x->Size());
-
-
-   // This creates the linear algebra problem.
-   b->FormSystemMatrix(ess_tdof_list, heart_mat);
-
-   string VmFilename;
-   objectGet(obj, "Vm", VmFilename, "");
-   shared_ptr<GridFunction> Vm_gf;
-   {
-      ifstream VmStream(VmFilename);
-      Vm_gf = make_shared<GridFunction>(mesh, VmStream);
-   }
+   Vector phi_e;
+   Vector phi_b;
+   a->FormLinearSystem(ess_tdof_list,gf_x,gf_b,torso_mat,phi_e,phi_b);
    
-   Vector B(x->Size());
-   heart_mat.Mult(B, *Vm_gf);
-
-   a->FormSystemMatrix(ess_tdof_list, torso_mat);
-
 // NOTE THE ifdef
 #ifndef MFEM_USE_SUITESPARSE
    // 10. Define a simple symmetric Gauss-Seidel preconditioner and use it to
    //     solve the system A X = B with PCG.
    GSSmoother M(torso_mat);
-   PCG(torso_mat, M, B, phi_e, 1, 200, 1e-12, 0.0);
+   PCG(torso_mat, M, phi_b, phi_e, 1, 200, 1e-12, 0.0);
 #else
    // 10. If MFEM was compiled with SuiteSparse, use UMFPACK to solve the system.
    UMFPackSolver umf_solver;
    umf_solver.Control[UMFPACK_ORDERING] = UMFPACK_ORDERING_METIS;
    umf_solver.SetOperator(torso_mat);
-   umf_solver.Mult(B, phi_e);
+   umf_solver.Mult(phi_b, phi_e);
    // See parallel version for HypreSolver - which is an LLNL package.
 #endif
 
+   cout << phi_e.Max() << " "
+        << phi_e.Min() << " "
+        << phi_e.Norml2() << " "
+        << phi_e.Size() << endl;
+   
    // 11. Recover the solution as a finite element grid function.
-   a->RecoverFEMSolution(phi_e, B, *x);
+   a->RecoverFEMSolution(phi_e, phi_b, gf_x);
 
+   cout << gf_x.Max() << " "
+        << gf_x.Min() << " "
+        << gf_x.Norml2() << " "
+        << gf_x.Size() << endl;
+
+   
    // 12. Save the refined mesh and the solution. This output can be viewed later
    //     using GLVis: "glvis -m refined.mesh -g sol.gf".
    ofstream mesh_ofs("refined.mesh");
@@ -352,7 +370,7 @@ int main(int argc, char *argv[])
    mesh->Print(mesh_ofs);
    ofstream sol_ofs("sol.gf");
    sol_ofs.precision(8);
-   x->Save(sol_ofs);
+   gf_x.Save(sol_ofs);
 
    // 14. Free the used memory.
    delete a;
