@@ -232,7 +232,7 @@ void getVetecesGradients(Mesh *mesh, GridFunction& x, vector<vector<int> >& vert
     
 }
 
-bool isPlanar(double *coor0, double *coor1, double *coor2, double cosTheta){
+bool isPlanar(double *coor0, double *coor1, double *coor2, double cosTheta, int axis){
     double u[3];
     double v[3];
     double w[3];
@@ -248,7 +248,7 @@ bool isPlanar(double *coor0, double *coor1, double *coor2, double cosTheta){
     w[2]=u[0]*v[1]-u[1]*v[0];
     
     double r=sqrt(w[0]*w[0]+w[1]*w[1]+w[2]*w[2]);
-    double cosT=abs(w[2]/r);
+    double cosT=abs(w[axis]/r);
     
     if(cosT>cosTheta){
         return true;
@@ -303,6 +303,50 @@ void findNeighbor(Element* ele, vector<Element*>& elements, int attr){
     }           
 }
 
+int detectAxis(Mesh *mesh, vector<Vector>& boundingbox){
+    // 0 - x; 1 - y; 2 - z
+    assert(boundingbox.size()==2);
+    Vector coord_min=boundingbox[0];
+    Vector coord_max=boundingbox[1];
+    
+    vector<double> top5(3);
+    
+    for(int i=0; i<3; i++){
+        top5[i]=coord_max[i]-(coord_max[i]-coord_min[i])*0.05;
+    }
+    
+    vector<int> count(3, 0);
+    
+    int nbe=mesh->GetNBE();
+    for(int i=0; i<nbe; i++){
+        Element *ele = mesh->GetBdrElement(i);        
+        const int *v = ele->GetVertices();
+        const int nv = ele->GetNVertices();
+        MFEM_ASSERT(nv == 3, "Wrong boundary size");
+        
+        double *coord0 = mesh->GetVertex(v[0]);
+        
+        for(int i=0; i<3; i++){
+            if(coord0[i]>top5[i]){
+                count[i]++;
+            }            
+        }
+
+    }
+
+    int axis=0;
+    int maxVal=-1;
+    for(int i=0; i<3; i++){
+        if(count[i]>maxVal){
+            maxVal=count[i];
+            axis=i;
+        }
+    }
+    
+    return axis; 
+    
+}
+
 void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle, int myid){
     // Attributes for different surface
     const int apexAttr=1;
@@ -318,8 +362,6 @@ void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle, int myid
     Vector coord_min(3);
     Vector coord_max(3);
     bool firstEle=true;
-    int apexVet=0;
-    int apexEleIndex=0;
     
     int nbe=mesh->GetNBE();
     for(int i=0; i<nbe; i++){
@@ -342,11 +384,6 @@ void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle, int myid
             for (int k = 0; k < 3; k++) {
                 if(coord[k]<coord_min[k]){
                     coord_min(k)=coord[k];
-                    // Keep track vertex and element indeces for min in z-axis
-                    if(k==2){  
-                        apexVet=v[j];
-                        apexEleIndex=i;
-                    }
                 }
                 if(coord[k]>coord_max[k]){
                     coord_max(k)=coord[k];
@@ -358,17 +395,54 @@ void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle, int myid
     
     boundingbox.push_back(coord_min);
     boundingbox.push_back(coord_max);
+    
+    // axis: 0 - x; 1 - y; 2 - z
+    int axis=detectAxis(mesh, boundingbox);
+
+    // Keep track vertex and element indeces for min in axis
+    int apexVet=0;
+    int apexEleIndex=0;    
+    double apexCoord_min=0;
+    firstEle=true;
+    
+    for(int i=0; i<nbe; i++){
+        Element *ele = mesh->GetBdrElement(i);        
+        const int *v = ele->GetVertices();
+        const int nv = ele->GetNVertices();
+        
+        // The first loop has to initialize the min and max.
+        if(firstEle){
+            firstEle=false;
+            coord=mesh->GetVertex(v[0]);
+            apexCoord_min=coord[axis];
+            apexVet = v[0];
+            apexEleIndex = i;
+        }
+        
+        for(int j=0; j<nv; j++){
+            coord=mesh->GetVertex(v[j]);
+                       
+            if(coord[axis]<apexCoord_min){
+                apexCoord_min=coord[axis];  
+                apexVet=v[j];
+                apexEleIndex=i;
+                
+            }                                   
+        }
+        
+    }    
 
     coord = mesh->GetVertex(apexVet);
     
-    // Top 5% of the z axis.
-    double zTop5=coord_max[2]-(coord_max[2]-coord_min[2])*0.05;
+    // Top 5% of the  axis.
+    double apexTop5=coord_max[axis]-(coord_max[axis]-coord_min[axis])*0.05;
 
     if (myid == 0) {
+        cout << "\tHeart aligns along " << axis << " (0=x, 1=y, 2=z)" << endl;
         cout << "\tMin: " << coord_min(0) << " " << coord_min(1) << " " << coord_min(2) << endl;
         cout << "\tMax: " << coord_max(0) << " " << coord_max(1) << " " << coord_max(2) << endl;
         cout << "\tApex: " << coord[0] << " " << coord[1] << " " << coord[2] << endl;
-        cout << "\tTop 5% z coordinate: " << zTop5 << endl;
+        cout << "\tTop 5% axis {"<< axis <<") coordinate: " << apexTop5 << endl;
     }
     // Initialization the attributes to 0 and set attribute of apex
     for(int i=0; i<nbe; i++){
@@ -397,10 +471,10 @@ void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle, int myid
         MFEM_ASSERT(nv == 3, "Wrong boundary size");
         
         double *coord0 = mesh->GetVertex(v[0]);
-        if(coord0[2]>zTop5){
+        if(coord0[axis]>apexTop5){
             double *coord1 = mesh->GetVertex(v[1]);
             double *coord2 = mesh->GetVertex(v[2]);
-            if(isPlanar(coord0, coord1, coord2, cosTheta)){
+            if(isPlanar(coord0, coord1, coord2, cosTheta, axis)){
                 ele->SetAttribute(baseAttr);
             }
         }
@@ -497,8 +571,6 @@ void setSurf4Surf(Mesh *surface, double angle){
     Vector coord_min(3);
     Vector coord_max(3);
     bool firstEle=true;
-    int apexVet=0;
-    int apexEleIndex=0;
     
     int ne=surface->GetNE();
     for(int i=0; i<ne; i++){
@@ -521,11 +593,6 @@ void setSurf4Surf(Mesh *surface, double angle){
             for (int k = 0; k < 3; k++) {
                 if(coord[k]<coord_min[k]){
                     coord_min(k)=coord[k];
-                    // Keep track vertex and element indeces for min in z-axis
-                    if(k==2){  
-                        apexVet=v[j];
-                        apexEleIndex=i;
-                    }
                 }
                 if(coord[k]>coord_max[k]){
                     coord_max(k)=coord[k];
@@ -535,18 +602,60 @@ void setSurf4Surf(Mesh *surface, double angle){
         
     }
     
+    vector<Vector> boundingbox;
+    boundingbox.push_back(coord_min);
+    boundingbox.push_back(coord_max);
+    
+    // axis: 0 - x; 1 - y; 2 - z
+    int axis=detectAxis(surface, boundingbox);
 
+    // Keep track vertex and element indeces for min in axis
+    int apexVet=0;
+    int apexEleIndex=0;    
+    double apexCoord_min=0;
+    firstEle=true;
+    
+    for(int i=0; i<ne; i++){
+        Element *ele = surface->GetBdrElement(i);        
+        const int *v = ele->GetVertices();
+        const int nv = ele->GetNVertices();
+        
+        // The first loop has to initialize the min and max.
+        if(firstEle){
+            firstEle=false;
+            coord=surface->GetVertex(v[0]);
+            apexCoord_min=coord[axis];
+            apexVet = v[0];
+            apexEleIndex = i;
+        }
+        
+        for(int j=0; j<nv; j++){
+            coord=surface->GetVertex(v[j]);
+                       
+            if(coord[axis]<apexCoord_min){
+                apexCoord_min=coord[axis];  
+                apexVet=v[j];
+                apexEleIndex=i;
+                
+            }                                   
+        }
+        
+    }   
+    
     coord = surface->GetVertex(apexVet);
     
-    // Top 5% of the z axis.
-    double zTop5=coord_max[2]-(coord_max[2]-coord_min[2])*0.05;
+
+    // Top 5% of the  axis.
+    double apexTop5=coord_max[axis]-(coord_max[axis]-coord_min[axis])*0.05;
 
 
-    cout << "Min: " << coord_min(0) << " " << coord_min(1) << " " << coord_min(2) << endl;
-    cout << "Max: " << coord_max(0) << " " << coord_max(1) << " " << coord_max(2) << endl;
-    cout << "Apex: " << coord[0] << " " << coord[1] << " " << coord[2] << endl;
-    cout << "Top 5% z coordinate: " << zTop5 << endl;
-
+    cout << "\tHeart aligns along " << axis << " (0=x, 1=y, 2=z)" << endl;
+    cout << "\tMin: " << coord_min(0) << " " << coord_min(1) << " " << coord_min(2) << endl;
+    cout << "\tMax: " << coord_max(0) << " " << coord_max(1) << " " << coord_max(2) << endl;
+    cout << "\tApex: " << coord[0] << " " << coord[1] << " " << coord[2] << endl;
+    cout << "\tTop 5% axis {"<< axis <<") coordinate: " << apexTop5 << endl;
+       
+    
     // Initialization the attributes to 0 and set attribute of apex
     for(int i=0; i<ne; i++){
         Element *ele = surface->GetElement(i);        
@@ -574,10 +683,10 @@ void setSurf4Surf(Mesh *surface, double angle){
         MFEM_ASSERT(nv == 3, "Wrong boundary size");
         
         double *coord0 = surface->GetVertex(v[0]);
-        if(coord0[2]>zTop5){
+        if(coord0[axis]>apexTop5){
             double *coord1 = surface->GetVertex(v[1]);
             double *coord2 = surface->GetVertex(v[2]);
-            if(isPlanar(coord0, coord1, coord2, cosTheta)){
+            if(isPlanar(coord0, coord1, coord2, cosTheta, axis)){
                 ele->SetAttribute(baseAttr);
             }
         }
@@ -659,7 +768,7 @@ void setSurf4Surf(Mesh *surface, double angle){
             
 }
 
-
+/*
 void setBaseOLD(Mesh *mesh, int attr){
     int nv = mesh->GetNV();
     double *coord;
@@ -715,9 +824,9 @@ void setBaseOLD(Mesh *mesh, int attr){
     }    
     
     // for debug
-/*    ofstream befh;
+    ofstream befh;
     befh.open("boundary3.txt");
-*/    //
+    //
     
     double cosTheta = cos(20*PI/180); // within 20 degrees of z axis.
     vector<vector<int> > baseBoundary;
@@ -743,7 +852,7 @@ void setBaseOLD(Mesh *mesh, int attr){
                 sort(vertecies.begin(), vertecies.end());
                 baseBoundary.push_back(vertecies);
                 // for debug
-/*                befh << nv;
+                befh << nv;
                 for (int j = 0; j < nv; j++) {                    
                     befh << ' ' << v[j];                    
                 }
@@ -755,7 +864,7 @@ void setBaseOLD(Mesh *mesh, int attr){
                 }
                 befh << '\n';                 
                 //
- */
+ 
             }
         }
         
@@ -787,4 +896,4 @@ void setBaseOLD(Mesh *mesh, int attr){
     
     
 }
-
+*/
