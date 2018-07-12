@@ -188,3 +188,14 @@ anatomy#000005  anatomy#000042  anatomy#000079  anatomy#000116  anatomy#000153  
 
 Generate by the standalone "surface". Tagged surface vtk file with face order unchanged.
 
+
+
+## 6 Use ParaView to visualize fiber and generate the figure.
+In ParaBiew:
+1. Open fvectors.vtk 
+2. Apply → stream tracer (Filters -> Alphabetical -> Stream Tracer)
+3. StreamTracer: Seed Type=Point Source; Radius=70; Number of Points=100000; 
+4. Apply → tube  (Filters -> Alphabetical -> Tube)
+5. Tube: Radius=0.3; Coloring=fiber, Z (or X, Y depend on axis heart algined against)
+6. Save the image by File -> Save Screenshot...
+
