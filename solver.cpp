@@ -1,3 +1,6 @@
+#include <set>
+#include <valarray>
+
 #include "solver.h"
 #include "constants.h"
 #include "option.h"
@@ -274,7 +277,7 @@ bool isTriInTet(vector<int>& tri, vector<int>& tet){
     return false;
 }
 
-void findNeighbor(Element* ele, vector<Element*>& elements, int attr){
+void findNeighborRecursive(Element* ele, vector<Element*>& elements, int attr){
     const int *v = ele->GetVertices();
     const int nv = ele->GetNVertices(); 
     for(unsigned i=0; i<elements.size(); i++){
@@ -297,10 +300,66 @@ void findNeighbor(Element* ele, vector<Element*>& elements, int attr){
             if(isNeighbor){
                 queryEle->SetAttribute(attr);
                 // recursively search for neighboring elements.
-                findNeighbor(queryEle, elements, attr);
+                findNeighborRecursive(queryEle, elements, attr);
             }
         }
     }           
+}
+
+set<Element*> findNeighbor(Element* ele, set<Element*>& elements, int attr){
+    
+    set<Element*> explored;
+    set<Element*> front;
+    
+    front.insert(ele);
+    
+    while(!front.empty()){
+        // grab item from front
+        Element* item=*(front.begin());        
+        explored.insert(item);
+        front.erase(front.begin());
+        
+        set<Element*> neighbors;
+
+        const int *v = item->GetVertices();
+        const int nv = item->GetNVertices(); 
+        for(set<Element*>::iterator it=elements.begin(); it!=elements.end(); ++it){
+            Element* queryEle=(*it);
+            const int *qv = queryEle->GetVertices();
+            const int nqv = queryEle->GetNVertices(); 
+            bool found=false;
+            for (int j = 0; j < nv; j++) {
+                for (int k = 0; k < nqv; k++) {
+                    // If two elements share the same vertex they are neighbor. 
+                    if(v[j]==qv[k]){                   
+                        neighbors.insert(queryEle);
+                        found=true;
+                        //cout << "DEBUG size of neighbors=" << neighbors.size()<< endl;
+                        break;
+                    }
+                }
+                if(found) break;
+            }
+            
+        }
+                        
+        for(set<Element*>::iterator it=neighbors.begin(); it!=neighbors.end(); ++it){
+            elements.erase(*(it)); // remove the found neighbors from elements
+            
+            if(explored.find(*(it)) == explored.end()){ // if neighobr is not in explored
+                front.insert(*(it));
+            }
+        }
+               
+    }
+    
+    for(set<Element*>::iterator it=explored.begin(); it!=explored.end(); ++it){
+        (*it)->SetAttribute(attr); //set the attribute values
+    }
+    
+    //cout << "DEBUG number of explored elements=" << explored.size() << endl;
+    
+    return explored;
 }
 
 int detectAxis(Mesh *mesh, vector<Vector>& boundingbox){
@@ -354,8 +413,6 @@ void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle, int myid
     const int epiAttr=3;
     const int lvAttr=5; 
     const int rvAttr=4;
-    
-    const int vAttr=9; // A temporary value assigned to one of ventricle first.
        
     // Determine the max and min dimension of mesh and apex.
     double *coord;
@@ -481,69 +538,51 @@ void setSurfaces(Mesh *mesh, vector<Vector>& boundingbox, double angle, int myid
     }
     
     //EPI
-    vector<Element *> elements;
+    set<Element*> elements;
     for(int i=0; i<nbe; i++){
         Element *ele = mesh->GetBdrElement(i); 
         if(ele->GetAttribute()==0){
-            elements.push_back(ele);
+            elements.insert(ele);
         }
     }
     
     Element *apexEle=mesh->GetBdrElement(apexEleIndex);
-    findNeighbor(apexEle, elements, epiAttr);
+    set<Element*> epiElements=findNeighbor(apexEle, elements, epiAttr);
+        
+    // set the apexEle back to apexAttr, it got changed in the findNeighbor
+    apexEle->SetAttribute(apexAttr);
     
     // LV & RV
-    vector<Element *> vElements;    
-    for(unsigned i=0; i<elements.size(); i++){
-        Element *ele =elements[i];
-        if(ele->GetAttribute()==0){
-            vElements.push_back(ele);
-        }
-    }
-    // pick one element in the container and assigned it to a temporary attr value.
-    int last=vElements.size()-1;
-    Element *lastEle=vElements[last];
-    lastEle->SetAttribute(vAttr);
+    // pick one element in the container and assume it is right ventricles.
+    Element* lastEle=*(elements.begin()); 
+    lastEle->SetAttribute(rvAttr);
     // get rid of last element in the container
-    vElements.pop_back();
-    findNeighbor(lastEle, vElements, vAttr);
-    
-    //count the numbers of points in two ventricles
-    unsigned v1count=0;
-    unsigned v2count=0;
-    for(unsigned i=0; i<vElements.size(); i++){
-        Element *ele =vElements[i];
-        if(ele->GetAttribute()==vAttr){
-            v1count++;
-        }
-        if(ele->GetAttribute()==0){
-            v2count++;
-        }        
+    elements.erase(elements.begin());
+    set<Element*> vElements=findNeighbor(lastEle, elements, rvAttr);
+        
+    //get the numbers of points in two ventricles
+    unsigned v1count=vElements.size(); // assume right ventricle
+    unsigned v2count=elements.size();  // assume left ventricle
+ 
+    if (myid == 0) {
+        cout << "\nEPI number of element = " << epiElements.size() << endl;
+        cout << "V1  number of element = " << v1count << endl;
+        cout << "V2  number of element = " << v2count << endl << endl;
     }
-    
+
     //The right ventricle has more points/cells than the left 
-    if(v1count>v2count){
-       lastEle->SetAttribute(rvAttr);
-      for(unsigned i=0; i<vElements.size(); i++){
-          Element *ele =vElements[i];
-          if(ele->GetAttribute()==vAttr){
-             ele->SetAttribute(rvAttr);
-          }
-          if(ele->GetAttribute()==0){
-              ele->SetAttribute(lvAttr);
-          }        
-      }       
+    if(v1count>v2count){ //the assumption validated
+        for(set<Element*>::iterator it=elements.begin(); it!=elements.end(); ++it){
+            (*it)->SetAttribute(lvAttr); //set the attribute values
+        }              
     }else{
        lastEle->SetAttribute(lvAttr);
-      for(unsigned i=0; i<vElements.size(); i++){
-          Element *ele =vElements[i];
-          if(ele->GetAttribute()==vAttr){
-             ele->SetAttribute(lvAttr);
-          }
-          if(ele->GetAttribute()==0){
-              ele->SetAttribute(rvAttr);
-          }        
-      }        
+        for(set<Element*>::iterator it=vElements.begin(); it!=vElements.end(); ++it){
+            (*it)->SetAttribute(lvAttr); //set the attribute values
+        }
+        for(set<Element*>::iterator it=elements.begin(); it!=elements.end(); ++it){
+            (*it)->SetAttribute(rvAttr); //set the attribute values
+        }              
     }
 
     // Check if there are unassigned elements left.
@@ -563,8 +602,6 @@ void setSurf4Surf(Mesh *surface, double angle){
     const int epiAttr=3;
     const int lvAttr=5; 
     const int rvAttr=4;
-    
-    const int vAttr=9; // A temporary value assigned to one of ventricle first.
        
     // Determine the max and min dimension of mesh and apex.
     double *coord;
@@ -693,69 +730,45 @@ void setSurf4Surf(Mesh *surface, double angle){
     }
     
     //EPI
-    vector<Element *> elements;
+    set<Element*> elements;
     for(int i=0; i<ne; i++){
         Element *ele = surface->GetElement(i); 
         if(ele->GetAttribute()==0){
-            elements.push_back(ele);
+            elements.insert(ele);
         }
     }
     
     Element *apexEle=surface->GetElement(apexEleIndex);
-    findNeighbor(apexEle, elements, epiAttr);
+    set<Element*> epiElements=findNeighbor(apexEle, elements, epiAttr);
+    
+    // set the apexEle back to apexAttr, it got changed in the findNeighbor
+    apexEle->SetAttribute(apexAttr);    
     
     // LV & RV
-    vector<Element *> vElements;    
-    for(unsigned i=0; i<elements.size(); i++){
-        Element *ele =elements[i];
-        if(ele->GetAttribute()==0){
-            vElements.push_back(ele);
-        }
-    }
-    // pick one element in the container and assigned it to a temporary attr value.
-    int last=vElements.size()-1;
-    Element *lastEle=vElements[last];
-    lastEle->SetAttribute(vAttr);
+    // pick one element in the container and assume it is right ventricles.
+    Element* lastEle=*(elements.begin()); 
+    lastEle->SetAttribute(rvAttr);
     // get rid of last element in the container
-    vElements.pop_back();
-    findNeighbor(lastEle, vElements, vAttr);
+    elements.erase(elements.begin());
+    set<Element*> vElements=findNeighbor(lastEle, elements, rvAttr);
     
-    //count the numbers of points in two ventricles
-    unsigned v1count=0;
-    unsigned v2count=0;
-    for(unsigned i=0; i<vElements.size(); i++){
-        Element *ele =vElements[i];
-        if(ele->GetAttribute()==vAttr){
-            v1count++;
-        }
-        if(ele->GetAttribute()==0){
-            v2count++;
-        }        
-    }
+    //get the numbers of points in two ventricles
+    unsigned v1count=vElements.size(); // assume right ventricle
+    unsigned v2count=elements.size();  // assume left ventricle
     
     //The right ventricle has more points/cells than the left 
-    if(v1count>v2count){
-       lastEle->SetAttribute(rvAttr);
-      for(unsigned i=0; i<vElements.size(); i++){
-          Element *ele =vElements[i];
-          if(ele->GetAttribute()==vAttr){
-             ele->SetAttribute(rvAttr);
-          }
-          if(ele->GetAttribute()==0){
-              ele->SetAttribute(lvAttr);
-          }        
-      }       
+    if(v1count>v2count){ //the assumption validated
+        for(set<Element*>::iterator it=elements.begin(); it!=elements.end(); ++it){
+            (*it)->SetAttribute(lvAttr); //set the attribute values
+        }              
     }else{
        lastEle->SetAttribute(lvAttr);
-      for(unsigned i=0; i<vElements.size(); i++){
-          Element *ele =vElements[i];
-          if(ele->GetAttribute()==vAttr){
-             ele->SetAttribute(lvAttr);
-          }
-          if(ele->GetAttribute()==0){
-              ele->SetAttribute(rvAttr);
-          }        
-      }        
+        for(set<Element*>::iterator it=vElements.begin(); it!=vElements.end(); ++it){
+            (*it)->SetAttribute(lvAttr); //set the attribute values
+        }
+        for(set<Element*>::iterator it=elements.begin(); it!=elements.end(); ++it){
+            (*it)->SetAttribute(rvAttr); //set the attribute values
+        }              
     }
 
     // Check if there are unassigned elements left.
