@@ -13,3 +13,5 @@
 /slab.ground.set*
 ex1*.cpp
 *~
+*ground.set
+sol.vtk
