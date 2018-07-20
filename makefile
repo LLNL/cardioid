@@ -10,8 +10,9 @@
 # Software Foundation) version 2.1 dated February 1999.
 
 # Use the MFEM build directory
-MFEM_DIR=deps/share/mfem
-CONFIG_MK = $(MFEM_DIR)/config.mk
+##PR MFEM_DIR=deps/share/mfem
+##PR CONFIG_MK = $(MFEM_DIR)/config.mk
+CONFIG_MK = $(MFEM_DIR)/config/config.mk
 TEST_MK = $(MFEM_DIR)/test.mk
 # Use the MFEM install directory
 # MFEM_DIR = ../mfem
@@ -72,20 +73,24 @@ DDCMDSRC = $(filter %.c, $(DDCMD_FILES))
 DDCMD_OBJECT = $(DDCMDSRC:.c=.o)
 OBJECTS = $(DDCMD_OBJECT)
 
-MY_FLAGS = -IddcmdUtil/include -DDiff_Weight_Type_Single -DWITH_PIO -DWITH_MPI -IddcmdUtil/include
+MY_FLAGS = -IddcmdUtil/include -D_USE_MATH_DEFINES -DDiff_Weight_Type_Single -DWITH_PIO -DWITH_MPI -IddcmdUtil/include -I/usr/tce/packages/impi/impi-2018.0-gcc-4.9.3/include -g -DM_PI=3.14159 -std=c++11 -DDEBUG
 
-MFEM_CC := $(MFEM_CXX)
+MFEM_CC = mpicxx #$(MFEM_CXX)
 MFEM_CC := $(MFEM_CC:%c++=%cc)
 MFEM_CC := $(MFEM_CC:%cxx=%cc)
 
-ecg: $(OBJECTS) ecg.cpp 
-	$(MFEM_CXX) $(MFEM_FLAGS) $(MY_FLAGS) $(OBJECTS) ecg.cpp -o $@ $(MFEM_LIBS)
+ecg: $(OBJECTS) 
+	$(MFEM_CXX) -std=c++11 $(MFEM_FLAGS) $(MY_FLAGS) $(OBJECTS) ecg.cpp -o $@ $(MFEM_LIBS) -L/usr/tce/packages/impi/impi-2018.0-gcc-4.9.3/lib
+
+pecg: $(OBJECTS) 
+	$(MFEM_CXX) -std=c++11 $(MFEM_FLAGS) $(MY_FLAGS) $(OBJECTS) pecg.cpp -o $@ $(MFEM_LIBS) -L/usr/tce/packages/impi/impi-2018.0-gcc-4.9.3/lib
+	#$(MFEM_CXX) -std=c++11 $(MFEM_FLAGS) $(MY_FLAGS) $(OBJECTS) pecg.cpp -o $@ $(MFEM_LIBS) -L/usr/tce/packages/impi/impi-2018.0-gcc-4.9.3/lib -L../hypre/src/hypre/lib -I../hypre/src/hypre/include
 
 %.o : %.cpp
-	$(MFEM_CXX) $(MFEM_FLAGS) $(MY_FLAGS) -c $(<) -o $(@)
+	$(MFEM_CXX) -std=gnu++11 $(MFEM_FLAGS) $(MY_FLAGS) -c $(<) -o $(@)
 
 ddcmdUtil/src/%.o : ddcmdUtil/src/%.c
-	$(MFEM_CC) $(MFEM_FLAGS) $(MY_FLAGS) -c $< -o $@
+	$(MFEM_CC) -std=c99 $(MFEM_FLAGS) $(MY_FLAGS) -c $< -o $@
 
 # Testing: "test" target and mfem-test* variables are defined in config/test.mk
 
