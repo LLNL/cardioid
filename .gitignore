@@ -4,10 +4,11 @@
 /*.core
 .nfs*
 /ecg
-/ecg.mfem.FiberQuat.gf
+/ecg.mfem.FiberQuat.gf*
 /refined.mesh
-/slab.vtk
-/sol.gf
-/slab.FiberQuat.gf
-/slab.Vm.gf
-/slab.ground.set
+/slab.vtk*
+/sol.gf*
+/slab.FiberQuat.gf*
+/slab.Vm.gf*
+/slab.ground.set*
+*~
