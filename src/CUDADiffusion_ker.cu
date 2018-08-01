@@ -152,11 +152,11 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
 //  #undef npsi(x,y,z) 
 }
 
-__global__ void map_dVm(ArrayView<Real> dVmOut, ConstArrayView<Real> dVmRaw, ConstArrayView<int> remap,int nCells)
+__global__ void map_dVm(ArrayView<Real> dVmOut, ConstArrayView<Real> dVmRaw, ConstArrayView<int> remap,int nLocal)
 {
   int idx0 = threadIdx.x + blockDim.x*blockIdx.x;
   int stride = blockDim.x * gridDim.x;
-  for(int idx = idx0 ; idx<nCells ; idx+=stride)
+  for(int idx = idx0 ; idx<nLocal ; idx+=stride)
   {
       dVmOut[idx] = dVmRaw[remap[idx]];
   }
@@ -171,7 +171,7 @@ __global__ void map_dVm(ArrayView<Real> dVmOut, ConstArrayView<Real> dVmRaw, Con
 //      VT[remap[idx]] = V[idx];
 //}
 
-void call_cuda_kernels(OnDevice<ConstArrayView<Real>> Vm, OnDevice<ArrayView<Real>> dVm, OnDevice<ConstArrayView<Real>> sigma, int nx, int ny, int nz, OnDevice<ArrayView<Real>> dVmOut, OnDevice<ConstArrayView<int>> lookup,int nCells)
+void call_cuda_kernels(OnDevice<ConstArrayView<Real>> Vm, OnDevice<ArrayView<Real>> dVm, OnDevice<ConstArrayView<Real>> sigma, int nx, int ny, int nz, OnDevice<ArrayView<Real>> dVmOut, OnDevice<ConstArrayView<int>> lookup,int nLocal)
 {   
    //determine block dim
    //1. blockdim.z and blockdim.y are determined in a simple way.
@@ -192,7 +192,7 @@ void call_cuda_kernels(OnDevice<ConstArrayView<Real>> Vm, OnDevice<ArrayView<Rea
 //   {
 //     printf("mcp (%d,%d,%d)=%e\n",ii,jj,kk,tmp[kk+nz*(jj+ny*ii)]);
 //   }
-   map_dVm<<<112,512>>>(dVmOut,dVm,lookup,nCells);
+   map_dVm<<<112,512>>>(dVmOut,dVm,lookup,nLocal);
 }
 
 __global__ void copy_to_block_kernel(ArrayView<double> blockGPU, ConstArrayView<int> lookupGPU, ConstArrayView<double> sourceGPU, const int begin, const int end)
