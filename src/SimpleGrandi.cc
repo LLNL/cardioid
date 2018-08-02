@@ -14,44 +14,42 @@
 #include "SimpleGrandi.hh"
 #include "object_cc.hh"
 #include "Anatomy.hh"
+#include "reactionFactory.hh"
 #include <cmath>
 
 #define pi 3.141592653589793238462643383279502884197169399375105820974944592307816406286
 
 using namespace std;
 
-namespace scanReaction 
-{
 
 #define setDefault(name, value) objectGet(obj, #name, reaction->name, #value)
    
-   Reaction* scanSimpleGrandi(OBJECT* obj, const int numPoints)
-   {
-      SimpleGrandi::ThisReaction* reaction = new SimpleGrandi::ThisReaction(numPoints);
+REACTION_FACTORY(SimpleGrandi)(OBJECT* obj, const double, const int numPoints, const ThreadTeam&)
+{
+   SimpleGrandi::ThisReaction* reaction = new SimpleGrandi::ThisReaction(numPoints);
 
-      //override the defaults
-      //EDIT_FLAGS
-      setDefault(AF, 0);
-      setDefault(ISO, 0);
-      setDefault(RA, 1);
-      setDefault(useRatpolyApprox, 0);
+   //override the defaults
+   //EDIT_FLAGS
+   setDefault(AF, 0);
+   setDefault(ISO, 0);
+   setDefault(RA, 1);
+   setDefault(useRatpolyApprox, 0);
 
-      //EDIT_PARAMETERS
-      /*setDefault(ks, 25); // [1/ms]      
-      setDefault(Vmax_SRCaP, 5.3114e-3);  // [mM/msec] (286 umol/L cytosol/sec)
-      setDefault(GCaB, 6.0643e-4);    // [uA/uF] 3
-      setDefault(GClCa, 0.0548);   // [mS/uF]
-      setDefault(GClB, 9e-3);        // [mS/uF]
-      setDefault(gkp, 0.002);
-      setDefault(IbarNaK, 1.26);     // [uA/uF]
-      setDefault(IbarSLCaP, 0.0471); // IbarSLCaP FEI changed [uA/uF](2.2 umol/L cytosol/sec) jeff 0.093 [uA/uF]
-      */
+   //EDIT_PARAMETERS
+   /*setDefault(ks, 25); // [1/ms]      
+     setDefault(Vmax_SRCaP, 5.3114e-3);  // [mM/msec] (286 umol/L cytosol/sec)
+     setDefault(GCaB, 6.0643e-4);    // [uA/uF] 3
+     setDefault(GClCa, 0.0548);   // [mS/uF]
+     setDefault(GClB, 9e-3);        // [mS/uF]
+     setDefault(gkp, 0.002);
+     setDefault(IbarNaK, 1.26);     // [uA/uF]
+     setDefault(IbarSLCaP, 0.0471); // IbarSLCaP FEI changed [uA/uF](2.2 umol/L cytosol/sec) jeff 0.093 [uA/uF]
+   */
 
-      return reaction;
-   }
+   return reaction;
+}
 #undef setDefault
 
-}
 
 static inline double pow(const double x, const int p)
 {

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+reaction=${1%%.cc}
+
+@CMAKE_CXX_COMPILER@ \
+ @CMAKE_CXX_FLAGS@ \
+ @CMAKE_C_FLAGS@ \
+ @CMAKE_SHARED_LIBRARY_C_FLAGS@ \
+ @CMAKE_C_FLAGS_BUILD@ \
+ @heart_compile_flags@ \
+ @CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS@ \
+ -DDYNAMIC_REACTION=1 \
+ -o $reaction.so \
+ $reaction.cc \
+ -L@CMAKE_CURRENT_BINARY_DIR@ -lheart
+

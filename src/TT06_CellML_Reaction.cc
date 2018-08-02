@@ -1,6 +1,8 @@
 #include "TT06_CellML_Reaction.hh"
 #include <cmath>
+#include "object_cc.hh"
 #include "Anatomy.hh"
+#include "reactionFactory.hh"
 #include "TT06_CellML.hh"
 #include "TT06_CellML_Endo.hh"
 #include "TT06_CellML_Mid.hh"
@@ -264,3 +266,15 @@ void TT06_CellML_Reaction::rushLarsenIntegrator(double dt, ConstArrayView<double
    }
 }
 
+REACTION_FACTORY(TT06_CellML)(OBJECT* obj, const double, const int numPoints, const ThreadTeam&)
+{
+   TT06_CellML_Reaction::IntegratorType integrator;
+   string tmp;
+   objectGet(obj, "integrator", tmp, "rushLarsen");
+   if      (tmp == "rushLarsen")   integrator = TT06_CellML_Reaction::rushLarsen;
+   else if (tmp == "forwardEuler") integrator = TT06_CellML_Reaction::forwardEuler;
+   else    assert(false);    
+   int ttType;
+   objectGet(obj, "ttType", ttType, "0");
+   return new TT06_CellML_Reaction(numPoints, ttType, integrator);
+}

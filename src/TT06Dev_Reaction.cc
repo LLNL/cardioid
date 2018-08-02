@@ -1,5 +1,6 @@
 #include "TT06Dev_Reaction.hh"
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include "Anatomy.hh"
 #include "TT06Func.hh"
@@ -15,6 +16,9 @@
 #include <string>
 #include <algorithm>
 #include "pio.h"
+#include "object_cc.hh"
+#include "ioUtils.h"
+#include "reactionFactory.hh"
 
 #include "slow_fix.hh"
 
@@ -570,3 +574,111 @@ HandleMap& TT06Dev_Reaction::getHandleMap() const
    return handleMap;
 }
 
+   PADE *scanFit()
+   {
+      if (!object_exists("functions", "FIT") ) return NULL;
+      OBJECT* obj = object_find("functions", "FIT");
+      vector<string>fitName; 
+      objectGet(obj,"functions",fitName); 
+      PADE *fit =  new PADE  [fitName.size()] ;
+      for (int i=0;i<fitName.size();i++)
+      {
+         vector<double> coef; 
+         double tol,deltaV,V0,V1;
+         int l,m;
+         string name = fitName[i]; 
+         OBJECT* obj = object_find(name.c_str(), "FIT");
+         objectGet(obj,"tol", tol,"1.0"); 
+         objectGet(obj,"deltaX",deltaV,"1"); 
+         objectGet(obj,"x0"    ,    V0,"0"); 
+         objectGet(obj,"x1"    ,    V1,"0"); 
+         objectGet(obj,"l"     ,     l,"0"); 
+         objectGet(obj,"m"     ,     m,"0"); 
+         objectGet(obj,"coef"  ,coef); 
+         padeApprox(fit[i],name,fitFuncMap(name),NULL,0,deltaV,V0,V1,tol,0,0,0,l,m,&coef[0]); 
+      //   fit[i].aparms=fit+i; 
+      }
+      return fit; 
+   }
+   REACTION_FACTORY(TT06Dev)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group)
+   {
+      vector<string> scaleCurrents;
+      TT06Dev_ReactionParms parms;
+      map<string,TT06Func::CellTypeParmsFull> cellTypeParms = TT06Func::getStandardCellTypes(); 
+      int fastGate =-1; 
+      int fastNonGate =-1; 
+      TT06Func::initCnst(); 
+      string fitFit; 
+/*
+      if (object_testforkeyword(obj,"mod") )
+      {
+          //if (getRank(0) == 0) printf("keyword <mod> is deprecated by <jhTauSmooth>.  Replace keyword <mod> in the reaction object <%s>  with <jhTauSmooth>\n",obj->name); 
+          
+          //exit(1); 
+         objectGet(obj, "mod",          parms.jhTauSmooth, "0") ;
+      }
+*/
+      objectGet(obj, "mod",          parms.jhTauSmooth, "0") ;
+      objectGet(obj, "tolerance",    parms.tolerance, "0.0") ;
+      objectGet(obj, "fastReaction", parms.fastReaction, "-1") ;
+      objectGet(obj, "fastGate",     fastGate, "-1") ;
+      objectGet(obj, "fastNonGate",  fastNonGate, "-1") ;
+      if (object_testforkeyword(obj, "gateThreadMap") ) objectGet(obj,"gateThreadMap",parms.gateThreadMap);
+      parms.fit = NULL; 
+      parms.fitFile = "fit.data"; 
+      if (object_testforkeyword(obj,"fitFile") )
+      {
+        objectGet(obj, "fitFile",     parms.fitFile,"fit.data"); 
+        int fileFitExists=0; 
+        if (getRank(0) ==0) 
+        {
+          if (filetest(parms.fitFile.c_str(), S_IFREG) == 0) fileFitExists=1; 
+          if (fileFitExists) object_compilefile(parms.fitFile.c_str()); 
+        }
+        MPI_Bcast(&fileFitExists, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        if (fileFitExists) 
+        {
+           object_Bcast(0, MPI_COMM_WORLD);
+           parms.fit = scanFit();
+        }
+      }
+      if (parms.fastReaction == -1) 
+      {
+         if (fastGate    ==  -1 )  fastGate   =0; 
+         if (fastNonGate ==  -1 )  fastNonGate=0; 
+         parms.fastReaction = fastGate+256*fastNonGate; 
+      }
+      string cellTypeName;
+      objectGet(obj, "cellTypeName", cellTypeName, "endoCellML");
+
+      OBJECT* cellobj = object_find2(cellTypeName.c_str(), "CELLTYPE", IGNORE_IF_NOT_FOUND);
+      if (cellobj) {
+         string clone; 
+         objectGet(cellobj, "clone", clone, "") ;
+         if (clone != "")
+         {
+            assert(cellTypeName != clone); 
+            assert(cellTypeParms.count(clone) != 0);
+            cellTypeParms[cellTypeName]=cellTypeParms[clone]; 
+            cellTypeParms[cellTypeName].name=cellTypeName;
+         }
+         if (object_testforkeyword(cellobj, "s_switch")       ) objectGet(cellobj,"s_switch"      ,cellTypeParms[cellTypeName].s_switch,"0"); 
+         if (object_testforkeyword(cellobj, "P_NaK")          ) objectGet(cellobj,"P_NaK"         ,cellTypeParms[cellTypeName].P_NaK,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_NaL")          ) objectGet(cellobj,"g_NaL"         ,cellTypeParms[cellTypeName].g_NaL,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_Ks")           ) objectGet(cellobj,"g_Ks"        ,cellTypeParms[cellTypeName].g_Ks,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_Kr")           ) objectGet(cellobj,"g_Kr"        ,cellTypeParms[cellTypeName].g_Kr,"0.0"); 
+         if (object_testforkeyword(cellobj, "g_to")           ) objectGet(cellobj,"g_to"        ,cellTypeParms[cellTypeName].g_to,"0.0"); 
+      } else {
+         assert(cellTypeName == cellTypeParms[cellTypeName].name);
+      }
+      parms.cellTypeParm = cellTypeParms[cellTypeName];
+
+      parms.currentNames = scaleCurrents;
+      
+      Reaction *reaction = new TT06Dev_Reaction(dt, numPoints, parms, group);
+      return  reaction; 
+   }
+   REACTION_FACTORY(TT06Opt)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group)
+   {
+      return reactionFactoryForTT06Dev(obj,dt,numPoints,group);
+   }

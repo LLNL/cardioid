@@ -2,13 +2,26 @@
 #define REACTION_FACTORY_HH
 #include <vector>
 #include <string>
+#include <functional>
+#include "object.h"
 class ThreadTeam;
 class Reaction;
-class Anatomy;
-using std::string;
-using std::vector;
+
+typedef std::function<Reaction*(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group)> reactionFactoryFunction;
 
 Reaction* reactionFactory(const std::string& name, double dt, const int numPoints,
                           const ThreadTeam &group);
+
+void registerReactionFactory(const std::string method, reactionFactoryFunction scanFunc);
+
+void registerBuiltinReactions();
+
+#ifdef DYNAMIC_REACTION
+#define REACTION_FACTORY(name) extern "C" Reaction* factory
+#define FRIEND_FACTORY(name) friend extern "C" Reaction* ::factory
+#else
+#define REACTION_FACTORY(name) Reaction* reactionFactoryFor##name
+#define FRIEND_FACTORY(name) friend Reaction* ::reactionFactoryFor##name
+#endif
 
 #endif

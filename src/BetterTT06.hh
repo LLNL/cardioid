@@ -2,15 +2,13 @@
 #include "Interpolation.hh"
 #include "TransportCoordinator.hh"
 #include "object.h"
+#include "reactionFactory.hh"
 #include <vector>
 #include <sstream>
 #include <nvrtc.h>
 #include <cuda.h>
 
-namespace scanReaction 
-{
-    Reaction* scanBetterTT06(OBJECT* obj, const int numPoints, const double __dt);
-}
+REACTION_FACTORY(BetterTT06 )(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);
 
 namespace BetterTT06
 {
@@ -54,7 +52,7 @@ namespace BetterTT06
       int blockSize_;
 
       Interpolation _interpolant[31];
-      friend Reaction* scanReaction::scanBetterTT06(OBJECT* obj, const int numPoints, const double __dt);
+      FRIEND_FACTORY(BetterTT06)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);
    };
 }
 

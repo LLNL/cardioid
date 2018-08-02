@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <string>
 #include <cstring>
+#include <iostream>
 
 #include "Reaction.hh"
 #include "VectorDouble32.hh"
@@ -65,7 +66,19 @@ int main(int argc, char* argv[])
 
    struct gengetopt_args_info params;
    cmdline_parser(argc, argv, &params);
-
+   if (!params.object_given && !params.method_given)
+   {
+      cmdline_parser_print_help();
+      cerr << "ERROR: Must specify either at least one object or a method name.\n";
+      return -1;
+   }
+   else if (params.object_given && params.method_given)
+   {
+      cmdline_parser_print_help();
+      cerr << "ERROR: Cannot specify both a method name and an object file-- pick one.\n";
+      return -1;
+   }
+   
    double dt = params.dt_arg;
 
    double duration;
@@ -124,60 +137,68 @@ int main(int argc, char* argv[])
    //create the ionic model
    const int nCells = params.num_points_arg;
 
-   //read in the object file
-   for (int iobject=0; iobject<params.object_given; iobject++) 
-   {
-      object_compilefile(params.object_arg[iobject]);
-   }
-   
-   //figure out the name of the object
    string objectName;
-   if (params.reaction_name_given) 
+   if (params.method_given)
    {
-      objectName = params.reaction_name_arg;
-      objectFind(objectName, "REACTION");
+      string objectFile = string("default REACTION { method=")+params.method_arg+"; }";
+      object_compilestring(const_cast<char*>(objectFile.c_str()));
+      objectName = "default";
    }
    else
    {
-      /* 
-         Unlike most uses of the object database, we'd like users to be
-         able to name the top level object here whatever they'd like, so
-         they can use the same reaction object in actual simulation runs
-      */
-      string objectClass;
-      OBJECTFILE file;
-      file = object_fopen(params.object_arg[0], "r");
-      if (file.file == NULL)
+      //read in the object file
+      for (int iobject=0; iobject<params.object_given; iobject++) 
       {
-         fprintf(stderr, "Object file could not be opened for reading.\n");
-         return __LINE__;
+         object_compilefile(params.object_arg[iobject]);
       }
-      char* g_line = object_read(file);
-      if (g_line == NULL)
+   
+      if (params.reaction_name_given) 
       {
-         fprintf(stderr, "Object file is empty.\n");
-         return __LINE__;
+         objectName = params.reaction_name_arg;
+         objectFind(objectName, "REACTION");
       }
-      char* line = strdup(g_line);
-      OBJECT obj;
-      int rc = object_lineparse(line, &obj);
-      if (rc >= 2)
+      else
       {
-         fprintf(stderr, "Other object parsing error?\n");
-         return __LINE__;
-      }
-      objectName = obj.name;
-      objectClass = obj.objclass;
+         /* 
+            Unlike most uses of the object database, we'd like users to be
+            able to name the top level object here whatever they'd like, so
+            they can use the same reaction object in actual simulation runs
+         */
+         string objectClass;
+         OBJECTFILE file;
+         file = object_fopen(params.object_arg[0], "r");
+         if (file.file == NULL)
+         {
+            fprintf(stderr, "Object file could not be opened for reading.\n");
+            return __LINE__;
+         }
+         char* g_line = object_read(file);
+         if (g_line == NULL)
+         {
+            fprintf(stderr, "Object file is empty.\n");
+            return __LINE__;
+         }
+         char* line = strdup(g_line);
+         OBJECT obj;
+         int rc = object_lineparse(line, &obj);
+         if (rc >= 2)
+         {
+            fprintf(stderr, "Other object parsing error?\n");
+            return __LINE__;
+         }
+         objectName = obj.name;
+         objectClass = obj.objclass;
 
-      free(obj.name);
-      free(obj.objclass);
-      free(obj.value);
-      free(line);
-      object_fclose(file);
-      if (objectClass != "REACTION")
-      {
-         fprintf(stderr, "First object in file must be a REACTION!\n");
-         return __LINE__;
+         free(obj.name);
+         free(obj.objclass);
+         free(obj.value);
+         free(line);
+         object_fclose(file);
+         if (objectClass != "REACTION")
+         {
+            fprintf(stderr, "First object in file must be a REACTION!\n");
+            return __LINE__;
+         }
       }
    }
 

@@ -71,7 +71,7 @@ class TT06Dev_Reaction : public Reaction
 
    CellTypeParms cellTypeParm_;
    double XXXinitialVm_;
-   unsigned nCells_;
+   int nCells_;
    CURRENT_SCALES currentScales_; 
    std::vector<int> currentMap_; 
 

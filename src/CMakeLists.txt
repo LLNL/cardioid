@@ -1,6 +1,18 @@
 
 project(cardioid_elec)
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.1)
+
+macro(use_c99)
+  if (CMAKE_VERSION VERSION_LESS "3.1.3")
+    if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+      set (CMAKE_C_FLAGS "-std=gnu99 ${CMAKE_C_FLAGS}")
+    endif ()
+  else ()
+    set (CMAKE_C_STANDARD 99)
+  endif ()
+endmacro(use_c99)
+
+use_c99()
 
 # Set a default build type if none was specified
 set(default_build_type "Release")
@@ -15,6 +27,12 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   # Set the possible values of build type for cmake-gui
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
     "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
+#Fixing bad default behavior for plugins on OSX
+if (CMAKE_SYSTEM_NAME MATCHES Darwin)
+  SET(CMAKE_SHARED_MODULE_CREATE_C_FLAGS "${CMAKE_SHARED_MODULE_CREATE_C_FLAGS} -undefined dynamic_lookup")
+  SET(CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS "${CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS} -undefined dynamic_lookup")
 endif()
 
 find_package(OpenMP)
@@ -33,10 +51,41 @@ find_library(BLAS_LIB blas)
 find_library(LAPACK_LIB lapack)
 
 find_package(CUDA QUIET REQUIRED)
+find_program(PERL perl)
 
 if (BLAS_LIB AND LAPACK_LIB)
    add_definitions(-DHAVE_LAPACK)
 endif()
+
+
+
+set (reaction_src
+	TT04_CellML_Reaction.cc
+	TT06_CellML_Reaction.cc 
+	TT06Dev_Reaction.cc
+	SimpleOHaraRudy.cc
+	SimpleGrandi.cc
+        Passive.cc
+	TT06Tau.cc
+	TT06Func.cc
+        BetterTT06.cc
+	pade.cc
+   TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc
+   TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc
+	TT06_RRG.cc
+   spi_impl.c
+   clooper.c TT06GatesSimd2.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c
+)   
+
+add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc
+        COMMAND ${PERL} ARGS registerBuiltinReactions.pl ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc ${reaction_src}
+        MAIN_DEPENDENCY registerBuiltinReactions.pl
+        DEPENDS ${reaction_src}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+ )
+
+
 
 set (heart_src 
 	ThreadServer.cc
@@ -79,24 +128,6 @@ set (heart_src
 	FGRUtils.cc
 	Reaction.cc
 	ReactionManager.cc
-        #ReactionFHN.cc
-	TT04_CellML_Reaction.cc
-	TT06_CellML_Reaction.cc 
-	TT06Dev_Reaction.cc
-	#TT06_RRG_Reaction.cc
-	#OHaraRudy_Reaction.cc
-	SimpleOHaraRudy.cc
-	SimpleGrandi.cc
-        BetterTT06.cc
-	SimpleTT06.cc
-	SimpleTT06_ker.cu
-        Passive.cc
-	TT06Tau.cc
-	TT06Func.cc
-	pade.cc
-   TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc
-   TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc
-	TT06_RRG.cc
 	TestStimulus.cc PointStimulus.cc BoxStimulus.cc
 	PeriodicPulse.cc RandomPulse.cc
 	PointListSensor.cc ActivationTimeSensor.cc
@@ -109,15 +140,13 @@ set (heart_src
    StateVariableSensor.cc Interpolation.cc
    Ledger.cc simulationLoopCuda.cu singleCellCuda.cu BoxStimulusCuda.cu HaloExchange.cu
    Version.cc
-   spi_impl.c
-   clooper.c TT06GatesSimd2.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c
+   ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc
 )
 if (NOT use_precompiled)
-  list(APPEND heart_src TT06GatesSimd.c)
+  list(APPEND reaction_src TT06GatesSimd.c)
 endif()
-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -arch=sm_60 " )
 cuda_add_library(heart
-            ${heart_src})
+            ${heart_src} ${reaction_src})
 target_link_libraries(heart ddcMDutil ${extra_libs})
 if (BLAS_LIB AND LAPACK_LIB)
   target_link_libraries(heart ${LAPACK_LIB} ${BLAS_LIB})
@@ -133,3 +162,49 @@ if (LAPACK_LIB)
    cuda_add_executable(modifyAnatomyFile modifyAnatomyFile.cc)
    target_link_libraries(modifyAnatomyFile heart)
 endif ()
+
+
+
+### Getting compile flags for making plugins.
+
+set(heart_compile_flags "")
+
+get_property(p_dirs TARGET heart PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${p_dirs})
+  set(heart_compile_flags "${heart_compile_flags} -I${dir}")
+endforeach()
+
+get_property(p_flags TARGET heart PROPERTY COMPILE_FLAGS)
+foreach(flag ${p_flags})
+  set(heart_compile_flags "${heart_compile_flags} ${flag}")
+endforeach()
+
+get_property(p_flags TARGET heart PROPERTY COMPILE_DEFINITIONS)
+foreach(flag ${p_flags})
+  set(heart_compile_flags "${heart_compile_flags} -D${flag}")
+endforeach()
+
+get_property(p_flags TARGET heart PROPERTY COMPILE_DEFINITIONS_RELEASE)
+foreach(flag ${p_flags})
+  set(heart_compile_flags "${heart_compile_flags} -D${flag}")
+endforeach()
+
+get_property(p_flags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIRECTORY} PROPERTY COMPILE_DEFINITIONS)
+foreach(flag ${p_flags})
+  set(heart_compile_flags "${heart_compile_flags} -D${flag}")
+endforeach()
+
+get_property(p_flags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIRECTORY} PROPERTY COMPILE_FLAGS)
+foreach(flag ${p_flags})
+  set(heart_compile_flags "${heart_compile_flags} ${flag}")
+endforeach()
+
+string(TOUPPER "CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE}" CMAKE_C_FLAGS_BUILDNAME)
+set(CMAKE_C_FLAGS_BUILD "${${CMAKE_C_FLAGS_BUILDNAME}}")
+
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/compileReaction.template
+               ${CMAKE_BINARY_DIR}/compileReaction
+               @ONLY
+               )
+
