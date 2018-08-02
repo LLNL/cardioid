@@ -138,7 +138,7 @@ void CUDADiffusion::calc(Managed<ArrayView<double>> dVm){
    }
 
    call_cuda_kernels(VmBlock_,dVmBlock_,sigmaFaceNormal_,nx_,ny_,nz_,
-                     dVm,cellLookup_,nCells_);
+                     dVm,cellLookup_,nLocal_);
 }
 
 unsigned* CUDADiffusion::blockIndex() {return NULL;}

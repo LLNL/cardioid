@@ -26,7 +26,7 @@ __global__ void integrateVoltageKernel(ArrayView<double> vmarrayRaw, ConstArrayV
 void integrateVoltage(OnDevice<ArrayView<double>> vmarrayRaw, OnDevice<ConstArrayView<double>> dVmReactionRaw, OnDevice<ConstArrayView<double>> dVmDiffusionRaw,const double dt)
 {
    int blockSize = 1024;
-   integrateVoltageKernel<<<(dVmDiffusionRaw.size()+blockSize-1)/blockSize,blockSize>>>
+   integrateVoltageKernel<<<(dVmReactionRaw.size()+blockSize-1)/blockSize,blockSize>>>
       (vmarrayRaw,
        dVmReactionRaw,
        dVmDiffusionRaw,
