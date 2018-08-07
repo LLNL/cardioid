@@ -10,8 +10,8 @@ typedef __m256d native_vector_type;
 
 #define SIMDOPS_FLOAT64V_WIDTH 4
 
-inline native_vector_type load(const double* x) { return _mm256_load_pd(x); }
-inline void store(double* x, const native_vector_type y) { _mm256_store_pd(x,y); }
+inline native_vector_type load(const double* x) { return _mm256_loadu_pd(x); }
+inline void store(double* x, const native_vector_type y) { _mm256_storeu_pd(x,y); }
 inline native_vector_type make_float(const double x) { return _mm256_set_pd(x,x,x,x); }
 inline native_vector_type splat(const double* x) { return _mm256_broadcast_sd(x); }
 inline native_vector_type add(const native_vector_type a, const native_vector_type b) { return _mm256_add_pd(a,b); }
