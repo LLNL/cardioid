@@ -41,6 +41,7 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
 add_definitions(-DDiff_Weight_Type_Single)
 add_definitions(-DWITH_PIO -DWITH_MPI)
+add_definitions(-DUSE_CUDA)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/include)
