@@ -169,9 +169,9 @@ void simulationLoop(Simulate& sim)
    {
       int nLocal = sim.anatomy_.nLocal();
 
-      startTimer(imbalanceTimer);
-      voltageExchange.barrier();
-      stopTimer(imbalanceTimer);
+      //startTimer(imbalanceTimer);
+      //voltageExchange.barrier();
+      //stopTimer(imbalanceTimer);
 
       startTimer(haloTimer);
       {

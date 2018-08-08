@@ -272,7 +272,7 @@ void ECGSensor::eval(double time, int loop)
    }
   }
 
- if(1){ // DEBUG use the CPU version
+ if(0){ // DEBUG use the CPU version
    calcEcg(ecgsTransport_,
                invrTransport_,
                dVmDiffusionTransport_,
