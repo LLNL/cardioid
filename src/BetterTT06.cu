@@ -141,7 +141,6 @@ const char* interpName[] = {
          {
             vector<string> functions;
             objectGet(fitObj, "functions", functions);
-            OBJECT* funcObj;
             if (functions.size() == funcCount)
             {
                for (int _ii=0; _ii<functions.size(); _ii++)
@@ -1630,20 +1629,97 @@ string ThisReaction::methodName() const
 }
 
 #ifdef USE_CUDA
+
+#define READ_STATE(state,index) (stateData[_##state##_off*nCells_+index])
+__global__ void initMembraneState(int nCells_, int nStates_, OnDevice<ArrayView<double>> perCellData, OnDevice<ArrayView<double>> stateData)
+{
+   const int _ii = threadIdx.x + blockIdx.x*blockDim.x;
+   if (_ii >= nCells_) { return; }
+
+   for (int _jj=0; _jj<nStates_; _jj++)
+   {
+      stateData[_jj*nCells_+_ii] = perCellData[_jj];
+   }
+}
+
 void ThisReaction::initializeMembraneVoltage(ArrayView<double> __Vm)
+{
+   assert(__Vm.size() >= nCells_);
+   TransportCoordinator<PinnedVector<double>> perCellDataTransport;
+   perCellDataTransport.setup(PinnedVector<double>(NUMSTATES));
+   ArrayView<double> perCellData = perCellDataTransport.writeOnHost();
+
+
+   double V_init = -83;
+   double V = V_init;
+   double Ca_i_init = 2.0000000000000002e-5;
+   double Ca_i = Ca_i_init;
+   double R_prime_init = 0.98680000000000001;
+   double R_prime = R_prime_init;
+   double Ca_SR_init = 3.1549999999999998;
+   double Ca_SR = Ca_SR_init;
+   double Ca_ss_init = 0.00017000000000000001;
+   double Ca_ss = Ca_ss_init;
+   double d_init = 3.1640000000000002e-5;
+   double d = d_init;
+   double f2_init = 0.9778;
+   double f2 = f2_init;
+   double fCass_init = 0.99529999999999996;
+   double fCass = fCass_init;
+   double f_init = 0.96089999999999998;
+   double f = f_init;
+   double h_init = 0.55000000000000004;
+   double h = h_init;
+   double j_init = 0.66000000000000003;
+   double j = j_init;
+   double m_init = 0.0015499999999999999;
+   double m = m_init;
+   double K_i_init = 138.40000000000001;
+   double K_i = K_i_init;
+   double Xr1_init = 0.0044799999999999996;
+   double Xr1 = Xr1_init;
+   double Xr2_init = 0.47599999999999998;
+   double Xr2 = Xr2_init;
+   double Xs_init = 0.0086999999999999994;
+   double Xs = Xs_init;
+   double Na_i_init = 10.355;
+   double Na_i = Na_i_init;
+   double r_init = 2.2350000000000002e-8;
+   double r = r_init;
+   double s_init = 0.60119999999999996;
+   double s = s_init;
+   perCellData[_Ca_SR_off] = Ca_SR;
+   perCellData[_Ca_i_off] = Ca_i;
+   perCellData[_Ca_ss_off] = Ca_ss;
+   perCellData[_K_i_off] = K_i;
+   perCellData[_Na_i_off] = Na_i;
+   perCellData[_R_prime_off] = R_prime;
+   perCellData[_Xr1_off] = Xr1;
+   perCellData[_Xr2_off] = Xr2;
+   perCellData[_Xs_off] = Xs;
+   perCellData[_d_off] = d;
+   perCellData[_f_off] = f;
+   perCellData[_f2_off] = f2;
+   perCellData[_fCass_off] = fCass;
+   perCellData[_h_off] = h;
+   perCellData[_j_off] = j;
+   perCellData[_m_off] = m;
+   perCellData[_r_off] = r;
+   perCellData[_s_off] = s;
+    
+   int blockSize=32;
+   initMembraneState<<<blockSize,(nCells_+blockSize-1)/blockSize>>>(nCells_, NUMSTATES, perCellDataTransport, stateTransport_.writeOnDevice());
+   __Vm.assign(__Vm.size(), V);
+}
+
 #else //USE_CUDA
+
+#define READ_STATE(state,index) (state_[index/width].state[index % width])
 void ThisReaction::initializeMembraneVoltage(VectorDouble32& __Vm)
-#endif //USE_CUDA
 {
    assert(__Vm.size() >= nCells_);
 
-#ifdef USE_CUDA
-#define READ_STATE(state,index) (stateData[_##state##_off*nCells_+index])
-   ArrayView<double> stateData = stateTransport_;
-#else //USE_CUDA
-#define READ_STATE(state,index) (state_[index/width].state[index % width])
    state_.resize((nCells_+width-1)/width);
-#endif //USE_CUDA
 
 
    double V_init = -83;
@@ -1708,6 +1784,12 @@ void ThisReaction::initializeMembraneVoltage(VectorDouble32& __Vm)
 
    __Vm.assign(__Vm.size(), V_init);
 }
+#endif //USE_CUDA
+
+#ifdef USE_CUDA
+#else //USE_CUDA
+#endif //USE_CUDA
+
 
 enum varHandles
 {
