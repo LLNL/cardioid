@@ -161,6 +161,18 @@ class ViewManager
          isDeviceValid_ = false;
       }
    }
+   inline View writeOnHost()
+   {
+      const_cast<bool&>(isHostValid_) = true;
+      const_cast<bool&>(isDeviceValid_) = false;
+      return View(data_);
+   }
+   inline View writeOnDevice()
+   {
+      const_cast<bool&>(isHostValid_) = false;
+      const_cast<bool&>(isDeviceValid_) = true;
+      return OnDevice<View>(data_);
+   }
    inline View modifyOnHost()
    {
       readOnHost();
