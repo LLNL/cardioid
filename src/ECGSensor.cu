@@ -65,6 +65,22 @@ void calcInvrCUDA(OnDevice<ArrayView<double>> invr,
 
 }
 
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 600
+inline __device__ double atomicAdd(double* pointer, const double value)
+{
+   unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(pointer);
+   unsigned long long int old = *address_as_ull;
+   unsigned long long int assumed;
+   do {
+      assumed=old;
+      old = atomicCAS(address_as_ull,
+                      assumed,
+                      __double_as_longlong(value + __longlong_as_double(assumed)));
+   } while(assumed != old);
+   return assumed;
+}
+#endif
+
 __global__ void calcEcg_kernel(ArrayView<double> ecgs,
                                ConstArrayView<double> invr,
                                ConstArrayView<double> dVmDiffusion,
