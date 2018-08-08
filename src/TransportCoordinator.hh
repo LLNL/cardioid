@@ -167,7 +167,7 @@ class ViewManager
       const_cast<bool&>(isDeviceValid_) = false;
       return View(data_);
    }
-   inline View writeOnDevice()
+   inline OnDevice<View> writeOnDevice()
    {
       const_cast<bool&>(isHostValid_) = false;
       const_cast<bool&>(isDeviceValid_) = true;
@@ -231,6 +231,8 @@ class Managed
    inline OnDevice<View> modifyOnDevice() { return p_manager_->modifyOnDevice(); }
    inline ConstView readOnHost() const { return p_manager_->readOnHost(); }
    inline OnDevice<ConstView> readOnDevice() const { return p_manager_->readOnDevice(); }
+   inline View writeOnHost() { return p_manager_->writeOnHost(); }
+   inline OnDevice<View> writeOnDevice() { return p_manager_->writeOnDevice(); }
 
    inline operator View() { return modifyOnHost(); }
    inline operator OnDevice<View>() { return modifyOnDevice(); }
@@ -288,6 +290,8 @@ class TransportCoordinator {
    inline OnDevice<View> modifyOnDevice() { return view().modifyOnDevice(); }
    inline ConstView readOnHost() const { return view().readOnHost(); }
    inline OnDevice<ConstView> readOnDevice() const { return view().readOnDevice(); }
+   inline View writeOnHost() { return view().writeOnHost(); }
+   inline OnDevice<View> writeOnDevice() { return view().writeOnDevice(); }
 
    //inline View host() { return view().host(); }
    //inline ConstView host() const { return view().host(); }
