@@ -1,6 +1,8 @@
 #include "mfem.hpp"
 #include "object.h"
 #include "ddcMalloc.h"
+#include "pio.h"
+#include "pioFixedRecordHelper.h"
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
@@ -51,7 +53,37 @@ int main(int argc, char *argv[])
   int dim = mesh->Dimension();
 
   // KNOWNS thus far:  mesh, dim, ground
-  
+
+  //Fill in the MatrixElementPiecewiseCoefficients
+#ifdef DEBUG
+  std::cout << "Reading region codes and sigmas... ";
+#endif
+  std::vector<int> bathRegions;
+  objectGetv<int,INT>(obj,"bath_regions",bathRegions);
+  std::vector<int> heartRegions;
+  objectGetv<int,INT>(obj,"heart_regions", heartRegions);
+  std::vector<double> sigma_b;
+  objectGetv<double,DOUBLE>(obj,"sigma_b",sigma_b);;
+  std::vector<double> sigma_i;
+  std::vector<double> sigma_e;
+  objectGetv<double,DOUBLE>(obj,"sigma_i",sigma_i);
+  objectGetv<double,DOUBLE>(obj,"sigma_e",sigma_e);
+
+  // Verify Inputs
+  assert(bathRegions.size() == sigma_b.size());
+  assert(heartRegions.size()*3 == sigma_i.size());
+  assert(heartRegions.size()*3 == sigma_e.size());
+#ifdef DEBUG
+  std::cout << "Done." << std::endl;
+#endif
+
+  // Added KNOWNS: bathRegions, heartRegions, sigma_{b,i,e}
+
+  // Read sensors
+  std::unordered_map<int,int> sensors = ecg_readMap(obj,"sensors");
+
+  // Read gid->gf mapping
+
   // Describe input data
 #ifdef DEBUG
   std::cout << "Read " << mesh->GetNE() << " elements, "
@@ -124,29 +156,6 @@ int main(int argc, char *argv[])
   gf_x = 0.0;
    
 
-  //Fill in the MatrixElementPiecewiseCoefficients
-#ifdef DEBUG
-  std::cout << "Reading region codes and sigmas... ";
-#endif
-  std::vector<int> bathRegions;
-  objectGet(obj,"bath_regions",bathRegions);
-  std::vector<int> heartRegions;
-  objectGet(obj,"heart_regions", heartRegions);
-  std::vector<double> sigma_b;
-  objectGet(obj,"sigma_b",sigma_b);;
-  std::vector<double> sigma_i;
-  std::vector<double> sigma_e;
-  objectGet(obj,"sigma_i",sigma_i);
-  objectGet(obj,"sigma_e",sigma_e);
-
-  // Verify Inputs
-  assert(bathRegions.size() == sigma_b.size());
-  assert(heartRegions.size()*3 == sigma_i.size());
-  assert(heartRegions.size()*3 == sigma_e.size());
-#ifdef DEBUG
-  std::cout << "Done." << std::endl;
-#endif
-
   // Load fiber quaterions from file
   std::shared_ptr<GridFunction> fiber_quat;
   ecg_readGF(obj, "fibers", mesh, fiber_quat);
@@ -188,12 +197,45 @@ int main(int argc, char *argv[])
   std::cout << "Done in " << time(nullptr)-timestamp << "s." << std::endl;
 #endif
 
+
+  std::unordered_map<int,int> gfFromGid = ecg_readMap(obj,"cardioid_from_ecg");
+  
   std::string VmFilename;
   objectGet(obj, "Vm", VmFilename, "");
+  
   std::shared_ptr<GridFunction> gf_Vm;
   {
-    std::ifstream VmStream(VmFilename);
-    gf_Vm = std::make_shared<GridFunction>(mesh, VmStream);
+    //std::ifstream VmStream(VmFilename);
+    //gf_Vm = std::make_shared<GridFunction>(mesh, VmStream);
+    PFILE* file = Popen(VmFilename.c_str(), "r", COMM_LOCAL);
+    gf_Vm = std::make_shared<mfem::GridFunction>(fespace);
+    
+    OBJECT* hObj = file->headerObject;
+    std::vector<std::string> fieldNames;
+    std::vector<std::string> fieldTypes;
+    objectGetv<std::string,STRING>(hObj, "field_names", fieldNames);
+    objectGetv<std::string,STRING>(hObj, "field_types", fieldTypes);
+    assert(file->datatype == FIXRECORDASCII);
+    PIO_FIXED_RECORD_HELPER* helper = (PIO_FIXED_RECORD_HELPER*) file->helper;
+    unsigned lrec = helper->lrec;
+    unsigned nRecords = file->bufsize/lrec;
+    for (unsigned int irec=0; irec<nRecords; irec++) //read in the file
+      {
+	unsigned maxRec = 2048;
+	char buf[maxRec];
+	Pfgets(buf, maxRec, file);
+	assert(strlen(buf) < maxRec);
+	//do something with the line
+	std::string bufString(buf);
+	std::string whitespace(" \n\t");
+	std::string::size_type begin = bufString.find_first_not_of(whitespace, beginPos);
+	std::string::size_type endPos = bufString.find_first_of(whitespace, begin);
+	int gid; //read from buffer
+	double Vm; //read in the data value
+	(*gf_Vm)[gfFromGid[gid]] = Vm;
+      }
+      
+    Pclose(file);
   }
 
 

@@ -31,16 +31,18 @@ void objectGet(OBJECT* obj, const std::string& name,
     value = "";
 }
 
-void objectGet(OBJECT* obj, const std::string& name, std::vector<int>& value) {
+template <typename T, OBJECTTYPES E>
+void objectGetv(OBJECT* obj, const std::string& name, std::vector<T>& value) {
   value.clear();
-  int* tmp;
-  unsigned n = object_getv(obj, name.c_str(), (void**) &tmp, INT, IGNORE_IF_NOT_FOUND);
+  T* tmp;
+  unsigned n = object_getv(obj, name.c_str(), (void**) &tmp, E, IGNORE_IF_NOT_FOUND);
   value.reserve(n);
   for (unsigned ii=0; ii<n; ++ii)
     value.push_back(tmp[ii]);
   ddcFree(tmp);
 }
 
+/*
 void objectGet(OBJECT* obj, const std::string& name, std::vector<double>& value)
 {
   value.clear();
@@ -51,6 +53,7 @@ void objectGet(OBJECT* obj, const std::string& name, std::vector<double>& value)
     value.push_back(tmp[ii]);
   ddcFree(tmp);
 }
+*/
 
 std::set<int> readSet(std::istream& stream) {
   std::set<int> retval;
@@ -76,6 +79,31 @@ std::set<int> ecg_readSet(OBJECT* obj, const std::string dataname) {
   return retval;
 }
 
+std::unordered_map<int,int> readMap(std::istream& stream) {
+  std::unordered_map<int,int> retval;
+  int i = 0;
+  while(1) {
+    int value;
+    stream >> value;
+    if (!stream) {break;}
+    retval[i++] = value;
+  }
+  return retval;
+}
+
+std::unordered_map<int,int> ecg_readMap(OBJECT* obj, const std::string dataname) {
+  std::string filename;
+  objectGet(obj,dataname,filename,"");
+
+  std::ifstream infile(filename);
+  std::unordered_map<int,int> retval = readMap(infile);
+#ifdef DEBUG
+  std::cout << "Read " << retval.size() << " elements from "
+	    << filename << std::endl;
+#endif
+  return retval;
+}
+
 void ecg_readGF(OBJECT* obj, const std::string dataname,
 		mfem::Mesh* mesh, std::shared_ptr<mfem::GridFunction>& sp_gf) {
   std::string filename;
@@ -93,6 +121,8 @@ mfem::Mesh* ecg_readMeshptr(OBJECT* obj, const std::string dataname) {
   return new mfem::Mesh(filename.c_str(), 1, 1);
 }
 
+// If rank==0, then object_bcast()
+
 void ecg_process_args(int argc, char* argv[]) {
   std::vector<std::string> objectFilenames;
   if (argc == 1)
@@ -101,8 +131,57 @@ void ecg_process_args(int argc, char* argv[]) {
   for (int iargCursor=1; iargCursor<argc; iargCursor++)
     objectFilenames.push_back(argv[iargCursor]);
 
-  for (int ii=0; ii<objectFilenames.size(); ii++)
-    object_compilefile(objectFilenames[ii].c_str());
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if (rank == 0) {
+    for (int ii=0; ii<objectFilenames.size(); ii++)
+      object_compilefile(objectFilenames[ii].c_str());
+  }
+  object_Bcast(0,MPI_COMM_WORLD);
 }
 
+// Read sensors
+/* garbage?
+std::unordered_map<int,int> ecg_readMap(OBJECT* obj, const std::string dataname) {
+  std::string filename;
+  objectGet(obj,dataname,filename,"");
+  std::ifstream sensorStream(filename);
+
+  unordered_map<int,int> gfFromGid;
+  //read in the sensor file
+  {
+    int token = 0;
+    do {
+      //read in from the sensor file
+      int sensorGid;
+      sensorStream >> sensorGid;
+      if (!sensorStream) break;
+      gfFromGid[sensorGid] = token++;
+    }
+  }
+
+  return gfFromGid
+}
+*/
+
 #endif
+
+// Instead of trying to use BucketOfBits, just look for where it uses calls which occur above,
+// and modify the above to use similar patterns.
+
+// Flatten part(s) of readPioFile
+
+// readAscii
+
+// pfgets distributes all data among ranks, but only some are
+// getting it from the file(s)
+
+// While you have no way of knowing which data you will get from a pfgets,
+// You can know nobody else is getting it.
+
+// Reassemble as required
+
+// Verify whether/how mfem sends data when assigned into a ParGridFunction
+// (look for any PGF assemble mechanisms for clues)
+
+// string::find_first_...
