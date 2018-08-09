@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
 	//do something with the line
 	std::string bufString(buf);
 	std::string whitespace(" \n\t");
-	std::string::size_type begin = bufString.find_first_not_of(whitespace, beginPos);
+	std::string::size_type begin = bufString.find_first_not_of(whitespace, 0); //beginPos);
 	std::string::size_type endPos = bufString.find_first_of(whitespace, begin);
 	int gid; //read from buffer
 	double Vm; //read in the data value
