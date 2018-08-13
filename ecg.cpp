@@ -5,6 +5,7 @@
 #include "pioFixedRecordHelper.h"
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <unordered_map>
 #include <cassert>
 #include <memory>
@@ -55,32 +56,26 @@ int main(int argc, char *argv[])
   // KNOWNS thus far:  mesh, dim, ground
 
   //Fill in the MatrixElementPiecewiseCoefficients
-#ifdef DEBUG
-  std::cout << "Reading region codes and sigmas... ";
-#endif
   std::vector<int> bathRegions;
-  objectGetv<int,INT>(obj,"bath_regions",bathRegions);
+  objectGetv(obj,"bath_regions",bathRegions);
   std::vector<int> heartRegions;
-  objectGetv<int,INT>(obj,"heart_regions", heartRegions);
+  objectGetv(obj,"heart_regions", heartRegions);
   std::vector<double> sigma_b;
-  objectGetv<double,DOUBLE>(obj,"sigma_b",sigma_b);;
+  objectGetv(obj,"sigma_b",sigma_b);;
   std::vector<double> sigma_i;
   std::vector<double> sigma_e;
-  objectGetv<double,DOUBLE>(obj,"sigma_i",sigma_i);
-  objectGetv<double,DOUBLE>(obj,"sigma_e",sigma_e);
+  objectGetv(obj,"sigma_i",sigma_i);
+  objectGetv(obj,"sigma_e",sigma_e);
 
   // Verify Inputs
   assert(bathRegions.size() == sigma_b.size());
   assert(heartRegions.size()*3 == sigma_i.size());
   assert(heartRegions.size()*3 == sigma_e.size());
-#ifdef DEBUG
-  std::cout << "Done." << std::endl;
-#endif
 
   // Added KNOWNS: bathRegions, heartRegions, sigma_{b,i,e}
 
   // Read sensors
-  std::unordered_map<int,int> sensors = ecg_readMap(obj,"sensors");
+  std::unordered_map<int,int> sensors = ecg_readInverseMap(obj,"sensors");
 
   // Read gid->gf mapping
 
@@ -134,6 +129,9 @@ int main(int argc, char *argv[])
   FiniteElementSpace *fespace = new FiniteElementSpace(mesh, fec);
   std::cout << "Number of finite element unknowns: "
 	    << fespace->GetTrueVSize() << std::endl;
+
+  // GetTrueVSize() gets all vector-local dofs
+  // GetGlobalTDofNumber converts to a GF index reference against gidfromgf
    
   // 5. Determine the list of true (i.e. conforming) essential boundary
   //    dofs.
@@ -197,47 +195,51 @@ int main(int argc, char *argv[])
   std::cout << "Done in " << time(nullptr)-timestamp << "s." << std::endl;
 #endif
 
+  // cardioid_from_ecg = torso/sensor.txt;
+  std::unordered_map<int,int> gfFromGid = ecg_readInverseMap(obj,"cardioid_from_ecg");
 
-  std::unordered_map<int,int> gfFromGid = ecg_readMap(obj,"cardioid_from_ecg");
-  
+  // Want to use the below instead of this
   std::string VmFilename;
-  objectGet(obj, "Vm", VmFilename, "");
+  objectGet(obj, "Vm", VmFilename, ""); // Vm = ../test.Vm.gf;
+
+  // Want to use this instead of the above
+  std::string VmPattern;
+  objectGet(obj, "VmPattern", VmPattern, ""); // VmPattern = ../torsoRun/snapshot.%012d/Vm#%06d;
   
   std::shared_ptr<GridFunction> gf_Vm;
   {
-    //std::ifstream VmStream(VmFilename);
-    //gf_Vm = std::make_shared<GridFunction>(mesh, VmStream);
+    //char *VmFileCstr = new char[VmPattern.length()+1]; // Cannot use variable formats!
+    //sprintf(VmFileCstr, VmPattern.c_str(), 200, i);
     PFILE* file = Popen(VmFilename.c_str(), "r", COMM_LOCAL);
     gf_Vm = std::make_shared<mfem::GridFunction>(fespace);
     
     OBJECT* hObj = file->headerObject;
-    std::vector<std::string> fieldNames;
-    std::vector<std::string> fieldTypes;
-    objectGetv<std::string,STRING>(hObj, "field_names", fieldNames);
-    objectGetv<std::string,STRING>(hObj, "field_types", fieldTypes);
+    std::vector<std::string> fieldNames,  fieldTypes;
+    objectGetv(hObj, "field_names", fieldNames); // field_names = gid Vm dVmD dVmR;
+    objectGetv(hObj, "field_types", fieldTypes); // field_types = u f f f;
     assert(file->datatype == FIXRECORDASCII);
+    
     PIO_FIXED_RECORD_HELPER* helper = (PIO_FIXED_RECORD_HELPER*) file->helper;
     unsigned lrec = helper->lrec;
     unsigned nRecords = file->bufsize/lrec;
-    for (unsigned int irec=0; irec<nRecords; irec++) //read in the file
-      {
-	unsigned maxRec = 2048;
-	char buf[maxRec];
-	Pfgets(buf, maxRec, file);
-	assert(strlen(buf) < maxRec);
-	//do something with the line
-	std::string bufString(buf);
-	std::string whitespace(" \n\t");
-	std::string::size_type begin = bufString.find_first_not_of(whitespace, 0); //beginPos);
-	std::string::size_type endPos = bufString.find_first_of(whitespace, begin);
-	int gid; //read from buffer
-	double Vm; //read in the data value
-	(*gf_Vm)[gfFromGid[gid]] = Vm;
-      }
+    for (unsigned int irec=0; irec<nRecords; irec++) { //read in the file
+      unsigned maxRec = 2048;          // Maximum record *length*
+      char buf[maxRec+1];
+	
+      Pfgets(buf, maxRec, file);
+      assert(strlen(buf) < maxRec);
+
+      std::stringstream readline(buf);
+
+      int gid;   readline >> gid; // For now we just happen to know gid is column 1
+      double Vm; readline >> Vm;  // For now we just happen to know the data is column 2
+
+      (*gf_Vm)[gfFromGid[gid]] = Vm;
+    }
       
     Pclose(file);
+    //}
   }
-
 
   heart_mat.Mult(*gf_Vm, gf_b);
 #ifdef DEBUG

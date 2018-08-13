@@ -31,29 +31,30 @@ void objectGet(OBJECT* obj, const std::string& name,
     value = "";
 }
 
-template <typename T, OBJECTTYPES E>
+template <typename T> struct PioTypeFromCType;
+
+template <> struct PioTypeFromCType<double> {
+  enum { result = DOUBLE };
+};
+
+template <> struct PioTypeFromCType<int> {
+  enum { result = INT };
+};
+
+template <> struct PioTypeFromCType<std::string> {
+  enum { result = STRING };
+};
+
+template <typename T>
 void objectGetv(OBJECT* obj, const std::string& name, std::vector<T>& value) {
   value.clear();
   T* tmp;
-  unsigned n = object_getv(obj, name.c_str(), (void**) &tmp, E, IGNORE_IF_NOT_FOUND);
+  unsigned n = object_getv(obj, name.c_str(), (void**) &tmp, PioTypeFromCType<T>::result, IGNORE_IF_NOT_FOUND);
   value.reserve(n);
   for (unsigned ii=0; ii<n; ++ii)
     value.push_back(tmp[ii]);
   ddcFree(tmp);
 }
-
-/*
-void objectGet(OBJECT* obj, const std::string& name, std::vector<double>& value)
-{
-  value.clear();
-  double* tmp;
-  unsigned n = object_getv(obj, name.c_str(), (void**) &tmp, DOUBLE, IGNORE_IF_NOT_FOUND);
-  value.reserve(n);
-  for (unsigned ii=0; ii<n; ++ii)
-    value.push_back(tmp[ii]);
-  ddcFree(tmp);
-}
-*/
 
 std::set<int> readSet(std::istream& stream) {
   std::set<int> retval;
@@ -141,13 +142,12 @@ void ecg_process_args(int argc, char* argv[]) {
 }
 
 // Read sensors
-/* garbage?
-std::unordered_map<int,int> ecg_readMap(OBJECT* obj, const std::string dataname) {
+std::unordered_map<int,int> ecg_readInverseMap(OBJECT* obj, const std::string dataname) {
   std::string filename;
   objectGet(obj,dataname,filename,"");
   std::ifstream sensorStream(filename);
 
-  unordered_map<int,int> gfFromGid;
+  std::unordered_map<int,int> gfFromGid;
   //read in the sensor file
   {
     int token = 0;
@@ -157,12 +157,11 @@ std::unordered_map<int,int> ecg_readMap(OBJECT* obj, const std::string dataname)
       sensorStream >> sensorGid;
       if (!sensorStream) break;
       gfFromGid[sensorGid] = token++;
-    }
+    } while(1);
   }
 
-  return gfFromGid
+  return gfFromGid;
 }
-*/
 
 #endif
 
