@@ -270,7 +270,7 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    vector<AnatomyCell>& cellArray(anatomy.cellArray());
    {
       set<int> missingReactions;
-      for (int icell=0; icell<cellArray.size(); icell++)
+      for (int icell=0; icell<anatomy.nLocal(); icell++)
       {
          if (allCellTypes_.find(cellArray[icell].cellType_) == allCellTypes_.end()) {
             missingReactions.insert(cellArray[icell].cellType_);
@@ -288,7 +288,7 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    //sort the anatomy in the correct order.
    {
       SortByRidxThenAnatomyThenGid cmpFunc(ridxFromCellType);
-      sort(cellArray.begin(),cellArray.end(), cmpFunc);
+      sort(cellArray.begin(),cellArray.begin()+anatomy.nLocal(), cmpFunc);
    }
       
    //count how many of each we have.
@@ -297,7 +297,7 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    {
       countFromRidx[ireaction] = 0;
    }
-   for (int icell=0; icell<cellArray.size(); ++icell)
+   for (int icell=0; icell<anatomy.nLocal(); ++icell)
    {
       const AnatomyCell& cell(cellArray[icell]);
       if (ridxFromCellType.find(cell.cellType_) != ridxFromCellType.end())
