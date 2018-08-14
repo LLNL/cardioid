@@ -122,36 +122,36 @@ int main(int argc, char** argv)
    //MPI_Pcontrol(0);
 
    profileStop("Total");
-   profileSetRefTimer("00:Loop");
+   //profileSetRefTimer("00:Loop");
 
-   profileSetPrintOrder("Total");
-   profileSetPrintOrder("Assignment");
-   profileSetPrintOrder("Loop");
-   profileSetPrintOrder("parallelDiffReac");
-   profileSetPrintOrder("DiffusionLoop");
-   profileSetPrintOrder("ReactionLoop");
-   profileSetPrintOrder("Dummy");
-   profileSetPrintOrder("HaloExchange");
+   //profileSetPrintOrder("Total");
+   //profileSetPrintOrder("Assignment");
+   //profileSetPrintOrder("Loop");
+   //profileSetPrintOrder("parallelDiffReac");
+   //profileSetPrintOrder("DiffusionLoop");
+   //profileSetPrintOrder("ReactionLoop");
+   //profileSetPrintOrder("Dummy");
+   //profileSetPrintOrder("HaloExchange");
    //profileSetPrintOrder("HaloExchMove2Buf");
-   profileSetPrintOrder("Integrator");
-   profileSetPrintOrder("ReactionWait");
-   profileSetPrintOrder("reactionL2Arrive");
-   profileSetPrintOrder("reactionL2Rest");
-   profileSetPrintOrder("Reaction");
-   profileSetPrintOrder("Reaction_nonGate");
-   profileSetPrintOrder("GateNonGateBarrier");
-   profileSetPrintOrder("Reaction_Gate");
+   //profileSetPrintOrder("Integrator");
+   //profileSetPrintOrder("ReactionWait");
+   //profileSetPrintOrder("reactionL2Arrive");
+   //profileSetPrintOrder("reactionL2Rest");
+   //profileSetPrintOrder("Reaction");
+   //profileSetPrintOrder("Reaction_nonGate");
+   //profileSetPrintOrder("GateNonGateBarrier");
+   //profileSetPrintOrder("Reaction_Gate");
 
    //profileSetPrintOrder("");
    if (mype == 0)
    {
-      profileDumpTimes(cout);
-      cout << "\n" << endl;
+      //profileDumpTimes(cout);
+      //cout << "\n" << endl;
    }
-   profileDumpStats(cout);
+   //profileDumpStats(cout);
    stringstream dirname;
    dirname << "snapshot."<<setfill('0')<<setw(12)<<sim.loop_;
-   profileDumpAll(dirname.str());
+   //profileDumpAll(dirname.str());
    heap_deallocate();
    MPI_Finalize();
    
