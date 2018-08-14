@@ -1645,9 +1645,7 @@ __global__ void initMembraneState(int nCells_, int nStates_, OnDevice<ArrayView<
 void ThisReaction::initializeMembraneVoltage(ArrayView<double> __Vm)
 {
    assert(__Vm.size() >= nCells_);
-   TransportCoordinator<PinnedVector<double>> perCellDataTransport;
-   perCellDataTransport.setup(PinnedVector<double>(NUMSTATES));
-   ArrayView<double> perCellData = perCellDataTransport.writeOnHost();
+   ArrayView<double> stateData_ = stateTransport_.modifyOnHost();
 
 
    double V_init = -83;
@@ -1688,27 +1686,27 @@ void ThisReaction::initializeMembraneVoltage(ArrayView<double> __Vm)
    double r = r_init;
    double s_init = 0.60119999999999996;
    double s = s_init;
-   perCellData[_Ca_SR_off] = Ca_SR;
-   perCellData[_Ca_i_off] = Ca_i;
-   perCellData[_Ca_ss_off] = Ca_ss;
-   perCellData[_K_i_off] = K_i;
-   perCellData[_Na_i_off] = Na_i;
-   perCellData[_R_prime_off] = R_prime;
-   perCellData[_Xr1_off] = Xr1;
-   perCellData[_Xr2_off] = Xr2;
-   perCellData[_Xs_off] = Xs;
-   perCellData[_d_off] = d;
-   perCellData[_f_off] = f;
-   perCellData[_f2_off] = f2;
-   perCellData[_fCass_off] = fCass;
-   perCellData[_h_off] = h;
-   perCellData[_j_off] = j;
-   perCellData[_m_off] = m;
-   perCellData[_r_off] = r;
-   perCellData[_s_off] = s;
+   for (int _ii=0; _ii<nCells_; _ii++) {
+      stateData_[nCells_*_Ca_SR_off+_ii] = Ca_SR;
+      stateData_[nCells_*_Ca_i_off+_ii] = Ca_i;
+      stateData_[nCells_*_Ca_ss_off+_ii] = Ca_ss;
+      stateData_[nCells_*_K_i_off+_ii] = K_i;
+      stateData_[nCells_*_Na_i_off+_ii] = Na_i;
+      stateData_[nCells_*_R_prime_off+_ii] = R_prime;
+      stateData_[nCells_*_Xr1_off+_ii] = Xr1;
+      stateData_[nCells_*_Xr2_off+_ii] = Xr2;
+      stateData_[nCells_*_Xs_off+_ii] = Xs;
+      stateData_[nCells_*_d_off+_ii] = d;
+      stateData_[nCells_*_f_off+_ii] = f;
+      stateData_[nCells_*_f2_off+_ii] = f2;
+      stateData_[nCells_*_fCass_off+_ii] = fCass;
+      stateData_[nCells_*_h_off+_ii] = h;
+      stateData_[nCells_*_j_off+_ii] = j;
+      stateData_[nCells_*_m_off+_ii] = m;
+      stateData_[nCells_*_r_off+_ii] = r;
+      stateData_[nCells_*_s_off+_ii] = s;
+   }
     
-   int blockSize=32;
-   initMembraneState<<<blockSize,(nCells_+blockSize-1)/blockSize>>>(nCells_, NUMSTATES, perCellDataTransport, stateTransport_.writeOnDevice());
    __Vm.assign(__Vm.size(), V);
 }
 
