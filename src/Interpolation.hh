@@ -99,7 +99,8 @@ class Interpolation {
    }
    double create(const std::vector<double>& inputs,
                  const std::vector<double>& outputs,
-                 const double tolerance);
+                 const double tolerance,
+                 const double rangeWindow=0.1);
 
  public:
    int numNumer_;
