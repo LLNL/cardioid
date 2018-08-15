@@ -114,7 +114,8 @@ static vector<double> hornFromCheby(const vector<double>& chebyCoeff,
 
 double Interpolation::create(const vector<double>& inputs,
                              const vector<double>& outputs,
-                             const double tolerance)
+                             const double tolerance,
+                             const double rangeWindow)
 {   
    double lb = inputs[0];
    double ub = inputs[inputs.size()-1];
@@ -194,9 +195,14 @@ double Interpolation::create(const vector<double>& inputs,
    }
    else
    {
-      int filterSize = inSize/10;
+      int filterSize = inSize*rangeWindow;
       //make sure filterSize is odd
       if (!(filterSize % 2)) { filterSize++; }
+      if (filterSize > inSize)
+      {
+        filterSize = inSize;
+        if (!(filterSize % 2)) { filterSize--; }
+      }
       assert(filterSize <= inSize);
       assert(filterSize >= 2);
       multiset<double> window;
