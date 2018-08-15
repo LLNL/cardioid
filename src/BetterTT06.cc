@@ -219,7 +219,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _fCass_RLA;
       }
       double relError = 0.0001;
-      double actualTolerance = _interpolant[0].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[0].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _fCass_RLA: " 
@@ -245,7 +245,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _Xr1_RLA;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[1].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[1].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _Xr1_RLA: " 
@@ -267,7 +267,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _Xr1_RLB;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[2].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[2].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _Xr1_RLB: " 
@@ -293,7 +293,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _Xr2_RLA;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[3].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[3].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _Xr2_RLA: " 
@@ -315,7 +315,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _Xr2_RLB;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[4].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[4].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _Xr2_RLB: " 
@@ -342,7 +342,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _Xs_RLA;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[5].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[5].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _Xs_RLA: " 
@@ -364,7 +364,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _Xs_RLB;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[6].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[6].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _Xs_RLB: " 
@@ -392,7 +392,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _d_RLA;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[7].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[7].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _d_RLA: " 
@@ -414,7 +414,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _d_RLB;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[8].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[8].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _d_RLB: " 
@@ -439,7 +439,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _f2_RLA;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[9].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[9].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _f2_RLA: " 
@@ -461,7 +461,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _f2_RLB;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[10].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[10].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _f2_RLB: " 
@@ -486,7 +486,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _f_RLA;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[11].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[11].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _f_RLA: " 
@@ -508,7 +508,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _f_RLB;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[12].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[12].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _f_RLB: " 
@@ -547,7 +547,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _h_RLA;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[13].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[13].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _h_RLA: " 
@@ -569,7 +569,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _h_RLB;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[14].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[14].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _h_RLB: " 
@@ -611,7 +611,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _j_RLA;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[15].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[15].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _j_RLA: " 
@@ -633,7 +633,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _j_RLB;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[16].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[16].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _j_RLB: " 
@@ -660,7 +660,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _m_RLA;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[17].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[17].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _m_RLA: " 
@@ -682,7 +682,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _m_RLB;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[18].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[18].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _m_RLB: " 
@@ -705,7 +705,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _r_RLA;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[19].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[19].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _r_RLA: " 
@@ -727,7 +727,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _r_RLB;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[20].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[20].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _r_RLB: " 
@@ -762,7 +762,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _s_RLA;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[21].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[21].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _s_RLA: " 
@@ -795,7 +795,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = _s_RLB;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[22].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[22].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _s_RLB: " 
@@ -819,7 +819,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = exp_gamma_VFRT;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[23].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[23].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for exp_gamma_VFRT: " 
@@ -843,7 +843,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = exp_gamma_m1_VFRT;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[24].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[24].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for exp_gamma_m1_VFRT: " 
@@ -877,7 +877,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = i_CalTerm3;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[25].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[25].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for i_CalTerm3: " 
@@ -912,7 +912,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = i_CalTerm4;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[26].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[26].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for i_CalTerm4: " 
@@ -940,7 +940,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = i_NaK_term;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[27].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[27].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for i_NaK_term: " 
@@ -961,7 +961,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = i_p_K_term;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[28].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[28].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for i_p_K_term: " 
@@ -991,7 +991,7 @@ void ThisReaction::createInterpolants(const double _dt) {
          _outputs[_ii] = inward_rectifier_potassium_current_i_Kitot;
       }
       double relError = 1e-3;
-      double actualTolerance = _interpolant[29].create(_inputs,_outputs, relError);
+      double actualTolerance = _interpolant[29].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for inward_rectifier_potassium_current_i_Kitot: " 
