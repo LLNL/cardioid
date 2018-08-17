@@ -6,6 +6,7 @@
 #include "CommTable.hh"
 #include <iostream>
 #include "PerformanceTimers.hh"
+#include "cudaNVTX.h"
 using namespace std;
 
 #ifdef SPI
@@ -312,9 +313,15 @@ class HaloExchangeCUDA : public HaloExchange<T, Allocator>
    {
       ConstArrayView<T> sendBuf = sendBufTransport_.readOnHost();
       ArrayView<T> recvBuf = recvBufTransport_.modifyOnHost();
+      PUSH_RANGE("Halo_Exchange", 1);
       HaloExchange<T, Allocator>::startComm(sendBuf,recvBuf);
    }
    
+   void wait()
+   {
+      HaloExchange<T, Allocator>::wait();
+      POP_RANGE();
+   }
 
  protected:
 

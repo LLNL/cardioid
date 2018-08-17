@@ -42,6 +42,7 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 add_definitions(-DDiff_Weight_Type_Single)
 add_definitions(-DWITH_PIO -DWITH_MPI)
 add_definitions(-DUSE_CUDA)
+add_definitions(-DUSE_NVTX)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/include)
@@ -52,6 +53,18 @@ find_library(BLAS_LIB blas)
 find_library(LAPACK_LIB lapack)
 
 find_package(CUDA QUIET REQUIRED)
+
+find_library(CUDA_NVTX_LIBRARY
+  NAMES nvToolsExt nvTools nvtoolsext nvtools nvtx NVTX
+  PATHS ${CUDA_TOOLKIT_ROOT_DIR}
+  PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib"
+  DOC "Location of the CUDA Toolkit Extension (NVTX) library"
+  NO_DEFAULT_PATH
+  )
+mark_as_advanced(CUDA_NVTX_LIBRARY)
+
+set(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_NVTX_LIBRARY})
+
 find_program(PERL perl)
 
 if (BLAS_LIB AND LAPACK_LIB)

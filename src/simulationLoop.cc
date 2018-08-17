@@ -24,6 +24,7 @@
 #include "mpiUtils.h"
 #include "ReactionManager.hh"
 #include "simulationLoopCuda.hh"
+#include  "cudaNVTX.h"
 
 /*
    This follwing header, fastBarrier_nosync.hh, contains barrier code
@@ -173,12 +174,10 @@ void simulationLoop(Simulate& sim)
       //voltageExchange.barrier();
       //stopTimer(imbalanceTimer);
 
-      startTimer(haloTimer);
       {
          voltageExchange.fillSendBuffer(vdata.VmTransport_);
          voltageExchange.startComm();
       }
-      stopTimer(haloTimer);
 
 
       // REACTION
