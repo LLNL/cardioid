@@ -5,16 +5,26 @@
 #include <vector>
 #include <sstream>
 
-#include <simdops/simdops.hpp>
+#ifdef USE_CUDA
+# include "TransportCoordinator.hh"
+# include <nvrtc.h>
+# include <cuda.h>
+#else //USE_CUDA
+# if 0
+#  include <simdops/resetArch.hpp>
+# endif
+# include <simdops/simdops.hpp>
+#endif //USE_CUDA
 
 REACTION_FACTORY(VecTT06)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);    
 
 namespace VecTT06
 {
 
-
+#ifndef USE_CUDA
    struct State
    {
+
       double Ca_SR[SIMDOPS_FLOAT64V_WIDTH];
       double Ca_i[SIMDOPS_FLOAT64V_WIDTH];
       double Ca_ss[SIMDOPS_FLOAT64V_WIDTH];
@@ -34,6 +44,8 @@ namespace VecTT06
       double r[SIMDOPS_FLOAT64V_WIDTH];
       double s[SIMDOPS_FLOAT64V_WIDTH];
    };
+#endif //USE_CUDA
+
    class ThisReaction : public Reaction
    {
     public:
@@ -57,6 +69,7 @@ namespace VecTT06
 
     public:
       //PARAMETERS
+      double celltype;
       double g_CaL;
       double g_K1;
       double g_Kr;
@@ -67,15 +80,33 @@ namespace VecTT06
       double g_pCa;
       double g_pK;
       double g_to;
+#ifdef USE_CUDA
+    public:
+      void calc(double dt,
+                const Managed<ArrayView<double>> Vm_m,
+                const Managed<ArrayView<double>> iStim_m,
+                Managed<ArrayView<double>> dVm_m);
+      void initializeMembraneVoltage(ArrayView<double> Vm);
+      virtual ~ThisReaction();
+      void constructKernel();
 
+      TransportCoordinator<PinnedVector<double> > stateTransport_;
+      std::string _program_code;
+      nvrtcProgram _program;
+      std::vector<char> _ptx;
+      CUmodule _module;
+      CUfunction _kernel;
+      int blockSize_;
+#else //USE_CUDA
     public:
       void calc(double dt,
                 const VectorDouble32& Vm,
                 const std::vector<double>& iStim,
                 VectorDouble32& dVm);
       void initializeMembraneVoltage(VectorDouble32& Vm);
-    private:
+
       std::vector<State> state_;
+#endif
 
       Interpolation _interpolant[30];
       FRIEND_FACTORY(VecTT06)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);

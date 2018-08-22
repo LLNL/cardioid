@@ -21,14 +21,58 @@
 
 using namespace std;
 
-#define setDefault(name, value) objectGet(obj, #name, name, #value)
-   
+#define setDefault(name, value) objectGet(obj, #name, name, TO_STRING(value))
+
+template<typename TTT>
+static inline string TO_STRING(const TTT x)
+{
+   stringstream ss;
+   ss << x;
+   return ss.str();
+}
+
+const char* interpName[] = {
+   "_fCass_RLA",
+   "_Xr1_RLA",
+   "_Xr1_RLB",
+   "_Xr2_RLA",
+   "_Xr2_RLB",
+   "_Xs_RLA",
+   "_Xs_RLB",
+   "_d_RLA",
+   "_d_RLB",
+   "_f2_RLA",
+   "_f2_RLB",
+   "_f_RLA",
+   "_f_RLB",
+   "_h_RLA",
+   "_h_RLB",
+   "_j_RLA",
+   "_j_RLB",
+   "_m_RLA",
+   "_m_RLB",
+   "_r_RLA",
+   "_r_RLB",
+   "_s_RLA",
+   "_s_RLB",
+   "exp_gamma_VFRT",
+   "exp_gamma_m1_VFRT",
+   "i_CalTerm3",
+   "i_CalTerm4",
+   "i_NaK_term",
+   "i_p_K_term",
+   "inward_rectifier_potassium_current_i_Kitot",
+    NULL
+};
+
+
    REACTION_FACTORY(VecTT06)(OBJECT* obj, const double _dt, const int numPoints, const ThreadTeam&)
    {
       VecTT06::ThisReaction* reaction = new VecTT06::ThisReaction(numPoints, _dt);
 
       //override the defaults
       //EDIT_PARAMETERS
+      double celltype;
       double g_CaL;
       double g_K1;
       double g_Kr;
@@ -39,7 +83,7 @@ using namespace std;
       double g_pCa;
       double g_pK;
       double g_to;
-      double celltype = 0;
+      setDefault(celltype, 0);
       setDefault(g_CaL, 3.98000000000000e-5);
       setDefault(g_bca, 0.000592000000000000);
       setDefault(g_pCa, 0.123800000000000);
@@ -68,6 +112,7 @@ using namespace std;
          g_to = 0.294000000000000;
       }
       setDefault(g_to, g_to);
+      reaction->celltype = celltype;
       reaction->g_CaL = g_CaL;
       reaction->g_K1 = g_K1;
       reaction->g_Kr = g_Kr;
@@ -86,9 +131,11 @@ using namespace std;
       {
          OBJECT* fitObj = objectFind(fitName, "FIT");
          double _fit_dt; objectGet(fitObj, "dt", _fit_dt, "nan");
+         double _fit_celltype; objectGet(fitObj, "celltype", _fit_celltype, "nan");
          double _fit_g_K1; objectGet(fitObj, "g_K1", _fit_g_K1, "nan");
          if (1
             && _fit_dt == _dt
+            && _fit_celltype == reaction->celltype
             && _fit_g_K1 == reaction->g_K1
          )
          {
@@ -122,17 +169,18 @@ using namespace std;
          outfile << obj->name << " REACTION { fit=" << fitName << "; }\n";
          outfile << fitName << " FIT {\n";
             outfile << "   dt = " << _dt << ";\n";
+            outfile << "   celltype = " << reaction->celltype << ";\n";
             outfile << "   g_K1 = " << reaction->g_K1 << ";\n";
          outfile << "   functions = ";
          for (int _ii=0; _ii<funcCount; _ii++) {
-            outfile << obj->name << "_interpFunc" << _ii << " ";
+            outfile << obj->name << "_interpFunc" << _ii << "_" << interpName[_ii] << " ";
          }
          outfile << ";\n";
          outfile << "}\n";
 
          for (int _ii=0; _ii<funcCount; _ii++)
          {
-            outfile << obj->name << "_interpFunc" << _ii << " FUNCTION { "
+            outfile << obj->name << "_interpFunc" << _ii << "_" << interpName[_ii] << " FUNCTION { "
                     << "numer=" << reaction->_interpolant[_ii].numNumer_ << "; "
                     << "denom=" << reaction->_interpolant[_ii].numDenom_ << "; "
                     << "coeff=";
@@ -145,6 +193,9 @@ using namespace std;
          outfile.close();
       }
       }
+#ifdef USE_CUDA
+      reaction->constructKernel();
+#endif
       return reaction;
    }
 #undef setDefault
@@ -167,8 +218,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _fCass_RLA = _expensive_functions_049 - 1;
          _outputs[_ii] = _fCass_RLA;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[0].create(_inputs,_outputs, relError);
+      double relError = 0.0001;
+      double actualTolerance = _interpolant[0].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _fCass_RLA: " 
@@ -193,8 +244,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _Xr1_RLA = _expensive_functions_043 - 1;
          _outputs[_ii] = _Xr1_RLA;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[1].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[1].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _Xr1_RLA: " 
@@ -215,8 +266,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _Xr1_RLB = -xr1_inf;
          _outputs[_ii] = _Xr1_RLB;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[2].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[2].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _Xr1_RLB: " 
@@ -241,8 +292,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _Xr2_RLA = _expensive_functions_044 - 1;
          _outputs[_ii] = _Xr2_RLA;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[3].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[3].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _Xr2_RLA: " 
@@ -263,8 +314,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _Xr2_RLB = -xr2_inf;
          _outputs[_ii] = _Xr2_RLB;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[4].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[4].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _Xr2_RLB: " 
@@ -290,8 +341,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _Xs_RLA = _expensive_functions_045 - 1;
          _outputs[_ii] = _Xs_RLA;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[5].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[5].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _Xs_RLA: " 
@@ -312,8 +363,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _Xs_RLB = -xs_inf;
          _outputs[_ii] = _Xs_RLB;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[6].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[6].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _Xs_RLB: " 
@@ -340,8 +391,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _d_RLA = _expensive_functions_046 - 1;
          _outputs[_ii] = _d_RLA;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[7].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[7].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _d_RLA: " 
@@ -362,8 +413,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _d_RLB = -d_inf;
          _outputs[_ii] = _d_RLB;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[8].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[8].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _d_RLB: " 
@@ -387,8 +438,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _f2_RLA = _expensive_functions_048 - 1;
          _outputs[_ii] = _f2_RLA;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[9].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[9].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _f2_RLA: " 
@@ -409,8 +460,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _f2_RLB = -f2_inf;
          _outputs[_ii] = _f2_RLB;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[10].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[10].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _f2_RLB: " 
@@ -434,8 +485,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _f_RLA = _expensive_functions_047 - 1;
          _outputs[_ii] = _f_RLA;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[11].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[11].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _f_RLA: " 
@@ -456,8 +507,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _f_RLB = -f_inf;
          _outputs[_ii] = _f_RLB;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[12].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[12].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _f_RLB: " 
@@ -495,8 +546,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _h_RLA = _expensive_functions_050 - 1;
          _outputs[_ii] = _h_RLA;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[13].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[13].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _h_RLA: " 
@@ -517,8 +568,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _h_RLB = -h_inf;
          _outputs[_ii] = _h_RLB;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[14].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[14].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _h_RLB: " 
@@ -559,8 +610,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _j_RLA = _expensive_functions_051 - 1;
          _outputs[_ii] = _j_RLA;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[15].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[15].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _j_RLA: " 
@@ -581,8 +632,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _j_RLB = -j_inf;
          _outputs[_ii] = _j_RLB;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[16].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[16].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _j_RLB: " 
@@ -608,8 +659,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _m_RLA = _expensive_functions_052 - 1;
          _outputs[_ii] = _m_RLA;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[17].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[17].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _m_RLA: " 
@@ -630,8 +681,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _m_RLB = -m_inf;
          _outputs[_ii] = _m_RLB;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[18].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[18].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _m_RLB: " 
@@ -653,8 +704,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _r_RLA = _expensive_functions_053 - 1;
          _outputs[_ii] = _r_RLA;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[19].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[19].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _r_RLA: " 
@@ -675,8 +726,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _r_RLB = -r_inf;
          _outputs[_ii] = _r_RLB;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[20].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[20].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _r_RLB: " 
@@ -692,7 +743,6 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double celltype = 0;
          double __melodee_temp_003 = celltype == 0;
          double s_inf;
          double tau_s;
@@ -711,8 +761,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _s_RLA = _expensive_functions_054 - 1;
          _outputs[_ii] = _s_RLA;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[21].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[21].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _s_RLA: " 
@@ -728,7 +778,6 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double celltype = 0;
          double __melodee_temp_003 = celltype == 0;
          double s_inf;
          double tau_s;
@@ -745,8 +794,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double _s_RLB = -s_inf;
          _outputs[_ii] = _s_RLB;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[22].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[22].create(_inputs,_outputs, relError,1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for _s_RLB: " 
@@ -769,8 +818,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double exp_gamma_VFRT = exp(F*V*gamma/(R*T));
          _outputs[_ii] = exp_gamma_VFRT;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[23].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[23].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for exp_gamma_VFRT: " 
@@ -793,8 +842,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double exp_gamma_m1_VFRT = exp(F*V*(gamma - 1)/(R*T));
          _outputs[_ii] = exp_gamma_m1_VFRT;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[24].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[24].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for exp_gamma_m1_VFRT: " 
@@ -827,8 +876,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          }
          _outputs[_ii] = i_CalTerm3;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[25].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[25].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for i_CalTerm3: " 
@@ -862,8 +911,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double i_CalTerm4 = i_CalTerm2*i_CalTerm3;
          _outputs[_ii] = i_CalTerm4;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[26].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[26].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for i_CalTerm4: " 
@@ -890,8 +939,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double i_NaK_term = K_o*P_NaK/((K_o + K_mk)*(0.0353*_expensive_functions_031 + 0.1245*_expensive_functions_032 + 1));
          _outputs[_ii] = i_NaK_term;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[27].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[27].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for i_NaK_term: " 
@@ -911,8 +960,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double i_p_K_term = (1.0/(65.4052157419383*_expensive_functions_019 + 1));
          _outputs[_ii] = i_p_K_term;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[28].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[28].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for i_p_K_term: " 
@@ -941,8 +990,8 @@ void ThisReaction::createInterpolants(const double _dt) {
          double inward_rectifier_potassium_current_i_Kitot = i_K1;
          _outputs[_ii] = inward_rectifier_potassium_current_i_Kitot;
       }
-      double relError = 1e-4;
-      double actualTolerance = _interpolant[29].create(_inputs,_outputs, relError);
+      double relError = 1e-3;
+      double actualTolerance = _interpolant[29].create(_inputs,_outputs, relError,0.1);
       if (actualTolerance > relError  && getRank(0) == 0)
       {
          cerr << "Warning: Could not meet tolerance for inward_rectifier_potassium_current_i_Kitot: " 
@@ -951,20 +1000,420 @@ void ThisReaction::createInterpolants(const double _dt) {
       }
    }
 }
+
+#ifdef USE_CUDA
+
+void generateInterpString(stringstream& ss, const Interpolation& interp, const char* interpVar)
+{
+   ss <<
+   "{\n"
+   "   const double _numerCoeff[]={";
+    for (int _ii=interp.numNumer_-1; _ii>=0; _ii--)
+   {
+      if (_ii != interp.numNumer_-1) { ss << ", "; }
+      ss << interp.coeff_[_ii];
+   }
+   ss<< "};\n"
+   "   const double _denomCoeff[]={";
+   for (int _ii=interp.numDenom_+interp.numNumer_-2; _ii>=interp.numNumer_; _ii--)
+   {
+      ss << interp.coeff_[_ii] << ", ";
+   }
+   ss<< "1};\n"
+   "   double _inVal = " << interpVar << ";\n"
+   "   double _numerator=_numerCoeff[0];\n"
+   "   for (int _jj=1; _jj<sizeof(_numerCoeff)/sizeof(_numerCoeff[0]); _jj++)\n"
+   "   {\n"
+   "      _numerator = _numerCoeff[_jj] + _inVal*_numerator;\n"
+   "   }\n"
+   "   if (sizeof(_denomCoeff)/sizeof(_denomCoeff[0]) == 1)\n"
+   "   {\n"
+   "      _ratPoly = _numerator;\n"
+   "   }\n"
+   "   else\n"
+   "   {\n"
+   "      double _denominator=_denomCoeff[0];\n"
+   "      for (int _jj=1; _jj<sizeof(_denomCoeff)/sizeof(_denomCoeff[0]); _jj++)\n"
+   "      {\n"
+   "         _denominator = _denomCoeff[_jj] + _inVal*_denominator;\n"
+   "      }\n"
+   "      _ratPoly = _numerator/_denominator;\n"
+   "   }\n"
+   "}"
+      ;
+}
+
+void ThisReaction::constructKernel()
+{
+
+   stringstream ss;
+   ss.precision(16);
+   ss <<
+   "enum StateOffset {\n"
+
+   "   Ca_SR_off,\n"
+   "   Ca_i_off,\n"
+   "   Ca_ss_off,\n"
+   "   K_i_off,\n"
+   "   Na_i_off,\n"
+   "   R_prime_off,\n"
+   "   Xr1_off,\n"
+   "   Xr2_off,\n"
+   "   Xs_off,\n"
+   "   d_off,\n"
+   "   f_off,\n"
+   "   f2_off,\n"
+   "   fCass_off,\n"
+   "   h_off,\n"
+   "   j_off,\n"
+   "   m_off,\n"
+   "   r_off,\n"
+   "   s_off,\n"
+   "   NUMSTATES\n"
+   "};\n"
+   "extern \"C\"\n"
+   "__global__ void VecTT06_kernel(const double* _Vm, const double* _iStim, double* _dVm, double* _state) {\n"
+   "const double _dt = " << __cachedDt << ";\n"
+   "const int _nCells = " << nCells_ << ";\n"
+
+   "const double celltype = " << celltype << ";\n"
+   "const double g_CaL = " << g_CaL << ";\n"
+   "const double g_K1 = " << g_K1 << ";\n"
+   "const double g_Kr = " << g_Kr << ";\n"
+   "const double g_Ks = " << g_Ks << ";\n"
+   "const double g_Na = " << g_Na << ";\n"
+   "const double g_bca = " << g_bca << ";\n"
+   "const double g_bna = " << g_bna << ";\n"
+   "const double g_pCa = " << g_pCa << ";\n"
+   "const double g_pK = " << g_pK << ";\n"
+   "const double g_to = " << g_to << ";\n"
+   "const int _ii = threadIdx.x + blockIdx.x*blockDim.x;\n"
+   "if (_ii >= _nCells) { return; }\n"
+   "const double V = _Vm[_ii];\n"
+   "double _ratPoly;\n"
+
+   "const double Ca_SR = _state[_ii+Ca_SR_off*_nCells];\n"
+   "const double Ca_i = _state[_ii+Ca_i_off*_nCells];\n"
+   "const double Ca_ss = _state[_ii+Ca_ss_off*_nCells];\n"
+   "const double K_i = _state[_ii+K_i_off*_nCells];\n"
+   "const double Na_i = _state[_ii+Na_i_off*_nCells];\n"
+   "const double R_prime = _state[_ii+R_prime_off*_nCells];\n"
+   "const double Xr1 = _state[_ii+Xr1_off*_nCells];\n"
+   "const double Xr2 = _state[_ii+Xr2_off*_nCells];\n"
+   "const double Xs = _state[_ii+Xs_off*_nCells];\n"
+   "const double d = _state[_ii+d_off*_nCells];\n"
+   "const double f = _state[_ii+f_off*_nCells];\n"
+   "const double f2 = _state[_ii+f2_off*_nCells];\n"
+   "const double fCass = _state[_ii+fCass_off*_nCells];\n"
+   "const double h = _state[_ii+h_off*_nCells];\n"
+   "const double j = _state[_ii+j_off*_nCells];\n"
+   "const double m = _state[_ii+m_off*_nCells];\n"
+   "const double r = _state[_ii+r_off*_nCells];\n"
+   "const double s = _state[_ii+s_off*_nCells];\n"
+   "//get the gate updates (diagonalized exponential integrator)\n"
+   "double fCass_inf = 0.4 + 0.6/(400.0*(Ca_ss*Ca_ss) + 1);\n"
+   ""; generateInterpString(ss,_interpolant[1], "V"); ss << "\n"
+   "double _Xr1_RLA = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[2], "V"); ss << "\n"
+   "double _Xr1_RLB = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[3], "V"); ss << "\n"
+   "double _Xr2_RLA = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[4], "V"); ss << "\n"
+   "double _Xr2_RLB = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[5], "V"); ss << "\n"
+   "double _Xs_RLA = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[6], "V"); ss << "\n"
+   "double _Xs_RLB = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[7], "V"); ss << "\n"
+   "double _d_RLA = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[8], "V"); ss << "\n"
+   "double _d_RLB = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[11], "V"); ss << "\n"
+   "double _f_RLA = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[12], "V"); ss << "\n"
+   "double _f_RLB = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[9], "V"); ss << "\n"
+   "double _f2_RLA = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[10], "V"); ss << "\n"
+   "double _f2_RLB = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[0], "Ca_ss"); ss << "\n"
+   "double _fCass_RLA = _ratPoly;\n"
+   "double _fCass_RLB = -fCass_inf;\n"
+   ""; generateInterpString(ss,_interpolant[13], "V"); ss << "\n"
+   "double _h_RLA = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[14], "V"); ss << "\n"
+   "double _h_RLB = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[15], "V"); ss << "\n"
+   "double _j_RLA = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[16], "V"); ss << "\n"
+   "double _j_RLB = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[17], "V"); ss << "\n"
+   "double _m_RLA = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[18], "V"); ss << "\n"
+   "double _m_RLB = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[19], "V"); ss << "\n"
+   "double _r_RLA = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[20], "V"); ss << "\n"
+   "double _r_RLB = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[21], "V"); ss << "\n"
+   "double _s_RLA = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[22], "V"); ss << "\n"
+   "double _s_RLB = _ratPoly;\n"
+   "//get the other differential updates\n"
+   "double Cm = 0.185000000000000;\n"
+   "double F = 96485.3415000000;\n"
+   "double R = 8314.47200000000;\n"
+   "double T = 310;\n"
+   "double V_c = 0.0164040000000000;\n"
+   "double factor_fix = 1;\n"
+   "double Ca_o = 2;\n"
+   "double Buf_c = 0.200000000000000;\n"
+   "double Buf_sr = 10;\n"
+   "double Buf_ss = 0.400000000000000;\n"
+   "double EC = 1.50000000000000;\n"
+   "double K_buf_c = 0.00100000000000000;\n"
+   "double K_buf_sr = 0.300000000000000;\n"
+   "double K_buf_ss = 0.000250000000000000;\n"
+   "double K_up = 0.000250000000000000;\n"
+   "double V_leak = 0.000360000000000000;\n"
+   "double V_rel = 0.102000000000000;\n"
+   "double V_sr = 0.00109400000000000;\n"
+   "double V_ss = 5.46800000000000e-5;\n"
+   "double V_xfer = 0.00380000000000000;\n"
+   "double Vmax_up = 0.00637500000000000;\n"
+   "double k1_prime = 0.150000000000000;\n"
+   "double k2_prime = 0.0450000000000000;\n"
+   "double k3 = 0.0600000000000000;\n"
+   "double k4 = 0.00500000000000000;\n"
+   "double max_sr = 2.50000000000000;\n"
+   "double min_sr = 1;\n"
+   "double i_CalTerm3;\n"
+   ""; generateInterpString(ss,_interpolant[25], "V"); ss << "\n"
+   "i_CalTerm3 = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[26], "V"); ss << "\n"
+   "double i_CalTerm4 = _ratPoly;\n"
+   "double _expensive_functions_012 = log(Ca_o/Ca_i);\n"
+   "double E_Ca = 0.5*R*T*_expensive_functions_012/F;\n"
+   "double i_b_Ca = g_bca*(V - E_Ca);\n"
+   "double K_pCa = 0.000500000000000000;\n"
+   "double i_p_Ca = Ca_i*g_pCa/(Ca_i + K_pCa);\n"
+   "double K_NaCa = 1000;\n"
+   "double K_sat = 0.100000000000000;\n"
+   "double Km_Ca = 1.38000000000000;\n"
+   "double Km_Nai = 87.5000000000000;\n"
+   "double alpha = 2.50000000000000;\n"
+   ""; generateInterpString(ss,_interpolant[23], "V"); ss << "\n"
+   "double exp_gamma_VFRT = _ratPoly;\n"
+   ""; generateInterpString(ss,_interpolant[24], "V"); ss << "\n"
+   "double exp_gamma_m1_VFRT = _ratPoly;\n"
+   "double K_o = 5.40000000000000;\n"
+   ""; generateInterpString(ss,_interpolant[28], "V"); ss << "\n"
+   "double i_p_K_term = _ratPoly;\n"
+   "double _expensive_functions_026 = log(K_o/K_i);\n"
+   "double E_K = R*T*_expensive_functions_026/F;\n"
+   "double P_kna = 0.0300000000000000;\n"
+   "double Na_o = 140;\n"
+   "double K_mNa = 40;\n"
+   ""; generateInterpString(ss,_interpolant[27], "V"); ss << "\n"
+   "double i_NaK_term = _ratPoly;\n"
+   "double i_NaK = Na_i*i_NaK_term/(Na_i + K_mNa);\n"
+   "double i_Naitot = 3*i_NaK;\n"
+   "double i_Kitot = -2*i_NaK;\n"
+   "double VEK = -E_K + V;\n"
+   "double Ca_i_bufc = (1.0/(Buf_c*K_buf_c/((Ca_i + K_buf_c)*(Ca_i + K_buf_c)) + 1));\n"
+   "double Ca_sr_bufsr = (1.0/(Buf_sr*K_buf_sr/((Ca_SR + K_buf_sr)*(Ca_SR + K_buf_sr)) + 1));\n"
+   "double Ca_ss_bufss = (1.0/(Buf_ss*K_buf_ss/((Ca_ss + K_buf_ss)*(Ca_ss + K_buf_ss)) + 1));\n"
+   "double i_leak = V_leak*(Ca_SR - Ca_i);\n"
+   "double i_up = Vmax_up/(1 + (K_up*K_up)/(Ca_i*Ca_i));\n"
+   "double i_xfer = V_xfer*(-Ca_i + Ca_ss);\n"
+   "double kcasr = max_sr - (max_sr - min_sr)/(1 + (EC*EC)/(Ca_SR*Ca_SR));\n"
+   "double k1 = k1_prime/kcasr;\n"
+   "double k2 = k2_prime*kcasr;\n"
+   "double O = (Ca_ss*Ca_ss)*R_prime*k1/((Ca_ss*Ca_ss)*k1 + k3);\n"
+   "double R_prime_diff = -Ca_ss*R_prime*k2 + k4*(-R_prime + 1);\n"
+   "double i_rel = O*V_rel*(Ca_SR - Ca_ss);\n"
+   "double Ca_SR_diff = Ca_sr_bufsr*(-i_leak - i_rel + i_up);\n"
+   "double i_CaL = d*f*f2*fCass*g_CaL*(-Ca_o*i_CalTerm3 + 0.25*Ca_ss*i_CalTerm4);\n"
+   "double i_NaCa = K_NaCa*((Na_i*Na_i*Na_i)*Ca_o*exp_gamma_VFRT - (Na_o*Na_o*Na_o)*Ca_i*alpha*exp_gamma_m1_VFRT)/(((Na_o*Na_o*Na_o) + (Km_Nai*Km_Nai*Km_Nai))*(Ca_o + Km_Ca)*(K_sat*exp_gamma_m1_VFRT + 1));\n"
+   "double sodium_calcium_exchanger_current_i_Naitot = 3*i_NaCa;\n"
+   ""; generateInterpString(ss,_interpolant[29], "VEK"); ss << "\n"
+   "double inward_rectifier_potassium_current_i_Kitot = _ratPoly;\n"
+   "double i_p_K = VEK*g_pK*i_p_K_term;\n"
+   "double potassium_pump_current_i_Kitot = i_p_K;\n"
+   "double _expensive_functions_040 = sqrt(K_o);\n"
+   "double i_Kr = 0.430331482911935*VEK*_expensive_functions_040*Xr1*Xr2*g_Kr;\n"
+   "double rapid_time_dependent_potassium_current_i_Kitot = i_Kr;\n"
+   "double _expensive_functions_041 = log(Na_o/Na_i);\n"
+   "double E_Na = R*T*_expensive_functions_041/F;\n"
+   "double _expensive_functions_042 = log((K_o + Na_o*P_kna)/(K_i + Na_i*P_kna));\n"
+   "double E_Ks = R*T*_expensive_functions_042/F;\n"
+   "double i_Ks = (Xs*Xs)*g_Ks*(V - E_Ks);\n"
+   "double slow_time_dependent_potassium_current_i_Kitot = i_Ks;\n"
+   "double i_b_Na = g_bna*(-E_Na + V);\n"
+   "double sodium_background_current_i_Naitot = i_b_Na;\n"
+   "double i_to = VEK*g_to*r*s;\n"
+   "double transient_outward_current_i_Kitot = i_to;\n"
+   "double i_Kitot_001 = i_Kitot + inward_rectifier_potassium_current_i_Kitot + potassium_pump_current_i_Kitot + rapid_time_dependent_potassium_current_i_Kitot + slow_time_dependent_potassium_current_i_Kitot + transient_outward_current_i_Kitot;\n"
+   "double Ca_i_diff = Ca_i_bufc*(-1.0L/2.0L*Cm*(-2*i_NaCa + i_b_Ca + i_p_Ca)/(F*V_c) + i_xfer + V_sr*(i_leak - i_up)/V_c);\n"
+   "double Ca_ss_diff = Ca_ss_bufss*(-1.0L/2.0L*Cm*i_CaL/(F*V_ss) - V_c*i_xfer/V_ss + V_sr*i_rel/V_ss);\n"
+   "double i_Na = (m*m*m)*g_Na*h*j*(-E_Na + V);\n"
+   "double fast_sodium_current_i_Naitot = i_Na;\n"
+   "double K_i_diff = -Cm*factor_fix*i_Kitot_001/(F*V_c);\n"
+   "double i_Naitot_001 = fast_sodium_current_i_Naitot + i_Naitot + sodium_background_current_i_Naitot + sodium_calcium_exchanger_current_i_Naitot;\n"
+   "double Na_i_diff = -Cm*factor_fix*i_Naitot_001/(F*V_c);\n"
+   "//get Iion\n"
+   "double i_Caitot = i_b_Ca;\n"
+   "double calcium_pump_current_i_Caitot = i_p_Ca;\n"
+   "double L_type_Ca_current_i_Caitot = i_CaL;\n"
+   "double sodium_calcium_exchanger_current_i_Caitot = -2*i_NaCa;\n"
+   "double i_Caitot_001 = L_type_Ca_current_i_Caitot + calcium_pump_current_i_Caitot + i_Caitot + sodium_calcium_exchanger_current_i_Caitot;\n"
+   "double Iion = i_Caitot_001 + i_Kitot_001 + i_Naitot_001;\n"
+   "double Iion_001 = Iion;\n"
+   "//Do the markov update (1 step rosenbrock with gauss siedel)\n"
+   "int _count=0;\n"
+   "do\n"
+   "{\n"
+   "   _count++;\n"
+   "} while (_count<50);\n"
+   "//EDIT_STATE\n"
+   "_state[_ii+Ca_SR_off*_nCells] += _dt*Ca_SR_diff;\n"
+   "_state[_ii+Ca_i_off*_nCells] += _dt*Ca_i_diff;\n"
+   "_state[_ii+Ca_ss_off*_nCells] += _dt*Ca_ss_diff;\n"
+   "_state[_ii+K_i_off*_nCells] += _dt*K_i_diff;\n"
+   "_state[_ii+Na_i_off*_nCells] += _dt*Na_i_diff;\n"
+   "_state[_ii+R_prime_off*_nCells] += _dt*R_prime_diff;\n"
+   "_state[_ii+Xr1_off*_nCells] += _Xr1_RLA*(Xr1+_Xr1_RLB);\n"
+   "_state[_ii+Xr2_off*_nCells] += _Xr2_RLA*(Xr2+_Xr2_RLB);\n"
+   "_state[_ii+Xs_off*_nCells] += _Xs_RLA*(Xs+_Xs_RLB);\n"
+   "_state[_ii+d_off*_nCells] += _d_RLA*(d+_d_RLB);\n"
+   "_state[_ii+f_off*_nCells] += _f_RLA*(f+_f_RLB);\n"
+   "_state[_ii+f2_off*_nCells] += _f2_RLA*(f2+_f2_RLB);\n"
+   "_state[_ii+fCass_off*_nCells] += _fCass_RLA*(fCass+_fCass_RLB);\n"
+   "_state[_ii+h_off*_nCells] += _h_RLA*(h+_h_RLB);\n"
+   "_state[_ii+j_off*_nCells] += _j_RLA*(j+_j_RLB);\n"
+   "_state[_ii+m_off*_nCells] += _m_RLA*(m+_m_RLB);\n"
+   "_state[_ii+r_off*_nCells] += _r_RLA*(r+_r_RLB);\n"
+   "_state[_ii+s_off*_nCells] += _s_RLA*(s+_s_RLB);\n"
+   "_dVm[_ii] = -Iion_001;\n"
+   "}\n";
+
+   _program_code = ss.str();
+   //cout << ss.str();
+   nvrtcCreateProgram(&_program,
+                      _program_code.c_str(),
+                      "VecTT06_program",
+                      0,
+                      NULL,
+                      NULL);
+   nvrtcCompileProgram(_program,
+                       0,
+                       NULL);
+   std::size_t size;
+   nvrtcGetPTXSize(_program, &size);
+   _ptx.resize(size);
+   nvrtcGetPTX(_program, &_ptx[0]);
+
+   cuModuleLoadDataEx(&_module, &_ptx[0], 0, 0, 0);
+   cuModuleGetFunction(&_kernel, _module, "VecTT06_kernel");
+}
+
+void ThisReaction::calc(double dt,
+                const Managed<ArrayView<double>> Vm_m,
+                const Managed<ArrayView<double>> iStim_m,
+                Managed<ArrayView<double>> dVm_m)
+{
+   ArrayView<double> state = stateTransport_.modifyOnDevice();
+
+   {
+      int errorCode=-1;
+      if (blockSize_ == -1) { blockSize_ = 1024; }
+      while(1)
+      {
+         ConstArrayView<double> Vm = Vm_m.readOnDevice();
+         ConstArrayView<double> iStim = iStim_m.readOnDevice();
+         ArrayView<double> dVm = dVm_m.modifyOnDevice();
+         double* VmRaw = const_cast<double*>(&Vm[0]);
+         double* iStimRaw = const_cast<double*>(&iStim[0]);
+         double* dVmRaw = &dVm[0];
+         double* stateRaw= &state[0];
+         void* args[] = { &VmRaw,
+                          &iStimRaw,
+                          &dVmRaw,
+                          &stateRaw};
+         int errorCode = cuLaunchKernel(_kernel,
+                                        (nCells_+blockSize_-1)/blockSize_, 1, 1,
+                                        blockSize_,1,1,
+                                        0, NULL,
+                                        args, 0);
+         if (errorCode == CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES && blockSize_ > 0)
+         {
+            blockSize_ /= 2;
+            continue;
+         }
+         else if (errorCode != CUDA_SUCCESS)
+         {
+            printf("Cuda return %d;\n", errorCode);
+            assert(0 && "Launch failed");
+         }
+         else
+         {
+            break;
+         }
+         //cuCtxSynchronize();
+      }
+   }
+}
+
+enum StateOffset {
+   _Ca_SR_off,
+   _Ca_i_off,
+   _Ca_ss_off,
+   _K_i_off,
+   _Na_i_off,
+   _R_prime_off,
+   _Xr1_off,
+   _Xr2_off,
+   _Xs_off,
+   _d_off,
+   _f_off,
+   _f2_off,
+   _fCass_off,
+   _h_off,
+   _j_off,
+   _m_off,
+   _r_off,
+   _s_off,
+   NUMSTATES
+};
+
+ThisReaction::ThisReaction(const int numPoints, const double __dt)
+: nCells_(numPoints)
+{
+   stateTransport_.setup(PinnedVector<double>(nCells_*NUMSTATES));
+   __cachedDt = __dt;
+   blockSize_ = -1;
+   _program = NULL;
+   _module = NULL;
+}
+
+ThisReaction::~ThisReaction() {
+   if (_program)
+   {
+      nvrtcDestroyProgram(&_program);
+      _program = NULL;
+   }
+   if (_module)
+   {
+      cuModuleUnload(_module);
+      _module = NULL;
+   }
+}
+
+#else //USE_CUDA
+
 #define width SIMDOPS_FLOAT64V_WIDTH
 #define real simdops::float64v
 #define load simdops::load
-
-/*
-#else
-#define width 1
-#define real double
-#define load(x) (*(x))
-#define store(x,y) ((*(x)) = y)
-#define extract(x,y) (x)
-#define insert(x,k,y) (y)
-#endif
-*/
 
 ThisReaction::ThisReaction(const int numPoints, const double __dt)
 : nCells_(numPoints)
@@ -1170,18 +1619,31 @@ void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
       store(state_[__jj].m, m);
       store(state_[__jj].r, r);
       store(state_[__jj].s, s);
-      simdops::store(&__dVm[__ii],-Iion_001);
+      store(&__dVm[__ii],-Iion_001);
    }
 }
+#endif //USE_CUDA
    
 string ThisReaction::methodName() const
 {
    return "VecTT06";
 }
-   
+
+#ifdef USE_CUDA
+void ThisReaction::initializeMembraneVoltage(ArrayView<double> __Vm)
+#else //USE_CUDA
 void ThisReaction::initializeMembraneVoltage(VectorDouble32& __Vm)
+#endif //USE_CUDA
 {
    assert(__Vm.size() >= nCells_);
+
+#ifdef USE_CUDA
+#define READ_STATE(state,index) (stateData[_##state##_off*nCells_+index])
+   ArrayView<double> stateData = stateTransport_;
+#else //USE_CUDA
+#define READ_STATE(state,index) (state_[index/width].state[index % width])
+   state_.resize((nCells_+width-1)/width);
+#endif //USE_CUDA
 
 
    double V_init = -83;
@@ -1222,27 +1684,26 @@ void ThisReaction::initializeMembraneVoltage(VectorDouble32& __Vm)
    double r = r_init;
    double s_init = 0.601200000000000;
    double s = s_init;
-   state_.resize((nCells_+width-1)/width);
    for (int iCell=0; iCell<nCells_; iCell++)
    {
-      state_[iCell/width].Ca_SR[iCell % width] = Ca_SR;
-      state_[iCell/width].Ca_i[iCell % width] = Ca_i;
-      state_[iCell/width].Ca_ss[iCell % width] = Ca_ss;
-      state_[iCell/width].K_i[iCell % width] = K_i;
-      state_[iCell/width].Na_i[iCell % width] = Na_i;
-      state_[iCell/width].R_prime[iCell % width] = R_prime;
-      state_[iCell/width].Xr1[iCell % width] = Xr1;
-      state_[iCell/width].Xr2[iCell % width] = Xr2;
-      state_[iCell/width].Xs[iCell % width] = Xs;
-      state_[iCell/width].d[iCell % width] = d;
-      state_[iCell/width].f[iCell % width] = f;
-      state_[iCell/width].f2[iCell % width] = f2;
-      state_[iCell/width].fCass[iCell % width] = fCass;
-      state_[iCell/width].h[iCell % width] = h;
-      state_[iCell/width].j[iCell % width] = j;
-      state_[iCell/width].m[iCell % width] = m;
-      state_[iCell/width].r[iCell % width] = r;
-      state_[iCell/width].s[iCell % width] = s;
+      READ_STATE(Ca_SR,iCell) = Ca_SR;
+      READ_STATE(Ca_i,iCell) = Ca_i;
+      READ_STATE(Ca_ss,iCell) = Ca_ss;
+      READ_STATE(K_i,iCell) = K_i;
+      READ_STATE(Na_i,iCell) = Na_i;
+      READ_STATE(R_prime,iCell) = R_prime;
+      READ_STATE(Xr1,iCell) = Xr1;
+      READ_STATE(Xr2,iCell) = Xr2;
+      READ_STATE(Xs,iCell) = Xs;
+      READ_STATE(d,iCell) = d;
+      READ_STATE(f,iCell) = f;
+      READ_STATE(f2,iCell) = f2;
+      READ_STATE(fCass,iCell) = fCass;
+      READ_STATE(h,iCell) = h;
+      READ_STATE(j,iCell) = j;
+      READ_STATE(m,iCell) = m;
+      READ_STATE(r,iCell) = r;
+      READ_STATE(s,iCell) = s;
    }
 
    __Vm.assign(__Vm.size(), V_init);
@@ -1369,73 +1830,88 @@ int ThisReaction::getVarHandle(const std::string& varName) const
 
 void ThisReaction::setValue(int iCell, int varHandle, double value) 
 {
+#ifdef USE_CUDA
+   ArrayView<double> stateData = stateTransport_;
+#endif //USE_CUDA
+
+
+
    if (0) {}
-   else if (varHandle == Ca_SR_handle) { state_[iCell/width].Ca_SR[iCell % width] = value; }
-   else if (varHandle == Ca_i_handle) { state_[iCell/width].Ca_i[iCell % width] = value; }
-   else if (varHandle == Ca_ss_handle) { state_[iCell/width].Ca_ss[iCell % width] = value; }
-   else if (varHandle == K_i_handle) { state_[iCell/width].K_i[iCell % width] = value; }
-   else if (varHandle == Na_i_handle) { state_[iCell/width].Na_i[iCell % width] = value; }
-   else if (varHandle == R_prime_handle) { state_[iCell/width].R_prime[iCell % width] = value; }
-   else if (varHandle == Xr1_handle) { state_[iCell/width].Xr1[iCell % width] = value; }
-   else if (varHandle == Xr2_handle) { state_[iCell/width].Xr2[iCell % width] = value; }
-   else if (varHandle == Xs_handle) { state_[iCell/width].Xs[iCell % width] = value; }
-   else if (varHandle == d_handle) { state_[iCell/width].d[iCell % width] = value; }
-   else if (varHandle == f_handle) { state_[iCell/width].f[iCell % width] = value; }
-   else if (varHandle == f2_handle) { state_[iCell/width].f2[iCell % width] = value; }
-   else if (varHandle == fCass_handle) { state_[iCell/width].fCass[iCell % width] = value; }
-   else if (varHandle == h_handle) { state_[iCell/width].h[iCell % width] = value; }
-   else if (varHandle == j_handle) { state_[iCell/width].j[iCell % width] = value; }
-   else if (varHandle == m_handle) { state_[iCell/width].m[iCell % width] = value; }
-   else if (varHandle == r_handle) { state_[iCell/width].r[iCell % width] = value; }
-   else if (varHandle == s_handle) { state_[iCell/width].s[iCell % width] = value; }
+   else if (varHandle == Ca_SR_handle) { READ_STATE(Ca_SR,iCell) = value; }
+   else if (varHandle == Ca_i_handle) { READ_STATE(Ca_i,iCell) = value; }
+   else if (varHandle == Ca_ss_handle) { READ_STATE(Ca_ss,iCell) = value; }
+   else if (varHandle == K_i_handle) { READ_STATE(K_i,iCell) = value; }
+   else if (varHandle == Na_i_handle) { READ_STATE(Na_i,iCell) = value; }
+   else if (varHandle == R_prime_handle) { READ_STATE(R_prime,iCell) = value; }
+   else if (varHandle == Xr1_handle) { READ_STATE(Xr1,iCell) = value; }
+   else if (varHandle == Xr2_handle) { READ_STATE(Xr2,iCell) = value; }
+   else if (varHandle == Xs_handle) { READ_STATE(Xs,iCell) = value; }
+   else if (varHandle == d_handle) { READ_STATE(d,iCell) = value; }
+   else if (varHandle == f_handle) { READ_STATE(f,iCell) = value; }
+   else if (varHandle == f2_handle) { READ_STATE(f2,iCell) = value; }
+   else if (varHandle == fCass_handle) { READ_STATE(fCass,iCell) = value; }
+   else if (varHandle == h_handle) { READ_STATE(h,iCell) = value; }
+   else if (varHandle == j_handle) { READ_STATE(j,iCell) = value; }
+   else if (varHandle == m_handle) { READ_STATE(m,iCell) = value; }
+   else if (varHandle == r_handle) { READ_STATE(r,iCell) = value; }
+   else if (varHandle == s_handle) { READ_STATE(s,iCell) = value; }
 }
 
 
 double ThisReaction::getValue(int iCell, int varHandle) const
 {
+#ifdef USE_CUDA
+   ConstArrayView<double> stateData = stateTransport_;
+#endif //USE_CUDA
+
+
    if (0) {}
-   else if (varHandle == Ca_SR_handle) { return state_[iCell/width].Ca_SR[iCell % width]; }
-   else if (varHandle == Ca_i_handle) { return state_[iCell/width].Ca_i[iCell % width]; }
-   else if (varHandle == Ca_ss_handle) { return state_[iCell/width].Ca_ss[iCell % width]; }
-   else if (varHandle == K_i_handle) { return state_[iCell/width].K_i[iCell % width]; }
-   else if (varHandle == Na_i_handle) { return state_[iCell/width].Na_i[iCell % width]; }
-   else if (varHandle == R_prime_handle) { return state_[iCell/width].R_prime[iCell % width]; }
-   else if (varHandle == Xr1_handle) { return state_[iCell/width].Xr1[iCell % width]; }
-   else if (varHandle == Xr2_handle) { return state_[iCell/width].Xr2[iCell % width]; }
-   else if (varHandle == Xs_handle) { return state_[iCell/width].Xs[iCell % width]; }
-   else if (varHandle == d_handle) { return state_[iCell/width].d[iCell % width]; }
-   else if (varHandle == f_handle) { return state_[iCell/width].f[iCell % width]; }
-   else if (varHandle == f2_handle) { return state_[iCell/width].f2[iCell % width]; }
-   else if (varHandle == fCass_handle) { return state_[iCell/width].fCass[iCell % width]; }
-   else if (varHandle == h_handle) { return state_[iCell/width].h[iCell % width]; }
-   else if (varHandle == j_handle) { return state_[iCell/width].j[iCell % width]; }
-   else if (varHandle == m_handle) { return state_[iCell/width].m[iCell % width]; }
-   else if (varHandle == r_handle) { return state_[iCell/width].r[iCell % width]; }
-   else if (varHandle == s_handle) { return state_[iCell/width].s[iCell % width]; }
+   else if (varHandle == Ca_SR_handle) { return READ_STATE(Ca_SR,iCell); }
+   else if (varHandle == Ca_i_handle) { return READ_STATE(Ca_i,iCell); }
+   else if (varHandle == Ca_ss_handle) { return READ_STATE(Ca_ss,iCell); }
+   else if (varHandle == K_i_handle) { return READ_STATE(K_i,iCell); }
+   else if (varHandle == Na_i_handle) { return READ_STATE(Na_i,iCell); }
+   else if (varHandle == R_prime_handle) { return READ_STATE(R_prime,iCell); }
+   else if (varHandle == Xr1_handle) { return READ_STATE(Xr1,iCell); }
+   else if (varHandle == Xr2_handle) { return READ_STATE(Xr2,iCell); }
+   else if (varHandle == Xs_handle) { return READ_STATE(Xs,iCell); }
+   else if (varHandle == d_handle) { return READ_STATE(d,iCell); }
+   else if (varHandle == f_handle) { return READ_STATE(f,iCell); }
+   else if (varHandle == f2_handle) { return READ_STATE(f2,iCell); }
+   else if (varHandle == fCass_handle) { return READ_STATE(fCass,iCell); }
+   else if (varHandle == h_handle) { return READ_STATE(h,iCell); }
+   else if (varHandle == j_handle) { return READ_STATE(j,iCell); }
+   else if (varHandle == m_handle) { return READ_STATE(m,iCell); }
+   else if (varHandle == r_handle) { return READ_STATE(r,iCell); }
+   else if (varHandle == s_handle) { return READ_STATE(s,iCell); }
    return NAN;
 }
 
 double ThisReaction::getValue(int iCell, int varHandle, double V) const
 {
+#ifdef USE_CUDA
+   ConstArrayView<double> stateData = stateTransport_;
+#endif //USE_CUDA
 
-   const double Ca_SR=state_[iCell/width].Ca_SR[iCell % width];
-   const double Ca_i=state_[iCell/width].Ca_i[iCell % width];
-   const double Ca_ss=state_[iCell/width].Ca_ss[iCell % width];
-   const double K_i=state_[iCell/width].K_i[iCell % width];
-   const double Na_i=state_[iCell/width].Na_i[iCell % width];
-   const double R_prime=state_[iCell/width].R_prime[iCell % width];
-   const double Xr1=state_[iCell/width].Xr1[iCell % width];
-   const double Xr2=state_[iCell/width].Xr2[iCell % width];
-   const double Xs=state_[iCell/width].Xs[iCell % width];
-   const double d=state_[iCell/width].d[iCell % width];
-   const double f=state_[iCell/width].f[iCell % width];
-   const double f2=state_[iCell/width].f2[iCell % width];
-   const double fCass=state_[iCell/width].fCass[iCell % width];
-   const double h=state_[iCell/width].h[iCell % width];
-   const double j=state_[iCell/width].j[iCell % width];
-   const double m=state_[iCell/width].m[iCell % width];
-   const double r=state_[iCell/width].r[iCell % width];
-   const double s=state_[iCell/width].s[iCell % width];
+
+   const double Ca_SR=READ_STATE(Ca_SR,iCell);
+   const double Ca_i=READ_STATE(Ca_i,iCell);
+   const double Ca_ss=READ_STATE(Ca_ss,iCell);
+   const double K_i=READ_STATE(K_i,iCell);
+   const double Na_i=READ_STATE(Na_i,iCell);
+   const double R_prime=READ_STATE(R_prime,iCell);
+   const double Xr1=READ_STATE(Xr1,iCell);
+   const double Xr2=READ_STATE(Xr2,iCell);
+   const double Xs=READ_STATE(Xs,iCell);
+   const double d=READ_STATE(d,iCell);
+   const double f=READ_STATE(f,iCell);
+   const double f2=READ_STATE(f2,iCell);
+   const double fCass=READ_STATE(fCass,iCell);
+   const double h=READ_STATE(h,iCell);
+   const double j=READ_STATE(j,iCell);
+   const double m=READ_STATE(m,iCell);
+   const double r=READ_STATE(r,iCell);
+   const double s=READ_STATE(s,iCell);
    if (0) {}
    else if (varHandle == Ca_SR_handle)
    {
