@@ -65,11 +65,15 @@ struct gengetopt_args_info
   double output_dt_arg;	/**< @brief Output timetep (default='1').  */
   char * output_dt_orig;	/**< @brief Output timetep original value given at command line.  */
   const char *output_dt_help; /**< @brief Output timetep help description.  */
-  char ** add_column_arg;	/**< @brief Add a column of output (currently only SVs).  */
-  char ** add_column_orig;	/**< @brief Add a column of output (currently only SVs) original value given at command line.  */
-  unsigned int add_column_min; /**< @brief Add a column of output (currently only SVs)'s minimum occurreces */
-  unsigned int add_column_max; /**< @brief Add a column of output (currently only SVs)'s maximum occurreces */
-  const char *add_column_help; /**< @brief Add a column of output (currently only SVs) help description.  */
+  char ** add_column_arg;	/**< @brief Add a column of output.  */
+  char ** add_column_orig;	/**< @brief Add a column of output original value given at command line.  */
+  unsigned int add_column_min; /**< @brief Add a column of output's minimum occurreces */
+  unsigned int add_column_max; /**< @brief Add a column of output's maximum occurreces */
+  const char *add_column_help; /**< @brief Add a column of output help description.  */
+  int add_all_state_flag;	/**< @brief Add all possible states to the output (default=off).  */
+  const char *add_all_state_help; /**< @brief Add all possible states to the output help description.  */
+  int add_header_flag;	/**< @brief Add a header row to stdout (default=off).  */
+  const char *add_header_help; /**< @brief Add a header row to stdout help description.  */
   int s1_count_arg;	/**< @brief Number of s1 stimulii (default='1').  */
   char * s1_count_orig;	/**< @brief Number of s1 stimulii original value given at command line.  */
   const char *s1_count_help; /**< @brief Number of s1 stimulii help description.  */
@@ -107,6 +111,8 @@ struct gengetopt_args_info
   unsigned int save_state_time_given ;	/**< @brief Whether save-state-time was given.  */
   unsigned int output_dt_given ;	/**< @brief Whether output-dt was given.  */
   unsigned int add_column_given ;	/**< @brief Whether add-column was given.  */
+  unsigned int add_all_state_given ;	/**< @brief Whether add-all-state was given.  */
+  unsigned int add_header_given ;	/**< @brief Whether add-header was given.  */
   unsigned int s1_count_given ;	/**< @brief Whether s1-count was given.  */
   unsigned int s1_bcl_given ;	/**< @brief Whether s1-bcl was given.  */
   unsigned int s1_offset_given ;	/**< @brief Whether s1-offset was given.  */

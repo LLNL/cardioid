@@ -44,7 +44,9 @@ const char *gengetopt_args_info_help[] = {
   "  -S, --save-state-file=STRING  Filename to save the state to",
   "  -T, --save-state-time=DOUBLE  Time to save the state",
   "  -p, --output-dt=DOUBLE        Output timetep  (default=`1')",
-  "  -c, --add-column=STRING       Add a column of output (currently only SVs)",
+  "  -c, --add-column=STRING       Add a column of output",
+  "  -A, --add-all-state           Add all possible states to the output\n                                  (default=off)",
+  "  -H, --add-header              Add a header row to stdout  (default=off)",
   "  -n, --s1-count=INT            Number of s1 stimulii  (default=`1')",
   "  -b, --s1-bcl=DOUBLE           Basic cycle length  (default=`1000')",
   "  -f, --s1-offset=DOUBLE        Time to start s1 stimulii  (default=`0')",
@@ -92,6 +94,8 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->save_state_time_given = 0 ;
   args_info->output_dt_given = 0 ;
   args_info->add_column_given = 0 ;
+  args_info->add_all_state_given = 0 ;
+  args_info->add_header_given = 0 ;
   args_info->s1_count_given = 0 ;
   args_info->s1_bcl_given = 0 ;
   args_info->s1_offset_given = 0 ;
@@ -122,6 +126,8 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->output_dt_orig = NULL;
   args_info->add_column_arg = NULL;
   args_info->add_column_orig = NULL;
+  args_info->add_all_state_flag = 0;
+  args_info->add_header_flag = 0;
   args_info->s1_count_arg = 1;
   args_info->s1_count_orig = NULL;
   args_info->s1_bcl_arg = 1000;
@@ -160,16 +166,18 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->add_column_help = gengetopt_args_info_help[10] ;
   args_info->add_column_min = 0;
   args_info->add_column_max = 0;
-  args_info->s1_count_help = gengetopt_args_info_help[11] ;
-  args_info->s1_bcl_help = gengetopt_args_info_help[12] ;
-  args_info->s1_offset_help = gengetopt_args_info_help[13] ;
-  args_info->stim_at_help = gengetopt_args_info_help[14] ;
+  args_info->add_all_state_help = gengetopt_args_info_help[11] ;
+  args_info->add_header_help = gengetopt_args_info_help[12] ;
+  args_info->s1_count_help = gengetopt_args_info_help[13] ;
+  args_info->s1_bcl_help = gengetopt_args_info_help[14] ;
+  args_info->s1_offset_help = gengetopt_args_info_help[15] ;
+  args_info->stim_at_help = gengetopt_args_info_help[16] ;
   args_info->stim_at_min = 0;
   args_info->stim_at_max = 0;
-  args_info->stim_strength_help = gengetopt_args_info_help[15] ;
-  args_info->stim_duration_help = gengetopt_args_info_help[16] ;
-  args_info->num_points_help = gengetopt_args_info_help[17] ;
-  args_info->alternate_update_help = gengetopt_args_info_help[18] ;
+  args_info->stim_strength_help = gengetopt_args_info_help[17] ;
+  args_info->stim_duration_help = gengetopt_args_info_help[18] ;
+  args_info->num_points_help = gengetopt_args_info_help[19] ;
+  args_info->alternate_update_help = gengetopt_args_info_help[20] ;
   
 }
 
@@ -395,6 +403,10 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
   if (args_info->output_dt_given)
     write_into_file(outfile, "output-dt", args_info->output_dt_orig, 0);
   write_multiple_into_file(outfile, args_info->add_column_given, "add-column", args_info->add_column_orig, 0);
+  if (args_info->add_all_state_given)
+    write_into_file(outfile, "add-all-state", 0, 0 );
+  if (args_info->add_header_given)
+    write_into_file(outfile, "add-header", 0, 0 );
   if (args_info->s1_count_given)
     write_into_file(outfile, "s1-count", args_info->s1_count_orig, 0);
   if (args_info->s1_bcl_given)
@@ -989,6 +1001,8 @@ cmdline_parser_internal (
         { "save-state-time",	1, NULL, 'T' },
         { "output-dt",	1, NULL, 'p' },
         { "add-column",	1, NULL, 'c' },
+        { "add-all-state",	0, NULL, 'A' },
+        { "add-header",	0, NULL, 'H' },
         { "s1-count",	1, NULL, 'n' },
         { "s1-bcl",	1, NULL, 'b' },
         { "s1-offset",	1, NULL, 'f' },
@@ -1000,7 +1014,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "Vo:m:r:h:d:S:T:p:c:n:b:f:s:a:t:N:U", long_options, &option_index);
+      c = getopt_long (argc, argv, "Vo:m:r:h:d:S:T:p:c:AHn:b:f:s:a:t:N:U", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1104,11 +1118,31 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'c':	/* Add a column of output (currently only SVs).  */
+        case 'c':	/* Add a column of output.  */
         
           if (update_multiple_arg_temp(&add_column_list, 
               &(local_args_info.add_column_given), optarg, 0, 0, ARG_STRING,
               "add-column", 'c',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'A':	/* Add all possible states to the output.  */
+        
+        
+          if (update_arg((void *)&(args_info->add_all_state_flag), 0, &(args_info->add_all_state_given),
+              &(local_args_info.add_all_state_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "add-all-state", 'A',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'H':	/* Add a header row to stdout.  */
+        
+        
+          if (update_arg((void *)&(args_info->add_header_flag), 0, &(args_info->add_header_given),
+              &(local_args_info.add_header_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "add-header", 'H',
               additional_error))
             goto failure;
         

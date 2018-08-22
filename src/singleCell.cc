@@ -218,27 +218,45 @@ int main(int argc, char* argv[])
       fieldHandles[istate] = reaction->getVarHandle(fieldNames[istate]);
    }
 
-   vector<int> extraColumns(params.add_column_given);
-   for (int iextra=0; iextra<extraColumns.size(); ++iextra) 
+   vector<int> extraColumns;
+   vector<string> extraColumnHeaders;
+   if (params.add_all_state_given)
    {
-      //find the state name
-      int foundState = -1;
       for (int istate=0; istate<fieldNames.size(); ++istate) 
       {
-         if (fieldNames[istate] == params.add_column_arg[iextra]) 
-         {
-            foundState = istate;
-            break;
-         }
+         extraColumns.push_back(fieldHandles[istate]);
+         extraColumnHeaders.push_back(fieldNames[istate]);
       }
-      if (foundState == -1)
-      {
-         fprintf(stderr, "Couldn't find state '%s' in the model\n", params.add_column_arg[iextra]);
-         return __LINE__;
-      }
-      extraColumns[iextra] = fieldHandles[foundState];
    }
-   
+   bool allColumnsAdded = true;
+   for (int iextra=0; iextra<params.add_column_given; ++iextra)
+   {
+      int handle = reaction->getVarHandle(params.add_column_arg[iextra]);
+      if (handle != -1)
+      {
+         extraColumns.push_back(handle);
+         extraColumnHeaders.push_back(params.add_column_arg[iextra]);
+      }
+      else
+      {
+         fprintf(stderr, "Can't add column '%s': can't find the handle.\n",params.add_column_arg[iextra]);
+         allColumnsAdded = false;
+      }
+   }
+   if (!allColumnsAdded)
+   {
+      exit(1);
+   }
+
+   if (params.add_header_given)
+   {
+      printf("                     time                        Vm");
+      for (int ii=0; ii<extraColumnHeaders.size(); ++ii)
+      {
+         printf(" %25s",extraColumnHeaders[ii].c_str());
+      }
+      printf("\n");
+   }
    //using a forever loop here so we can repeat outputs on the last iteration.
    //otherwise, we'd use a for loop here.
    int itime=0;
@@ -276,10 +294,10 @@ int main(int argc, char* argv[])
       if ((itime % outputTimestepInterval) == 0)
       {
          //doIO();
-         printf("%21.17g %21.17g", timeline.realTimeFromTimestep(itime), Vm[0]);
+         printf("%25.17g %25.17g", timeline.realTimeFromTimestep(itime), Vm[0]);
          for (int iextra=0; iextra<extraColumns.size(); ++iextra) 
          {
-            printf(" %21.17g", reaction->getValue(0,extraColumns[iextra]));
+            printf(" %25.17g", reaction->getValue(0,extraColumns[iextra]));
          }
          printf("\n");
       }

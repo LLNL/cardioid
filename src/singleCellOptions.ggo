@@ -13,7 +13,12 @@ option      "save-state-file"    S "Filename to save the state to"              
 option      "save-state-time"    T "Time to save the state"                             double  optional
 
 option      "output-dt"          p "Output timetep"                                     double  default="1" optional
-option      "add-column"         c "Add a column of output (currently only SVs)"        string  optional multiple
+option      "add-column"         c "Add a column of output"                             string  optional multiple
+option      "add-all-state"      A "Add all possible states to the output"              flag    off
+option      "add-header"         H "Add a header row to stdout"                         flag    off
+
+#option      "clamp-file"         C "Clamp variables according to an input file"         string  optional
+#option      "validate-state"     V "Validate the model from another simulator's output" string optional
 
 option      "s1-count"           n "Number of s1 stimulii"                              int     default="1" optional
 option      "s1-bcl"             b "Basic cycle length"                                 double  default="1000" optional
