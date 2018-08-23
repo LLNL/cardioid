@@ -47,6 +47,7 @@ const char *gengetopt_args_info_help[] = {
   "  -c, --add-column=STRING       Add a column of output",
   "  -A, --add-all-state           Add all possible states to the output\n                                  (default=off)",
   "  -H, --add-header              Add a header row to stdout  (default=off)",
+  "  -C, --clamp-file=STRING       Clamp variables according to an input file",
   "  -n, --s1-count=INT            Number of s1 stimulii  (default=`1')",
   "  -b, --s1-bcl=DOUBLE           Basic cycle length  (default=`1000')",
   "  -f, --s1-offset=DOUBLE        Time to start s1 stimulii  (default=`0')",
@@ -96,6 +97,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->add_column_given = 0 ;
   args_info->add_all_state_given = 0 ;
   args_info->add_header_given = 0 ;
+  args_info->clamp_file_given = 0 ;
   args_info->s1_count_given = 0 ;
   args_info->s1_bcl_given = 0 ;
   args_info->s1_offset_given = 0 ;
@@ -128,6 +130,8 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->add_column_orig = NULL;
   args_info->add_all_state_flag = 0;
   args_info->add_header_flag = 0;
+  args_info->clamp_file_arg = NULL;
+  args_info->clamp_file_orig = NULL;
   args_info->s1_count_arg = 1;
   args_info->s1_count_orig = NULL;
   args_info->s1_bcl_arg = 1000;
@@ -168,16 +172,17 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->add_column_max = 0;
   args_info->add_all_state_help = gengetopt_args_info_help[11] ;
   args_info->add_header_help = gengetopt_args_info_help[12] ;
-  args_info->s1_count_help = gengetopt_args_info_help[13] ;
-  args_info->s1_bcl_help = gengetopt_args_info_help[14] ;
-  args_info->s1_offset_help = gengetopt_args_info_help[15] ;
-  args_info->stim_at_help = gengetopt_args_info_help[16] ;
+  args_info->clamp_file_help = gengetopt_args_info_help[13] ;
+  args_info->s1_count_help = gengetopt_args_info_help[14] ;
+  args_info->s1_bcl_help = gengetopt_args_info_help[15] ;
+  args_info->s1_offset_help = gengetopt_args_info_help[16] ;
+  args_info->stim_at_help = gengetopt_args_info_help[17] ;
   args_info->stim_at_min = 0;
   args_info->stim_at_max = 0;
-  args_info->stim_strength_help = gengetopt_args_info_help[17] ;
-  args_info->stim_duration_help = gengetopt_args_info_help[18] ;
-  args_info->num_points_help = gengetopt_args_info_help[19] ;
-  args_info->alternate_update_help = gengetopt_args_info_help[20] ;
+  args_info->stim_strength_help = gengetopt_args_info_help[18] ;
+  args_info->stim_duration_help = gengetopt_args_info_help[19] ;
+  args_info->num_points_help = gengetopt_args_info_help[20] ;
+  args_info->alternate_update_help = gengetopt_args_info_help[21] ;
   
 }
 
@@ -337,6 +342,8 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->save_state_time_orig));
   free_string_field (&(args_info->output_dt_orig));
   free_multiple_string_field (args_info->add_column_given, &(args_info->add_column_arg), &(args_info->add_column_orig));
+  free_string_field (&(args_info->clamp_file_arg));
+  free_string_field (&(args_info->clamp_file_orig));
   free_string_field (&(args_info->s1_count_orig));
   free_string_field (&(args_info->s1_bcl_orig));
   free_string_field (&(args_info->s1_offset_orig));
@@ -407,6 +414,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "add-all-state", 0, 0 );
   if (args_info->add_header_given)
     write_into_file(outfile, "add-header", 0, 0 );
+  if (args_info->clamp_file_given)
+    write_into_file(outfile, "clamp-file", args_info->clamp_file_orig, 0);
   if (args_info->s1_count_given)
     write_into_file(outfile, "s1-count", args_info->s1_count_orig, 0);
   if (args_info->s1_bcl_given)
@@ -1003,6 +1012,7 @@ cmdline_parser_internal (
         { "add-column",	1, NULL, 'c' },
         { "add-all-state",	0, NULL, 'A' },
         { "add-header",	0, NULL, 'H' },
+        { "clamp-file",	1, NULL, 'C' },
         { "s1-count",	1, NULL, 'n' },
         { "s1-bcl",	1, NULL, 'b' },
         { "s1-offset",	1, NULL, 'f' },
@@ -1014,7 +1024,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "Vo:m:r:h:d:S:T:p:c:AHn:b:f:s:a:t:N:U", long_options, &option_index);
+      c = getopt_long (argc, argv, "Vo:m:r:h:d:S:T:p:c:AHC:n:b:f:s:a:t:N:U", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1143,6 +1153,18 @@ cmdline_parser_internal (
           if (update_arg((void *)&(args_info->add_header_flag), 0, &(args_info->add_header_given),
               &(local_args_info.add_header_given), optarg, 0, 0, ARG_FLAG,
               check_ambiguity, override, 1, 0, "add-header", 'H',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'C':	/* Clamp variables according to an input file.  */
+        
+        
+          if (update_arg( (void *)&(args_info->clamp_file_arg), 
+               &(args_info->clamp_file_orig), &(args_info->clamp_file_given),
+              &(local_args_info.clamp_file_given), optarg, 0, 0, ARG_STRING,
+              check_ambiguity, override, 0, 0,
+              "clamp-file", 'C',
               additional_error))
             goto failure;
         

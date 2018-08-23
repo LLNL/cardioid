@@ -74,6 +74,9 @@ struct gengetopt_args_info
   const char *add_all_state_help; /**< @brief Add all possible states to the output help description.  */
   int add_header_flag;	/**< @brief Add a header row to stdout (default=off).  */
   const char *add_header_help; /**< @brief Add a header row to stdout help description.  */
+  char * clamp_file_arg;	/**< @brief Clamp variables according to an input file.  */
+  char * clamp_file_orig;	/**< @brief Clamp variables according to an input file original value given at command line.  */
+  const char *clamp_file_help; /**< @brief Clamp variables according to an input file help description.  */
   int s1_count_arg;	/**< @brief Number of s1 stimulii (default='1').  */
   char * s1_count_orig;	/**< @brief Number of s1 stimulii original value given at command line.  */
   const char *s1_count_help; /**< @brief Number of s1 stimulii help description.  */
@@ -113,6 +116,7 @@ struct gengetopt_args_info
   unsigned int add_column_given ;	/**< @brief Whether add-column was given.  */
   unsigned int add_all_state_given ;	/**< @brief Whether add-all-state was given.  */
   unsigned int add_header_given ;	/**< @brief Whether add-header was given.  */
+  unsigned int clamp_file_given ;	/**< @brief Whether clamp-file was given.  */
   unsigned int s1_count_given ;	/**< @brief Whether s1-count was given.  */
   unsigned int s1_bcl_given ;	/**< @brief Whether s1-bcl was given.  */
   unsigned int s1_offset_given ;	/**< @brief Whether s1-offset was given.  */

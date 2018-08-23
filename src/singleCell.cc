@@ -2,10 +2,13 @@
 #include <mpi.h>
 #include <cmath>
 #include <vector>
+#include <map>
 #include <algorithm>
 #include <string>
 #include <cstring>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 
 #include "Reaction.hh"
 #include "VectorDouble32.hh"
@@ -47,6 +50,29 @@ class Timeline
  private:
    double dt_;
    int maxTimesteps_;
+};
+
+class FunctionFromFile
+{
+ public:
+   double operator()(const double x) const
+   {
+      if (valuesFromTime_.empty()) { assert(0 && "Need to populate the map!" ); }
+      std::map<double,double>::const_iterator upper=valuesFromTime_.upper_bound(x);
+      if (upper == valuesFromTime_.cbegin()) { return upper->second; }
+      std::map<double,double>::const_iterator lower=upper;
+      lower--;
+      if (upper == valuesFromTime_.cend()) { return lower->second; }
+      if (lower->first == upper->first) { return (lower->second+upper->second)/2; }
+      return ((x-lower->first)*upper->second + (upper->first-x)*lower->second)/(upper->first-lower->first);
+   }
+   void addData(const double x, const double y)
+   {
+      valuesFromTime_.insert(make_pair(x,y));
+   }
+   
+ private:
+   std::multimap<double,double> valuesFromTime_;
 };
 
 
@@ -127,7 +153,7 @@ int main(int argc, char* argv[])
          writeStateTimestep=timeline.timestepFromRealTime(params.save_state_time_arg);
       }
    }
-
+   
    //create the ionic model
    const int nCells = params.num_points_arg;
 
@@ -257,11 +283,81 @@ int main(int argc, char* argv[])
       }
       printf("\n");
    }
+
+   const int VmKey = -99;
+   vector<int> clampHandles;
+   vector<FunctionFromFile> clampFunctions;
+   if (params.clamp_file_given)
+   {
+      ifstream clampFile(params.clamp_file_arg);
+      string temp;
+      getline(clampFile,temp);
+      stringstream headerLine(temp);
+      string timeName;
+      headerLine >> timeName;
+      assert(timeName == "time");
+      while (1)
+      {
+         string columnName;
+         headerLine >> columnName;
+         if (!!headerLine) { break; }
+         int handle;
+         if (columnName == "Vm")
+         {
+            handle = VmKey;
+         }
+         else
+         {
+            handle = reaction->getVarHandle(columnName);
+            assert(handle >= 0 && "Invalid column name!");
+         }
+         clampHandles.push_back(handle);
+      }
+      vector<double> timestepValues(clampHandles.size());
+      clampFunctions.resize(clampHandles.size());
+      while (1)
+      {
+         string temp;
+         getline(clampFile,temp);
+         stringstream thisLine(temp);
+         double time;
+         thisLine >> time;
+         for (int iclamp=0; iclamp<clampHandles.size(); iclamp++)
+         {
+            thisLine >> timestepValues[iclamp];
+         }
+         if (!!thisLine) { break; }
+         for (int iclamp=0; iclamp<clampHandles.size(); iclamp++)
+         {
+            clampFunctions[iclamp].addData(time,timestepValues[iclamp]);
+         }
+      }
+   }
+
+
    //using a forever loop here so we can repeat outputs on the last iteration.
    //otherwise, we'd use a for loop here.
    int itime=0;
    while(1)
    {
+      //if we should clamp, do so.
+      for (int iclamp=0; iclamp<clampHandles.size(); iclamp++)
+      {
+         int handle = clampHandles[iclamp];
+         double value = clampFunctions[iclamp](timeline.realTimeFromTimestep(itime));
+         for (int ii=0; ii<nCells; ii++)
+         {
+            if (handle == VmKey)
+            {
+               Vm[ii] = value;
+            }
+            else
+            {
+               reaction->setValue(ii,handle,value);
+            }
+         }
+      }
+      
       //if we should checkpoint, do so.
       if (shouldWriteState && itime == writeStateTimestep)
       {

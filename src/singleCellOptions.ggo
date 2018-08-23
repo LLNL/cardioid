@@ -17,7 +17,7 @@ option      "add-column"         c "Add a column of output"                     
 option      "add-all-state"      A "Add all possible states to the output"              flag    off
 option      "add-header"         H "Add a header row to stdout"                         flag    off
 
-#option      "clamp-file"         C "Clamp variables according to an input file"         string  optional
+option      "clamp-file"         C "Clamp variables according to an input file"         string  optional
 #option      "validate-state"     V "Validate the model from another simulator's output" string optional
 
 option      "s1-count"           n "Number of s1 stimulii"                              int     default="1" optional
