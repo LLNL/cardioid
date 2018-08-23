@@ -109,6 +109,9 @@ endif
 ifeq ($(HOSTNAME),prince)
   ARCHGUESS = osx
 endif
+ifeq ($(HOSTNAME),crestone)
+  ARCHGUESS = osx
+endif
 
 ifndef ARCHGUESS
    ARCHGUESS = mpi-default
