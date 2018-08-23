@@ -1,0 +1,40 @@
+module load gcc impi
+Dir=$HOME/src/build/cardioid-scratch
+mkdir -p "$Dir"
+cd "$Dir"
+rm -r mfem* hypre* metis* parmetis* 2>/dev/null
+tar xzf ~/src/incoming/mfem*.tgz
+tar xzf ~/src/incoming/hypre*.tar.gz
+tar xzf ~/src/incoming/metis*.tar.gz
+
+# Didn't work; parmetis 4 metis seems to be missing a symbol needed by mfem
+# echo; echo "Building parmetis"
+# cd parmetis-4.0.3
+# make config
+# make -j8
+# cd metis
+# make config prefix=$Dir/metis-4.0
+# make -j8 install
+# cd ../..
+# cd metis-4.0
+# ln -s lib/libmetis.a .
+# cd ..
+
+echo; echo "building metis"
+cd metis-5.1.0
+make config prefix=$Dir/metis-5.0
+make -j8 install
+cd ..
+
+echo; echo "building hypre"
+cd hypre-2.10.0b/src
+./configure --prefix=$PWD/..; make -j8 install
+cd ../..
+
+echo; echo "building mfem"
+# Out-of-source build breaks due to muddled hypre paths
+# mkdir mfem-build
+# cd mfem-build
+# cmake ~/src/incoming/mfem-3.4 -DMFEM_USE_MPI=yes -DHYPRE_DIR=../hypre-2.10.0b -DMETIS_DIR=../parmetis-4.0.3/metis/metis-4.0
+cd mfem-3.4
+make CXX=mpicxx CC=mpicc CXXFLAGS=-g MFEM_USE_METIS_5=true parallel -j8
