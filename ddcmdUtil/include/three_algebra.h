@@ -66,7 +66,7 @@ extern const THREE_MATRIX mzero;
 extern const THREE_SMATRIX szero;
 
 double DET(THREE_MATRIX a );
-double matinv(THREE_MATRIX*a0, THREE_MATRIX*ainv);
+double three_matinv(THREE_MATRIX*a0, THREE_MATRIX*ainv);
 void matrix_set(THREE_MATRIX*a, double value, char *how);
 int matrix_equal(THREE_MATRIX a1, THREE_MATRIX a2);
 int matrix_equal_tol(THREE_MATRIX a1, THREE_MATRIX a2, double tol);

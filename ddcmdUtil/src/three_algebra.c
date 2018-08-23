@@ -34,7 +34,7 @@ double DET(THREE_MATRIX a )
 	double det = a.xx*d00 + a.xy*d01 + a.xz*d02;
 	return det; 
 }
-double matinv(THREE_MATRIX*a0, THREE_MATRIX*ainv)
+double three_matinv(THREE_MATRIX*a0, THREE_MATRIX*ainv)
 {
 	double det;
 	double d00, d01, d02;
