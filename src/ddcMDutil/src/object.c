@@ -101,6 +101,19 @@ void object_set(const char *get, ... )
 	va_end(ap);
 }
 
+//NOTE: this function deletes all initialize objects except routine manager
+void object_list_purge()
+{
+	for(int i =0; i <niobject; i++)
+	{ //ROUTINEMANAGER
+	         if (strcmp(object_list[i]->objclass, "ROUTINEMANAGER"))
+		{
+			object_free(object_list[i]);
+		}
+		niobject=1;
+	}
+}
+
 void prune_spaces(char *string)
 {
 	int i,l;
@@ -820,6 +833,7 @@ int object_exists(const char *name, const char *objclass)
 	}
 	return 0; 
 }
+
 OBJECT *object_find(const char *name, const char *objclass)
 {
 	int i;
@@ -867,6 +881,7 @@ OBJECT *object_find2(const char *name, const char *objclass, enum OBJECTACTION a
 	}
 	return object[i];
 }
+
 
 OBJECT *object_initialize(char *name, char *objclass, int size)
 {

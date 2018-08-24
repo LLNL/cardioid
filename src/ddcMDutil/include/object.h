@@ -64,7 +64,7 @@ int object_get_with_units(OBJECT*object, char *name, void *ptr, int type,
 			  char *unit_convert_to);
 char* object_keywordsAndValues(OBJECT* object);
 OBJECT *object_longFind(const char *name, const char *objclass);
-
+void object_list_purge();
 OBJECTFILE object_fopen(const char *filename, char *mode);
 void object_fclose(OBJECTFILE file);
 
