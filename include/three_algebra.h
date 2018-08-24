@@ -2,10 +2,10 @@
 #ifndef THREE_ALGEBRA_H
 #define THREE_ALGEBRA_H
 
+#include <complex.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <complex.h>
 
 #define TRACE(A) ( ((A).xx) + ((A).yy) + ((A).zz) )
 #define ZEROVIR(A) ((A).xx=(A).xy=(A).xz=(A).yx=(A).yy=(A).yz=(A).zx=(A).zy=(A).zz=0)
@@ -37,7 +37,7 @@ extern "C" {
 enum EIGENVALUES { REAL_EIGENVALUES, COMPLEX_EIGENVALUES}; 
 
 typedef struct { double x, y, z; } THREE_VECTOR;
-typedef struct { double complex x, y, z; } CTHREE_VECTOR;
+typedef struct { double _Complex x, y, z; } CTHREE_VECTOR;
 typedef struct { double v,x, y, z; } FOUR_VECTOR;
 typedef struct { float  x, y, z; } THREE_VECTOR_FLOAT;
 typedef struct
