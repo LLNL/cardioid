@@ -2,12 +2,11 @@
 #define REACTION_FACTORY_HH
 #include <vector>
 #include <string>
-#include <functional>
 #include "object.h"
 class ThreadTeam;
 class Reaction;
 
-typedef std::function<Reaction*(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group)> reactionFactoryFunction;
+typedef Reaction* (*reactionFactoryFunction)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);
 
 Reaction* reactionFactory(const std::string& name, double dt, const int numPoints,
                           const ThreadTeam &group);

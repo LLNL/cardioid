@@ -3,7 +3,11 @@
 #include <cassert>
 #include <cstdlib>
 #include <dlfcn.h>
+#ifndef BGQ //FIXME!!!
 #include <unordered_map>
+#else
+#include <map>
+#endif
 #include <mpi.h>
 #include "object_cc.hh"
 #include "ioUtils.h"
@@ -27,7 +31,13 @@
 #include <iostream>
 using namespace std;
 
-static unordered_map<string,reactionFactoryFunction> g_factoryFromMethodName;
+#ifndef BGQ
+#define MAP unordered_map
+#else
+#define MAP map
+#endif
+
+static MAP<string,reactionFactoryFunction> g_factoryFromMethodName;
 
 Reaction* reactionFactory(const string& name, double dt, const int numPoints,
                           const ThreadTeam& group)
@@ -42,7 +52,7 @@ Reaction* reactionFactory(const string& name, double dt, const int numPoints,
    OBJECT* obj = objectFind(name, "REACTION");
    string method; objectGet(obj, "method", method, "undefined");
 
-   auto iter = g_factoryFromMethodName.find(method);
+   MAP<string,reactionFactoryFunction>::iterator iter = g_factoryFromMethodName.find(method);
    if (iter != g_factoryFromMethodName.end())
    {
       return iter->second(obj, dt, numPoints, group);
