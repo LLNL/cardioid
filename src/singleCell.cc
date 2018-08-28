@@ -59,10 +59,10 @@ class FunctionFromFile
    {
       if (valuesFromTime_.empty()) { assert(0 && "Need to populate the map!" ); }
       std::map<double,double>::const_iterator upper=valuesFromTime_.upper_bound(x);
-      if (upper == valuesFromTime_.cbegin()) { return upper->second; }
+      if (upper == valuesFromTime_.begin()) { return upper->second; }
       std::map<double,double>::const_iterator lower=upper;
       lower--;
-      if (upper == valuesFromTime_.cend()) { return lower->second; }
+      if (upper == valuesFromTime_.end()) { return lower->second; }
       if (lower->first == upper->first) { return (lower->second+upper->second)/2; }
       return ((x-lower->first)*upper->second + (upper->first-x)*lower->second)/(upper->first-lower->first);
    }

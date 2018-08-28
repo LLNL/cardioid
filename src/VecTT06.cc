@@ -1601,25 +1601,25 @@ void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
       m += _m_RLA*(m+_m_RLB);
       r += _r_RLA*(r+_r_RLB);
       s += _s_RLA*(s+_s_RLB);
-      store(state_[__jj].Ca_SR, Ca_SR);
-      store(state_[__jj].Ca_i, Ca_i);
-      store(state_[__jj].Ca_ss, Ca_ss);
-      store(state_[__jj].K_i, K_i);
-      store(state_[__jj].Na_i, Na_i);
-      store(state_[__jj].R_prime, R_prime);
-      store(state_[__jj].Xr1, Xr1);
-      store(state_[__jj].Xr2, Xr2);
-      store(state_[__jj].Xs, Xs);
-      store(state_[__jj].d, d);
-      store(state_[__jj].f, f);
-      store(state_[__jj].f2, f2);
-      store(state_[__jj].fCass, fCass);
-      store(state_[__jj].h, h);
-      store(state_[__jj].j, j);
-      store(state_[__jj].m, m);
-      store(state_[__jj].r, r);
-      store(state_[__jj].s, s);
-      store(&__dVm[__ii],-Iion_001);
+      simdops::store(state_[__jj].Ca_SR, Ca_SR);
+      simdops::store(state_[__jj].Ca_i, Ca_i);
+      simdops::store(state_[__jj].Ca_ss, Ca_ss);
+      simdops::store(state_[__jj].K_i, K_i);
+      simdops::store(state_[__jj].Na_i, Na_i);
+      simdops::store(state_[__jj].R_prime, R_prime);
+      simdops::store(state_[__jj].Xr1, Xr1);
+      simdops::store(state_[__jj].Xr2, Xr2);
+      simdops::store(state_[__jj].Xs, Xs);
+      simdops::store(state_[__jj].d, d);
+      simdops::store(state_[__jj].f, f);
+      simdops::store(state_[__jj].f2, f2);
+      simdops::store(state_[__jj].fCass, fCass);
+      simdops::store(state_[__jj].h, h);
+      simdops::store(state_[__jj].j, j);
+      simdops::store(state_[__jj].m, m);
+      simdops::store(state_[__jj].r, r);
+      simdops::store(state_[__jj].s, s);
+      simdops::store(&__dVm[__ii],-Iion_001);
    }
 }
 #endif //USE_CUDA
