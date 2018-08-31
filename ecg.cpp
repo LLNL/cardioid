@@ -10,7 +10,6 @@
 #include <cassert>
 #include <memory>
 #include <set>
-#include <ctime>
 #include "ecgdefs.hpp"
 #include "ecgobjutil.hpp"
 
@@ -27,7 +26,6 @@ int main(int argc, char *argv[])
    std::cout << "Initializing with " << num_ranks << " MPI ranks." << std::endl;
    // 1. Parse command-line options.
    int order = 1;
-   time_t timestamp;
 
    ecg_process_args(argc,argv);
 
@@ -81,15 +79,8 @@ int main(int argc, char *argv[])
 
    // Read sensors
    std::unordered_map<int,int> sensors = ecg_readInverseMap(obj,"cardioid_from_ecg");
-
-   // Describe input data
-#ifdef DEBUG
-   std::cout << "Read " << pmesh->GetNE() << " elements, "
-	     << pmesh->GetNV() << " vertices, "
-	     << pmesh->GetNBE() << " boundary elements, and "
-	     << pmesh->GetNumFaces() << " faces in "
-	     << dim << " dimensions." << std::endl;
-#endif
+   // cardioid_from_ecg = torso/sensor.txt;
+   std::unordered_map<int,int> gfFromGid = ecg_readInverseMap(obj,"cardioid_from_ecg");
 
    {
       // Iterate over boundary elements
@@ -183,29 +174,29 @@ int main(int argc, char *argv[])
    //    corresponding to the Laplacian operator -Delta, by adding the Diffusion
    //    domain integrator.
 
-#ifdef DEBUG
-   timestamp = time(nullptr);
-   std::cout << std::endl << "Forming bilinear system (heart)... ";
-#endif
+   StartTimer("Forming bilinear system (heart)");
+
    ParBilinearForm *b = new ParBilinearForm(pfespace);
    b->AddDomainIntegrator(new DiffusionIntegrator(sigma_i_coeffs));
    b->Assemble();
    // This creates the linear algebra problem.
    HypreParMatrix heart_mat;
    b->FormSystemMatrix(ess_tdof_list, heart_mat);
-   // heart_mat.Finalize();
-#ifdef DEBUG
-   std::cout << "Done in " << time(nullptr)-timestamp << "s." << std::endl;
-#endif
+   // Parallel versions don't get finalized? // heart_mat.Finalize();
 
-   // cardioid_from_ecg = torso/sensor.txt;
-   std::unordered_map<int,int> gfFromGid = ecg_readInverseMap(obj,"cardioid_from_ecg");
+   EndTimer();
 
-   // Want to use the below instead of this once we get to multiple time steps
-   //std::string VmFilename;
-   //objectGet(obj, "Vm", VmFilename, ""); // Vm = ../test.Vm.gf;
+   // Brought out of loop to avoid unnecessary duplication
+      ParBilinearForm *a = new ParBilinearForm(pfespace);   // defines a.
+      // this is the Laplacian: grad u . grad v with linear coefficient.
+      // we defined "one" ourselves in step 6.
+      a->AddDomainIntegrator(new DiffusionIntegrator(sigma_ie_coeffs));
+      // a->Assemble();   // This creates the loops.
+      HypreParMatrix torso_mat;
+      Vector phi_e;
+      Vector phi_b;
 
-   // Want to use this instead of the above once we get to multiple time steps
+   // Want to use this instead of literal filenames for multiple time steps
    std::string VmPattern;
    objectGet(obj, "VmPattern", VmPattern, ""); // VmPattern = ../torsoRun/snapshot.%012d/Vm#%06d;
    // Cheezy example of a way the pattern might be used
@@ -248,81 +239,39 @@ int main(int argc, char *argv[])
 
       heart_mat.Mult(*gf_Vm, gf_b);
 
-#ifdef DEBUG
-      timestamp = time(nullptr);
-      std::cout << std::endl << "Forming bilinear system (torso)... ";
-#endif
-      ParBilinearForm *a = new ParBilinearForm(pfespace);   // defines a.
-      // this is the Laplacian: grad u . grad v with linear coefficient.
-      // we defined "one" ourselves in step 6.
-      a->AddDomainIntegrator(new DiffusionIntegrator(sigma_ie_coeffs));
-      a->Assemble();   // This creates the loops.
-      HypreParMatrix torso_mat;
-      Vector phi_e;
-      Vector phi_b;
+      a->Update(pfespace);
+      a->Assemble();
+      // Look into FLS to see what steps are being applied and make sure boundary conditions are still being set
       a->FormLinearSystem(ess_tdof_list,gf_x,gf_b,torso_mat,phi_e,phi_b);
-#ifdef DEBUG
-      std::cout << "Done in " << time(nullptr)-timestamp << "s." << std::endl;
-#endif
    
-      // NOTE THE ifdef
-#ifndef MFEM_USE_SUITESPARSE
       // 10. Define a simple symmetric Gauss-Seidel preconditioner and use it to
       //     solve the system A X = B with PCG.
-#ifdef DEBUG
-      timestamp = time(nullptr);
-      std::cout << std::endl << "Solving... ";
-#endif
-      HypreSmoother M(torso_mat);
-      PCG(torso_mat, M, phi_b, phi_e, 1, 2000, 1e-12, 0.0);
-#ifdef DEBUG
-      std::cout << "Done in " << time(nullptr)-timestamp << "s." << std::endl;
-#endif
-#else
-      // 10. If MFEM was compiled with SuiteSparse, use UMFPACK to solve the system.
-      UMFPackSolver umf_solver;
-      umf_solver.Control[UMFPACK_ORDERING] = UMFPACK_ORDERING_METIS;
-      umf_solver.SetOperator(torso_mat);
-      umf_solver.Mult(phi_b, phi_e);
-      // See parallel version for HypreSolver - which is an LLNL package.
-#endif
 
-#ifdef DEBUG
-      std::cout << std::endl << "phi_e.Max()" << " "
-		<< "phi_e.Min()" << " "
-		<< "phi_e.Norml2()" << " "
-		<< "phi_e.Size():" << std::endl
-		<< phi_e.Max() << " "
-		<< phi_e.Min() << " "
-		<< phi_e.Norml2() << " "
-		<< phi_e.Size() << std::endl;
-#endif
+      StartTimer("Solving");
+
+      HypreSmoother M(torso_mat, 6 /*GS*/);
+      // PCG(torso_mat, M, phi_b, phi_e, 1, 2000, 1e-12);//, 0.0);
+      HyprePCG pcg(torso_mat);
+      pcg.SetTol(1e-12);
+      pcg.SetMaxIter(2000);
+      pcg.SetPrintLevel(2);
+      HypreSolver *M_test = new HypreBoomerAMG(torso_mat);
+      pcg.SetPreconditioner(*M_test);//M);
+      pcg.Mult(phi_b,phi_e);
+
+      EndTimer();
 
       // 11. Recover the solution as a finite element grid function.
       a->RecoverFEMSolution(phi_e, phi_b, gf_x);
 
-#ifdef DEBUG
-      std::cout << std::endl << "gf_x.Max()" << " "
-		<< "gf_x.Min()" << " "
-		<< "gf_x.Norml2()" << " "
-		<< "gf_x.Size()" << std::endl;
-      std::cout << gf_x.Max() << " "
-		<< gf_x.Min() << " "
-		<< gf_x.Norml2() << " "
-		<< gf_x.Size() << std::endl;
-#endif
-   
       // 12. Save the refined mesh and the solution. This output can be viewed later
       //     using GLVis: "glvis -m refined.mesh -g sol.gf".
       std::ofstream sol_ofs("sol"+std::to_string(step)+".gf");
-      //std::ofstream sol_vtk("sol"+std::to_string(step)+".vtk");
+
       sol_ofs.precision(8);
       gf_x.Save(sol_ofs);
-      //pmesh->PrintVTK(sol_vtk);
-      //gf_x.SaveVTK(sol_vtk,"test",1);
 
-      // 14. Free the used memory.
-      delete a;
+      delete M_test;
    }
 
    // Not sure how this will adapt to n>1, probably want to only run from rank 0 at least
@@ -331,6 +280,7 @@ int main(int argc, char *argv[])
    pmesh->Print(mesh_ofs);
 
    // 14. Free the used memory.
+   delete a;
    delete b;
    delete pfespace;
    if (order > 0) { delete fec; }

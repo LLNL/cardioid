@@ -7,6 +7,7 @@
 #include <cassert>
 #include <memory>
 #include <set>
+#include <ctime>
 
 #pragma once
 
@@ -197,6 +198,29 @@ std::map<int,std::string> ecg_readAssignments(OBJECT* obj, const std::string dat
    } while(1);
 
    return electrodeFromGid;
+}
+
+// Basic inline progress reporting
+
+time_t delta_t() {
+   static time_t last_time;
+   time_t curr_time = time(nullptr);
+   time_t retval = curr_time - last_time;
+   last_time = curr_time;
+   return retval;
+}
+
+void StartTimer(std::string msg) {
+#ifdef DEBUG
+   std::cout << std::endl << msg << "... ";
+   time_t discard = delta_t();  // Update timestamp but don't report it
+#endif
+}
+
+void EndTimer() {
+#ifdef DEBUG
+   std::cout << "Done in " << delta_t() << "s." << std::endl;
+#endif
 }
 
 // electrodes.txt is a bit different from the others.
