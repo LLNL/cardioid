@@ -60,6 +60,7 @@ endif()
 
 set (reaction_src
         ReactionFHN.cc
+        sundnes_et_al_2016_FHN.cc
 	TT04_CellML_Reaction.cc
 	TT06_CellML_Reaction.cc 
 	TT06Dev_Reaction.cc
