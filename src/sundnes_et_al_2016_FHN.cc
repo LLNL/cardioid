@@ -355,7 +355,7 @@ void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
       //EDIT_STATE
       W += _dt*W_diff;
       store(state_[__jj].W, W);
-      store(&__dVm[__ii],-Iion);
+      simdops::store(&__dVm[__ii],-Iion);
    }
 }
 #endif //USE_CUDA
