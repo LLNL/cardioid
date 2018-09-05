@@ -80,10 +80,11 @@ namespace sundnes_et_al_2016_FHN
                 VectorDouble32& dVm);
       void initializeMembraneVoltage(VectorDouble32& Vm);
 
-      std::vector<State> state_;
+      std::vector<State, AlignedAllocator<State> > state_;
 #endif
 
-      Interpolation _interpolant[0];
+      //BGQ_HACKFIX, compiler bug with zero length arrays
+      Interpolation _interpolant[0+1];
       FRIEND_FACTORY(sundnes_et_al_2016_FHN)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);
    };
 }

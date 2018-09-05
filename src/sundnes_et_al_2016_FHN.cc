@@ -45,9 +45,9 @@ static const char* interpName[] = {
       double Vpeak;
       double Vrest;
       double Vthresh;
-      double a = 0.13;
-      setDefault(Vrest, -85.0);
-      setDefault(Vpeak, 40.0);
+      double a = 0.130000000000000;
+      setDefault(Vrest, -85.0000000000000);
+      setDefault(Vpeak, 40.0000000000000);
       double vamp = Vpeak - Vrest;
       setDefault(Vthresh, Vrest + a*vamp);
       reaction->Vpeak = Vpeak;
@@ -56,7 +56,7 @@ static const char* interpName[] = {
       bool reusingInterpolants = false;
       string fitName;
       objectGet(obj, "fit", fitName, "");
-      int funcCount = sizeof(reaction->_interpolant)/sizeof(reaction->_interpolant[0]);
+      int funcCount = sizeof(reaction->_interpolant)/sizeof(reaction->_interpolant[0])-1; //BGQ_HACKFIX, compiler bug with zero length arrays
       if (fitName != "")
       {
          OBJECT* fitObj = objectFind(fitName, "FIT");
@@ -197,12 +197,12 @@ void ThisReaction::constructKernel()
    "const double W = _state[_ii+W_off*_nCells];\n"
    "//get the gate updates (diagonalized exponential integrator)\n"
    "//get the other differential updates\n"
-   "double b = 0.012999999999999999;\n"
-   "double c3 = 1.0;\n"
+   "double b = 0.0130000000000000;\n"
+   "double c3 = 1.00000000000000;\n"
    "double W_diff = b*(V - Vrest - W*c3);\n"
    "//get Iion\n"
-   "double c1 = 0.26000000000000001;\n"
-   "double c2 = 0.10000000000000001;\n"
+   "double c1 = 0.260000000000000;\n"
+   "double c2 = 0.100000000000000;\n"
    "double vamp = Vpeak - Vrest;\n"
    "double fhn1 = c1/(vamp*vamp);\n"
    "double fhn2 = c2/vamp;\n"
@@ -330,10 +330,10 @@ void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
                        const vector<double>& __iStim , VectorDouble32& __dVm)
 {
    //define the constants
-   double b = 0.012999999999999999;
-   double c1 = 0.26000000000000001;
-   double c2 = 0.10000000000000001;
-   double c3 = 1.0;
+   double b = 0.0130000000000000;
+   double c1 = 0.260000000000000;
+   double c2 = 0.100000000000000;
+   double c3 = 1.00000000000000;
    double vamp = Vpeak - Vrest;
    double fhn1 = c1/(vamp*vamp);
    double fhn2 = c2/vamp;
