@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
          char *VmFileCstr = new char[VmPattern.length()+1000]; // Cannot use variable formats!
          sprintf(VmFileCstr, VmPattern.c_str(), step);
          VmFileStr = VmFileCstr;
-         delete VmFileCstr;
+         delete [] VmFileCstr;
       }
     
       std::shared_ptr<ParGridFunction> gf_Vm;
