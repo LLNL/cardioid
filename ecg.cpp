@@ -77,8 +77,6 @@ int main(int argc, char *argv[])
    assert(heartRegions.size()*3 == sigma_i.size());
    assert(heartRegions.size()*3 == sigma_e.size());
 
-   // Read sensors
-   std::unordered_map<int,int> sensors = ecg_readInverseMap(obj,"cardioid_from_ecg");
    // cardioid_from_ecg = torso/sensor.txt;
    std::unordered_map<int,int> gfFromGid = ecg_readInverseMap(obj,"cardioid_from_ecg");
 
@@ -202,12 +200,17 @@ int main(int argc, char *argv[])
    // Cheezy example of a way the pattern might be used
    for(int step=200; step<=21200; step+=200) {
       std::cout << "Reading step " << step << std::endl;
-      char *VmFileCstr = new char[VmPattern.length()+1]; // Cannot use variable formats!
-      sprintf(VmFileCstr, VmPattern.c_str(), step);
+      std::string VmFileStr;
+      {
+         char *VmFileCstr = new char[VmPattern.length()+1000]; // Cannot use variable formats!
+         sprintf(VmFileCstr, VmPattern.c_str(), step);
+         VmFileStr = VmFileCstr;
+         delete VmFileCstr;
+      }
     
       std::shared_ptr<ParGridFunction> gf_Vm;
       {
-	 PFILE* file = Popen(VmFileCstr, "r", COMM_LOCAL);
+	 PFILE* file = Popen(VmFileStr.c_str(), "r", COMM_LOCAL);
 	 gf_Vm = std::make_shared<mfem::ParGridFunction>(pfespace);
     
 	 OBJECT* hObj = file->headerObject;
