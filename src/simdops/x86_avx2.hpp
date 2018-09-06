@@ -19,6 +19,17 @@ inline native_vector_type sub(const native_vector_type a, const native_vector_ty
 inline native_vector_type mul(const native_vector_type a, const native_vector_type b) { return _mm256_mul_pd(a,b); }
 inline native_vector_type div(const native_vector_type a, const native_vector_type b) { return _mm256_div_pd(a,b); }
 inline native_vector_type neg(const native_vector_type a) { return _mm256_sub_pd(make_float(0),a); }
+
+inline native_vector_type lt(const native_vector_type a, const native_vector_type b) { return _mm256_cmp_pd(a,b,_CMP_LT_OQ); }
+inline native_vector_type gt(const native_vector_type a, const native_vector_type b) { return _mm256_cmp_pd(a,b,_CMP_GT_OQ); }
+inline native_vector_type le(const native_vector_type a, const native_vector_type b) { return _mm256_cmp_pd(a,b,_CMP_LE_OQ); }
+inline native_vector_type ge(const native_vector_type a, const native_vector_type b) { return _mm256_cmp_pd(a,b,_CMP_GE_OQ); }
+inline native_vector_type eq(const native_vector_type a, const native_vector_type b) { return _mm256_cmp_pd(a,b,_CMP_EQ_OQ); }
+inline native_vector_type neq(const native_vector_type a, const native_vector_type b) { return _mm256_cmp_pd(a,b,_CMP_NEQ_OQ); }
+inline native_vector_type b_and(const native_vector_type a, const native_vector_type b) { return _mm256_and_pd(a,b); }
+inline native_vector_type b_or(const native_vector_type a, const native_vector_type b) { return _mm256_or_pd(a,b); }
+inline native_vector_type b_not(const native_vector_type a) { return _mm256_xor_pd(a,eq(a,a)); }
+   
 /*
 inline double extract(const native_vector_type a, const int k)
 {
