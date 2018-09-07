@@ -20,6 +20,17 @@ inline native_vector_type mul(const native_vector_type a, const native_vector_ty
 inline native_vector_type div(const native_vector_type a, const native_vector_type b) { return _mm512_div_pd(a,b); }
 inline native_vector_type neg(const native_vector_type a) { return _mm512_sub_pd(make_float(0),a); }
 
+inline native_vector_type lt(const native_vector_type a, const native_vector_type b) { return _mm512_cmp_pd(a,b,_CMP_LT_OQ); }
+inline native_vector_type gt(const native_vector_type a, const native_vector_type b) { return _mm512_cmp_pd(a,b,_CMP_GT_OQ); }
+inline native_vector_type le(const native_vector_type a, const native_vector_type b) { return _mm512_cmp_pd(a,b,_CMP_LE_OQ); }
+inline native_vector_type ge(const native_vector_type a, const native_vector_type b) { return _mm512_cmp_pd(a,b,_CMP_GE_OQ); }
+inline native_vector_type eq(const native_vector_type a, const native_vector_type b) { return _mm512_cmp_pd(a,b,_CMP_EQ_OQ); }
+inline native_vector_type neq(const native_vector_type a, const native_vector_type b) { return _mm512_cmp_pd(a,b,_CMP_NEQ_OQ); }
+inline native_vector_type b_and(const native_vector_type a, const native_vector_type b) { return _mm512_and_pd(a,b); }
+inline native_vector_type b_or(const native_vector_type a, const native_vector_type b) { return _mm512_or_pd(a,b); }
+inline native_vector_type b_not(const native_vector_type a) { return _mm512_xor_pd(a,eq(a,a)); }
+
+   
 #if defined(SIMDOPS_INTEL_VECTOR_LIBM)
 inline native_vector_type expm1(native_vector_type x) {
   return _mm512_expm1_pd(x);

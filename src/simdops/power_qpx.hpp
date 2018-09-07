@@ -20,6 +20,16 @@ inline native_vector_type mul(const native_vector_type a, const native_vector_ty
 inline native_vector_type div(const native_vector_type a, const native_vector_type b) { return vec_swdiv_nochk(a,b); }
 inline native_vector_type neg(const native_vector_type a) { return vec_neg(a); }
 
+inline native_vector_type lt(const native_vector_type a, const native_vector_type b) { return vec_cmpgt(b,a); }
+inline native_vector_type gt(const native_vector_type a, const native_vector_type b) { return vec_cmpgt(a,b); }
+inline native_vector_type le(const native_vector_type a, const native_vector_type b) { return vec_cmpge(b,a); }
+inline native_vector_type ge(const native_vector_type a, const native_vector_type b) { return vec_cmpge(a,b); }
+inline native_vector_type eq(const native_vector_type a, const native_vector_type b) { return vec_cmpeq(a,b); }
+inline native_vector_type neq(const native_vector_type a, const native_vector_type b) { return b_not(eq(a,b)); }
+inline native_vector_type b_and(const native_vector_type a, const native_vector_type b) { return vec_and(a,b); }
+inline native_vector_type b_or(const native_vector_type a, const native_vector_type b) { return vec_or(a,b); }
+inline native_vector_type b_not(const native_vector_type a) { return vec_not(a); }
+
 }
 
 #endif

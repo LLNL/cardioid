@@ -31,14 +31,14 @@ SIMDOPS_BINARY_OP(+,add)
 SIMDOPS_BINARY_OP(*,mul)
 SIMDOPS_BINARY_OP(-,sub)
 SIMDOPS_BINARY_OP(/,div)
-//SIMDOPS_BINARY_OP(<,lt)
-//SIMDOPS_BINARY_OP(>,gt)
-//SIMDOPS_BINARY_OP(<=,le)
-//SIMDOPS_BINARY_OP(>=,ge)
-//SIMDOPS_BINARY_OP(==,eq)
-//SIMDOPS_BINARY_OP(!=,neq)
-//SIMDOPS_BINARY_OP(&&,b_and)
-//SIMDOPS_BINARY_OP(||,b_or)
+SIMDOPS_BINARY_OP(<,lt)
+SIMDOPS_BINARY_OP(>,gt)
+SIMDOPS_BINARY_OP(<=,le)
+SIMDOPS_BINARY_OP(>=,ge)
+SIMDOPS_BINARY_OP(==,eq)
+SIMDOPS_BINARY_OP(!=,neq)
+SIMDOPS_BINARY_OP(&&,b_and)
+SIMDOPS_BINARY_OP(||,b_or)
 #undef SIMDOPS_BINARY_OP
 
 #endif
@@ -52,14 +52,14 @@ SIMDOPS_ASSIGN_OP(*)
 SIMDOPS_ASSIGN_OP(/)
 #undef SIMDOPS_ASSIGN_OP
 
-//inline double   ternary_if(const double   mask, const double   tt, const double   ff) { return mask ? tt : ff; } 
-//inline float64v ternary_if(const double   mask, const float64v tt, const float64v ff) { return mask ? tt : ff; } 
-//inline float64v ternary_if(const double   mask, const double   tt, const float64v ff) { return mask ? float64v(tt) : ff; } 
-//inline float64v ternary_if(const double   mask, const float64v tt, const double   ff) { return mask ? tt : float64v(ff); }
-//inline float64v ternary_if(const float64v mask, const float64v tt, const float64v ff) { return b_or(b_and(mask,tt),b_and(b_not(mask),ff)); }
-//inline float64v ternary_if(const float64v mask, const float64v tt, const double   ff) { return b_or(b_and(mask,tt),b_and(b_not(mask),float64v(ff))); }
-//inline float64v ternary_if(const float64v mask, const double   tt, const double   ff) { return b_or(b_and(mask,float64v(tt)),b_and(b_not(mask),float64v(ff))); }
-//inline float64v ternary_if(const float64v mask, const double   tt, const float64v ff) { return b_or(b_and(mask,float64v(tt)),b_and(b_not(mask),ff)); }
+inline double   ternary_if(const double   mask, const double   tt, const double   ff) { return mask ? tt : ff; } 
+inline float64v ternary_if(const double   mask, const float64v tt, const float64v ff) { return mask ? tt : ff; } 
+inline float64v ternary_if(const double   mask, const double   tt, const float64v ff) { return mask ? float64v(tt) : ff; } 
+inline float64v ternary_if(const double   mask, const float64v tt, const double   ff) { return mask ? tt : float64v(ff); }
+inline float64v ternary_if(const float64v mask, const float64v tt, const float64v ff) { return b_or(b_and(mask,tt),b_and(b_not(mask),ff)); }
+inline float64v ternary_if(const float64v mask, const float64v tt, const double   ff) { return b_or(b_and(mask,tt),b_and(b_not(mask),float64v(ff))); }
+inline float64v ternary_if(const float64v mask, const double   tt, const double   ff) { return b_or(b_and(mask,float64v(tt)),b_and(b_not(mask),float64v(ff))); }
+inline float64v ternary_if(const float64v mask, const double   tt, const float64v ff) { return b_or(b_and(mask,float64v(tt)),b_and(b_not(mask),ff)); }
    
 }
 
