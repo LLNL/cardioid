@@ -10,6 +10,8 @@
 #include <cassert>
 #include <memory>
 #include <set>
+#include <dirent.h>
+#include <regex.h>
 #include "ecgdefs.hpp"
 #include "ecgobjutil.hpp"
 
@@ -195,22 +197,33 @@ int main(int argc, char *argv[])
       Vector phi_b;
 
    // Want to use this instead of literal filenames for multiple time steps
-   std::string VmPattern;
-   objectGet(obj, "VmPattern", VmPattern, ""); // VmPattern = ../torsoRun/snapshot.%012d/Vm#%06d;
+   std::string VmSubfile;
+   objectGet(obj, "VmSubfile", VmSubfile, ""); // VmPattern = ../torsoRun/snapshot.%012d/Vm#%06d;
+   std::string rootFilename;
+   objectGet(obj, "simDir", rootFilename, ".");
    // Cheezy example of a way the pattern might be used
-   for(int step=200; step<=21200; step+=200) {
-      std::cout << "Reading step " << step << std::endl;
-      std::string VmFileStr;
-      {
-         char *VmFileCstr = new char[VmPattern.length()+1000]; // Cannot use variable formats!
-         sprintf(VmFileCstr, VmPattern.c_str(), step);
-         VmFileStr = VmFileCstr;
-         delete [] VmFileCstr;
-      }
-    
+   DIR *dir;
+   dir = opendir(rootFilename.c_str());
+   if (dir == NULL) return 0;
+
+   dirent *entry;
+   regex_t snapshotRegex;
+   int retCode = regcomp(&snapshotRegex, "^snapshot\\.[0-9]+$", REG_NOSUB);
+   assert(retCode != 0);
+   while((entry = readdir(dir)) != NULL)
+   {
+      //Does the file match the output pattern?
+      retCode = regexec(&snapshotRegex, entry->d_name, 0, NULL, 0);
+      if (!retCode) { continue; }
+
+      std::string VmFilename = std::string(entry->d_name) + "/" + VmSubfile;
+         
+      //Do we have a Vm file present?
+      if (access((VmFilename + "#000000").c_str(), R_OK) == -1) { continue; }
       std::shared_ptr<ParGridFunction> gf_Vm;
       {
-	 PFILE* file = Popen(VmFileStr.c_str(), "r", COMM_LOCAL);
+         //Open and read the file
+         PFILE* file = Popen(VmFilename.c_str(), "r", COMM_LOCAL);
 	 gf_Vm = std::make_shared<mfem::ParGridFunction>(pfespace);
     
 	 OBJECT* hObj = file->headerObject;
@@ -269,13 +282,16 @@ int main(int argc, char *argv[])
 
       // 12. Save the refined mesh and the solution. This output can be viewed later
       //     using GLVis: "glvis -m refined.mesh -g sol.gf".
-      std::ofstream sol_ofs("sol"+std::to_string(step)+".gf");
+      std::ofstream sol_ofs(std::string(entry->d_name) + "/sol.gf");
 
       sol_ofs.precision(8);
       gf_x.Save(sol_ofs);
 
       delete M_test;
    }
+
+   regfree(&snapshotRegex);
+   closedir(dir);
 
    // Not sure how this will adapt to n>1, probably want to only run from rank 0 at least
    std::ofstream mesh_ofs("refined.mesh");
@@ -287,7 +303,8 @@ int main(int argc, char *argv[])
    delete b;
    delete pfespace;
    if (order > 0) { delete fec; }
-   delete mesh, pmesh;
+   delete pmesh;
+   delete mesh;
 
    return 0;
 }
