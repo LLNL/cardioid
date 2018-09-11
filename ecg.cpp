@@ -53,15 +53,16 @@ int main(int argc, char *argv[])
    // Read unordered set of grounds
    std::set<int> ground = ecg_readSet(obj, "ground");
 
-   // Read labels for gids corresponding to electrodes
-   std::map<int,std::string> electrodes = ecg_readAssignments(obj, "ecg_electrodes");
-  
+   StartTimer("Read the mesh");
    // Read shared global mesh
    mfem::Mesh *mesh = ecg_readMeshptr(obj, "mesh");
+   EndTimer();
    int dim = mesh->Dimension();
+   StartTimer("Partition Mesh");
    int *pmeshpart = mesh->GeneratePartitioning(num_ranks);
    ParMesh *pmesh = new ParMesh(MPI_COMM_WORLD, *mesh);//, pmeshpart);
-
+   EndTimer();
+   
    //Fill in the MatrixElementPiecewiseCoefficients
    std::vector<int> bathRegions;
    objectGetv(obj,"bath_regions",bathRegions);
@@ -79,6 +80,7 @@ int main(int argc, char *argv[])
    assert(heartRegions.size()*3 == sigma_i.size());
    assert(heartRegions.size()*3 == sigma_e.size());
 
+   StartTimer("Constructing the ground part of the mesh.");
    // cardioid_from_ecg = torso/sensor.txt;
    std::unordered_map<int,int> gfFromGid = ecg_readInverseMap(obj,"cardioid_from_ecg");
 
@@ -105,9 +107,12 @@ int main(int argc, char *argv[])
 	 }
       }
    }
+   EndTimer();
    // Sort+unique pmesh->bdr_attributes and pmesh->attributes?
+   StartTimer("Setting Attributes");
    pmesh->SetAttributes();
-
+   EndTimer();
+   
    // Pointer to the FEC stored in mesh's internal GF
    FiniteElementCollection *fec;
    if (pmesh->GetNodes()) {
@@ -186,41 +191,84 @@ int main(int argc, char *argv[])
 
    EndTimer();
 
+   StartTimer("Forming bilinear system (torso)");
+   
    // Brought out of loop to avoid unnecessary duplication
-      ParBilinearForm *a = new ParBilinearForm(pfespace);   // defines a.
-      // this is the Laplacian: grad u . grad v with linear coefficient.
-      // we defined "one" ourselves in step 6.
-      a->AddDomainIntegrator(new DiffusionIntegrator(sigma_ie_coeffs));
-      // a->Assemble();   // This creates the loops.
-      HypreParMatrix torso_mat;
-      Vector phi_e;
-      Vector phi_b;
+   ParBilinearForm *a = new ParBilinearForm(pfespace);   // defines a.
+   // this is the Laplacian: grad u . grad v with linear coefficient.
+   // we defined "one" ourselves in step 6.
+   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_ie_coeffs));
+   // a->Assemble();   // This creates the loops.
 
+   a->Update(pfespace);
+   a->Assemble();
+   HypreParMatrix torso_mat;
+   a->FormSystemMatrix(ess_tdof_list,torso_mat);
+   // Look into FLS to see what steps are being applied and make sure boundary conditions are still being set
+   
+   // 10. Define a simple symmetric Gauss-Seidel preconditioner and use it to
+   //     solve the system A X = B with PCG.
+   EndTimer();
+
+   
+   Vector phi_e;
+   Vector phi_b;
+   
+   // Read in the electrode list
+   std::string electrodeFilename;
+   objectGet(obj, "ecg_electrodes", electrodeFilename, "");
+   std::vector<std::string> nameFromElectrode;
+   std::vector<int> gfidFromElectrode;
+   {
+      std::ifstream electrodeFile(electrodeFilename.c_str());
+      while (!!electrodeFile)
+      {
+         std::string name;
+         std::string dontCare;
+         int gfid;
+         electrodeFile >> name;
+         electrodeFile >> dontCare;
+         electrodeFile >> gfid;
+
+         if (!electrodeFile) { break; }
+         nameFromElectrode.push_back(name);
+         gfidFromElectrode.push_back(gfid);
+      }
+   }
    // Want to use this instead of literal filenames for multiple time steps
    std::string VmSubfile;
-   objectGet(obj, "VmSubfile", VmSubfile, ""); // VmPattern = ../torsoRun/snapshot.%012d/Vm#%06d;
+   objectGet(obj, "vm_subfile", VmSubfile, ""); // VmPattern = ../torsoRun/snapshot.%012d/Vm#%06d;
    std::string rootFilename;
-   objectGet(obj, "simDir", rootFilename, ".");
-   // Cheezy example of a way the pattern might be used
+   objectGet(obj, "simdir", rootFilename, ".");
+   std::string outDir;
+   objectGet(obj, "outdir", outDir, rootFilename.c_str());
+   std::vector<std::ofstream> fileFromElectrode(nameFromElectrode.size());
+   for (int ielec=0; ielec<fileFromElectrode.size(); ielec++)
+   {
+      fileFromElectrode[ielec] = std::ofstream(outDir+"/"+nameFromElectrode[ielec]+".txt");
+   }
+   
    DIR *dir;
    dir = opendir(rootFilename.c_str());
    if (dir == NULL) return 0;
 
    dirent *entry;
    regex_t snapshotRegex;
-   int retCode = regcomp(&snapshotRegex, "^snapshot\\.[0-9]+$", REG_NOSUB);
-   assert(retCode != 0);
+   int retCode = regcomp(&snapshotRegex, "^snapshot\\.[[:digit:]]\\{1,\\}$", REG_NOSUB);
+   assert(retCode == 0);
    while((entry = readdir(dir)) != NULL)
    {
       //Does the file match the output pattern?
       retCode = regexec(&snapshotRegex, entry->d_name, 0, NULL, 0);
-      if (!retCode) { continue; }
+      if (retCode != 0) { continue; }
 
-      std::string VmFilename = std::string(entry->d_name) + "/" + VmSubfile;
-         
+      std::string VmFilename = rootFilename + "/" + std::string(entry->d_name) + "/" + VmSubfile + "#";
+
       //Do we have a Vm file present?
-      if (access((VmFilename + "#000000").c_str(), R_OK) == -1) { continue; }
+      if (access((VmFilename + "000000").c_str(), R_OK) == -1) { continue; }
+
       std::shared_ptr<ParGridFunction> gf_Vm;
+      double time;
       {
          //Open and read the file
          PFILE* file = Popen(VmFilename.c_str(), "r", COMM_LOCAL);
@@ -230,6 +278,7 @@ int main(int argc, char *argv[])
 	 std::vector<std::string> fieldNames,  fieldTypes;
 	 objectGetv(hObj, "field_names", fieldNames); // field_names = gid Vm dVmD dVmR;
 	 objectGetv(hObj, "field_types", fieldTypes); // field_types = u f f f;
+         objectGet(hObj, "time", time, "-1");
 	 assert(file->datatype == FIXRECORDASCII);
     
 	 PIO_FIXED_RECORD_HELPER* helper = (PIO_FIXED_RECORD_HELPER*) file->helper;
@@ -252,34 +301,34 @@ int main(int argc, char *argv[])
 
 	 Pclose(file);
       }
-
-      heart_mat.Mult(*gf_Vm, gf_b);
-
-      a->Update(pfespace);
-      a->Assemble();
-      // Look into FLS to see what steps are being applied and make sure boundary conditions are still being set
-      a->FormLinearSystem(ess_tdof_list,gf_x,gf_b,torso_mat,phi_e,phi_b);
    
-      // 10. Define a simple symmetric Gauss-Seidel preconditioner and use it to
-      //     solve the system A X = B with PCG.
 
-      StartTimer("Solving");
+      StartTimer("Solve");
+      
+      heart_mat.Mult(*gf_Vm, gf_b);
+      a->FormLinearSystem(ess_tdof_list,gf_x,gf_b,torso_mat,phi_e,phi_b);
 
-      HypreSmoother M(torso_mat, 6 /*GS*/);
+
+      //HypreSmoother M(torso_mat, 6 /*GS*/);
       // PCG(torso_mat, M, phi_b, phi_e, 1, 2000, 1e-12);//, 0.0);
+      //FIXME!!!  move me outside the loop
       HyprePCG pcg(torso_mat);
       pcg.SetTol(1e-12);
       pcg.SetMaxIter(2000);
       pcg.SetPrintLevel(2);
       HypreSolver *M_test = new HypreBoomerAMG(torso_mat);
       pcg.SetPreconditioner(*M_test);//M);
+      //end move me
+      
       pcg.Mult(phi_b,phi_e);
 
       EndTimer();
-
+      
       // 11. Recover the solution as a finite element grid function.
       a->RecoverFEMSolution(phi_e, phi_b, gf_x);
 
+
+      
       // 12. Save the refined mesh and the solution. This output can be viewed later
       //     using GLVis: "glvis -m refined.mesh -g sol.gf".
       std::ofstream sol_ofs(std::string(entry->d_name) + "/sol.gf");
@@ -287,6 +336,11 @@ int main(int argc, char *argv[])
       sol_ofs.precision(8);
       gf_x.Save(sol_ofs);
 
+      for (int ielec=0; ielec<fileFromElectrode.size(); ielec++)
+      {
+         fileFromElectrode[ielec] << time << "\t" << gf_x[gfidFromElectrode[ielec]] << std::endl;
+      }
+      
       delete M_test;
    }
 

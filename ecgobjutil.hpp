@@ -19,6 +19,13 @@
  *  fact that object_get will return 0 instead of 1.  We can catch this
  *  case and do the right thing with the value we return to the caller.
  */
+void objectGet(OBJECT* obj, const std::string& name, double& value, const std::string& defVal)
+{
+   double tmp;
+   object_get(obj, name.c_str(), &tmp, DOUBLE, 1, defVal.c_str());
+   value = tmp;
+}
+
 void objectGet(OBJECT* obj, const std::string& name,
 	       std::string& value, const std::string& defVal) {
    char* tmp;
