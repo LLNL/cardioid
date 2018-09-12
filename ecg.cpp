@@ -210,7 +210,15 @@ int main(int argc, char *argv[])
    //     solve the system A X = B with PCG.
    EndTimer();
 
-   
+   //FIXME!!!  move me outside the loop
+   HyprePCG pcg(torso_mat);
+   pcg.SetTol(1e-12);
+   pcg.SetMaxIter(2000);
+   pcg.SetPrintLevel(2);
+   HypreSolver *M_test = new HypreBoomerAMG(torso_mat);
+   pcg.SetPreconditioner(*M_test);
+   //end move me
+
    Vector phi_e;
    Vector phi_b;
    
@@ -311,14 +319,6 @@ int main(int argc, char *argv[])
 
       //HypreSmoother M(torso_mat, 6 /*GS*/);
       // PCG(torso_mat, M, phi_b, phi_e, 1, 2000, 1e-12);//, 0.0);
-      //FIXME!!!  move me outside the loop
-      HyprePCG pcg(torso_mat);
-      pcg.SetTol(1e-12);
-      pcg.SetMaxIter(2000);
-      pcg.SetPrintLevel(2);
-      HypreSolver *M_test = new HypreBoomerAMG(torso_mat);
-      pcg.SetPreconditioner(*M_test);//M);
-      //end move me
       
       pcg.Mult(phi_b,phi_e);
 
@@ -327,8 +327,6 @@ int main(int argc, char *argv[])
       // 11. Recover the solution as a finite element grid function.
       a->RecoverFEMSolution(phi_e, phi_b, gf_x);
 
-
-      
       // 12. Save the refined mesh and the solution. This output can be viewed later
       //     using GLVis: "glvis -m refined.mesh -g sol.gf".
       std::ofstream sol_ofs(std::string(entry->d_name) + "/sol.gf");
@@ -339,9 +337,7 @@ int main(int argc, char *argv[])
       for (int ielec=0; ielec<fileFromElectrode.size(); ielec++)
       {
          fileFromElectrode[ielec] << time << "\t" << gf_x[gfidFromElectrode[ielec]] << std::endl;
-      }
-      
-      delete M_test;
+      }      
    }
 
    regfree(&snapshotRegex);
@@ -353,6 +349,7 @@ int main(int argc, char *argv[])
    pmesh->Print(mesh_ofs);
 
    // 14. Free the used memory.
+   delete M_test;
    delete a;
    delete b;
    delete pfespace;
