@@ -124,6 +124,9 @@ endif
 ifeq ($(HOSTNAME),clogin)
   ARCHGUESS = r92
 endif
+ifeq ($(HOSTNAME),pascal)
+  ARCHGUESS = pascal
+endif
 
 ifndef ARCHGUESS
    ARCHGUESS = mpi-default
