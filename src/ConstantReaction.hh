@@ -9,7 +9,7 @@ class ConstantReaction : public Reaction
 {
  public:
    ConstantReaction(const Anatomy& anatomy,
-                 const vector<double>& eta,
+                 const std::vector<double>& eta,
                  const SymmetricTensor& sigma1,
                  const SymmetricTensor& sigma2,
                  const SymmetricTensor& sigma3,
@@ -26,7 +26,7 @@ class ConstantReaction : public Reaction
                      wo_larray_ptr<double> dVm);
    virtual void initializeMembraneVoltage(wo_larray_ptr<double> Vm);
    double getValue(int iCell, int handle) const;
-   int getVarHandle(const string& varName) const;
+   int getVarHandle(const std::string& varName) const;
 
  private:
    const Anatomy& anatomy_;

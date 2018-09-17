@@ -5,7 +5,7 @@
 #include <map>
 #include <vector>
 #include "Plane.hh"
-using namespace std;
+
 class ProcBox
 {
   public:
@@ -34,10 +34,10 @@ class ProcBox
 private:
     int peid_;
     int addCnt_;
-    vector<map<int,Plane*> > planes_;
-    vector<set<int> > axisPoints_;
-    vector<int> min_;
-    vector<int> max_;
+    std::vector<std::map<int,Plane*> > planes_;
+    std::vector<std::set<int> > axisPoints_;
+    std::vector<int> min_;
+    std::vector<int> max_;
 };
 
 

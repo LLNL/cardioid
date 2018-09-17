@@ -5,11 +5,13 @@
 #include <ostream>
 #include <fstream>
 
+using namespace std;
+
 MaxDVSensor::MaxDVSensor(const SensorParms& sp,
                          const Anatomy& anatomy,
                          const PotentialData& vdata,
                          MPI_Comm comm, 
-                         ostream* os)
+                         std::ostream* os)
 :  Sensor(sp),
    vdata_(vdata),
    comm_(comm),
@@ -30,7 +32,7 @@ MaxDVSensor::MaxDVSensor(const SensorParms& sp,
                          const Anatomy& anatomy,
                          const PotentialData& vdata,
                          MPI_Comm comm, 
-                         string& filename)
+                         std::string& filename)
 :  Sensor(sp),
    vdata_(vdata),
    comm_(comm)

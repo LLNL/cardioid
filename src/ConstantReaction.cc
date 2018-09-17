@@ -8,7 +8,7 @@
 using namespace std;
 
 ConstantReaction::ConstantReaction(const Anatomy& anatomy,
-                 const vector<double>& eta,
+                 const std::vector<double>& eta,
                  const SymmetricTensor& sigma1,
                  const SymmetricTensor& sigma2,
                  const SymmetricTensor& sigma3,
@@ -83,7 +83,7 @@ double ConstantReaction::getValue(int iCell, int handle) const
    return alpha*x+beta*y+gamma*z;
 }
 
-int ConstantReaction::getVarHandle(const string& varName) const
+int ConstantReaction::getVarHandle(const std::string& varName) const
 {
    return -1;
 }

@@ -5,8 +5,6 @@
 #include <stdint.h> // uint64_t
 
 #include <iostream>
-using namespace std;
-
 
 /** Random number generator that combines a particle gid, a seed, and a
  *  call site id to generate a random number.  Since the underlying

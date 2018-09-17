@@ -7,7 +7,6 @@
 #include <iostream>
 #include "PerformanceTimers.hh"
 #include "cudaNVTX.h"
-using namespace std;
 
 #ifdef SPI
 #include "spi_impl.h"

@@ -3,12 +3,11 @@
 
 #include "SymmetricTensor.hh"
 #include <vector>
-using namespace std;
 
 class ConstantModel
 {
  public:
-   ConstantModel(const vector<double>& eta,
+   ConstantModel(const std::vector<double>& eta,
                  const SymmetricTensor& sigma1,
                  const SymmetricTensor& sigma2,
                  const SymmetricTensor& sigma3,
