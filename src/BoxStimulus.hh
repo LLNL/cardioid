@@ -3,7 +3,7 @@
 
 #include "Stimulus.hh"
 #include "Pulse.hh"
-#include "TransportCoordinator.hh"
+#include "lazy_array.hh"
 #include <string>
 
 class Anatomy;
@@ -26,12 +26,12 @@ class BoxStimulus : public Stimulus
    BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy,
                Pulse* pulse, const std::string& name);
    int subClassStim(double time,
-		    Managed<ArrayView<double>> dVmDiffusion);
+		    rw_larray_ptr<double> dVmDiffusion);
    int nStim();
    
  private:
    Pulse* pulse_;
-   TransportCoordinator<PinnedVector<int> > stimListTransport_;
+   lazy_array<int> stimListTransport_;
 };
 
 #endif

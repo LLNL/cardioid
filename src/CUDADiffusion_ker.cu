@@ -7,7 +7,7 @@
 //#include "options.h"
 //#include "cudautil.h"
 #include <stdio.h>
-#include "TransportCoordinator.hh"
+#include "lazy_array.hh"
 
 #define XTILE 20
 typedef double Real;
@@ -152,7 +152,7 @@ __global__ void diff_6face_v1(const Real* d_psi, Real* d_npsi, const Real* d_sig
 //  #undef npsi(x,y,z) 
 }
 
-__global__ void map_dVm(ArrayView<Real> dVmOut, ConstArrayView<Real> dVmRaw, ConstArrayView<int> remap,int nLocal)
+__global__ void map_dVm(wo_larray_ptr<Real> dVmOut, ro_larray_ptr<Real> dVmRaw, ro_larray_ptr<int> remap,int nLocal)
 {
   int idx0 = threadIdx.x + blockDim.x*blockIdx.x;
   int stride = blockDim.x * gridDim.x;
@@ -171,8 +171,9 @@ __global__ void map_dVm(ArrayView<Real> dVmOut, ConstArrayView<Real> dVmRaw, Con
 //      VT[remap[idx]] = V[idx];
 //}
 
-void call_cuda_kernels(OnDevice<ConstArrayView<Real>> Vm, OnDevice<ArrayView<Real>> dVm, OnDevice<ConstArrayView<Real>> sigma, int nx, int ny, int nz, OnDevice<ArrayView<Real>> dVmOut, OnDevice<ConstArrayView<int>> lookup,int nLocal)
-{   
+void call_cuda_kernels(ro_larray_ptr<Real> Vm, rw_larray_ptr<Real> dVm, ro_larray_ptr<Real> sigma, int nx, int ny, int nz, rw_larray_ptr<Real> dVmOut, ro_larray_ptr<int> lookup,int nLocal)
+//void call_cuda_kernels(ro_larray_ptr<double> Vm, rw_larray_ptr<double> dVm, ro_larray_ptr<double> sigma, int nx, int ny, int nz, wo_larray_ptr<double> dVmOut, ro_larray_ptr<int> lookup,int nLocal)
+{
    //determine block dim
    //1. blockdim.z and blockdim.y are determined in a simple way.
    int bdimz = (int)((nz-2)/30) + ((nz-2)%30==0?0:1);
@@ -183,6 +184,10 @@ void call_cuda_kernels(OnDevice<ConstArrayView<Real>> Vm, OnDevice<ArrayView<Rea
    cudaFuncSetAttribute(diff_6face_v1, cudaFuncAttributePreferredSharedMemoryCarveout, 50);
 #endif
    //map_V<<<112,512>>>(VmBlockRaw,VmRaw,lookup,nCells);
+   ContextRegion region(GPU);
+   Vm.use();
+   dVm.use();
+   sigma.use();
    diff_6face_v1<<<dim3(bdimx,bdimy,bdimz),dim3(32,32,1)>>>(&Vm[0],&dVm[0],&sigma[0],&sigma[0]+3*nx*ny*nz,&sigma[0]+6*nx*ny*nz,nx,ny,nz);
 
 //   cudaMemcpy(tmp,dVmRaw,nx*ny*nz*sizeof(double), cudaMemcpyDeviceToHost);
@@ -192,23 +197,29 @@ void call_cuda_kernels(OnDevice<ConstArrayView<Real>> Vm, OnDevice<ArrayView<Rea
 //   {
 //     printf("mcp (%d,%d,%d)=%e\n",ii,jj,kk,tmp[kk+nz*(jj+ny*ii)]);
 //   }
+
    map_dVm<<<112,512>>>(dVmOut,dVm,lookup,nLocal);
 }
 
-__global__ void copy_to_block_kernel(ArrayView<double> blockGPU, ConstArrayView<int> lookupGPU, ConstArrayView<double> sourceGPU, const int begin, const int end)
+__global__ void copy_to_block_kernel(wo_larray_ptr<double> block, ro_larray_ptr<int> lookup, ro_larray_ptr<double> source, const int begin, const int end)
 {
    int ii = threadIdx.x + blockIdx.x*blockDim.x;
    if (ii >= end-begin) { return; }
-   blockGPU[lookupGPU[ii+begin]] = sourceGPU[ii];
+   block[lookup[ii+begin]] = source[ii];
 }
 
-void copy_to_block(OnDevice<ArrayView<double>> block, OnDevice<ConstArrayView<int>> lookup, OnDevice<ConstArrayView<double>> source, const int begin, const int end)
+void copy_to_block(wo_larray_ptr<double> block, ro_larray_ptr<int> lookup, ro_larray_ptr<double> source, const int begin, const int end)
 {
+   ContextRegion region(GPU);
    int blockSize = 1024;
-   copy_to_block_kernel<<<(end-begin+blockSize-1)/blockSize,blockSize>>>
-      (block,
-       lookup,
-       source,
-       begin,
-       end);
+
+   if(source.size()>0){
+   	copy_to_block_kernel<<<(end-begin+blockSize-1)/blockSize,blockSize>>>
+      		(block,
+       		lookup,
+       		source,
+       		begin,
+       		end);
+
+    }
 }

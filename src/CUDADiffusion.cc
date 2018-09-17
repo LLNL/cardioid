@@ -5,6 +5,8 @@
 #include <map>
 #include <iostream>
 #include <stdio.h>
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 
 //update is called before calc
 //dVm is combined with Vm from reaction without any rearrangement
@@ -12,6 +14,8 @@
 //Hence
 //'update' must rearrange the dVmBlock
 //activate map_dVm
+//
+#define CUDA_VERIFY(x) do { cudaError_t error = x; if (error != cudaSuccess) { cout << error << endl; assert(error == cudaSuccess && #x ); } } while(0)
 
 using namespace std;
 
@@ -19,9 +23,9 @@ using namespace std;
 
 typedef double Real;
 
-void call_cuda_kernels(OnDevice<ConstArrayView<Real>> VmRaw, OnDevice<ArrayView<Real>> dVmRaw, OnDevice<ConstArrayView<Real>> sigmaRaw, int nx, int ny, int nz, OnDevice<ArrayView<Real>> dVmOut, OnDevice<ConstArrayView<int>> lookup,int nCells);
+void call_cuda_kernels(ro_larray_ptr<Real> VmRaw, rw_larray_ptr<Real> dVmRaw, ro_larray_ptr<Real> sigmaRaw, int nx, int ny, int nz, rw_larray_ptr<Real> dVmOut, ro_larray_ptr<int> lookup,int nCells);
 
-void copy_to_block(OnDevice<ArrayView<double>> blockCPU, OnDevice<ConstArrayView<int>> lookupCPU, OnDevice<ConstArrayView<double>> sourceCPU, const int begin, const int end);
+void copy_to_block(wo_larray_ptr<double> blockCPU, ro_larray_ptr<int> lookupCPU, ro_larray_ptr<double> sourceCPU, const int begin, const int end);
 
 CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType, double newDiffusionScale)
 : anatomy_(anatomy), simLoopType_(simLoopType), Diffusion(newDiffusionScale),
@@ -31,9 +35,9 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType, double new
    nx_ = localGrid_.nx();
    ny_ = localGrid_.ny();
    nz_ = localGrid_.nz();
-   VmBlock_.setup(PinnedVector<double>(nx_*ny_*nz_));
-   dVmBlock_.setup(PinnedVector<double>(nx_*ny_*nz_));
-   cellLookup_.setup(PinnedVector<int>(anatomy.size()));
+   VmBlock_.resize(nx_*ny_*nz_);
+   dVmBlock_.resize(nx_*ny_*nz_);
+   cellLookup_.resize(anatomy.size());
 
    nLocal_ = anatomy.nLocal();
    nRemote_ = anatomy.nRemote();
@@ -45,7 +49,8 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType, double new
    //vector<int>& blockFromRedVec(blockFromRed_.modifyOnHost());
    //vector<int>& cellFromRedVec(cellFromRed_.modifyOnHost());
    map<int,int> cellFromBlock;
-   ArrayView<int> cellLookupVec(cellLookup_.modifyOnHost());
+   ContextRegion region(CPU);
+   wo_larray_ptr<int> cellLookupVec = cellLookup_;
    for (int icell=0; icell<nCells_; icell++)
    {
       //index to coordinate 
@@ -54,6 +59,9 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType, double new
       cellFromBlock[iblock] = icell;
       cellLookupVec[icell] = iblock;
    }
+
+   //auto cellLookupAccess=cellLookup_.writeonly();
+   //copy(cellLookupVec.begin(), cellLookupVec.end(), cellLookupAccess.begin());
 
    const int offsets[3] = {ny_*nz_, nz_ , 1};
    const double areas[3] =
@@ -65,8 +73,8 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType, double new
    const double disc[3] = {anatomy.dx(), anatomy.dy(), anatomy.dz()};
    const double gridCellVolume = disc[0]*disc[1]*disc[2];
    //initialize the array of diffusion coefficients
-   sigmaFaceNormal_.setup(PinnedVector<double>(nx_*ny_*nz_*9));
-   ArrayView<double> sigmaFaceNormalVec(sigmaFaceNormal_.modifyOnHost());
+   sigmaFaceNormal_.resize(nx_*ny_*nz_*9);
+   wo_larray_ptr<double> sigmaFaceNormalVec = sigmaFaceNormal_;
 
    for (int icell=0; icell<nCells_; icell++)
    {
@@ -119,22 +127,23 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType, double new
    }
 }
 
-void CUDADiffusion::updateLocalVoltage(const Managed<ArrayView<double>> VmLocal)
+void CUDADiffusion::updateLocalVoltage(ro_larray_ptr<double> VmLocal)
 {
    copy_to_block(VmBlock_, cellLookup_, VmLocal, 0, nLocal_);
 }
 
-void CUDADiffusion::updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote)
+void CUDADiffusion::updateRemoteVoltage(ro_larray_ptr<double> VmRemote)
 {
    copy_to_block(VmBlock_, cellLookup_, VmRemote, nLocal_, nCells_);
 }
 
-void CUDADiffusion::calc(Managed<ArrayView<double>> dVm){
+void CUDADiffusion::calc(rw_larray_ptr<double> dVm)
+{
    if (simLoopType_ == 0) // it is a hard coded of enum LoopType {omp, pdr}  
    {
-      ArrayView<double> deviceArray = dVm.modifyOnDevice();
-      //ledger_deviceZero(&deviceArray[0]);
-      ledger_deviceZero(&(dVm.raw()[0]));
+      ContextRegion region(GPU);
+      wo_larray_ptr<double> dVm_to_zero = dVm;
+      CUDA_VERIFY(cudaMemset(dVm_to_zero.raw(), 0, dVm_to_zero.size()*sizeof(double)));
    }
 
    call_cuda_kernels(VmBlock_,dVmBlock_,sigmaFaceNormal_,nx_,ny_,nz_,

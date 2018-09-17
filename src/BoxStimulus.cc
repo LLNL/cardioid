@@ -12,7 +12,7 @@ BoxStimulus::BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy, Puls
 {
    // Loop through local points and store the indices of any that are in
    // the stimulated region.
-   PinnedVector<int> stimList;
+   std::vector<int> stimList;
    for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
    {
       Tuple gt = anatomy.globalTuple(ii);
@@ -33,22 +33,25 @@ BoxStimulus::BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy, Puls
    {
    	cout << "# of tissue compute cells within box stimulus \"" << name << "\" = " << nGlobal << " (# cells should be (lx-1)x(ly-1)x(lz-1) b/c of fencepost condition, where lx, ly, and lz are length of box in discrete points in x, y, and z, respectively)" << endl;
    }
-   stimListTransport_.setup(std::move(stimList));
+
+   stimListTransport_.resize(stimList.size());
+   ContextRegion region(CPU);
+   auto stimListAccess = stimListTransport_.writeonly();
+   copy(stimList.begin(), stimList.end(), stimListAccess.begin());
 }
 
 int BoxStimulus::subClassStim(double time,
-                              Managed<ArrayView<double>> dVmDiffusion)
+                              rw_larray_ptr<double> dVmDiffusion)
 {
    double value = pulse_->eval(time);
    if (value == 0)
       return 0;
-   void addStimulus(OnDevice<ArrayView<double>> dVmDiffusion, OnDevice<ConstArrayView<int>> stimListRaw, const double value);
+   void addStimulus(rw_larray_ptr<double> dVmDiffusion, ro_larray_ptr<int> stimListRaw, const double value);
    addStimulus(dVmDiffusion, stimListTransport_, value);
    return 1;
 }
 
 int BoxStimulus::nStim()
 {
-   ConstArrayView<int> stimList = stimListTransport_.raw();
-   return stimList.size();
+   return stimListTransport_.size();
 }

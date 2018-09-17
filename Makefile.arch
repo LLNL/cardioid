@@ -109,6 +109,9 @@ endif
 ifeq ($(HOSTNAME),rzmanta)
   ARCHGUESS = ray-openmp
 endif
+ifeq ($(HOSTNAME),pascal)
+  ARCHGUESS = ray-openmp
+endif
 ifeq ($(HOSTNAME),ray)
   ARCHGUESS = ray-openmp
 endif

@@ -14,6 +14,7 @@
 #include "BetterTT06.hh"
 #include "object_cc.hh"
 #include "mpiUtils.h"
+#include "lazy_array.hh"
 #include <cmath>
 #include <cassert>
 #include <fstream>
@@ -1318,24 +1319,25 @@ void ThisReaction::constructKernel()
 }
 
 void ThisReaction::calc(double dt,
-                const Managed<ArrayView<double>> Vm_m,
-                const Managed<ArrayView<double>> iStim_m,
-                Managed<ArrayView<double>> dVm_m)
+                ro_larray_ptr<double> Vm_m,
+                ro_larray_ptr<double> iStim_m,
+                wo_larray_ptr<double> dVm_m)
 {
-   ArrayView<double> state = stateTransport_.modifyOnDevice();
+   ContextRegion region(GPU);
+   rw_larray_ptr<double> state = stateTransport_;
+   Vm_m.use();
+   iStim_m.use();
+   dVm_m.use();
 
    {
       int errorCode=-1;
-      if (blockSize_ == -1) { blockSize_ = 1024; }
+      if (blockSize_ == -1) { blockSize_ = 256; }
       while(1)
       {
-         ConstArrayView<double> Vm = Vm_m.readOnDevice();
-         ConstArrayView<double> iStim = iStim_m.readOnDevice();
-         ArrayView<double> dVm = dVm_m.modifyOnDevice();
-         double* VmRaw = const_cast<double*>(&Vm[0]);
-         double* iStimRaw = const_cast<double*>(&iStim[0]);
-         double* dVmRaw = &dVm[0];
-         double* stateRaw= &state[0];
+         const double* VmRaw = Vm_m.raw();
+         const double* iStimRaw = iStim_m.raw();
+         double* dVmRaw = dVm_m.raw();
+         double* stateRaw= state.raw();
          void* args[] = { &VmRaw,
                           &iStimRaw,
                           &dVmRaw,
@@ -1389,7 +1391,8 @@ enum StateOffset {
 ThisReaction::ThisReaction(const int numPoints, const double __dt)
 : nCells_(numPoints)
 {
-   stateTransport_.setup(PinnedVector<double>(nCells_*NUMSTATES));
+   //stateTransport_.setup(PinnedVector<double>(nCells_*NUMSTATES));
+   stateTransport_.resize(nCells_*NUMSTATES);
    __cachedDt = __dt;
    blockSize_ = -1;
    _program = NULL;
@@ -1630,7 +1633,7 @@ string ThisReaction::methodName() const
 }
 
 #ifdef USE_CUDA
-void ThisReaction::initializeMembraneVoltage(ArrayView<double> __Vm)
+void ThisReaction::initializeMembraneVoltage(wo_larray_ptr<double> __Vm)
 #else //USE_CUDA
 void ThisReaction::initializeMembraneVoltage(VectorDouble32& __Vm)
 #endif //USE_CUDA
@@ -1639,7 +1642,7 @@ void ThisReaction::initializeMembraneVoltage(VectorDouble32& __Vm)
 
 #ifdef USE_CUDA
 #define READ_STATE(state,index) (stateData[_##state##_off*nCells_+index])
-   ArrayView<double> stateData = stateTransport_;
+   wo_larray_ptr<double> stateData = stateTransport_;
 #else //USE_CUDA
 #define READ_STATE(state,index) (state_[index/width].state[index % width])
    state_.resize((nCells_+width-1)/width);
@@ -1831,7 +1834,7 @@ int ThisReaction::getVarHandle(const std::string& varName) const
 void ThisReaction::setValue(int iCell, int varHandle, double value) 
 {
 #ifdef USE_CUDA
-   ArrayView<double> stateData = stateTransport_;
+   wo_larray_ptr<double> stateData = stateTransport_;
 #endif //USE_CUDA
 
 
@@ -1861,7 +1864,7 @@ void ThisReaction::setValue(int iCell, int varHandle, double value)
 double ThisReaction::getValue(int iCell, int varHandle) const
 {
 #ifdef USE_CUDA
-   ConstArrayView<double> stateData = stateTransport_;
+   ro_larray_ptr<double> stateData = stateTransport_;
 #endif //USE_CUDA
 
 
@@ -1890,7 +1893,7 @@ double ThisReaction::getValue(int iCell, int varHandle) const
 double ThisReaction::getValue(int iCell, int varHandle, double V) const
 {
 #ifdef USE_CUDA
-   ConstArrayView<double> stateData = stateTransport_;
+   ro_larray_ptr<double> stateData = stateTransport_;
 #endif //USE_CUDA
 
 

@@ -13,89 +13,47 @@
 
 using namespace std;
 
-void copyNumbers(OnDevice<ConstArrayView<double>> src_, const int src_begin, OnDevice<ArrayView<double>> dest_, const int dest_begin, const int localSize) {
-   ConstArrayView<double> src(src_);
-   ArrayView<double> dest(dest_);
-   cudaError_t ret =  cudaMemcpy(&dest[dest_begin], &src[src_begin], sizeof(double)*(localSize), cudaMemcpyDeviceToDevice);
-   assert(ret == cudaSuccess);
-}
-
 ///pass through routines.
 void ReactionManager::calc(double dt,
-                           const Managed<ArrayView<double>> Vm,
-                           const Managed<ArrayView<double>> iStim,
-                           Managed<ArrayView<double>> dVm)
+                           ro_larray_ptr<double> Vm,
+                           ro_larray_ptr<double> iStim,
+                           wo_larray_ptr<double> dVm)
 {
-   if (reactions_.size() == 1)
+   for (int ii=0; ii<reactions_.size(); ++ii)
    {
-      reactions_[0]->calc(dt, Vm, iStim, dVm);
-   }
-   else
-   {
-      for (int ii=0; ii<reactions_.size(); ++ii)
-      {
-         Managed<ArrayView<double>> localVm(VmTransportPerReaction_[ii]);
-         Managed<ArrayView<double>> localIStim(iStimTransportPerReaction_[ii]);
-         Managed<ArrayView<double>> localDVm(dVmTransportPerReaction_[ii]);
-         int localSize = extents_[ii+1]-extents_[ii];
-         copyNumbers(Vm, extents_[ii], localVm, 0, localSize);
-         copyNumbers(iStim, extents_[ii], localIStim, 0, localSize);
-         reactions_[ii]->calc(dt, localVm, localIStim, localDVm);
-         copyNumbers(localDVm, 0, dVm, extents_[ii], localSize);
-      }
+      reactions_[ii]->calc(dt,
+                           Vm.slice(extents_[ii],extents_[ii+1]),
+                           iStim.slice(extents_[ii],extents_[ii+1]),
+                           dVm.slice(extents_[ii],extents_[ii+1]));
    }
 }
    
-void ReactionManager::updateNonGate(double dt, const Managed<ArrayView<double>> Vm, Managed<ArrayView<double>> dVm)
+void ReactionManager::updateNonGate(double dt, ro_larray_ptr<double> Vm, wo_larray_ptr<double> dVR)
 {
-   if (reactions_.size() == 1)
+   for (int ii=0; ii<reactions_.size(); ++ii)
    {
-      reactions_[0]->updateNonGate(dt,Vm,dVm);
+      reactions_[ii]->updateNonGate(dt,
+                                    Vm.slice(extents_[ii], extents_[ii+1]),
+                                    dVR.slice(extents_[ii], extents_[ii+1]));
    }
-   else
-   {
-      for (int ii=0; ii<reactions_.size(); ++ii)
-      {
-         Managed<ArrayView<double>> localVm(VmTransportPerReaction_[ii]);
-         Managed<ArrayView<double>> localDVm(dVmTransportPerReaction_[ii]);
-         int localSize = extents_[ii+1]-extents_[ii];
-         copyNumbers(Vm, extents_[ii], localVm, 0, localSize);
-         reactions_[ii]->updateNonGate(dt, localVm, localDVm);
-         copyNumbers(localDVm, 0, dVm, extents_[ii], localSize);
-      }
-   }
+
 }
-void ReactionManager::updateGate(double dt, const Managed<ArrayView<double>> Vm)
+void ReactionManager::updateGate(double dt, ro_larray_ptr<double> Vm)
 {
-   if (reactions_.size() == 1)
+   for (int ii=0; ii<reactions_.size(); ++ii)
    {
-      reactions_[0]->updateGate(dt, Vm);
-   }
-   else
-   {
-      for (int ii=0; ii<reactions_.size(); ++ii)
-      {
-         Managed<ArrayView<double>> localVm(VmTransportPerReaction_[ii]);
-         int localSize = extents_[ii+1]-extents_[ii];
-         copyNumbers(Vm, extents_[ii], localVm, 0, localSize);
-         reactions_[ii]->updateGate(dt, localVm);
-      }
+      reactions_[ii]->updateGate(dt, Vm.slice(extents_[ii], extents_[ii+1]));
    }
 }
 
 /** Populates the Vm array with some sensible default initial
  * membrane voltage.  Vm will be the parallel to the local cells in
  * the anatomy that was used to create the concrete reaction class. */
-void ReactionManager::initializeMembraneState(ArrayView<double> Vm)
+void ReactionManager::initializeMembraneState(wo_larray_ptr<double> Vm)
 {
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
-      Reaction* reaction = reactions_[ii];
-      string objectName = objectNameFromRidx_[ii];
-      ArrayView<double> localVm(VmTransportPerReaction_[ii].modifyOnHost());
-      int localSize = extents_[ii+1]-extents_[ii];
-      ::initializeMembraneState(reaction, objectName, localVm);
-      copy(&localVm[0], &localVm[localSize], &Vm[extents_[ii]]);
+      ::initializeMembraneState(reactions_[ii], objectNameFromRidx_[ii], Vm.slice(extents_[ii],extents_[ii+1]));
    }
 }
 
@@ -310,18 +268,12 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    reactions_.resize(numReactions);
    extents_.resize(numReactions+1);
    extents_[0] = 0;
-   VmTransportPerReaction_.resize(numReactions);
-   iStimTransportPerReaction_.resize(numReactions);
-   dVmTransportPerReaction_.resize(numReactions);
    for (int ireaction=0; ireaction<numReactions; ++ireaction)
    {
       int localSize = countFromRidx[ireaction];
       reactions_[ireaction] = reactionFactory(objectNameFromRidx_[ireaction], dt, localSize, group);
       extents_[ireaction+1] = extents_[ireaction]+localSize;
       int bufferSize = convertActualSizeToBufferSize(localSize);
-      VmTransportPerReaction_[ireaction].setup(PinnedVector<double>(bufferSize));
-      iStimTransportPerReaction_[ireaction].setup(PinnedVector<double>(bufferSize));
-      dVmTransportPerReaction_[ireaction].setup(PinnedVector<double>(bufferSize));
    }
 
    //Ok, now we've created the reaction objects.  Now we need to

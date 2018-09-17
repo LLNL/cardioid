@@ -85,6 +85,11 @@ int main(int argc, char** argv)
    if (mype == 0)
      printBanner();
    parseCommandLineAndReadInputFile(argc, argv, MPI_COMM_WORLD);
+
+   // A ugly way to trigger the default CUDA context
+   int *d_i;
+   cudaMalloc(&d_i, sizeof(int));
+   cudaFree(d_i);
    
    timestampBarrier("Starting initializeSimulate", MPI_COMM_WORLD);
    Simulate sim;
@@ -123,7 +128,6 @@ int main(int argc, char** argv)
 
    profileStop("Total");
    //profileSetRefTimer("00:Loop");
-
    //profileSetPrintOrder("Total");
    //profileSetPrintOrder("Assignment");
    //profileSetPrintOrder("Loop");

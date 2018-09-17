@@ -9,6 +9,10 @@
 #include "Simulate.hh"
 #include "PerformanceTimers.hh"
 #include "PioHeaderData.hh"
+#include <cuda.h>
+#include <cuda_runtime_api.h>
+
+#define CUDA_VERIFY(x) do { cudaError_t error = x; if (error != cudaSuccess) { cout << error << endl; assert(error == cudaSuccess && #x ); } } while(0)
 
 using namespace std;
 using PerformanceTimers::sensorEvalTimer;
@@ -27,12 +31,17 @@ ECGSensor::ECGSensor(const SensorParms& sp,
     kECG=p.kconst;
     const int dim=3;
     nEcgPoints=p.ecgPoints.size()/dim;
-    PinnedVector<double> ecgPoints(p.ecgPoints);
-    ecgPointTransport_.setup(std::move(ecgPoints));
+    std::vector<double> ecgPoints(p.ecgPoints);
+    ecgPointTransport_.resize(ecgPoints.size());
+    ContextRegion region(CPU);
+    auto ecgPointAccess = ecgPointTransport_.writeonly();
+    copy(ecgPoints.begin(), ecgPoints.end(), ecgPointAccess.begin());
     calcInvR(sim);
    
-    PinnedVector<double> ecgs(nEcgPoints, 0);
-    ecgsTransport_.setup(std::move(ecgs));
+    std::vector<double> ecgs(nEcgPoints, 0);
+    ecgsTransport_.resize(ecgs.size());
+    auto ecgAccess = ecgsTransport_.writeonly();
+    copy(ecgs.begin(), ecgs.end(), ecgAccess.begin());
 }
 
 void ECGSensor::calcInvR(const Simulate& sim)
@@ -49,15 +58,18 @@ void ECGSensor::calcInvR(const Simulate& sim)
 
     kECG=kECG*dx*dy*dz;
 
-    TransportCoordinator<PinnedVector<Long64> > gidsTransport_;
-    PinnedVector<Long64> gids(nlocal, 0);
+    lazy_array<Long64>  gidsTransport_;
+    gidsTransport_.resize(nlocal);
+    ContextRegion region(CPU);
+    auto gridAccess = gidsTransport_.writeonly();
     for(unsigned ii=0; ii<nlocal; ++ii){
-        gids[ii]=anatomy.gid(ii);
+        gridAccess[ii]=anatomy.gid(ii);
     }
-    gidsTransport_.setup(std::move(gids));
     
-    PinnedVector<double> invr(nlocal*nSensorPoints_,0.0);
-    invrTransport_.setup(std::move(invr));
+    std::vector<double> invr(nlocal*nSensorPoints_,0.0);
+    invrTransport_.resize(invr.size());
+    auto invrAccess=invrTransport_.writeonly();
+    copy(invr.begin(), invr.end(), invrAccess.begin());
     
     calcInvrCUDA(invrTransport_,
                  gidsTransport_,
@@ -116,7 +128,7 @@ void ECGSensor::calcInvR(const Simulate& sim)
       header.writeHeader(file, loop, time);
 
    }
-   ConstArrayView<double> invrT=invrTransport_;
+   ro_larray_ptr<double> invrT=invrTransport_;
 
       char line[lRec+1];
 
@@ -217,16 +229,16 @@ void ECGSensor::print(double time, int loop)
    Pclose(file);
 }
 
-void calcEcg(ArrayView<double> ecgs,
-                 ConstArrayView<double> invr,
-                 ConstArrayView<double> dVmDiffusion,
+void calcEcg(rw_larray_ptr<double> ecgs,
+                 ro_larray_ptr<double> invr,
+                 ro_larray_ptr<double> dVmDiffusion,
                  const int nEcgPoints) {
 
     int nData=dVmDiffusion.size();
     for(unsigned ii=0; ii< nData; ii++){
 	for (unsigned jj=0; jj< nEcgPoints; jj++){
             unsigned index=ii*nEcgPoints+jj;
-	    ecgs[jj]=ecgs[jj]+invr[index]*dVmDiffusion[ii];
+	    ecgs[jj]+=invr[index]*dVmDiffusion[ii];
 	}
     }
 }
@@ -235,17 +247,15 @@ void ECGSensor::eval(double time, int loop)
 {
    startTimer(sensorEvalTimer);
    {   // zero out
-   	ArrayView<double> ecgs = ecgsTransport_;
-   	for(int ii=0; ii<ecgs.size(); ii++)
-   	{
-        	ecgs[ii]=0.0;
-   	}
+        ContextRegion region(GPU);
+   	wo_larray_ptr<double> ecgs = ecgsTransport_;
+        CUDA_VERIFY(cudaMemset(ecgs.raw(), 0, sizeof(double)*ecgs.size()));
    }
    
   if(0) { // DEBUG to print out invr and  dVmDiffusion
    if(loop<100 || loop%100==1){
-      ConstArrayView<double> invr=invrTransport_;
-      ConstArrayView<double> dVmDiffusion=dVmDiffusionTransport_;
+      ro_larray_ptr<double> invr=invrTransport_;
+      ro_larray_ptr<double> dVmDiffusion=dVmDiffusionTransport_;
 
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -286,8 +296,9 @@ void ECGSensor::eval(double time, int loop)
                nEcgPoints);
  }
    
-   ArrayView<double> ecgs = ecgsTransport_;
-   double* ecgsSendBuf=&ecgs[0];
+   ContextRegion region(CPU);
+   ro_larray_ptr<double> ecgs = ecgsTransport_;
+   const double* ecgsSendBuf=ecgs.raw();
    double ecgsRecvBuf[nEcgPoints];
    // MPI_Allreduce(ecgsSendBuf, ecgsRecvBuf, nEcgPoints, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);  
    // Only the Rank 0 stores the total ecg values

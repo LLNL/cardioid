@@ -17,9 +17,9 @@ class FGRDiffusionOMP : public Diffusion
       const FGRUtils::FGRDiffusionParms& parms,
       const Anatomy& anatomy);
    
-   void updateLocalVoltage(const Managed<ArrayView<double>> VmLocal);
-   void updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote);
-   void calc(Managed<ArrayView<double>> dVm);
+   void updateLocalVoltage(ro_larray_ptr<double> VmLocal);
+   void updateRemoteVoltage(ro_larray_ptr<double> VmRemote);
+   void calc(rw_larray_ptr<double> dVm);
 
  private:
    void buildTupleArray(const Anatomy& anatomy);

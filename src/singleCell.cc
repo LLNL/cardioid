@@ -14,15 +14,14 @@
 #include "ThreadServer.hh"
 #include "object.h"
 #include "object_cc.hh"
-#include "TransportCoordinator.hh"
 
 #include "singleCellOptions.h"
 
 using namespace std;
 
-void integrateVoltage(OnDevice<ArrayView<double>> Vm,
-                      OnDevice<ConstArrayView<double>> dVm,
-                      OnDevice<ConstArrayView<double>> iStim,
+void integrateVoltage(rw_larray_ptr<double> Vm,
+                      ro_larray_ptr<double> dVm,
+                      ro_larray_ptr<double> iStim,
                       const double dt);
 
 MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
@@ -209,12 +208,12 @@ int main(int argc, char* argv[])
                                         nCells, threads);
 
    //initialize the ionic model
-   TransportCoordinator<PinnedVector<double>> VmTransport;
-   VmTransport.setup(PinnedVector<double>(nCells));
-   TransportCoordinator<PinnedVector<double> > iStimTransport;
-   iStimTransport.setup(PinnedVector<double>(nCells));
-   TransportCoordinator<PinnedVector<double>> dVmTransport;
-   dVmTransport.setup(PinnedVector<double>(nCells));
+   lazy_array<double> VmTransport;
+   VmTransport.resize(nCells);
+   lazy_array<double> iStimTransport;
+   iStimTransport.resize(nCells);
+   lazy_array<double> dVmTransport;
+   dVmTransport.resize(nCells);
 
    initializeMembraneState(reaction, objectName, VmTransport);
 
@@ -256,7 +255,7 @@ int main(int argc, char* argv[])
          }
          else
          {
-            ConstArrayView<double> Vm = VmTransport;
+            ro_larray_ptr<double> Vm = VmTransport;
             fprintf(file, "%s REACTION { initialState = %s; }\n",
                     objectName.c_str(), objectName.c_str());
             fprintf(file, "%s SINGLECELL {\n", objectName.c_str());
@@ -279,7 +278,7 @@ int main(int argc, char* argv[])
       if ((itime % outputTimestepInterval) == 0)
       {
          //doIO();
-         ConstArrayView<double> Vm = VmTransport;
+         ro_larray_ptr<double> Vm = VmTransport;
          printf("%21.17g %21.17g", timeline.realTimeFromTimestep(itime), Vm[0]);
          for (int iextra=0; iextra<extraColumns.size(); ++iextra) 
          {
@@ -323,7 +322,7 @@ int main(int argc, char* argv[])
             stimAmount = -params.stim_strength_arg;
             timestepsLeftInStimulus--;
          }
-         void setStimulus(OnDevice<ArrayView<double>> iStim, const double stimAmount);         
+         void setStimulus(wo_larray_ptr<double> iStim, const double stimAmount);         
          setStimulus(iStimTransport, stimAmount);
       }
 

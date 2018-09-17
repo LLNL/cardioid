@@ -1,5 +1,4 @@
-#include "Ledger.hh"
-#include "TransportCoordinator.hh"
+#include "lazy_array.hh"
 #include "Long64.hh"
 #include <stdio.h>
 
@@ -7,9 +6,9 @@
 #define CELL_PER_BLOCK 32
 
 
-__global__ void calcInvr_kernel(ArrayView<double> invr,
-                                ConstArrayView<Long64> gids,
-                                ConstArrayView<double> ecgPoints,
+__global__ void calcInvr_kernel(wo_larray_ptr<double> invr,
+                                ro_larray_ptr<Long64> gids,
+                                ro_larray_ptr<double> ecgPoints,
                                 const int nEcgPoints,
                                 const int nx, const int ny, const int nz,
                                 const double dx, const double dy, const double dz,
@@ -40,18 +39,18 @@ __global__ void calcInvr_kernel(ArrayView<double> invr,
 
 }
 
-void calcInvrCUDA(OnDevice<ArrayView<double>> invr,
-                  OnDevice<ConstArrayView<Long64>> gids, 
-                  OnDevice<ConstArrayView<double>> ecgPoints,
+void calcInvrCUDA(wo_larray_ptr<double> invr,
+                  ro_larray_ptr<Long64> gids, 
+                  ro_larray_ptr<double> ecgPoints,
                   const int nEcgPoints,
                   const int nx, const int ny, const int nz,
                   const double dx, const double dy, const double dz)
 {
+    ContextRegion region(GPU);
     int blockSize = 1024;
-    ConstArrayView<Long64> tmp=gids;
 
     int begin=0;
-    int end=tmp.size();
+    int end=gids.size();
 
 
     calcInvr_kernel<<<(end-begin+blockSize-1)/blockSize, blockSize>>>
@@ -81,9 +80,9 @@ inline __device__ double atomicAdd(double* pointer, const double value)
 }
 #endif
 
-__global__ void calcEcg_kernel(ArrayView<double> ecgs,
-                               ConstArrayView<double> invr,
-                               ConstArrayView<double> dVmDiffusion,
+__global__ void calcEcg_kernel(wo_larray_ptr<double> ecgs,
+                               ro_larray_ptr<double> invr,
+                               ro_larray_ptr<double> dVmDiffusion,
                                const int nEcgPoints,
                                const int cellPartition,
                                const int nCells)
@@ -125,20 +124,20 @@ __global__ void calcEcg_kernel(ArrayView<double> ecgs,
   }
 
   if(threadIdx.x<nEcgPoints){
-    double* result=&ecgs[0];
+    double* result=ecgs.raw();
     atomicAdd(result+ecgID ,tmpECG);
    }
    
 }
 
-void calcEcgCUDA(OnDevice<ArrayView<double>> ecgs,
-                 OnDevice<ConstArrayView<double>> invr,
-                 OnDevice<ConstArrayView<double>> dVmDiffusion,
+void calcEcgCUDA(wo_larray_ptr<double> ecgs,
+                 ro_larray_ptr<double> invr,
+                 ro_larray_ptr<double> dVmDiffusion,
                  const int nEcgPoints)
 {
-
-    ConstArrayView<double> tmp=dVmDiffusion;
-    int nCells=tmp.size();
+    ContextRegion region(GPU);
+   
+    int nCells=dVmDiffusion.size();
     const int cellPartition = (nCells+(NUM_TBLOCK-1))/(NUM_TBLOCK);
 
     if ( nEcgPoints > 32 ) printf("error:too many ECG points\n");
@@ -151,7 +150,7 @@ void calcEcgCUDA(OnDevice<ArrayView<double>> ecgs,
          nCells);
 }
 
-__global__ void dump_kernel(ConstArrayView<double> data)
+__global__ void dump_kernel(ro_larray_ptr<double> data)
 {
 	for(int ii=0; ii<100; ii++)
         {
@@ -160,14 +159,14 @@ __global__ void dump_kernel(ConstArrayView<double> data)
         }
 }
 
-void dump_GPU_data(OnDevice<ArrayView<double>> ecgs,
-                 OnDevice<ConstArrayView<double>> invr,
-                 OnDevice<ConstArrayView<double>> dVmDiffusion,
-                 const int nEcgPoints)
+void dump_GPU_data(wo_larray_ptr<double> ecgs,
+                   ro_larray_ptr<double> invr,
+                   ro_larray_ptr<double> dVmDiffusion,
+                   const int nEcgPoints)
 {
-
-    dump_kernel<<<1,1>>>(invr);
-    printf("\n\n\n");
-    dump_kernel<<<1,1>>>(dVmDiffusion);
-    printf("\n\n\n");
+   ContextRegion region(GPU);
+   dump_kernel<<<1,1>>>(invr);
+   printf("\n\n\n");
+   dump_kernel<<<1,1>>>(dVmDiffusion);
+   printf("\n\n\n");
 }

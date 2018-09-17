@@ -19,8 +19,8 @@ void DVThreshSensor::eval(double time, int loop)
 {
    double maxdVdt=-10000.;
    double mindVdt= 10000.;
-   ConstArrayView<double> dVmDiffusion = vdata_.dVmDiffusionTransport_;
-   ConstArrayView<double> dVmReaction = vdata_.dVmReactionTransport_;
+   ro_larray_ptr<double> dVmDiffusion = vdata_.dVmDiffusionTransport_;
+   ro_larray_ptr<double> dVmReaction = vdata_.dVmReactionTransport_;
 
    for (unsigned ii=0; ii<nlocal_; ++ii)
    {

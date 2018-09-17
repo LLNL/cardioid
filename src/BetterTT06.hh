@@ -6,9 +6,9 @@
 #include <sstream>
 
 #ifdef USE_CUDA
-# include "TransportCoordinator.hh"
-# include <nvrtc.h>
-# include <cuda.h>
+#include "lazy_array.hh"
+#include <nvrtc.h>
+#include <cuda.h>
 #else //USE_CUDA
 # include <simdops/simdops.hpp>
 #endif //USE_CUDA
@@ -80,14 +80,14 @@ namespace BetterTT06
 #ifdef USE_CUDA
     public:
       void calc(double dt,
-                const Managed<ArrayView<double>> Vm_m,
-                const Managed<ArrayView<double>> iStim_m,
-                Managed<ArrayView<double>> dVm_m);
-      void initializeMembraneVoltage(ArrayView<double> Vm);
+                ro_larray_ptr<double> Vm_m,
+                ro_larray_ptr<double> iStim_m,
+                wo_larray_ptr<double> dVm_m);
+      void initializeMembraneVoltage(wo_larray_ptr<double> Vm);
       virtual ~ThisReaction();
       void constructKernel();
 
-      TransportCoordinator<PinnedVector<double> > stateTransport_;
+      lazy_array<double> stateTransport_;
       std::string _program_code;
       nvrtcProgram _program;
       std::vector<char> _ptx;

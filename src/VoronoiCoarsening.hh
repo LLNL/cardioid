@@ -5,7 +5,7 @@
 #include "Anatomy.hh"
 #include "IndexToVector.hh"
 #include "Long64.hh"
-#include "ArrayView.hh"
+#include "lazy_array.hh"
 
 #include <mpi.h>
 
@@ -29,7 +29,7 @@ class VoronoiCoarsening
    void colorDisplacements(std::vector<double>& dx,
                            std::vector<double>& dy,
                            std::vector<double>& dz);
-   void accumulateValues(ConstArrayView<double> val, LocalSums& valcolors);
+   void accumulateValues(ro_larray_ptr<double> val, LocalSums& valcolors);
    
    const Long64& getCenterGid(int color) const
    {

@@ -16,7 +16,7 @@ class TestStimulus : public Stimulus
  public:
    TestStimulus(const TestStimulusParms& p, Pulse* pulse);
    int subClassStim(double time,
-		    Managed<ArrayView<double>> dVmDiffusion);
+		    rw_larray_ptr<double> dVmDiffusion);
    int nStim();
    
  private:

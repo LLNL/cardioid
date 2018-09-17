@@ -15,17 +15,18 @@ class NullDiffusion : public Diffusion
      dVm_(0)
    {};
    
-   void updateLocalVoltage(const Managed<ArrayView<double>> VmLocal) {}
-   void updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote) {}
+   void updateLocalVoltage(ro_larray_ptr<double> VmLocal) {};
+   void updateRemoteVoltage(ro_larray_ptr<double> VmRemote) {};
    /** omp loop must assign dVm, parallel loop need to increment dVm */
-   void calc(Managed<ArrayView<double>> dVm)
+   void calc(rw_larray_ptr<double> dVm)
    {
       if (simLoopType_ == 0)
       {
-         ArrayView<double> dVmHost = dVm.modifyOnHost();
-         for (int ii=0; ii<dVmHost.size(); ++ii)
+         ContextRegion region(CPU);
+         dVm.use();
+         for (int ii=0; ii<dVm.size(); ++ii)
          {
-            dVmHost[ii] = 0;
+            dVm[ii] = 0;
          }
       }
    };

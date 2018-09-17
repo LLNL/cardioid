@@ -4,24 +4,24 @@
 #include "Long64.hh"
 #include "Sensor.hh"
 #include "VectorDouble32.hh"
-#include "TransportCoordinator.hh"
+#include "lazy_array.hh"
 
 
-void calcInvrCUDA(OnDevice<ArrayView<double>> invr,
-                  OnDevice<ConstArrayView<Long64>> gids,
-                  OnDevice<ConstArrayView<double>> ecgPoints,
+void calcInvrCUDA(wo_larray_ptr<double> invr,
+                  ro_larray_ptr<Long64> gids,
+                  ro_larray_ptr<double> ecgPoints,
                   const int nEcgPoints,
                   const int nx, const int ny, const int nz,
                   const double dx, const double dy, const double dz);
 
-void calcEcgCUDA(OnDevice<ArrayView<double>> ecgs,
-                 OnDevice<ConstArrayView<double>> invr,
-                 OnDevice<ConstArrayView<double>> Vm,
+void calcEcgCUDA(wo_larray_ptr<double> ecgs,
+                 ro_larray_ptr<double> invr,
+                 ro_larray_ptr<double> Vm,
                  const int nEcgPoints);
-void dump_GPU_data(OnDevice<ArrayView<double>> ecgs,
-                 OnDevice<ConstArrayView<double>> invr,
-                 OnDevice<ConstArrayView<double>> Vm,
-                 const int nEcgPoints);
+void dump_GPU_data(wo_larray_ptr<double> ecgs,
+                   ro_larray_ptr<double> invr,
+                   ro_larray_ptr<double> Vm,
+                   const int nEcgPoints);
 
 struct ECGSensorParms
 {
@@ -30,7 +30,7 @@ struct ECGSensorParms
    int stencilSize;
    double kconst;
    std::string filename;
-   PinnedVector<double> ecgPoints;
+   std::vector<double> ecgPoints;
 };
 
 class Simulate;
@@ -65,13 +65,11 @@ class ECGSensor : public Sensor
    std::vector<int> saveLoops;
    std::vector<double> saveEcgs;
 
-   const TransportCoordinator<PinnedVector<double>>& dVmDiffusionTransport_;
+   const lazy_array<double>& dVmDiffusionTransport_;
    
-   TransportCoordinator<PinnedVector<double> > ecgPointTransport_;
-
-   TransportCoordinator<PinnedVector<double> > ecgsTransport_;
-   
-   TransportCoordinator<PinnedVector<double> > invrTransport_;
+   lazy_array<double> ecgPointTransport_;
+   lazy_array<double> ecgsTransport_;
+   lazy_array<double> invrTransport_;
 
 };
 

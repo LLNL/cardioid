@@ -26,13 +26,12 @@ ConstantReaction::ConstantReaction(const Anatomy& anatomy,
 }
 
 void ConstantReaction::calc(double dt,
-                            const Managed<ArrayView<double>> Vm_,
-                            const Managed<ArrayView<double>> iStim_,
-                            Managed<ArrayView<double>> dVm_)
+                            ro_larray_ptr<double> Vm,
+                            ro_larray_ptr<double> iStim,
+                            wo_larray_ptr<double> dVm)
 {
    assert( cellModel_!=0 );
 
-   ArrayView<double> dVm(dVm_);
    //double sum=0.;
    for (unsigned ii=0; ii<anatomy_.nLocal(); ++ii)
    {
@@ -40,13 +39,13 @@ void ConstantReaction::calc(double dt,
       const double x=((double)globalTuple.x()+0.5)*anatomy_.dx();
       const double y=((double)globalTuple.y()+0.5)*anatomy_.dy();
       const double z=((double)globalTuple.z()+0.5)*anatomy_.dz();
-      dVm[ii] = cellModel_->calc(x,y,z);
-       
-      assert( dVm[ii]==dVm[ii] ); // test for nan
+      double update = cellModel_->calc(x,y,z);
+      assert(update ==update); //test for nan
+      dVm[ii] = update;
    }
 }
 
-void ConstantReaction::initializeMembraneVoltage(ArrayView<double> Vm)
+void ConstantReaction::initializeMembraneVoltage(wo_larray_ptr<double> Vm)
 {
 #if 0
    for (unsigned ii=0; ii<Vm.size(); ++ii)

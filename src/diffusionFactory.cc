@@ -5,14 +5,15 @@
 #include "Diffusion.hh"
 #include "object_cc.hh"
 
-#include "FGRDiffusion.hh"
-#include "FGRDiffusionOMP.hh"
-#include "FGRDiffusionThreads.hh"
-#include "FGRDiffusionStrip.hh"
-#include "FGRDiffusionOverlap.hh"
+#include "FGRUtils.hh"
+//#include "FGRDiffusion.hh"
+//#include "FGRDiffusionOMP.hh"
+//#include "FGRDiffusionThreads.hh"
+//#include "FGRDiffusionStrip.hh"
+//#include "FGRDiffusionOverlap.hh"
 #include "NullDiffusion.hh"
-#include "OpenmpGpuRedblackDiffusion.hh"
-#include "OpenmpGpuFlatDiffusion.hh"
+//#include "OpenmpGpuRedblackDiffusion.hh"
+//#include "OpenmpGpuFlatDiffusion.hh"
 #include "CUDADiffusion.hh"
 #include "Simulate.hh"
 
@@ -48,12 +49,12 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
       
    if (method.empty())
       assert(1==0);
-   else if (method == "FGR")
-      return fgrDiffusionFactory(obj, anatomy, threadInfo, reactionThreadInfo, simLoopType, variantHint);
-   else if (method == "gpu" || method == "OpenmpGpuRedblack")
-      return new OpenmpGpuRedblackDiffusion(anatomy, simLoopType);
-   else if (method == "OpenmpGpuFlat")
-      return new OpenmpGpuFlatDiffusion(anatomy, simLoopType);
+   //else if (method == "FGR")
+   //   return fgrDiffusionFactory(obj, anatomy, threadInfo, reactionThreadInfo, simLoopType, variantHint);
+   //else if (method == "gpu" || method == "OpenmpGpuRedblack")
+   //   return new OpenmpGpuRedblackDiffusion(anatomy, simLoopType);
+   //else if (method == "OpenmpGpuFlat")
+   //   return new OpenmpGpuFlatDiffusion(anatomy, simLoopType);
    else if (method == "cuda")
       return new CUDADiffusion(anatomy, simLoopType, diffusionScale); 
    else if (method == "null")
@@ -78,16 +79,16 @@ namespace
          defaultVariant = variantHint;
       string variant;
       objectGet(obj, "variant", variant, defaultVariant);
-      if (variant == "omp" || simLoopType == Simulate::omp)
-         return new FGRDiffusionOMP(p, anatomy);
-      else if (variant == "threads")
-         return new FGRDiffusionThreads(p, anatomy, threadInfo, reactionThreadInfo);
-      else if (variant == "simd")
-         return new FGRDiffusion(p, anatomy, threadInfo, reactionThreadInfo);
-      else if (variant == "strip" )
-         return new FGRDiffusionStrip(p, anatomy, threadInfo, reactionThreadInfo);
-      else if (variant == "overlap" )
-         return new FGRDiffusionOverlap(p, anatomy, threadInfo, reactionThreadInfo);
+      //if (variant == "omp" || simLoopType == Simulate::omp)
+      //   return new FGRDiffusionOMP(p, anatomy);
+      //else if (variant == "threads")
+      //   return new FGRDiffusionThreads(p, anatomy, threadInfo, reactionThreadInfo);
+      //else if (variant == "simd")
+      //   return new FGRDiffusion(p, anatomy, threadInfo, reactionThreadInfo);
+      //else if (variant == "strip" )
+      //   return new FGRDiffusionStrip(p, anatomy, threadInfo, reactionThreadInfo);
+      //else if (variant == "overlap" )
+      //   return new FGRDiffusionOverlap(p, anatomy, threadInfo, reactionThreadInfo);
 
 
       // unreachable.  Should have matched a clause above.

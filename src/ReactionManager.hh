@@ -7,7 +7,7 @@
 #include "VectorDouble32.hh"
 #include "ThreadUtils.hh"
 #include "Anatomy.hh"
-#include "TransportCoordinator.hh"
+#include "lazy_array.hh"
 
 class Reaction;
 
@@ -15,17 +15,17 @@ class ReactionManager
 {
  public:
    void calc(double dt,
-             const Managed<ArrayView<double>> Vm,
-             const Managed<ArrayView<double>> iStim,
-             Managed<ArrayView<double>> dVm);
-   void updateNonGate(double dt, const Managed<ArrayView<double>> Vm, Managed<ArrayView<double>> dVR);
-   void updateGate   (double dt, const Managed<ArrayView<double>> Vm);
+             ro_larray_ptr<double> Vm,
+             ro_larray_ptr<double> iStim,
+             wo_larray_ptr<double> dVm);
+   void updateNonGate(double dt, ro_larray_ptr<double> Vm, wo_larray_ptr<double> dVR);
+   void updateGate   (double dt, ro_larray_ptr<double> Vm);
    std::string stateDescription() const;
 
    /** Populates the Vm array with some sensible default initial
     * membrane voltage.  Vm will be the parallel to the local cells in
     * the anatomy that was used to create the concrete reaction class. */
-   void initializeMembraneState(ArrayView<double> Vm);
+   void initializeMembraneState(wo_larray_ptr<double> Vm);
 
    void addReaction(const std::string& reactionName);
    void create(const double dt, Anatomy& anatomy, const ThreadTeam &group);
@@ -48,10 +48,6 @@ class ReactionManager
    std::vector<Reaction*> reactions_;
    std::vector<int> extents_;
    
-   std::vector<TransportCoordinator<PinnedVector<double>>> VmTransportPerReaction_;
-   std::vector<TransportCoordinator<PinnedVector<double>>> iStimTransportPerReaction_;
-   std::vector<TransportCoordinator<PinnedVector<double>>> dVmTransportPerReaction_;
-
    std::vector<std::string> unitFromHandle_;
    std::map<std::string, int> handleFromVarname_;
 

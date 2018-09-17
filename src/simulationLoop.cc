@@ -67,13 +67,14 @@ namespace
 
 void printData(const Simulate& sim)
 {
+   ContextRegion region(CPU);
    startTimer(printDataTimer);
    int pi = sim.printIndex_;
    if (pi >= 0)
    {
-      ConstArrayView<double> VmArray = sim.vdata_.VmTransport_;
-      ConstArrayView<double> dVmReaction = sim.vdata_.dVmReactionTransport_;
-      ConstArrayView<double> dVmDiffusion = sim.vdata_.dVmDiffusionTransport_;
+      ro_larray_ptr<double> VmArray = sim.vdata_.VmTransport_;
+      ro_larray_ptr<double> dVmReaction = sim.vdata_.dVmReactionTransport_;
+      ro_larray_ptr<double> dVmDiffusion = sim.vdata_.dVmDiffusionTransport_;
       const unsigned* const blockIndex = sim.diffusion_->blockIndex();
       double dVd = dVmDiffusion[pi];
       if (blockIndex)
@@ -98,11 +99,12 @@ void printData(const Simulate& sim)
 
 void simulationProlog(Simulate& sim)
 {
+   ContextRegion region(CPU);
    // initialize membrane voltage with default value from the reaction
    // model.  Initialize with zero for remote cells
    sim.vdata_.setup(sim.anatomy_);
    sim.reaction_->initializeMembraneState(sim.vdata_.VmTransport_);
-   ArrayView<double> VmArray = sim.vdata_.VmTransport_;
+   wo_larray_ptr<double> VmArray = sim.vdata_.VmTransport_;
    for (unsigned ii = sim.anatomy_.nLocal(); ii < sim.anatomy_.size(); ++ii)
    {
       VmArray[ii] = 0;
@@ -149,10 +151,16 @@ void loopIO(const Simulate& sim, int firstCall)
 
 void simulationLoop(Simulate& sim)
 {
-   TransportCoordinator<PinnedVector<double> > iStimTransport;
-   iStimTransport.setup(PinnedVector<double>(sim.anatomy_.nLocal(), 0.0));
+   lazy_array<double> iStimTransport;
+   iStimTransport.resize(sim.anatomy_.nLocal());
+   {
+      ContextRegion region(CPU);
+      wo_larray_ptr<double> iStim =  iStimTransport;
+      iStim.fill(0);
+   }
+   
    simulationProlog(sim);
-   HaloExchangeCUDA<double, AlignedAllocator<double> > voltageExchange(sim.sendMap_, (sim.commTable_));
+   HaloExchangeCUDA<double> voltageExchange(sim.sendMap_, (sim.commTable_));
 
    PotentialData& vdata = sim.vdata_;
 
@@ -191,7 +199,7 @@ void simulationLoop(Simulate& sim)
       {
          sim.diffusion_->updateLocalVoltage(vdata.VmTransport_);
          voltageExchange.wait();
-         sim.diffusion_->updateRemoteVoltage(voltageExchange.getRecvManaged());
+         sim.diffusion_->updateRemoteVoltage(voltageExchange.getRecvBuf());
          sim.diffusion_->calc(vdata.dVmDiffusionTransport_);
       }
       stopTimer(diffusionCalcTimer);
@@ -315,7 +323,7 @@ struct SimLoopData
 #endif
 
       int nLocal = sim.anatomy_.nLocal();
-      ConstArrayView<int> haloSendMap = voltageExchange.getSendMap();
+      lazy_array<int> haloSendMap = voltageExchange.getSendMap();
 #ifndef PER_SQUAD_BARRIER
       mkOffsets(integratorOffset, sim.anatomy_.nLocal(), sim.reactionThreads_);
 #endif
@@ -352,7 +360,7 @@ struct SimLoopData
 #endif
    vector<pair<unsigned, unsigned> > sendBufIndirect;
    vector<int> fillSendBufOffset;
-   HaloExchange<double, AlignedAllocator<double> > voltageExchange;
+   HaloExchange<double> voltageExchange;
 };
 
 void diffusionLoop(Simulate& sim,
@@ -371,7 +379,7 @@ void diffusionLoop(Simulate& sim,
 
    vector<int> zeroDiffusionOffset(nThreads + 1);
    {
-      ConstArrayView<double> dVmDiffusion = sim.vdata_.dVmDiffusionTransport_;
+      ro_larray_ptr<double> dVmDiffusion = sim.vdata_.dVmDiffusionTransport_;
       mkOffsets(zeroDiffusionOffset, dVmDiffusion.size(), sim.diffusionThreads_);
    }
    int zdoBegin = zeroDiffusionOffset[tid];
@@ -419,7 +427,7 @@ void diffusionLoop(Simulate& sim,
       // stimulus
       startTimer(initializeDVmDTimer);
       {
-         ArrayView<double> dVmDiffusion(sim.vdata_.dVmDiffusionTransport_);
+         wo_larray_ptr<double> dVmDiffusion(sim.vdata_.dVmDiffusionTransport_);
          if (loopData.stimIsNonZero > 0)
          {
             // we has a non-zero stimulus in the last time step so we
@@ -608,9 +616,9 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 #endif
 
       {
-         ArrayView<double> VmArray = sim.vdata_.VmTransport_;
-         ArrayView<double> dVmReaction = sim.vdata_.dVmReactionTransport_;
-         ArrayView<double> dVmDiffusion = sim.vdata_.dVmDiffusionTransport_;
+         rw_larray_ptr<double> VmArray = sim.vdata_.VmTransport_;
+         rw_larray_ptr<double> dVmReaction = sim.vdata_.dVmReactionTransport_;
+         rw_larray_ptr<double> dVmDiffusion = sim.vdata_.dVmDiffusionTransport_;
          integrate(begin, end, sim.dt_, &dVmReaction[0], &dVmDiffusion[0],
                    sim.diffusion_->blockIndex(),
                    sim.diffusion_->dVmBlock(),
@@ -657,7 +665,7 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
          const double* const dVdMatrix = sim.diffusion_->dVmBlock();
          const double diffusionScale = sim.diffusion_->diffusionScale();
          {
-            ArrayView<double> dVmDiffusion(sim.vdata_.dVmDiffusionTransport_);
+            rw_larray_ptr<double> dVmDiffusion(sim.vdata_.dVmDiffusionTransport_);
             for (unsigned ii = begin; ii < end; ++ii)
             {
                const int index = blockIndex[ii];
@@ -678,11 +686,11 @@ void reactionLoop(Simulate& sim, SimLoopData& loopData, L2_BarrierHandle_t& reac
 
       startTimer(haloMove2BufTimer);
       {
-         ConstArrayView<int> haloSendMap = loopData.voltageExchange.getSendMap();
+         ro_larray_ptr<int> haloSendMap = loopData.voltageExchange.getSendMap();
          unsigned begin = loopData.fillSendBufOffset[tid];
          unsigned end = loopData.fillSendBufOffset[tid + 1];
-         double* sendBuf = loopData.voltageExchange.getSendBuf();
-         ConstArrayView<double> VmArray = sim.vdata_.VmTransport_;
+         wo_larray_ptr<double> sendBuf = loopData.voltageExchange.getSendBuf();
+         ro_larray_ptr<double> VmArray = sim.vdata_.VmTransport_;
          for (unsigned ii = begin; ii < end; ++ii)
          {
             sendBuf[ii] = VmArray[haloSendMap[ii]];
@@ -733,7 +741,7 @@ void simulationLoopParallelDiffusionReaction(Simulate& sim)
          }
          if (sim.reactionThreads_.teamRank() == 0)
          {
-            ArrayView<double> VmArray(sim.vdata_.VmTransport_);
+            ro_larray_ptr<double> VmArray(sim.vdata_.VmTransport_);
             loopData.voltageExchange.fillSendBuffer(VmArray);
          }
       }

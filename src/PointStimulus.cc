@@ -23,11 +23,12 @@ PointStimulus::PointStimulus(const PointStimulusParms& p,
 }
 
 int PointStimulus::subClassStim(double time,
-                                Managed<ArrayView<double>> dVmDiffusion)
+                                rw_larray_ptr<double> dVmDiffusion)
 {
+   ContextRegion region(CPU);
    if (cellLocal_)
    {
-      dVmDiffusion.modifyOnHost()[localInd_] += pulse_->eval(time);
+      dVmDiffusion[localInd_] += pulse_->eval(time);
       return 1;
    }
    return 0;

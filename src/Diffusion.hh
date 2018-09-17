@@ -1,7 +1,7 @@
 #ifndef DIFFUSION_HH
 #define DIFFUSION_HH
 
-#include "TransportCoordinator.hh"
+#include "lazy_array.hh"
 
 /**
  *  We have managed to do something exceptionally stupid in this class.
@@ -21,10 +21,10 @@ class Diffusion
  public:
    inline Diffusion(double newDiffusionScale=0) : diffusionScale_(newDiffusionScale) {}
    virtual ~Diffusion(){};
-   virtual void updateLocalVoltage(const Managed<ArrayView<double>> VmLocal) = 0;
-   virtual void updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote) = 0;
-   virtual void calc(Managed<ArrayView<double>> dVm) = 0;
-   virtual void calc_overlap(Managed<ArrayView<double>> dVm) {};
+   virtual void updateLocalVoltage(ro_larray_ptr<double> VmLocal) = 0;
+   virtual void updateRemoteVoltage(ro_larray_ptr<double> VmRemote) = 0;
+   virtual void calc(rw_larray_ptr<double> dVm) = 0;
+   virtual void calc_overlap(rw_larray_ptr<double> dVm) {};
    virtual unsigned* blockIndex(){return 0;}
    virtual double* VmBlock(){return 0;}
    virtual double* dVmBlock(){return 0;}

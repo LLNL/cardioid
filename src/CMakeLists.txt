@@ -36,8 +36,8 @@ if (CMAKE_SYSTEM_NAME MATCHES Darwin)
 endif()
 
 find_package(OpenMP)
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+#set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
 add_definitions(-DDiff_Weight_Type_Single)
 add_definitions(-DWITH_PIO -DWITH_MPI)
@@ -74,19 +74,19 @@ endif()
 
 
 set (reaction_src
-	TT04_CellML_Reaction.cc
-	TT06_CellML_Reaction.cc 
-	TT06Dev_Reaction.cc
-	SimpleOHaraRudy.cc
-	SimpleGrandi.cc
-        Passive.cc
+	#TT04_CellML_Reaction.cc
+	#TT06_CellML_Reaction.cc 
+	#TT06Dev_Reaction.cc
+	#SimpleOHaraRudy.cc
+	#SimpleGrandi.cc
+        #Passive.cc
 	TT06Tau.cc
 	TT06Func.cc
         BetterTT06.cc
 	pade.cc
-   TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc
-   TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc
-	TT06_RRG.cc
+   #TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc
+   #TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc
+	#TT06_RRG.cc
    spi_impl.c
    clooper.c TT06GatesSimd2.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c
 )   
@@ -130,13 +130,13 @@ set (heart_src
    Drug.cc DrugChannel.cc
 	FibreConductivity.cc JHUConductivity.cc
 	DiffusionUtils.cc
-	FGRDiffusion.cc
-	FGRDiffusionOMP.cc
-	FGRDiffusionThreads.cc
-	FGRDiffusionOverlap.cc
-	FGRDiffusionStrip.cc
-	OpenmpGpuRedblackDiffusion.cc
-	OpenmpGpuFlatDiffusion.cc
+	#FGRDiffusion.cc
+	#FGRDiffusionOMP.cc
+	#FGRDiffusionThreads.cc
+	#FGRDiffusionOverlap.cc
+	#FGRDiffusionStrip.cc
+	#OpenmpGpuRedblackDiffusion.cc
+	#OpenmpGpuFlatDiffusion.cc
 	CUDADiffusion.cc
 	CUDADiffusion_ker.cu
 	FGRUtils.cc
@@ -152,7 +152,7 @@ set (heart_src
 	ECGSensor.cu
 	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc DVThreshSensor.cc
    StateVariableSensor.cc Interpolation.cc
-   Ledger.cc simulationLoopCuda.cu singleCellCuda.cu BoxStimulusCuda.cu HaloExchange.cu
+   SpaceAllocator.cc ContextManager.cc simulationLoopCuda.cu singleCellCuda.cu BoxStimulusCuda.cu HaloExchange.cu
    Version.cc
    ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc
 )

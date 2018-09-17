@@ -14,12 +14,13 @@ TestStimulus::TestStimulus(const TestStimulusParms& p, Pulse* pulse)
 }
 
 int TestStimulus::subClassStim(double time,
-                               Managed<ArrayView<double>> dVmDiffusion)
+                               rw_larray_ptr<double> dVmDiffusion)
 {
    if ( myRank_ != targetRank_ )
       return 0;
-   
-   dVmDiffusion.modifyOnDevice()[targetCell_] = pulse_->eval(time);
+
+   ContextRegion region(CPU);
+   dVmDiffusion[targetCell_] = pulse_->eval(time);
    return 1;
 }
 

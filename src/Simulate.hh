@@ -12,7 +12,7 @@
 #include "ThreadServer.hh"
 #include "VectorDouble32.hh"
 #include "slow_fix.hh"
-#include "TransportCoordinator.hh"
+#include "lazy_array.hh"
 
 class Diffusion;
 class ReactionManager;
@@ -35,27 +35,25 @@ class PotentialData
    
    void setup(const Anatomy& anatomy)
    {
-      PinnedVector<double> VmArray(anatomy.size(), 0.);
-      PinnedVector<double> dVmDiffusion(anatomy.nLocal(), 0.);
-      PinnedVector<double> dVmReaction(anatomy.nLocal(), 0.);
-      unsigned paddedSize = convertActualSizeToBufferSize(anatomy.nLocal());
-      VmArray.reserve(paddedSize);
-      dVmDiffusion.reserve(paddedSize);
-      dVmReaction.reserve(paddedSize);
+      VmTransport_.resize(anatomy.size());
+      dVmDiffusionTransport_.resize(anatomy.nLocal());
+      dVmReactionTransport_.resize(anatomy.nLocal());
 
-      assert((size_t)&(VmArray[0])      % 32 == 0);
-      assert((size_t)&(dVmDiffusion[0]) % 32 == 0);
-      assert((size_t)&(dVmReaction[0])  % 32 == 0);
+      
+      //unsigned paddedSize = convertActualSizeToBufferSize(anatomy.nLocal());
+      //VmArray.reserve(paddedSize);
+      //dVmDiffusion.reserve(paddedSize);
+      //dVmReaction.reserve(paddedSize);
 
-      VmTransport_.setup(std::move(VmArray));
-      dVmDiffusionTransport_.setup(std::move(dVmDiffusion));
-      dVmReactionTransport_.setup(std::move(dVmReaction));
+      //assert((size_t)&(VmArray[0])      % 32 == 0);
+      //assert((size_t)&(dVmDiffusion[0]) % 32 == 0);
+      //assert((size_t)&(dVmReaction[0])  % 32 == 0);
    }
    
    // use pointers to vector so that they can be swapped
-   TransportCoordinator<PinnedVector<double>> VmTransport_; // local and remote
-   TransportCoordinator<PinnedVector<double>> dVmDiffusionTransport_;
-   TransportCoordinator<PinnedVector<double>> dVmReactionTransport_;
+   lazy_array<double> VmTransport_; // local and remote
+   lazy_array<double> dVmDiffusionTransport_;
+   lazy_array<double> dVmReactionTransport_;
 };
 
 // Kitchen sink class for heart simulation.  This is probably a great
@@ -74,12 +72,12 @@ class Simulate
    enum LoopType {omp, pdr};
    
    void checkRanges(int begin, int end,
-                    ConstArrayView<double> Vm,
-                    ConstArrayView<double> dVmReaction,
-                    ConstArrayView<double> dVmDiffusion);
-   void checkRanges(ConstArrayView<double> Vm,
-                    ConstArrayView<double> dVmReaction,
-                    ConstArrayView<double> dVmDiffusion);
+                    ro_larray_ptr<double> Vm,
+                    ro_larray_ptr<double> dVmReaction,
+                    ro_larray_ptr<double> dVmDiffusion);
+   void checkRanges(ro_larray_ptr<double> Vm,
+                    ro_larray_ptr<double> dVmReaction,
+                    ro_larray_ptr<double> dVmDiffusion);
    
 
    bool checkIO(int loop=-1)const;

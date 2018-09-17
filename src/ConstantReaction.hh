@@ -21,10 +21,10 @@ class ConstantReaction : public Reaction
    std::string methodName() const {return "Constant";}
 
    virtual void calc(double dt,
-                     const Managed<ArrayView<double>> Vm,
-                     const Managed<ArrayView<double>> iStim,
-                     Managed<ArrayView<double>> dVm);
-   virtual void initializeMembraneVoltage(ArrayView<double> Vm);
+                     ro_larray_ptr<double> Vm,
+                     ro_larray_ptr<double> iStim,
+                     wo_larray_ptr<double> dVm);
+   virtual void initializeMembraneVoltage(wo_larray_ptr<double> Vm);
    double getValue(int iCell, int handle) const;
    int getVarHandle(const string& varName) const;
 

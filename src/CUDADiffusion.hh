@@ -2,7 +2,7 @@
 #define CUDA_DIFFUSION_HH
 
 #include "Diffusion.hh"
-#include "TransportCoordinator.hh"
+#include "lazy_array.hh"
 #include "Anatomy.hh"
 #include "LocalGrid.hh"
 #include <vector>
@@ -12,10 +12,10 @@ class CUDADiffusion : public Diffusion
  public:
    CUDADiffusion(const Anatomy& anatomy, int simLoopType, double diffusionScale);
 
-   void updateLocalVoltage(const Managed<ArrayView<double>> VmLocal);
-   void updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote);
+   void updateLocalVoltage(ro_larray_ptr<double> VmLocal);
+   void updateRemoteVoltage(ro_larray_ptr<double> VmRemote);
    /** omp loop must assign dVm, parallel loop need to increment dVm */
-   void calc(Managed<ArrayView<double>> dVm);
+   void calc(rw_larray_ptr<double> dVm);
 
    unsigned* blockIndex();
    double* VmBlock();
@@ -37,10 +37,10 @@ class CUDADiffusion : public Diffusion
    double Vm_;
    double dVm_;
    LocalGrid localGrid_;
-   TransportCoordinator<PinnedVector<double> > VmBlock_;
-   TransportCoordinator<PinnedVector<double> > dVmBlock_;
-   TransportCoordinator<PinnedVector<double> > sigmaFaceNormal_;
-   TransportCoordinator<PinnedVector<int> > cellLookup_;
+   lazy_array<double> VmBlock_;
+   lazy_array<double> dVmBlock_;
+   lazy_array<double> sigmaFaceNormal_;
+   lazy_array<int> cellLookup_;
    
 };
 

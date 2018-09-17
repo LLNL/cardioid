@@ -18,13 +18,12 @@ SET(LAPACK_LIB /usr/tcetmp/packages/lapack/lapack-3.6.0-gfortran-4.8.5/lib/libla
 SET(BLAS_LIB /usr/tcetmp/packages/blas/blas-3.6.0-gfortran-4.8.5/lib/libblas.a)
 
 
-SET(CMAKE_BUILD_TYPE Release)
+SET(CMAKE_BUILD_TYPE Debug)
 
 SET(CMAKE_CXX_FLAGS "-std=c++11" CACHE STRING "" FORCE)
 SET(CMAKE_C_FLAGS "-std=gnu99" CACHE STRING "" FORCE)
 
-
-SET(CMAKE_C_FLAGS_DEBUG "-g -ggdb -O0 " CACHE STRING "" FORCE)
+SET(CMAKE_C_FLAGS_DEBUG "-ggdb -O0 -fopenmp" CACHE STRING "" FORCE)
 SET(CMAKE_C_FLAGS_MINSIZEREL "-g -pg -O3 -DPROFILE" CACHE STRING "" FORCE)
 SET(CMAKE_C_FLAGS_RELEASE "-g -O3 -ffp-contract=fast -fopenmp-nonaliased-maps" CACHE STRING "" FORCE) 
 SET(CMAKE_C_FLAGS_RELWITHDEBINFO "-ggdb -O2" CACHE STRING "" FORCE)

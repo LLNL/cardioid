@@ -105,7 +105,7 @@ void PointListSensor::print(double time, int /*loop*/)
 
 void PointListSensor::print(double time)
 {
-   ConstArrayView<double> VmArray = vdata_.VmTransport_;
+    ro_larray_ptr<double> VmArray = vdata_.VmTransport_;
    for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
    {
       int ind = sensorind_[ii];
@@ -115,9 +115,9 @@ void PointListSensor::print(double time)
 
 void PointListSensor::printDerivs(double time)
 {
-   ConstArrayView<double> VmArray = vdata_.VmTransport_;
-   ConstArrayView<double> dVmReaction = vdata_.dVmReactionTransport_;
-   ConstArrayView<double> dVmDiffusion = vdata_.dVmDiffusionTransport_;
+   ro_larray_ptr<double> VmArray = vdata_.VmTransport_;
+   ro_larray_ptr<double> dVmReaction = vdata_.dVmReactionTransport_;
+   ro_larray_ptr<double> dVmDiffusion = vdata_.dVmDiffusionTransport_;
    for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
    {
       int ind = sensorind_[ii];
