@@ -23,7 +23,7 @@
 #include "fastBarrier.hh"
 #include "mpiUtils.h"
 #include "ReactionManager.hh"
-#include "simulationLoopCuda.hh"
+#include "DeviceFor.hh"
 #include  "cudaNVTX.h"
 
 /*
@@ -160,7 +160,7 @@ void simulationLoop(Simulate& sim)
    }
    
    simulationProlog(sim);
-   HaloExchangeCUDA<double> voltageExchange(sim.sendMap_, (sim.commTable_));
+   HaloExchangeDevice<double> voltageExchange(sim.sendMap_, (sim.commTable_));
 
    PotentialData& vdata = sim.vdata_;
 
@@ -211,10 +211,10 @@ void simulationLoop(Simulate& sim)
          {
             sim.stimulus_[ii]->stim(sim.time_, sim.vdata_.dVmDiffusionTransport_);
          }
-
-         {
-            setStimulus(iStimTransport,vdata.dVmDiffusionTransport_);
-         }
+         auto iStim = iStimTransport.writeonly();
+         auto dVmDiffusion = sim.vdata_.dVmDiffusionTransport_.readonly();
+         DEVICE_PARALLEL_FORALL(iStim.size(),
+                                (int ii) {iStim[ii] = -dVmDiffusion[ii];});
       }
       stopTimer(stimulusTimer);
 
@@ -226,10 +226,12 @@ void simulationLoop(Simulate& sim)
       // no special BGQ integrator is this loop.  More bang for buck
       // from OMP threading.
       {
-         integrateVoltage(vdata.VmTransport_,
-                          vdata.dVmReactionTransport_,
-                          vdata.dVmDiffusionTransport_,
-                          sim.dt_);         
+         auto Vm = vdata.VmTransport_.readwrite();
+         auto dVmR = vdata.dVmReactionTransport_.readonly();
+         auto dVmD = vdata.dVmDiffusionTransport_.readonly();
+         double dt = sim.dt_;
+         DEVICE_PARALLEL_FORALL(dVmR.size(),
+                                (int ii) { Vm[ii] += dt*(dVmR[ii]+dVmD[ii]); });
       }
 
       sim.time_ += sim.dt_;

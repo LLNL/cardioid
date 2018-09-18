@@ -17,15 +17,11 @@
 #include "ThreadServer.hh"
 #include "object.h"
 #include "object_cc.hh"
+#include "DeviceFor.hh"
 
 #include "singleCellOptions.h"
 
 using namespace std;
-
-void integrateVoltage(rw_larray_ptr<double> Vm,
-                      ro_larray_ptr<double> dVm,
-                      ro_larray_ptr<double> iStim,
-                      const double dt);
 
 MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
 
@@ -448,8 +444,10 @@ int main(int argc, char* argv[])
             stimAmount = -params.stim_strength_arg;
             timestepsLeftInStimulus--;
          }
-         void setStimulus(wo_larray_ptr<double> iStim, const double stimAmount);         
-         setStimulus(iStimTransport, stimAmount);
+         auto iStim = iStimTransport.writeonly();
+         DEVICE_PARALLEL_FORALL(iStim.size(),
+                                (int ii) { iStim[ii] = -stimAmount; });
+
       }
 
       {         
@@ -463,9 +461,14 @@ int main(int argc, char* argv[])
          {
             reaction->calc(dt, VmTransport, iStimTransport, dVmTransport);
          }
-
+      }
+      {
          //update Vm and apply stimulus
-         integrateVoltage(VmTransport, dVmTransport, iStimTransport, dt);
+         auto Vm = VmTransport.readwrite();
+         auto iStim = iStimTransport.readonly();
+         auto dVm = dVmTransport.readonly();
+         DEVICE_PARALLEL_FORALL(VmTransport.size(),
+                                (int ii) { Vm[ii] += dt*(dVm[ii]+iStim[ii]); });
       }
       itime++;
    }

@@ -1,5 +1,6 @@
 #include "BoxStimulus.hh"
 #include "Anatomy.hh"
+#include "DeviceFor.hh"
 #include <cmath>
 #include <mpi.h>
 #include <iostream>
@@ -46,8 +47,9 @@ int BoxStimulus::subClassStim(double time,
    double value = pulse_->eval(time);
    if (value == 0)
       return 0;
-   void addStimulus(rw_larray_ptr<double> dVmDiffusion, ro_larray_ptr<int> stimListRaw, const double value);
-   addStimulus(dVmDiffusion, stimListTransport_, value);
+   auto stimList = stimListTransport_.readonly();
+   DEVICE_PARALLEL_FORALL(stimList.size(),
+                          (int ii) { dVmDiffusion[stimList[ii]] = value; });
    return 1;
 }
 

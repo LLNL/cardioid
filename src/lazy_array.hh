@@ -35,7 +35,7 @@ class lazy_array_impl
    LAZY_HOST_DEVICE inline std::size_t size() const { return size_; }
    
  protected:
-   LAZY_HOST_DEVICE inline value_type* deref() {
+   LAZY_HOST_DEVICE inline value_type* deref() const {
 #if !defined(__CUDA_ARCH__) && defined(LAZY_ARRAY_CHECK_USAGE)
       assert(dataManager_->getContext() != CPU);
 #endif

@@ -66,7 +66,7 @@ class basic_impl
    }
    LAZY_HOST_DEVICE inline std::size_t size() const { return size_; }
  protected:
-   LAZY_HOST_DEVICE inline value_type* deref() { return data_; }
+   LAZY_HOST_DEVICE inline value_type* deref() const { return data_; }
    LAZY_HOST_DEVICE void create(value_type* newData, const std::size_t newSize)
    {
       data_ = newData;
@@ -81,10 +81,10 @@ class ro_array_ptr_interface : public Accessor
 {
  public:
    typedef typename Accessor::value_type value_type;
-   LAZY_HOST_DEVICE inline assign_type operator[](const int ii) { return assign_type(this->deref()[ii]); }
-   LAZY_HOST_DEVICE inline iterator begin() { return iterator(this->deref()); }
-   LAZY_HOST_DEVICE inline iterator end() { return iterator(this->deref()+this->size()); }
-   LAZY_HOST_DEVICE inline value_type* raw() { return this->deref(); }   
+   LAZY_HOST_DEVICE inline assign_type operator[](const int ii) const { return assign_type(this->deref()[ii]); }
+   LAZY_HOST_DEVICE inline iterator begin() const { return iterator(this->deref()); }
+   LAZY_HOST_DEVICE inline iterator end() const { return iterator(this->deref()+this->size()); }
+   LAZY_HOST_DEVICE inline value_type* raw() const { return this->deref(); }   
 };
 
 template <typename Accessor, typename assign_type, typename iterator>

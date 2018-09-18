@@ -114,7 +114,6 @@ if (ENABLE_CUDA)
       ECGSensor.cc
       ECGSensor.hh
       ECGSensor.cu
-      simulationLoopCuda.cu singleCellCuda.cu BoxStimulusCuda.cu HaloExchange.cu
    )
    cuda_add_library(heart_explicit_cuda ${heart_explicit_cuda_src})
    target_link_libraries(heart_explicit_cuda heart_transport)

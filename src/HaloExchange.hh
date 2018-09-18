@@ -6,6 +6,7 @@
 #include "CommTable.hh"
 #include <iostream>
 #include "PerformanceTimers.hh"
+#include "DeviceFor.hh"
 #include "cudaNVTX.h"
 
 #ifdef SPI
@@ -71,14 +72,11 @@ class HaloExchangeBase
    virtual void fillSendBuffer(ro_larray_ptr<T> externalData)
    {
       startTimer(PerformanceTimers::haloMove2BufTimer);
-      
-      ContextRegion region(CPU);
-      externalData.use();
-      ro_larray_ptr<int> sendMapView = sendMap_;
-      wo_larray_ptr<T> sendBufView = sendBuf_;
-      assert(sendMap_.size() == commTable_->sendSize());
-      for (int ii=0; ii<sendMapView.size(); ++ii) { sendBufView[ii] = externalData[sendMapView[ii]]; }
 
+      auto sendMap = sendMap_.readonly();
+      auto sendBuf = sendBuf_.writeonly();
+      HOST_PARALLEL_FORALL(sendMap.size(),
+                           (int ii) {sendBuf[ii] = externalData[sendMap[ii]]; };);
       stopTimer(PerformanceTimers::haloMove2BufTimer);
          
    }
@@ -264,18 +262,18 @@ class HaloExchange : public HaloExchangeBase<T>
 #endif // ifdef SPI
 
 template <class T>
-class HaloExchangeCUDA : public HaloExchange<T>
+class HaloExchangeDevice : public HaloExchange<T>
 {
    
  public:
    using HaloExchangeBase<T>::sendBuf_;
    using HaloExchangeBase<T>::sendMap_;
    
-   HaloExchangeCUDA(const std::vector<int>& sendMap, const CommTable* comm)
+   HaloExchangeDevice(const std::vector<int>& sendMap, const CommTable* comm)
      : HaloExchange<T>(sendMap, comm)
    {};
 
-   ~HaloExchangeCUDA()
+   ~HaloExchangeDevice()
    {
    };
 
@@ -283,7 +281,10 @@ class HaloExchangeCUDA : public HaloExchange<T>
    {
       startTimer(PerformanceTimers::haloMove2BufTimer);
 
-      fillSendBufferCUDA(sendBuf_, data, sendMap_);
+      auto sendMap = sendMap_.readonly();
+      auto sendBuf = sendBuf_.writeonly();
+      DEVICE_PARALLEL_FORALL(sendMap.size(),
+                             (int ii) {sendBuf[ii] = data[sendMap[ii]]; };);
 
       stopTimer(PerformanceTimers::haloMove2BufTimer);
    };
