@@ -6,10 +6,13 @@
 #include <sstream>
 
 #ifdef USE_CUDA
-#include "lazy_array.hh"
-#include <nvrtc.h>
-#include <cuda.h>
+# include "lazy_array.hh"
+# include <nvrtc.h>
+# include <cuda.h>
 #else //USE_CUDA
+# if 0
+#  include <simdops/resetArch.hpp>
+# endif
 # include <simdops/simdops.hpp>
 #endif //USE_CUDA
 
@@ -102,10 +105,11 @@ namespace BetterTT06
                 VectorDouble32& dVm);
       void initializeMembraneVoltage(VectorDouble32& Vm);
 
-      std::vector<State> state_;
+      std::vector<State, AlignedAllocator<State> > state_;
 #endif
 
-      Interpolation _interpolant[30];
+      //BGQ_HACKFIX, compiler bug with zero length arrays
+      Interpolation _interpolant[30+1];
       FRIEND_FACTORY(BetterTT06)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);
    };
 }

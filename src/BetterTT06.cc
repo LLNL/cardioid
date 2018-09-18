@@ -14,7 +14,6 @@
 #include "BetterTT06.hh"
 #include "object_cc.hh"
 #include "mpiUtils.h"
-#include "lazy_array.hh"
 #include <cmath>
 #include <cassert>
 #include <fstream>
@@ -32,7 +31,7 @@ static inline string TO_STRING(const TTT x)
    return ss.str();
 }
 
-const char* interpName[] = {
+static const char* interpName[] = {
    "_fCass_RLA",
    "_Xr1_RLA",
    "_Xr1_RLB",
@@ -85,32 +84,32 @@ const char* interpName[] = {
       double g_pK;
       double g_to;
       setDefault(celltype, 0);
-      setDefault(g_CaL, 3.9799999999999998e-5);
-      setDefault(g_bca, 0.00059199999999999997);
-      setDefault(g_pCa, 0.12379999999999999);
-      setDefault(g_Na, 14.837999999999999);
-      setDefault(g_K1, 5.4050000000000002);
-      setDefault(g_pK, 0.0146);
-      setDefault(g_Kr, 0.153);
+      setDefault(g_CaL, 3.98000000000000e-5);
+      setDefault(g_bca, 0.000592000000000000);
+      setDefault(g_pCa, 0.123800000000000);
+      setDefault(g_Na, 14.8380000000000);
+      setDefault(g_K1, 5.40500000000000);
+      setDefault(g_pK, 0.0146000000000000);
+      setDefault(g_Kr, 0.153000000000000);
       double __melodee_temp_002 = celltype == 1;
       if (__melodee_temp_002)
       {
-         g_Ks = 0.098000000000000004;
+         g_Ks = 0.0980000000000000;
       }
       else
       {
-         g_Ks = 0.39200000000000002;
+         g_Ks = 0.392000000000000;
       }
       setDefault(g_Ks, g_Ks);
-      setDefault(g_bna, 0.00029);
+      setDefault(g_bna, 0.000290000000000000);
       double __melodee_temp_004 = celltype == 0;
       if (__melodee_temp_004)
       {
-         g_to = 0.072999999999999995;
+         g_to = 0.0730000000000000;
       }
       else
       {
-         g_to = 0.29399999999999998;
+         g_to = 0.294000000000000;
       }
       setDefault(g_to, g_to);
       reaction->celltype = celltype;
@@ -127,7 +126,7 @@ const char* interpName[] = {
       bool reusingInterpolants = false;
       string fitName;
       objectGet(obj, "fit", fitName, "");
-      int funcCount = sizeof(reaction->_interpolant)/sizeof(reaction->_interpolant[0]);
+      int funcCount = sizeof(reaction->_interpolant)/sizeof(reaction->_interpolant[0])-1; //BGQ_HACKFIX, compiler bug with zero length arrays
       if (fitName != "")
       {
          OBJECT* fitObj = objectFind(fitName, "FIT");
@@ -236,10 +235,10 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_020 = exp(-1.0/10.0*V - 9.0/2.0);
+         double _expensive_functions_020 = exp(-1.0L/10.0L*V - 9.0L/2.0L);
          double alpha_xr1 = 450/(_expensive_functions_020 + 1);
-         double _expensive_functions_021 = exp(0.086956521739130432*V);
-         double beta_xr1 = 6/(13.581324522578193*_expensive_functions_021 + 1);
+         double _expensive_functions_021 = exp(0.0869565217391304*V);
+         double beta_xr1 = 6/(13.5813245225782*_expensive_functions_021 + 1);
          double tau_xr1 = alpha_xr1*beta_xr1;
          double _expensive_functions_043 = exp(-_dt/tau_xr1);
          double _Xr1_RLA = _expensive_functions_043 - 1;
@@ -262,7 +261,7 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_022 = exp(-1.0/7.0*V - 26.0/7.0);
+         double _expensive_functions_022 = exp(-1.0L/7.0L*V - 26.0L/7.0L);
          double xr1_inf = (1.0/(_expensive_functions_022 + 1));
          double _Xr1_RLB = -xr1_inf;
          _outputs[_ii] = _Xr1_RLB;
@@ -284,10 +283,10 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_023 = exp(-1.0/20.0*V - 3);
+         double _expensive_functions_023 = exp(-1.0L/20.0L*V - 3);
          double alpha_xr2 = 3/(_expensive_functions_023 + 1);
-         double _expensive_functions_024 = exp((1.0/20.0)*V - 3);
-         double beta_xr2 = 1.1200000000000001/(_expensive_functions_024 + 1);
+         double _expensive_functions_024 = exp((1.0L/20.0L)*V - 3);
+         double beta_xr2 = 1.12/(_expensive_functions_024 + 1);
          double tau_xr2 = alpha_xr2*beta_xr2;
          double _expensive_functions_044 = exp(-_dt/tau_xr2);
          double _Xr2_RLA = _expensive_functions_044 - 1;
@@ -310,7 +309,7 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_025 = exp((1.0/24.0)*V + 11.0/3.0);
+         double _expensive_functions_025 = exp((1.0L/24.0L)*V + 11.0L/3.0L);
          double xr2_inf = (1.0/(_expensive_functions_025 + 1));
          double _Xr2_RLB = -xr2_inf;
          _outputs[_ii] = _Xr2_RLB;
@@ -332,10 +331,10 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_027 = exp(-1.0/6.0*V + 5.0/6.0);
-         double _expensive_functions_028 = pow(_expensive_functions_027 + 1, -1.0/2.0);
+         double _expensive_functions_027 = exp(-1.0L/6.0L*V + 5.0L/6.0L);
+         double _expensive_functions_028 = pow(_expensive_functions_027 + 1, -1.0L/2.0L);
          double alpha_xs = 1400*_expensive_functions_028;
-         double _expensive_functions_029 = exp((1.0/15.0)*V - 7.0/3.0);
+         double _expensive_functions_029 = exp((1.0L/15.0L)*V - 7.0L/3.0L);
          double beta_xs = (1.0/(_expensive_functions_029 + 1));
          double tau_xs = alpha_xs*beta_xs + 80;
          double _expensive_functions_045 = exp(-_dt/tau_xs);
@@ -359,7 +358,7 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_030 = exp(-1.0/14.0*V - 5.0/14.0);
+         double _expensive_functions_030 = exp(-1.0L/14.0L*V - 5.0L/14.0L);
          double xs_inf = (1.0/(_expensive_functions_030 + 1));
          double _Xs_RLB = -xs_inf;
          _outputs[_ii] = _Xs_RLB;
@@ -381,11 +380,11 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions = exp(-1.0/13.0*V - 35.0/13.0);
-         double alpha_d = 0.25 + 1.3999999999999999/(_expensive_functions + 1);
-         double _expensive_functions_001 = exp((1.0/5.0)*V + 1);
-         double beta_d = 1.3999999999999999/(_expensive_functions_001 + 1);
-         double _expensive_functions_003 = exp(-1.0/20.0*V + 5.0/2.0);
+         double _expensive_functions = exp(-1.0L/13.0L*V - 35.0L/13.0L);
+         double alpha_d = 0.25 + 1.4/(_expensive_functions + 1);
+         double _expensive_functions_001 = exp((1.0L/5.0L)*V + 1);
+         double beta_d = 1.4/(_expensive_functions_001 + 1);
+         double _expensive_functions_003 = exp(-1.0L/20.0L*V + 5.0L/2.0L);
          double gamma_d = (1.0/(_expensive_functions_003 + 1));
          double tau_d = alpha_d*beta_d + gamma_d;
          double _expensive_functions_046 = exp(-_dt/tau_d);
@@ -409,8 +408,8 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_002 = exp(-0.13333333333333333*V);
-         double d_inf = (1.0/(0.34415378686541237*_expensive_functions_002 + 1));
+         double _expensive_functions_002 = exp(-0.133333333333333*V);
+         double d_inf = (1.0/(0.344153786865412*_expensive_functions_002 + 1));
          double _d_RLB = -d_inf;
          _outputs[_ii] = _d_RLB;
       }
@@ -431,9 +430,9 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_005 = exp(-1.0/10.0*V + 5.0/2.0);
-         double _expensive_functions_006 = exp((1.0/10.0)*V + 3);
-         double _expensive_functions_007 = exp(-1.0/240.0*((V + 27)*(V + 27)));
+         double _expensive_functions_005 = exp(-1.0L/10.0L*V + 5.0L/2.0L);
+         double _expensive_functions_006 = exp((1.0L/10.0L)*V + 3);
+         double _expensive_functions_007 = exp(-1.0L/240.0L*((V + 27)*(V + 27)));
          double tau_f2 = 562*_expensive_functions_007 + 80/(_expensive_functions_006 + 1) + 31/(_expensive_functions_005 + 1);
          double _expensive_functions_048 = exp(-_dt/tau_f2);
          double _f2_RLA = _expensive_functions_048 - 1;
@@ -456,8 +455,8 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_004 = exp((1.0/7.0)*V + 5);
-         double f2_inf = 0.33000000000000002 + 0.67000000000000004/(_expensive_functions_004 + 1);
+         double _expensive_functions_004 = exp((1.0L/7.0L)*V + 5);
+         double f2_inf = 0.33 + 0.67/(_expensive_functions_004 + 1);
          double _f2_RLB = -f2_inf;
          _outputs[_ii] = _f2_RLB;
       }
@@ -478,9 +477,9 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_009 = exp((1.0/10.0)*V + 3);
-         double _expensive_functions_010 = exp(-1.0/10.0*V + 13.0/10.0);
-         double _expensive_functions_011 = exp(-1.0/225.0*((V + 27)*(V + 27)));
+         double _expensive_functions_009 = exp((1.0L/10.0L)*V + 3);
+         double _expensive_functions_010 = exp(-1.0L/10.0L*V + 13.0L/10.0L);
+         double _expensive_functions_011 = exp(-1.0L/225.0L*((V + 27)*(V + 27)));
          double tau_f = 1102.5*_expensive_functions_011 + 20 + 200/(_expensive_functions_010 + 1) + 180/(_expensive_functions_009 + 1);
          double _expensive_functions_047 = exp(-_dt/tau_f);
          double _f_RLA = _expensive_functions_047 - 1;
@@ -503,7 +502,7 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_008 = exp((1.0/7.0)*V + 20.0/7.0);
+         double _expensive_functions_008 = exp((1.0L/7.0L)*V + 20.0L/7.0L);
          double f_inf = (1.0/(_expensive_functions_008 + 1));
          double _f_RLB = -f_inf;
          _outputs[_ii] = _f_RLB;
@@ -530,17 +529,17 @@ void ThisReaction::createInterpolants(const double _dt) {
          double beta_h;
          if (__melodee_temp_000)
          {
-            double _expensive_functions_013 = exp(-0.14705882352941177*V);
-            alpha_h = 4.4312679295805147e-7*_expensive_functions_013;
-            double _expensive_functions_014 = exp(0.34849999999999998*V);
-            double _expensive_functions_015 = exp(0.079000000000000001*V);
-            beta_h = 310000*_expensive_functions_014 + 2.7000000000000002*_expensive_functions_015;
+            double _expensive_functions_013 = exp(-0.147058823529412*V);
+            alpha_h = 4.43126792958051e-7*_expensive_functions_013;
+            double _expensive_functions_014 = exp(0.3485*V);
+            double _expensive_functions_015 = exp(0.079*V);
+            beta_h = 310000*_expensive_functions_014 + 2.7*_expensive_functions_015;
          }
          else
          {
             alpha_h = 0;
             double _expensive_functions_013 = exp(-0.0900900900900901*V);
-            beta_h = 0.77000000000000002/(0.049758141083938695*_expensive_functions_013 + 0.13);
+            beta_h = 0.77/(0.0497581410839387*_expensive_functions_013 + 0.13);
          }
          double tau_h = (1.0/(alpha_h + beta_h));
          double _expensive_functions_050 = exp(-_dt/tau_h);
@@ -564,8 +563,8 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_013 = exp(0.13458950201884254*V);
-         double h_inf = (1.0/(15212.593285654404*_expensive_functions_013 + 1)/(15212.593285654404*_expensive_functions_013 + 1));
+         double _expensive_functions_013 = exp(0.134589502018843*V);
+         double h_inf = (1.0/(15212.5932856544*_expensive_functions_013 + 1)/(15212.5932856544*_expensive_functions_013 + 1));
          double _h_RLB = -h_inf;
          _outputs[_ii] = _h_RLB;
       }
@@ -592,19 +591,19 @@ void ThisReaction::createInterpolants(const double _dt) {
          if (__melodee_temp_001)
          {
             double _expensive_functions_014 = exp(0.311*V);
-            double _expensive_functions_015 = exp(0.24440000000000001*V);
-            double _expensive_functions_016 = exp(-0.043909999999999998*V);
-            alpha_j = (-25428*_expensive_functions_015 - 6.9480000000000002e-6*_expensive_functions_016)*(V + 37.780000000000001)/(50262745825.953987*_expensive_functions_014 + 1);
-            double _expensive_functions_017 = exp(-0.13780000000000001*V);
+            double _expensive_functions_015 = exp(0.2444*V);
+            double _expensive_functions_016 = exp(-0.04391*V);
+            alpha_j = (-25428*_expensive_functions_015 - 6.948e-6*_expensive_functions_016)*(V + 37.78)/(50262745825.954*_expensive_functions_014 + 1);
+            double _expensive_functions_017 = exp(-0.1378*V);
             double _expensive_functions_018 = exp(-0.01052*V);
-            beta_j = 0.024240000000000001*_expensive_functions_018/(0.003960868339904256*_expensive_functions_017 + 1);
+            beta_j = 0.02424*_expensive_functions_018/(0.00396086833990426*_expensive_functions_017 + 1);
          }
          else
          {
             alpha_j = 0;
-            double _expensive_functions_014 = exp(-0.10000000000000001*V);
-            double _expensive_functions_015 = exp(0.057000000000000002*V);
-            beta_j = 0.59999999999999998*_expensive_functions_015/(0.040762203978366204*_expensive_functions_014 + 1);
+            double _expensive_functions_014 = exp(-0.1*V);
+            double _expensive_functions_015 = exp(0.057*V);
+            beta_j = 0.6*_expensive_functions_015/(0.0407622039783662*_expensive_functions_014 + 1);
          }
          double tau_j = (1.0/(alpha_j + beta_j));
          double _expensive_functions_051 = exp(-_dt/tau_j);
@@ -628,8 +627,8 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_014 = exp(0.13458950201884254*V);
-         double j_inf = (1.0/(15212.593285654404*_expensive_functions_014 + 1)/(15212.593285654404*_expensive_functions_014 + 1));
+         double _expensive_functions_014 = exp(0.134589502018843*V);
+         double j_inf = (1.0/(15212.5932856544*_expensive_functions_014 + 1)/(15212.5932856544*_expensive_functions_014 + 1));
          double _j_RLB = -j_inf;
          _outputs[_ii] = _j_RLB;
       }
@@ -650,11 +649,11 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_015 = exp(-1.0/5.0*V - 12);
+         double _expensive_functions_015 = exp(-1.0L/5.0L*V - 12);
          double alpha_m = (1.0/(_expensive_functions_015 + 1));
-         double _expensive_functions_016 = exp((1.0/5.0)*V + 7);
-         double _expensive_functions_017 = exp((1.0/200.0)*V - 1.0/4.0);
-         double beta_m = 0.10000000000000001/(_expensive_functions_017 + 1) + 0.10000000000000001/(_expensive_functions_016 + 1);
+         double _expensive_functions_016 = exp((1.0L/5.0L)*V + 7);
+         double _expensive_functions_017 = exp((1.0L/200.0L)*V - 1.0L/4.0L);
+         double beta_m = 0.1/(_expensive_functions_017 + 1) + 0.1/(_expensive_functions_016 + 1);
          double tau_m = alpha_m*beta_m;
          double _expensive_functions_052 = exp(-_dt/tau_m);
          double _m_RLA = _expensive_functions_052 - 1;
@@ -677,8 +676,8 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_018 = exp(-0.11074197120708749*V);
-         double m_inf = (1.0/(0.0018422115811651339*_expensive_functions_018 + 1)/(0.0018422115811651339*_expensive_functions_018 + 1));
+         double _expensive_functions_018 = exp(-0.110741971207087*V);
+         double m_inf = (1.0/(0.00184221158116513*_expensive_functions_018 + 1)/(0.00184221158116513*_expensive_functions_018 + 1));
          double _m_RLB = -m_inf;
          _outputs[_ii] = _m_RLB;
       }
@@ -699,8 +698,8 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_034 = exp(-1.0/1800.0*((V + 40)*(V + 40)));
-         double tau_r = 9.5*_expensive_functions_034 + 0.80000000000000004;
+         double _expensive_functions_034 = exp(-1.0L/1800.0L*((V + 40)*(V + 40)));
+         double tau_r = 9.5*_expensive_functions_034 + 0.8;
          double _expensive_functions_053 = exp(-_dt/tau_r);
          double _r_RLA = _expensive_functions_053 - 1;
          _outputs[_ii] = _r_RLA;
@@ -722,7 +721,7 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_033 = exp(-1.0/6.0*V + 10.0/3.0);
+         double _expensive_functions_033 = exp(-1.0L/6.0L*V + 10.0L/3.0L);
          double r_inf = (1.0/(_expensive_functions_033 + 1));
          double _r_RLB = -r_inf;
          _outputs[_ii] = _r_RLB;
@@ -749,13 +748,13 @@ void ThisReaction::createInterpolants(const double _dt) {
          double tau_s;
          if (__melodee_temp_003)
          {
-            double _expensive_functions_036 = exp(-1.0/1000.0*((V + 67)*(V + 67)));
+            double _expensive_functions_036 = exp(-1.0L/1000.0L*((V + 67)*(V + 67)));
             tau_s = 1000*_expensive_functions_036 + 8;
          }
          else
          {
-            double _expensive_functions_036 = exp((1.0/5.0)*V - 4);
-            double _expensive_functions_037 = exp(-1.0/320.0*((V + 45)*(V + 45)));
+            double _expensive_functions_036 = exp((1.0L/5.0L)*V - 4);
+            double _expensive_functions_037 = exp(-1.0L/320.0L*((V + 45)*(V + 45)));
             tau_s = 85*_expensive_functions_037 + 3 + 5/(_expensive_functions_036 + 1);
          }
          double _expensive_functions_054 = exp(-_dt/tau_s);
@@ -784,12 +783,12 @@ void ThisReaction::createInterpolants(const double _dt) {
          double tau_s;
          if (__melodee_temp_003)
          {
-            double _expensive_functions_035 = exp((1.0/5.0)*V + 28.0/5.0);
+            double _expensive_functions_035 = exp((1.0L/5.0L)*V + 28.0L/5.0L);
             s_inf = (1.0/(_expensive_functions_035 + 1));
          }
          else
          {
-            double _expensive_functions_035 = exp((1.0/5.0)*V + 4);
+            double _expensive_functions_035 = exp((1.0L/5.0L)*V + 4);
             s_inf = (1.0/(_expensive_functions_035 + 1));
          }
          double _s_RLB = -s_inf;
@@ -812,10 +811,10 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double F = 96485.341499999995;
-         double R = 8314.4719999999998;
+         double F = 96485.3415000000;
+         double R = 8314.47200000000;
          double T = 310;
-         double gamma = 0.34999999999999998;
+         double gamma = 0.350000000000000;
          double exp_gamma_VFRT = exp(F*V*gamma/(R*T));
          _outputs[_ii] = exp_gamma_VFRT;
       }
@@ -836,10 +835,10 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double F = 96485.341499999995;
-         double R = 8314.4719999999998;
+         double F = 96485.3415000000;
+         double R = 8314.47200000000;
          double T = 310;
-         double gamma = 0.34999999999999998;
+         double gamma = 0.350000000000000;
          double exp_gamma_m1_VFRT = exp(F*V*(gamma - 1)/(R*T));
          _outputs[_ii] = exp_gamma_m1_VFRT;
       }
@@ -860,8 +859,8 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double F = 96485.341499999995;
-         double R = 8314.4719999999998;
+         double F = 96485.3415000000;
+         double R = 8314.47200000000;
          double T = 310;
          double i_CalTerm1 = (F*F)*(4*V - 60)/(R*T);
          double i_CalTerm2 = exp(F*(2*V - 30)/(R*T));
@@ -894,8 +893,8 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double F = 96485.341499999995;
-         double R = 8314.4719999999998;
+         double F = 96485.3415000000;
+         double R = 8314.47200000000;
          double T = 310;
          double i_CalTerm1 = (F*F)*(4*V - 60)/(R*T);
          double i_CalTerm2 = exp(F*(2*V - 30)/(R*T));
@@ -929,15 +928,15 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double F = 96485.341499999995;
-         double R = 8314.4719999999998;
+         double F = 96485.3415000000;
+         double R = 8314.47200000000;
          double T = 310;
-         double K_o = 5.4000000000000004;
+         double K_o = 5.40000000000000;
          double K_mk = 1;
-         double P_NaK = 2.7240000000000002;
+         double P_NaK = 2.72400000000000;
          double _expensive_functions_031 = exp(-F*V/(R*T));
-         double _expensive_functions_032 = exp(-0.10000000000000001*F*V/(R*T));
-         double i_NaK_term = K_o*P_NaK/((K_o + K_mk)*(0.035299999999999998*_expensive_functions_031 + 0.1245*_expensive_functions_032 + 1));
+         double _expensive_functions_032 = exp(-0.1*F*V/(R*T));
+         double i_NaK_term = K_o*P_NaK/((K_o + K_mk)*(0.0353*_expensive_functions_031 + 0.1245*_expensive_functions_032 + 1));
          _outputs[_ii] = i_NaK_term;
       }
       double relError = 1e-3;
@@ -957,8 +956,8 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double V = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = V;
-         double _expensive_functions_019 = exp(-0.16722408026755853*V);
-         double i_p_K_term = (1.0/(65.405215741938321*_expensive_functions_019 + 1));
+         double _expensive_functions_019 = exp(-0.167224080267559*V);
+         double i_p_K_term = (1.0/(65.4052157419383*_expensive_functions_019 + 1));
          _outputs[_ii] = i_p_K_term;
       }
       double relError = 1e-3;
@@ -978,16 +977,16 @@ void ThisReaction::createInterpolants(const double _dt) {
       {
          double VEK = -100 + (100 - -100)*(_ii+0.5)/_numPoints;
          _inputs[_ii] = VEK;
-         double K_o = 5.4000000000000004;
-         double _expensive_functions_035 = exp(0.059999999999999998*VEK);
-         double alpha_K1 = 0.10000000000000001/(6.1442123533282098e-6*_expensive_functions_035 + 1);
+         double K_o = 5.40000000000000;
+         double _expensive_functions_035 = exp(0.06*VEK);
+         double alpha_K1 = 0.1/(6.14421235332821e-6*_expensive_functions_035 + 1);
          double _expensive_functions_036 = exp(-0.5*VEK);
-         double _expensive_functions_037 = exp(0.10000000000000001*VEK);
-         double _expensive_functions_038 = exp(0.00020000000000000001*VEK);
-         double beta_K1 = (0.36787944117144233*_expensive_functions_037 + 3.0606040200802673*_expensive_functions_038)/(_expensive_functions_036 + 1);
+         double _expensive_functions_037 = exp(0.1*VEK);
+         double _expensive_functions_038 = exp(0.0002*VEK);
+         double beta_K1 = (0.367879441171442*_expensive_functions_037 + 3.06060402008027*_expensive_functions_038)/(_expensive_functions_036 + 1);
          double xK1_inf = alpha_K1/(alpha_K1 + beta_K1);
          double _expensive_functions_039 = sqrt(K_o);
-         double i_K1 = 0.43033148291193518*VEK*_expensive_functions_039*g_K1*xK1_inf;
+         double i_K1 = 0.430331482911935*VEK*_expensive_functions_039*g_K1*xK1_inf;
          double inward_rectifier_potassium_current_i_Kitot = i_K1;
          _outputs[_ii] = inward_rectifier_potassium_current_i_Kitot;
       }
@@ -1112,7 +1111,7 @@ void ThisReaction::constructKernel()
    "const double r = _state[_ii+r_off*_nCells];\n"
    "const double s = _state[_ii+s_off*_nCells];\n"
    "//get the gate updates (diagonalized exponential integrator)\n"
-   "double fCass_inf = 0.40000000000000002 + 0.59999999999999998/(400.0*(Ca_ss*Ca_ss) + 1);\n"
+   "double fCass_inf = 0.4 + 0.6/(400.0*(Ca_ss*Ca_ss) + 1);\n"
    ""; generateInterpString(ss,_interpolant[1], "V"); ss << "\n"
    "double _Xr1_RLA = _ratPoly;\n"
    ""; generateInterpString(ss,_interpolant[2], "V"); ss << "\n"
@@ -1161,32 +1160,32 @@ void ThisReaction::constructKernel()
    ""; generateInterpString(ss,_interpolant[22], "V"); ss << "\n"
    "double _s_RLB = _ratPoly;\n"
    "//get the other differential updates\n"
-   "double Cm = 0.185;\n"
-   "double F = 96485.341499999995;\n"
-   "double R = 8314.4719999999998;\n"
+   "double Cm = 0.185000000000000;\n"
+   "double F = 96485.3415000000;\n"
+   "double R = 8314.47200000000;\n"
    "double T = 310;\n"
-   "double V_c = 0.016403999999999998;\n"
+   "double V_c = 0.0164040000000000;\n"
    "double factor_fix = 1;\n"
    "double Ca_o = 2;\n"
-   "double Buf_c = 0.20000000000000001;\n"
+   "double Buf_c = 0.200000000000000;\n"
    "double Buf_sr = 10;\n"
-   "double Buf_ss = 0.40000000000000002;\n"
-   "double EC = 1.5;\n"
-   "double K_buf_c = 0.001;\n"
-   "double K_buf_sr = 0.29999999999999999;\n"
-   "double K_buf_ss = 0.00025000000000000001;\n"
-   "double K_up = 0.00025000000000000001;\n"
-   "double V_leak = 0.00036000000000000002;\n"
-   "double V_rel = 0.10199999999999999;\n"
-   "double V_sr = 0.0010939999999999999;\n"
-   "double V_ss = 5.4679999999999998e-5;\n"
-   "double V_xfer = 0.0038;\n"
-   "double Vmax_up = 0.0063749999999999996;\n"
-   "double k1_prime = 0.14999999999999999;\n"
-   "double k2_prime = 0.044999999999999998;\n"
-   "double k3 = 0.059999999999999998;\n"
-   "double k4 = 0.0050000000000000001;\n"
-   "double max_sr = 2.5;\n"
+   "double Buf_ss = 0.400000000000000;\n"
+   "double EC = 1.50000000000000;\n"
+   "double K_buf_c = 0.00100000000000000;\n"
+   "double K_buf_sr = 0.300000000000000;\n"
+   "double K_buf_ss = 0.000250000000000000;\n"
+   "double K_up = 0.000250000000000000;\n"
+   "double V_leak = 0.000360000000000000;\n"
+   "double V_rel = 0.102000000000000;\n"
+   "double V_sr = 0.00109400000000000;\n"
+   "double V_ss = 5.46800000000000e-5;\n"
+   "double V_xfer = 0.00380000000000000;\n"
+   "double Vmax_up = 0.00637500000000000;\n"
+   "double k1_prime = 0.150000000000000;\n"
+   "double k2_prime = 0.0450000000000000;\n"
+   "double k3 = 0.0600000000000000;\n"
+   "double k4 = 0.00500000000000000;\n"
+   "double max_sr = 2.50000000000000;\n"
    "double min_sr = 1;\n"
    "double i_CalTerm3;\n"
    ""; generateInterpString(ss,_interpolant[25], "V"); ss << "\n"
@@ -1196,23 +1195,23 @@ void ThisReaction::constructKernel()
    "double _expensive_functions_012 = log(Ca_o/Ca_i);\n"
    "double E_Ca = 0.5*R*T*_expensive_functions_012/F;\n"
    "double i_b_Ca = g_bca*(V - E_Ca);\n"
-   "double K_pCa = 0.00050000000000000001;\n"
+   "double K_pCa = 0.000500000000000000;\n"
    "double i_p_Ca = Ca_i*g_pCa/(Ca_i + K_pCa);\n"
    "double K_NaCa = 1000;\n"
-   "double K_sat = 0.10000000000000001;\n"
-   "double Km_Ca = 1.3799999999999999;\n"
-   "double Km_Nai = 87.5;\n"
-   "double alpha = 2.5;\n"
+   "double K_sat = 0.100000000000000;\n"
+   "double Km_Ca = 1.38000000000000;\n"
+   "double Km_Nai = 87.5000000000000;\n"
+   "double alpha = 2.50000000000000;\n"
    ""; generateInterpString(ss,_interpolant[23], "V"); ss << "\n"
    "double exp_gamma_VFRT = _ratPoly;\n"
    ""; generateInterpString(ss,_interpolant[24], "V"); ss << "\n"
    "double exp_gamma_m1_VFRT = _ratPoly;\n"
-   "double K_o = 5.4000000000000004;\n"
+   "double K_o = 5.40000000000000;\n"
    ""; generateInterpString(ss,_interpolant[28], "V"); ss << "\n"
    "double i_p_K_term = _ratPoly;\n"
    "double _expensive_functions_026 = log(K_o/K_i);\n"
    "double E_K = R*T*_expensive_functions_026/F;\n"
-   "double P_kna = 0.029999999999999999;\n"
+   "double P_kna = 0.0300000000000000;\n"
    "double Na_o = 140;\n"
    "double K_mNa = 40;\n"
    ""; generateInterpString(ss,_interpolant[27], "V"); ss << "\n"
@@ -1242,7 +1241,7 @@ void ThisReaction::constructKernel()
    "double i_p_K = VEK*g_pK*i_p_K_term;\n"
    "double potassium_pump_current_i_Kitot = i_p_K;\n"
    "double _expensive_functions_040 = sqrt(K_o);\n"
-   "double i_Kr = 0.43033148291193518*VEK*_expensive_functions_040*Xr1*Xr2*g_Kr;\n"
+   "double i_Kr = 0.430331482911935*VEK*_expensive_functions_040*Xr1*Xr2*g_Kr;\n"
    "double rapid_time_dependent_potassium_current_i_Kitot = i_Kr;\n"
    "double _expensive_functions_041 = log(Na_o/Na_i);\n"
    "double E_Na = R*T*_expensive_functions_041/F;\n"
@@ -1255,8 +1254,8 @@ void ThisReaction::constructKernel()
    "double i_to = VEK*g_to*r*s;\n"
    "double transient_outward_current_i_Kitot = i_to;\n"
    "double i_Kitot_001 = i_Kitot + inward_rectifier_potassium_current_i_Kitot + potassium_pump_current_i_Kitot + rapid_time_dependent_potassium_current_i_Kitot + slow_time_dependent_potassium_current_i_Kitot + transient_outward_current_i_Kitot;\n"
-   "double Ca_i_diff = Ca_i_bufc*(-1.0/2.0*Cm*(-2*i_NaCa + i_b_Ca + i_p_Ca)/(F*V_c) + i_xfer + V_sr*(i_leak - i_up)/V_c);\n"
-   "double Ca_ss_diff = Ca_ss_bufss*(-1.0/2.0*Cm*i_CaL/(F*V_ss) - V_c*i_xfer/V_ss + V_sr*i_rel/V_ss);\n"
+   "double Ca_i_diff = Ca_i_bufc*(-1.0L/2.0L*Cm*(-2*i_NaCa + i_b_Ca + i_p_Ca)/(F*V_c) + i_xfer + V_sr*(i_leak - i_up)/V_c);\n"
+   "double Ca_ss_diff = Ca_ss_bufss*(-1.0L/2.0L*Cm*i_CaL/(F*V_ss) - V_c*i_xfer/V_ss + V_sr*i_rel/V_ss);\n"
    "double i_Na = (m*m*m)*g_Na*h*j*(-E_Na + V);\n"
    "double fast_sodium_current_i_Naitot = i_Na;\n"
    "double K_i_diff = -Cm*factor_fix*i_Kitot_001/(F*V_c);\n"
@@ -1331,7 +1330,7 @@ void ThisReaction::calc(double dt,
 
    {
       int errorCode=-1;
-      if (blockSize_ == -1) { blockSize_ = 256; }
+      if (blockSize_ == -1) { blockSize_ = 1024; }
       while(1)
       {
          const double* VmRaw = Vm_m.raw();
@@ -1391,7 +1390,6 @@ enum StateOffset {
 ThisReaction::ThisReaction(const int numPoints, const double __dt)
 : nCells_(numPoints)
 {
-   //stateTransport_.setup(PinnedVector<double>(nCells_*NUMSTATES));
    stateTransport_.resize(nCells_*NUMSTATES);
    __cachedDt = __dt;
    blockSize_ = -1;
@@ -1429,41 +1427,41 @@ void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
                        const vector<double>& __iStim , VectorDouble32& __dVm)
 {
    //define the constants
-   double Cm = 0.185;
-   double F = 96485.341499999995;
-   double R = 8314.4719999999998;
+   double Cm = 0.185000000000000;
+   double F = 96485.3415000000;
+   double R = 8314.47200000000;
    double T = 310;
-   double V_c = 0.016403999999999998;
+   double V_c = 0.0164040000000000;
    double factor_fix = 1;
    double Ca_o = 2;
-   double Buf_c = 0.20000000000000001;
+   double Buf_c = 0.200000000000000;
    double Buf_sr = 10;
-   double Buf_ss = 0.40000000000000002;
-   double EC = 1.5;
-   double K_buf_c = 0.001;
-   double K_buf_sr = 0.29999999999999999;
-   double K_buf_ss = 0.00025000000000000001;
-   double K_up = 0.00025000000000000001;
-   double V_leak = 0.00036000000000000002;
-   double V_rel = 0.10199999999999999;
-   double V_sr = 0.0010939999999999999;
-   double V_ss = 5.4679999999999998e-5;
-   double V_xfer = 0.0038;
-   double Vmax_up = 0.0063749999999999996;
-   double k1_prime = 0.14999999999999999;
-   double k2_prime = 0.044999999999999998;
-   double k3 = 0.059999999999999998;
-   double k4 = 0.0050000000000000001;
-   double max_sr = 2.5;
+   double Buf_ss = 0.400000000000000;
+   double EC = 1.50000000000000;
+   double K_buf_c = 0.00100000000000000;
+   double K_buf_sr = 0.300000000000000;
+   double K_buf_ss = 0.000250000000000000;
+   double K_up = 0.000250000000000000;
+   double V_leak = 0.000360000000000000;
+   double V_rel = 0.102000000000000;
+   double V_sr = 0.00109400000000000;
+   double V_ss = 5.46800000000000e-5;
+   double V_xfer = 0.00380000000000000;
+   double Vmax_up = 0.00637500000000000;
+   double k1_prime = 0.150000000000000;
+   double k2_prime = 0.0450000000000000;
+   double k3 = 0.0600000000000000;
+   double k4 = 0.00500000000000000;
+   double max_sr = 2.50000000000000;
    double min_sr = 1;
-   double K_pCa = 0.00050000000000000001;
+   double K_pCa = 0.000500000000000000;
    double K_NaCa = 1000;
-   double K_sat = 0.10000000000000001;
-   double Km_Ca = 1.3799999999999999;
-   double Km_Nai = 87.5;
-   double alpha = 2.5;
-   double K_o = 5.4000000000000004;
-   double P_kna = 0.029999999999999999;
+   double K_sat = 0.100000000000000;
+   double Km_Ca = 1.38000000000000;
+   double Km_Nai = 87.5000000000000;
+   double alpha = 2.50000000000000;
+   double K_o = 5.40000000000000;
+   double P_kna = 0.0300000000000000;
    double Na_o = 140;
    double K_mNa = 40;
    double _expensive_functions_040 = sqrt(K_o);
@@ -1494,7 +1492,7 @@ void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
       real r=load(state_[__jj].r);
       real s=load(state_[__jj].s);
       //get the gate updates (diagonalized exponential integrator)
-      real fCass_inf = 0.40000000000000002 + 0.59999999999999998/(400.0*(Ca_ss*Ca_ss) + 1);
+      real fCass_inf = 0.4 + 0.6/(400.0*(Ca_ss*Ca_ss) + 1);
       real _Xr1_RLA = _interpolant[1].eval(V);
       real _Xr1_RLB = _interpolant[2].eval(V);
       real _Xr2_RLA = _interpolant[3].eval(V);
@@ -1556,7 +1554,7 @@ void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
       real inward_rectifier_potassium_current_i_Kitot = _interpolant[29].eval(VEK);
       real i_p_K = VEK*g_pK*i_p_K_term;
       real potassium_pump_current_i_Kitot = i_p_K;
-      real i_Kr = 0.43033148291193518*VEK*_expensive_functions_040*Xr1*Xr2*g_Kr;
+      real i_Kr = 0.430331482911935*VEK*_expensive_functions_040*Xr1*Xr2*g_Kr;
       real rapid_time_dependent_potassium_current_i_Kitot = i_Kr;
       real _expensive_functions_041 = log(Na_o/Na_i);
       real E_Na = R*T*_expensive_functions_041/F;
@@ -1569,8 +1567,8 @@ void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
       real i_to = VEK*g_to*r*s;
       real transient_outward_current_i_Kitot = i_to;
       real i_Kitot_001 = i_Kitot + inward_rectifier_potassium_current_i_Kitot + potassium_pump_current_i_Kitot + rapid_time_dependent_potassium_current_i_Kitot + slow_time_dependent_potassium_current_i_Kitot + transient_outward_current_i_Kitot;
-      real Ca_i_diff = Ca_i_bufc*(-1.0/2.0*Cm*(-2*i_NaCa + i_b_Ca + i_p_Ca)/(F*V_c) + i_xfer + V_sr*(i_leak - i_up)/V_c);
-      real Ca_ss_diff = Ca_ss_bufss*(-1.0/2.0*Cm*i_CaL/(F*V_ss) - V_c*i_xfer/V_ss + V_sr*i_rel/V_ss);
+      real Ca_i_diff = Ca_i_bufc*(-1.0L/2.0L*Cm*(-2*i_NaCa + i_b_Ca + i_p_Ca)/(F*V_c) + i_xfer + V_sr*(i_leak - i_up)/V_c);
+      real Ca_ss_diff = Ca_ss_bufss*(-1.0L/2.0L*Cm*i_CaL/(F*V_ss) - V_c*i_xfer/V_ss + V_sr*i_rel/V_ss);
       real i_Na = (m*m*m)*g_Na*h*j*(-E_Na + V);
       real fast_sodium_current_i_Naitot = i_Na;
       real K_i_diff = -Cm*factor_fix*i_Kitot_001/(F*V_c);
@@ -1622,7 +1620,7 @@ void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
       store(state_[__jj].m, m);
       store(state_[__jj].r, r);
       store(state_[__jj].s, s);
-      store(&__dVm[__ii],-Iion_001);
+      simdops::store(&__dVm[__ii],-Iion_001);
    }
 }
 #endif //USE_CUDA
@@ -1642,6 +1640,8 @@ void ThisReaction::initializeMembraneVoltage(VectorDouble32& __Vm)
 
 #ifdef USE_CUDA
 #define READ_STATE(state,index) (stateData[_##state##_off*nCells_+index])
+   ContextRegion region(CPU);
+   __Vm.use();
    wo_larray_ptr<double> stateData = stateTransport_;
 #else //USE_CUDA
 #define READ_STATE(state,index) (state_[index/width].state[index % width])
@@ -1651,41 +1651,41 @@ void ThisReaction::initializeMembraneVoltage(VectorDouble32& __Vm)
 
    double V_init = -83;
    double V = V_init;
-   double Ca_i_init = 2.0000000000000002e-5;
+   double Ca_i_init = 2.00000000000000e-5;
    double Ca_i = Ca_i_init;
-   double R_prime_init = 0.98680000000000001;
+   double R_prime_init = 0.986800000000000;
    double R_prime = R_prime_init;
-   double Ca_SR_init = 3.1549999999999998;
+   double Ca_SR_init = 3.15500000000000;
    double Ca_SR = Ca_SR_init;
-   double Ca_ss_init = 0.00017000000000000001;
+   double Ca_ss_init = 0.000170000000000000;
    double Ca_ss = Ca_ss_init;
-   double d_init = 3.1640000000000002e-5;
+   double d_init = 3.16400000000000e-5;
    double d = d_init;
-   double f2_init = 0.9778;
+   double f2_init = 0.977800000000000;
    double f2 = f2_init;
-   double fCass_init = 0.99529999999999996;
+   double fCass_init = 0.995300000000000;
    double fCass = fCass_init;
-   double f_init = 0.96089999999999998;
+   double f_init = 0.960900000000000;
    double f = f_init;
-   double h_init = 0.55000000000000004;
+   double h_init = 0.550000000000000;
    double h = h_init;
-   double j_init = 0.66000000000000003;
+   double j_init = 0.660000000000000;
    double j = j_init;
-   double m_init = 0.0015499999999999999;
+   double m_init = 0.00155000000000000;
    double m = m_init;
-   double K_i_init = 138.40000000000001;
+   double K_i_init = 138.400000000000;
    double K_i = K_i_init;
-   double Xr1_init = 0.0044799999999999996;
+   double Xr1_init = 0.00448000000000000;
    double Xr1 = Xr1_init;
-   double Xr2_init = 0.47599999999999998;
+   double Xr2_init = 0.476000000000000;
    double Xr2 = Xr2_init;
-   double Xs_init = 0.0086999999999999994;
+   double Xs_init = 0.00870000000000000;
    double Xs = Xs_init;
-   double Na_i_init = 10.355;
+   double Na_i_init = 10.3550000000000;
    double Na_i = Na_i_init;
-   double r_init = 2.2350000000000002e-8;
+   double r_init = 2.23500000000000e-8;
    double r = r_init;
-   double s_init = 0.60119999999999996;
+   double s_init = 0.601200000000000;
    double s = s_init;
    for (int iCell=0; iCell<nCells_; iCell++)
    {
@@ -1834,6 +1834,7 @@ int ThisReaction::getVarHandle(const std::string& varName) const
 void ThisReaction::setValue(int iCell, int varHandle, double value) 
 {
 #ifdef USE_CUDA
+   ContextRegion region(CPU);
    wo_larray_ptr<double> stateData = stateTransport_;
 #endif //USE_CUDA
 
@@ -1864,6 +1865,7 @@ void ThisReaction::setValue(int iCell, int varHandle, double value)
 double ThisReaction::getValue(int iCell, int varHandle) const
 {
 #ifdef USE_CUDA
+   ContextRegion region(CPU);
    ro_larray_ptr<double> stateData = stateTransport_;
 #endif //USE_CUDA
 
@@ -1893,6 +1895,7 @@ double ThisReaction::getValue(int iCell, int varHandle) const
 double ThisReaction::getValue(int iCell, int varHandle, double V) const
 {
 #ifdef USE_CUDA
+   ContextRegion region(CPU);
    ro_larray_ptr<double> stateData = stateTransport_;
 #endif //USE_CUDA
 
@@ -1974,8 +1977,8 @@ double ThisReaction::getValue(int iCell, int varHandle, double V) const
    }
    else if (varHandle == i_CaL_handle)
    {
-      double F = 96485.341499999995;
-      double R = 8314.4719999999998;
+      double F = 96485.3415000000;
+      double R = 8314.47200000000;
       double T = 310;
       double Ca_o = 2;
       double i_CalTerm1 = (F*F)*(4*V - 60)/(R*T);
@@ -1996,44 +1999,44 @@ double ThisReaction::getValue(int iCell, int varHandle, double V) const
    }
    else if (varHandle == i_K1_handle)
    {
-      double F = 96485.341499999995;
-      double R = 8314.4719999999998;
+      double F = 96485.3415000000;
+      double R = 8314.47200000000;
       double T = 310;
-      double K_o = 5.4000000000000004;
+      double K_o = 5.40000000000000;
       double _expensive_functions_026 = log(K_o/K_i);
       double E_K = R*T*_expensive_functions_026/F;
       double VEK = -E_K + V;
-      double _expensive_functions_035 = exp(0.059999999999999998*VEK);
-      double alpha_K1 = 0.10000000000000001/(6.1442123533282098e-6*_expensive_functions_035 + 1);
+      double _expensive_functions_035 = exp(0.06*VEK);
+      double alpha_K1 = 0.1/(6.14421235332821e-6*_expensive_functions_035 + 1);
       double _expensive_functions_036 = exp(-0.5*VEK);
-      double _expensive_functions_037 = exp(0.10000000000000001*VEK);
-      double _expensive_functions_038 = exp(0.00020000000000000001*VEK);
-      double beta_K1 = (0.36787944117144233*_expensive_functions_037 + 3.0606040200802673*_expensive_functions_038)/(_expensive_functions_036 + 1);
+      double _expensive_functions_037 = exp(0.1*VEK);
+      double _expensive_functions_038 = exp(0.0002*VEK);
+      double beta_K1 = (0.367879441171442*_expensive_functions_037 + 3.06060402008027*_expensive_functions_038)/(_expensive_functions_036 + 1);
       double xK1_inf = alpha_K1/(alpha_K1 + beta_K1);
       double _expensive_functions_039 = sqrt(K_o);
-      double i_K1 = 0.43033148291193518*VEK*_expensive_functions_039*g_K1*xK1_inf;
+      double i_K1 = 0.430331482911935*VEK*_expensive_functions_039*g_K1*xK1_inf;
       return i_K1;
    }
    else if (varHandle == i_Kr_handle)
    {
-      double F = 96485.341499999995;
-      double R = 8314.4719999999998;
+      double F = 96485.3415000000;
+      double R = 8314.47200000000;
       double T = 310;
-      double K_o = 5.4000000000000004;
+      double K_o = 5.40000000000000;
       double _expensive_functions_026 = log(K_o/K_i);
       double E_K = R*T*_expensive_functions_026/F;
       double VEK = -E_K + V;
       double _expensive_functions_040 = sqrt(K_o);
-      double i_Kr = 0.43033148291193518*VEK*_expensive_functions_040*Xr1*Xr2*g_Kr;
+      double i_Kr = 0.430331482911935*VEK*_expensive_functions_040*Xr1*Xr2*g_Kr;
       return i_Kr;
    }
    else if (varHandle == i_Ks_handle)
    {
-      double F = 96485.341499999995;
-      double R = 8314.4719999999998;
+      double F = 96485.3415000000;
+      double R = 8314.47200000000;
       double T = 310;
-      double K_o = 5.4000000000000004;
-      double P_kna = 0.029999999999999999;
+      double K_o = 5.40000000000000;
+      double P_kna = 0.0300000000000000;
       double Na_o = 140;
       double _expensive_functions_042 = log((K_o + Na_o*P_kna)/(K_i + Na_i*P_kna));
       double E_Ks = R*T*_expensive_functions_042/F;
@@ -2042,8 +2045,8 @@ double ThisReaction::getValue(int iCell, int varHandle, double V) const
    }
    else if (varHandle == i_Na_handle)
    {
-      double F = 96485.341499999995;
-      double R = 8314.4719999999998;
+      double F = 96485.3415000000;
+      double R = 8314.47200000000;
       double T = 310;
       double Na_o = 140;
       double _expensive_functions_041 = log(Na_o/Na_i);
@@ -2053,16 +2056,16 @@ double ThisReaction::getValue(int iCell, int varHandle, double V) const
    }
    else if (varHandle == i_NaCa_handle)
    {
-      double F = 96485.341499999995;
-      double R = 8314.4719999999998;
+      double F = 96485.3415000000;
+      double R = 8314.47200000000;
       double T = 310;
       double Ca_o = 2;
       double K_NaCa = 1000;
-      double K_sat = 0.10000000000000001;
-      double Km_Ca = 1.3799999999999999;
-      double Km_Nai = 87.5;
-      double alpha = 2.5;
-      double gamma = 0.34999999999999998;
+      double K_sat = 0.100000000000000;
+      double Km_Ca = 1.38000000000000;
+      double Km_Nai = 87.5000000000000;
+      double alpha = 2.50000000000000;
+      double gamma = 0.350000000000000;
       double exp_gamma_VFRT = exp(F*V*gamma/(R*T));
       double exp_gamma_m1_VFRT = exp(F*V*(gamma - 1)/(R*T));
       double Na_o = 140;
@@ -2071,23 +2074,23 @@ double ThisReaction::getValue(int iCell, int varHandle, double V) const
    }
    else if (varHandle == i_NaK_handle)
    {
-      double F = 96485.341499999995;
-      double R = 8314.4719999999998;
+      double F = 96485.3415000000;
+      double R = 8314.47200000000;
       double T = 310;
-      double K_o = 5.4000000000000004;
+      double K_o = 5.40000000000000;
       double K_mNa = 40;
       double K_mk = 1;
-      double P_NaK = 2.7240000000000002;
+      double P_NaK = 2.72400000000000;
       double _expensive_functions_031 = exp(-F*V/(R*T));
-      double _expensive_functions_032 = exp(-0.10000000000000001*F*V/(R*T));
-      double i_NaK_term = K_o*P_NaK/((K_o + K_mk)*(0.035299999999999998*_expensive_functions_031 + 0.1245*_expensive_functions_032 + 1));
+      double _expensive_functions_032 = exp(-0.1*F*V/(R*T));
+      double i_NaK_term = K_o*P_NaK/((K_o + K_mk)*(0.0353*_expensive_functions_031 + 0.1245*_expensive_functions_032 + 1));
       double i_NaK = Na_i*i_NaK_term/(Na_i + K_mNa);
       return i_NaK;
    }
    else if (varHandle == i_b_Ca_handle)
    {
-      double F = 96485.341499999995;
-      double R = 8314.4719999999998;
+      double F = 96485.3415000000;
+      double R = 8314.47200000000;
       double T = 310;
       double Ca_o = 2;
       double _expensive_functions_012 = log(Ca_o/Ca_i);
@@ -2097,8 +2100,8 @@ double ThisReaction::getValue(int iCell, int varHandle, double V) const
    }
    else if (varHandle == i_b_Na_handle)
    {
-      double F = 96485.341499999995;
-      double R = 8314.4719999999998;
+      double F = 96485.3415000000;
+      double R = 8314.47200000000;
       double T = 310;
       double Na_o = 140;
       double _expensive_functions_041 = log(Na_o/Na_i);
@@ -2108,24 +2111,24 @@ double ThisReaction::getValue(int iCell, int varHandle, double V) const
    }
    else if (varHandle == i_leak_handle)
    {
-      double V_leak = 0.00036000000000000002;
+      double V_leak = 0.000360000000000000;
       double i_leak = V_leak*(Ca_SR - Ca_i);
       return i_leak;
    }
    else if (varHandle == i_p_Ca_handle)
    {
-      double K_pCa = 0.00050000000000000001;
+      double K_pCa = 0.000500000000000000;
       double i_p_Ca = Ca_i*g_pCa/(Ca_i + K_pCa);
       return i_p_Ca;
    }
    else if (varHandle == i_p_K_handle)
    {
-      double F = 96485.341499999995;
-      double R = 8314.4719999999998;
+      double F = 96485.3415000000;
+      double R = 8314.47200000000;
       double T = 310;
-      double K_o = 5.4000000000000004;
-      double _expensive_functions_019 = exp(-0.16722408026755853*V);
-      double i_p_K_term = (1.0/(65.405215741938321*_expensive_functions_019 + 1));
+      double K_o = 5.40000000000000;
+      double _expensive_functions_019 = exp(-0.167224080267559*V);
+      double i_p_K_term = (1.0/(65.4052157419383*_expensive_functions_019 + 1));
       double _expensive_functions_026 = log(K_o/K_i);
       double E_K = R*T*_expensive_functions_026/F;
       double VEK = -E_K + V;
@@ -2134,11 +2137,11 @@ double ThisReaction::getValue(int iCell, int varHandle, double V) const
    }
    else if (varHandle == i_rel_handle)
    {
-      double EC = 1.5;
-      double V_rel = 0.10199999999999999;
-      double k1_prime = 0.14999999999999999;
-      double k3 = 0.059999999999999998;
-      double max_sr = 2.5;
+      double EC = 1.50000000000000;
+      double V_rel = 0.102000000000000;
+      double k1_prime = 0.150000000000000;
+      double k3 = 0.0600000000000000;
+      double max_sr = 2.50000000000000;
       double min_sr = 1;
       double kcasr = max_sr - (max_sr - min_sr)/(1 + (EC*EC)/(Ca_SR*Ca_SR));
       double k1 = k1_prime/kcasr;
@@ -2148,10 +2151,10 @@ double ThisReaction::getValue(int iCell, int varHandle, double V) const
    }
    else if (varHandle == i_to_handle)
    {
-      double F = 96485.341499999995;
-      double R = 8314.4719999999998;
+      double F = 96485.3415000000;
+      double R = 8314.47200000000;
       double T = 310;
-      double K_o = 5.4000000000000004;
+      double K_o = 5.40000000000000;
       double _expensive_functions_026 = log(K_o/K_i);
       double E_K = R*T*_expensive_functions_026/F;
       double VEK = -E_K + V;
@@ -2160,14 +2163,14 @@ double ThisReaction::getValue(int iCell, int varHandle, double V) const
    }
    else if (varHandle == i_up_handle)
    {
-      double K_up = 0.00025000000000000001;
-      double Vmax_up = 0.0063749999999999996;
+      double K_up = 0.000250000000000000;
+      double Vmax_up = 0.00637500000000000;
       double i_up = Vmax_up/(1 + (K_up*K_up)/(Ca_i*Ca_i));
       return i_up;
    }
    else if (varHandle == i_xfer_handle)
    {
-      double V_xfer = 0.0038;
+      double V_xfer = 0.00380000000000000;
       double i_xfer = V_xfer*(-Ca_i + Ca_ss);
       return i_xfer;
    }
