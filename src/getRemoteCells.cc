@@ -64,7 +64,10 @@ void getRemoteCells(Simulate& sim, const string& name, MPI_Comm comm)
    int recvBuffSize=cellExchange.recvSize(); 
    anatomy.nRemote() = recvBuffSize;
    anatomy.cellArray().resize(anatomy.cellArray().size()+anatomy.nRemote());
-   cellExchange.execute(anatomy.cellArray(), anatomy.nLocal());
+   //HACK!  We have a cpu-only data structure, but that should be fine....
+   //Make the data fit the interface.  
+   rw_larray_ptr<AnatomyCell> CPUonlyCellArray(NULL, &(anatomy.cellArray()[0]), 0, anatomy.cellArray().size());
+   cellExchange.execute(CPUonlyCellArray, anatomy.nLocal());
    //size_t oldSize = anatomy.size();
    //cellExchange.execute(anatomy.cellArray(), anatomy.nLocal());
    //anatomy.nRemote() = anatomy.size() - oldSize;

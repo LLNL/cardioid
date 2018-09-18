@@ -29,7 +29,7 @@ class VoronoiCoarsening
    void colorDisplacements(std::vector<double>& dx,
                            std::vector<double>& dy,
                            std::vector<double>& dz);
-   void accumulateValues(ro_larray_ptr<double> val, LocalSums& valcolors);
+   void accumulateValues(ro_array_ptr<double> val, LocalSums& valcolors);
    
    const Long64& getCenterGid(int color) const
    {

@@ -40,7 +40,7 @@ private:
    // average for each local color
    std::map<int,std::vector<float> > averages_;
    
-   void computeColorAverages(ro_larray_ptr<double> val);
+   void computeColorAverages(ro_array_ptr<double> val);
    void writeAverages(const std::string& filename,
                       const double current_time,
                       const int current_loop)const;

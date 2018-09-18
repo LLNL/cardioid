@@ -1,170 +1,30 @@
 #pragma once
 
-#include <cstddef>
-#include <cassert>
-#include <iostream>
+#include "array_ptr.hh"
 #include "SpaceAllocator.hh"
 #include "ContextManager.hh"
 
-#if defined(USE_CUDA) and defined(__NVCC__) 
-#define HOST_DEVICE __device__ __host__
-#define HOST __host__
-#else
-#define HOST_DEVICE
-#define HOST
-#endif
 
 template <typename TTT>
 class lazy_array;
 
-template <typename TTT>
-class ro_larray_ptr
-{
-  public:
-   typedef const TTT* iterator;
-   
-   HOST_DEVICE inline std::size_t size() const { return size_; }
-   HOST_DEVICE inline const TTT& operator[](const int ii) const { return activePointer_[ii]; }
-   HOST_DEVICE inline const TTT* begin() const { return activePointer_; }
-   HOST_DEVICE inline const TTT* end() const { return activePointer_+size(); }
-   HOST_DEVICE inline const TTT* raw() const { return activePointer_; }
+template< class T > struct my_remove_const          { typedef T type; };
+template< class T > struct my_remove_const<const T> { typedef T type; };
+ 
 
-   HOST_DEVICE inline ro_larray_ptr(const ro_larray_ptr<TTT>& other)
-   : ro_larray_ptr(other.dataManager_, other.activePointer_, other.offset_, other.size_) {}
-   HOST_DEVICE inline ro_larray_ptr() : ro_larray_ptr(NULL, NULL, 0, 0) {}
-   HOST_DEVICE inline ro_larray_ptr(lazy_array<TTT>* dataManager, const TTT* activePointer, std::ptrdiff_t offset, const std::size_t newSize)
-   : dataManager_(dataManager), activePointer_(activePointer), offset_(offset), size_(newSize) {
-#if !defined(__CUDA_ARCH__)
-      use();
-#endif
-   }
-   HOST_DEVICE inline ro_larray_ptr(const TTT* rawData, std::size_t newSize)
-   : ro_larray_ptr(NULL, rawData, 0, newSize) {}
-   template <typename Allocator>
-   HOST_DEVICE inline ro_larray_ptr(const std::vector<TTT,Allocator>& rawData)
-   : ro_larray_ptr(NULL, &rawData[0], 0, rawData.size()) {}
-      
-   HOST_DEVICE inline ro_larray_ptr<TTT> slice(const int begin, const int end)
-   {
-      const TTT* newActivePointer = (activePointer_ == NULL) ? NULL : activePointer_+begin;
-      return ro_larray_ptr<TTT>(dataManager_, newActivePointer, (activePointer_+begin) - activePointer_, end-begin);
-   }
-
-   HOST void use()
-   {
-      if (dataManager_ != NULL)
-      {
-         ExecutionSpace space = dataManager_->getContext();
-         if (space >= 0) { useOn(space); }
-      }
-   }
-   
-   HOST void useNowhere()
-   {
-      activePointer_ = NULL;
-   }
-   
-  private:
-   HOST void useOn(const ExecutionSpace space)
-   {
-      activePointer_ = dataManager_->readonlyRaw(space,offset_);
-   }
-
-   const TTT* activePointer_;
-   std::ptrdiff_t offset_;
-   std::size_t size_;
-   lazy_array<TTT>* dataManager_;
-};
-
-template <typename TTT>
-class OnlyAssignable
+template <typename External,typename TTT>
+class lazy_array_impl
 {
  public:
-   HOST_DEVICE inline OnlyAssignable(TTT& dataPoint) : dataPoint_(dataPoint) {}
-   HOST_DEVICE inline TTT& operator=(const TTT value)
-   {
-      dataPoint_ = value;
-      return dataPoint_;
-   }
- private:
-   TTT& dataPoint_;
-};
-
-template <typename TTT>
-class AssignableIterator
-{
- public:
-   typedef std::output_iterator_tag iterator_category;
    typedef TTT value_type;
-   typedef std::ptrdiff_t difference_type;
-   typedef TTT* pointer;
-   typedef TTT& reference;
-
-   HOST_DEVICE inline AssignableIterator() : ptr_(NULL) {}
-   HOST_DEVICE inline AssignableIterator(TTT* ptr) : ptr_(ptr) {}
-   
-   HOST_DEVICE inline OnlyAssignable<TTT> operator*() { return OnlyAssignable<TTT>(*ptr_); }
-   HOST_DEVICE inline AssignableIterator<TTT>& operator++() { ++ptr_; return *this; }
-   HOST_DEVICE inline AssignableIterator<TTT> operator++(int) { AssignableIterator<TTT> temp(*this); ptr_++; return temp; }
-   HOST_DEVICE inline AssignableIterator<TTT>& operator--() { --ptr_; return *this; }
-   HOST_DEVICE inline AssignableIterator<TTT> operator--(int) { AssignableIterator<TTT> temp(*this); ptr_--; return temp; }
-
-   HOST_DEVICE inline bool operator==(const AssignableIterator<TTT> other) const { return ptr_==other.ptr_; }
-   HOST_DEVICE inline bool operator!=(const AssignableIterator<TTT> other) const { return ptr_!=other.ptr_; }
-
- private:
-   pointer ptr_;
-};
-
-template <typename TTT>
-class wo_larray_ptr
-{
-  public:
-   typedef AssignableIterator<TTT> iterator;
-   
-   HOST_DEVICE inline std::size_t size() const { return size_; }
-   HOST_DEVICE inline OnlyAssignable<TTT> operator[](const int ii) { return OnlyAssignable<TTT>(activePointer_[ii]); }
-   HOST_DEVICE inline iterator begin() { return iterator(activePointer_); }
-   HOST_DEVICE inline iterator end() { return iterator(activePointer_+size()); }
-   HOST_DEVICE inline TTT* raw() { return activePointer_; }
-
-   HOST_DEVICE inline void fill(const TTT value)
+   typedef typename my_remove_const<TTT>::type noconst_value_type;
+   HOST_DEVICE inline External slice(const int begin, const int end)
    {
-      TTT* data=activePointer_;
-      for (std::size_t ii=0; ii<size(); ii++)
-      {
-         data[ii] = value;
-      }
+      value_type* newData = activePointer_;
+      if (newData != NULL) { newData += begin; }
+      return External(dataManager_, newData, (activePointer_+begin) - activePointer_, end-begin);
    }
-   HOST_DEVICE inline void assign(const std::size_t numelem, const TTT value)
-   {
-      assert(numelem == size());
-      fill(value);
-   }
-
-   HOST_DEVICE inline wo_larray_ptr(const wo_larray_ptr<TTT>& other)
-   : wo_larray_ptr(other.dataManager_, other.activePointer_, other.offset_, other.size_) {}
-   HOST_DEVICE inline wo_larray_ptr() : wo_larray_ptr(NULL, NULL, 0, 0) {}
-   HOST_DEVICE inline wo_larray_ptr(lazy_array<TTT>* dataManager, TTT* activePointer, std::ptrdiff_t offset, const std::size_t newSize)
-   : dataManager_(dataManager), activePointer_(activePointer), offset_(offset), size_(newSize)
-   {
-#if !defined(__CUDA_ARCH__)
-      use();
-#endif
-   }
-   HOST_DEVICE inline wo_larray_ptr(TTT* rawData, const std::size_t newSize)
-   : wo_larray_ptr(NULL, rawData, 0, newSize) {}
-   HOST_DEVICE inline wo_larray_ptr(std::vector<TTT>& rawData)
-   : wo_larray_ptr(NULL, &rawData[0], 0, rawData.size()) {}
-
-
-   HOST_DEVICE inline wo_larray_ptr<TTT> slice(const int begin, const int end)
-   {
-      TTT* newActivePointer = (activePointer_ == NULL) ? NULL : activePointer_+begin;
-      return wo_larray_ptr<TTT>(dataManager_, newActivePointer, (activePointer_+begin) - activePointer_, end-begin);
-   }
-
-   HOST void use()
+   HOST inline void use()
    {
       if (dataManager_ != NULL)
       {
@@ -172,107 +32,80 @@ class wo_larray_ptr
          if (space >= 0) { useOn(space); }
       }
    }
-
-   HOST void useNowhere()
-   {
-      activePointer_ = NULL;
-   }
+   HOST_DEVICE inline std::size_t size() const { return size_; }
    
-  private:
-   HOST void useOn(const ExecutionSpace space)
-   {
-      activePointer_ = dataManager_->writeonlyRaw(space,offset_);
+ protected:
+   HOST_DEVICE inline value_type* deref() {
+#if !defined(__CUDA_ARCH__) && defined(LAZY_ARRAY_CHECK_USAGE)
+      assert(dataManager_->getContext() != CPU);
+#endif
+      return activePointer_;
    }
-
+   HOST_DEVICE inline void create(lazy_array<noconst_value_type>* dataManager, TTT* activePointer, std::ptrdiff_t offset, const std::size_t newSize)
+   {
+      dataManager_ = dataManager;
+      activePointer_ = activePointer;
+      offset_ = offset;
+      size_ = newSize;
+#if !defined(__CUDA_ARCH__)
+      use();
+#endif      
+   }
+   HOST inline void useOn(const ExecutionSpace space)
+   {
+      this->activePointer_ = this->dataManager_->raw(this, space, offset_);
+   }
    TTT* activePointer_;
    std::ptrdiff_t offset_;
    std::size_t size_;
-   lazy_array<TTT>* dataManager_;
+   lazy_array<noconst_value_type>* dataManager_;
+};
+
+
+template <typename TTT>
+class ro_larray_ptr : public ro_array_ptr_interface<lazy_array_impl<ro_larray_ptr<TTT>,const TTT>,const TTT&,const TTT*>
+{
+ public:
+   HOST_DEVICE inline ro_larray_ptr() : ro_larray_ptr(NULL, NULL, 0, 0) {}
+   HOST_DEVICE inline ro_larray_ptr(const ro_larray_ptr<TTT>& other)
+   : ro_larray_ptr(other.dataManager_, other.activePointer_, other.offset_, other.size_) {}
+   HOST_DEVICE inline ro_larray_ptr(lazy_array<TTT>* dataManager, const TTT* activePointer, const std::ptrdiff_t offset, const std::size_t newSize)
+   { this->create(dataManager,activePointer,offset,newSize); }
+   HOST_DEVICE inline operator ro_array_ptr<TTT>() { return ro_array_ptr<TTT>(this->deref(), this->size()); }
 };
 
 template <typename TTT>
-class rw_larray_ptr
+class wo_larray_ptr : public rw_array_ptr_interface<lazy_array_impl<wo_larray_ptr<TTT>,TTT>,OnlyAssignable<TTT>,AssignableIterator<TTT> >
 {
-  public:
-   typedef TTT* iterator;
-   
-   HOST_DEVICE inline std::size_t size() const { return size_; }
-   HOST_DEVICE inline TTT& operator[](const int ii) { return activePointer_[ii]; }
-   HOST_DEVICE inline TTT* begin() { return activePointer_; }
-   HOST_DEVICE inline TTT* end() { return activePointer_+size(); }
-   HOST_DEVICE inline TTT* raw() { return activePointer_; }
+ public:
+   HOST_DEVICE inline wo_larray_ptr() : wo_larray_ptr(NULL, NULL, 0, 0) {}
+   HOST_DEVICE inline wo_larray_ptr(const wo_larray_ptr<TTT>& other)
+   : wo_larray_ptr(other.dataManager_, other.activePointer_, other.offset_, other.size_) {}
+   HOST_DEVICE inline wo_larray_ptr(lazy_array<TTT>* dataManager, TTT* activePointer, const std::ptrdiff_t offset, const std::size_t newSize)
+   { this->create(dataManager,activePointer,offset,newSize); }
+   HOST_DEVICE inline operator wo_array_ptr<TTT>() { return wo_array_ptr<TTT>(this->deref(), this->size()); }
+};
 
-   HOST_DEVICE inline void fill(const TTT value)
-   {
-      TTT* data=activePointer_;
-      for (std::size_t ii=0; ii<size(); ii++)
-      {
-         data[ii] = value;
-      }
-   }
-   HOST_DEVICE inline void assign(const std::size_t numelem, const TTT value)
-   {
-      assert(numelem == size());
-      fill(value);
-   }
-
+template <typename TTT>
+class rw_larray_ptr : public rw_array_ptr_interface<lazy_array_impl<rw_larray_ptr<TTT>,TTT>,TTT&,TTT*>
+{
+ public:
+   HOST_DEVICE inline rw_larray_ptr() : rw_larray_ptr(NULL, NULL, 0, 0) {}
+   HOST_DEVICE inline rw_larray_ptr(const rw_larray_ptr<TTT>& other)
+   : rw_larray_ptr(other.dataManager_, other.activePointer_, other.offset_, other.size_) {}
+   HOST_DEVICE inline rw_larray_ptr(lazy_array<TTT>* dataManager, TTT* activePointer, const std::ptrdiff_t offset, const std::size_t newSize)
+   { this->create(dataManager,activePointer,offset,newSize); }
    HOST_DEVICE inline operator ro_larray_ptr<TTT>()
    {
-      return ro_larray_ptr<TTT>(dataManager_, activePointer_, offset_, size_);
+      return ro_larray_ptr<TTT>(this->dataManager_, this->activePointer_, this->offset_, this->size());
    }
    HOST_DEVICE inline operator wo_larray_ptr<TTT>()
    {
-      return wo_larray_ptr<TTT>(dataManager_, activePointer_, offset_, size_);
+      return wo_larray_ptr<TTT>(this->dataManager_, this->activePointer_, this->offset_, this->size());
    }
+   HOST_DEVICE inline operator rw_array_ptr<TTT>() { return rw_array_ptr<TTT>(this->deref(), this->size()); }
 
-
-   HOST_DEVICE inline rw_larray_ptr(const rw_larray_ptr<TTT>& other)
-   : rw_larray_ptr(other.dataManager_, other.activePointer_, other.offset_, other.size_) {}
-   HOST_DEVICE inline rw_larray_ptr() : rw_larray_ptr(NULL, NULL, 0, 0) {}
-   HOST_DEVICE inline rw_larray_ptr(lazy_array<TTT>* dataManager, TTT* activePointer, std::ptrdiff_t offset, const std::size_t newSize)
-   : dataManager_(dataManager), activePointer_(activePointer), offset_(offset), size_(newSize)
-   {
-#if !defined(__CUDA_ARCH__)
-      use();
-#endif
-   }
-   HOST_DEVICE inline rw_larray_ptr(TTT* rawData, const std::size_t newSize)
-   : rw_larray_ptr(NULL, rawData, 0, newSize) {}
-   HOST_DEVICE inline rw_larray_ptr(std::vector<TTT>& rawData)
-   : rw_larray_ptr(NULL, &rawData[0], 0, rawData.size()) {}
-
-   HOST_DEVICE inline rw_larray_ptr<TTT> slice(const int begin, const int end)
-   {
-      TTT* newActivePointer = (activePointer_ == NULL) ? NULL : activePointer_+begin;
-      return rw_larray_ptr<TTT>(dataManager_, newActivePointer, (activePointer_+begin) - activePointer_, end-begin);
-   }
-
-   HOST void use()
-   {
-      if (dataManager_ != NULL)
-      {
-         ExecutionSpace space = dataManager_->getContext();
-         if (space >= 0) { useOn(space); }
-      }
-   }
-
-   HOST void useNowhere()
-   {
-      activePointer_ = NULL;
-   }
-   
- private:
-   HOST void useOn(const ExecutionSpace space)
-   {
-      activePointer_ = dataManager_->readwriteRaw(space,offset_);
-   }
-
-   TTT* activePointer_;
-   std::ptrdiff_t offset_;
-   std::size_t size_;
-   lazy_array<TTT>* dataManager_;
 };
-
 
 template <typename TTT>
 class lazy_array
@@ -381,8 +214,25 @@ class lazy_array
    inline rw_larray_ptr<TTT> readwrite() { return rw_larray_ptr<TTT>(this, NULL, 0, size()); }
    inline wo_larray_ptr<TTT> writeonly() { return wo_larray_ptr<TTT>(this, NULL, 0, size()); }
    inline ro_larray_ptr<TTT> readonly() const { return ro_larray_ptr<TTT>(const_cast<lazy_array<TTT>*>(this), NULL, 0, size()); }
-   
-   TTT* readwriteRaw(ExecutionSpace space,std::ptrdiff_t offset=0)
+
+   HOST inline const TTT* raw(lazy_array_impl<ro_larray_ptr<TTT>,const TTT>*,
+                              const ExecutionSpace space, const std::ptrdiff_t offset=0)
+   {
+      allocateFor(space);
+      moveTo(space);
+      
+      return lookup(space,offset);      
+   }
+   HOST inline TTT* raw(lazy_array_impl<wo_larray_ptr<TTT>,TTT>*,
+                        const ExecutionSpace space, const std::ptrdiff_t offset=0)
+   {
+      allocateFor(space);
+      writeOn(space);
+      
+      return lookup(space,offset);      
+   }
+   HOST inline TTT* raw(lazy_array_impl<rw_larray_ptr<TTT>,TTT>*,
+                        const ExecutionSpace space, const std::ptrdiff_t offset=0)
    {
       allocateFor(space);
       moveTo(space);
@@ -390,20 +240,6 @@ class lazy_array
       
       return lookup(space,offset);
    }
-   TTT* writeonlyRaw(ExecutionSpace space, std::ptrdiff_t offset=0)
-   {
-      allocateFor(space);
-      writeOn(space);
-
-      return lookup(space,offset);
-   }
-   TTT* readonlyRaw(ExecutionSpace space, std::ptrdiff_t offset=0)
-   {
-      allocateFor(space);
-      moveTo(space);
-
-      return lookup(space,offset);
-   }   
    
  private:
    TTT* pointerRecord_[NUMSPACES];
@@ -433,6 +269,7 @@ class lazy_array
       {
           
          if (NUMSPACES == 1) {}
+#ifdef USE_CUDA
          else if (NUMSPACES == 2) {
             ExecutionSpace otherSpace;
             if (space == GPU) { otherSpace = CPU; }
@@ -443,7 +280,10 @@ class lazy_array
                            otherSpace, pointerRecord_[otherSpace],
                            size());
             }
-         } else {
+         }
+#endif
+         else
+         {
             assert(false && "Need to figure out an algorithm for more than 2 spaces");
          }
          isValid_[space] = true;
@@ -455,4 +295,3 @@ class lazy_array
    }
    
 };
-

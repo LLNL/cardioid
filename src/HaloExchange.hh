@@ -99,8 +99,8 @@ class HaloExchangeBase
 
 #ifdef SPI
 // spi version
-template <class T, class Allocator = std::allocator<T> >
-class HaloExchange : public HaloExchangeBase<T, Allocator>
+template <class T>
+class HaloExchange : public HaloExchangeBase<T>
 {
   public:
    using HaloExchangeBase<T>::commTable_;

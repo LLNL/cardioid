@@ -44,7 +44,7 @@ CaAverageSensor::CaAverageSensor(const SensorParms& sp,
    ca_handle_=reaction_.getVarHandle("Ca_i");
 }
 
-void CaAverageSensor::computeColorAverages(ro_larray_ptr<double> val)
+void CaAverageSensor::computeColorAverages(ro_array_ptr<double> val)
 {
    // calculate local sums
    coarsening_.accumulateValues(val,avg_valcolors_);
