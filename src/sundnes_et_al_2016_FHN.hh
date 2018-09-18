@@ -16,33 +16,16 @@
 # include <simdops/simdops.hpp>
 #endif //USE_CUDA
 
-REACTION_FACTORY(VecTT06)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);    
+REACTION_FACTORY(sundnes_et_al_2016_FHN)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);    
 
-namespace VecTT06
+namespace sundnes_et_al_2016_FHN
 {
 
 #ifndef USE_CUDA
    struct State
    {
 
-      double Ca_SR[SIMDOPS_FLOAT64V_WIDTH];
-      double Ca_i[SIMDOPS_FLOAT64V_WIDTH];
-      double Ca_ss[SIMDOPS_FLOAT64V_WIDTH];
-      double K_i[SIMDOPS_FLOAT64V_WIDTH];
-      double Na_i[SIMDOPS_FLOAT64V_WIDTH];
-      double R_prime[SIMDOPS_FLOAT64V_WIDTH];
-      double Xr1[SIMDOPS_FLOAT64V_WIDTH];
-      double Xr2[SIMDOPS_FLOAT64V_WIDTH];
-      double Xs[SIMDOPS_FLOAT64V_WIDTH];
-      double d[SIMDOPS_FLOAT64V_WIDTH];
-      double f[SIMDOPS_FLOAT64V_WIDTH];
-      double f2[SIMDOPS_FLOAT64V_WIDTH];
-      double fCass[SIMDOPS_FLOAT64V_WIDTH];
-      double h[SIMDOPS_FLOAT64V_WIDTH];
-      double j[SIMDOPS_FLOAT64V_WIDTH];
-      double m[SIMDOPS_FLOAT64V_WIDTH];
-      double r[SIMDOPS_FLOAT64V_WIDTH];
-      double s[SIMDOPS_FLOAT64V_WIDTH];
+      double W[SIMDOPS_FLOAT64V_WIDTH];
    };
 #endif //USE_CUDA
 
@@ -69,17 +52,9 @@ namespace VecTT06
 
     public:
       //PARAMETERS
-      double celltype;
-      double g_CaL;
-      double g_K1;
-      double g_Kr;
-      double g_Ks;
-      double g_Na;
-      double g_bca;
-      double g_bna;
-      double g_pCa;
-      double g_pK;
-      double g_to;
+      double Vpeak;
+      double Vrest;
+      double Vthresh;
 #ifdef USE_CUDA
     public:
       void calc(double dt,
@@ -105,11 +80,12 @@ namespace VecTT06
                 VectorDouble32& dVm);
       void initializeMembraneVoltage(VectorDouble32& Vm);
 
-      std::vector<State> state_;
+      std::vector<State, AlignedAllocator<State> > state_;
 #endif
 
-      Interpolation _interpolant[30];
-      FRIEND_FACTORY(VecTT06)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);
+      //BGQ_HACKFIX, compiler bug with zero length arrays
+      Interpolation _interpolant[0+1];
+      FRIEND_FACTORY(sundnes_et_al_2016_FHN)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);
    };
 }
 

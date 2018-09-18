@@ -2,12 +2,11 @@
 #define REACTION_FACTORY_HH
 #include <vector>
 #include <string>
-#include <functional>
 #include "object.h"
 class ThreadTeam;
 class Reaction;
 
-typedef std::function<Reaction*(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group)> reactionFactoryFunction;
+typedef Reaction* (*reactionFactoryFunction)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);
 
 Reaction* reactionFactory(const std::string& name, double dt, const int numPoints,
                           const ThreadTeam &group);
@@ -18,7 +17,7 @@ void registerBuiltinReactions();
 
 #ifdef DYNAMIC_REACTION
 #define REACTION_FACTORY(name) extern "C" Reaction* factory
-#define FRIEND_FACTORY(name) friend extern "C" Reaction* ::factory
+#define FRIEND_FACTORY(name) friend Reaction* ::factory
 #else
 #define REACTION_FACTORY(name) Reaction* reactionFactoryFor##name
 #define FRIEND_FACTORY(name) friend Reaction* ::reactionFactoryFor##name

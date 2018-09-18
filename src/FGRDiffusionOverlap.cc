@@ -28,9 +28,9 @@ FGRDiffusionOverlap::FGRDiffusionOverlap(const FGRDiffusionParms& parms,
   diffusionScale_(parms.diffusionScale_)
 {
 
-   unsigned nx = localGrid_.nx();
-   unsigned ny = localGrid_.ny();
-   unsigned nz = localGrid_.nz();
+   int nx = localGrid_.nx();
+   int ny = localGrid_.ny();
+   int nz = localGrid_.nz();
 
    cout << "the bounding box size is"<<nx<<"x"<<ny<<"x"<<nz<<endl;
    // This is a test
@@ -387,9 +387,9 @@ void FGRDiffusionOverlap::test()
   //prepare Voltage
   double* BufferL = new double[nLocal_];
   double* BufferR = new double[nRemote_];
-  unsigned nx = localGrid_.nx();
-  unsigned ny = localGrid_.ny();
-  unsigned nz = localGrid_.nz();
+  int nx = localGrid_.nx();
+  int ny = localGrid_.ny();
+  int nz = localGrid_.nz();
 
   for(int ii=0;ii<nLocal_;ii++) BufferL[ii]=ii;
   for(int ii=0;ii<nRemote_;ii++) BufferR[ii]=ii+1000000;
@@ -486,9 +486,9 @@ void FGRDiffusionOverlap::updateRemoteVoltage(const Managed<ArrayView<double>> V
 void FGRDiffusionOverlap::buildSlabIndex(const Anatomy& anatomy)
 {
    slabIndex_.resize(anatomy.size(),0);
-   unsigned nx = localGrid_.nx();
-   unsigned ny = localGrid_.ny();
-   unsigned nz = localGrid_.nz();
+   int nx = localGrid_.nx();
+   int ny = localGrid_.ny();
+   int nz = localGrid_.nz();
    uint32_t ny4=((int)(ny+3)/4)*4;
    for (unsigned ii=nLocal_; ii<anatomy.size(); ++ii)
    {

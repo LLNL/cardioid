@@ -80,6 +80,8 @@ set (reaction_src
 	#SimpleOHaraRudy.cc
 	#SimpleGrandi.cc
         #Passive.cc
+        #ReactionFHN.cc
+        #sundnes_et_al_2016_FHN.cc
 	TT06Tau.cc
 	TT06Func.cc
         BetterTT06.cc

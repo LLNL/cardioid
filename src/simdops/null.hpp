@@ -19,6 +19,17 @@ inline native_vector_type mul(const native_vector_type a, const native_vector_ty
 inline native_vector_type div(const native_vector_type a, const native_vector_type b) { return a/b; }
 inline native_vector_type neg(const native_vector_type a) { return -a; }
 
+inline native_vector_type lt(const native_vector_type a, const native_vector_type b) { return a<b; }
+inline native_vector_type gt(const native_vector_type a, const native_vector_type b) { return a>b; }
+inline native_vector_type le(const native_vector_type a, const native_vector_type b) { return a<=b; }
+inline native_vector_type ge(const native_vector_type a, const native_vector_type b) { return a>=b; }
+inline native_vector_type eq(const native_vector_type a, const native_vector_type b) { return a==b; }
+inline native_vector_type neq(const native_vector_type a, const native_vector_type b) { return a!=b; }
+inline native_vector_type b_and(const native_vector_type a, const native_vector_type b) { return a && b; }
+inline native_vector_type b_or(const native_vector_type a, const native_vector_type b) { return a || b; }
+inline native_vector_type b_not(const native_vector_type a) { return !a; }
+   
+
 
 }
 

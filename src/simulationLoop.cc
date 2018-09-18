@@ -27,7 +27,7 @@
 #include  "cudaNVTX.h"
 
 /*
-   This follwing header, fastBarrier_nosync.hh, contains barrier code
+   This following header, fastBarrier_nosync.hh, contains barrier code
    stolen from fastBarrierBGQ.hh, but with memory synchronization
    turned off. It is acceptable to use that when a barrier executes
    entirely within one core. It is necessary that a squad runs within
