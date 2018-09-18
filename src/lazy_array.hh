@@ -71,7 +71,7 @@ class ro_larray_ptr : public ro_array_ptr_interface<lazy_array_impl<ro_larray_pt
    : ro_larray_ptr(other.dataManager_, other.activePointer_, other.offset_, other.size_) {}
    HOST_DEVICE inline ro_larray_ptr(lazy_array<TTT>* dataManager, const TTT* activePointer, const std::ptrdiff_t offset, const std::size_t newSize)
    { this->create(dataManager,activePointer,offset,newSize); }
-   HOST_DEVICE inline operator ro_array_ptr<TTT>() { return ro_array_ptr<TTT>(this->deref(), this->size()); }
+   HOST_DEVICE inline operator ro_array_ptr<TTT>() { return ro_array_ptr<TTT>(this->raw(), this->size()); }
 };
 
 template <typename TTT>
@@ -83,7 +83,7 @@ class wo_larray_ptr : public rw_array_ptr_interface<lazy_array_impl<wo_larray_pt
    : wo_larray_ptr(other.dataManager_, other.activePointer_, other.offset_, other.size_) {}
    HOST_DEVICE inline wo_larray_ptr(lazy_array<TTT>* dataManager, TTT* activePointer, const std::ptrdiff_t offset, const std::size_t newSize)
    { this->create(dataManager,activePointer,offset,newSize); }
-   HOST_DEVICE inline operator wo_array_ptr<TTT>() { return wo_array_ptr<TTT>(this->deref(), this->size()); }
+   HOST_DEVICE inline operator wo_array_ptr<TTT>() { return wo_array_ptr<TTT>(this->raw(), this->size()); }
 };
 
 template <typename TTT>
@@ -103,7 +103,7 @@ class rw_larray_ptr : public rw_array_ptr_interface<lazy_array_impl<rw_larray_pt
    {
       return wo_larray_ptr<TTT>(this->dataManager_, this->activePointer_, this->offset_, this->size());
    }
-   HOST_DEVICE inline operator rw_array_ptr<TTT>() { return rw_array_ptr<TTT>(this->deref(), this->size()); }
+   HOST_DEVICE inline operator rw_array_ptr<TTT>() { return rw_array_ptr<TTT>(this->raw(), this->size()); }
 
 };
 
