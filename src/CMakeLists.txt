@@ -35,14 +35,32 @@ if (CMAKE_SYSTEM_NAME MATCHES Darwin)
   SET(CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS "${CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS} -undefined dynamic_lookup")
 endif()
 
-find_package(OpenMP)
-#set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
 add_definitions(-DDiff_Weight_Type_Single)
 add_definitions(-DWITH_PIO -DWITH_MPI)
-add_definitions(-DUSE_CUDA)
-add_definitions(-DUSE_NVTX)
+
+
+
+function(add_to_nvcc inString)
+  set(_list "${inString}")
+  separate_arguments(_list)
+  foreach(flag IN LISTS _list)
+    if (NOT "${flag}" STREQUAL "")
+      set (CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -Xcompiler ${flag}" PARENT_SCOPE)
+    endif()
+  endforeach()
+endfunction()
+
+find_package(OpenMP)
+
+if (ENABLE_CUDA)
+   add_definitions(-DUSE_CUDA)
+   add_definitions(-DUSE_NVTX)
+   find_package(CUDA QUIET REQUIRED)
+else()
+   set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()   
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/include)
@@ -52,26 +70,55 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 find_library(BLAS_LIB blas)
 find_library(LAPACK_LIB lapack)
 
-find_package(CUDA QUIET REQUIRED)
-
-find_library(CUDA_NVTX_LIBRARY
-  NAMES nvToolsExt nvTools nvtoolsext nvtools nvtx NVTX
-  PATHS ${CUDA_TOOLKIT_ROOT_DIR}
-  PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib"
-  DOC "Location of the CUDA Toolkit Extension (NVTX) library"
-  NO_DEFAULT_PATH
-  )
-mark_as_advanced(CUDA_NVTX_LIBRARY)
-
-set(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_NVTX_LIBRARY})
+#find_package(CUDA QUIET REQUIRED)
+#find_library(CUDA_NVTX_LIBRARY
+#  NAMES nvToolsExt nvTools nvtoolsext nvtools nvtx NVTX
+#  PATHS ${CUDA_TOOLKIT_ROOT_DIR}
+#  PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib"
+#  DOC "Location of the CUDA Toolkit Extension (NVTX) library"
+#  NO_DEFAULT_PATH
+#  )
+#mark_as_advanced(CUDA_NVTX_LIBRARY)
+#set(CUDA_LIBRARIES ${CUDA_LIBRARIES} ${CUDA_NVTX_LIBRARY})
 
 find_program(PERL perl)
 
 if (BLAS_LIB AND LAPACK_LIB)
    add_definitions(-DHAVE_LAPACK)
+   list(APPEND extra_libs ${LAPACK_LIB} ${BLAS_LIB})
+endif()
+
+add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc
+        COMMAND ${PERL} ARGS registerBuiltinReactions.pl ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc ${reaction_src}
+        MAIN_DEPENDENCY registerBuiltinReactions.pl
+        DEPENDS ${reaction_src}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+ )
+
+set (heart_transport_src
+   SpaceAllocator.cc ContextManager.cc 
+   lazy_array.hh
+)
+add_library(heart_transport ${heart_transport_src})
+if (ENABLE_CUDA)
+   target_link_libraries(heart_transport ${cuda_libs})
 endif()
 
 
+if (ENABLE_CUDA)
+   set (heart_explicit_cuda_src
+      CUDADiffusion.cc
+      CUDADiffusion.hh
+      CUDADiffusion_ker.cu
+      ECGSensor.cc
+      ECGSensor.hh
+      ECGSensor.cu
+      simulationLoopCuda.cu singleCellCuda.cu BoxStimulusCuda.cu HaloExchange.cu
+   )
+   cuda_add_library(heart_explicit_cuda ${heart_explicit_cuda_src})
+   target_link_libraries(heart_explicit_cuda heart_transport)
+endif()
 
 set (reaction_src
 	#TT04_CellML_Reaction.cc
@@ -86,30 +133,59 @@ set (reaction_src
 	TT06Func.cc
         BetterTT06.cc
 	pade.cc
-   #TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc
-   #TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc
+        #TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc
+        #TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc
 	#TT06_RRG.cc
-   spi_impl.c
-   clooper.c TT06GatesSimd2.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c
 )   
 
-add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc
-        COMMAND ${PERL} ARGS registerBuiltinReactions.pl ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc ${reaction_src}
-        MAIN_DEPENDENCY registerBuiltinReactions.pl
-        DEPENDS ${reaction_src}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
- )
+set (heart_gpu_aware_src
+   ${reaction_src}
+   ActivationAndRecoverySensor.cc
+   ActivationTimeSensor.cc
+   BoxStimulus.cc
+   BoxStimulus.hh
+   DVThreshSensor.cc
+   DataVoronoiCoarsening.cc
+   Diffusion.hh
+   GradientVoronoiCoarsening.cc
+   GradientVoronoiCoarsening.hh
+   HaloExchange.hh
+   MaxDVSensor.cc
+   MinMaxSensor.cc
+   PointListSensor.cc
+   PointStimulus.cc
+   PointStimulus.hh
+   Reaction.cc
+   Reaction.hh
+   ReactionManager.cc
+   ReactionManager.hh
+   Simulate.cc
+   Simulate.hh
+   StateVariableSensor.cc
+   Stimulus.hh
+   TestStimulus.cc
+   TestStimulus.hh
+   checkpointIO.cc
+   getRemoteCells.cc
+   simulationLoop.cc
+)
+add_library(heart_gpu_aware ${heart_gpu_aware_src})
+set(heart_gpu_aware_libs heart_transport ddcMDutil ${extra_libs})
+if (ENABLE_CUDA)
+  list(APPEND heart_gpu_aware_libs heart_explicit_cuda)
+endif()
+target_link_libraries(heart_gpu_aware ${heart_gpu_aware_libs})
 
 
-
-set (heart_src 
+set (heart_cpu_only_src 
+   spi_impl.c
+   clooper.c TT06GatesSimd2.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c
 	ThreadServer.cc
 	ThreadUtils.cc
 	stringUtils.cc
 	readCellList.cc
 	PioHeaderData.cc
-	Vector.cc SymmetricTensor.cc ConstantModel.cc ConstantReaction.cc
+	Vector.cc SymmetricTensor.cc
 	PerformanceTimers.cc unionOfStrings.cc getUserInfo.cc
         GDLoadBalancer.cc BlockLoadBalancer.cc workBoundBalancer.cc
 	pioBalancer.cc
@@ -123,10 +199,7 @@ set (heart_src
 	DomainInfo.cc
 	BoundingBox.cc
 	initializeSimulate.cc
-	Simulate.cc
 	initializeAnatomy.cc setConductivity.cc assignCellsToTasks.cc
-	getRemoteCells.cc
-	simulationLoop.cc
 	diffusionFactory.cc reactionFactory.cc
 	stimulusFactory.cc sensorFactory.cc drugFactory.cc
    Drug.cc DrugChannel.cc
@@ -139,44 +212,31 @@ set (heart_src
 	#FGRDiffusionStrip.cc
 	#OpenmpGpuRedblackDiffusion.cc
 	#OpenmpGpuFlatDiffusion.cc
-	CUDADiffusion.cc
-	CUDADiffusion_ker.cu
 	FGRUtils.cc
-	Reaction.cc
-	ReactionManager.cc
-	TestStimulus.cc PointStimulus.cc BoxStimulus.cc
 	PeriodicPulse.cc RandomPulse.cc
-	PointListSensor.cc ActivationTimeSensor.cc
-	ActivationAndRecoverySensor.cc
-	VoronoiCoarsening.cc DataVoronoiCoarsening.cc GradientVoronoiCoarsening.cc
+	VoronoiCoarsening.cc
 	CaAverageSensor.cc
-	ECGSensor.cc
-	ECGSensor.cu
-	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc DVThreshSensor.cc
-   StateVariableSensor.cc Interpolation.cc
-   SpaceAllocator.cc ContextManager.cc simulationLoopCuda.cu singleCellCuda.cu BoxStimulusCuda.cu HaloExchange.cu
+        ProcBox.cc
+   Interpolation.cc
    Version.cc
    ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc
 )
 if (NOT use_precompiled)
-  list(APPEND reaction_src TT06GatesSimd.c)
+  list(APPEND heart_cpu_only_src TT06GatesSimd.c)
 endif()
-cuda_add_library(heart
-            ${heart_src} ${reaction_src})
-target_link_libraries(heart ddcMDutil ${extra_libs})
-if (BLAS_LIB AND LAPACK_LIB)
-  target_link_libraries(heart ${LAPACK_LIB} ${BLAS_LIB})
-endif()
+add_library(heart_cpu_only ${heart_cpu_only_src})
+target_link_libraries(heart_cpu_only ddcMDutil ${extra_libs})
 
-cuda_add_executable(cardioid cardioid.cc)
-target_link_libraries(cardioid heart)
 
-cuda_add_executable(singleCell singleCell.cc singleCellOptions.c)
-target_link_libraries(singleCell heart)
+add_executable(cardioid cardioid.cc)
+target_link_libraries(cardioid heart_gpu_aware heart_cpu_only heart_gpu_aware)
+
+add_executable(singleCell singleCell.cc singleCellOptions.c)
+target_link_libraries(singleCell heart_gpu_aware heart_cpu_only heart_gpu_aware)
 
 if (LAPACK_LIB)
-   cuda_add_executable(modifyAnatomyFile modifyAnatomyFile.cc)
-   target_link_libraries(modifyAnatomyFile heart)
+   add_executable(modifyAnatomyFile modifyAnatomyFile.cc)
+   target_link_libraries(modifyAnatomyFile heart_gpu_aware heart_cpu_only heart_gpu_aware)
 endif ()
 
 
@@ -185,22 +245,22 @@ endif ()
 
 set(heart_compile_flags "")
 
-get_property(p_dirs TARGET heart PROPERTY INCLUDE_DIRECTORIES)
+get_property(p_dirs TARGET heart_gpu_aware PROPERTY INCLUDE_DIRECTORIES)
 foreach(dir ${p_dirs})
   set(heart_compile_flags "${heart_compile_flags} -I${dir}")
 endforeach()
 
-get_property(p_flags TARGET heart PROPERTY COMPILE_FLAGS)
+get_property(p_flags TARGET heart_gpu_aware PROPERTY COMPILE_FLAGS)
 foreach(flag ${p_flags})
   set(heart_compile_flags "${heart_compile_flags} ${flag}")
 endforeach()
 
-get_property(p_flags TARGET heart PROPERTY COMPILE_DEFINITIONS)
+get_property(p_flags TARGET heart_gpu_aware PROPERTY COMPILE_DEFINITIONS)
 foreach(flag ${p_flags})
   set(heart_compile_flags "${heart_compile_flags} -D${flag}")
 endforeach()
 
-get_property(p_flags TARGET heart PROPERTY COMPILE_DEFINITIONS_RELEASE)
+get_property(p_flags TARGET heart_gpu_aware PROPERTY COMPILE_DEFINITIONS_RELEASE)
 foreach(flag ${p_flags})
   set(heart_compile_flags "${heart_compile_flags} -D${flag}")
 endforeach()

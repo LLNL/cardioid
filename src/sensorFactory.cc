@@ -18,7 +18,6 @@
 #include "ECGSensor.hh"
 #include "Simulate.hh"
 #include "readCellList.hh"
-#include "PinnedAllocator.hh"
 
 using namespace std;
 
@@ -126,8 +125,10 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
      return scanActivationAndRecoverySensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "averageCa")
      return scanCaSensor(obj, sp, sim.anatomy_,*sim.reaction_, sim);
+#ifdef USE_CUDA
   else if (method == "ECG")
      return scanECGSensor(obj, sp, sim);
+#endif
   else if (method == "maxDV")
      return scanMaxDvSensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "DVThresh")

@@ -14,6 +14,7 @@
 #  include <simdops/resetArch.hpp>
 # endif
 # include <simdops/simdops.hpp>
+# include "VectorDouble32.hh"
 #endif //USE_CUDA
 
 REACTION_FACTORY(BetterTT06)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);    
@@ -80,7 +81,6 @@ namespace BetterTT06
       double g_pCa;
       double g_pK;
       double g_to;
-#ifdef USE_CUDA
     public:
       void calc(double dt,
                 ro_larray_ptr<double> Vm_m,
@@ -88,6 +88,7 @@ namespace BetterTT06
                 wo_larray_ptr<double> dVm_m);
       void initializeMembraneVoltage(wo_larray_ptr<double> Vm);
       virtual ~ThisReaction();
+#ifdef USE_CUDA
       void constructKernel();
 
       lazy_array<double> stateTransport_;
@@ -98,13 +99,6 @@ namespace BetterTT06
       CUfunction _kernel;
       int blockSize_;
 #else //USE_CUDA
-    public:
-      void calc(double dt,
-                const VectorDouble32& Vm,
-                const std::vector<double>& iStim,
-                VectorDouble32& dVm);
-      void initializeMembraneVoltage(VectorDouble32& Vm);
-
       std::vector<State, AlignedAllocator<State> > state_;
 #endif
 

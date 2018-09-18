@@ -6,19 +6,19 @@
 #include <vector>
 
 #if defined(USE_CUDA) and defined(__NVCC__) 
-#define HOST_DEVICE __device__ __host__
-#define HOST __host__
+#define LAZY_HOST_DEVICE __device__ __host__
+#define LAZY_HOST_ONLY __host__
 #else
-#define HOST_DEVICE
-#define HOST
+#define LAZY_HOST_DEVICE
+#define LAZY_HOST_ONLY
 #endif
 
 template <typename TTT>
 class OnlyAssignable
 {
  public:
-   HOST_DEVICE inline OnlyAssignable(TTT& dataPoint) : dataPoint_(dataPoint) {}
-   HOST_DEVICE inline TTT& operator=(const TTT value)
+   LAZY_HOST_DEVICE inline OnlyAssignable(TTT& dataPoint) : dataPoint_(dataPoint) {}
+   LAZY_HOST_DEVICE inline TTT& operator=(const TTT value)
    {
       dataPoint_ = value;
       return dataPoint_;
@@ -37,17 +37,17 @@ class AssignableIterator
    typedef TTT* pointer;
    typedef TTT& reference;
 
-   HOST_DEVICE inline AssignableIterator() : ptr_(NULL) {}
-   HOST_DEVICE inline AssignableIterator(TTT* ptr) : ptr_(ptr) {}
+   LAZY_HOST_DEVICE inline AssignableIterator() : ptr_(NULL) {}
+   LAZY_HOST_DEVICE inline AssignableIterator(TTT* ptr) : ptr_(ptr) {}
    
-   HOST_DEVICE inline OnlyAssignable<TTT> operator*() { return OnlyAssignable<TTT>(*ptr_); }
-   HOST_DEVICE inline AssignableIterator<TTT>& operator++() { ++ptr_; return *this; }
-   HOST_DEVICE inline AssignableIterator<TTT> operator++(int) { AssignableIterator<TTT> temp(*this); ptr_++; return temp; }
-   HOST_DEVICE inline AssignableIterator<TTT>& operator--() { --ptr_; return *this; }
-   HOST_DEVICE inline AssignableIterator<TTT> operator--(int) { AssignableIterator<TTT> temp(*this); ptr_--; return temp; }
+   LAZY_HOST_DEVICE inline OnlyAssignable<TTT> operator*() { return OnlyAssignable<TTT>(*ptr_); }
+   LAZY_HOST_DEVICE inline AssignableIterator<TTT>& operator++() { ++ptr_; return *this; }
+   LAZY_HOST_DEVICE inline AssignableIterator<TTT> operator++(int) { AssignableIterator<TTT> temp(*this); ptr_++; return temp; }
+   LAZY_HOST_DEVICE inline AssignableIterator<TTT>& operator--() { --ptr_; return *this; }
+   LAZY_HOST_DEVICE inline AssignableIterator<TTT> operator--(int) { AssignableIterator<TTT> temp(*this); ptr_--; return temp; }
 
-   HOST_DEVICE inline bool operator==(const AssignableIterator<TTT> other) const { return ptr_==other.ptr_; }
-   HOST_DEVICE inline bool operator!=(const AssignableIterator<TTT> other) const { return ptr_!=other.ptr_; }
+   LAZY_HOST_DEVICE inline bool operator==(const AssignableIterator<TTT> other) const { return ptr_==other.ptr_; }
+   LAZY_HOST_DEVICE inline bool operator!=(const AssignableIterator<TTT> other) const { return ptr_!=other.ptr_; }
 
  private:
    pointer ptr_;
@@ -58,16 +58,16 @@ class basic_impl
 {
  public:
    typedef _value_type value_type;
-   HOST_DEVICE inline External slice(const int begin, const int end)
+   LAZY_HOST_DEVICE inline External slice(const int begin, const int end)
    {
       value_type* newData = data_;
       if (newData != NULL) { newData += begin; }
       return External(newData, end-begin);
    }
-   HOST_DEVICE inline std::size_t size() const { return size_; }
+   LAZY_HOST_DEVICE inline std::size_t size() const { return size_; }
  protected:
-   HOST_DEVICE inline value_type* deref() { return data_; }
-   HOST_DEVICE void create(value_type* newData, const std::size_t newSize)
+   LAZY_HOST_DEVICE inline value_type* deref() { return data_; }
+   LAZY_HOST_DEVICE void create(value_type* newData, const std::size_t newSize)
    {
       data_ = newData;
       size_ = newSize;
@@ -81,10 +81,10 @@ class ro_array_ptr_interface : public Accessor
 {
  public:
    typedef typename Accessor::value_type value_type;
-   HOST_DEVICE inline assign_type operator[](const int ii) { return assign_type(this->deref()[ii]); }
-   HOST_DEVICE inline iterator begin() { return iterator(this->deref()); }
-   HOST_DEVICE inline iterator end() { return iterator(this->deref()+this->size()); }
-   HOST_DEVICE inline value_type* raw() { return this->deref(); }   
+   LAZY_HOST_DEVICE inline assign_type operator[](const int ii) { return assign_type(this->deref()[ii]); }
+   LAZY_HOST_DEVICE inline iterator begin() { return iterator(this->deref()); }
+   LAZY_HOST_DEVICE inline iterator end() { return iterator(this->deref()+this->size()); }
+   LAZY_HOST_DEVICE inline value_type* raw() { return this->deref(); }   
 };
 
 template <typename Accessor, typename assign_type, typename iterator>
@@ -92,7 +92,7 @@ class rw_array_ptr_interface : public ro_array_ptr_interface<Accessor,assign_typ
 {
  public:
    typedef typename Accessor::value_type value_type;
-   HOST_DEVICE inline void fill(const value_type value)
+   LAZY_HOST_DEVICE inline void fill(const value_type value)
    {
       value_type* data=this->deref();
       for (std::size_t ii=0; ii<this->size(); ii++)
@@ -100,7 +100,7 @@ class rw_array_ptr_interface : public ro_array_ptr_interface<Accessor,assign_typ
          data[ii] = value;
       }
    }
-   HOST_DEVICE inline void assign(const std::size_t numelem, const value_type value)
+   LAZY_HOST_DEVICE inline void assign(const std::size_t numelem, const value_type value)
    {
       assert(numelem == this->size());
       fill(value);
@@ -111,35 +111,35 @@ template <typename TTT>
 class ro_array_ptr : public ro_array_ptr_interface<basic_impl<ro_array_ptr<TTT>,const TTT>,const TTT&,const TTT*>
 {
  public:
-   HOST_DEVICE ro_array_ptr() : ro_array_ptr(NULL, 0) {}
+   LAZY_HOST_DEVICE ro_array_ptr() : ro_array_ptr(NULL, 0) {}
    template <typename Allocator>
-   HOST_DEVICE ro_array_ptr(const std::vector<TTT,Allocator>& newData) : ro_array_ptr(&newData[0], newData.size()) {}
-   HOST_DEVICE ro_array_ptr(const TTT* newData, const std::size_t newSize) { this->create(newData,newSize); }
+   LAZY_HOST_DEVICE ro_array_ptr(const std::vector<TTT,Allocator>& newData) : ro_array_ptr(&newData[0], newData.size()) {}
+   LAZY_HOST_DEVICE ro_array_ptr(const TTT* newData, const std::size_t newSize) { this->create(newData,newSize); }
 };
 
 template <typename TTT>
 class wo_array_ptr : public rw_array_ptr_interface<basic_impl<wo_array_ptr<TTT>,TTT>,OnlyAssignable<TTT>,AssignableIterator<TTT> >
 {
  public:
-   HOST_DEVICE wo_array_ptr() : wo_array_ptr(NULL, 0) {}
+   LAZY_HOST_DEVICE wo_array_ptr() : wo_array_ptr(NULL, 0) {}
    template <typename Allocator>
-   HOST_DEVICE wo_array_ptr(std::vector<TTT,Allocator>& newData) : wo_array_ptr(&newData[0], newData.size()) {}
-   HOST_DEVICE wo_array_ptr(TTT* newData, const std::size_t newSize) { this->create(newData,newSize); }
+   LAZY_HOST_DEVICE wo_array_ptr(std::vector<TTT,Allocator>& newData) : wo_array_ptr(&newData[0], newData.size()) {}
+   LAZY_HOST_DEVICE wo_array_ptr(TTT* newData, const std::size_t newSize) { this->create(newData,newSize); }
 };
 
 template <typename TTT>
 class rw_array_ptr : public rw_array_ptr_interface<basic_impl<rw_array_ptr<TTT>,TTT>,TTT&,TTT*>
 {
  public:
-   HOST_DEVICE rw_array_ptr() : rw_array_ptr(NULL, 0) {}
+   LAZY_HOST_DEVICE rw_array_ptr() : rw_array_ptr(NULL, 0) {}
    template <typename Allocator>
-   HOST_DEVICE rw_array_ptr(std::vector<TTT,Allocator>& newData) : rw_array_ptr(&newData[0], newData.size()) {}
-   HOST_DEVICE rw_array_ptr(TTT* newData, const std::size_t newSize) { this->create(newData,newSize); }
-   HOST_DEVICE inline operator ro_array_ptr<TTT>()
+   LAZY_HOST_DEVICE rw_array_ptr(std::vector<TTT,Allocator>& newData) : rw_array_ptr(&newData[0], newData.size()) {}
+   LAZY_HOST_DEVICE rw_array_ptr(TTT* newData, const std::size_t newSize) { this->create(newData,newSize); }
+   LAZY_HOST_DEVICE inline operator ro_array_ptr<TTT>()
    {
       return ro_array_ptr<TTT>(this->data_, this->size());
    }
-   HOST_DEVICE inline operator wo_array_ptr<TTT>()
+   LAZY_HOST_DEVICE inline operator wo_array_ptr<TTT>()
    {
       return wo_array_ptr<TTT>(this->data_, this->size());
    }

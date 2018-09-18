@@ -55,8 +55,10 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
    //   return new OpenmpGpuRedblackDiffusion(anatomy, simLoopType);
    //else if (method == "OpenmpGpuFlat")
    //   return new OpenmpGpuFlatDiffusion(anatomy, simLoopType);
+#ifdef USE_CUDA
    else if (method == "cuda")
       return new CUDADiffusion(anatomy, simLoopType, diffusionScale); 
+#endif
    else if (method == "null")
       return new NullDiffusion(anatomy, simLoopType);
    

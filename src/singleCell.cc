@@ -359,7 +359,7 @@ int main(int argc, char* argv[])
             if (handle == VmKey)
             {
                ContextRegion region(CPU);
-               ro_larray_ptr<double> Vm = VmTransport;
+               wo_larray_ptr<double> Vm = VmTransport;
                Vm[ii] = value;
             }
             else

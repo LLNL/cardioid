@@ -1423,9 +1423,16 @@ ThisReaction::ThisReaction(const int numPoints, const double __dt)
    __cachedDt = __dt;
 }
 
-void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
-                       const vector<double>& __iStim , VectorDouble32& __dVm)
+void ThisReaction::calc(double _dt,
+                ro_larray_ptr<double> __Vm,
+                ro_larray_ptr<double> __iStim,
+                wo_larray_ptr<double> __dVm)
 {
+   ContextRegion region(CPU);
+   __Vm.use();
+   __iStim.use();
+   __dVm.use();
+
    //define the constants
    double Cm = 0.185000000000000;
    double F = 96485.3415000000;
@@ -1620,7 +1627,7 @@ void ThisReaction::calc(double _dt, const VectorDouble32& __Vm,
       store(state_[__jj].m, m);
       store(state_[__jj].r, r);
       store(state_[__jj].s, s);
-      simdops::store(&__dVm[__ii],-Iion_001);
+      simdops::store(&__dVm.raw()[__ii],-Iion_001);
    }
 }
 #endif //USE_CUDA
@@ -1630,18 +1637,14 @@ string ThisReaction::methodName() const
    return "BetterTT06";
 }
 
-#ifdef USE_CUDA
 void ThisReaction::initializeMembraneVoltage(wo_larray_ptr<double> __Vm)
-#else //USE_CUDA
-void ThisReaction::initializeMembraneVoltage(VectorDouble32& __Vm)
-#endif //USE_CUDA
 {
    assert(__Vm.size() >= nCells_);
 
-#ifdef USE_CUDA
-#define READ_STATE(state,index) (stateData[_##state##_off*nCells_+index])
    ContextRegion region(CPU);
    __Vm.use();
+#ifdef USE_CUDA
+#define READ_STATE(state,index) (stateData[_##state##_off*nCells_+index])
    wo_larray_ptr<double> stateData = stateTransport_;
 #else //USE_CUDA
 #define READ_STATE(state,index) (state_[index/width].state[index % width])

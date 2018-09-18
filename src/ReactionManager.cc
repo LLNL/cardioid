@@ -1,8 +1,6 @@
 
 #include <set>
 #include <algorithm>
-#include <cuda.h>
-#include <cuda_runtime_api.h>
 #include "ReactionManager.hh"
 #include "Reaction.hh"
 #include "object_cc.hh"

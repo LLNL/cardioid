@@ -8,8 +8,10 @@
 #include <mpi.h>
 #include <cstdlib>
 #include <sstream>
-#include "cuda.h"
-#include "cuda_runtime.h"
+#ifdef USE_CUDA
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
 
 #include "Simulate.hh"
 #include "PerformanceTimers.hh"
@@ -70,8 +72,14 @@ int main(int argc, char** argv)
    MPI_Comm_size(MPI_COMM_WORLD, &npes);
    MPI_Comm_rank(MPI_COMM_WORLD, &mype);  
 
+#ifdef USE_CUDA
+   //FIXME!!! Have to figure out a better way to do binding!
    cudaSetDevice(mype % 4);
-
+   // A ugly way to trigger the default CUDA context
+   int *d_i;
+   cudaMalloc(&d_i, sizeof(int));
+   cudaFree(d_i);
+#endif
    // See units above.
    units_internal(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
    units_external(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
@@ -86,10 +94,6 @@ int main(int argc, char** argv)
      printBanner();
    parseCommandLineAndReadInputFile(argc, argv, MPI_COMM_WORLD);
 
-   // A ugly way to trigger the default CUDA context
-   int *d_i;
-   cudaMalloc(&d_i, sizeof(int));
-   cudaFree(d_i);
    
    timestampBarrier("Starting initializeSimulate", MPI_COMM_WORLD);
    Simulate sim;
