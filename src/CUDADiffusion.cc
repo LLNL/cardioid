@@ -23,7 +23,7 @@ using namespace std;
 
 typedef double Real;
 
-void call_cuda_kernels(ro_larray_ptr<Real> VmRaw, rw_larray_ptr<Real> dVmRaw, ro_larray_ptr<Real> sigmaRaw, int nx, int ny, int nz, rw_larray_ptr<Real> dVmOut, ro_larray_ptr<int> lookup,int nCells);
+void call_cuda_kernels(ro_larray_ptr<Real> VmRaw, rw_larray_ptr<Real> dVmRaw, ro_larray_ptr<Real> sigmaRaw, int nx, int ny, int nz, wo_larray_ptr<Real> dVmOut, ro_larray_ptr<int> lookup,int nCells);
 
 void copy_to_block(wo_larray_ptr<double> blockCPU, ro_larray_ptr<int> lookupCPU, ro_larray_ptr<double> sourceCPU, const int begin, const int end);
 
@@ -124,6 +124,11 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType, double new
             }
          }
       }
+   }
+   {
+      ContextRegion region(GPU);
+      wo_larray_ptr<double> VmBlock = VmBlock_;
+      CUDA_VERIFY(cudaMemset(VmBlock.raw(), 0, VmBlock.size()*sizeof(double)));
    }
 }
 
