@@ -31,7 +31,11 @@ void ConstantReaction::calc(double dt,
                             wo_larray_ptr<double> dVm)
 {
    assert( cellModel_!=0 );
-
+   ContextRegion region(CPU);
+   Vm.use();
+   iStim.use();
+   dVm.use();
+   
    //double sum=0.;
    for (unsigned ii=0; ii<anatomy_.nLocal(); ++ii)
    {
@@ -47,6 +51,8 @@ void ConstantReaction::calc(double dt,
 
 void ConstantReaction::initializeMembraneVoltage(wo_larray_ptr<double> Vm)
 {
+   ContextRegion region(CPU);
+   Vm.use();
 #if 0
    for (unsigned ii=0; ii<Vm.size(); ++ii)
       Vm[ii] = 0.;

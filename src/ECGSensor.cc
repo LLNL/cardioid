@@ -128,6 +128,7 @@ void ECGSensor::calcInvR(const Simulate& sim)
       header.writeHeader(file, loop, time);
 
    }
+   ContextRegion region(CPU);
    ro_larray_ptr<double> invrT=invrTransport_;
 
       char line[lRec+1];
@@ -233,7 +234,7 @@ void calcEcg(rw_larray_ptr<double> ecgs,
                  ro_larray_ptr<double> invr,
                  ro_larray_ptr<double> dVmDiffusion,
                  const int nEcgPoints) {
-
+   ContextRegion region(CPU);
     int nData=dVmDiffusion.size();
     for(unsigned ii=0; ii< nData; ii++){
 	for (unsigned jj=0; jj< nEcgPoints; jj++){
@@ -253,7 +254,8 @@ void ECGSensor::eval(double time, int loop)
    }
    
   if(0) { // DEBUG to print out invr and  dVmDiffusion
-   if(loop<100 || loop%100==1){
+     ContextRegion region(CPU);
+     if(loop<100 || loop%100==1){
       ro_larray_ptr<double> invr=invrTransport_;
       ro_larray_ptr<double> dVmDiffusion=dVmDiffusionTransport_;
 

@@ -105,6 +105,7 @@ void PointListSensor::print(double time, int /*loop*/)
 
 void PointListSensor::print(double time)
 {
+   ContextRegion region(CPU);
     ro_larray_ptr<double> VmArray = vdata_.VmTransport_;
    for (unsigned ii=0; ii<fout_loc_.size(); ++ii)
    {
@@ -115,6 +116,7 @@ void PointListSensor::print(double time)
 
 void PointListSensor::printDerivs(double time)
 {
+   ContextRegion region(CPU);
    ro_larray_ptr<double> VmArray = vdata_.VmTransport_;
    ro_larray_ptr<double> dVmReaction = vdata_.dVmReactionTransport_;
    ro_larray_ptr<double> dVmDiffusion = vdata_.dVmDiffusionTransport_;

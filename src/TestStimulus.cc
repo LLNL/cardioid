@@ -20,6 +20,7 @@ int TestStimulus::subClassStim(double time,
       return 0;
 
    ContextRegion region(CPU);
+   dVmDiffusion.use();
    dVmDiffusion[targetCell_] = pulse_->eval(time);
    return 1;
 }

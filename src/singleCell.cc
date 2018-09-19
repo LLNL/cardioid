@@ -255,6 +255,7 @@ int main(int argc, char* argv[])
          }
          else
          {
+            ContextRegion region(CPU);
             ro_larray_ptr<double> Vm = VmTransport;
             fprintf(file, "%s REACTION { initialState = %s; }\n",
                     objectName.c_str(), objectName.c_str());
@@ -278,6 +279,7 @@ int main(int argc, char* argv[])
       if ((itime % outputTimestepInterval) == 0)
       {
          //doIO();
+         ContextRegion region(CPU);
          ro_larray_ptr<double> Vm = VmTransport;
          printf("%21.17g %21.17g", timeline.realTimeFromTimestep(itime), Vm[0]);
          for (int iextra=0; iextra<extraColumns.size(); ++iextra) 

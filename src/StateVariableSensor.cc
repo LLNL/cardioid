@@ -179,6 +179,7 @@ void StateVariableSensor::print(double time, int loop)
 
 double StateVariableSensor::getSimValue(int iCell, int varHandle)
 {
+   ContextRegion region(CPU);
    double value;
    switch (varHandle)
    {
