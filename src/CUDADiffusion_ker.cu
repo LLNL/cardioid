@@ -171,7 +171,7 @@ __global__ void map_dVm(wo_larray_ptr<Real> dVmOut, ro_larray_ptr<Real> dVmRaw, 
 //      VT[remap[idx]] = V[idx];
 //}
 
-void call_cuda_kernels(ro_larray_ptr<Real> Vm, rw_larray_ptr<Real> dVm, ro_larray_ptr<Real> sigma, int nx, int ny, int nz, rw_larray_ptr<Real> dVmOut, ro_larray_ptr<int> lookup,int nLocal)
+void call_cuda_kernels(ro_larray_ptr<Real> Vm, rw_larray_ptr<Real> dVm, ro_larray_ptr<Real> sigma, int nx, int ny, int nz, wo_larray_ptr<Real> dVmOut, ro_larray_ptr<int> lookup,int nLocal)
 //void call_cuda_kernels(ro_larray_ptr<double> Vm, rw_larray_ptr<double> dVm, ro_larray_ptr<double> sigma, int nx, int ny, int nz, wo_larray_ptr<double> dVmOut, ro_larray_ptr<int> lookup,int nLocal)
 {
    //determine block dim

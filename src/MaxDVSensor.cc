@@ -63,6 +63,7 @@ void MaxDVSensor::print(double time, int loop)
    
    double maxdVdt=-10000.;
    double mindVdt= 10000.;
+   ContextRegion region(CPU);
    ro_larray_ptr<double> dVmDiffusion = vdata_.dVmDiffusionTransport_;
    ro_larray_ptr<double> dVmReaction = vdata_.dVmReactionTransport_;
 

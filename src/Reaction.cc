@@ -24,6 +24,8 @@ void initializeMembraneState(Reaction* reaction, const string& objectName, wo_la
       //read in the voltage
       if (object_testforkeyword(stateObj, "Vm"))
       {
+         ContextRegion region(CPU);
+         Vm.use();
          double newVoltage;
          objectGet(stateObj, "Vm", newVoltage, "", "mV");
          //set the voltage

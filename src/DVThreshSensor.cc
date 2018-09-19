@@ -17,6 +17,7 @@ DVThreshSensor::DVThreshSensor(const SensorParms& sp,
 
 void DVThreshSensor::eval(double time, int loop)
 {
+   ContextRegion region(CPU);
    double maxdVdt=-10000.;
    double mindVdt= 10000.;
    ro_larray_ptr<double> dVmDiffusion = vdata_.dVmDiffusionTransport_;
