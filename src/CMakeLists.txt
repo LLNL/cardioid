@@ -39,7 +39,8 @@ endif()
 add_definitions(-DDiff_Weight_Type_Single)
 add_definitions(-DWITH_PIO -DWITH_MPI)
 
-add_definitions(-DPELOTON -DADD_ -DUSE_CSTDIO_LFS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64)
+set(extra_definitions "" CACHE STRING "")
+add_definitions(${extra_definitions})
 
 if (ENABLE_CUDA)
    include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
@@ -223,9 +224,9 @@ blt_add_library(NAME heart_cpu_only
 
 blt_add_executable(NAME cardioid
                    SOURCES cardioid.cc
-                   DEPENDS_ON heart_gpu_aware heart_cpu_only heart_explicit_cuda
-                              heart_gpu_aware heart_cpu_only heart_explicit_cuda
-                              heart_gpu_aware heart_cpu_only heart_explicit_cuda
+                   DEPENDS_ON heart_gpu_aware heart_cpu_only ${heart_explicit_cuda}
+                              heart_gpu_aware heart_cpu_only ${heart_explicit_cuda}
+                              heart_gpu_aware heart_cpu_only ${heart_explicit_cuda}
                               ${cuda_runtime} openmp)
 
 blt_add_executable(NAME singleCell
