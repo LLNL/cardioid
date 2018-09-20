@@ -15,6 +15,8 @@ do                                              \
 
 #ifdef USE_CUDA
 
+#define DEVICE_PARALLEL_FORALL(N, LAMBDA) HOST_PARALLEL_FORALL(N, LAMBDA)
+
 #else
 
 #define DEVICE_PARALLEL_FORALL(N, LAMBDA) HOST_PARALLEL_FORALL(N, LAMBDA)

@@ -12,7 +12,7 @@ function runBinary {
     exe=$1; shift
     valgrind --error-markers=--BEGIN--,--END-- --log-file=memcheck-%n.log \
              --suppressions=$testroot/results/$build/$profile/suppressions \
-             $testroot/../bin/$build/$exe "$@"
+             $testroot/../build/$build/bin/$exe "$@"
 }
 
 function endTest {

@@ -1,37 +1,69 @@
+###########################################################
+# MPI Support
+###########################################################
+set(ENABLE_MPI ON CACHE BOOL "")
+set(ENABLE_FIND_MPI OFF CACHE BOOL "")
 
-SET(CMAKE_CXX_COMPILER mpiclang++)
-SET(CMAKE_C_COMPILER mpiclang)
+set(MPI_HOME                 "/usr/tcetmp" CACHE PATH "")
+set(MPI_C_COMPILER           "${MPI_HOME}/bin/mpiclang"   CACHE PATH "")
+set(MPI_CXX_COMPILER         "${MPI_HOME}/bin/mpiclang++"  CACHE PATH "")
+
+set(MPIEXEC                "mpirun"  CACHE PATH "")
+set(MPIEXEC_NUMPROC_FLAG   "-np"     CACHE PATH "")
+set(BLT_MPI_COMMAND_APPEND "mpibind" CACHE PATH "")
+
+###########################################################
+# OpenMP support
+###########################################################
+set(ENABLE_OPENMP ON CACHE BOOL "")
+
+###########################################################
+# c compiler
+set(CMAKE_C_COMPILER "${MPI_C_COMPILER}" CACHE PATH "")
+# cpp compiler
+set(CMAKE_CXX_COMPILER "${MPI_CXX_COMPILER}" CACHE PATH "")
+
+###########################################################
+# CUDA support
+###########################################################
+set(ENABLE_CUDA ON CACHE BOOL "")
+
+set(CUDA_TOOLKIT_ROOT_DIR "/usr/tce/packages/cuda/cuda-9.2.148" CACHE PATH "")
+set(CMAKE_CUDA_COMPILER "${CUDA_TOOLKIT_ROOT_DIR}/bin/nvcc" CACHE PATH "")
+
+set (CUDA_ARCH "sm_70" CACHE PATH "")
+set (CMAKE_CUDA_FLAGS "-restrict -arch ${CUDA_ARCH} -std=c++11 --expt-extended-lambda -G" CACHE STRING "" )
+set (CMAKE_CUDA_HOST_COMPILER ${MPI_CXX_COMPILER} CACHE STRING "")
+
+#set (CUDA_SEPARABLE_COMPILATION ON CACHE BOOL "" )
+#set (CUDA_LINK_WITH_NVCC ON CACHE BOOL "")
+# set the link flags manually since nvcc will link (and not have the wrappers knowledge)
+# on ray - can figure out your equavilant flags by doing mpicc -vvvv
+#set (CMAKE_CUDA_LINK_FLAGS "-Xlinker -rpath -Xlinker /usr/tce/packages/spectrum-mpi/ibm/spectrum-mpi-2017.04.03/lib -Xlinker -rpath -Xlinker /usr/tce/packages/clang/clang-coral-2017.10.13/ibm/lib:/usr/tce/packages/gcc/gcc-4.9.3/lib64 -L/usr/tce/packages/spectrum-mpi/ibm/spectrum-mpi-2017.04.03/lib/ -lmpi_ibm" CACHE STRING "")
+#set (CMAKE_CUDA_LINK_FLAGS "-Xlinker -rpath -Xlinker /usr/tce/packages/spectrum-mpi/ibm/spectrum-mpi-rolling-release/lib -L/usr/tce/packages/spectrum-mpi/ibm/spectrum-mpi-rolling-release/lib -lmpiprofilesupport -lmpi_ibm -Xlinker -rpath -Xlinker /usr/tce/packages/clang/clang-coral-2018.08.08/ibm/lib:/usr/tce/packages/gcc/gcc-4.9.3/lib64:/usr/tce/packages/clang/clang-coral-2018.08.08/ibm/omprtl/lib -L/usr/tce/packages/clang/clang-coral-2018.08.08/ibm/lib -L/usr/tce/packages/gcc/gcc-4.9.3/lib64 -L/usr/tce/packages/clang/clang-coral-2018.08.08/ibm/omprtl/lib -lomp" CACHE STRING "")
 
 
-add_definitions(-DPELOTON -DADD_ -DUSE_CSTDIO_LFS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64)
 
 
-SET(CUDA_TOOLKIT_ROOT_DIR /usr/tce/packages/cuda/cuda-9.2.64)
+
 SET(extra_libs dl 
     ${CUDA_TOOLKIT_ROOT_DIR}/lib64/libcudart.so 
     ${CUDA_TOOLKIT_ROOT_DIR}/lib64/libnvrtc.so
-    cuda
     )
-include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
-
 SET(LAPACK_LIB /usr/tcetmp/packages/lapack/lapack-3.6.0-gfortran-4.8.5/lib/liblapack.a gfortran)
 SET(BLAS_LIB /usr/tcetmp/packages/blas/blas-3.6.0-gfortran-4.8.5/lib/libblas.a)
 
-#set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -arch=sm_70 " )
+SET(CMAKE_C_FLAGS_DEBUG "-g -ggdb -O0 " CACHE STRING "")
+SET(CMAKE_C_FLAGS_MINSIZEREL "-g -pg -O3 -DPROFILE" CACHE STRING "")
+SET(CMAKE_C_FLAGS_RELEASE "-g -O3" CACHE STRING "") 
+SET(CMAKE_C_FLAGS_RELWITHDEBINFO "-ggdb -O2" CACHE STRING "")
 
-SET(CMAKE_BUILD_TYPE Release)
+SET(CMAKE_CXX_FLAGS_DEBUG  ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "")
+SET(CMAKE_CXX_FLAGS_MINSIZEREL ${CMAKE_C_FLAGS_MINSIZEREL} CACHE STRING "")
+SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" ) 
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_C_FLAGS_RELWITHDEBINFO} CACHE STRING "")
 
-SET(CMAKE_CXX_FLAGS "-std=c++11" CACHE STRING "" FORCE)
-SET(CMAKE_C_FLAGS "-std=gnu99" CACHE STRING "" FORCE)
-
-SET(CMAKE_C_FLAGS_DEBUG "-g -ggdb -O0 " CACHE STRING "" FORCE)
-SET(CMAKE_C_FLAGS_MINSIZEREL "-g -pg -O3 -DPROFILE" CACHE STRING "" FORCE)
-SET(CMAKE_C_FLAGS_RELEASE "-g -O3 -ffp-contract=fast -fopenmp-nonaliased-maps" CACHE STRING "" FORCE) 
-SET(CMAKE_C_FLAGS_RELWITHDEBINFO "-ggdb -O2" CACHE STRING "" FORCE)
-
-SET(CMAKE_CXX_FLAGS_DEBUG  ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
-SET(CMAKE_CXX_FLAGS_MINSIZEREL ${CMAKE_C_FLAGS_MINSIZEREL} CACHE STRING "" FORCE)
-SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE) 
-SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_C_FLAGS_RELWITHDEBINFO} CACHE STRING "" FORCE)
-
-
+SET(CMAKE_CUDA_FLAGS_DEBUG "-g -O0" CACHE STRING "")
+SET(CMAKE_CUDA_FLAGS_RELEASE "-g -O3" CACHE STRING "")
+SET(CMAKE_CUDA_FLAGS_RELWITHDEBINFO "-g -O2" CACHE STRING "")
+SET(CMAKE_CUDA_FLAGS_MINSIZEREL "-g -O3" CACHE STRING "")
