@@ -36,9 +36,6 @@ if (CMAKE_SYSTEM_NAME MATCHES Darwin)
 endif()
 
 
-add_definitions(-DDiff_Weight_Type_Single)
-add_definitions(-DWITH_PIO -DWITH_MPI)
-
 set(extra_definitions "" CACHE STRING "")
 add_definitions(${extra_definitions})
 
@@ -68,7 +65,6 @@ else()
 endif()   
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/src)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/include)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -212,7 +208,7 @@ set (heart_gpu_aware_src
 )
 blt_add_library(NAME heart_gpu_aware
                 SOURCES ${heart_gpu_aware_src}
-                DEPENDS_ON ${heart_explicit_cuda} heart_transport ddcMDutil ${extra_libs} ${CUDA_NVTX_LIBRARY} openmp mpi)
+                DEPENDS_ON ${heart_explicit_cuda} heart_transport simUtil ${extra_libs} ${CUDA_NVTX_LIBRARY} openmp mpi)
 
 set (heart_cpu_only_src 
    spi_impl.c
@@ -220,7 +216,7 @@ set (heart_cpu_only_src
 )
 blt_add_library(NAME heart_cpu_only
                 SOURCES ${heart_cpu_only_src}
-                DEPENDS_ON ddcMDutil ${extra_libs} openmp)
+                DEPENDS_ON simUtil ${extra_libs} openmp)
 
 blt_add_executable(NAME cardioid
                    SOURCES cardioid.cc
