@@ -22,30 +22,15 @@ MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
 int main(int argc, char *argv[])
 {
    MPI_Init(NULL,NULL);
-   int num_ranks;
+   int num_ranks, my_rank;
    MPI_Comm_size(COMM_LOCAL,&num_ranks);
+   MPI_Comm_rank(COMM_LOCAL,&my_rank);
 
    std::cout << "Initializing with " << num_ranks << " MPI ranks." << std::endl;
-   // 1. Parse command-line options.
+
    int order = 1;
 
    ecg_process_args(argc,argv);
-
-   /* Inputs:
-      - "mesh" as .vtk (example: slab.vtk)
-      - points as float[9] (143871)
-      - cells as int[9] (135000x9=1215000)
-      - cell types as int (135000)
-      - materials as int[9] (135000)
-      - "fibers" as .gf (example: slab.FiberQuat.gf)
-      NOTE: header also contains FEC type, L2_3D_P0
-      - values as int[3] (135000)
-      - "Vm" as .gf (example: slab.Vm.gf)
-      NOTE: header also contains FEC type, H1_3D_P1
-      - values as int (63240)
-      - "ground" as .set (example: slab.ground.set)
-      - Node IDs as int (1581)
-   */
 
    OBJECT* obj = object_find("ecg", "ECG");
    assert(obj != NULL);
@@ -58,20 +43,14 @@ int main(int argc, char *argv[])
    mfem::Mesh *mesh = ecg_readMeshptr(obj, "mesh");
    EndTimer();
    int dim = mesh->Dimension();
-   StartTimer("Partition Mesh");
-   int *pmeshpart = mesh->GeneratePartitioning(num_ranks);
-   ParMesh *pmesh = new ParMesh(MPI_COMM_WORLD, *mesh);//, pmeshpart);
-   EndTimer();
-   
+
    //Fill in the MatrixElementPiecewiseCoefficients
-   std::vector<int> bathRegions;
+   std::vector<int> bathRegions, heartRegions;
    objectGetv(obj,"bath_regions",bathRegions);
-   std::vector<int> heartRegions;
    objectGetv(obj,"heart_regions", heartRegions);
-   std::vector<double> sigma_b;
-   objectGetv(obj,"sigma_b",sigma_b);;
-   std::vector<double> sigma_i;
-   std::vector<double> sigma_e;
+
+   std::vector<double> sigma_b, sigma_i, sigma_e;
+   objectGetv(obj,"sigma_b",sigma_b);
    objectGetv(obj,"sigma_i",sigma_i);
    objectGetv(obj,"sigma_e",sigma_e);
 
@@ -86,9 +65,10 @@ int main(int argc, char *argv[])
 
    {
       // Iterate over boundary elements
-      int nbe=pmesh->GetNBE();
-      for(int i=0; i<nbe; i++){
-	 Element *ele = pmesh->GetBdrElement(i);
+      int nbe=mesh->GetNBE();
+      std::cout << nbe << " border elements in pmesh." << std::endl;
+      for(int i=0; i<nbe; i++) {
+	 Element *ele = mesh->GetBdrElement(i);
 	 const int *v = ele->GetVertices();
 	 const int nv = ele->GetNVertices();
 	 // Search for element's vertices in the ground set
@@ -110,30 +90,50 @@ int main(int argc, char *argv[])
    EndTimer();
    // Sort+unique pmesh->bdr_attributes and pmesh->attributes?
    StartTimer("Setting Attributes");
-   pmesh->SetAttributes();
+   mesh->SetAttributes();
+   EndTimer();
+
+   StartTimer("Partition Mesh");
+   // If I read correctly, pmeshpart will now point to an integer array
+   //  containing a partition ID (rank!) for every element ID.
+   int *pmeshpart = mesh->GeneratePartitioning(num_ranks);
    EndTimer();
    
-   // Pointer to the FEC stored in mesh's internal GF
+   
+   // Elements per rank
+   std::map<int,int> local_counts;
+   for(int i = 0; i < num_ranks; i++) {
+      local_counts[i]=0;
+   }
+
+   // Map between local/global element indices
+   std::map<int,int> local_ele_from_global;
+   std::map<int,int> global_ele_from_my_local;
+   int global_size = mesh->GetNE();
+   std::cout << "Global problem size " << global_size << std::endl;
+   for(int i=0; i<global_size; i++) {
+      // Ugh...
+      local_ele_from_global[i] = local_counts[pmeshpart[i]];
+      if(pmeshpart[i] == my_rank) {
+	 global_ele_from_my_local[local_counts[pmeshpart[i]]] = i;
+      }
+      local_counts[pmeshpart[i]]++;
+   }
+   for(int i=0; i<num_ranks; i++) {
+      std::cout << "Rank " << i << " has " << local_counts[i] << " elements!" << std::endl;
+   }
+   ParMesh *pmesh = new ParMesh(MPI_COMM_WORLD, *mesh, pmeshpart);
+
+   // Build a new FEC...
    FiniteElementCollection *fec;
-   if (pmesh->GetNodes()) {
-      // Not called?
-      fec = pmesh->GetNodes()->OwnFEC();
-      std::cout << "Using isoparametric FEs: " << fec->Name() << std::endl;
-   }
-   else {
-      std::cout << "Creating new FEC..." << std::endl;
-      fec = new H1_FECollection(order, dim);
-   }
-  
+   std::cout << "Creating new FEC..." << std::endl;
+   fec = new H1_FECollection(order, dim);
+   // ...and corresponding FES
    ParFiniteElementSpace *pfespace = new ParFiniteElementSpace(pmesh, fec);
    std::cout << "Number of finite element unknowns: "
 	     << pfespace->GetTrueVSize() << std::endl;
 
-   // GetTrueVSize() gets all vector-local dofs
-   // GetGlobalTDofNumber converts to a GF index reference against gidfromgf
-   
-   // 5. Determine the list of true (i.e. conforming) essential boundary
-   //    dofs.
+   // 5. Determine the list of true (i.e. conforming) essential boundary DOFs
    Array<int> ess_tdof_list;   // Essential true degrees of freedom
    // "true" takes into account shared vertices.
    if (pmesh->bdr_attributes.Size()) {
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
       Array<int> ess_bdr(pmesh->bdr_attributes.Max());
       ess_bdr = 0;
       ess_bdr[1] = 1;
-      pfespace->GetEssentialTrueDofs(ess_bdr /*const*/, ess_tdof_list);
+      pfespace->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
    }
 
 
@@ -151,12 +151,12 @@ int main(int argc, char *argv[])
    ParGridFunction gf_x(pfespace);
    ParGridFunction gf_b(pfespace);
    gf_x = 0.0;
-
+   gf_b = 0.0;
 
    // Load fiber quaternions from file
    std::shared_ptr<ParGridFunction> fiber_quat;
    ecg_readGF(obj, "fibers", pmesh, fiber_quat);
-
+   
    // Load conductivity data?
    MatrixElementPiecewiseCoefficient sigma_i_coeffs(fiber_quat);
    MatrixElementPiecewiseCoefficient sigma_ie_coeffs(fiber_quat);
@@ -251,9 +251,12 @@ int main(int argc, char *argv[])
    std::string outDir;
    objectGet(obj, "outdir", outDir, rootFilename.c_str());
    std::vector<std::ofstream> fileFromElectrode(nameFromElectrode.size());
-   for (int ielec=0; ielec<fileFromElectrode.size(); ielec++)
+   if (my_rank == 0)
    {
-      fileFromElectrode[ielec] = std::ofstream(outDir+"/"+nameFromElectrode[ielec]+".txt");
+      for (int ielec=0; ielec<fileFromElectrode.size(); ielec++)
+      {
+         fileFromElectrode[ielec] = std::ofstream(outDir+"/"+nameFromElectrode[ielec]+".txt");
+      }
    }
    
    DIR *dir;
@@ -276,40 +279,9 @@ int main(int argc, char *argv[])
       if (access((VmFilename + "000000").c_str(), R_OK) == -1) { continue; }
 
       std::shared_ptr<ParGridFunction> gf_Vm;
-      double time;
-      {
-         //Open and read the file
-         PFILE* file = Popen(VmFilename.c_str(), "r", COMM_LOCAL);
-	 gf_Vm = std::make_shared<mfem::ParGridFunction>(pfespace);
-    
-	 OBJECT* hObj = file->headerObject;
-	 std::vector<std::string> fieldNames,  fieldTypes;
-	 objectGetv(hObj, "field_names", fieldNames); // field_names = gid Vm dVmD dVmR;
-	 objectGetv(hObj, "field_types", fieldTypes); // field_types = u f f f;
-         objectGet(hObj, "time", time, "-1");
-	 assert(file->datatype == FIXRECORDASCII);
-    
-	 PIO_FIXED_RECORD_HELPER* helper = (PIO_FIXED_RECORD_HELPER*) file->helper;
-	 unsigned lrec = helper->lrec;
-	 unsigned nRecords = file->bufsize/lrec;
-	 for (unsigned int irec=0; irec<nRecords; irec++) { //read in the file
-	    unsigned maxRec = 2048;          // Maximum record *length*
-	    char buf[maxRec+1];
-	
-	    Pfgets(buf, maxRec, file);
-	    assert(strlen(buf) < maxRec);
-
-	    std::stringstream readline(buf);
-
-	    int gid;   readline >> gid; // For now we just happen to know gid is column 1
-	    double Vm; readline >> Vm;  // For now we just happen to know the data is column 2
-
-	    (*gf_Vm)[gfFromGid[gid]] = Vm;
-	 }
-
-	 Pclose(file);
-      }
-   
+      std::vector<double> gfvmData;
+      double time = ecg_readParGF(obj, VmFilename, global_size, gfFromGid, gfvmData);
+      gf_Vm = std::make_shared<mfem::ParGridFunction>(pfespace, gfvmData.data());
 
       StartTimer("Solve");
       
@@ -329,24 +301,28 @@ int main(int argc, char *argv[])
 
       // 12. Save the refined mesh and the solution. This output can be viewed later
       //     using GLVis: "glvis -m refined.mesh -g sol.gf".
-      std::ofstream sol_ofs(std::string(entry->d_name) + "/sol.gf");
+      if(my_rank == 0) {
+	 std::ofstream sol_ofs("sol"+std::to_string(step)+".gf");
+	 sol_ofs.precision(8);
+	 gf_x.Save(sol_ofs);
 
-      sol_ofs.precision(8);
-      gf_x.Save(sol_ofs);
-
-      for (int ielec=0; ielec<fileFromElectrode.size(); ielec++)
-      {
-         fileFromElectrode[ielec] << time << "\t" << gf_x[gfidFromElectrode[ielec]] << std::endl;
-      }      
+         for (int ielec=0; ielec<fileFromElectrode.size(); ielec++)
+         {
+            //CHECKME, can I do this access?!
+            fileFromElectrode[ielec] << time << "\t" << gf_x[gfidFromElectrode[ielec]] << std::endl;
+         }
+      }
    }
 
    regfree(&snapshotRegex);
    closedir(dir);
 
    // Not sure how this will adapt to n>1, probably want to only run from rank 0 at least
-   std::ofstream mesh_ofs("refined.mesh");
-   mesh_ofs.precision(8);
-   pmesh->Print(mesh_ofs);
+   if(my_rank == 0) {
+      std::ofstream mesh_ofs("refined.mesh");
+      mesh_ofs.precision(8);
+      pmesh->Print(mesh_ofs);
+   }
 
    // 14. Free the used memory.
    delete M_test;
@@ -354,8 +330,7 @@ int main(int argc, char *argv[])
    delete b;
    delete pfespace;
    if (order > 0) { delete fec; }
-   delete pmesh;
-   delete mesh;
-
+   delete mesh, pmesh, pmeshpart;
+   
    return 0;
 }

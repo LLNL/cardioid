@@ -230,26 +230,86 @@ void EndTimer() {
 #endif
 }
 
-// electrodes.txt is a bit different from the others.
-// <label> = <gid>
-// We could overload the template but let's not for now since we don't even know 
+double ecg_readParGF(OBJECT* obj, const std::string VmFilename, const int global_size, const std::unordered_map<int,int> &gfFromGid, std::vector<double>& final_values) {
 
-// Instead of trying to use BucketOfBits, just look for where it uses calls which occur above,
-// and modify the above to use similar patterns.
+   int num_ranks, my_rank;
+   MPI_Comm_size(COMM_LOCAL,&num_ranks);
+   MPI_Comm_rank(COMM_LOCAL,&my_rank);
 
-// Flatten part(s) of readPioFile
+   std::vector<int> my_keys, combined_keys;
+   std::vector<double> my_values, combined_values;
 
-// readAscii
+   PFILE* file = Popen(VmFilename.c_str(), "r", COMM_LOCAL);
+    
+   OBJECT* hObj = file->headerObject;
+   std::vector<std::string> fieldNames,  fieldTypes;
+   objectGetv(hObj, "field_names", fieldNames); // field_names = gid Vm dVmD dVmR;
+   objectGetv(hObj, "field_types", fieldTypes); // field_types = u f f f;
+   double time;
+   objectGet(hObj, "time", time, "-1");
+   assert(file->datatype == FIXRECORDASCII);
 
-// pfgets distributes all data among ranks, but only some are
-// getting it from the file(s)
+   int my_num_inputs = 0;
+   std::map<int,double> my_inputs;
 
-// While you have no way of knowing which data you will get from a pfgets,
-// You can know nobody else is getting it.
+   PIO_FIXED_RECORD_HELPER* helper = (PIO_FIXED_RECORD_HELPER*) file->helper;
+   unsigned lrec = helper->lrec;
+   unsigned nRecords = file->bufsize/lrec;
+   for (unsigned int irec=0; irec<nRecords; irec++) { //read in the file
+      unsigned maxRec = 2048;          // Maximum record *length*
+      char buf[maxRec+1];
+      
+      Pfgets(buf, maxRec, file);
+      assert(strlen(buf) < maxRec);
 
-// Reassemble as required
+      std::stringstream readline(buf);
 
-// Verify whether/how mfem sends data when assigned into a ParGridFunction
-// (look for any PGF assemble mechanisms for clues)
+      int gid;   readline >> gid; // For now we happen to know gid is column 1
+      double Vm; readline >> Vm;  // For now we happen to know data is column 2
 
-// string::find_first_...
+      assert(gfFromGid.find(gid) != gfFromGid.end());
+      my_inputs[gfFromGid.find(gid)->second] = Vm;
+      my_num_inputs++;
+   }
+
+   // Share input buffer sizes
+   std::vector<int> num_inputs_per_rank(num_ranks);
+   // num_inputs_per_rank[my_rank] = my_num_inputs;
+   MPI_Allgather(&my_num_inputs,1,MPI_INT,
+		 num_inputs_per_rank.data(),1,MPI_INT,MPI_COMM_WORLD);
+
+   // Share actual inputs
+   std::vector<int> displacements_per_rank(num_ranks);
+   {
+      int curr_disp = 0;
+      for(int i=0; i<num_ranks; i++) {
+	 displacements_per_rank[i] = curr_disp;
+	 curr_disp += num_inputs_per_rank[i];
+      }
+   }
+   std::cout << "Local size " << my_num_inputs << ", global size " << global_size << "." << std::endl;
+
+   my_keys.resize(my_num_inputs), combined_keys.resize(global_size);
+   my_values.resize(my_num_inputs), combined_values.resize(global_size), final_values.resize(global_size);
+   {
+      int i=0;
+      for(std::map<int,double>::iterator it=my_inputs.begin();
+	  it!=my_inputs.end(); ++it) {
+	 my_keys[i] = it->first;
+	 my_values[i] = it->second;
+	 i++;
+      }
+   }
+   int my_disp = displacements_per_rank[my_rank];
+   MPI_Allgatherv(my_keys.data(),my_num_inputs,MPI_INT,
+		  combined_keys.data(),num_inputs_per_rank.data(),displacements_per_rank.data(),MPI_INT,MPI_COMM_WORLD);
+   MPI_Allgatherv(my_values.data(),my_num_inputs,MPI_DOUBLE,
+		  combined_values.data(),num_inputs_per_rank.data(),displacements_per_rank.data(),MPI_DOUBLE,MPI_COMM_WORLD);
+
+   for(int i=0; i<global_size; i++) {
+      final_values[combined_keys[i]] = combined_values[i];
+   }
+   
+   Pclose(file);
+   return final_values;
+}
