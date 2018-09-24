@@ -47,9 +47,9 @@ Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
  maxVoronoiSteps_(parms.maxVoronoiSteps),
  maxSteps_       (parms.maxSteps),
  outputRate_     (parms.outputRate),
- alpha_          (parms.alpha),
  tolerance_      (parms.tolerance),
  nbrDeltaR_      (parms.nbrDeltaR),
+ alphaStep_      (parms.alphaStep),
  indexToVector_  (anatomy.nx(), anatomy.ny(), anatomy.nz()),
  indexTo3Vector_ (anatomy.nx(), anatomy.ny(), anatomy.nz()),
  cells_          (anatomy.cellArray())
@@ -61,7 +61,7 @@ Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
 
    centers_.resize(nTasks_*nCentersPerTask_);
    radii_.resize(nTasks_*nCentersPerTask_);
-   bias_.resize(nTasks_*nCentersPerTask_, 0.0);
+   alpha_.resize(nTasks_*nCentersPerTask_, 1.0);
    load_.resize(nTasks_*nCentersPerTask_, 0.0);
    nbrDomains_.resize(nCentersPerTask_);
 
@@ -109,12 +109,10 @@ Koradi::Koradi(Anatomy& anatomy, const KoradiParms& parms)
 void Koradi::balanceStep()
 {
    findNbrDomains();
-   updateBias();
+   biasAlpha();
    assignCells();
    moveCenters();
-   double maxBias = *max_element(bias_.begin(), bias_.end());
-   for (unsigned ii=0; ii<bias_.size(); ++ii)
-      bias_[ii] -= maxBias;
+   computeRadii();
 }
 
 void Koradi::voronoiBalance()
@@ -123,10 +121,11 @@ void Koradi::voronoiBalance()
    {
       assignCells();
       moveCenters();
-      bias_.assign(bias_.size(), 0);
-      computeLoad(load_);
-      if (verbose_)
+      computeRadii();
+      if (verbose_) {
+         computeLoad(load_);
          printStatistics();
+      }
 
 //       if (stats.imbalance < tolerance_)
 //       break;
@@ -213,11 +212,11 @@ void Koradi::calculateCellDestinations()
          int cellOwner = cells_[ii].dest_;
          Vector rCell = indexToVector_(cells_[ii].gid_);
          const vector<int> overLapList = nbrDomains_[cellOwner-localOffset_];
-         double r2Min = diffSq(rCell, centers_[cellOwner]) - bias_[cellOwner];
+         double r2Min = diffSq(rCell, centers_[cellOwner])/alpha_[localOffset_+ii];
          cells_[ii].dest_ = cellOwner;
          for (unsigned jj=0; jj<overLapList.size(); ++jj)
          {
-            double r2 = diffSq(rCell, centers_[overLapList[jj]]) - bias_[overLapList[jj]];
+            double r2 = diffSq(rCell, centers_[overLapList[jj]])/alpha_[overLapList[jj]];
             if (r2 < r2Min)
             {
                r2Min = r2;
@@ -269,20 +268,6 @@ void Koradi::moveCenters()
    for (unsigned ii=0; ii<nCentersPerTask_; ++ii)
       centers_[ii+localOffset_] /= double(nCells[ii+localOffset_]);
    allGather(centers_, nCentersPerTask_, MPI_COMM_WORLD);
-
-   vector<double> oldRadii = radii_;
-   computeRadii();
-   for (unsigned ii=0; ii<centers_.size(); ++ii)
-   {
-      double rNew = radii_[ii];
-      double rOld = oldRadii[ii];
-      double update = 0.25*(rNew-rOld)*(rNew-rOld);
-      bias_[ii] -= update;
-//      cout <<"update " << ii<<": " << update<<endl;
-   }
-   
-
-
 }
 
 // We impose minimum radius to ensure that if a domain happens to
@@ -316,29 +301,16 @@ void Koradi::printStatistics()
    double minLoad = *min_element(load_.begin(), load_.end());
    double maxRadius = *max_element(radii_.begin(), radii_.end());
    double minRadius = *min_element(radii_.begin(), radii_.end());
-   double maxBias = *max_element(bias_.begin(), bias_.end());
-   double minBias = *min_element(bias_.begin(), bias_.end());
 
    if (myRank_ == 0)
    {
-      cout << "min/max load, radius, bias  = "
+      cout << "min/max load, radius = "
            << minLoad << " " << maxLoad << " "
-           << minRadius << " " << maxRadius << " "
-           << minBias << " " << maxBias << endl;
-//       for (unsigned ii=0; ii<centers_.size(); ++ii)
-//       {
-//       cout << ii <<": " <<bias_[ii]<<" " << nCells[ii] <<" "<<radii_[ii]
-//            <<" " << nbrDomains_[ii].size()<< " ";
-         
-//       for (unsigned jj=0; jj<nbrDomains_[ii].size(); ++jj)
-//          cout << nbrDomains_[ii][jj] <<",";
-//       cout <<endl;
-//       }
-
+           << minRadius << " " << maxRadius << endl;
    }
 }
 
-void Koradi::updateBias()
+void Koradi::biasAlpha()
 {
    computeLoad(load_);
 
@@ -351,27 +323,18 @@ void Koradi::updateBias()
 
    for (unsigned ii=0; ii<nCentersPerTask_; ++ii)
    {
-      double localAverageLoad = 0;
-      const vector<int>& overLapList = nbrDomains_[ii];
-      for (unsigned jj=0; jj<overLapList.size(); ++jj)
-         localAverageLoad += load_[overLapList[jj]];
-      
-//      assert(overLapList.size() > 0);
-      if (overLapList.size() > 0)
-         localAverageLoad /= (1.0*overLapList.size());
-
-      double aveLoad = globalAveLoad;
-//      double aveLoad = localAverageLoad;
-
-      double tmp = aveLoad/load_[localOffset_+ii];
-
-      tmp = pow(tmp, (2.0/3.0));
-      double r = radii_[ii+localOffset_];
-      bias_[ii+localOffset_] += alpha_*r*r*(tmp-1.0);
-
+      //Bigger Alpha = bigger radius
+      if (load_[localOffset_+ii]/globalAveLoad < (1-tolerance_))
+      {
+         alpha_[localOffset_+ii] *= 1+alphaStep_;
+      }
+      else if (load_[localOffset_+ii]/globalAveLoad > (1+tolerance_))
+      {
+         alpha_[localOffset_+ii] /= 1+alphaStep_;
+      }
    }
 
-   allGather(bias_, nCentersPerTask_, MPI_COMM_WORLD);
+   allGather(alpha_, nCentersPerTask_, MPI_COMM_WORLD);
 }
 
 void Koradi::findNbrDomains()

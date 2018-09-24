@@ -16,7 +16,8 @@ struct KoradiParms
    int maxVoronoiSteps;
    int maxSteps;
    int outputRate;
-   double alpha;
+   
+   double alphaStep;
    double tolerance;
    double nbrDeltaR;
 };
@@ -39,7 +40,7 @@ class Koradi
    void sendCellsToDestinations();
    void moveCenters();
    void computeRadii();
-   void updateBias();
+   void biasAlpha();
    void printStatistics();
    
    void calculateCellDestinations();
@@ -55,7 +56,7 @@ class Koradi
    int maxSteps_;
    int reconditionRate_;
    int outputRate_;
-   double alpha_;
+   double alphaStep_;
    double tolerance_;
    double nbrDeltaR_;
 
@@ -69,7 +70,7 @@ class Koradi
    // shared globally
    std::vector<Vector> centers_;
    std::vector<double> radii_;
-   std::vector<double> bias_;
+   std::vector<double> alpha_;
    std::vector<double> load_;
    double targetLoad_;
    
