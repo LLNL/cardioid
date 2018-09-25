@@ -17,12 +17,12 @@ cmake_minimum_required(VERSION 3.2)
 set (CMAKE_C_STANDARD 99)
 set (BLT_CXX_STD c++11)
 
-set(ENABLE_GTEST OFF CACHE STRING "Cardioid" FORCE)
-set(BUILD_GTEST OFF CACHE STRING "Cardioid" FORCE)
-set(ENABLE_TESTS OFF CACHE STRING "Cardioid" FORCE)
-set(INSTALL_GTEST OFF CACHE STRING "Cardioid" FORCE)
-set(ENABLE_GTEST OFF CACHE STRING "Cardioid" FORCE)
-set(ENABLE_EXAMPLES OFF CACHE STRING "Cardioid" FORCE)
+set(ENABLE_GTEST OFF CACHE BOOL "")
+set(BUILD_GTEST OFF CACHE BOOL "")
+set(ENABLE_TESTS OFF CACHE BOOL "")
+set(INSTALL_GTEST OFF CACHE BOOL "")
+set(ENABLE_GTEST OFF CACHE BOOL "")
+set(ENABLE_EXAMPLES OFF CACHE BOOL "")
 
 if (NOT BLT_LOADED)
    include(${CMAKE_CURRENT_SOURCE_DIR}/../blt/SetupBLT.cmake)
@@ -101,7 +101,7 @@ blt_add_library(NAME heart_transport
 if (ENABLE_CUDA)
    blt_add_library(NAME heart_actual_cuda
                    SOURCES CUDADiffusion_ker.cu ECGSensor.cu
-                   DEPENDS_ON ${cuda} openmp)
+                   DEPENDS_ON ${cuda} simUtil openmp)
    set (heart_explicit_cuda_src
       CUDADiffusion.cc
       CUDADiffusion.hh
