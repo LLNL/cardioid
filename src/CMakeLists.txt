@@ -15,7 +15,7 @@ project(cardioid_elec)
 cmake_minimum_required(VERSION 3.2)
 
 set (CMAKE_C_STANDARD 99)
-set (BLT_CXX_STD c++11)
+set (BLT_CXX_STD c++98)
 
 set(ENABLE_GTEST OFF CACHE BOOL "")
 set(BUILD_GTEST OFF CACHE BOOL "")
@@ -38,6 +38,8 @@ endif()
 
 set(extra_definitions "" CACHE STRING "")
 add_definitions(${extra_definitions})
+
+set(extra_includes "" CACHE STRING "")
 
 if (ENABLE_CUDA)
    include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
@@ -119,7 +121,7 @@ endif()
 set (reaction_src
 	#TT04_CellML_Reaction.cc
 	#TT06_CellML_Reaction.cc 
-	#TT06Dev_Reaction.cc
+	TT06Dev_Reaction.cc
 	#SimpleOHaraRudy.cc
 	#SimpleGrandi.cc
         #Passive.cc
@@ -209,7 +211,9 @@ set (heart_gpu_aware_src
 )
 blt_add_library(NAME heart_gpu_aware
                 SOURCES ${heart_gpu_aware_src}
-                DEPENDS_ON ${heart_explicit_cuda} heart_transport simUtil ${extra_libs} ${CUDA_NVTX_LIBRARY} openmp mpi)
+                DEPENDS_ON ${heart_explicit_cuda} heart_transport simUtil ${extra_libs} ${CUDA_NVTX_LIBRARY} openmp mpi
+                INCLUDES ${extra_includes}
+                )
 
 set (heart_cpu_only_src 
    spi_impl.c
@@ -217,7 +221,9 @@ set (heart_cpu_only_src
 )
 blt_add_library(NAME heart_cpu_only
                 SOURCES ${heart_cpu_only_src}
-                DEPENDS_ON simUtil ${extra_libs} openmp)
+                DEPENDS_ON simUtil ${extra_libs} openmp
+                INCLUDES ${extra_includes}
+                )
 
 blt_add_executable(NAME cardioid
                    SOURCES cardioid.cc

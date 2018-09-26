@@ -30,7 +30,7 @@ using namespace PerformanceTimers;
 using namespace TT06Func;
 int workBundle(int index, int nItems, int nGroups , int mod, int& offset);
 
-#ifdef BGQ
+#if 0
 static const  UPDATEGATE gateEq[] ={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, 
                                update_Xr2Gate_v1, update_XsGate_v1, update_rGate_v1, update_dGate_v1, 
                                update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, update_s0Gate_v1, 
