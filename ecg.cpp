@@ -309,24 +309,22 @@ int main(int argc, char *argv[])
             fileFromElectrode[ielec] << time << "\t" << gf_x[gfidFromElectrode[ielec]] << std::endl;
          }
       }
+      
 #ifdef DEBUG
       std::ofstream sol_ofs(outDir+"/sol"+std::to_string(time)+".gf");
       sol_ofs.precision(8);
       gf_x.SaveAsOne(sol_ofs);
       sol_ofs.close();
+      
+      std::ofstream mesh_ofs(outDir+"/refined.mesh");
+      mesh_ofs.precision(8);
+      pmesh->PrintAsOne(mesh_ofs);
 #endif
 	 
    }
 
    regfree(&snapshotRegex);
    closedir(dir);
-
-   // Not sure how this will adapt to n>1, probably want to only run from rank 0 at least
-   if(my_rank == 0) {
-      std::ofstream mesh_ofs("refined.mesh");
-      mesh_ofs.precision(8);
-      pmesh->Print(mesh_ofs);
-   }
 
    // 14. Free the used memory.
    delete M_test;
