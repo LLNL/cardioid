@@ -233,13 +233,13 @@ void EndTimer() {
 double ecg_readParGF(OBJECT* obj, const std::string VmFilename, const int global_size, const std::unordered_map<int,int> &gfFromGid, std::vector<double>& final_values) {
 
    int num_ranks, my_rank;
-   MPI_Comm_size(COMM_LOCAL,&num_ranks);
-   MPI_Comm_rank(COMM_LOCAL,&my_rank);
+   MPI_Comm_size(MPI_COMM_WORLD,&num_ranks);
+   MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
 
    std::vector<int> my_keys, combined_keys;
    std::vector<double> my_values, combined_values;
 
-   PFILE* file = Popen(VmFilename.c_str(), "r", COMM_LOCAL);
+   PFILE* file = Popen(VmFilename.c_str(), "r", MPI_COMM_WORLD);
     
    OBJECT* hObj = file->headerObject;
    std::vector<std::string> fieldNames,  fieldTypes;
@@ -311,5 +311,5 @@ double ecg_readParGF(OBJECT* obj, const std::string VmFilename, const int global
    }
    
    Pclose(file);
-   return final_values;
+   return time;
 }
