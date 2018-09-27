@@ -179,25 +179,24 @@ void StateVariableSensor::print(double time, int loop)
 
 double StateVariableSensor::getSimValue(int iCell, int varHandle)
 {
-   ContextRegion region(CPU);
    double value;
    switch (varHandle)
    {
      case -1:
       {
-         ro_larray_ptr<double> VmArray = sim_.vdata_.VmTransport_;
+         ro_array_ptr<double> VmArray = sim_.vdata_.VmTransport_.useOn(CPU);
          value = VmArray[iCell];
       }
       break;
      case -2:
       {
-         ro_larray_ptr<double> dVmDiffusion = sim_.vdata_.dVmDiffusionTransport_;
+         ro_array_ptr<double> dVmDiffusion = sim_.vdata_.dVmDiffusionTransport_.useOn(CPU);
          value = dVmDiffusion[iCell];
       }
       break;
      case -3:
       {
-         ro_larray_ptr<double> dVmReaction = sim_.vdata_.dVmReactionTransport_;
+         ro_array_ptr<double> dVmReaction = sim_.vdata_.dVmReactionTransport_.useOn(CPU);
          value = dVmReaction[iCell];
       }
       break;

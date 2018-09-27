@@ -43,12 +43,12 @@ class TT06Dev_Reaction : public Reaction
    ~TT06Dev_Reaction();
 
    void calc(double dt,
-             const Managed<ArrayView<double>> Vm,
-             const Managed<ArrayView<double>> iStim,
-             Managed<ArrayView<double>> dVm);
-   void updateNonGate(double dt, const Managed<ArrayView<double>> Vm, Managed<ArrayView<double>> dVR);
-   void updateGate   (double dt, const Managed<ArrayView<double>> Vm);
-   void initializeMembraneVoltage(ArrayView<double> Vm);
+             ro_mgarray_ptr<double> Vm,
+             ro_mgarray_ptr<double> iStim,
+             wo_mgarray_ptr<double> dVm);
+   void updateNonGate(double dt, ro_mgarray_ptr<double> Vm, wo_mgarray_ptr<double> dVR);
+   void updateGate   (double dt, ro_mgarray_ptr<double> Vm);
+   void initializeMembraneVoltage(wo_mgarray_ptr<double> Vm);
 
    void writeStateDev(int loop);
 

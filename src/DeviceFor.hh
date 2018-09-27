@@ -2,23 +2,21 @@
 
 #include "lazy_array.hh"
 
-#define HOST_PARALLEL_FORALL(N, LAMBDA)         \
+#define HOST_PARALLEL_FORALL(N, VAR, BODY)      \
 do                                              \
 {                                               \
-   ContextRegion region(CPU);                   \
-   auto lambda = [=] LAMBDA;                    \
-   for (int ii=0; ii<(N); ii++)                 \
+   for (int VAR=0; VAR<(N); VAR++)              \
    {                                            \
-      lambda(ii);                               \
+      BODY;                                     \
    }                                            \
 } while(0)
 
 #ifdef USE_CUDA
 
-#define DEVICE_PARALLEL_FORALL(N, LAMBDA) HOST_PARALLEL_FORALL(N, LAMBDA)
+#define DEVICE_PARALLEL_FORALL(N, VAR, LAMBDA) HOST_PARALLEL_FORALL(N, VAR, LAMBDA)
 
 #else
 
-#define DEVICE_PARALLEL_FORALL(N, LAMBDA) HOST_PARALLEL_FORALL(N, LAMBDA)
+#define DEVICE_PARALLEL_FORALL(N, VAR, LAMBDA) HOST_PARALLEL_FORALL(N, VAR, LAMBDA)
 
 #endif

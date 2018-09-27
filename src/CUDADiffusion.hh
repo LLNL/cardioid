@@ -12,10 +12,10 @@ class CUDADiffusion : public Diffusion
  public:
    CUDADiffusion(const Anatomy& anatomy, int simLoopType, double diffusionScale);
 
-   void updateLocalVoltage(ro_larray_ptr<double> VmLocal);
-   void updateRemoteVoltage(ro_larray_ptr<double> VmRemote);
+   void updateLocalVoltage(ro_mgarray_ptr<double> VmLocal);
+   void updateRemoteVoltage(ro_mgarray_ptr<double> VmRemote);
    /** omp loop must assign dVm, parallel loop need to increment dVm */
-   void calc(rw_larray_ptr<double> dVm);
+   void calc(rw_mgarray_ptr<double> dVm);
 
    unsigned* blockIndex();
    double* VmBlock();

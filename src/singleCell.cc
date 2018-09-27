@@ -354,8 +354,7 @@ int main(int argc, char* argv[])
          {
             if (handle == VmKey)
             {
-               ContextRegion region(CPU);
-               wo_larray_ptr<double> Vm = VmTransport;
+               wo_array_ptr<double> Vm = VmTransport.useOn(CPU);
                Vm[ii] = value;
             }
             else
@@ -375,8 +374,7 @@ int main(int argc, char* argv[])
          }
          else
          {
-            ContextRegion region(CPU);
-            ro_larray_ptr<double> Vm = VmTransport;
+            ro_array_ptr<double> Vm = VmTransport.useOn(CPU);
             fprintf(file, "%s REACTION { initialState = %s; }\n",
                     objectName.c_str(), objectName.c_str());
             fprintf(file, "%s SINGLECELL {\n", objectName.c_str());
@@ -399,8 +397,7 @@ int main(int argc, char* argv[])
       if ((itime % outputTimestepInterval) == 0)
       {
          //doIO();
-         ContextRegion region(CPU);
-         ro_larray_ptr<double> Vm = VmTransport;
+         ro_array_ptr<double> Vm = VmTransport.useOn(CPU);
          printf("%21.17g %21.17g", timeline.realTimeFromTimestep(itime), Vm[0]);
          for (int iextra=0; iextra<extraColumns.size(); ++iextra) 
          {
@@ -444,9 +441,9 @@ int main(int argc, char* argv[])
             stimAmount = -params.stim_strength_arg;
             timestepsLeftInStimulus--;
          }
-         auto iStim = iStimTransport.writeonly();
-         DEVICE_PARALLEL_FORALL(iStim.size(),
-                                (int ii) { iStim[ii] = -stimAmount; });
+         wo_array_ptr<double> iStim = iStimTransport.writeonly(DEFAULT_COMPUTE_SPACE);
+         DEVICE_PARALLEL_FORALL(iStim.size(), ii,
+                                iStim[ii] = -stimAmount);
 
       }
 
@@ -464,11 +461,11 @@ int main(int argc, char* argv[])
       }
       {
          //update Vm and apply stimulus
-         auto Vm = VmTransport.readwrite();
-         auto iStim = iStimTransport.readonly();
-         auto dVm = dVmTransport.readonly();
-         DEVICE_PARALLEL_FORALL(VmTransport.size(),
-                                (int ii) { Vm[ii] += dt*(dVm[ii]+iStim[ii]); });
+         rw_array_ptr<double> Vm = VmTransport.readwrite(DEFAULT_COMPUTE_SPACE);
+         ro_array_ptr<double> iStim = iStimTransport.readonly(DEFAULT_COMPUTE_SPACE);
+         ro_array_ptr<double> dVm = dVmTransport.readonly(DEFAULT_COMPUTE_SPACE);
+         DEVICE_PARALLEL_FORALL(VmTransport.size(), ii,
+                                Vm[ii] += dt*(dVm[ii]+iStim[ii]));
       }
       itime++;
    }

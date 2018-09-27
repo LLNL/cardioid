@@ -32,10 +32,6 @@
  *  exchange. 
  */
 
-void fillSendBufferCUDA(wo_larray_ptr<double> sendBufRaw, 
-                        ro_larray_ptr<double> dataRaw, 
-                        ro_larray_ptr<int> sendMapRaw);   
-
 template <class T>
 class HaloExchangeBase
 {
@@ -48,39 +44,39 @@ class HaloExchangeBase
 
    virtual ~HaloExchangeBase() {};
 
-   lazy_array<T>   getSendBuf() {return sendBuf_;}
-   lazy_array<int> getSendMap() const {return sendMap_;}
+   rw_mgarray_ptr<T>   getSendBuf() {return sendBuf_;}
+   ro_mgarray_ptr<int> getSendMap() const {return sendMap_;}
 
    int recvSize() { return commTable_->recvSize(); }
 
 
-   void execute(rw_larray_ptr<T> data, int nLocal)
+   void execute(rw_mgarray_ptr<T> _data, int nLocal)
    {
-      fillSendBuffer(data);
+      fillSendBuffer(_data);
       startComm();
       wait();
       {
-         ContextRegion region(CPU);
-         data.use();
-         ro_larray_ptr<T> recvBuf = getRecvBuf();
+         rw_array_ptr<T> data = _data.useOn(CPU);
+         ro_array_ptr<T> recvBuf = getRecvBuf().useOn(CPU);
          for (int ii=0; ii<recvSize(); ii++)
          {
             data[nLocal+ii] = recvBuf[ii];
          }
       }
    }
-   virtual void fillSendBuffer(ro_larray_ptr<T> externalData)
+   virtual void fillSendBuffer(ro_mgarray_ptr<T> _externalData)
    {
       startTimer(PerformanceTimers::haloMove2BufTimer);
 
-      auto sendMap = sendMap_.readonly();
-      auto sendBuf = sendBuf_.writeonly();
-      HOST_PARALLEL_FORALL(sendMap.size(),
-                           (int ii) {sendBuf[ii] = externalData[sendMap[ii]]; };);
+      ro_array_ptr<int> sendMap = sendMap_.readonly(CPU);
+      wo_array_ptr<T> sendBuf = sendBuf_.writeonly(CPU);
+      ro_array_ptr<T> externalData = _externalData.useOn(CPU);
+      HOST_PARALLEL_FORALL(sendMap.size(), ii,
+                           sendBuf[ii] = externalData[sendMap[ii]]);
       stopTimer(PerformanceTimers::haloMove2BufTimer);
          
    }
-   virtual ro_larray_ptr<T> getRecvBuf() = 0;
+   virtual ro_mgarray_ptr<T> getRecvBuf() = 0;
    virtual void startComm() = 0;
    virtual void wait() = 0;
    virtual void barrier() = 0;
@@ -110,9 +106,8 @@ class HaloExchange : public HaloExchangeBase<T>
   {
      recvBuf_.resize(commTable_->recvSize()*2);
 
-     ContextRegion region(CPU);
-     rw_larray_ptr<T> sendBuf = sendBuf_;
-     rw_larray_ptr<T> recvBuf = recvBuf_;
+     rw_array_ptr<T> sendBuf = sendBuf_.useOn(CPU);
+     rw_array_ptr<T> recvBuf = recvBuf_.useOn(CPU);
      
      //create mapping table
      //mapping_table(&spiHdl_);
@@ -145,9 +140,8 @@ class HaloExchange : public HaloExchangeBase<T>
      bw_=1-bw_;
 #pragma omp critical
      {
-        ContextRegion region(CPU);
-        sendBuf_.readonly();
-        recvBuf_.writeonly();
+        sendBuf_.readonly(CPU);
+        recvBuf_.writeonly(CPU);
         execute_spi_alter(&spiHdl_,commTable_->_putTask.size(),bw_);
      }
      
@@ -169,7 +163,7 @@ class HaloExchange : public HaloExchangeBase<T>
    virtual void barrier() {global_sync(&spiHdl_);};
    void barrierWithTimeout(uint64_t timeout) {global_sync_2(&spiHdl_,timeout);};
    
-   virtual ro_larray_ptr<T> getRecvBuf() { return recvBuf_.readonly().slice(recvSize()*bw_,recvSize()); }
+   virtual ro_mgarray_ptr<T> getRecvBuf() { return recvBuf_.readonly().slice(recvSize()*bw_,recvSize()); }
 
 
 
@@ -204,10 +198,8 @@ class HaloExchange : public HaloExchangeBase<T>
    {
 #pragma omp critical 
       {
-         ContextRegion region(CPU);
-         
-         const char* sendBuf = (const char*)sendBuf_.readonly().raw();
-         char* recvBuf = (char*)recvBuf_.writeonly().raw();
+         const char* sendBuf = (const char*)sendBuf_.readonly(CPU).raw();
+         char* recvBuf = (char*)recvBuf_.writeonly(CPU).raw();
 
          MPI_Request* recvReq = &recvReq_[0];
          const int tag = 151515;
@@ -248,7 +240,7 @@ class HaloExchange : public HaloExchangeBase<T>
       MPI_Barrier(commTable_->_comm);
    }
    
-   virtual ro_larray_ptr<T> getRecvBuf()
+   virtual ro_mgarray_ptr<T> getRecvBuf()
    {
       return recvBuf_;
    }
@@ -277,14 +269,15 @@ class HaloExchangeDevice : public HaloExchange<T>
    {
    };
 
-   void fillSendBuffer(ro_larray_ptr<T> data)
+   void fillSendBuffer(ro_mgarray_ptr<T> _data)
    {
       startTimer(PerformanceTimers::haloMove2BufTimer);
 
-      auto sendMap = sendMap_.readonly();
-      auto sendBuf = sendBuf_.writeonly();
-      DEVICE_PARALLEL_FORALL(sendMap.size(),
-                             (int ii) {sendBuf[ii] = data[sendMap[ii]]; };);
+      ro_array_ptr<int> sendMap = sendMap_.readonly(DEFAULT_COMPUTE_SPACE);
+      wo_array_ptr<T> sendBuf = sendBuf_.writeonly(DEFAULT_COMPUTE_SPACE);
+      ro_array_ptr<T> data = _data.useOn(DEFAULT_COMPUTE_SPACE);
+      DEVICE_PARALLEL_FORALL(sendMap.size(), ii,
+                             sendBuf[ii] = data[sendMap[ii]]);
 
       stopTimer(PerformanceTimers::haloMove2BufTimer);
    };

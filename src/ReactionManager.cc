@@ -13,9 +13,9 @@ using namespace std;
 
 ///pass through routines.
 void ReactionManager::calc(double dt,
-                           ro_larray_ptr<double> Vm,
-                           ro_larray_ptr<double> iStim,
-                           wo_larray_ptr<double> dVm)
+                           ro_mgarray_ptr<double> Vm,
+                           ro_mgarray_ptr<double> iStim,
+                           wo_mgarray_ptr<double> dVm)
 {
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
@@ -26,7 +26,7 @@ void ReactionManager::calc(double dt,
    }
 }
    
-void ReactionManager::updateNonGate(double dt, ro_larray_ptr<double> Vm, wo_larray_ptr<double> dVR)
+void ReactionManager::updateNonGate(double dt, ro_mgarray_ptr<double> Vm, wo_mgarray_ptr<double> dVR)
 {
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
@@ -36,7 +36,7 @@ void ReactionManager::updateNonGate(double dt, ro_larray_ptr<double> Vm, wo_larr
    }
 
 }
-void ReactionManager::updateGate(double dt, ro_larray_ptr<double> Vm)
+void ReactionManager::updateGate(double dt, ro_mgarray_ptr<double> Vm)
 {
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
@@ -47,7 +47,7 @@ void ReactionManager::updateGate(double dt, ro_larray_ptr<double> Vm)
 /** Populates the Vm array with some sensible default initial
  * membrane voltage.  Vm will be the parallel to the local cells in
  * the anatomy that was used to create the concrete reaction class. */
-void ReactionManager::initializeMembraneState(wo_larray_ptr<double> Vm)
+void ReactionManager::initializeMembraneState(wo_mgarray_ptr<double> Vm)
 {
    for (int ii=0; ii<reactions_.size(); ++ii)
    {

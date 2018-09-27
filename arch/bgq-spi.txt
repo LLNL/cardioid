@@ -28,10 +28,8 @@ set(CMAKE_CXX_COMPILER "${MPI_CXX_COMPILER}" CACHE PATH "")
 # CUDA support
 ###########################################################
 set(ENABLE_CUDA OFF CACHE BOOL "")
-#SET(extra_libs dl 
-#    ${CUDA_TOOLKIT_ROOT_DIR}/lib64/libcudart.so 
-#    ${CUDA_TOOLKIT_ROOT_DIR}/lib64/libnvrtc.so
-#    )
+
+set (BLT_CXX_STD c++98 CACHE STRING "")
 
 set(extra_definitions "-DBGQ -DSPI -qlanglvl=delegatingctors" CACHE STRING "")
 set(extra_includes

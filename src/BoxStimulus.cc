@@ -36,20 +36,20 @@ BoxStimulus::BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy, Puls
    }
 
    stimListTransport_.resize(stimList.size());
-   ContextRegion region(CPU);
-   auto stimListAccess = stimListTransport_.writeonly();
+   wo_array_ptr<int> stimListAccess = stimListTransport_.useOn(CPU);
    copy(stimList.begin(), stimList.end(), stimListAccess.begin());
 }
 
 int BoxStimulus::subClassStim(double time,
-                              rw_larray_ptr<double> dVmDiffusion)
+                              rw_mgarray_ptr<double> _dVmDiffusion)
 {
    double value = pulse_->eval(time);
    if (value == 0)
       return 0;
-   auto stimList = stimListTransport_.readonly();
-   DEVICE_PARALLEL_FORALL(stimList.size(),
-                          (int ii) { dVmDiffusion[stimList[ii]] = value; });
+   ro_array_ptr<int> stimList = stimListTransport_.useOn(DEFAULT_COMPUTE_SPACE);
+   rw_array_ptr<double> dVmDiffusion = _dVmDiffusion.useOn(DEFAULT_COMPUTE_SPACE);
+   DEVICE_PARALLEL_FORALL(stimList.size(), ii, 
+                          dVmDiffusion[stimList[ii]] = value);
    return 1;
 }
 

@@ -23,9 +23,9 @@ using namespace std;
 
 typedef double Real;
 
-void call_cuda_kernels(ro_larray_ptr<Real> VmRaw, rw_larray_ptr<Real> dVmRaw, ro_larray_ptr<Real> sigmaRaw, int nx, int ny, int nz, wo_larray_ptr<Real> dVmOut, ro_larray_ptr<int> lookup,int nCells);
+void call_cuda_kernels(ro_mgarray_ptr<Real> VmRaw, rw_mgarray_ptr<Real> dVmRaw, ro_mgarray_ptr<Real> sigmaRaw, int nx, int ny, int nz, wo_mgarray_ptr<Real> dVmOut, ro_mgarray_ptr<int> lookup,int nCells);
 
-void copy_to_block(wo_larray_ptr<double> blockCPU, ro_larray_ptr<int> lookupCPU, ro_larray_ptr<double> sourceCPU, const int begin, const int end);
+void copy_to_block(wo_mgarray_ptr<double> blockCPU, ro_mgarray_ptr<int> lookupCPU, ro_mgarray_ptr<double> sourceCPU, const int begin, const int end);
 
 CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType, double newDiffusionScale)
 : anatomy_(anatomy), simLoopType_(simLoopType), Diffusion(newDiffusionScale),
@@ -49,8 +49,7 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType, double new
    //vector<int>& blockFromRedVec(blockFromRed_.modifyOnHost());
    //vector<int>& cellFromRedVec(cellFromRed_.modifyOnHost());
    map<int,int> cellFromBlock;
-   ContextRegion region(CPU);
-   wo_larray_ptr<int> cellLookupVec = cellLookup_;
+   wo_array_ptr<int> cellLookupVec = cellLookup_.writeonly(CPU);
    for (int icell=0; icell<nCells_; icell++)
    {
       //index to coordinate 
@@ -74,7 +73,7 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType, double new
    const double gridCellVolume = disc[0]*disc[1]*disc[2];
    //initialize the array of diffusion coefficients
    sigmaFaceNormal_.resize(nx_*ny_*nz_*9);
-   wo_larray_ptr<double> sigmaFaceNormalVec = sigmaFaceNormal_;
+   wo_array_ptr<double> sigmaFaceNormalVec = sigmaFaceNormal_.writeonly(CPU);
 
    for (int icell=0; icell<nCells_; icell++)
    {
@@ -126,28 +125,26 @@ CUDADiffusion::CUDADiffusion(const Anatomy& anatomy, int simLoopType, double new
       }
    }
    {
-      ContextRegion region(GPU);
-      wo_larray_ptr<double> VmBlock = VmBlock_;
+      wo_array_ptr<double> VmBlock = VmBlock_.writeonly(GPU);
       CUDA_VERIFY(cudaMemset(VmBlock.raw(), 0, VmBlock.size()*sizeof(double)));
    }
 }
 
-void CUDADiffusion::updateLocalVoltage(ro_larray_ptr<double> VmLocal)
+void CUDADiffusion::updateLocalVoltage(ro_mgarray_ptr<double> VmLocal)
 {
    copy_to_block(VmBlock_, cellLookup_, VmLocal, 0, nLocal_);
 }
 
-void CUDADiffusion::updateRemoteVoltage(ro_larray_ptr<double> VmRemote)
+void CUDADiffusion::updateRemoteVoltage(ro_mgarray_ptr<double> VmRemote)
 {
    copy_to_block(VmBlock_, cellLookup_, VmRemote, nLocal_, nCells_);
 }
 
-void CUDADiffusion::calc(rw_larray_ptr<double> dVm)
+void CUDADiffusion::calc(rw_mgarray_ptr<double> dVm)
 {
    if (simLoopType_ == 0) // it is a hard coded of enum LoopType {omp, pdr}  
    {
-      ContextRegion region(GPU);
-      wo_larray_ptr<double> dVm_to_zero = dVm;
+      wo_array_ptr<double> dVm_to_zero = dVm.useOn(GPU);
       CUDA_VERIFY(cudaMemset(dVm_to_zero.raw(), 0, dVm_to_zero.size()*sizeof(double)));
    }
 

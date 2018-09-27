@@ -98,8 +98,7 @@ void ActivationTimeSensor::print(double time, int loop)
 
 void ActivationTimeSensor::eval(double time, int loop)
 {
-   ContextRegion region(CPU);
-   ro_larray_ptr<double> VmArray = vdata_.VmTransport_;
+   ro_array_ptr<double> VmArray = vdata_.VmTransport_.useOn(CPU);
    for (unsigned ii=0; ii<nLocal_; ++ii)
    {
       if (activated_[ii]) continue;

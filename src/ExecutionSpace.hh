@@ -7,6 +7,8 @@ typedef int ExecutionSpace;
 #ifdef USE_CUDA
 # define GPU (1)
 # define NUMSPACES (2)
+# define DEFAULT_COMPUTE_SPACE GPU
 #else
 # define NUMSPACES (1)
+# define DEFAULT_COMPUTE_SPACE CPU
 #endif

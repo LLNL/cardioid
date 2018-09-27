@@ -7,20 +7,20 @@
 #include "lazy_array.hh"
 
 
-void calcInvrCUDA(wo_larray_ptr<double> invr,
-                  ro_larray_ptr<Long64> gids,
-                  ro_larray_ptr<double> ecgPoints,
+void calcInvrCUDA(wo_mgarray_ptr<double> invr,
+                  ro_mgarray_ptr<Long64> gids,
+                  ro_mgarray_ptr<double> ecgPoints,
                   const int nEcgPoints,
                   const int nx, const int ny, const int nz,
                   const double dx, const double dy, const double dz);
 
-void calcEcgCUDA(wo_larray_ptr<double> ecgs,
-                 ro_larray_ptr<double> invr,
-                 ro_larray_ptr<double> Vm,
+void calcEcgCUDA(wo_mgarray_ptr<double> ecgs,
+                 ro_mgarray_ptr<double> invr,
+                 ro_mgarray_ptr<double> Vm,
                  const int nEcgPoints);
-void dump_GPU_data(wo_larray_ptr<double> ecgs,
-                   ro_larray_ptr<double> invr,
-                   ro_larray_ptr<double> Vm,
+void dump_GPU_data(wo_mgarray_ptr<double> ecgs,
+                   ro_mgarray_ptr<double> invr,
+                   ro_mgarray_ptr<double> Vm,
                    const int nEcgPoints);
 
 struct ECGSensorParms

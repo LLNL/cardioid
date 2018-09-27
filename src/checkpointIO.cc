@@ -124,8 +124,6 @@ void writeCheckpoint(const Simulate& sim, MPI_Comm comm)
    MPI_Comm_rank(comm, &myRank);
    const Anatomy& anatomy = sim.anatomy_;
 
-   ContextRegion region(CPU);
-   
    stringstream name;
    name << "snapshot."<<setfill('0')<<setw(12)<<sim.loop_;
    string dirName = name.str();
@@ -177,7 +175,7 @@ void writeCheckpoint(const Simulate& sim, MPI_Comm comm)
    
    char buf[lRec+1];
    vector<double> value(handle.size(), 0.0);
-   ro_larray_ptr<double> vmarray = sim.vdata_.VmTransport_;
+   ro_array_ptr<double> vmarray = sim.vdata_.VmTransport_.useOn(CPU);
    for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
    {
       if (sim.asciiCheckpoints_)
@@ -210,8 +208,6 @@ void writeCheckpoint(const Simulate& sim, MPI_Comm comm)
 
 void readCheckpoint(const string& filename, Simulate& sim, MPI_Comm comm)
 {
-   ContextRegion region(CPU);
-   
    BucketOfBits* data = 
       loadAndDistributeState(filename, sim.anatomy_);
    assert(data->nRecords() == sim.anatomy_.nLocal());
@@ -263,7 +259,7 @@ void readCheckpoint(const string& filename, Simulate& sim, MPI_Comm comm)
    }
 
    // Load membrane voltage from checkpoint file into VmArray.
-   wo_larray_ptr<double> vmarray = sim.vdata_.VmTransport_; 
+   wo_array_ptr<double> vmarray = sim.vdata_.VmTransport_.useOn(CPU); 
    unsigned vmIndex = data->getIndex("Vm");
    if (vmIndex != data->nFields())
       for (unsigned ii=0; ii<data->nRecords(); ++ii)

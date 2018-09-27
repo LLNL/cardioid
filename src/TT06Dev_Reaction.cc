@@ -412,26 +412,26 @@ int TT06Dev_Reaction::nonGateWorkPartition_(int& offset)
 }
 
 void TT06Dev_Reaction::calc(double dt,
-                            const Managed<ArrayView<double>> Vm_m,
-                            const Managed<ArrayView<double>> iStim_m,
-                            Managed<ArrayView<double>> dVm_m)
+                            ro_mgarray_ptr<double> Vm_m,
+                            ro_mgarray_ptr<double> iStim_m,
+                            wo_mgarray_ptr<double> dVm_m)
 {
-   ConstArrayView<double> Vm = Vm_m;
-   ConstArrayView<double> iStim = iStim_m;
-   ArrayView<double> dVm = dVm_m;
+   ro_array_ptr<double> Vm = Vm_m.useOn(CPU);
+   ro_array_ptr<double> iStim = iStim_m.useOn(CPU);
+   wo_array_ptr<double> dVm = dVm_m.useOn(CPU);
    WORK work ={ 0,static_cast<int>(nCells_),0,12}; 
    if (nCells_ > 0) 
    {
-      update_nonGate_((void*)fit_, &currentScales_,dt,&(cellTypeParm_), nCells_,const_cast<double *>(&Vm[0]),  0, &state_[0], &dVm[0]);
+      update_nonGate_((void*)fit_, &currentScales_,dt,&(cellTypeParm_), nCells_,const_cast<double *>(&Vm[0]),  0, &state_[0], dVm.raw());
       update_gate_(dt, nCells_, cellTypeParm_.s_switch, const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],fit_,work);
    }
 }
-void TT06Dev_Reaction::updateNonGate(double dt, const Managed<ArrayView<double>> Vm_m, Managed<ArrayView<double>> dVR_m)   
+void TT06Dev_Reaction::updateNonGate(double dt, ro_mgarray_ptr<double> Vm_m, wo_mgarray_ptr<double> dVR_m)
 {
    int offset,nCells; 
 
-   ConstArrayView<double> Vm = Vm_m;
-   ArrayView<double> dVR = dVR_m;
+   ro_array_ptr<double> Vm = Vm_m.useOn(CPU);
+   wo_array_ptr<double> dVR = dVR_m.useOn(CPU);
    
 #ifdef LEGACY_NG_WORKPARTITION
    nCells = nonGateWorkPartition(offset);
@@ -445,15 +445,15 @@ void TT06Dev_Reaction::updateNonGate(double dt, const Managed<ArrayView<double>>
    if (nCells > 0) 
    {
       startTimer(nonGateTimer);
-      update_nonGate_(fit_,&currentScales_,dt,&cellTypeParm_, nCells, const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
+      update_nonGate_(fit_,&currentScales_,dt,&cellTypeParm_, nCells, const_cast<double *>(&Vm[offset]),  offset, &state_[0], dVR.raw()+offset);
       stopTimer(nonGateTimer);
    }
 }
-void TT06Dev_Reaction::updateGate   (double dt, const Managed<ArrayView<double>> Vm_m)
+void TT06Dev_Reaction::updateGate   (double dt, ro_mgarray_ptr<double> Vm_m)
 {
    int teamRank = group_.teamRank();
 
-   ConstArrayView<double> Vm = Vm_m;
+   ro_array_ptr<double> Vm = Vm_m.useOn(CPU);
 
    TT06Func::WORK work = gateWork_[teamRank]; 
    int nCell=work.nCell; 
@@ -473,10 +473,11 @@ void TT06Dev_Reaction::updateGate   (double dt, const Managed<ArrayView<double>>
    stopTimer(gateTimer);
 }
 
-void TT06Dev_Reaction::initializeMembraneVoltage(ArrayView<double> Vm)
+void TT06Dev_Reaction::initializeMembraneVoltage(wo_mgarray_ptr<double> Vm_m)
 {
-   assert(Vm.size() >= nCells_);
-   for (unsigned ii=0; ii<Vm.size(); ++ii) Vm[ii] = XXXinitialVm_;
+   assert(Vm_m.size() >= nCells_);
+   wo_array_ptr<double> Vm = Vm_m.useOn(CPU);
+   for (unsigned ii=0; ii<nCells_; ++ii) Vm[ii] = XXXinitialVm_;
 }
 
 void TT06Dev_Reaction::getCheckpointInfo(vector<string>& name,

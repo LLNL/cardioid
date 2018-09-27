@@ -6,9 +6,9 @@
 #define CELL_PER_BLOCK 32
 
 
-__global__ void calcInvr_kernel(wo_larray_ptr<double> invr,
-                                ro_larray_ptr<Long64> gids,
-                                ro_larray_ptr<double> ecgPoints,
+__global__ void calcInvr_kernel(wo_array_ptr<double> invr,
+                                ro_array_ptr<Long64> gids,
+                                ro_array_ptr<double> ecgPoints,
                                 const int nEcgPoints,
                                 const int nx, const int ny, const int nz,
                                 const double dx, const double dy, const double dz,
@@ -39,14 +39,13 @@ __global__ void calcInvr_kernel(wo_larray_ptr<double> invr,
 
 }
 
-void calcInvrCUDA(wo_larray_ptr<double> invr,
-                  ro_larray_ptr<Long64> gids, 
-                  ro_larray_ptr<double> ecgPoints,
+void calcInvrCUDA(wo_mgarray_ptr<double> invr,
+                  ro_mgarray_ptr<Long64> gids, 
+                  ro_mgarray_ptr<double> ecgPoints,
                   const int nEcgPoints,
                   const int nx, const int ny, const int nz,
                   const double dx, const double dy, const double dz)
 {
-    ContextRegion region(GPU);
     int blockSize = 1024;
 
     int begin=0;
@@ -54,9 +53,9 @@ void calcInvrCUDA(wo_larray_ptr<double> invr,
 
 
     calcInvr_kernel<<<(end-begin+blockSize-1)/blockSize, blockSize>>>
-        (invr,
-         gids,
-         ecgPoints,
+        (invr.useOn(GPU),
+         gids.useOn(GPU),
+         ecgPoints.useOn(GPU),
          nEcgPoints,
          nx, ny, nz,
          dx, dy, dz,
@@ -80,9 +79,9 @@ inline __device__ double atomicAdd(double* pointer, const double value)
 }
 #endif
 
-__global__ void calcEcg_kernel(wo_larray_ptr<double> ecgs,
-                               ro_larray_ptr<double> invr,
-                               ro_larray_ptr<double> dVmDiffusion,
+__global__ void calcEcg_kernel(wo_array_ptr<double> ecgs,
+                               ro_array_ptr<double> invr,
+                               ro_array_ptr<double> dVmDiffusion,
                                const int nEcgPoints,
                                const int cellPartition,
                                const int nCells)
@@ -130,27 +129,25 @@ __global__ void calcEcg_kernel(wo_larray_ptr<double> ecgs,
    
 }
 
-void calcEcgCUDA(wo_larray_ptr<double> ecgs,
-                 ro_larray_ptr<double> invr,
-                 ro_larray_ptr<double> dVmDiffusion,
+void calcEcgCUDA(wo_mgarray_ptr<double> ecgs,
+                 ro_mgarray_ptr<double> invr,
+                 ro_mgarray_ptr<double> dVmDiffusion,
                  const int nEcgPoints)
 {
-    ContextRegion region(GPU);
-   
     int nCells=dVmDiffusion.size();
     const int cellPartition = (nCells+(NUM_TBLOCK-1))/(NUM_TBLOCK);
 
     if ( nEcgPoints > 32 ) printf("error:too many ECG points\n");
     calcEcg_kernel<<<NUM_TBLOCK, (nEcgPoints*CELL_PER_BLOCK)>>>
-        (ecgs,
-         invr,
-         dVmDiffusion,
+        (ecgs.useOn(GPU),
+         invr.useOn(GPU),
+         dVmDiffusion.useOn(GPU),
          nEcgPoints,
          cellPartition,
          nCells);
 }
 
-__global__ void dump_kernel(ro_larray_ptr<double> data)
+__global__ void dump_kernel(ro_array_ptr<double> data)
 {
 	for(int ii=0; ii<100; ii++)
         {
@@ -159,14 +156,13 @@ __global__ void dump_kernel(ro_larray_ptr<double> data)
         }
 }
 
-void dump_GPU_data(wo_larray_ptr<double> ecgs,
-                   ro_larray_ptr<double> invr,
-                   ro_larray_ptr<double> dVmDiffusion,
+void dump_GPU_data(wo_mgarray_ptr<double> ecgs,
+                   ro_mgarray_ptr<double> invr,
+                   ro_mgarray_ptr<double> dVmDiffusion,
                    const int nEcgPoints)
 {
-   ContextRegion region(GPU);
-   dump_kernel<<<1,1>>>(invr);
+   dump_kernel<<<1,1>>>(invr.useOn(GPU));
    printf("\n\n\n");
-   dump_kernel<<<1,1>>>(dVmDiffusion);
+   dump_kernel<<<1,1>>>(dVmDiffusion.useOn(GPU));
    printf("\n\n\n");
 }

@@ -33,14 +33,13 @@ ECGSensor::ECGSensor(const SensorParms& sp,
     nEcgPoints=p.ecgPoints.size()/dim;
     std::vector<double> ecgPoints(p.ecgPoints);
     ecgPointTransport_.resize(ecgPoints.size());
-    ContextRegion region(CPU);
-    auto ecgPointAccess = ecgPointTransport_.writeonly();
+    auto ecgPointAccess = ecgPointTransport_.writeonly(CPU);
     copy(ecgPoints.begin(), ecgPoints.end(), ecgPointAccess.begin());
     calcInvR(sim);
    
     std::vector<double> ecgs(nEcgPoints, 0);
     ecgsTransport_.resize(ecgs.size());
-    auto ecgAccess = ecgsTransport_.writeonly();
+    auto ecgAccess = ecgsTransport_.writeonly(CPU);
     copy(ecgs.begin(), ecgs.end(), ecgAccess.begin());
 }
 
@@ -60,16 +59,15 @@ void ECGSensor::calcInvR(const Simulate& sim)
 
     lazy_array<Long64>  gidsTransport_;
     gidsTransport_.resize(nlocal);
-    ContextRegion region(CPU);
-    auto gridAccess = gidsTransport_.writeonly();
+    auto gridAccess = gidsTransport_.writeonly(CPU);
     for(unsigned ii=0; ii<nlocal; ++ii){
         gridAccess[ii]=anatomy.gid(ii);
     }
     
     std::vector<double> invr(nlocal*nSensorPoints_,0.0);
-    invrTransport_.resize(invr.size());
-    auto invrAccess=invrTransport_.writeonly();
-    copy(invr.begin(), invr.end(), invrAccess.begin());
+    invrTransport_.resize(nlocal*nSensorPoints_);
+    auto invrAccess=invrTransport_.writeonly(GPU);
+    CUDA_VERIFY(cudaMemset(invrAccess.raw(), 0, sizeof(double)*invrAccess.size()));
     
     calcInvrCUDA(invrTransport_,
                  gidsTransport_,
@@ -128,8 +126,7 @@ void ECGSensor::calcInvR(const Simulate& sim)
       header.writeHeader(file, loop, time);
 
    }
-   ContextRegion region(CPU);
-   ro_larray_ptr<double> invrT=invrTransport_;
+   auto invrT=invrTransport_.readonly(CPU);
 
       char line[lRec+1];
 
@@ -230,34 +227,34 @@ void ECGSensor::print(double time, int loop)
    Pclose(file);
 }
 
-void calcEcg(rw_larray_ptr<double> ecgs,
-                 ro_larray_ptr<double> invr,
-                 ro_larray_ptr<double> dVmDiffusion,
-                 const int nEcgPoints) {
-   ContextRegion region(CPU);
-    int nData=dVmDiffusion.size();
-    for(unsigned ii=0; ii< nData; ii++){
-	for (unsigned jj=0; jj< nEcgPoints; jj++){
-            unsigned index=ii*nEcgPoints+jj;
-	    ecgs[jj]+=invr[index]*dVmDiffusion[ii];
-	}
-    }
+void calcEcg(rw_mgarray_ptr<double> _ecgs,
+             ro_mgarray_ptr<double> _invr,
+             ro_mgarray_ptr<double> _dVmDiffusion,
+             const int nEcgPoints) {
+   auto ecgs = _ecgs.useOn(CPU);
+   auto invr = _invr.useOn(CPU);
+   auto dVmDiffusion = _dVmDiffusion.useOn(CPU);
+   int nData=dVmDiffusion.size();
+   for(unsigned ii=0; ii< nData; ii++){
+      for (unsigned jj=0; jj< nEcgPoints; jj++){
+         unsigned index=ii*nEcgPoints+jj;
+         ecgs[jj]+=invr[index]*dVmDiffusion[ii];
+      }
+   }
 }
 
 void ECGSensor::eval(double time, int loop)
 {
    startTimer(sensorEvalTimer);
    {   // zero out
-        ContextRegion region(GPU);
-   	wo_larray_ptr<double> ecgs = ecgsTransport_;
+   	auto ecgs = ecgsTransport_.writeonly(GPU);
         CUDA_VERIFY(cudaMemset(ecgs.raw(), 0, sizeof(double)*ecgs.size()));
    }
    
   if(0) { // DEBUG to print out invr and  dVmDiffusion
-     ContextRegion region(CPU);
      if(loop<100 || loop%100==1){
-      ro_larray_ptr<double> invr=invrTransport_;
-      ro_larray_ptr<double> dVmDiffusion=dVmDiffusionTransport_;
+        auto invr=invrTransport_.readonly(CPU);
+        auto dVmDiffusion=dVmDiffusionTransport_.readonly(CPU);
 
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
@@ -298,8 +295,7 @@ void ECGSensor::eval(double time, int loop)
                nEcgPoints);
  }
    
-   ContextRegion region(CPU);
-   ro_larray_ptr<double> ecgs = ecgsTransport_;
+   auto ecgs = ecgsTransport_.readonly(CPU);
    const double* ecgsSendBuf=ecgs.raw();
    double ecgsRecvBuf[nEcgPoints];
    // MPI_Allreduce(ecgsSendBuf, ecgsRecvBuf, nEcgPoints, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);  

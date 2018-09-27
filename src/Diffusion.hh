@@ -21,10 +21,10 @@ class Diffusion
  public:
    inline Diffusion(double newDiffusionScale=0) : diffusionScale_(newDiffusionScale) {}
    virtual ~Diffusion(){};
-   virtual void updateLocalVoltage(ro_larray_ptr<double> VmLocal) = 0;
-   virtual void updateRemoteVoltage(ro_larray_ptr<double> VmRemote) = 0;
-   virtual void calc(rw_larray_ptr<double> dVm) = 0;
-   virtual void calc_overlap(rw_larray_ptr<double> dVm) {};
+   virtual void updateLocalVoltage(ro_mgarray_ptr<double> VmLocal) = 0;
+   virtual void updateRemoteVoltage(ro_mgarray_ptr<double> VmRemote) = 0;
+   virtual void calc(rw_mgarray_ptr<double> dVm) = 0;
+   virtual void calc_overlap(rw_mgarray_ptr<double> dVm) {};
    virtual unsigned* blockIndex(){return 0;}
    virtual double* VmBlock(){return 0;}
    virtual double* dVmBlock(){return 0;}

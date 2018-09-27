@@ -72,12 +72,12 @@ class Simulate
    enum LoopType {omp, pdr};
    
    void checkRanges(int begin, int end,
-                    ro_larray_ptr<double> Vm,
-                    ro_larray_ptr<double> dVmReaction,
-                    ro_larray_ptr<double> dVmDiffusion);
-   void checkRanges(ro_larray_ptr<double> Vm,
-                    ro_larray_ptr<double> dVmReaction,
-                    ro_larray_ptr<double> dVmDiffusion);
+                    ro_mgarray_ptr<double> Vm,
+                    ro_mgarray_ptr<double> dVmReaction,
+                    ro_mgarray_ptr<double> dVmDiffusion);
+   void checkRanges(ro_mgarray_ptr<double> Vm,
+                    ro_mgarray_ptr<double> dVmReaction,
+                    ro_mgarray_ptr<double> dVmDiffusion);
    
 
    bool checkIO(int loop=-1)const;

@@ -63,15 +63,16 @@ void getRemoteCells(Simulate& sim, const string& name, MPI_Comm comm)
 
    int recvBuffSize=cellExchange.recvSize(); 
    anatomy.nRemote() = recvBuffSize;
-   anatomy.cellArray().resize(anatomy.cellArray().size()+anatomy.nRemote());
-   //HACK!  We have a cpu-only data structure, but that should be fine....
-   //Make the data fit the interface.  
-   rw_larray_ptr<AnatomyCell> CPUonlyCellArray(NULL, &(anatomy.cellArray()[0]), 0, anatomy.cellArray().size());
-   cellExchange.execute(CPUonlyCellArray, anatomy.nLocal());
-   //size_t oldSize = anatomy.size();
-   //cellExchange.execute(anatomy.cellArray(), anatomy.nLocal());
-   //anatomy.nRemote() = anatomy.size() - oldSize;
-//   dumpCells(anatomy);
+   {
+      lazy_array<AnatomyCell> lzCells;
+      lzCells.resize(anatomy.cellArray().size()+anatomy.nRemote());
+      wo_array_ptr<AnatomyCell> wo_ptr = lzCells.writeonly(CPU);
+      copy(anatomy.cellArray().begin(), anatomy.cellArray().end(), wo_ptr.begin());
+      cellExchange.execute(lzCells, anatomy.nLocal());
+      anatomy.cellArray().resize(anatomy.cellArray().size()+anatomy.nRemote());
+      ro_array_ptr<AnatomyCell> ro_ptr = lzCells.readonly(CPU);
+      copy(ro_ptr.begin(), ro_ptr.end(), anatomy.cellArray().begin());
+   }
 
    OBJECT* obj = object_find(name.c_str(), "DECOMPOSITION");
    bool printStats;

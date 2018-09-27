@@ -12,14 +12,13 @@ using std::vector;
 
 /** Offsets version.  Be sure to maintain in parallel with OMP version*/
 void Simulate::checkRanges(int begin, int end,
-                           ro_larray_ptr<double> Vm,
-                           ro_larray_ptr<double> dVmReaction,
-                           ro_larray_ptr<double> dVmDiffusion)
+                           ro_mgarray_ptr<double> _Vm,
+                           ro_mgarray_ptr<double> _dVmReaction,
+                           ro_mgarray_ptr<double> _dVmDiffusion)
 {
-   ContextRegion region(CPU);
-   Vm.use();
-   dVmReaction.use();
-   dVmDiffusion.use();
+   ro_array_ptr<double> Vm = _Vm.useOn(CPU);
+   ro_array_ptr<double> dVmReaction = _dVmReaction.useOn(CPU);
+   ro_array_ptr<double> dVmDiffusion = _dVmDiffusion.useOn(CPU);
    //const double vMax =   60.;
    //const double vMin = -110.;
    const double vMax = checkRange_.vMax;
@@ -33,14 +32,13 @@ void Simulate::checkRanges(int begin, int end,
 
 /** Omp version.  Be sure to maintain in parallel with offsets version.
  *  Don't call from parallel loop */
-void Simulate::checkRanges(ro_larray_ptr<double> Vm,
-                           ro_larray_ptr<double> dVmReaction,
-                           ro_larray_ptr<double> dVmDiffusion)
+void Simulate::checkRanges(ro_mgarray_ptr<double> _Vm,
+                           ro_mgarray_ptr<double> _dVmReaction,
+                           ro_mgarray_ptr<double> _dVmDiffusion)
 {
-   ContextRegion region(CPU);
-   Vm.use();
-   dVmReaction.use();
-   dVmDiffusion.use();
+   ro_array_ptr<double> Vm = _Vm.useOn(CPU);
+   ro_array_ptr<double> dVmReaction = _dVmReaction.useOn(CPU);
+   ro_array_ptr<double> dVmDiffusion = _dVmDiffusion.useOn(CPU);
    int nLocal = anatomy_.nLocal();
    //const double vMax =   60.;
    //const double vMin = -110.;

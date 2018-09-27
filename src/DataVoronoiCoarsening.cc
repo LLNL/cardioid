@@ -231,8 +231,7 @@ void DataVoronoiCoarsening::eval(double time, int loop)			// AT-HACK, evaluates/
    
    times_.push_back(time);
 
-   ContextRegion region(CPU);
-   ro_larray_ptr<double> VmArray = vdata_.VmTransport_;
+   ro_array_ptr<double> VmArray = vdata_.VmTransport_.useOn(CPU);
    computeColorAverages(VmArray);
    
    

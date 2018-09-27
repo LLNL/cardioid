@@ -15,17 +15,17 @@ class ReactionManager
 {
  public:
    void calc(double dt,
-             ro_larray_ptr<double> Vm,
-             ro_larray_ptr<double> iStim,
-             wo_larray_ptr<double> dVm);
-   void updateNonGate(double dt, ro_larray_ptr<double> Vm, wo_larray_ptr<double> dVR);
-   void updateGate   (double dt, ro_larray_ptr<double> Vm);
+             ro_mgarray_ptr<double> Vm,
+             ro_mgarray_ptr<double> iStim,
+             wo_mgarray_ptr<double> dVm);
+   void updateNonGate(double dt, ro_mgarray_ptr<double> Vm, wo_mgarray_ptr<double> dVR);
+   void updateGate   (double dt, ro_mgarray_ptr<double> Vm);
    std::string stateDescription() const;
 
    /** Populates the Vm array with some sensible default initial
     * membrane voltage.  Vm will be the parallel to the local cells in
     * the anatomy that was used to create the concrete reaction class. */
-   void initializeMembraneState(wo_larray_ptr<double> Vm);
+   void initializeMembraneState(wo_mgarray_ptr<double> Vm);
 
    void addReaction(const std::string& reactionName);
    void create(const double dt, Anatomy& anatomy, const ThreadTeam &group);

@@ -19,7 +19,7 @@ class PointStimulus : public Stimulus
    PointStimulus(const PointStimulusParms& p, const Anatomy& anatomy, 
                  Pulse* pulse);
    int subClassStim(double time,
-		    rw_larray_ptr<double> dVmDiffusion);
+		    rw_mgarray_ptr<double> dVmDiffusion);
    int nStim();
    
  private:

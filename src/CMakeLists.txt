@@ -15,7 +15,6 @@ project(cardioid_elec)
 cmake_minimum_required(VERSION 3.2)
 
 set (CMAKE_C_STANDARD 99)
-set (BLT_CXX_STD c++98)
 
 set(ENABLE_GTEST OFF CACHE BOOL "")
 set(BUILD_GTEST OFF CACHE BOOL "")
@@ -23,6 +22,8 @@ set(ENABLE_TESTS OFF CACHE BOOL "")
 set(INSTALL_GTEST OFF CACHE BOOL "")
 set(ENABLE_GTEST OFF CACHE BOOL "")
 set(ENABLE_EXAMPLES OFF CACHE BOOL "")
+
+set(ENABLE_ALL_WARNINGS OFF CACHE BOOL "")
 
 if (NOT BLT_LOADED)
    include(${CMAKE_CURRENT_SOURCE_DIR}/../blt/SetupBLT.cmake)
@@ -92,7 +93,7 @@ add_custom_command(
 
 
 set (heart_transport_src
-   SpaceAllocator.cc ContextManager.cc 
+   SpaceAllocator.cc 
    lazy_array.hh
 )
 

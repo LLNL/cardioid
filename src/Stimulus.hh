@@ -19,7 +19,7 @@ class Stimulus
    virtual ~Stimulus(){};
    /** Returns non-zero if stimulus was "on" */ 
    int stim(double time,
-            rw_larray_ptr<double> dVmDiffusion)
+            rw_mgarray_ptr<double> dVmDiffusion)
    {
       if (time > t0_ && time < tf_)
 	 return subClassStim(time, dVmDiffusion);
@@ -27,7 +27,7 @@ class Stimulus
    }
 
    virtual int subClassStim(double time,
-                            rw_larray_ptr<double> dVmDiffusion) = 0;
+                            rw_mgarray_ptr<double> dVmDiffusion) = 0;
 
    virtual int nStim() = 0;
 

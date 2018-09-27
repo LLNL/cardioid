@@ -133,7 +133,7 @@ GradientVoronoiCoarsening::GradientVoronoiCoarsening(
    prologComputeLeastSquareGradients();
 }
 
-void GradientVoronoiCoarsening::computeColorCenterValues(ro_larray_ptr<double> val)
+void GradientVoronoiCoarsening::computeColorCenterValues(ro_array_ptr<double> val)
 {
    startTimer(sensorCompColorCenterTimer);
 
@@ -269,7 +269,7 @@ void GradientVoronoiCoarsening::setupLSmatrix()
 }
 
 // setup r.h.s. of least square system dX^T W^2 dX grad V = dX^T W^2 dF
-void GradientVoronoiCoarsening::setupLSsystem(ro_larray_ptr<double> val)
+void GradientVoronoiCoarsening::setupLSsystem(ro_array_ptr<double> val)
 {
    startTimer(sensorSetupLSTimer);
 
@@ -664,7 +664,7 @@ void GradientVoronoiCoarsening::eval(double time, int loop)
    if( eval_count_==0 )time0_=time;
    if( eval_count_==1 )dt_=time-time0_;
 
-   ro_larray_ptr<double> VmArray = vdata_.VmTransport_;
+   ro_array_ptr<double> VmArray = vdata_.VmTransport_.readonly(CPU);
    computeColorCenterValues(VmArray);
    setupLSsystem(VmArray);
    computeLeastSquareGradients(time, loop);   

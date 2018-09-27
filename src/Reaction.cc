@@ -4,9 +4,9 @@
 
 using namespace std;
 
-void initializeMembraneState(Reaction* reaction, const string& objectName, wo_larray_ptr<double> Vm)
+void initializeMembraneState(Reaction* reaction, const string& objectName, wo_mgarray_ptr<double> _Vm)
 {
-   reaction->initializeMembraneVoltage(Vm);
+   reaction->initializeMembraneVoltage(_Vm);
    OBJECT* reactionObj = objectFind(objectName, "REACTION");
    assert(reactionObj != NULL);
    if (object_testforkeyword(reactionObj, "initialState"))
@@ -24,8 +24,7 @@ void initializeMembraneState(Reaction* reaction, const string& objectName, wo_la
       //read in the voltage
       if (object_testforkeyword(stateObj, "Vm"))
       {
-         ContextRegion region(CPU);
-         Vm.use();
+         wo_array_ptr<double> Vm = _Vm.useOn(CPU);
          double newVoltage;
          objectGet(stateObj, "Vm", newVoltage, "", "mV");
          //set the voltage
@@ -48,7 +47,7 @@ void initializeMembraneState(Reaction* reaction, const string& objectName, wo_la
             double newValue;
             objectGet(stateObj, thisState, newValue, "", thisUnit);
             int handle = reaction->getVarHandle(thisState);
-            for (int ii=0; ii<Vm.size(); ++ii)
+            for (int ii=0; ii<_Vm.size(); ++ii)
             {
                reaction->setValue(ii, handle, newValue);
             }

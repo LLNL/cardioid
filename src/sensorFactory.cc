@@ -389,6 +389,7 @@ namespace
       return new StateVariableSensor(sp, p, sim);      
    }
 }
+#ifdef USE_CUDA
 namespace
 {
    Sensor* scanECGSensor(OBJECT* obj, const SensorParms& sp, const Simulate& sim)
@@ -416,4 +417,4 @@ namespace
       return new ECGSensor(sp, p, sim);      
    }
 }
-
+#endif
