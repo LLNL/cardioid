@@ -12,6 +12,7 @@
 #include <set>
 #include <dirent.h>
 #include <regex.h>
+#include <unistd.h>
 #include "ecgdefs.hpp"
 #include "ecgobjutil.hpp"
 
@@ -255,7 +256,7 @@ int main(int argc, char *argv[])
    {
       for (int ielec=0; ielec<fileFromElectrode.size(); ielec++)
       {
-         fileFromElectrode[ielec] = std::ofstream(outDir+"/"+nameFromElectrode[ielec]+".txt");
+         fileFromElectrode[ielec].open(outDir+"/"+nameFromElectrode[ielec]+".txt");
       }
    }
    
@@ -302,16 +303,19 @@ int main(int argc, char *argv[])
       // 12. Save the refined mesh and the solution. This output can be viewed later
       //     using GLVis: "glvis -m refined.mesh -g sol.gf".
       if(my_rank == 0) {
-	 std::ofstream sol_ofs("sol"+std::to_string(step)+".gf");
-	 sol_ofs.precision(8);
-	 gf_x.Save(sol_ofs);
-
          for (int ielec=0; ielec<fileFromElectrode.size(); ielec++)
          {
             //CHECKME, can I do this access?!
             fileFromElectrode[ielec] << time << "\t" << gf_x[gfidFromElectrode[ielec]] << std::endl;
          }
       }
+#ifdef DEBUG
+      std::ofstream sol_ofs(outDir+"/sol"+std::to_string(time)+".gf");
+      sol_ofs.precision(8);
+      gf_x.SaveAsOne(sol_ofs);
+      sol_ofs.close();
+#endif
+	 
    }
 
    regfree(&snapshotRegex);
