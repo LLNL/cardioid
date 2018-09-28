@@ -82,14 +82,6 @@ if (BLAS_LIB AND LAPACK_LIB)
    list(APPEND extra_libs ${LAPACK_LIB} ${BLAS_LIB})
 endif()
 
-add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc
-        COMMAND ${PERL} ARGS registerBuiltinReactions.pl ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc ${reaction_src}
-        MAIN_DEPENDENCY registerBuiltinReactions.pl
-        DEPENDS ${reaction_src}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
- )
-
 
 
 set (heart_transport_src
@@ -137,6 +129,13 @@ set (reaction_src
 	#TT06_RRG.cc
 )
 
+add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc
+        COMMAND ${PERL} ARGS registerBuiltinReactions.pl ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc ${reaction_src}
+        MAIN_DEPENDENCY registerBuiltinReactions.pl
+        DEPENDS ${reaction_src}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+ )
 
 set (heart_gpu_aware_src
    ${reaction_src}
