@@ -107,19 +107,8 @@ int main(int argc, char *argv[])
       local_counts[i]=0;
    }
 
-   // Map between local/global element indices
-   std::map<int,int> local_ele_from_global;
-   std::map<int,int> global_ele_from_my_local;
    int global_size = mesh->GetNE();
    std::cout << "Global problem size " << global_size << std::endl;
-   for(int i=0; i<global_size; i++) {
-      // Ugh...
-      local_ele_from_global[i] = local_counts[pmeshpart[i]];
-      if(pmeshpart[i] == my_rank) {
-	 global_ele_from_my_local[local_counts[pmeshpart[i]]] = i;
-      }
-      local_counts[pmeshpart[i]]++;
-   }
    for(int i=0; i<num_ranks; i++) {
       std::cout << "Rank " << i << " has " << local_counts[i] << " elements!" << std::endl;
    }

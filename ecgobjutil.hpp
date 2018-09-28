@@ -231,16 +231,19 @@ void EndTimer() {
 }
 
 double ecg_readParGF(OBJECT* obj, const std::string VmFilename, const int global_size, const std::unordered_map<int,int> &gfFromGid, std::vector<double>& final_values) {
-
+   // Reconstruct same MPI basics as outside the function
    int num_ranks, my_rank;
    MPI_Comm_size(MPI_COMM_WORLD,&num_ranks);
    MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
 
+   // Store pio input in my_*, use MPI to give everybody combined_*
    std::vector<int> my_keys, combined_keys;
    std::vector<double> my_values, combined_values;
 
+   // Actual pio input handle
    PFILE* file = Popen(VmFilename.c_str(), "r", MPI_COMM_WORLD);
-    
+
+   // Read metadata for time step
    OBJECT* hObj = file->headerObject;
    std::vector<std::string> fieldNames,  fieldTypes;
    objectGetv(hObj, "field_names", fieldNames); // field_names = gid Vm dVmD dVmR;
@@ -249,9 +252,11 @@ double ecg_readParGF(OBJECT* obj, const std::string VmFilename, const int global
    objectGet(hObj, "time", time, "-1");
    assert(file->datatype == FIXRECORDASCII);
 
+   // Prepare to read in random inputs in a random order
    int my_num_inputs = 0;
    std::map<int,double> my_inputs;
 
+   // Main input engine
    PIO_FIXED_RECORD_HELPER* helper = (PIO_FIXED_RECORD_HELPER*) file->helper;
    unsigned lrec = helper->lrec;
    unsigned nRecords = file->bufsize/lrec;
@@ -274,23 +279,31 @@ double ecg_readParGF(OBJECT* obj, const std::string VmFilename, const int global
 
    // Share input buffer sizes
    std::vector<int> num_inputs_per_rank(num_ranks);
-   // num_inputs_per_rank[my_rank] = my_num_inputs;
    MPI_Allgather(&my_num_inputs,1,MPI_INT,
 		 num_inputs_per_rank.data(),1,MPI_INT,MPI_COMM_WORLD);
 
    // Share actual inputs
-   std::vector<int> displacements_per_rank(num_ranks);
+   std::vector<int> rank_offsets(num_ranks);
    {
-      int curr_disp = 0;
+      int next_offset = 0;
       for(int i=0; i<num_ranks; i++) {
-	 displacements_per_rank[i] = curr_disp;
-	 curr_disp += num_inputs_per_rank[i];
+	 rank_offsets[i] = next_offset;
+	 next_offset += num_inputs_per_rank[i];
       }
    }
-   std::cout << "Local size " << my_num_inputs << ", global size " << global_size << "." << std::endl;
+#ifdef DEBUG
+   std::cout << "Local size " << my_num_inputs
+	     << ", global size " << global_size << "." << std::endl;
+#endif
 
-   my_keys.resize(my_num_inputs), combined_keys.resize(global_size);
-   my_values.resize(my_num_inputs), combined_values.resize(global_size), final_values.resize(global_size);
+   // Prepare buffers for MPI sync
+   my_keys.resize(my_num_inputs);
+   combined_keys.resize(global_size);
+   my_values.resize(my_num_inputs);
+   combined_values.resize(global_size);
+   final_values.resize(global_size);
+
+   // Flatten random map to a pair of contiguous vectors
    {
       int i=0;
       for(std::map<int,double>::iterator it=my_inputs.begin();
@@ -300,16 +313,23 @@ double ecg_readParGF(OBJECT* obj, const std::string VmFilename, const int global
 	 i++;
       }
    }
-   int my_disp = displacements_per_rank[my_rank];
-   MPI_Allgatherv(my_keys.data(),my_num_inputs,MPI_INT,
-		  combined_keys.data(),num_inputs_per_rank.data(),displacements_per_rank.data(),MPI_INT,MPI_COMM_WORLD);
-   MPI_Allgatherv(my_values.data(),my_num_inputs,MPI_DOUBLE,
-		  combined_values.data(),num_inputs_per_rank.data(),displacements_per_rank.data(),MPI_DOUBLE,MPI_COMM_WORLD);
 
+   // Merge all pio data into contiguous regions
+   //  (on all ranks, at least for now)
+   int my_offset = rank_offsets[my_rank];
+   MPI_Allgatherv(my_keys.data(),my_num_inputs,MPI_INT,
+		  combined_keys.data(),num_inputs_per_rank.data(),
+		  rank_offsets.data(),MPI_INT,MPI_COMM_WORLD);
+   MPI_Allgatherv(my_values.data(),my_num_inputs,MPI_DOUBLE,
+		  combined_values.data(),num_inputs_per_rank.data(),
+		  rank_offsets.data(),MPI_DOUBLE,MPI_COMM_WORLD);
+
+   // Sort combined data based on keys
    for(int i=0; i<global_size; i++) {
       final_values[combined_keys[i]] = combined_values[i];
    }
-   
+
+   // Clean up and terminate
    Pclose(file);
    return time;
 }
