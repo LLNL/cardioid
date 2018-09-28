@@ -106,27 +106,6 @@ TT06Dev_Reaction::TT06Dev_Reaction(const double dt, const int numPoints, TT06Dev
    }
 
    mkState_(parms);
-   currentMap_.resize(parms.currentNames.size()); 
-   int nCurrents=0; 
-   while (std::string(TT06currentNames[nCurrents]).empty()) {nCurrents++;}
-   //printf("current sizes: %d %d %d\n",nCurrents,sizeof(double),sizeof(currentScales_)); 
-   assert(nCurrents*sizeof(double) == sizeof(currentScales_)); 
-   currentScales_=currentScalesDefault; 
-
-   //SHOWVAR(parms.currentNames.size());
-   for (int i=0;i<parms.currentNames.size();i++)
-   {
-      int j = 0;
-      for (;j<nCurrents;j++) {
-         if ( std::string(TT06currentNames[j]) == parms.currentNames[i]) { break; }
-      }
-      //SHOWVAR(i);
-      //SHOWVAR(nCurrents);
-      //SHOWVAR(j);
-      assert(j<nCurrents); 
-      currentMap_[i]   = j;
-   }
-
 
    fastReaction_ = 0; 
    //if (parms.fastReaction >= 0) ;
@@ -422,7 +401,7 @@ void TT06Dev_Reaction::calc(double dt,
    WORK work ={ 0,static_cast<int>(nCells_),0,12}; 
    if (nCells_ > 0) 
    {
-      update_nonGate_((void*)fit_, &currentScales_,dt,&(cellTypeParm_), nCells_,const_cast<double *>(&Vm[0]),  0, &state_[0], dVm.raw());
+      update_nonGate_((void*)fit_,dt,&(cellTypeParm_), nCells_,const_cast<double *>(&Vm[0]),  0, &state_[0], dVm.raw());
       update_gate_(dt, nCells_, cellTypeParm_.s_switch, const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],fit_,work);
    }
 }
@@ -445,7 +424,7 @@ void TT06Dev_Reaction::updateNonGate(double dt, ro_mgarray_ptr<double> Vm_m, wo_
    if (nCells > 0) 
    {
       startTimer(nonGateTimer);
-      update_nonGate_(fit_,&currentScales_,dt,&cellTypeParm_, nCells, const_cast<double *>(&Vm[offset]),  offset, &state_[0], dVR.raw()+offset);
+      update_nonGate_(fit_,dt,&cellTypeParm_, nCells, const_cast<double *>(&Vm[offset]),  offset, &state_[0], dVR.raw()+offset);
       stopTimer(nonGateTimer);
    }
 }

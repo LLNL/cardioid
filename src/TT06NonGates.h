@@ -5,10 +5,6 @@
 #define TT06  0 
 #define RICE  1
 #define fCassForm TT06
-typedef struct currentScales_st        { double   K1,    Kr,    Ks,    Na,    bNa,    CaL,    bCa,    to,    NaK,    NaCa,    pCa,    pK,    NaL, leak, up, rel,xfer;} CURRENT_SCALES;    
-static const char * TT06currentNames[18] =      { "I_K1","I_Kr","I_Ks","I_Na","I_bNa","I_CaL","I_bCa","I_to","I_NaK","I_NaCa","I_pCa","I_pK","I_NaL","I_leak","I_up","I_rel","I_xfer",""}; 
-// Note all currents are in picoA/picoF except for I_leak,I_up,I_rel,I_xfer which are millimolar/millisecond
-static CURRENT_SCALES currentScalesDefault = {    1.0,   1.0,   1.0,   1.0,    1.0,    1.0,     1.0,  1.0,    1.0,     1.0,    1.0,   1.0,    1.0, 1.0, 1.0, 1.0, 1.0  }; 
 struct LogParms     { FILE *file; int loop, cellType, minK_i,maxK_i,midK_i,minNa_i,maxNa_i,midNa_i;}  ;
 struct nonGateCnst { double c2,  c3,  c4,  c5,  c6,  c7,  c8,  c9,
                     c11, c13, c14, c15, c16, c17, c18, c19,
@@ -18,10 +14,10 @@ struct nonGateCnst { double c2,  c3,  c4,  c5,  c6,  c7,  c8,  c9,
 #ifdef __cplusplus
 extern "C" {
 #endif
-void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *VM, int offset, double **state, double *dVdt);
-void update_nonGateSimdM(void *fit, CURRENT_SCALES *currentScales, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *VM, int offset, double **state, double *dVdt);
-void update_nonGateSimdF(void *fit, CURRENT_SCALES *currentScales, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *VM, int offset, double **state, double *dVdt);
-void update_nonGateSimdFA(void *fit, CURRENT_SCALES *currentScales, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *VM, int offset, double **state, double *dVdt);
+void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *VM, int offset, double **state, double *dVdt);
+void update_nonGateSimdM(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *VM, int offset, double **state, double *dVdt);
+void update_nonGateSimdF(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *VM, int offset, double **state, double *dVdt);
+   void update_nonGateSimdFA(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *VM, int offset, double **state, double *dVdt);
 void sampleLog(struct LogParms *logParms, int nCells, int offset, int *cellTypeVector, double *VM, double **state);
 void set_SP(); 
 void initNonGateCnst(); 

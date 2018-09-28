@@ -72,13 +72,11 @@ class TT06Dev_Reaction : public Reaction
    CellTypeParms cellTypeParm_;
    double XXXinitialVm_;
    int nCells_;
-   CURRENT_SCALES currentScales_; 
-   std::vector<int> currentMap_; 
 
    std::vector<double> XXXstateInitial_;
 
    void (*update_gate_)   (double dt,                                      int nCells, int s_switch, double *Vm, int offset, double **state, PADE* xfit, TT06Func::WORK& work);
-   void (*update_nonGate_)(void *fit, CURRENT_SCALES *, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *Vm, int offset, double **state, double *dVdt);
+   void (*update_nonGate_)(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *Vm, int offset, double **state, double *dVdt);
    int nonGateWorkPartition_(int& offset);
    void mkCellTypeParms_(TT06Dev_ReactionParms& parms);
    void mkState_(TT06Dev_ReactionParms& parms);

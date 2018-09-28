@@ -371,7 +371,7 @@ double fv6(double dV0, void *p)
 
 #define logSeries(x)    (log(1+(x)) )
 
-void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *VM, int offset, double **state, double *dVdt)
+void update_nonGate(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *VM, int offset, double **state, double *dVdt)
 {
   double *f2Gate = state[f2_gate]+offset; 
   double *fGate = state[f_gate]+offset; 
@@ -402,28 +402,28 @@ void update_nonGate(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
   fv05Func = fv05General; 
   fv6Func  = fv6General; 
   double fv[6];
- double  c_K1   =  currentScales->K1; 
- double  c_Na   =  currentScales->Na *cnst.c20; 
- double  c_bNa  =  currentScales->bNa*cnst.c21; 
- double  c_CaL  =  currentScales->CaL; 
- double  c_bCa  =  currentScales->bCa*cnst.c7; 
- double  c_NaCa =  currentScales->NaCa; 
- double  c_pCa  =  currentScales->pCa*cnst.c24; 
- double  c_pK   =  currentScales->pK; 
- double  c_up   = currentScales->up*cnst.c44;
- double  c_leak = currentScales->leak*cnst.c43;
- double  c_xfer = currentScales->xfer *cnst.c23;
- double  c_rel  = currentScales->rel  *cnst.c40;
+ double  c_K1   =  1; 
+ double  c_Na   =  1 *cnst.c20; 
+ double  c_bNa  =  1*cnst.c21; 
+ double  c_CaL  =  1; 
+ double  c_bCa  =  1*cnst.c7; 
+ double  c_NaCa =  1; 
+ double  c_pCa  =  1*cnst.c24; 
+ double  c_pK   =  1; 
+ double  c_up   = 1*cnst.c44;
+ double  c_leak = 1*cnst.c43;
+ double  c_xfer = 1*cnst.c23;
+ double  c_rel  = 1  *cnst.c40;
  //CURRENT_SCALES *cS = currentScales; 
  //printf("%e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n",cS->K1,cS->Na,cS->bNa,cS->CaL,cS->bCa,cS->NaCa,cS->pCa,cS->pK,cS->NaK,cS->Ks,cS->Kr,cS->to,cS->NaL,cS->up,cS->leak,cS->xfer,cS->rel); 
  double c_NaK,c_Ks,c_Kr,c_to,c_NaL;
 
  double midK_i,midNa_i,alphaK_i,alphaNa_i,cK_i,cNa_i; 
- c_NaK = currentScales->NaK*cellTypeParms->P_NaK; 
- c_Ks  = currentScales->Ks *cellTypeParms->g_Ks; 
- c_Kr  = currentScales->Kr *cellTypeParms->g_Kr; 
- c_to  = currentScales->to *cellTypeParms->g_to; 
- c_NaL = currentScales->NaL*cellTypeParms->g_NaL; 
+ c_NaK = 1 *cellTypeParms->P_NaK; 
+ c_Ks  = 1 *cellTypeParms->g_Ks; 
+ c_Kr  = 1 *cellTypeParms->g_Kr; 
+ c_to  = 1 *cellTypeParms->g_to; 
+ c_NaL = 1 *cellTypeParms->g_NaL; 
  
  midK_i = cellTypeParms->midK_i; 
  midNa_i = cellTypeParms->midNa_i; 
