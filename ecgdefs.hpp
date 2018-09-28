@@ -53,7 +53,7 @@ class MatrixElementPiecewiseCoefficient : public mfem::MatrixCoefficient
 public:
   MatrixElementPiecewiseCoefficient() : mfem::MatrixCoefficient(3) {}
   
-  MatrixElementPiecewiseCoefficient(std::shared_ptr<mfem::GridFunction> x)
+  MatrixElementPiecewiseCoefficient(std::shared_ptr<mfem::ParGridFunction> x)
     : mfem::MatrixCoefficient(3)
   {
     p_gf_=x;
@@ -66,12 +66,12 @@ public:
     std::unordered_map<int,mfem::Vector>::iterator iter = heartConductivities_.find(T.Attribute);
     if (iter != heartConductivities_.end()) {
       mfem::Vector direction(3);
-      if (0) {
+      if (1) {
 	p_gf_->GetVectorValue(T.ElementNo, ip, direction);
       } else {
 	direction = 0.0;
       }
-	
+
       mfem::Vector quat(4);
       double w2 = 1;
       for (int ii=0; ii<3; ii++) {
@@ -93,7 +93,7 @@ public:
     }
   }
 
-  std::shared_ptr<mfem::GridFunction> p_gf_;
+  std::shared_ptr<mfem::ParGridFunction> p_gf_;
   std::unordered_map<int,mfem::Vector> heartConductivities_;
   std::unordered_map<int,double> bathConductivities_;
 };

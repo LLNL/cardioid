@@ -109,6 +109,10 @@ int main(int argc, char *argv[])
 
    int global_size = mesh->GetNE();
    std::cout << "Global problem size " << global_size << std::endl;
+   for(int i=0; i<global_size; i++) {
+      local_counts[pmeshpart[i]]++;
+   }
+
    for(int i=0; i<num_ranks; i++) {
       std::cout << "Rank " << i << " has " << local_counts[i] << " elements!" << std::endl;
    }
@@ -120,6 +124,7 @@ int main(int argc, char *argv[])
    fec = new H1_FECollection(order, dim);
    // ...and corresponding FES
    ParFiniteElementSpace *pfespace = new ParFiniteElementSpace(pmesh, fec);
+   FiniteElementSpace *fespace = new FiniteElementSpace(mesh, fec);
    std::cout << "Number of finite element unknowns: "
 	     << pfespace->GetTrueVSize() << std::endl;
 
@@ -144,8 +149,11 @@ int main(int argc, char *argv[])
    gf_b = 0.0;
 
    // Load fiber quaternions from file
+   std::shared_ptr<GridFunction> flat_fiber_quat;
+   ecg_readGF(obj, "fibers", mesh, flat_fiber_quat);
    std::shared_ptr<ParGridFunction> fiber_quat;
-   ecg_readGF(obj, "fibers", pmesh, fiber_quat);
+   fiber_quat = std::make_shared<mfem::ParGridFunction>(pmesh, flat_fiber_quat.get(), pmeshpart);
+
    
    // Load conductivity data?
    MatrixElementPiecewiseCoefficient sigma_i_coeffs(fiber_quat);
@@ -241,18 +249,19 @@ int main(int argc, char *argv[])
    std::string outDir;
    objectGet(obj, "outdir", outDir, rootFilename.c_str());
    std::vector<std::ofstream> fileFromElectrode(nameFromElectrode.size());
-   if (my_rank == 0)
+   for (int ielec=0; ielec<fileFromElectrode.size(); ielec++)
    {
-      for (int ielec=0; ielec<fileFromElectrode.size(); ielec++)
-      {
+      if(my_rank == pmeshpart[gfidFromElectrode[ielec]]) {
          fileFromElectrode[ielec].open(outDir+"/"+nameFromElectrode[ielec]+".txt");
       }
    }
-   
+
+   // Top-level simulation directory holding time steps (snapshots)
    DIR *dir;
    dir = opendir(rootFilename.c_str());
    if (dir == NULL) return 0;
 
+   // Iterate over time steps in no particular order
    dirent *entry;
    regex_t snapshotRegex;
    int retCode = regcomp(&snapshotRegex, "^snapshot\\.[[:digit:]]\\{1,\\}$", REG_NOSUB);
@@ -269,9 +278,11 @@ int main(int argc, char *argv[])
       if (access((VmFilename + "000000").c_str(), R_OK) == -1) { continue; }
 
       std::shared_ptr<ParGridFunction> gf_Vm;
+      std::shared_ptr<GridFunction> flat_gf_Vm;
       std::vector<double> gfvmData;
       double time = ecg_readParGF(obj, VmFilename, global_size, gfFromGid, gfvmData);
-      gf_Vm = std::make_shared<mfem::ParGridFunction>(pfespace, gfvmData.data());
+      flat_gf_Vm = std::make_shared<mfem::GridFunction>(fespace, gfvmData.data());
+      gf_Vm = std::make_shared<mfem::ParGridFunction>(pmesh, flat_gf_Vm.get(), pmeshpart);
 
       StartTimer("Solve");
       
@@ -291,9 +302,9 @@ int main(int argc, char *argv[])
 
       // 12. Save the refined mesh and the solution. This output can be viewed later
       //     using GLVis: "glvis -m refined.mesh -g sol.gf".
-      if(my_rank == 0) {
-         for (int ielec=0; ielec<fileFromElectrode.size(); ielec++)
-         {
+      for (int ielec=0; ielec<fileFromElectrode.size(); ielec++)
+      {
+	 if(my_rank == pmeshpart[gfidFromElectrode[ielec]]) {
             //CHECKME, can I do this access?!
             fileFromElectrode[ielec] << time << "\t" << gf_x[gfidFromElectrode[ielec]] << std::endl;
          }
@@ -304,14 +315,15 @@ int main(int argc, char *argv[])
       sol_ofs.precision(8);
       gf_x.SaveAsOne(sol_ofs);
       sol_ofs.close();
-      
-      std::ofstream mesh_ofs(outDir+"/refined.mesh");
-      mesh_ofs.precision(8);
-      pmesh->PrintAsOne(mesh_ofs);
-#endif
-	 
+#endif	 
    }
 
+#ifdef DEBUG
+   std::ofstream mesh_ofs(outDir+"/refined.mesh");
+   mesh_ofs.precision(8);
+   pmesh->PrintAsOne(mesh_ofs);
+#endif
+   
    regfree(&snapshotRegex);
    closedir(dir);
 

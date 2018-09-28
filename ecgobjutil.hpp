@@ -130,12 +130,12 @@ std::unordered_map<int,int> ecg_readMap(OBJECT* obj, const std::string dataname)
 }
 
 void ecg_readGF(OBJECT* obj, const std::string dataname,
-		mfem::ParMesh* pmesh, std::shared_ptr<mfem::ParGridFunction>& sp_gf) {
+		mfem::Mesh* mesh, std::shared_ptr<mfem::GridFunction>& sp_gf) {
    std::string filename;
    objectGet(obj,dataname,filename,"");
 
    std::ifstream infile(filename);
-   sp_gf = std::make_shared<mfem::ParGridFunction>(pmesh, infile);
+   sp_gf = std::make_shared<mfem::GridFunction>(mesh, infile);
 }
 
 mfem::Mesh* ecg_readMeshptr(OBJECT* obj, const std::string dataname) {
