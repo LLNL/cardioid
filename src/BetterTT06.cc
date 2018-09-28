@@ -1417,6 +1417,8 @@ ThisReaction::ThisReaction(const int numPoints, const double __dt)
    __cachedDt = __dt;
 }
 
+ThisReaction::~ThisReaction() {}
+
 void ThisReaction::calc(double _dt,
                 ro_mgarray_ptr<double> ___Vm,
                 ro_mgarray_ptr<double> ___iStim,
