@@ -107,10 +107,13 @@ int main(int argc, char *argv[])
       local_counts[i]=0;
    }
 
+   // Map local indices manually and keep counts for later
    int global_size = mesh->GetNE();
+   std::vector<int> local_from_global(global_size);
    std::cout << "Global problem size " << global_size << std::endl;
    for(int i=0; i<global_size; i++) {
-      local_counts[pmeshpart[i]]++;
+      // This calculates everybody's local indices, not just mine.
+      local_from_global[i] = local_counts[pmeshpart[i]]++;
    }
 
    for(int i=0; i<num_ranks; i++) {
@@ -306,7 +309,7 @@ int main(int argc, char *argv[])
       {
 	 if(my_rank == pmeshpart[gfidFromElectrode[ielec]]) {
             //CHECKME, can I do this access?!
-            fileFromElectrode[ielec] << time << "\t" << gf_x[gfidFromElectrode[ielec]] << std::endl;
+            fileFromElectrode[ielec] << time << "\t" << gf_x[local_from_global[gfidFromElectrode[ielec]]] << std::endl;
          }
       }
       
