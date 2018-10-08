@@ -109,6 +109,9 @@ int main(int argc, char** argv)
 #endif 
    timestampBarrier("Starting Simulation Loop", MPI_COMM_WORLD);
    profileStart_HW("Loop");
+   std::cout << "sim.loopType_="  << sim.loopType_ << std::endl;
+   std::cout << "Simulate::omp=="  << Simulate::omp << std::endl;
+   std::cout << "Simulate::pdr=="  << Simulate::pdr << std::endl;
    switch (sim.loopType_)
    {
      case Simulate::omp:

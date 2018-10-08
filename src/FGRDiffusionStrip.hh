@@ -22,9 +22,9 @@ class FGRDiffusionStrip : public Diffusion
       const ThreadTeam& threadInfo,
       const ThreadTeam& reactionThreadInfo);
    
-   void updateLocalVoltage(ro_larray_ptr<double> VmLocal);
-   void updateRemoteVoltage(ro_larray_ptr<double> VmRemote);
-   void calc(rw_larray_ptr<double> dVm);
+   void updateLocalVoltage(ro_mgarray_ptr<double> VmLocal);
+   void updateRemoteVoltage(ro_mgarray_ptr<double> VmRemote);
+   void calc(rw_mgarray_ptr<double> dVm);
    unsigned* blockIndex(){return &blockIndex_[0];}
    double* VmBlock() {return VmBlock_.cBlock();}
    double* dVmBlock(){return dVmBlock_.cBlock();}

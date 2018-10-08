@@ -11,8 +11,8 @@ mkdir-%:
 	@mkdir -p $(patsubst mkdir-%,build/%,$@)
 .PRECIOUS: build/%/CMakeCache.txt
 build/%/CMakeCache.txt: mkdir-%
-	(cd $(patsubst mkdir-%,build/%,$<) && cmake -C $(patsubst mkdir-%,../../arch/%.txt,$<) ../../src)
-	#(cd $(patsubst mkdir-%,build/%,$<) && cmake -DCMAKE_BUILD_TYPE=Debug ../../src -DCMAKE_TOOLCHAIN_FILE=$(patsubst mkdir-%,../../arch/%.txt,$<) )
+	#(cd $(patsubst mkdir-%,build/%,$<) && cmake -C $(patsubst mkdir-%,../../arch/%.txt,$<) ../../src)
+	(cd $(patsubst mkdir-%,build/%,$<) && cmake -DCMAKE_BUILD_TYPE=Debug ../../src -DCMAKE_TOOLCHAIN_FILE=$(patsubst mkdir-%,../../arch/%.txt,$<) )
 build-%: build/%/CMakeCache.txt
 	$(MAKE) --no-print-directory -C build/$(patsubst build-%,%,$@)
 cleanbuild-%:
