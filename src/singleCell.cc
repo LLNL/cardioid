@@ -300,12 +300,12 @@ int main(int argc, char* argv[])
       stringstream headerLine(temp);
       string timeName;
       headerLine >> timeName;
-      assert(timeName == "time");
+      assert(timeName == "time" || timeName == "t");
       while (1)
       {
          string columnName;
          headerLine >> columnName;
-         if (!!headerLine) { break; }
+         if (!headerLine) { break; }
          int handle;
          if (columnName == "Vm")
          {
@@ -331,7 +331,7 @@ int main(int argc, char* argv[])
          {
             thisLine >> timestepValues[iclamp];
          }
-         if (!!thisLine) { break; }
+         if (!thisLine) { break; }
          for (int iclamp=0; iclamp<clampHandles.size(); iclamp++)
          {
             clampFunctions[iclamp].addData(time,timestepValues[iclamp]);
