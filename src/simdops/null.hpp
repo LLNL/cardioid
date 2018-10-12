@@ -29,7 +29,7 @@ inline native_vector_type b_and(const native_vector_type a, const native_vector_
 inline native_vector_type b_or(const native_vector_type a, const native_vector_type b) { return a || b; }
 inline native_vector_type b_not(const native_vector_type a) { return !a; }
    
-
+inline bool any(const native_vector_type a) { return a; }
 
 }
 

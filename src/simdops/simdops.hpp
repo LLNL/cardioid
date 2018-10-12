@@ -12,8 +12,10 @@ class float64v {
    inline float64v(const native_vector_type d) : _d(d) {}
 #ifndef SIMDOPS_ARCH_NULL
    explicit inline float64v(const double e) { _d = make_float(e); }
+   inline float64v& operator=(const double e) { _d = make_float(e); return *this; }
 #endif
    inline float64v& operator=(const native_vector_type d) { _d = d; return *this; }
+   
    inline operator native_vector_type() const {  return _d; }
    native_vector_type _d;
 };
@@ -60,7 +62,8 @@ inline float64v ternary_if(const float64v mask, const float64v tt, const float64
 inline float64v ternary_if(const float64v mask, const float64v tt, const double   ff) { return b_or(b_and(mask,tt),b_and(b_not(mask),float64v(ff))); }
 inline float64v ternary_if(const float64v mask, const double   tt, const double   ff) { return b_or(b_and(mask,float64v(tt)),b_and(b_not(mask),float64v(ff))); }
 inline float64v ternary_if(const float64v mask, const double   tt, const float64v ff) { return b_or(b_and(mask,float64v(tt)),b_and(b_not(mask),ff)); }
-   
+
+inline bool all(const float64v mask) { return !any(b_not(mask)); }
 }
 
 #define SIMDOPS_ALIGN(width)
