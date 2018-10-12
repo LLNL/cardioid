@@ -31,7 +31,7 @@ set(ENABLE_CUDA OFF CACHE BOOL "")
 
 set (BLT_CXX_STD c++98 CACHE STRING "")
 
-set(extra_definitions "-DBGQ -DSPI -qlanglvl=delegatingctors" CACHE STRING "")
+set(extra_definitions "-DBGQ -DSPI -qlanglvl=delegatingctors -DSIMDOPS_ARCH_POWER_QPX" CACHE STRING "")
 set(extra_includes
    ${BGQ_SDK_PATH}/comm/sys/include
    ${BGQ_SDK_PATH}/spi/include
