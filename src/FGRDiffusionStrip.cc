@@ -10,7 +10,6 @@
 #include "ThreadServer.hh"
 #include "ThreadUtils.hh"
 #include "PerformanceTimers.hh"
-#include "lazy_array.hh"
 using namespace PerformanceTimers;
 
 using namespace std;
@@ -32,13 +31,11 @@ FGRDiffusionStrip::FGRDiffusionStrip(const FGRDiffusionParms& parms,
    unsigned ny = localGrid_.ny();
    unsigned nz = localGrid_.nz();
 
-   std::cout << "nx=" << nx << " ny=" << ny << " nz=" << nx << std::endl;
    // This is a test
    for (unsigned ii=0; ii<anatomy.size(); ++ii)
    {
       Tuple globalTuple = anatomy.globalTuple(ii);
       Tuple ll = localGrid_.localTuple(globalTuple);
-       //std::cout << "lx=" << ll.x() << " ly=" << ll.y() << " lz=" << ll.z() << std::endl;
       assert(ll.x() >= 0 && ll.y() >= 0 && ll.z() >= 0);
       assert(ll.x() < nx && ll.y() < ny && ll.z() < nz);
    }
@@ -315,10 +312,10 @@ FGRDiffusionStrip::FGRDiffusionStrip(const FGRDiffusionParms& parms,
 
 }
 
-void FGRDiffusionStrip::updateLocalVoltage(ro_mgarray_ptr<double> VmLocal_managed)
+void FGRDiffusionStrip::updateLocalVoltage(const Managed<ArrayView<double>> VmLocal_managed)
 {
    startTimer(FGR_ArrayLocal2MatrixTimer);
-   ro_array_ptr<double> VmLocal = VmLocal_managed.useOn(CPU);
+   ConstArrayView<double> VmLocal = VmLocal_managed;
    int tid = reactionThreadInfo_.teamRank();
    unsigned begin = localCopyOffset_[tid];
    unsigned end   = localCopyOffset_[tid+1];
@@ -330,10 +327,10 @@ void FGRDiffusionStrip::updateLocalVoltage(ro_mgarray_ptr<double> VmLocal_manage
    stopTimer(FGR_ArrayLocal2MatrixTimer);
 }
 
-void FGRDiffusionStrip::updateRemoteVoltage(ro_mgarray_ptr<double> VmRemote_managed)
+void FGRDiffusionStrip::updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote_managed)
 {
    startTimer(FGR_ArrayRemote2MatrixTimer);
-   ro_array_ptr<double> VmRemote = VmRemote_managed.useOn(CPU);
+   ConstArrayView<double> VmRemote = VmRemote_managed;
    int tid = threadInfo_.teamRank();
    unsigned begin = remoteCopyOffset_[tid];
    unsigned end   = remoteCopyOffset_[tid+1];
@@ -347,9 +344,9 @@ void FGRDiffusionStrip::updateRemoteVoltage(ro_mgarray_ptr<double> VmRemote_mana
 }
 
 /** threaded simd version */
-void FGRDiffusionStrip::calc(rw_mgarray_ptr<double> dVm_managed)
+void FGRDiffusionStrip::calc(Managed<ArrayView<double>> dVm_managed)
 {
-   rw_array_ptr<double> dVm = dVm_managed.useOn(CPU);
+   ArrayView<double> dVm = dVm_managed;
    int tid = threadInfo_.teamRank();
    startTimer(FGR_AlignCopyTimer);
 

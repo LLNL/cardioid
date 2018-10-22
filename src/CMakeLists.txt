@@ -198,7 +198,7 @@ set (heart_gpu_aware_src
 	#FGRDiffusionOMP.cc
 	#FGRDiffusionThreads.cc
 	#FGRDiffusionOverlap.cc
-	FGRDiffusionStrip.cc
+	#FGRDiffusionStrip.cc
 	#OpenmpGpuRedblackDiffusion.cc
 	#OpenmpGpuFlatDiffusion.cc
 	FGRUtils.cc

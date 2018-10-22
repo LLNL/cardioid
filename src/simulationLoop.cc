@@ -171,7 +171,6 @@ void simulationLoop(Simulate& sim)
    loopIO(sim, 1);
    profileStart(simulationLoopTimer);
 
-   std::cout << "sim loop " <<sim.loop_  << " " << sim.maxLoop_ << std::cout;
    while (sim.loop_ < sim.maxLoop_)
    {
       int nLocal = sim.anatomy_.nLocal();
@@ -395,7 +394,6 @@ void diffusionLoop(Simulate& sim,
    //  if globalSyncCnt >   0  sync at start of loop and then every globalSyncCnt timestep;
    int globalSyncCnt = 1;
    if (globalSyncRate == -1) { globalSyncCnt = -1; }
-   std::cout << "loopLocal " << loopLocal << " " << sim.loop_ << " sim.maxLoop_=" << sim.maxLoop_ << std::endl;
    while (loopLocal < sim.maxLoop_)
    {
       if (globalSyncCnt >= 0) { globalSyncCnt--; }
