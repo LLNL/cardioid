@@ -3,6 +3,7 @@
 
 #include <map>
 #include <vector>
+#include <set>
 #include <string>
 #include "VectorDouble32.hh"
 #include "ThreadUtils.hh"

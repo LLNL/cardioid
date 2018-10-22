@@ -48,8 +48,6 @@ if (ENABLE_CUDA)
    add_definitions(-DUSE_NVTX)
    set(cuda cuda)
    set(cuda_runtime cuda_runtime)
-   set(nvtx "")
-   set(openmp_cuda_flags "")
 
    find_library(CUDA_NVTX_LIBRARY
       NAMES nvToolsExt nvTools nvtoolsext nvtools nvtx NVTX
@@ -59,12 +57,20 @@ if (ENABLE_CUDA)
       NO_DEFAULT_PATH
    )
    mark_as_advanced(CUDA_NVTX_LIBRARY)
+   find_library(CUDA_NVRTC_LIBRARY
+      NAMES nvrtc NVRTC
+      PATHS ${CUDA_TOOLKIT_ROOT_DIR}
+      PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib"
+      DOC "Location of the CUDA NVidia Runtime Compilation library"
+      NO_DEFAULT_PATH
+   )
+   mark_as_advanced(CUDA_NVRTC_LIBRARY)
 else()
    set(cuda "")
    set(cuda_runtime "")
-   set(nvtx "")
-   set(openmp_cuda_link openmp)
    set(CUDA_NVTX_LIBRARY "")
+   set(CUDA_NVRTC_LIBRARY "")
+   set(CUDA_CUDA_LIBRARY "")
 endif()   
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/src)
@@ -212,7 +218,9 @@ set (heart_gpu_aware_src
 )
 blt_add_library(NAME heart_gpu_aware
                 SOURCES ${heart_gpu_aware_src}
-                DEPENDS_ON ${heart_explicit_cuda} heart_transport simUtil ${extra_libs} ${CUDA_NVTX_LIBRARY} openmp mpi
+                DEPENDS_ON ${heart_explicit_cuda} heart_transport simUtil ${extra_libs}
+                           ${CUDA_NVTX_LIBRARY} ${CUDA_NVRTC_LIBRARY} ${CUDA_CUDA_LIBRARY}
+                           ${cuda} ${cuda_runtime} openmp mpi
                 INCLUDES ${extra_includes}
                 )
 
@@ -235,7 +243,7 @@ blt_add_executable(NAME cardioid
 
 blt_add_executable(NAME singleCell
                    SOURCES singleCell.cc singleCellOptions.c
-                   DEPENDS_ON heart_gpu_aware heart_cpu_only ${cuda_runtime} openmp)
+                   DEPENDS_ON heart_gpu_aware heart_cpu_only ${cuda} ${cuda_runtime} openmp)
 
 if (LAPACK_LIB)
    blt_add_executable(NAME modifyAnatomyFile

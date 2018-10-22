@@ -113,7 +113,7 @@ class ro_array_ptr : public ro_array_ptr_interface<basic_impl<ro_array_ptr<TTT>,
  public:
    LAZY_HOST_DEVICE ro_array_ptr() : ro_array_ptr(NULL, 0) {}
    template <typename Allocator>
-   LAZY_HOST_DEVICE ro_array_ptr(const std::vector<TTT,Allocator>& newData) : ro_array_ptr(&newData[0], newData.size()) {}
+   LAZY_HOST_ONLY ro_array_ptr(const std::vector<TTT,Allocator>& newData) : ro_array_ptr(&newData[0], newData.size()) {}
    LAZY_HOST_DEVICE ro_array_ptr(const TTT* newData, const std::size_t newSize) { this->create(newData,newSize); }
 };
 
@@ -123,7 +123,7 @@ class wo_array_ptr : public rw_array_ptr_interface<basic_impl<wo_array_ptr<TTT>,
  public:
    LAZY_HOST_DEVICE wo_array_ptr() : wo_array_ptr(NULL, 0) {}
    template <typename Allocator>
-   LAZY_HOST_DEVICE wo_array_ptr(std::vector<TTT,Allocator>& newData) : wo_array_ptr(&newData[0], newData.size()) {}
+   LAZY_HOST_ONLY wo_array_ptr(std::vector<TTT,Allocator>& newData) : wo_array_ptr(&newData[0], newData.size()) {}
    LAZY_HOST_DEVICE wo_array_ptr(TTT* newData, const std::size_t newSize) { this->create(newData,newSize); }
 };
 
@@ -133,7 +133,7 @@ class rw_array_ptr : public rw_array_ptr_interface<basic_impl<rw_array_ptr<TTT>,
  public:
    LAZY_HOST_DEVICE rw_array_ptr() : rw_array_ptr(NULL, 0) {}
    template <typename Allocator>
-   LAZY_HOST_DEVICE rw_array_ptr(std::vector<TTT,Allocator>& newData) : rw_array_ptr(&newData[0], newData.size()) {}
+   LAZY_HOST_ONLY rw_array_ptr(std::vector<TTT,Allocator>& newData) : rw_array_ptr(&newData[0], newData.size()) {}
    LAZY_HOST_DEVICE rw_array_ptr(TTT* newData, const std::size_t newSize) { this->create(newData,newSize); }
    LAZY_HOST_DEVICE inline operator ro_array_ptr<TTT>()
    {
