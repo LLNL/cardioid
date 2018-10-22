@@ -121,8 +121,6 @@ set (reaction_src
 	#TT04_CellML_Reaction.cc
 	#TT06_CellML_Reaction.cc 
 	TT06Dev_Reaction.cc
-	#SimpleOHaraRudy.cc
-	#SimpleGrandi.cc
         #Passive.cc
         #ReactionFHN.cc
         #sundnes_et_al_2016_FHN.cc
@@ -131,9 +129,6 @@ set (reaction_src
         BetterTT06.cc
         Grandi.cc
 	pade.cc
-        #TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc
-        #TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc
-	#TT06_RRG.cc
 )
 
 add_custom_command(
@@ -196,8 +191,7 @@ set (heart_gpu_aware_src
 	initializeSimulate.cc
 	initializeAnatomy.cc setConductivity.cc assignCellsToTasks.cc
 	diffusionFactory.cc reactionFactory.cc
-	stimulusFactory.cc sensorFactory.cc drugFactory.cc
-   Drug.cc DrugChannel.cc
+	stimulusFactory.cc sensorFactory.cc
 	FibreConductivity.cc JHUConductivity.cc
 	DiffusionUtils.cc
 	#FGRDiffusion.cc

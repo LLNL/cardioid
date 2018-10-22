@@ -1,6 +1,0 @@
-#!/bin/csh  
-foreach file ( $argv[*]   ) 
-set class = `echo $file:r | awk -F'_' '{print $1}'`
-set root  = `echo $file:r | awk -F'_' '{print $2}'`
-fgrep  $class' '  Grandi_Symbols.txt | fgrep $root' '  | awk -f mkCompInclude_Grandi.awk  > $file
-end
