@@ -9,7 +9,7 @@
 //#include "FGRDiffusion.hh"
 //#include "FGRDiffusionOMP.hh"
 //#include "FGRDiffusionThreads.hh"
-//#include "FGRDiffusionStrip.hh"
+#include "FGRDiffusionStrip.hh"
 //#include "FGRDiffusionOverlap.hh"
 #include "NullDiffusion.hh"
 //#include "OpenmpGpuRedblackDiffusion.hh"
@@ -49,8 +49,8 @@ Diffusion* diffusionFactory(const string& name, const Anatomy& anatomy,
       
    if (method.empty())
       assert(1==0);
-   //else if (method == "FGR")
-   //   return fgrDiffusionFactory(obj, anatomy, threadInfo, reactionThreadInfo, simLoopType, variantHint);
+   else if (method == "FGR")
+      return fgrDiffusionFactory(obj, anatomy, threadInfo, reactionThreadInfo, simLoopType, variantHint);
    //else if (method == "gpu" || method == "OpenmpGpuRedblack")
    //   return new OpenmpGpuRedblackDiffusion(anatomy, simLoopType);
    //else if (method == "OpenmpGpuFlat")
@@ -81,14 +81,15 @@ namespace
          defaultVariant = variantHint;
       string variant;
       objectGet(obj, "variant", variant, defaultVariant);
-      //if (variant == "omp" || simLoopType == Simulate::omp)
+      if (0) {}
+      //else if (variant == "omp" || simLoopType == Simulate::omp)
       //   return new FGRDiffusionOMP(p, anatomy);
       //else if (variant == "threads")
       //   return new FGRDiffusionThreads(p, anatomy, threadInfo, reactionThreadInfo);
       //else if (variant == "simd")
       //   return new FGRDiffusion(p, anatomy, threadInfo, reactionThreadInfo);
-      //else if (variant == "strip" )
-      //   return new FGRDiffusionStrip(p, anatomy, threadInfo, reactionThreadInfo);
+      else if (variant == "strip" )
+         return new FGRDiffusionStrip(p, anatomy, threadInfo, reactionThreadInfo);
       //else if (variant == "overlap" )
       //   return new FGRDiffusionOverlap(p, anatomy, threadInfo, reactionThreadInfo);
 
