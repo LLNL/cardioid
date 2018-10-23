@@ -211,8 +211,10 @@ void Koradi::calculateCellDestinations()
       {
          int cellOwner = cells_[ii].dest_;
          Vector rCell = indexToVector_(cells_[ii].gid_);
-         const vector<int> overLapList = nbrDomains_[cellOwner-localOffset_];
-         double r2Min = diffSq(rCell, centers_[cellOwner])/alpha_[localOffset_+ii];
+         assert(cellOwner >= localOffset);
+         assert(cellOwner < localOffset+nCentersPerTask_);
+         const vector<int>& overLapList = nbrDomains_[cellOwner-localOffset_];
+         double r2Min = diffSq(rCell, centers_[cellOwner])/alpha_[cellOwner];
          cells_[ii].dest_ = cellOwner;
          for (unsigned jj=0; jj<overLapList.size(); ++jj)
          {
