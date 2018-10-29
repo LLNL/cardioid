@@ -121,7 +121,7 @@ set (reaction_src
 	#TT04_CellML_Reaction.cc
 	#TT06_CellML_Reaction.cc 
 	TT06Dev_Reaction.cc
-        #Passive.cc
+        Passive.cc
         #ReactionFHN.cc
         #sundnes_et_al_2016_FHN.cc
 	TT06Tau.cc
