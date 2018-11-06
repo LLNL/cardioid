@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
 
       //HypreSmoother M(torso_mat, 6 /*GS*/);
       // PCG(torso_mat, M, phi_b, phi_e, 1, 2000, 1e-12);//, 0.0);
-      
+      phi_b *= -1.0;
       pcg.Mult(phi_b,phi_e);
 
       EndTimer();
