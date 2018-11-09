@@ -406,6 +406,7 @@ namespace
       p.nSensorPoints=ecgNames.size();
       const int dim=3;
       p.ecgPoints.resize(p.nSensorPoints*dim, 0.0);
+      p.ecgNames = ecgNames;
       
       for(int i=0; i<ecgNames.size(); ++i){
           OBJECT* ecgObj = objectFind(ecgNames[i], "POINT");

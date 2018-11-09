@@ -31,6 +31,7 @@ struct ECGSensorParms
    double kconst;
    std::string filename;
    std::vector<double> ecgPoints;
+   std::vector<std::string> ecgNames;
 };
 
 class Simulate;
@@ -57,6 +58,7 @@ class ECGSensor : public Sensor
    int stencilSize_;
    int nEval_;
    int dataOffset_;
+   std::vector<std::string> ecgNames;
    
    int nEcgPoints;
 

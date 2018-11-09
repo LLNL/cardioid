@@ -24,6 +24,7 @@ ECGSensor::ECGSensor(const SensorParms& sp,
   nFiles_(p.nFiles),
   nSensorPoints_(p.nSensorPoints),
   stencilSize_(p.stencilSize),
+  ecgNames(p.ecgNames),
   filename_(p.filename),
   nEval_(0),
   dVmDiffusionTransport_(sim.vdata_.dVmDiffusionTransport_)
@@ -105,7 +106,7 @@ void ECGSensor::calcInvR(const Simulate& sim)
 
    for(unsigned ii=0; ii<nEcgPoints; ++ii)
    {
-        fieldNames = fieldNames +"   ecgPoint"+std::to_string(ii+1);
+        fieldNames = fieldNames + "  " + ecgNames[ii]
         fieldTypes = fieldTypes + "  f";
         fieldUnits = fieldUnits + "  mv";
    }
@@ -177,9 +178,9 @@ void ECGSensor::print(double time, int loop)
 
    for(unsigned ii=0; ii<nEcgPoints; ++ii)
    {
-	fieldNames = fieldNames +"   ecgPoint"+std::to_string(ii+1);
-        fieldTypes = fieldTypes + "  f";
-        fieldUnits = fieldUnits + "  mv";
+      fieldNames = fieldNames + "  " + ecgNames[ii];
+      fieldTypes = fieldTypes + "  f";
+      fieldUnits = fieldUnits + "  mv";
    }
     
 
