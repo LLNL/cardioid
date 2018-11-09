@@ -106,9 +106,9 @@ void ECGSensor::calcInvR(const Simulate& sim)
 
    for(unsigned ii=0; ii<nEcgPoints; ++ii)
    {
-        fieldNames = fieldNames + "  " + ecgNames[ii]
-        fieldTypes = fieldTypes + "  f";
-        fieldUnits = fieldUnits + "  mv";
+      fieldNames = fieldNames + "  " + ecgNames[ii];
+      fieldTypes = fieldTypes + "  f";
+      fieldUnits = fieldUnits + "  mv";
    }
 
 
