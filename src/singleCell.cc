@@ -85,6 +85,13 @@ int main(int argc, char* argv[])
    MPI_Comm_size(MPI_COMM_WORLD, &npes);
    MPI_Comm_rank(MPI_COMM_WORLD, &mype);
 
+#ifdef USE_CUDA
+   // A ugly way to trigger the default CUDA context
+   int *d_i;
+   cudaMalloc(&d_i, sizeof(int));
+   cudaFree(d_i);
+#endif
+
    struct gengetopt_args_info params;
    cmdline_parser(argc, argv, &params);
    if (!params.object_given && !params.method_given)
