@@ -72,8 +72,9 @@ FGRDiffusionOMP::FGRDiffusionOMP(const FGRDiffusionParms& parms,
 }
 
 
-void FGRDiffusionOMP::updateLocalVoltage(const double* VmLocal)
+void FGRDiffusionOMP::updateLocalVoltage(const Managed<ArrayView<double>> VmLocal_managed)
 {
+   ConstArrayView<double> VmLocal = VmLocal_managed;
 #pragma omp parallel
    {
       startTimer(FGR_ArrayLocal2MatrixTimer);
@@ -87,8 +88,9 @@ void FGRDiffusionOMP::updateLocalVoltage(const double* VmLocal)
    }
 }
 
-void FGRDiffusionOMP::updateRemoteVoltage(const double* VmRemote)
+void FGRDiffusionOMP::updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote_managed)
 {
+   ConstArrayView<double> VmRemote = VmRemote_managed;
 #pragma omp parallel
    {
       startTimer(FGR_ArrayRemote2MatrixTimer);
@@ -104,8 +106,9 @@ void FGRDiffusionOMP::updateRemoteVoltage(const double* VmRemote)
 }
 
 
-void FGRDiffusionOMP::calc(VectorDouble32& dVm)
+void FGRDiffusionOMP::calc(Managed<ArrayView<double>> dVm_managed)
 {
+   ArrayView<double> dVm = dVm_managed;
    int nCells = dVm.size();
 #pragma omp parallel
    {// parallel section to contain timer start/stop

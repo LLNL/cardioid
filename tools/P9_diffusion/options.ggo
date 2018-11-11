@@ -1,0 +1,14 @@
+package "diffusionHarness"
+version "0.1"
+purpose "Run a simple diffusion experiment"
+description "This program is a test harness for diffusion experiments."
+
+option      "nx"          x "How many points should we use in the x direction"          int     required
+option      "ny"          y "How many points should we use in the y direction"          int     required
+option      "nz"          z "How many points should we use in the z direction"          int     required
+option      "bx"          - "Block size in the x direction"                             int     default="512" optional
+option      "by"          - "Block size in the y direction"                             int     default="1" optional
+option      "bz"          - "Block size in the y direction"                             int     default="1" optional
+option      "numtimes"    N "Number of times to run the kernel"                         int     default="1" optional
+
+option      "kernel"      K "Kernel to use"                                             string  required

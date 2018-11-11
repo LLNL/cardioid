@@ -6,52 +6,58 @@
 #include "Diffusion.hh"
 #include <stdio.h>
 
-using std::isnan;
+//using std::isnan;
 using std::vector;
 
 
 /** Offsets version.  Be sure to maintain in parallel with OMP version*/
 void Simulate::checkRanges(int begin, int end,
-                           const VectorDouble32& dVmReaction,
-                           const VectorDouble32& dVmDiffusion)
+                           ro_mgarray_ptr<double> _Vm,
+                           ro_mgarray_ptr<double> _dVmReaction,
+                           ro_mgarray_ptr<double> _dVmDiffusion)
 {
+   ro_array_ptr<double> Vm = _Vm.useOn(CPU);
+   ro_array_ptr<double> dVmReaction = _dVmReaction.useOn(CPU);
+   ro_array_ptr<double> dVmDiffusion = _dVmDiffusion.useOn(CPU);
    //const double vMax =   60.;
    //const double vMin = -110.;
    const double vMax = checkRange_.vMax;
    const double vMin = checkRange_.vMin;
-   const VectorDouble32& Vm = (vdata_.VmArray_);
    for (unsigned ii=begin; ii<end; ++ii)
    {
       if ( Vm[ii] > vMax || Vm[ii] < vMin )
-         outOfRange(ii, vdata_.dVmReaction_[ii], vdata_.dVmDiffusion_[ii]);
+         outOfRange(ii, Vm[ii], dVmReaction[ii], dVmDiffusion[ii]);
    }
 }
 
 /** Omp version.  Be sure to maintain in parallel with offsets version.
  *  Don't call from parallel loop */
-void Simulate::checkRanges(const VectorDouble32& dVmReaction,
-                           const VectorDouble32& dVmDiffusion)
+void Simulate::checkRanges(ro_mgarray_ptr<double> _Vm,
+                           ro_mgarray_ptr<double> _dVmReaction,
+                           ro_mgarray_ptr<double> _dVmDiffusion)
 {
+   ro_array_ptr<double> Vm = _Vm.useOn(CPU);
+   ro_array_ptr<double> dVmReaction = _dVmReaction.useOn(CPU);
+   ro_array_ptr<double> dVmDiffusion = _dVmDiffusion.useOn(CPU);
    int nLocal = anatomy_.nLocal();
    //const double vMax =   60.;
    //const double vMin = -110.;
    const double vMax = checkRange_.vMax;
    const double vMin = checkRange_.vMin;
-   const VectorDouble32& Vm = vdata_.VmArray_;
    #pragma omp parallel for
    for (int ii=0; ii<nLocal; ++ii)
    {
       if ( Vm[ii] > vMax || Vm[ii] < vMin )
-         outOfRange(ii, vdata_.dVmReaction_[ii], vdata_.dVmDiffusion_[ii]);
+         outOfRange(ii, Vm[ii], dVmReaction[ii], dVmDiffusion[ii]);
    }
 }
 
-void Simulate::outOfRange(unsigned index, double dVmr, double dVmd)
+void Simulate::outOfRange(unsigned index, const double Vm, const double dVmr, const double dVmd)
 {
    int myRank;
    MPI_Comm_rank(MPI_COMM_WORLD, &myRank); 
-   double Vm = vdata_.VmArray_[index];
 
+#if 0 //FIXME!!!!!!
    /** This is awful.  Some diffusion classes don't store the results in
     *  array form, but keep them in an internal matrix.  We have to go
     *  fetch them. */
@@ -60,6 +66,7 @@ void Simulate::outOfRange(unsigned index, double dVmr, double dVmd)
       unsigned bi = diffusion_->blockIndex()[index];
       dVmd += diffusion_->dVmBlock()[bi] * diffusion_->diffusionScale();
    }
+#endif
    
    printf("WARNING: Voltage out of range: rank %d, index %d gid %llu "
           "loop = %d, V = %e, dVmd = %e, dVmr = %e\n",

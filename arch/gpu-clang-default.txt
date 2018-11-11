@@ -1,0 +1,53 @@
+###########################################################
+# MPI Support
+###########################################################
+set(ENABLE_MPI ON CACHE BOOL "")
+set(ENABLE_FIND_MPI OFF CACHE BOOL "")
+
+set(MPI_C_COMPILER           "mpiclang"   CACHE PATH "")
+set(MPI_CXX_COMPILER         "mpiclang++"  CACHE PATH "")
+
+###########################################################
+# OpenMP support
+###########################################################
+set(ENABLE_OPENMP ON CACHE BOOL "")
+
+###########################################################
+# c compiler
+set(CMAKE_C_COMPILER "${MPI_C_COMPILER}" CACHE PATH "")
+# cpp compiler
+set(CMAKE_CXX_COMPILER "${MPI_CXX_COMPILER}" CACHE PATH "")
+
+###########################################################
+# CUDA support
+###########################################################
+set(ENABLE_CUDA ON CACHE BOOL "")
+
+set (CMAKE_CUDA_FLAGS "-restrict -std=c++11 --expt-extended-lambda" CACHE STRING "" )
+set (CMAKE_CUDA_HOST_COMPILER ${MPI_CXX_COMPILER} CACHE STRING "")
+
+
+#SET(extra_libs dl 
+#    ${CUDA_TOOLKIT_ROOT_DIR}/lib64/libcudart.so 
+#    ${CUDA_TOOLKIT_ROOT_DIR}/lib64/libnvrtc.so
+#    )
+
+SET(LAPACK_LIB /usr/tcetmp/packages/lapack/lapack-3.6.0-gfortran-4.8.5/lib/liblapack.a gfortran)
+SET(BLAS_LIB /usr/tcetmp/packages/blas/blas-3.6.0-gfortran-4.8.5/lib/libblas.a)
+
+
+SET(CMAKE_C_FLAGS_DEBUG "-g -ggdb -O0 " CACHE STRING "")
+SET(CMAKE_C_FLAGS_RELEASE "-g -ggdb -O3 -ffp-contract=fast" CACHE STRING "") 
+SET(CMAKE_C_FLAGS_RELWITHDEBINFO "-ggdb -O2 -ffp-contract=fast" CACHE STRING "")
+SET(CMAKE_C_FLAGS_MINSIZEREL "-g -ggdb -pg -O3 -ffp-contract=fast" CACHE STRING "")
+
+SET(CMAKE_CXX_FLAGS_DEBUG  ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "")
+SET(CMAKE_CXX_FLAGS_MINSIZEREL ${CMAKE_C_FLAGS_MINSIZEREL} CACHE STRING "")
+SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" ) 
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_C_FLAGS_RELWITHDEBINFO} CACHE STRING "")
+
+SET(CMAKE_CUDA_FLAGS_DEBUG "-G -g -O0" CACHE STRING "")
+SET(CMAKE_CUDA_FLAGS_RELEASE "-g -O3" CACHE STRING "")
+SET(CMAKE_CUDA_FLAGS_RELWITHDEBINFO "-g -O2" CACHE STRING "")
+SET(CMAKE_CUDA_FLAGS_MINSIZEREL "-g -O3" CACHE STRING "")
+

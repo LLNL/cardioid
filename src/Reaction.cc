@@ -4,9 +4,9 @@
 
 using namespace std;
 
-void initializeMembraneState(Reaction* reaction, const string& objectName, VectorDouble32& Vm)
+void initializeMembraneState(Reaction* reaction, const string& objectName, wo_mgarray_ptr<double> _Vm)
 {
-   reaction->initializeMembraneVoltage(Vm);
+   reaction->initializeMembraneVoltage(_Vm);
    OBJECT* reactionObj = objectFind(objectName, "REACTION");
    assert(reactionObj != NULL);
    if (object_testforkeyword(reactionObj, "initialState"))
@@ -24,6 +24,7 @@ void initializeMembraneState(Reaction* reaction, const string& objectName, Vecto
       //read in the voltage
       if (object_testforkeyword(stateObj, "Vm"))
       {
+         wo_array_ptr<double> Vm = _Vm.useOn(CPU);
          double newVoltage;
          objectGet(stateObj, "Vm", newVoltage, "", "mV");
          //set the voltage
@@ -46,7 +47,7 @@ void initializeMembraneState(Reaction* reaction, const string& objectName, Vecto
             double newValue;
             objectGet(stateObj, thisState, newValue, "", thisUnit);
             int handle = reaction->getVarHandle(thisState);
-            for (int ii=0; ii<Vm.size(); ++ii)
+            for (int ii=0; ii<_Vm.size(); ++ii)
             {
                reaction->setValue(ii, handle, newValue);
             }
@@ -90,6 +91,11 @@ void Reaction::setValue(int iCell, int varHandle, double value)
 }
 
 
+double Reaction::getValue(int iCell, int handle, double V) const
+{
+   return getValue(iCell, handle);
+}
+
 double Reaction::getValue(int iCell, int handle) const
 {
    assert(false);
@@ -108,10 +114,4 @@ const string Reaction::getUnit(const string& varName) const
 {
    assert(false);
    return string();
-}
-
-void Reaction::scaleCurrents(std::vector<double>)
-{
-   assert(false);
-   return;
 }

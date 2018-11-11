@@ -1,33 +1,34 @@
-
-project(cardioid_elec)
-cmake_minimum_required(VERSION 3.1)
-
-macro(use_c99)
-  if (CMAKE_VERSION VERSION_LESS "3.1.3")
-    if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
-      set (CMAKE_C_FLAGS "-std=gnu99 ${CMAKE_C_FLAGS}")
-    endif ()
-  else ()
-    set (CMAKE_C_STANDARD 99)
-  endif ()
-endmacro(use_c99)
-
-use_c99()
-
 # Set a default build type if none was specified
 set(default_build_type "Release")
-#if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
-#  set(default_build_type "Debug")
-#endif()
  
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
   set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
-      STRING "Choose the type of build." FORCE)
+      STRING "Choose the type of build.")
   # Set the possible values of build type for cmake-gui
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
     "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
+
+
+project(cardioid_elec)
+cmake_minimum_required(VERSION 3.2)
+
+set (CMAKE_C_STANDARD 99)
+
+set(ENABLE_GTEST OFF CACHE BOOL "")
+set(BUILD_GTEST OFF CACHE BOOL "")
+set(ENABLE_TESTS OFF CACHE BOOL "")
+set(INSTALL_GTEST OFF CACHE BOOL "")
+set(ENABLE_GTEST OFF CACHE BOOL "")
+set(ENABLE_EXAMPLES OFF CACHE BOOL "")
+
+set(ENABLE_ALL_WARNINGS OFF CACHE BOOL "")
+
+if (NOT BLT_LOADED)
+   include(${CMAKE_CURRENT_SOURCE_DIR}/../blt/SetupBLT.cmake)
+endif()
+
 
 #Fixing bad default behavior for plugins on OSX
 if (CMAKE_SYSTEM_NAME MATCHES Darwin)
@@ -35,17 +36,47 @@ if (CMAKE_SYSTEM_NAME MATCHES Darwin)
   SET(CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS "${CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS} -undefined dynamic_lookup")
 endif()
 
-find_package(OpenMP)
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
-add_definitions(-DDiff_Weight_Type_Single)
-add_definitions(-DWITH_PIO -DWITH_MPI)
+set(extra_definitions "" CACHE STRING "")
+add_definitions(${extra_definitions})
+
+set(extra_includes "" CACHE STRING "")
+
+if (ENABLE_CUDA)
+   include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
+   add_definitions(-DUSE_CUDA)
+   add_definitions(-DUSE_NVTX)
+   set(cuda cuda)
+   set(cuda_runtime cuda_runtime)
+
+   find_library(CUDA_NVTX_LIBRARY
+      NAMES nvToolsExt nvTools nvtoolsext nvtools nvtx NVTX
+      PATHS ${CUDA_TOOLKIT_ROOT_DIR}
+      PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib"
+      DOC "Location of the CUDA Toolkit Extension (NVTX) library"
+      NO_DEFAULT_PATH
+   )
+   mark_as_advanced(CUDA_NVTX_LIBRARY)
+   find_library(CUDA_NVRTC_LIBRARY
+      NAMES nvrtc NVRTC
+      PATHS ${CUDA_TOOLKIT_ROOT_DIR}
+      PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib"
+      DOC "Location of the CUDA NVidia Runtime Compilation library"
+      NO_DEFAULT_PATH
+   )
+   mark_as_advanced(CUDA_NVRTC_LIBRARY)
+else()
+   set(cuda "")
+   set(cuda_runtime "")
+   set(CUDA_NVTX_LIBRARY "")
+   set(CUDA_NVRTC_LIBRARY "")
+   set(CUDA_CUDA_LIBRARY "")
+endif()   
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/src)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/include)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/include)
 
 find_library(BLAS_LIB blas)
 find_library(LAPACK_LIB lapack)
@@ -54,45 +85,51 @@ find_program(PERL perl)
 
 if (BLAS_LIB AND LAPACK_LIB)
    add_definitions(-DHAVE_LAPACK)
+   list(APPEND extra_libs ${LAPACK_LIB} ${BLAS_LIB})
 endif()
 
 
 
+set (heart_transport_src
+   SpaceAllocator.cc 
+   lazy_array.hh
+)
+
+blt_add_library(NAME heart_transport
+                SOURCES ${heart_transport_src}
+                DEPENDS_ON ${cuda_runtime} openmp)
+
+if (ENABLE_CUDA)
+   blt_add_library(NAME heart_actual_cuda
+                   SOURCES CUDADiffusion_ker.cu ECGSensor.cu
+                   DEPENDS_ON ${cuda} simUtil openmp)
+   set (heart_explicit_cuda_src
+      CUDADiffusion.cc
+      CUDADiffusion.hh
+      ECGSensor.cc
+      ECGSensor.hh
+   )
+   blt_add_library(NAME heart_explicit_cuda
+                   SOURCES ${heart_explicit_cuda_src}
+                   DEPENDS_ON heart_transport heart_actual_cuda ${cuda_runtime} openmp)
+   set(heart_explicit_cuda heart_explicit_cuda)
+else()
+   set(heart_explicit_cuda "")
+endif()
+
 set (reaction_src
-        ReactionFHN.cc
-        sundnes_et_al_2016_FHN.cc
-	TT04_CellML_Reaction.cc
-	TT06_CellML_Reaction.cc 
+	#TT04_CellML_Reaction.cc
+	#TT06_CellML_Reaction.cc 
 	TT06Dev_Reaction.cc
-	TT06_RRG_Reaction.cc
-	OHaraRudy_Reaction.cc
-	SimpleOHaraRudy.cc
-	Grandi_Reaction.cc
-	SimpleGrandi.cc
         Passive.cc
+        #ReactionFHN.cc
+        #sundnes_et_al_2016_FHN.cc
 	TT06Tau.cc
 	TT06Func.cc
-        VecTT06.cc
+        BetterTT06.cc
+        Grandi.cc
 	pade.cc
-   TT04_CellML_Endo.cc TT04_CellML_Mid.cc TT04_CellML_Epi.cc
-   TT06_CellML_Endo.cc TT06_CellML_Mid.cc TT06_CellML_Epi.cc
-	TT06_RRG.cc
-   OHaraRudyScan.cc
-   GrandiScan.cc 
-   spi_impl.c
-   clooper.c TT06GatesSimd2.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c
-   OHaraRudy.c OHaraRudy_Voltage.c OHaraRudy_Concent.c OHaraRudy_INaCai.c OHaraRudy_INaCass.c
-              OHaraRudy_INaK.c OHaraRudy_INab.c OHaraRudy_ICab.c OHaraRudy_IKb.c
-              OHaraRudy_IpCa.c OHaraRudy_INaFast.c OHaraRudy_INaL.c OHaraRudy_Ito.c
-              OHaraRudy_IKr.c OHaraRudy_IKs.c OHaraRudy_IK1.c OHaraRudy_ICa.c null_INull.c
-              OHaraRudy_Fluxes.c OHaraRudy_CaMKtrap.c reversalPotentials.c
-        OHaraRudyMod_INaFast.c RTYSC14A_IKr.c  MYBGBKC_INa.c
-        Grandi.c         Grandi_IClCa.c   Grandi_IKs.c     Grandi_INaL.c    Grandi_Revpots.c
-              Grandi_Concent.c Grandi_IClb.c    Grandi_IKur.c    Grandi_INab.c    Grandi_Voltage.c
-              Grandi_Fluxes.c  Grandi_IK1.c     Grandi_INCX.c    Grandi_INull.c
-              Grandi_ICa.c     Grandi_IKp.c     Grandi_INa.c     Grandi_IpCa.c
-              Grandi_ICab.c    Grandi_IKr.c     Grandi_INaK.c    Grandi_Ito.c
-)   
+)
 
 add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc
@@ -102,15 +139,43 @@ add_custom_command(
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
  )
 
+set (heart_gpu_aware_src
+   ${reaction_src}
 
-
-set (heart_src 
+   ActivationAndRecoverySensor.cc
+   ActivationTimeSensor.cc
+   BoxStimulus.cc
+   BoxStimulus.hh
+   DVThreshSensor.cc
+   DataVoronoiCoarsening.cc
+   Diffusion.hh
+   GradientVoronoiCoarsening.cc
+   GradientVoronoiCoarsening.hh
+   HaloExchange.hh
+   MaxDVSensor.cc
+   MinMaxSensor.cc
+   PointListSensor.cc
+   PointStimulus.cc
+   PointStimulus.hh
+   Reaction.cc
+   Reaction.hh
+   ReactionManager.cc
+   ReactionManager.hh
+   simulationLoop.cc
+   Simulate.cc
+   Simulate.hh
+   StateVariableSensor.cc
+   Stimulus.hh
+   TestStimulus.cc
+   TestStimulus.hh
+   checkpointIO.cc
+   getRemoteCells.cc
 	ThreadServer.cc
 	ThreadUtils.cc
 	stringUtils.cc
 	readCellList.cc
 	PioHeaderData.cc
-	Vector.cc SymmetricTensor.cc ConstantModel.cc ConstantReaction.cc
+	Vector.cc SymmetricTensor.cc
 	PerformanceTimers.cc unionOfStrings.cc getUserInfo.cc
         GDLoadBalancer.cc BlockLoadBalancer.cc workBoundBalancer.cc
 	pioBalancer.cc
@@ -124,54 +189,60 @@ set (heart_src
 	DomainInfo.cc
 	BoundingBox.cc
 	initializeSimulate.cc
-	Simulate.cc
 	initializeAnatomy.cc setConductivity.cc assignCellsToTasks.cc
-	getRemoteCells.cc
-	simulationLoop.cc
 	diffusionFactory.cc reactionFactory.cc
-	stimulusFactory.cc sensorFactory.cc drugFactory.cc
-   Drug.cc DrugChannel.cc
+	stimulusFactory.cc sensorFactory.cc
 	FibreConductivity.cc JHUConductivity.cc
 	DiffusionUtils.cc
-	FGRDiffusion.cc
-	FGRDiffusionOMP.cc
-	FGRDiffusionThreads.cc
-	FGRDiffusionOverlap.cc
+	#FGRDiffusion.cc
+	#FGRDiffusionOMP.cc
+	#FGRDiffusionThreads.cc
+	#FGRDiffusionOverlap.cc
 	FGRDiffusionStrip.cc
+	#OpenmpGpuRedblackDiffusion.cc
+	#OpenmpGpuFlatDiffusion.cc
 	FGRUtils.cc
-	Reaction.cc
-	ReactionManager.cc
-	TestStimulus.cc PointStimulus.cc BoxStimulus.cc
 	PeriodicPulse.cc RandomPulse.cc
-	PointListSensor.cc ActivationTimeSensor.cc
-	ActivationAndRecoverySensor.cc
-	VoronoiCoarsening.cc DataVoronoiCoarsening.cc GradientVoronoiCoarsening.cc
+	VoronoiCoarsening.cc
 	CaAverageSensor.cc
-	ECGSensor.cc
-	MinMaxSensor.cc ProcBox.cc MaxDVSensor.cc DVThreshSensor.cc
-   StateVariableSensor.cc Interpolation.cc
+        ProcBox.cc
+   Interpolation.cc
    Version.cc
    ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc
 )
-if (NOT use_precompiled)
-  list(APPEND reaction_src TT06GatesSimd.c)
-endif()
-add_library(heart
-            ${heart_src} ${reaction_src})
-target_link_libraries(heart ddcMDutil ${extra_libs})
-if (BLAS_LIB AND LAPACK_LIB)
-  target_link_libraries(heart ${LAPACK_LIB} ${BLAS_LIB})
-endif()
+blt_add_library(NAME heart_gpu_aware
+                SOURCES ${heart_gpu_aware_src}
+                DEPENDS_ON ${heart_explicit_cuda} heart_transport simUtil ${extra_libs}
+                           ${CUDA_NVTX_LIBRARY} ${CUDA_NVRTC_LIBRARY} ${CUDA_CUDA_LIBRARY}
+                           ${cuda} ${cuda_runtime} openmp mpi
+                INCLUDES ${extra_includes}
+                )
 
-add_executable(cardioid cardioid.cc)
-target_link_libraries(cardioid heart)
+set (heart_cpu_only_src 
+   spi_impl.c
+   clooper.c TT06GatesSimd2.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c
+)
+blt_add_library(NAME heart_cpu_only
+                SOURCES ${heart_cpu_only_src}
+                DEPENDS_ON simUtil ${extra_libs} openmp
+                INCLUDES ${extra_includes}
+                )
 
-add_executable(singleCell singleCell.cc singleCellOptions.c)
-target_link_libraries(singleCell heart)
+blt_add_executable(NAME cardioid
+                   SOURCES cardioid.cc
+                   DEPENDS_ON heart_gpu_aware heart_cpu_only ${heart_explicit_cuda}
+                              heart_gpu_aware heart_cpu_only ${heart_explicit_cuda}
+                              heart_gpu_aware heart_cpu_only ${heart_explicit_cuda}
+                              ${cuda_runtime} openmp)
+
+blt_add_executable(NAME singleCell
+                   SOURCES singleCell.cc singleCellOptions.c
+                   DEPENDS_ON heart_gpu_aware heart_cpu_only ${cuda} ${cuda_runtime} openmp)
 
 if (LAPACK_LIB)
-   add_executable(modifyAnatomyFile modifyAnatomyFile.cc)
-   target_link_libraries(modifyAnatomyFile heart)
+   blt_add_executable(NAME modifyAnatomyFile
+                      SOURCES modifyAnatomyFile.cc
+                      DEPENDS_ON heart_gpu_aware heart_cpu_only ${cuda_runtime} openmp)
 endif ()
 
 
@@ -180,35 +251,33 @@ endif ()
 
 set(heart_compile_flags "")
 
-get_property(p_dirs TARGET heart PROPERTY INCLUDE_DIRECTORIES)
+get_property(p_dirs TARGET heart_gpu_aware PROPERTY INCLUDE_DIRECTORIES)
 foreach(dir ${p_dirs})
   set(heart_compile_flags "${heart_compile_flags} -I${dir}")
 endforeach()
 
-get_property(p_flags TARGET heart PROPERTY COMPILE_FLAGS)
+get_property(p_flags TARGET heart_gpu_aware PROPERTY COMPILE_FLAGS)
 foreach(flag ${p_flags})
   set(heart_compile_flags "${heart_compile_flags} ${flag}")
 endforeach()
 
-get_property(p_flags TARGET heart PROPERTY COMPILE_DEFINITIONS)
+get_property(p_flags TARGET heart_gpu_aware PROPERTY COMPILE_DEFINITIONS)
 foreach(flag ${p_flags})
   set(heart_compile_flags "${heart_compile_flags} -D${flag}")
 endforeach()
 
-get_property(p_flags TARGET heart PROPERTY COMPILE_DEFINITIONS_RELEASE)
+get_property(p_flags TARGET heart_gpu_aware PROPERTY COMPILE_DEFINITIONS_RELEASE)
 foreach(flag ${p_flags})
   set(heart_compile_flags "${heart_compile_flags} -D${flag}")
 endforeach()
 
 get_property(p_flags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIRECTORY} PROPERTY COMPILE_DEFINITIONS)
 foreach(flag ${p_flags})
-  MESSAGE(ERROR ${flag})
   set(heart_compile_flags "${heart_compile_flags} -D${flag}")
 endforeach()
 
 get_property(p_flags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIRECTORY} PROPERTY COMPILE_FLAGS)
 foreach(flag ${p_flags})
-  MESSAGE(ERROR ${flag})
   set(heart_compile_flags "${heart_compile_flags} ${flag}")
 endforeach()
 
@@ -220,4 +289,3 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/compileReaction.template
                ${CMAKE_BINARY_DIR}/compileReaction
                @ONLY
                )
-

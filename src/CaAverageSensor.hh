@@ -3,6 +3,7 @@
 
 #include "VoronoiCoarsening.hh"
 #include "Sensor.hh"
+#include "VectorDouble32.hh"
 
 #include <string>
 
@@ -39,7 +40,7 @@ private:
    // average for each local color
    std::map<int,std::vector<float> > averages_;
    
-   void computeColorAverages(const VectorDouble32& val);
+   void computeColorAverages(ro_array_ptr<double> val);
    void writeAverages(const std::string& filename,
                       const double current_time,
                       const int current_loop)const;

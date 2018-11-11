@@ -2,9 +2,10 @@
 #include <cmath>
 #include <cassert>
 #include <iostream>
+
 using namespace std;
 
-ConstantModel::ConstantModel(const vector<double>& eta,
+ConstantModel::ConstantModel(const std::vector<double>& eta,
                              const SymmetricTensor& sigma1,
                              const SymmetricTensor& sigma2,
                              const SymmetricTensor& sigma3,

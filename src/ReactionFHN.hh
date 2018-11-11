@@ -11,10 +11,10 @@ class ReactionFHN : public Reaction
    std::string methodName() const {return "FHN";}
    
    void calc(double dt,
-             const VectorDouble32& Vm,
-             const std::vector<double>& iStim,
-             VectorDouble32& dVm);
-   void initializeMembraneVoltage(VectorDouble32& Vm);
+             ro_larray_ptr<double> Vm,
+             ro_larray_ptr<double> iStim,
+             wo_larray_ptr<double> dVm);
+   void initializeMembraneVoltage(wo_larray_ptr<double> Vm);
 
  private:
    unsigned nCells_;

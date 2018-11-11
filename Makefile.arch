@@ -100,14 +100,29 @@ endif
 ifeq ($(HOSTNAME),soifon)
   ARCHGUESS = osx
 endif
+ifeq ($(HOSTNAME),rzmanta)
+  ARCHGUESS = gpu-clang-default
+endif
+ifeq ($(HOSTNAME),pascal)
+  ARCHGUESS = gpu-clang-default
+endif
 ifeq ($(HOSTNAME),ray)
-  ARCHGUESS = peloton
+  ARCHGUESS = gpu-clang-default
+endif
+ifeq ($(HOSTNAME),surface)
+  ARCHGUESS = gpu-clang-default
 endif
 ifeq ($(HOSTNAME),sierra)
-  ARCHGUESS = peloton
+  ARCHGUESS = sierra
 endif
 ifeq ($(HOSTNAME),prince)
   ARCHGUESS = osx
+endif
+ifeq ($(HOSTNAME),clogin)
+  ARCHGUESS = r92
+endif
+ifeq ($(HOSTNAME),pascal)
+  ARCHGUESS = pascal
 endif
 ifeq ($(HOSTNAME),crestone)
   ARCHGUESS = osx

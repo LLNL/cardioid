@@ -17,6 +17,7 @@
 #include "ThreadServer.hh"
 #include "object.h"
 #include "object_cc.hh"
+#include "DeviceFor.hh"
 
 #include "singleCellOptions.h"
 
@@ -83,6 +84,13 @@ int main(int argc, char* argv[])
    MPI_Init(&argc,&argv);
    MPI_Comm_size(MPI_COMM_WORLD, &npes);
    MPI_Comm_rank(MPI_COMM_WORLD, &mype);
+
+#ifdef USE_CUDA
+   // A ugly way to trigger the default CUDA context
+   int *d_i;
+   cudaMalloc(&d_i, sizeof(int));
+   cudaFree(d_i);
+#endif
 
    struct gengetopt_args_info params;
    cmdline_parser(argc, argv, &params);
@@ -229,10 +237,14 @@ int main(int argc, char* argv[])
                                         nCells, threads);
 
    //initialize the ionic model
-   VectorDouble32 Vm(nCells);
-   vector<double> iStim(nCells);
-   VectorDouble32 dVm(nCells);
-   initializeMembraneState(reaction, objectName, Vm);
+   lazy_array<double> VmTransport;
+   VmTransport.resize(nCells);
+   lazy_array<double> iStimTransport;
+   iStimTransport.resize(nCells);
+   lazy_array<double> dVmTransport;
+   dVmTransport.resize(nCells);
+
+   initializeMembraneState(reaction, objectName, VmTransport);
 
    //prepare for checkpoint output and extra columns
    vector<string> fieldNames;
@@ -295,12 +307,12 @@ int main(int argc, char* argv[])
       stringstream headerLine(temp);
       string timeName;
       headerLine >> timeName;
-      assert(timeName == "time");
+      assert(timeName == "time" || timeName == "t");
       while (1)
       {
          string columnName;
          headerLine >> columnName;
-         if (!!headerLine) { break; }
+         if (!headerLine) { break; }
          int handle;
          if (columnName == "Vm")
          {
@@ -326,7 +338,7 @@ int main(int argc, char* argv[])
          {
             thisLine >> timestepValues[iclamp];
          }
-         if (!!thisLine) { break; }
+         if (!thisLine) { break; }
          for (int iclamp=0; iclamp<clampHandles.size(); iclamp++)
          {
             clampFunctions[iclamp].addData(time,timestepValues[iclamp]);
@@ -349,6 +361,7 @@ int main(int argc, char* argv[])
          {
             if (handle == VmKey)
             {
+               wo_array_ptr<double> Vm = VmTransport.useOn(CPU);
                Vm[ii] = value;
             }
             else
@@ -368,6 +381,7 @@ int main(int argc, char* argv[])
          }
          else
          {
+            ro_array_ptr<double> Vm = VmTransport.useOn(CPU);
             fprintf(file, "%s REACTION { initialState = %s; }\n",
                     objectName.c_str(), objectName.c_str());
             fprintf(file, "%s SINGLECELL {\n", objectName.c_str());
@@ -377,7 +391,7 @@ int main(int argc, char* argv[])
             {
                fprintf(file, "  %s = %.17g %s;\n",
                        fieldNames[istate].c_str(),
-                       reaction->getValue(0,fieldHandles[istate]),
+                       reaction->getValue(0,fieldHandles[istate], Vm[0]),
                        fieldUnits[istate].c_str()
                       );
             }
@@ -390,10 +404,11 @@ int main(int argc, char* argv[])
       if ((itime % outputTimestepInterval) == 0)
       {
          //doIO();
-         printf("%25.17g %25.17g", timeline.realTimeFromTimestep(itime), Vm[0]);
+         ro_array_ptr<double> Vm = VmTransport.useOn(CPU);
+         printf("%21.17g %21.17g", timeline.realTimeFromTimestep(itime), Vm[0]);
          for (int iextra=0; iextra<extraColumns.size(); ++iextra) 
          {
-            printf(" %25.17g", reaction->getValue(0,extraColumns[iextra]));
+            printf(" %21.17g", reaction->getValue(0,extraColumns[iextra],Vm[0]));
          }
          printf("\n");
       }
@@ -411,13 +426,12 @@ int main(int argc, char* argv[])
             timestepsLeftInStimulus=timestepsInEachStimulus;
          }
       }
-      for (int ii=0; ii<nCells; ii++)
       {
-         iStim[ii]=0;
+         double stimAmount = 0;
          if (timestepsLeftInStimulus > 0)
          {
             /* Check the negative sign here.  Look at:
-
+               
                startTimer(stimulusTimer);
                // add stimulus to dVmDiffusion
                for (unsigned ii=0; ii<sim.stimulus_.size(); ++ii)
@@ -431,29 +445,35 @@ int main(int argc, char* argv[])
                up negative.
 
             */
-            iStim[ii] = -params.stim_strength_arg;
+            stimAmount = -params.stim_strength_arg;
             timestepsLeftInStimulus--;
          }
+         wo_array_ptr<double> iStim = iStimTransport.writeonly(DEFAULT_COMPUTE_SPACE);
+         DEVICE_PARALLEL_FORALL(iStim.size(), ii,
+                                iStim[ii] = -stimAmount);
+
       }
 
-      //calc() dVm and update the internal states
-      if (params.alternate_update_flag)
-      {
-         reaction->updateNonGate(dt, Vm, dVm);
-         reaction->updateGate(dt,Vm);
+      {         
+         //calc() dVm and update the internal states
+         if (params.alternate_update_flag)
+         {
+            reaction->updateNonGate(dt, VmTransport, dVmTransport);
+            reaction->updateGate(dt,VmTransport);
+         }
+         else
+         {
+            reaction->calc(dt, VmTransport, iStimTransport, dVmTransport);
+         }
       }
-      else
       {
-         reaction->calc(dt, Vm, iStim, dVm);
+         //update Vm and apply stimulus
+         rw_array_ptr<double> Vm = VmTransport.readwrite(DEFAULT_COMPUTE_SPACE);
+         ro_array_ptr<double> iStim = iStimTransport.readonly(DEFAULT_COMPUTE_SPACE);
+         ro_array_ptr<double> dVm = dVmTransport.readonly(DEFAULT_COMPUTE_SPACE);
+         DEVICE_PARALLEL_FORALL(VmTransport.size(), ii,
+                                Vm[ii] += dt*(dVm[ii]+iStim[ii]));
       }
-      
-      //update Vm and apply stimulus
-      for (int ii=0; ii<nCells; ii++)
-      {
-         //use a negative sign here to undo the negative we had above.
-         Vm[ii] += (dVm[ii] - iStim[ii]) * dt;
-      }
-
       itime++;
    }
 

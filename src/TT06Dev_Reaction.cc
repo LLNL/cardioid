@@ -30,7 +30,7 @@ using namespace PerformanceTimers;
 using namespace TT06Func;
 int workBundle(int index, int nItems, int nGroups , int mod, int& offset);
 
-#ifdef BGQ
+#if 0
 static const  UPDATEGATE gateEq[] ={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, 
                                update_Xr2Gate_v1, update_XsGate_v1, update_rGate_v1, update_dGate_v1, 
                                update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, update_s0Gate_v1, 
@@ -106,30 +106,9 @@ TT06Dev_Reaction::TT06Dev_Reaction(const double dt, const int numPoints, TT06Dev
    }
 
    mkState_(parms);
-   currentMap_.resize(parms.currentNames.size()); 
-   int nCurrents=0; 
-   while (TT06currentNames[nCurrents] != "") {nCurrents++;}
-   //printf("current sizes: %d %d %d\n",nCurrents,sizeof(double),sizeof(currentScales_)); 
-   assert(nCurrents*sizeof(double) == sizeof(currentScales_)); 
-   currentScales_=currentScalesDefault; 
-
-   //SHOWVAR(parms.currentNames.size());
-   for (int i=0;i<parms.currentNames.size();i++)
-   {
-      int j = 0;
-      for (;j<nCurrents;j++) {
-         if ( std::string(TT06currentNames[j]) == parms.currentNames[i]) { break; }
-      }
-      //SHOWVAR(i);
-      //SHOWVAR(nCurrents);
-      //SHOWVAR(j);
-      assert(j<nCurrents); 
-      currentMap_[i]   = j;
-   }
-
 
    fastReaction_ = 0; 
-   if (parms.fastReaction >= 0) ;
+   //if (parms.fastReaction >= 0) ;
    {
       if ( (fabs(parms.tolerance/1e-4 - 1.0) < 1e-12) && parms.jhTauSmooth == 1 )fastReaction_ = parms.fastReaction; 
    }
@@ -175,18 +154,6 @@ TT06Dev_Reaction::TT06Dev_Reaction(const double dt, const int numPoints, TT06Dev
    }
 
    mkWorkBundles_(parms);
-}
-void TT06Dev_Reaction::scaleCurrents(vector <double> currentScales)
-{
-   //SHOWVAR(currentScales.size());
-   //SHOWVAR(currentMap_.size());
-   assert(currentScales.size() == currentMap_.size()); 
-   currentScales_=currentScalesDefault; 
-   for (int i=0;i<currentScales.size();i++) 
-   {
-      int j = currentMap_[i];
-      ((double *)&currentScales_)[j]=currentScales[i]; 
-   }
 }
 void TT06Dev_Reaction::mkCellTypeParms_(TT06Dev_ReactionParms& parms)
 {
@@ -423,19 +390,28 @@ int TT06Dev_Reaction::nonGateWorkPartition_(int& offset)
    return size;
 }
 
-void TT06Dev_Reaction::calc(double dt, const VectorDouble32& Vm, const vector<double>& iStim, VectorDouble32& dVm)
+void TT06Dev_Reaction::calc(double dt,
+                            ro_mgarray_ptr<double> Vm_m,
+                            ro_mgarray_ptr<double> iStim_m,
+                            wo_mgarray_ptr<double> dVm_m)
 {
-   WORK work ={ 0,nCells_,0,12}; 
+   ro_array_ptr<double> Vm = Vm_m.useOn(CPU);
+   ro_array_ptr<double> iStim = iStim_m.useOn(CPU);
+   wo_array_ptr<double> dVm = dVm_m.useOn(CPU);
+   WORK work ={ 0,static_cast<int>(nCells_),0,12}; 
    if (nCells_ > 0) 
    {
-      update_nonGate_((void*)fit_, &currentScales_,dt,&(cellTypeParm_), nCells_,const_cast<double *>(&Vm[0]),  0, &state_[0], &dVm[0]);
+      update_nonGate_((void*)fit_,dt,&(cellTypeParm_), nCells_,const_cast<double *>(&Vm[0]),  0, &state_[0], dVm.raw());
       update_gate_(dt, nCells_, cellTypeParm_.s_switch, const_cast<double *>(&Vm[0]), 0, &state_[gateOffset],fit_,work);
    }
 }
-void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR)
+void TT06Dev_Reaction::updateNonGate(double dt, ro_mgarray_ptr<double> Vm_m, wo_mgarray_ptr<double> dVR_m)
 {
    int offset,nCells; 
 
+   ro_array_ptr<double> Vm = Vm_m.useOn(CPU);
+   wo_array_ptr<double> dVR = dVR_m.useOn(CPU);
+   
 #ifdef LEGACY_NG_WORKPARTITION
    nCells = nonGateWorkPartition(offset);
 #else
@@ -445,57 +421,18 @@ void TT06Dev_Reaction::updateNonGate(double dt, const VectorDouble32& Vm, Vector
    nCells = nonGateWork_[tid].nCell;
 #endif
 
-   if(PRINT_WP) {
-      static int inited[64] = {0};
-      const int tid = group_.teamRank();
-
-      if(inited[tid] == 0) {
-         int pid,np;
-         const int nt = group_.nThreads();
-         static volatile int tag[64] = {0};
-
-         MPI_Comm_size(MPI_COMM_WORLD,&np);
-         MPI_Comm_rank(MPI_COMM_WORLD,&pid);	  
-
-         if(tid == 0) {
-            int i;
-
-            MPI_Barrier(MPI_COMM_WORLD);
-            for(i = 0; i<np; i++) {
-               if(i == pid) {
-                  int j;
-                  printf("@pid=%03d,tid=%02d :NGWP: offset = %6d  nCells = %6d  end = %6d\n",
-                        pid,tid,offset,nCells,offset+nCells);
-
-                  tag[tid] = 1;
-                  while(tag[nt-1] == 0) {}
-                  for(j = 0; j<nt; j++) tag[j] = 0;
-               }
-               MPI_Barrier(MPI_COMM_WORLD);
-            }
-         } else {
-            while(tag[tid-1] == 0) {}
-
-            printf("@pid=%03d,tid=%02d :NGWP: offset = %6d  nCells = %6d  end = %6d\n",
-                  pid,tid,offset,nCells,offset+nCells);
-
-            tag[tid] = 1;
-            while(tag[0] > 0) {}
-         }
-
-         inited[tid] = 1;
-      }
-   }
    if (nCells > 0) 
    {
       startTimer(nonGateTimer);
-      update_nonGate_(fit_,&currentScales_,dt,&cellTypeParm_, nCells, const_cast<double *>(&Vm[offset]),  offset, &state_[0], &dVR[offset]);
+      update_nonGate_(fit_,dt,&cellTypeParm_, nCells, const_cast<double *>(&Vm[offset]),  offset, &state_[0], dVR.raw()+offset);
       stopTimer(nonGateTimer);
    }
 }
-void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)
+void TT06Dev_Reaction::updateGate   (double dt, ro_mgarray_ptr<double> Vm_m)
 {
    int teamRank = group_.teamRank();
+
+   ro_array_ptr<double> Vm = Vm_m.useOn(CPU);
 
    TT06Func::WORK work = gateWork_[teamRank]; 
    int nCell=work.nCell; 
@@ -515,10 +452,11 @@ void TT06Dev_Reaction::updateGate(double dt, const VectorDouble32& Vm)
    stopTimer(gateTimer);
 }
 
-void TT06Dev_Reaction::initializeMembraneVoltage(VectorDouble32& Vm)
+void TT06Dev_Reaction::initializeMembraneVoltage(wo_mgarray_ptr<double> Vm_m)
 {
-   assert(Vm.size() >= nCells_);
-   for (unsigned ii=0; ii<Vm.size(); ++ii) Vm[ii] = XXXinitialVm_;
+   assert(Vm_m.size() >= nCells_);
+   wo_array_ptr<double> Vm = Vm_m.useOn(CPU);
+   for (unsigned ii=0; ii<nCells_; ++ii) Vm[ii] = XXXinitialVm_;
 }
 
 void TT06Dev_Reaction::getCheckpointInfo(vector<string>& name,

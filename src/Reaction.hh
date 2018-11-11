@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <string>
-#include "VectorDouble32.hh"
+#include "lazy_array.hh"
 
 class BucketOfBits;
 
@@ -13,18 +13,16 @@ class Reaction
    virtual ~Reaction(){};
    virtual std::string methodName() const = 0;
    virtual void calc(double dt,
-                     const VectorDouble32& Vm,
-                     const std::vector<double>& iStim,
-                     VectorDouble32& dVm) = 0;
-   virtual void updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR) {};
-   virtual void updateGate   (double dt, const VectorDouble32& Vm) {};
+                     ro_mgarray_ptr<double> Vm,
+                     ro_mgarray_ptr<double> iStim,
+                     wo_mgarray_ptr<double> dVm) = 0;
+   virtual void updateNonGate(double dt, ro_mgarray_ptr<double> Vm, wo_mgarray_ptr<double> dVR) {};
+   virtual void updateGate   (double dt, ro_mgarray_ptr<double> Vm) {};
 
    /** Populates the Vm array with some sensible default initial
     * membrane voltage.  Vm will be the parallel to the local cells in
     * the anatomy that was used to create the concrete reaction class. */
-   virtual void initializeMembraneVoltage(VectorDouble32& Vm) = 0;
-
-   virtual void scaleCurrents(std::vector<double>);  
+   virtual void initializeMembraneVoltage(wo_mgarray_ptr<double> Vm) = 0;
 
    /** Functions needed for checkpoint/restart */
    virtual void getCheckpointInfo(std::vector<std::string>& fieldNames,
@@ -33,6 +31,7 @@ class Reaction
    std::vector<int> getVarHandle(const std::vector<std::string>& varName) const;
    virtual void setValue(int iCell, int varHandle, double value);
    virtual double getValue(int iCell, int varHandle) const;
+   virtual double getValue(int iCell, int varHandle, double V) const;
    virtual void getValue(int iCell,
                          const std::vector<int>& handle,
                          std::vector<double>& value) const;
@@ -40,6 +39,6 @@ class Reaction
 };
 
 //! Call this instead of initializeMembraneVoltage directly.
-void initializeMembraneState(Reaction* reaction, const std::string& objectName, VectorDouble32& Vm);
+void initializeMembraneState(Reaction* reaction, const std::string& objectName, wo_mgarray_ptr<double> Vm);
 
 #endif

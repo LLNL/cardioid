@@ -3,10 +3,12 @@
 
 #include <map>
 #include <vector>
+#include <set>
 #include <string>
 #include "VectorDouble32.hh"
 #include "ThreadUtils.hh"
 #include "Anatomy.hh"
+#include "lazy_array.hh"
 
 class Reaction;
 
@@ -14,22 +16,20 @@ class ReactionManager
 {
  public:
    void calc(double dt,
-             const VectorDouble32& Vm,
-             const std::vector<double>& iStim,
-             VectorDouble32& dVm);
-   void updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR);
-   void updateGate   (double dt, const VectorDouble32& Vm);
+             ro_mgarray_ptr<double> Vm,
+             ro_mgarray_ptr<double> iStim,
+             wo_mgarray_ptr<double> dVm);
+   void updateNonGate(double dt, ro_mgarray_ptr<double> Vm, wo_mgarray_ptr<double> dVR);
+   void updateGate   (double dt, ro_mgarray_ptr<double> Vm);
    std::string stateDescription() const;
 
    /** Populates the Vm array with some sensible default initial
     * membrane voltage.  Vm will be the parallel to the local cells in
     * the anatomy that was used to create the concrete reaction class. */
-   void initializeMembraneState(VectorDouble32& Vm);
-
-   void scaleCurrents(std::vector<double>);  
+   void initializeMembraneState(wo_mgarray_ptr<double> Vm);
 
    void addReaction(const std::string& reactionName);
-   void create(const double dt, Anatomy& anatomy, const ThreadTeam &group, const std::vector<std::string>& scaleCurrents);
+   void create(const double dt, Anatomy& anatomy, const ThreadTeam &group);
 
    /** Functions needed for checkpoint/restart */
    void getCheckpointInfo(std::vector<std::string>& fieldNames,
@@ -49,10 +49,6 @@ class ReactionManager
    std::vector<Reaction*> reactions_;
    std::vector<int> extents_;
    
-   std::vector<VectorDouble32> VmPerReaction_;
-   std::vector<std::vector<double> > iStimPerReaction_;
-   std::vector<VectorDouble32> dVmPerReaction_;
-
    std::vector<std::string> unitFromHandle_;
    std::map<std::string, int> handleFromVarname_;
 

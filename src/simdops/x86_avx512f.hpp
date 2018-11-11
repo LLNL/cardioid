@@ -30,7 +30,8 @@ inline native_vector_type b_and(const native_vector_type a, const native_vector_
 inline native_vector_type b_or(const native_vector_type a, const native_vector_type b) { return _mm512_or_pd(a,b); }
 inline native_vector_type b_not(const native_vector_type a) { return _mm512_xor_pd(a,eq(a,a)); }
 
-   
+inline bool any(const native_vector_type a) { return _mm512_movemask_pd(a); }
+
 #if defined(SIMDOPS_INTEL_VECTOR_LIBM)
 inline native_vector_type expm1(native_vector_type x) {
   return _mm512_expm1_pd(x);

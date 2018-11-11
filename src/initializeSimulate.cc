@@ -12,9 +12,6 @@
 #include "diffusionFactory.hh"
 #include "ReactionManager.hh"
 #include "stimulusFactory.hh"
-#include "drugFactory.hh"
-#include "Drug.hh"
-#include "DrugChannel.hh"
 #include "Stimulus.hh"
 #include "sensorFactory.hh"
 #include "getRemoteCells.hh"
@@ -107,8 +104,6 @@ void initializeSimulate(const string& name, Simulate& sim)
    objectGet(obj, "globalSyncRate", sim.globalSyncRate_, "-1");
    objectGet(obj, "printGid", sim.printGid_, "-1");
    objectGet(obj, "checkpointRate", sim.checkpointRate_, "-1");
-   sim.findVrest_= object_testforkeyword(obj, "Vrest"); 
-   if (sim.findVrest_) objectGet(obj,"Vrest",sim.Vrest_,"-100.0"); 
    {
       int tmp; objectGet(obj, "profileAllCounters", tmp, "0");
       if (tmp == 1)
@@ -205,38 +200,6 @@ void initializeSimulate(const string& name, Simulate& sim)
          cout << "Reaction Threads: " << sim.reactionThreads_ << endl;
    }
    
-   timestampBarrier("building drug objects", MPI_COMM_WORLD);
-   vector<string> doseNames;
-   objectGet(obj, "dose", doseNames);
-   for (unsigned ii=0; ii<doseNames.size(); ++ii)
-      sim.drug_.push_back(drugFactory(doseNames[ii], sim));
-
-   // if drugs are defined, get a list of all channels they affect to
-   // pass to reaction constructor
-   map<std::string,double> cMap;
-   for (int idrug=0; idrug<sim.drug_.size(); idrug++)
-   {
-      for (int jj=0; jj<sim.drug_[idrug]->nChannels(); jj++)
-      {
-         string current = sim.drug_[idrug]->current(jj);
-         double scaleFactor = sim.drug_[idrug]->scaleFactor(jj);
-         if (cMap.find(current) != cMap.end())
-            cMap[current] *= scaleFactor;
-         else
-            cMap[current] = scaleFactor;
-      }
-   }
-
-   vector<string> scaleCurrents;
-   for (map<std::string,double>::iterator mapit = cMap.begin(); mapit != cMap.end(); mapit++)
-   {
-      scaleCurrents.push_back((*mapit).first);
-      sim.drugRescale_.push_back((*mapit).second);
-      if (myRank == 0)
-         cout << "initializeSimulate:  current channel " << (*mapit).first << " will be rescaled by " << (*mapit).second << endl;
-   }
-   timestampBarrier("finished building drug objects", MPI_COMM_WORLD);
-
    timestampBarrier("building reaction object", MPI_COMM_WORLD);
    vector<string> reactionNames;
    objectGet(obj, "reaction", reactionNames);
@@ -245,7 +208,7 @@ void initializeSimulate(const string& name, Simulate& sim)
       const string& reactionName(reactionNames[ii]);
       sim.reaction_->addReaction(reactionName);
    }
-   sim.reaction_->create(sim.dt_, sim.anatomy_, sim.reactionThreads_, scaleCurrents);
+   sim.reaction_->create(sim.dt_, sim.anatomy_, sim.reactionThreads_);
    timestampBarrier("finished building reaction object", MPI_COMM_WORLD);
 
    sim.printIndex_ = -1;

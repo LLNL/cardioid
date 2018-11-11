@@ -13,156 +13,412 @@
 
 #include "Passive.hh"
 #include "object_cc.hh"
-#include "Anatomy.hh"
-#include "reactionFactory.hh"
+#include "mpiUtils.h"
 #include <cmath>
-
-#define pi 3.141592653589793238462643383279502884197169399375105820974944592307816406286
+#include <cassert>
+#include <fstream>
+#include <iostream>
 
 using namespace std;
 
+#define setDefault(name, value) objectGet(obj, #name, name, TO_STRING(value))
 
-#define setDefault(name, value) objectGet(obj, #name, reaction->name, #value)
-   
-REACTION_FACTORY(Passive)(OBJECT* obj, const double, const int numPoints, const ThreadTeam&)
+template<typename TTT>
+static inline string TO_STRING(const TTT x)
 {
-   Passive::ThisReaction* reaction = new Passive::ThisReaction(numPoints);
-
-   //override the defaults
-   //EDIT_FLAGS
-
-   //EDIT_PARAMETERS
-   setDefault(G, 6.0643e-4);    // [mS/uF] 3
-   setDefault(E_R, -85.);
-      
-   return reaction;
+   stringstream ss;
+   ss << x;
+   return ss.str();
 }
-#undef setDefault
 
+static const char* interpName[] = {
+    NULL
+};
+
+
+   REACTION_FACTORY(Passive)(OBJECT* obj, const double _dt, const int numPoints, const ThreadTeam&)
+   {
+      Passive::ThisReaction* reaction = new Passive::ThisReaction(numPoints, _dt);
+
+      //override the defaults
+      //EDIT_PARAMETERS
+      double E_R;
+      double G;
+      setDefault(G, 0.00060643000000000003);
+      setDefault(E_R, -85);
+      reaction->E_R = E_R;
+      reaction->G = G;
+      bool reusingInterpolants = false;
+      string fitName;
+      objectGet(obj, "fit", fitName, "");
+      int funcCount = sizeof(reaction->_interpolant)/sizeof(reaction->_interpolant[0])-1; //BGQ_HACKFIX, compiler bug with zero length arrays
+      if (fitName != "")
+      {
+         OBJECT* fitObj = objectFind(fitName, "FIT");
+         if (1
+         )
+         {
+            vector<string> functions;
+            objectGet(fitObj, "functions", functions);
+            OBJECT* funcObj;
+            if (functions.size() == funcCount)
+            {
+               for (int _ii=0; _ii<functions.size(); _ii++)
+               {
+                  OBJECT* funcObj = objectFind(functions[_ii], "FUNCTION");
+                  objectGet(funcObj, "numer", reaction->_interpolant[_ii].numNumer_, "-1");
+                  objectGet(funcObj, "denom", reaction->_interpolant[_ii].numDenom_, "-1");
+                  objectGet(funcObj, "coeff", reaction->_interpolant[_ii].coeff_);
+               }
+               reusingInterpolants = true;
+            }
+         }
+      }
+
+      if (!reusingInterpolants)
+      {
+      reaction->createInterpolants(_dt);
+
+      //save the interpolants
+      if (funcCount > 0 && getRank(0) == 0)
+      {
+         ofstream outfile((string(obj->name) +".fit.data").c_str());
+         outfile.precision(16);
+         fitName = string(obj->name) + "_fit";
+         outfile << obj->name << " REACTION { fit=" << fitName << "; }\n";
+         outfile << fitName << " FIT {\n";
+         outfile << "   functions = ";
+         for (int _ii=0; _ii<funcCount; _ii++) {
+            outfile << obj->name << "_interpFunc" << _ii << "_" << interpName[_ii] << " ";
+         }
+         outfile << ";\n";
+         outfile << "}\n";
+
+         for (int _ii=0; _ii<funcCount; _ii++)
+         {
+            outfile << obj->name << "_interpFunc" << _ii << "_" << interpName[_ii] << " FUNCTION { "
+                    << "numer=" << reaction->_interpolant[_ii].numNumer_ << "; "
+                    << "denom=" << reaction->_interpolant[_ii].numDenom_ << "; "
+                    << "coeff=";
+            for (int _jj=0; _jj<reaction->_interpolant[_ii].coeff_.size(); _jj++)
+            {
+               outfile << reaction->_interpolant[_ii].coeff_[_jj] << " ";
+            }
+            outfile << "; }\n";
+         }
+         outfile.close();
+      }
+      }
+#ifdef USE_CUDA
+      reaction->constructKernel();
+#endif
+      return reaction;
+   }
+#undef setDefault
 
 namespace Passive 
 {
 
-inline double pow(const double x, const int p)
-{
-   double ret=1;
-   if (p > 0) 
-   {
-      for (int ii=0; ii<p; ii++) 
-      {
-         ret *= x;
-      }
-   }
-   else
-   {
-      for (int ii=0; ii<-p; ii++) 
-      {
-         ret /= x;
-      }
-   }
-   return ret;
+void ThisReaction::createInterpolants(const double _dt) {
+
 }
+
+#ifdef USE_CUDA
+
+void generateInterpString(stringstream& ss, const Interpolation& interp, const char* interpVar)
+{
+   ss <<
+   "{\n"
+   "   const double _numerCoeff[]={";
+    for (int _ii=interp.numNumer_-1; _ii>=0; _ii--)
+   {
+      if (_ii != interp.numNumer_-1) { ss << ", "; }
+      ss << interp.coeff_[_ii];
+   }
+   ss<< "};\n"
+   "   const double _denomCoeff[]={";
+   for (int _ii=interp.numDenom_+interp.numNumer_-2; _ii>=interp.numNumer_; _ii--)
+   {
+      ss << interp.coeff_[_ii] << ", ";
+   }
+   ss<< "1};\n"
+   "   double _inVal = " << interpVar << ";\n"
+   "   double _numerator=_numerCoeff[0];\n"
+   "   for (int _jj=1; _jj<sizeof(_numerCoeff)/sizeof(_numerCoeff[0]); _jj++)\n"
+   "   {\n"
+   "      _numerator = _numerCoeff[_jj] + _inVal*_numerator;\n"
+   "   }\n"
+   "   if (sizeof(_denomCoeff)/sizeof(_denomCoeff[0]) == 1)\n"
+   "   {\n"
+   "      _ratPoly = _numerator;\n"
+   "   }\n"
+   "   else\n"
+   "   {\n"
+   "      double _denominator=_denomCoeff[0];\n"
+   "      for (int _jj=1; _jj<sizeof(_denomCoeff)/sizeof(_denomCoeff[0]); _jj++)\n"
+   "      {\n"
+   "         _denominator = _denomCoeff[_jj] + _inVal*_denominator;\n"
+   "      }\n"
+   "      _ratPoly = _numerator/_denominator;\n"
+   "   }\n"
+   "}"
+      ;
+}
+
+void ThisReaction::constructKernel()
+{
+
+   stringstream ss;
+   ss.precision(16);
+   ss <<
+   "enum StateOffset {\n"
+
+   "   NUMSTATES\n"
+   "};\n"
+   "extern \"C\"\n"
+   "__global__ void Passive_kernel(const double* _Vm, const double* _iStim, double* _dVm, double* _state) {\n"
+   "const double _dt = " << __cachedDt << ";\n"
+   "const int _nCells = " << nCells_ << ";\n"
+
+   "const double E_R = " << E_R << ";\n"
+   "const double G = " << G << ";\n"
+   "const int _ii = threadIdx.x + blockIdx.x*blockDim.x;\n"
+   "if (_ii >= _nCells) { return; }\n"
+   "const double V = _Vm[_ii];\n"
+   "double _ratPoly;\n"
+
+   "//get the gate updates (diagonalized exponential integrator)\n"
+   "//get the other differential updates\n"
+   "//get Iion\n"
+   "double Iion = G*(-E_R + V);\n"
+   "//Do the markov update (1 step rosenbrock with gauss siedel)\n"
+   "int _count=0;\n"
+   "do\n"
+   "{\n"
+   "   _count++;\n"
+   "} while (_count<50);\n"
+   "//EDIT_STATE\n"
+   "_dVm[_ii] = -Iion;\n"
+   "}\n";
+
+   _program_code = ss.str();
+   //cout << ss.str();
+   nvrtcCreateProgram(&_program,
+                      _program_code.c_str(),
+                      "Passive_program",
+                      0,
+                      NULL,
+                      NULL);
+   nvrtcCompileProgram(_program,
+                       0,
+                       NULL);
+   std::size_t size;
+   nvrtcGetPTXSize(_program, &size);
+   _ptx.resize(size);
+   nvrtcGetPTX(_program, &_ptx[0]);
+
+   cuModuleLoadDataEx(&_module, &_ptx[0], 0, 0, 0);
+   cuModuleGetFunction(&_kernel, _module, "Passive_kernel");
+}
+
+void ThisReaction::calc(double dt,
+                ro_mgarray_ptr<double> Vm_m,
+                ro_mgarray_ptr<double> iStim_m,
+                wo_mgarray_ptr<double> dVm_m)
+{
+   if (nCells_ == 0) { return; }
+   {
+      int errorCode=-1;
+      if (blockSize_ == -1) { blockSize_ = 1024; }
+      while(1)
+      {
+         const double* VmRaw = Vm_m.useOn(GPU).raw();
+         const double* iStimRaw = iStim_m.useOn(GPU).raw();
+         double* dVmRaw = dVm_m.useOn(GPU).raw();
+         double* stateRaw= stateTransport_.readwrite(GPU).raw();
+         void* args[] = { &VmRaw,
+                          &iStimRaw,
+                          &dVmRaw,
+                          &stateRaw};
+         int errorCode = cuLaunchKernel(_kernel,
+                                        (nCells_+blockSize_-1)/blockSize_, 1, 1,
+                                        blockSize_,1,1,
+                                        0, NULL,
+                                        args, 0);
+         if (errorCode == CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES && blockSize_ > 0)
+         {
+            blockSize_ /= 2;
+            continue;
+         }
+         else if (errorCode != CUDA_SUCCESS)
+         {
+            printf("Cuda return %d;\n", errorCode);
+            assert(0 && "Launch failed");
+         }
+         else
+         {
+            break;
+         }
+         //cuCtxSynchronize();
+      }
+   }
+}
+
+enum StateOffset {
+   NUMSTATES
+};
+
+ThisReaction::ThisReaction(const int numPoints, const double __dt)
+: nCells_(numPoints)
+{
+   stateTransport_.resize(nCells_*NUMSTATES);
+   __cachedDt = __dt;
+   blockSize_ = -1;
+   _program = NULL;
+   _module = NULL;
+}
+
+ThisReaction::~ThisReaction() {
+   if (_program)
+   {
+      nvrtcDestroyProgram(&_program);
+      _program = NULL;
+   }
+   if (_module)
+   {
+      cuModuleUnload(_module);
+      _module = NULL;
+   }
+}
+
+#else //USE_CUDA
+
+#define width SIMDOPS_FLOAT64V_WIDTH
+#define real simdops::float64v
+#define load simdops::load
+
+ThisReaction::ThisReaction(const int numPoints, const double __dt)
+: nCells_(numPoints)
+{
+   state_.resize((nCells_+width-1)/width);
+   __cachedDt = __dt;
+}
+
+ThisReaction::~ThisReaction() {}
+
+void ThisReaction::calc(double _dt,
+                ro_mgarray_ptr<double> ___Vm,
+                ro_mgarray_ptr<double> ___iStim,
+                wo_mgarray_ptr<double> ___dVm)
+{
+   ro_array_ptr<double> __Vm = ___Vm.useOn(CPU);
+   ro_array_ptr<double> __iStim = ___iStim.useOn(CPU);
+   wo_array_ptr<double> __dVm = ___dVm.useOn(CPU);
+
+   //define the constants
+   for (unsigned __jj=0; __jj<(nCells_+width-1)/width; __jj++)
+   {
+      const int __ii = __jj*width;
+      //set Vm
+      const real V = load(&__Vm[__ii]);
+      const real iStim = load(&__iStim[__ii]);
+
+      //set all state variables
+      //get the gate updates (diagonalized exponential integrator)
+      //get the other differential updates
+      //get Iion
+      real Iion = G*(-E_R + V);
+      //Do the markov update (1 step rosenbrock with gauss siedel)
+      //EDIT_STATE
+      simdops::store(&__dVm.raw()[__ii],-Iion);
+   }
+}
+#endif //USE_CUDA
    
 string ThisReaction::methodName() const
 {
    return "Passive";
 }
-const char** varNames=NULL;
-#define NUMVARS 0
 
-int getVarOffset(const std::string& varName)
+void ThisReaction::initializeMembraneVoltage(wo_mgarray_ptr<double> __Vm_m)
 {
-   for (int ivar=0; ivar<NUMVARS; ivar++) 
+   assert(__Vm_m.size() >= nCells_);
+
+   wo_array_ptr<double> __Vm = __Vm_m.useOn(CPU);
+#ifdef USE_CUDA
+#define READ_STATE(state,index) (stateData[_##state##_off*nCells_+index])
+   wo_array_ptr<double> stateData = stateTransport_.useOn(CPU);
+#else //USE_CUDA
+#define READ_STATE(state,index) (state_[index/width].state[index % width])
+   state_.resize((nCells_+width-1)/width);
+#endif //USE_CUDA
+
+
+   double V_init = E_R;
+   double V = V_init;
+   for (int iCell=0; iCell<nCells_; iCell++)
    {
-      if (string(varNames[ivar]) == varName) 
-      {
-         return ivar;
-      }
    }
-   assert(0 && "Control should never get here.");
-   return -1;
+
+   __Vm.assign(__Vm.size(), V_init);
 }
 
-void assertStateOrderAndVarNamesAgree(void)
+enum varHandles
 {
-   State s;
-#define checkVarOrder(x) assert(reinterpret_cast<double*>(&s)+getVarOffset(#x) == &s . x)
-
-   int STATIC_ASSERT_checkAllDouble[(NUMVARS == sizeof(s)/sizeof(double))? 1: 0];
-
-   //EDIT_STATE
-}
-
-   
-ThisReaction::ThisReaction(const int numPoints)
-: nCells_(numPoints)
-{
-   assertStateOrderAndVarNamesAgree();
-   state_.resize(nCells_);
-   perCellFlags_.resize(nCells_);
-   perCellParameters_.resize(nCells_);
-}
-
-
-void ThisReaction::updateNonGate(double dt, const VectorDouble32& Vm,VectorDouble32& dVm) {
-   vector<double> noop;
-   calc(dt,Vm,noop,dVm);
-}
-  
-void ThisReaction::calc(double dt, const VectorDouble32& Vm,
-                       const vector<double>& iStim , VectorDouble32& dVm)
-{
-   for (unsigned ii=0; ii<nCells_; ++ii)
-   {
-      const double v = Vm[ii];
-      dVm[ii] = -G*(v-E_R);      
-   }
-}
-
-void ThisReaction::initializeMembraneVoltage(VectorDouble32& Vm)
-{
-   assert(Vm.size() >= nCells_);
-   Vm.assign(Vm.size(), -85.0);
-   State initState;
-   //EDIT_STATE
-   state_.resize(nCells_);
-   state_.assign(state_.size(), initState);
-
-}
+   NUMHANDLES
+};
 
 const string ThisReaction::getUnit(const std::string& varName) const
 {
-   //deliberatly broken for now, if this code still is being used past 2016-11-01 something has gone wrong.
-   return "1";
+   if(0) {}
+   return "INVALID";
 }
 
-#define HANDLE_OFFSET 1000
 int ThisReaction::getVarHandle(const std::string& varName) const
 {
-   return getVarOffset(varName)+HANDLE_OFFSET;
+   if (0) {}
+   return -1;
 }
 
 void ThisReaction::setValue(int iCell, int varHandle, double value) 
 {
-   reinterpret_cast<double*>(&state_[iCell])[varHandle-HANDLE_OFFSET] = value;
+#ifdef USE_CUDA
+   auto stateData = stateTransport_.readwrite(CPU);
+#endif //USE_CUDA
+
+
+
+   if (0) {}
 }
 
 
 double ThisReaction::getValue(int iCell, int varHandle) const
 {
-   return reinterpret_cast<const double*>(&state_[iCell])[varHandle-HANDLE_OFFSET];
+#ifdef USE_CUDA
+   auto stateData = stateTransport_.readonly(CPU);
+#endif //USE_CUDA
+
+
+   if (0) {}
+   return NAN;
+}
+
+double ThisReaction::getValue(int iCell, int varHandle, double V) const
+{
+#ifdef USE_CUDA
+   auto stateData = stateTransport_.readonly(CPU);
+#endif //USE_CUDA
+
+
+   if (0) {}
+   return NAN;
 }
 
 void ThisReaction::getCheckpointInfo(vector<string>& fieldNames,
                                      vector<string>& fieldUnits) const
 {
-   fieldNames.resize(NUMVARS);
-   fieldUnits.resize(NUMVARS);
-   for (int ivar=0; ivar<NUMVARS; ivar++) 
-   {
-      fieldNames[ivar] = varNames[ivar];
-      fieldUnits[ivar] = getUnit(fieldNames[ivar]);
-   }
+   fieldNames.clear();
+   fieldUnits.clear();
 }
 
 }

@@ -75,14 +75,15 @@ void ActivationAndRecoverySensor::print(double time, int loop)
 
 void ActivationAndRecoverySensor::eval(double time, int loop)
 {
+   ro_array_ptr<double> VmArray = vdata_.VmTransport_.useOn(CPU);
    for (unsigned ii=0; ii<nLocal_; ++ii)
    {
-      if (active_[ii] && vdata_.VmArray_[ii] < threshhold_ )
+      if (active_[ii] && VmArray[ii] < threshhold_ )
       {
          active_[ii] = false;
          recoveryTime_[ii].push_back(time);
       }
-      if (! active_[ii] && vdata_.VmArray_[ii] > threshhold_ )
+      if (! active_[ii] && VmArray[ii] > threshhold_ )
       {
          active_[ii] = true;
          activationTime_[ii].push_back(time);

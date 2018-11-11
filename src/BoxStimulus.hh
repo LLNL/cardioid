@@ -3,6 +3,7 @@
 
 #include "Stimulus.hh"
 #include "Pulse.hh"
+#include "lazy_array.hh"
 #include <string>
 
 class Anatomy;
@@ -25,12 +26,12 @@ class BoxStimulus : public Stimulus
    BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy,
                Pulse* pulse, const std::string& name);
    int subClassStim(double time,
-		    VectorDouble32& dVmDiffusion);
+		    rw_mgarray_ptr<double> dVmDiffusion);
    int nStim();
    
  private:
    Pulse* pulse_;
-   std::vector<int> stimList_;
+   lazy_array<int> stimListTransport_;
 };
 
 #endif

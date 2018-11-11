@@ -8,8 +8,6 @@
 #include <iostream>
 #include <mpi.h>
 
-using namespace std;
-
 class Anatomy;
 class PotentialData;
 
@@ -24,14 +22,14 @@ class MaxDVSensor : public Sensor
    void print(double time);
    int nLocal_;
    int myRank_;
-   ostream* os_;
+   std::ostream* os_;
    bool opened_file_;
 
  public:
    MaxDVSensor(const SensorParms& sp, const Anatomy& anatomy, const PotentialData& vdata, 
-               MPI_Comm comm, ostream* os= &std::cout);
+               MPI_Comm comm, std::ostream* os= &std::cout);
    MaxDVSensor(const SensorParms& sp, const Anatomy& anatomy, const PotentialData& vdata, 
-               MPI_Comm comm, string& filename);
+               MPI_Comm comm, std::string& filename);
    ~MaxDVSensor()
    {
       if( opened_file_ )delete os_;

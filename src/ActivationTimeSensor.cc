@@ -98,10 +98,11 @@ void ActivationTimeSensor::print(double time, int loop)
 
 void ActivationTimeSensor::eval(double time, int loop)
 {
+   ro_array_ptr<double> VmArray = vdata_.VmTransport_.useOn(CPU);
    for (unsigned ii=0; ii<nLocal_; ++ii)
    {
       if (activated_[ii]) continue;
-      if ( vdata_.VmArray_[ii] > 0 )
+      if (VmArray[ii] > 0 )
       {
          activated_[ii] = true;
          activationTime_[ii] = time;

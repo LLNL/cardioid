@@ -7,16 +7,14 @@
 #include <fstream>
 #include "Long64.hh"
 
-using namespace std;
-
 class Anatomy;
 class PotentialData;
 
 struct PointListSensorParms
 {
-   vector<Long64> pointList;
-   string filename;
-   string dirname;
+   std::vector<Long64> pointList;
+   std::string filename;
+   std::string dirname;
    int printDerivs;
 };
 
@@ -34,9 +32,9 @@ class PointListSensor : public Sensor
    void print(double time);
    void printDerivs(double time);
 
-   vector<Long64> localCells_;  // grid gids owned by this task
-   vector<unsigned> sensorind_;      // corresponding local array index 
-   vector<ofstream*> fout_loc_;
+   std::vector<Long64> localCells_;  // grid gids owned by this task
+   std::vector<unsigned> sensorind_;      // corresponding local array index 
+   std::vector<std::ofstream*> fout_loc_;
    bool printDerivs_;
    
    const PotentialData& vdata_;

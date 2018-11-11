@@ -14,11 +14,12 @@ TestStimulus::TestStimulus(const TestStimulusParms& p, Pulse* pulse)
 }
 
 int TestStimulus::subClassStim(double time,
-                                VectorDouble32& dVmDiffusion)
+                               rw_mgarray_ptr<double> _dVmDiffusion)
 {
    if ( myRank_ != targetRank_ )
       return 0;
-   
+
+   rw_array_ptr<double> dVmDiffusion = _dVmDiffusion.useOn(CPU);
    dVmDiffusion[targetCell_] = pulse_->eval(time);
    return 1;
 }

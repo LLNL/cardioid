@@ -11,59 +11,47 @@
 
 using namespace std;
 
-
 ///pass through routines.
 void ReactionManager::calc(double dt,
-                           const VectorDouble32& Vm,
-                           const std::vector<double>& iStim,
-                           VectorDouble32& dVm)
+                           ro_mgarray_ptr<double> Vm,
+                           ro_mgarray_ptr<double> iStim,
+                           wo_mgarray_ptr<double> dVm)
 {
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
-      copy(&Vm[extents_[ii]], &Vm[extents_[ii+1]], &VmPerReaction_[ii][0]);
-      copy(&iStim[extents_[ii]], &iStim[extents_[ii+1]], &iStimPerReaction_[ii][0]);
-      reactions_[ii]->calc(dt, VmPerReaction_[ii], iStimPerReaction_[ii], dVmPerReaction_[ii]);
-      copy(&dVmPerReaction_[ii][0], &dVmPerReaction_[ii][extents_[ii+1]-extents_[ii]], &dVm[extents_[ii]]);
+      reactions_[ii]->calc(dt,
+                           Vm.slice(extents_[ii],extents_[ii+1]),
+                           iStim.slice(extents_[ii],extents_[ii+1]),
+                           dVm.slice(extents_[ii],extents_[ii+1]));
    }
 }
    
-void ReactionManager::updateNonGate(double dt, const VectorDouble32& Vm, VectorDouble32& dVR)
+void ReactionManager::updateNonGate(double dt, ro_mgarray_ptr<double> Vm, wo_mgarray_ptr<double> dVR)
 {
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
-      copy(&Vm[extents_[ii]], &Vm[extents_[ii+1]], &VmPerReaction_[ii][0]);
-      reactions_[ii]->updateNonGate(dt, VmPerReaction_[ii], dVmPerReaction_[ii]);
-      copy(&dVmPerReaction_[ii][0], &dVmPerReaction_[ii][extents_[ii+1]-extents_[ii]], &dVR[extents_[ii]]);
+      reactions_[ii]->updateNonGate(dt,
+                                    Vm.slice(extents_[ii], extents_[ii+1]),
+                                    dVR.slice(extents_[ii], extents_[ii+1]));
    }
-}
-void ReactionManager::updateGate(double dt, const VectorDouble32& Vm)
-{
-   for (int ii=0; ii<reactions_.size(); ++ii)
-   {
-      copy(&Vm[extents_[ii]], &Vm[extents_[ii+1]], &VmPerReaction_[ii][0]);
-      reactions_[ii]->updateGate(dt, VmPerReaction_[ii]);
-   }
-}
 
-void ReactionManager::scaleCurrents(std::vector<double> arg)
+}
+void ReactionManager::updateGate(double dt, ro_mgarray_ptr<double> Vm)
 {
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
-      reactions_[ii]->scaleCurrents(arg);
+      reactions_[ii]->updateGate(dt, Vm.slice(extents_[ii], extents_[ii+1]));
    }
 }
 
 /** Populates the Vm array with some sensible default initial
  * membrane voltage.  Vm will be the parallel to the local cells in
  * the anatomy that was used to create the concrete reaction class. */
-void ReactionManager::initializeMembraneState(VectorDouble32& Vm)
+void ReactionManager::initializeMembraneState(wo_mgarray_ptr<double> Vm)
 {
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
-      Reaction* reaction = reactions_[ii];
-      string objectName = objectNameFromRidx_[ii];
-      ::initializeMembraneState(reaction, objectName, VmPerReaction_[ii]);
-      copy(&VmPerReaction_[ii][0], &VmPerReaction_[ii][extents_[ii+1]-extents_[ii]], &Vm[extents_[ii]]);
+      ::initializeMembraneState(reactions_[ii], objectNameFromRidx_[ii], Vm.slice(extents_[ii],extents_[ii+1]));
    }
 }
 
@@ -108,7 +96,7 @@ class SortByRidxThenAnatomyThenGid {
    }
 };
 
-void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam &group, const std::vector<std::string>& scaleCurrents)
+void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam &group)
 {
    //construct an array of all the objects
    int numReactions=objectNameFromRidx_.size();
@@ -238,7 +226,7 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    vector<AnatomyCell>& cellArray(anatomy.cellArray());
    {
       set<int> missingReactions;
-      for (int icell=0; icell<cellArray.size(); icell++)
+      for (int icell=0; icell<anatomy.nLocal(); icell++)
       {
          if (allCellTypes_.find(cellArray[icell].cellType_) == allCellTypes_.end()) {
             missingReactions.insert(cellArray[icell].cellType_);
@@ -256,7 +244,7 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    //sort the anatomy in the correct order.
    {
       SortByRidxThenAnatomyThenGid cmpFunc(ridxFromCellType);
-      sort(cellArray.begin(),cellArray.end(), cmpFunc);
+      sort(cellArray.begin(),cellArray.begin()+anatomy.nLocal(), cmpFunc);
    }
       
    //count how many of each we have.
@@ -265,7 +253,7 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    {
       countFromRidx[ireaction] = 0;
    }
-   for (int icell=0; icell<cellArray.size(); ++icell)
+   for (int icell=0; icell<anatomy.nLocal(); ++icell)
    {
       const AnatomyCell& cell(cellArray[icell]);
       if (ridxFromCellType.find(cell.cellType_) != ridxFromCellType.end())
@@ -278,18 +266,12 @@ void ReactionManager::create(const double dt, Anatomy& anatomy, const ThreadTeam
    reactions_.resize(numReactions);
    extents_.resize(numReactions+1);
    extents_[0] = 0;
-   VmPerReaction_.resize(numReactions);
-   iStimPerReaction_.resize(numReactions);
-   dVmPerReaction_.resize(numReactions);
    for (int ireaction=0; ireaction<numReactions; ++ireaction)
    {
       int localSize = countFromRidx[ireaction];
       reactions_[ireaction] = reactionFactory(objectNameFromRidx_[ireaction], dt, localSize, group);
       extents_[ireaction+1] = extents_[ireaction]+localSize;
       int bufferSize = convertActualSizeToBufferSize(localSize);
-      VmPerReaction_[ireaction].resize(bufferSize);
-      iStimPerReaction_[ireaction].resize(bufferSize);
-      dVmPerReaction_[ireaction].resize(bufferSize);
    }
 
    //Ok, now we've created the reaction objects.  Now we need to

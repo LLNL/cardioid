@@ -8,8 +8,6 @@
 #include <iostream>
 #include <mpi.h>
 
-using namespace std;
-
 class Anatomy;
 class PotentialData;
 

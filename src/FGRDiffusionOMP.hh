@@ -1,5 +1,5 @@
 #ifndef FGRDIFFUSION_OMP_HH
-#define FGRDIFFUSION_OPM_HH
+#define FGRDIFFUSION_OMP_HH
 
 #include "Diffusion.hh"
 #include "LocalGrid.hh"
@@ -17,9 +17,9 @@ class FGRDiffusionOMP : public Diffusion
       const FGRUtils::FGRDiffusionParms& parms,
       const Anatomy& anatomy);
    
-   void updateLocalVoltage(const double* VmLocal);
-   void updateRemoteVoltage(const double* VmRemote);
-   void calc(VectorDouble32& dVm);
+   void updateLocalVoltage(ro_larray_ptr<double> VmLocal);
+   void updateRemoteVoltage(ro_larray_ptr<double> VmRemote);
+   void calc(rw_larray_ptr<double> dVm);
 
  private:
    void buildTupleArray(const Anatomy& anatomy);

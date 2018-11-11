@@ -86,9 +86,10 @@ FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
 }
 
 
-void FGRDiffusionThreads::updateLocalVoltage(const double* VmLocal)
+void FGRDiffusionThreads::updateLocalVoltage(const Managed<ArrayView<double>> VmLocal_managed)
 {
    startTimer(FGR_ArrayLocal2MatrixTimer);
+   ConstArrayView<double> VmLocal = VmLocal_managed;
    int tid = reactionThreadInfo_.teamRank();
    unsigned begin = localCopyOffset_[tid];
    unsigned end   = localCopyOffset_[tid+1];
@@ -100,9 +101,10 @@ void FGRDiffusionThreads::updateLocalVoltage(const double* VmLocal)
    stopTimer(FGR_ArrayLocal2MatrixTimer);
 }
 
-void FGRDiffusionThreads::updateRemoteVoltage(const double* VmRemote)
+void FGRDiffusionThreads::updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote_managed)
 {
    startTimer(FGR_ArrayRemote2MatrixTimer);
+   ConstArrayView<double> VmRemote = VmRemote_managed;
    int tid = threadInfo_.teamRank();
    unsigned begin = remoteCopyOffset_[tid];
    unsigned end   = remoteCopyOffset_[tid+1];
@@ -118,7 +120,7 @@ void FGRDiffusionThreads::updateRemoteVoltage(const double* VmRemote)
 
 
 
-void FGRDiffusionThreads::calc(VectorDouble32& dVm)
+void FGRDiffusionThreads::calc(Managed<ArrayView<double>> dVm_managed)
 {
    startTimer(FGR_StencilTimer);
 

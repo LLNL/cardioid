@@ -144,8 +144,8 @@ namespace
       objectGet(obj, "maxVoronoiSteps", kp.maxVoronoiSteps, "50");
       objectGet(obj, "maxSteps",        kp.maxSteps,        "500");
       objectGet(obj, "outputRate",      kp.outputRate,      "-1");
-      objectGet(obj, "alpha",           kp.alpha,           "0.05");
-      objectGet(obj, "tolerance",       kp.tolerance,       "0.01");
+      objectGet(obj, "alphaStep",       kp.alphaStep,       "0.01");
+      objectGet(obj, "tolerance",       kp.tolerance,       "0.03");
       objectGet(obj, "nbrDeltaR",       kp.nbrDeltaR,       "2");
       
       kp.nCentersPerTask = nCenters/nTasks;

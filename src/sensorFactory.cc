@@ -125,8 +125,10 @@ Sensor* sensorFactory(const std::string& name, const Simulate& sim)
      return scanActivationAndRecoverySensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "averageCa")
      return scanCaSensor(obj, sp, sim.anatomy_,*sim.reaction_, sim);
+#ifdef USE_CUDA
   else if (method == "ECG")
      return scanECGSensor(obj, sp, sim);
+#endif
   else if (method == "maxDV")
      return scanMaxDvSensor(obj, sp, sim.anatomy_,sim.vdata_);
   else if (method == "DVThresh")
@@ -387,16 +389,33 @@ namespace
       return new StateVariableSensor(sp, p, sim);      
    }
 }
+#ifdef USE_CUDA
 namespace
 {
    Sensor* scanECGSensor(OBJECT* obj, const SensorParms& sp, const Simulate& sim)
    {
       ECGSensorParms p;
       objectGet(obj, "filename",      p.filename,      "ecgData");
-      objectGet(obj, "stencilSize",   p.stencilSize,   "4");
-      objectGet(obj, "nSensorPoints", p.nSensorPoints, "4");
+      //objectGet(obj, "stencilSize",   p.stencilSize,   "4");
+      //objectGet(obj, "nSensorPoints", p.nSensorPoints, "4");
       objectGet(obj, "nFiles",        p.nFiles,        "0");
+      objectGet(obj, "kconst",        p.kconst,        "0.8");
+      std::vector<std::string> ecgNames;
+      objectGet(obj, "ecgPoints",     ecgNames);
+      
+      p.nSensorPoints=ecgNames.size();
+      const int dim=3;
+      p.ecgPoints.resize(p.nSensorPoints*dim, 0.0);
+      p.ecgNames = ecgNames;
+      
+      for(int i=0; i<ecgNames.size(); ++i){
+          OBJECT* ecgObj = objectFind(ecgNames[i], "POINT");
+          objectGet(ecgObj, "x",      p.ecgPoints[i*dim],        "0.0");
+          objectGet(ecgObj, "y",      p.ecgPoints[i*dim+1],      "0.0");
+          objectGet(ecgObj, "z",      p.ecgPoints[i*dim+2],      "0.0");
+          
+      }
       return new ECGSensor(sp, p, sim);      
    }
 }
-
+#endif

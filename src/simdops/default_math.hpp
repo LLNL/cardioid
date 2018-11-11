@@ -19,9 +19,21 @@ inline float64v name(const float64v x)                  \
 }
 
 expandMathFunc(exp)
-expandMathFunc(expm1)
+//expandMathFunc(expm1)
 expandMathFunc(log)
 expandMathFunc(sqrt)
+#undef expandMathFunc
+
+inline float64v pow(const float64v x, double y)
+{
+   double el[SIMDOPS_FLOAT64V_WIDTH];
+   store(el, x);
+   for (int ii=0; ii<SIMDOPS_FLOAT64V_WIDTH; ii++) {
+      el[ii] = std::pow(el[ii],y);
+   }
+   float64v whole = load(el);
+   return whole;
+}
 
 }
 

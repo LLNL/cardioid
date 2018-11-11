@@ -1,7 +1,7 @@
 #ifndef STIMULUS_HH
 #define STIMULUS_HH
 
-#include "VectorDouble32.hh"
+#include "lazy_array.hh"
 
 struct StimulusBaseParms
 {
@@ -19,7 +19,7 @@ class Stimulus
    virtual ~Stimulus(){};
    /** Returns non-zero if stimulus was "on" */ 
    int stim(double time,
-            VectorDouble32& dVmDiffusion)
+            rw_mgarray_ptr<double> dVmDiffusion)
    {
       if (time > t0_ && time < tf_)
 	 return subClassStim(time, dVmDiffusion);
@@ -27,7 +27,7 @@ class Stimulus
    }
 
    virtual int subClassStim(double time,
-                            VectorDouble32& dVmDiffusion) = 0;
+                            rw_mgarray_ptr<double> dVmDiffusion) = 0;
 
    virtual int nStim() = 0;
 

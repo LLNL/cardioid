@@ -23,8 +23,9 @@ PointStimulus::PointStimulus(const PointStimulusParms& p,
 }
 
 int PointStimulus::subClassStim(double time,
-                                VectorDouble32& dVmDiffusion)
+                                rw_mgarray_ptr<double> _dVmDiffusion)
 {
+   rw_array_ptr<double> dVmDiffusion = _dVmDiffusion.useOn(CPU);
    if (cellLocal_)
    {
       dVmDiffusion[localInd_] += pulse_->eval(time);

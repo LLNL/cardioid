@@ -29,6 +29,8 @@ inline native_vector_type neq(const native_vector_type a, const native_vector_ty
 inline native_vector_type b_and(const native_vector_type a, const native_vector_type b) { return _mm256_and_pd(a,b); }
 inline native_vector_type b_or(const native_vector_type a, const native_vector_type b) { return _mm256_or_pd(a,b); }
 inline native_vector_type b_not(const native_vector_type a) { return _mm256_xor_pd(a,eq(a,a)); }
+
+inline bool any(const native_vector_type a) {return _mm256_movemask_pd(a); }
    
 /*
 inline double extract(const native_vector_type a, const int k)

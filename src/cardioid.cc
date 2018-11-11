@@ -8,6 +8,10 @@
 #include <mpi.h>
 #include <cstdlib>
 #include <sstream>
+#ifdef USE_CUDA
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
 
 #include "Simulate.hh"
 #include "PerformanceTimers.hh"
@@ -68,6 +72,14 @@ int main(int argc, char** argv)
    MPI_Comm_size(MPI_COMM_WORLD, &npes);
    MPI_Comm_rank(MPI_COMM_WORLD, &mype);  
 
+#ifdef USE_CUDA
+   //FIXME!!! Have to figure out a better way to do binding!
+   cudaSetDevice(mype % 4);
+   // A ugly way to trigger the default CUDA context
+   int *d_i;
+   cudaMalloc(&d_i, sizeof(int));
+   cudaFree(d_i);
+#endif
    // See units above.
    units_internal(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
    units_external(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
@@ -81,6 +93,7 @@ int main(int argc, char** argv)
    if (mype == 0)
      printBanner();
    parseCommandLineAndReadInputFile(argc, argv, MPI_COMM_WORLD);
+
    
    timestampBarrier("Starting initializeSimulate", MPI_COMM_WORLD);
    Simulate sim;
@@ -118,35 +131,35 @@ int main(int argc, char** argv)
    //MPI_Pcontrol(0);
 
    profileStop("Total");
-   profileSetRefTimer("00:Loop");
-
-   profileSetPrintOrder("Total");
-   profileSetPrintOrder("Assignment");
-   profileSetPrintOrder("Loop");
-   profileSetPrintOrder("parallelDiffReac");
-   profileSetPrintOrder("DiffusionLoop");
-   profileSetPrintOrder("ReactionLoop");
-   profileSetPrintOrder("Dummy");
-   profileSetPrintOrder("HaloExchMove2Buf");
-   profileSetPrintOrder("Integrator");
-   profileSetPrintOrder("ReactionWait");
-   profileSetPrintOrder("reactionL2Arrive");
-   profileSetPrintOrder("reactionL2Rest");
-   profileSetPrintOrder("Reaction");
-   profileSetPrintOrder("Reaction_nonGate");
-   profileSetPrintOrder("GateNonGateBarrier");
-   profileSetPrintOrder("Reaction_Gate");
+   //profileSetRefTimer("00:Loop");
+   //profileSetPrintOrder("Total");
+   //profileSetPrintOrder("Assignment");
+   //profileSetPrintOrder("Loop");
+   //profileSetPrintOrder("parallelDiffReac");
+   //profileSetPrintOrder("DiffusionLoop");
+   //profileSetPrintOrder("ReactionLoop");
+   //profileSetPrintOrder("Dummy");
+   //profileSetPrintOrder("HaloExchange");
+   //profileSetPrintOrder("HaloExchMove2Buf");
+   //profileSetPrintOrder("Integrator");
+   //profileSetPrintOrder("ReactionWait");
+   //profileSetPrintOrder("reactionL2Arrive");
+   //profileSetPrintOrder("reactionL2Rest");
+   //profileSetPrintOrder("Reaction");
+   //profileSetPrintOrder("Reaction_nonGate");
+   //profileSetPrintOrder("GateNonGateBarrier");
+   //profileSetPrintOrder("Reaction_Gate");
 
    //profileSetPrintOrder("");
    if (mype == 0)
    {
-      profileDumpTimes(cout);
-      cout << "\n" << endl;
+      //profileDumpTimes(cout);
+      //cout << "\n" << endl;
    }
-   profileDumpStats(cout);
+   //profileDumpStats(cout);
    stringstream dirname;
    dirname << "snapshot."<<setfill('0')<<setw(12)<<sim.loop_;
-   profileDumpAll(dirname.str());
+   //profileDumpAll(dirname.str());
    heap_deallocate();
    MPI_Finalize();
    

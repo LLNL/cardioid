@@ -168,7 +168,7 @@ UPDATEGATE updateGateFuncs1[]={ update_mGate_v1, update_hGate_v1, update_jGate_v
 */
 void updateGateFast(double dt, int nCellsTotal, int s_switch, double *Vm, int offset, double **gate, PADE *fit,  WORK &work)
 {
-#ifdef BGQ
+#if 0
      UPDATEGATE updateGateFuncs[]={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, 
                                     update_rGate_v1, update_dGate_v1, update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, 
                                     update_s0Gate_v1,update_s1Gate_v1} ;
@@ -212,7 +212,7 @@ void updateGateFast(double dt, int nCellsTotal, int s_switch, double *Vm, int of
 }
 void updateGateFast0(double dt, int nCellsTotal, int *cellTypeVector, double *Vm, int offset, double **gate, PADE *fit,  WORK &work)
 {
-#ifdef BGQ
+#if 0
      UPDATEGATE updateGateFuncs[]={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, 
                                     update_rGate_v1, update_dGate_v1, update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, update_s0Gate_v1} ;
 #else
@@ -236,7 +236,7 @@ void updateGateFast0(double dt, int nCellsTotal, int *cellTypeVector, double *Vm
 }
 void updateGateFast1(double dt, int nCellsTotal, int *cellTypeVector, double *Vm, int offset, double **gate, PADE *fit,  WORK &work)
 {
-#ifdef BGQ
+#if 0
      UPDATEGATE updateGateFuncs[]={ update_mGate_v1, update_hGate_v1, update_jGate_v1, update_Xr1Gate_v1, update_Xr2Gate_v1, update_XsGate_v1, 
                                     update_rGate_v1, update_dGate_v1, update_fGate_v1, update_f2Gate_v1,  update_jLGate_v1, update_s1Gate_v1} ;
 #else

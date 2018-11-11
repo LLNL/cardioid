@@ -1,5 +1,5 @@
 
-void updateFunction(void *fit, CURRENT_SCALES *currentScales, double dt, struct CellTypeParms *cellTypeParms,int nCells, double *VM, int offset, double **state, double *dVdt)
+void updateFunction(void *fit, double dt, struct CellTypeParms *cellTypeParms,int nCells, double *VM, int offset, double **state, double *dVdt)
 {
 
   typedef vector4double vdt;
@@ -52,20 +52,20 @@ void updateFunction(void *fit, CURRENT_SCALES *currentScales, double dt, struct 
   vdt v_dt =  vec_splats(dt);
 
 
-   double c_K1  = currentScales->K1;        // done
-   double c_Na  = currentScales->Na *SP[20];  //done
-   double c_bNa = currentScales->bNa*SP[21];   //done
-   double c_CaL = currentScales->CaL;          //done
-   double c_bCa = currentScales->bCa*SP[5];    //done
-   double c_NaCa= currentScales->NaCa;         //done
-   double c_pCa = currentScales->pCa*SP[6];    // done
-   double c_pK  = currentScales->pK;           // done
+   double c_K1  = 1;        // done
+   double c_Na  = 1 *SP[20];  //done
+   double c_bNa = 1 *SP[21];   //done
+   double c_CaL = 1;          //done
+   double c_bCa = 1*SP[5];    //done
+   double c_NaCa= 1;         //done
+   double c_pCa = 1*SP[6];    // done
+   double c_pK  = 1;           // done
 
-   vdt v_P_NaK   = vec_splats(currentScales->NaK*cellTypeParms->P_NaK);
-   vdt v_g_to    = vec_splats(currentScales->to *cellTypeParms->g_to); 
-   vdt v_g_Ks    = vec_splats(currentScales->Ks *cellTypeParms->g_Ks);
-   vdt v_g_Kr    = vec_splats(currentScales->Kr *cellTypeParms->g_Kr);
-   vdt v_g_NaL   = vec_splats(currentScales->NaL*cellTypeParms->g_NaL);
+   vdt v_P_NaK   = vec_splats(1*cellTypeParms->P_NaK);
+   vdt v_g_to    = vec_splats(1*cellTypeParms->g_to); 
+   vdt v_g_Ks    = vec_splats(1 *cellTypeParms->g_Ks);
+   vdt v_g_Kr    = vec_splats(1 *cellTypeParms->g_Kr);
+   vdt v_g_NaL   = vec_splats(1 *cellTypeParms->g_NaL);
 
    vdt v_ONE = vec_splats(1.0);
 

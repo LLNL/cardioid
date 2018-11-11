@@ -12,18 +12,6 @@
 #include "object_cc.hh"
 #include "ioUtils.h"
 #include "mpiUtils.h"
-
-#include "TT04_CellML_Reaction.hh" // TT04 implementation from CellML (Nov 2011)
-#include "TT06_CellML_Reaction.hh" // TT06 implementation from CellML (Nov 2011)
-#include "TT06Dev_Reaction.hh"
-#include "pade.hh"
-#include "TT06_RRG_Reaction.hh"    // TT06 with modifications from Rice et al.
-#include "OHaraRudy_Reaction.hh"    // OHara Rudy .
-//#include "Grandi_Reaction.hh"      // Grandi
-#include "ReactionFHN.hh"
-#include "NullReaction.hh"
-#include "TestReaction.hh"
-#include "ConstantReaction.hh"
 #include "ThreadServer.hh"
 #include "Anatomy.hh"
 #include "string.h"

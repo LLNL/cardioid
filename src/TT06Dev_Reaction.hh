@@ -42,12 +42,15 @@ class TT06Dev_Reaction : public Reaction
    TT06Dev_Reaction& operator=(const TT06Dev_Reaction&);
    ~TT06Dev_Reaction();
 
-   void updateNonGate(double dt, const VectorDouble32&Vm, VectorDouble32&dVR);
-   void updateGate   (double dt, const VectorDouble32&Vm) ;
-   void calc(double dt, const VectorDouble32& Vm, const std::vector<double>& iStim, VectorDouble32& dVm);
-   void initializeMembraneVoltage(VectorDouble32& Vm);
+   void calc(double dt,
+             ro_mgarray_ptr<double> Vm,
+             ro_mgarray_ptr<double> iStim,
+             wo_mgarray_ptr<double> dVm);
+   void updateNonGate(double dt, ro_mgarray_ptr<double> Vm, wo_mgarray_ptr<double> dVR);
+   void updateGate   (double dt, ro_mgarray_ptr<double> Vm);
+   void initializeMembraneVoltage(wo_mgarray_ptr<double> Vm);
+
    void writeStateDev(int loop);
-   void scaleCurrents(std::vector<double>);
 
    /** Support for checkpoint/restart */
    void getCheckpointInfo(std::vector<std::string>& fieldNames,
@@ -69,13 +72,11 @@ class TT06Dev_Reaction : public Reaction
    CellTypeParms cellTypeParm_;
    double XXXinitialVm_;
    int nCells_;
-   CURRENT_SCALES currentScales_; 
-   std::vector<int> currentMap_; 
 
    std::vector<double> XXXstateInitial_;
 
    void (*update_gate_)   (double dt,                                      int nCells, int s_switch, double *Vm, int offset, double **state, PADE* xfit, TT06Func::WORK& work);
-   void (*update_nonGate_)(void *fit, CURRENT_SCALES *, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *Vm, int offset, double **state, double *dVdt);
+   void (*update_nonGate_)(void *fit, double dt, struct CellTypeParms *cellTypeParms, int nCells, double *Vm, int offset, double **state, double *dVdt);
    int nonGateWorkPartition_(int& offset);
    void mkCellTypeParms_(TT06Dev_ReactionParms& parms);
    void mkState_(TT06Dev_ReactionParms& parms);

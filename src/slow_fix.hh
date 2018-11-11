@@ -70,9 +70,4 @@ convertActualSizeToBufferSize(int localSize) {
       return paddedSize;
 }
 
-
-#ifndef PRINT_WP
-#define PRINT_WP 0
-#endif
-
 #endif

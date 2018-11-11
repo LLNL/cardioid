@@ -8,7 +8,7 @@
 using namespace std;
 
 ConstantReaction::ConstantReaction(const Anatomy& anatomy,
-                 const vector<double>& eta,
+                 const std::vector<double>& eta,
                  const SymmetricTensor& sigma1,
                  const SymmetricTensor& sigma2,
                  const SymmetricTensor& sigma3,
@@ -26,19 +26,16 @@ ConstantReaction::ConstantReaction(const Anatomy& anatomy,
 }
 
 void ConstantReaction::calc(double dt,
-                         const VectorDouble32& Vm,
-                         const vector<double>& iStim,
-                         VectorDouble32& dVm)
+                            ro_larray_ptr<double> Vm,
+                            ro_larray_ptr<double> iStim,
+                            wo_larray_ptr<double> dVm)
 {
    assert( cellModel_!=0 );
+   ContextRegion region(CPU);
+   Vm.use();
+   iStim.use();
+   dVm.use();
    
-   static int count = 0;
-   
-   if( printRate_>0 )
-   if( count % printRate_ == 0)
-      compareWithExactSol(Vm);
-   count++;
-
    //double sum=0.;
    for (unsigned ii=0; ii<anatomy_.nLocal(); ++ii)
    {
@@ -46,57 +43,16 @@ void ConstantReaction::calc(double dt,
       const double x=((double)globalTuple.x()+0.5)*anatomy_.dx();
       const double y=((double)globalTuple.y()+0.5)*anatomy_.dy();
       const double z=((double)globalTuple.z()+0.5)*anatomy_.dz();
-      dVm[ii] = cellModel_->calc(x,y,z);
-       
-      assert( dVm[ii]==dVm[ii] ); // test for nan
+      double update = cellModel_->calc(x,y,z);
+      assert(update ==update); //test for nan
+      dVm[ii] = update;
    }
 }
 
-void ConstantReaction::compareWithExactSol(const VectorDouble32& Vm)const
+void ConstantReaction::initializeMembraneVoltage(wo_larray_ptr<double> Vm)
 {
-   const double alpha=cellModel_->getAlpha();
-   const double beta =cellModel_->getBeta();
-   const double gamma=cellModel_->getGamma();
-
-   double avg1=0.;
-   double avg2=0.;
-   for (unsigned ii=0; ii<anatomy_.nLocal(); ++ii)
-   {
-      Tuple globalTuple = anatomy_.globalTuple(ii);
-      const double x=((double)globalTuple.x()+0.5)*anatomy_.dx();
-      const double y=((double)globalTuple.y()+0.5)*anatomy_.dy();
-      const double z=((double)globalTuple.z()+0.5)*anatomy_.dz();
-      avg1+=alpha*x+beta*y+gamma*z;
-      avg2+=Vm[ii];
-   }
-   double tmp=0.;
-   MPI_Allreduce(&avg1,&tmp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-   avg1=tmp/anatomy_.nGlobal();
-   MPI_Allreduce(&avg2,&tmp, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-   avg2=tmp/anatomy_.nGlobal();
-
-
-   double diff2=0.;
-   for (unsigned ii=0; ii<anatomy_.nLocal(); ++ii)
-   {
-      Tuple globalTuple = anatomy_.globalTuple(ii);
-      const double x=((double)globalTuple.x()+0.5)*anatomy_.dx();
-      const double y=((double)globalTuple.y()+0.5)*anatomy_.dy();
-      const double z=((double)globalTuple.z()+0.5)*anatomy_.dz();
-      const double diff = Vm[ii]-avg2 - (alpha*x+beta*y+gamma*z-avg1);
-      diff2+=diff*diff;
-   }
-   double gdiff2=0.;
-   MPI_Allreduce(&diff2,&gdiff2, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-   int myRank;
-   MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-   gdiff2=sqrt(gdiff2/anatomy_.nGlobal());
-   if( myRank==0 )
-      cout<<"Diff. with exact solution = "<<gdiff2<<endl;
-}
-
-void ConstantReaction::initializeMembraneVoltage(VectorDouble32& Vm)
-{
+   ContextRegion region(CPU);
+   Vm.use();
 #if 0
    for (unsigned ii=0; ii<Vm.size(); ++ii)
       Vm[ii] = 0.;
@@ -133,7 +89,7 @@ double ConstantReaction::getValue(int iCell, int handle) const
    return alpha*x+beta*y+gamma*z;
 }
 
-int ConstantReaction::getVarHandle(const string& varName) const
+int ConstantReaction::getVarHandle(const std::string& varName) const
 {
    return -1;
 }

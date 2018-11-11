@@ -1,7 +1,7 @@
 #ifndef DIFFUSION_HH
 #define DIFFUSION_HH
 
-#include "VectorDouble32.hh"
+#include "lazy_array.hh"
 
 /**
  *  We have managed to do something exceptionally stupid in this class.
@@ -19,17 +19,23 @@
 class Diffusion
 {
  public:
+   inline Diffusion(double newDiffusionScale=0) : diffusionScale_(newDiffusionScale) {}
    virtual ~Diffusion(){};
-   virtual void updateLocalVoltage(const double* VmLocal) = 0;
-   virtual void updateRemoteVoltage(const double* VmRemote) = 0;
-   virtual void calc(VectorDouble32& dVm) = 0;
-   virtual void calc_overlap(VectorDouble32& dVm) {};
+   virtual void updateLocalVoltage(ro_mgarray_ptr<double> VmLocal) = 0;
+   virtual void updateRemoteVoltage(ro_mgarray_ptr<double> VmRemote) = 0;
+   virtual void calc(rw_mgarray_ptr<double> dVm) = 0;
+   virtual void calc_overlap(rw_mgarray_ptr<double> dVm) {};
    virtual unsigned* blockIndex(){return 0;}
    virtual double* VmBlock(){return 0;}
    virtual double* dVmBlock(){return 0;}
-   virtual double diffusionScale(){return 1;}
+   virtual double diffusionScale(){return diffusionScale_;}
+   virtual void setDiffusionScale(double newDiffusionScale) { diffusionScale_ = newDiffusionScale; }
    virtual void  dump_VmBlock(int tmp){;}
    virtual void test() {return;};
+
+ protected:
+   double diffusionScale_;
+   
 };
 
 #endif

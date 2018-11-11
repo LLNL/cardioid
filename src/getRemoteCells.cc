@@ -61,10 +61,21 @@ void getRemoteCells(Simulate& sim, const string& name, MPI_Comm comm)
 
    HaloExchange<AnatomyCell> cellExchange(sim.sendMap_, (sim.commTable_));
 
-   size_t oldSize = anatomy.size();
-   cellExchange.execute(anatomy.cellArray(), anatomy.nLocal());
-   anatomy.nRemote() = anatomy.size() - oldSize;
-//   dumpCells(anatomy);
+   int recvBuffSize=cellExchange.recvSize(); 
+   int nRemote = recvBuffSize;
+   int nLocal = anatomy.nLocal();
+   {
+      lazy_array<AnatomyCell> lzCells;
+      lzCells.resize(nLocal+nRemote);
+      wo_array_ptr<AnatomyCell> wo_ptr = lzCells.writeonly(CPU);
+      copy(anatomy.cellArray().begin(), anatomy.cellArray().end(), wo_ptr.begin());
+      cellExchange.execute(lzCells, nLocal);
+
+      anatomy.cellArray().resize(lzCells.size());
+      ro_array_ptr<AnatomyCell> ro_ptr = lzCells.readonly(CPU);
+      copy(ro_ptr.begin(), ro_ptr.end(), anatomy.cellArray().begin());
+   }
+   anatomy.nRemote() = nRemote;
 
    OBJECT* obj = object_find(name.c_str(), "DECOMPOSITION");
    bool printStats;

@@ -23,9 +23,9 @@ class FGRDiffusionThreads : public Diffusion
       const ThreadTeam& threadInfo,
       const ThreadTeam& reactionThreadInfo);
    
-   void updateLocalVoltage(const double* VmLocal);
-   void updateRemoteVoltage(const double* VmRemote);
-   void calc(VectorDouble32& dVm);
+   void updateLocalVoltage(ro_larray_ptr<double> VmLocal);
+   void updateRemoteVoltage(ro_larray_ptr<double> VmRemote);
+   void calc(rw_larray_ptr<double> dVm);
    unsigned* blockIndex(){return &blockIndex_[0];}
    double* VmBlock(){return VmBlock_.cBlock();}
    double* dVmBlock(){return dVmBlock_.cBlock();}

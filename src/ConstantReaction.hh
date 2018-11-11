@@ -9,7 +9,7 @@ class ConstantReaction : public Reaction
 {
  public:
    ConstantReaction(const Anatomy& anatomy,
-                 const vector<double>& eta,
+                 const std::vector<double>& eta,
                  const SymmetricTensor& sigma1,
                  const SymmetricTensor& sigma2,
                  const SymmetricTensor& sigma3,
@@ -20,20 +20,18 @@ class ConstantReaction : public Reaction
    ~ConstantReaction(){};
    std::string methodName() const {return "Constant";}
 
-   void calc(double dt,
-             const VectorDouble32& Vm,
-             const std::vector<double>& iStim,
-             VectorDouble32& dVm);
-   void initializeMembraneVoltage(VectorDouble32& Vm);
+   virtual void calc(double dt,
+                     ro_larray_ptr<double> Vm,
+                     ro_larray_ptr<double> iStim,
+                     wo_larray_ptr<double> dVm);
+   virtual void initializeMembraneVoltage(wo_larray_ptr<double> Vm);
    double getValue(int iCell, int handle) const;
-   int getVarHandle(const string& varName) const;
+   int getVarHandle(const std::string& varName) const;
 
  private:
    const Anatomy& anatomy_;
    ConstantModel* cellModel_;
    int printRate_;
-
-   void compareWithExactSol(const VectorDouble32& Vm)const;
 };
 
 #endif

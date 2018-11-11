@@ -19,10 +19,10 @@ class NullReaction : public Reaction
    std::string methodName() const {return "null";}
 
    void calc(double dt,
-             const VectorDouble32& Vm,
-             const std::vector<double>& iStim,
-             VectorDouble32& dVm){};
-   void initializeMembraneVoltage(VectorDouble32& Vm)
+             const Managed<ArrayView<double>> Vm,
+             const Managed<ArrayView<double>> iStim,
+             Managed<ArrayView<double>> dVm) {}
+   void initializeMembraneVoltage(ArrayView<double> Vm)
    {
       for (unsigned ii=0; ii<Vm.size(); ++ii)
          Vm[ii] = V0_;

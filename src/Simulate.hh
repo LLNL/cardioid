@@ -12,6 +12,7 @@
 #include "ThreadServer.hh"
 #include "VectorDouble32.hh"
 #include "slow_fix.hh"
+#include "lazy_array.hh"
 
 class Diffusion;
 class ReactionManager;
@@ -19,7 +20,7 @@ class Stimulus;
 class Sensor;
 class Drug;
 class CommTable;
-using std::isnan;
+//using std::isnan;
 
 // storage class for persistent data such as potentials that may 
 // need to be analyzed or printed out by sensors
@@ -34,24 +35,25 @@ class PotentialData
    
    void setup(const Anatomy& anatomy)
    {
-      VmArray_     = VectorDouble32(anatomy.size(), 0.);
-      dVmDiffusion_= VectorDouble32(anatomy.nLocal(), 0.);
-      dVmReaction_ = VectorDouble32(anatomy.nLocal(), 0.);
-      unsigned paddedSize = convertActualSizeToBufferSize(anatomy.nLocal());
-      VmArray_.reserve(paddedSize);
-      dVmDiffusion_.reserve(paddedSize);
-      dVmReaction_.reserve(paddedSize);
+      VmTransport_.resize(anatomy.size());
+      dVmDiffusionTransport_.resize(anatomy.nLocal());
+      dVmReactionTransport_.resize(anatomy.nLocal());
 
-      assert((size_t)&(VmArray_[0])      % 32 == 0);
-      assert((size_t)&(dVmDiffusion_[0]) % 32 == 0);
-      assert((size_t)&(dVmReaction_[0])  % 32 == 0);
       
+      //unsigned paddedSize = convertActualSizeToBufferSize(anatomy.nLocal());
+      //VmArray.reserve(paddedSize);
+      //dVmDiffusion.reserve(paddedSize);
+      //dVmReaction.reserve(paddedSize);
+
+      //assert((size_t)&(VmArray[0])      % 32 == 0);
+      //assert((size_t)&(dVmDiffusion[0]) % 32 == 0);
+      //assert((size_t)&(dVmReaction[0])  % 32 == 0);
    }
    
    // use pointers to vector so that they can be swapped
-   VectorDouble32 VmArray_; // local and remote
-   VectorDouble32 dVmDiffusion_;
-   VectorDouble32 dVmReaction_;
+   lazy_array<double> VmTransport_; // local and remote
+   lazy_array<double> dVmDiffusionTransport_;
+   lazy_array<double> dVmReactionTransport_;
 };
 
 // Kitchen sink class for heart simulation.  This is probably a great
@@ -70,10 +72,12 @@ class Simulate
    enum LoopType {omp, pdr};
    
    void checkRanges(int begin, int end,
-                    const VectorDouble32& dVmReaction,
-                    const VectorDouble32& dVmDiffusion);
-   void checkRanges(const VectorDouble32& dVmReaction,
-                    const VectorDouble32& dVmDiffusion);
+                    ro_mgarray_ptr<double> Vm,
+                    ro_mgarray_ptr<double> dVmReaction,
+                    ro_mgarray_ptr<double> dVmDiffusion);
+   void checkRanges(ro_mgarray_ptr<double> Vm,
+                    ro_mgarray_ptr<double> dVmReaction,
+                    ro_mgarray_ptr<double> dVmDiffusion);
    
 
    bool checkIO(int loop=-1)const;
@@ -98,8 +102,6 @@ class Simulate
    
    double dt_;
    double time_;
-   int findVrest_; 
-   double Vrest_;
    
    int nx_, ny_, nz_; // global size of grid
 
@@ -116,13 +118,11 @@ class Simulate
    ReactionManager* reaction_;
    std::vector<Stimulus*> stimulus_;
    std::vector<Sensor*> sensor_;
-   std::vector<Drug*> drug_;
-   std::vector<double> drugRescale_;
     
    void initSensors(const std::vector<std::string>& names);
 
  private:
-   void outOfRange(unsigned index, double dVmr, double dVmd);
+   void outOfRange(unsigned index, const double Vm, const double dVmr, const double dVmd);
 
 };
 

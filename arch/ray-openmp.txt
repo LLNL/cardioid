@@ -1,0 +1,36 @@
+
+SET(CMAKE_CXX_COMPILER mpiclang++)
+SET(CMAKE_C_COMPILER mpiclang)
+
+
+add_definitions(-DPELOTON -DADD_ -DUSE_CSTDIO_LFS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64)
+
+include_directories(/usr/local/cuda/include)
+
+SET(CUDA_TOOLKIT_ROOT_DIR /usr/local/cuda)
+SET(extra_libs dl 
+    ${CUDA_TOOLKIT_ROOT_DIR}/lib64/libcudart.so 
+    ${CUDA_TOOLKIT_ROOT_DIR}/lib64/libnvrtc.so
+    cuda
+    )
+
+SET(LAPACK_LIB /usr/tcetmp/packages/lapack/lapack-3.6.0-gfortran-4.8.5/lib/liblapack.a gfortran)
+SET(BLAS_LIB /usr/tcetmp/packages/blas/blas-3.6.0-gfortran-4.8.5/lib/libblas.a)
+
+
+SET(CMAKE_BUILD_TYPE Debug)
+
+SET(CMAKE_CXX_FLAGS "-std=c++11" CACHE STRING "" FORCE)
+SET(CMAKE_C_FLAGS "-std=gnu99" CACHE STRING "" FORCE)
+
+SET(CMAKE_C_FLAGS_DEBUG "-ggdb -O0 -fopenmp" CACHE STRING "" FORCE)
+SET(CMAKE_C_FLAGS_MINSIZEREL "-g -pg -O3 -DPROFILE" CACHE STRING "" FORCE)
+SET(CMAKE_C_FLAGS_RELEASE "-g -O3 -ffp-contract=fast -fopenmp-nonaliased-maps" CACHE STRING "" FORCE) 
+SET(CMAKE_C_FLAGS_RELWITHDEBINFO "-ggdb -O2" CACHE STRING "" FORCE)
+
+SET(CMAKE_CXX_FLAGS_DEBUG  ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
+SET(CMAKE_CXX_FLAGS_MINSIZEREL ${CMAKE_C_FLAGS_MINSIZEREL} CACHE STRING "" FORCE)
+SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE) 
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_C_FLAGS_RELWITHDEBINFO} CACHE STRING "" FORCE)
+
+
