@@ -55,7 +55,7 @@ namespace
  *  - capacitance:   millifarad
  *  - charge:        microcoulomb
  *  - concentration: millimolar
- *
+ *  
  */
 
 // Sorry about this.
@@ -66,12 +66,12 @@ int main(int argc, char** argv)
    int npes, mype;
    MPI_Init(&argc,&argv);
    MPI_Comm_size(MPI_COMM_WORLD, &npes);
-   MPI_Comm_rank(MPI_COMM_WORLD, &mype);
+   MPI_Comm_rank(MPI_COMM_WORLD, &mype);  
 
    // See units above.
    units_internal(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
    units_external(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
-
+   
    profileInit();
    profileStart("Total");
    // heap_start moved to initializeSimulate so that the size can be set
@@ -81,7 +81,7 @@ int main(int argc, char** argv)
    if (mype == 0)
      printBanner();
    parseCommandLineAndReadInputFile(argc, argv, MPI_COMM_WORLD);
-
+   
    timestampBarrier("Starting initializeSimulate", MPI_COMM_WORLD);
    Simulate sim;
    initializeSimulate("simulate", sim);
@@ -92,8 +92,8 @@ int main(int argc, char** argv)
    //MPI_Pcontrol(1);
 
 #ifdef HPM
-  HPM_Start("Loop");
-#endif
+  HPM_Start("Loop"); 
+#endif 
    timestampBarrier("Starting Simulation Loop", MPI_COMM_WORLD);
    profileStart_HW("Loop");
    switch (sim.loopType_)
@@ -102,7 +102,7 @@ int main(int argc, char** argv)
       simulationLoop(sim);
       break;
      case Simulate::pdr:
-     // printf("Cardioid pdr ptr=%p %p %p\n",sim.diffusion_->blockIndex(),sim.diffusion_->dVmBlock(),sim.diffusion_->VmBlock());  fflush(stdout);
+     // printf("Cardioid pdr ptr=%p %p %p\n",sim.diffusion_->blockIndex(),sim.diffusion_->dVmBlock(),sim.diffusion_->VmBlock());  fflush(stdout); 
       simulationLoopParallelDiffusionReaction(sim);
       break;
      default:
@@ -111,9 +111,9 @@ int main(int argc, char** argv)
    profileStop_HW("Loop");
    timestampBarrier("Finished Simulation Loop", MPI_COMM_WORLD);
 #ifdef HPM
-  HPM_Stop("Loop");
-#endif
-
+  HPM_Stop("Loop"); 
+#endif 
+   
    //ewd:  turn off mpiP
    //MPI_Pcontrol(0);
 
@@ -149,7 +149,7 @@ int main(int argc, char** argv)
    profileDumpAll(dirname.str());
    heap_deallocate();
    MPI_Finalize();
-
+   
    return 0;
 }
 
@@ -159,13 +159,13 @@ namespace
 void parseCommandLineAndReadInputFile(int argc, char** argv, MPI_Comm comm)
 {
    int myRank;
-   MPI_Comm_rank(comm, &myRank);
+   MPI_Comm_rank(comm, &myRank);      
 
    // get input file name from command line argument
-   if (argc > 8)
+   if (argc != 2 && argc != 1)
    {
       if (myRank == 0)
-         cout << "Too many arguments! Usage: cardioid [inputFile1 ... inputFile7]" << endl;
+         cout << "Usage:  cardioid [input file]" << endl;
       exit(1);
    }
 
@@ -176,18 +176,13 @@ void parseCommandLineAndReadInputFile(int argc, char** argv, MPI_Comm comm)
    {
       string argfile(argv[1]);
       objectFile = argfile;
-      for (int i = 2; i < argc; ++i){
-        argfile = argv[i];
-        objectFile += " " + argfile;
-      }
    }
 
    if (myRank == 0)
    {
-
-      if (filestest(objectFile.c_str(), S_IFREG) != 0)
+      if (filetest(objectFile.c_str(), S_IFREG) != 0)
       {
-         printf("some objectfile in [%s] does not exist or wrong type\n", objectFile.c_str());
+         printf("objectfile=%s does not exist or wrong type\n", objectFile.c_str());
          assert(false);
       }
 
@@ -197,7 +192,7 @@ void parseCommandLineAndReadInputFile(int argc, char** argv, MPI_Comm comm)
 
       object_set("files", inputFiles.c_str());
 
-
+      
       object_compile();
       printf("\nContents of object database:\n"
               "----------------------------------------------------------------------\n");
@@ -210,7 +205,7 @@ void parseCommandLineAndReadInputFile(int argc, char** argv, MPI_Comm comm)
 }
 
 
-namespace
+namespace 
 {
 void printBanner()
 {

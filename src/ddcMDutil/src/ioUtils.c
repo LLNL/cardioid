@@ -33,21 +33,6 @@ int filetest(const char* filename, int type)
    return rc;
 }
 
-int filestest(const char* inputFiles, int type)
-{
-    int rc=0, rcs;
-    unsigned long length = strlen(inputFiles);
-    char cArray[length];
-    strcpy(cArray, inputFiles);
-    char* file = strtok(cArray, " ");
-    while (file != NULL) {
-        rcs = filetest(file, type);
-        if (rcs != 0)
-            rc = rcs;
-        file = strtok(NULL, " ");
-    }
-    return rc;
-}
 
 int DirTestCreate(const char *dirname)
 {
@@ -107,7 +92,7 @@ mkInt(const unsigned char* data, const char* fieldType)
 	 invalid = 1;
       }
    }
-
+   
    if (fieldType[0] == 'b')
    {
       invalid = 0;
@@ -151,7 +136,7 @@ mkDouble(const unsigned char* data, const char* fieldType)
 	 invalid = 1;
       }
    }
-
+   
    if (invalid)
    {
       printf("ERROR: Invalid field type (%s) in mkDouble\n", fieldType);
@@ -167,7 +152,7 @@ mkValue(const unsigned char* data, const char* fieldType)
    if (fieldType[0] == 'f') return mkDouble(data, fieldType);
    if (fieldType[0] == 'b' || fieldType[0] == 'u') return mkInt(data, fieldType);
    assert(1==0);
-    return 0.0;
+    return 0.0; 
 }
 
 
@@ -215,10 +200,10 @@ unsigned bFieldSize(unsigned long long i)
    }
    while (i>0);
    return result;
-
+      
 }
 
-
+   
 
 unsigned* makeOffsets(char** fieldType, unsigned nFields)
 {
@@ -321,16 +306,17 @@ int makeOffsetsAndTypes(unsigned nInput, char** inputNames,
 
    void
 endianSwap(void* data, int size)
-{
-   int i, j;
-   char* b, save;
-   b = (char*) (data) ;
-   j = size;
-   for (i=0; i<size/2; i++)
+{ 
+   int i, j; 
+   char* b, save; 
+   b = (char*) (data) ; 
+   j = size; 
+   for (i=0; i<size/2; i++) 
    {
-      --j;
-      save = b[i] ;
-      b[i] = b[j];
-      b[j] = save;
+      --j; 
+      save = b[i] ;  
+      b[i] = b[j]; 
+      b[j] = save; 
    }
-}
+} 
+

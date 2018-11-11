@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id$ */ 
 #ifndef IOUTILS_H
 #define IOUTILS_H
 
@@ -23,7 +23,6 @@ enum IO_FIELDS {IOF_CHECKSUM, IOF_ID, IOF_PINFO,
 		IOF_NONE};
 
 int filetest(const char* filename, int type);
-int filestest(const char* filename, int type);
 int DirTestCreate(const char *dirname);
 
 
