@@ -1322,6 +1322,7 @@ void ThisReaction::calc(double dt,
                 ro_mgarray_ptr<double> iStim_m,
                 wo_mgarray_ptr<double> dVm_m)
 {
+   if (nCells_ == 0) { return; }
    {
       int errorCode=-1;
       if (blockSize_ == -1) { blockSize_ = 1024; }
