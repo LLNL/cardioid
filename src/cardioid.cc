@@ -162,36 +162,54 @@ void parseCommandLineAndReadInputFile(int argc, char** argv, MPI_Comm comm)
    MPI_Comm_rank(comm, &myRank);      
 
    // get input file name from command line argument
-   if (argc != 2 && argc != 1)
+   for (int argvCursor=1; argvCursor<argc; argvCursor++)
    {
-      if (myRank == 0)
-         cout << "Usage:  cardioid [input file]" << endl;
-      exit(1);
+      if (argv[argvCursor] == "-h" ||
+          argv[argvCursor] == "--help")
+      {
+         if (myRank == 0)
+            cout << "Usage:  cardioid [input files]" << endl;
+         exit(1);
+      }
    }
 
    // parse input file
-   string objectFile("object.data");
+   vector<string> objectFiles;
    string restartFile("restart");
-   if (argc > 1)
+   if (argc == 1)
    {
-      string argfile(argv[1]);
-      objectFile = argfile;
+      objectFiles.push_back("object.data");
+   }
+   else
+   {
+      for (int argvCursor=1; argvCursor<argc; argvCursor++)
+      {
+         objectFiles.push_back(argv[argvCursor]);
+      }
    }
 
    if (myRank == 0)
    {
-      if (filetest(objectFile.c_str(), S_IFREG) != 0)
+      bool inputDeckExists=true;
+      for (int ifile=0; ifile<objectFiles.size(); ifile++)
       {
-         printf("objectfile=%s does not exist or wrong type\n", objectFile.c_str());
-         assert(false);
+         if (filetest(objectFiles[ifile].c_str(), S_IFREG) != 0)
+         {
+            printf("objectfile=%s does not exist or wrong type\n", objectFiles[ifile].c_str());
+            inputDeckExists=false;
+         }
       }
+      assert(inputDeckExists);
 
-      string inputFiles = objectFile;
+      string inputFiles = objectFiles[0];
+      for (int ifile=1; ifile<objectFiles.size(); ifile++)
+      {
+         inputFiles += " " + objectFiles[ifile];
+      }
       if (filetest(restartFile.c_str(), S_IFREG) == 0)
          inputFiles += " " + restartFile;
 
       object_set("files", inputFiles.c_str());
-
       
       object_compile();
       printf("\nContents of object database:\n"
