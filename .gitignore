@@ -1,4 +1,6 @@
 *.o
+surface
+ply2vtk
 fiber
 fiberp
 /fiber.cpp-bak
