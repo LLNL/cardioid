@@ -1,40 +1,3 @@
-# Set a default build type if none was specified
-set(default_build_type "Release")
- 
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
-  set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
-      STRING "Choose the type of build.")
-  # Set the possible values of build type for cmake-gui
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
-    "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif()
-
-
-project(cardioid_elec)
-cmake_minimum_required(VERSION 3.2)
-
-set (CMAKE_C_STANDARD 99)
-
-set(ENABLE_GTEST OFF CACHE BOOL "")
-set(BUILD_GTEST OFF CACHE BOOL "")
-set(ENABLE_TESTS OFF CACHE BOOL "")
-set(INSTALL_GTEST OFF CACHE BOOL "")
-set(ENABLE_GTEST OFF CACHE BOOL "")
-set(ENABLE_EXAMPLES OFF CACHE BOOL "")
-
-set(ENABLE_ALL_WARNINGS OFF CACHE BOOL "")
-
-if (NOT BLT_LOADED)
-   include(${CMAKE_CURRENT_SOURCE_DIR}/../blt/SetupBLT.cmake)
-endif()
-
-
-#Fixing bad default behavior for plugins on OSX
-if (CMAKE_SYSTEM_NAME MATCHES Darwin)
-  SET(CMAKE_SHARED_MODULE_CREATE_C_FLAGS "${CMAKE_SHARED_MODULE_CREATE_C_FLAGS} -undefined dynamic_lookup")
-  SET(CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS "${CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS} -undefined dynamic_lookup")
-endif()
 
 
 set(extra_definitions "" CACHE STRING "")
@@ -73,11 +36,6 @@ else()
    set(CUDA_CUDA_LIBRARY "")
 endif()   
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/src)
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/ddcMDutil/include)
-
 find_library(BLAS_LIB blas)
 find_library(LAPACK_LIB lapack)
 
@@ -88,7 +46,8 @@ if (BLAS_LIB AND LAPACK_LIB)
    list(APPEND extra_libs ${LAPACK_LIB} ${BLAS_LIB})
 endif()
 
-
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../simdops/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set (heart_transport_src
    SpaceAllocator.cc 
@@ -102,7 +61,7 @@ blt_add_library(NAME heart_transport
 if (ENABLE_CUDA)
    blt_add_library(NAME heart_actual_cuda
                    SOURCES CUDADiffusion_ker.cu ECGSensor.cu
-                   DEPENDS_ON ${cuda} simUtil openmp)
+                   DEPENDS_ON ${cuda} simUtil simdops openmp)
    set (heart_explicit_cuda_src
       CUDADiffusion.cc
       CUDADiffusion.hh
@@ -212,7 +171,7 @@ set (heart_gpu_aware_src
 )
 blt_add_library(NAME heart_gpu_aware
                 SOURCES ${heart_gpu_aware_src}
-                DEPENDS_ON ${heart_explicit_cuda} heart_transport simUtil ${extra_libs}
+                DEPENDS_ON ${heart_explicit_cuda} heart_transport simUtil simdops ${extra_libs}
                            ${CUDA_NVTX_LIBRARY} ${CUDA_NVRTC_LIBRARY} ${CUDA_CUDA_LIBRARY}
                            ${cuda} ${cuda_runtime} openmp mpi
                 INCLUDES ${extra_includes}
@@ -224,7 +183,7 @@ set (heart_cpu_only_src
 )
 blt_add_library(NAME heart_cpu_only
                 SOURCES ${heart_cpu_only_src}
-                DEPENDS_ON simUtil ${extra_libs} openmp
+                DEPENDS_ON simUtil simdops ${extra_libs} openmp
                 INCLUDES ${extra_includes}
                 )
 
