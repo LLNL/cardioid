@@ -188,9 +188,3 @@ anatomy#000005  anatomy#000042  anatomy#000079  anatomy#000116  anatomy#000153  
 
 Generate by the standalone "surface". Tagged surface vtk file with face order unchanged.
 
-TO RUN:
-Step 1: Generate fibers
-- on LC account: srun -N1 -n4 -ppdebug $CARDIOID/fib-gen/fiberp -omar -m heart.vtk -fl IPlocations.txt
-- on personal Mac: mpirun -np 4 $CARDIOID/fib-gen/fiberp -omar -m heart.vtk -fl IPlocations.txt
-- on personal Ubuntu: mpirun -np 4 $CARDIOID/fib-gen/fiberp -omar -m heart.vtk -fl IPlocations.txt
-
