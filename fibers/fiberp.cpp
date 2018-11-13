@@ -61,6 +61,8 @@
 using namespace std;
 using namespace mfem;
 
+MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
+
 int main(int argc, char *argv[]) {
    // 1. Initialize MPI.
    int num_procs, myid;

@@ -1,4 +1,4 @@
-#define KDTREE_DEFINE_OSTREAM_OPERATORS   // Position sensitive.
+//#define KDTREE_DEFINE_OSTREAM_OPERATORS   // Position sensitive.
 
 #include "mfem.hpp"
 #include "cardfiber.h"
