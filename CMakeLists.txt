@@ -40,36 +40,42 @@ endif()
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/simUtil/src)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/simdops)
 
-#blt_register_library(
-#  NAME kdtree
-#  INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/libkdtree
-#  )
+blt_register_library(
+  NAME kdtree
+  INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/libkdtree
+  )
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/elec)
 
-#macro(makefile_get_var makefile name var)
-#  file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/echo.mak
-#"
-#echo-%:
-#	-@echo -n \${\$*}
-#")
-#  execute_process (COMMAND ${CMAKE_MAKE_PROGRAM} -f ${makefile} -f ${CMAKE_CURRENT_BINARY_DIR}/echo.mak --no-print-directory echo-${name}
-#      OUTPUT_VARIABLE ${var}
-#      RESULT_VARIABLE makefile_return)
-#  file (REMOVE ${CMAKE_CURRENT_BINARY_DIR}/echo.mak)
-#endmacro()
+macro(makefile_get_var makefile name var)
+  file (WRITE ${CMAKE_CURRENT_BINARY_DIR}/echo.mak
+"
+echo-%:
+	-@echo -n \${\$*}
+")
+  execute_process (COMMAND ${CMAKE_MAKE_PROGRAM} -f ${makefile} -f ${CMAKE_CURRENT_BINARY_DIR}/echo.mak --no-print-directory echo-${name}
+      OUTPUT_VARIABLE ${var}
+      RESULT_VARIABLE makefile_return)
+  file (REMOVE ${CMAKE_CURRENT_BINARY_DIR}/echo.mak)
+endmacro()
 
-#makefile_get_var(${CMAKE_CURRENT_SOURCE_DIR}/deps/share/mfem/config.mk MFEM_LIB_FILE MFEM_LIBRARY)
-#makefile_get_var(${CMAKE_CURRENT_SOURCE_DIR}/deps/share/mfem/config.mk MFEM_EXT_LIBS  MFEM_LINK_FLAGS)
+set(MFEM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps" CACHE PATH "Path to the mfem directory")
+if (EXISTS ${MFEM_DIR})
+   makefile_get_var(${MFEM_DIR}/share/mfem/config.mk MFEM_LIB_FILE MFEM_LIBRARY)
+   makefile_get_var(${MFEM_DIR}/share/mfem/config.mk MFEM_EXT_LIBS  MFEM_LINK_FLAGS)
+   
+   blt_register_library(
+     NAME mfem
+     INCLUDES ${MFEM_DIR}/include
+     LIBRARIES ${MFEM_LIBRARY}
+     LINK_FLAGS ${MFEM_LINK_FLAGS}
+   )
 
-#blt_register_library(
-#  NAME mfem
-#  INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/deps/include
-#  LIBRARIES ${MFEM_LIBRARY}
-#  LINK_FLAGS ${MFEM_LINK_FLAGS}
-#)
 
-
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ecg)
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/fibers)
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/mech)
+   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ecg)
+   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/fibers)
+   option(BUILD_MECH "Should we build with mechanics?  Needs a non-public version of mfem." OFF)
+   if (BUILD_MECH)
+      add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/mech)
+   endif()
+endif()
