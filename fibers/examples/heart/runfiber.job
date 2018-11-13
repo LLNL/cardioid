@@ -1,0 +1,12 @@
+#!/bin/bash
+##### These lines are for Moab
+#MSUB -l nodes=16
+#MSUB -l partition=cab
+#MSUB -l walltime=02:59:00
+#MSUB -q pbatch
+#MSUB -A vhh
+##MSUB -o slurm.out
+##MSUB -e slurm.err
+
+##### Now comes the srun call
+srun -N16 -n256 fiberp -m heart.vtk -dd 0.1 -omar -fl IPlocations.txt 
