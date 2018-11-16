@@ -189,7 +189,7 @@ void simulationLoop(Simulate& sim)
          //#pragma omp target teams distribute parallel for
          for (unsigned ii = 0; ii < sim.stimulus_.size(); ++ii)
          {
-            sim.stimululs_[ii]->stim(sim.time_, iStimTransport);
+            sim.stimulus_[ii]->stim(sim.time_, iStimTransport);
          }
       }
       stopTimer(stimulusTimer);
