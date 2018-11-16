@@ -151,10 +151,6 @@ void simulationLoop(Simulate& sim)
 {
    lazy_array<double> iStimTransport;
    iStimTransport.resize(sim.anatomy_.nLocal());
-   {
-      wo_array_ptr<double> iStim = iStimTransport.useOn(CPU);
-      iStim.fill(0);
-   }
    
    simulationProlog(sim);
    HaloExchangeDevice<double> voltageExchange(sim.sendMap_, (sim.commTable_));
@@ -184,6 +180,19 @@ void simulationLoop(Simulate& sim)
          voltageExchange.startComm();
       }
 
+      startTimer(stimulusTimer);
+      {
+         {
+            wo_array_ptr<double> iStim = iStimTransport.useOn(DEFAULT_COMPUTE_SPACE);
+            DEVICE_PARALLEL_FORALL(iStim.size(), ii, iStim[ii] = 0);
+         }
+         //#pragma omp target teams distribute parallel for
+         for (unsigned ii = 0; ii < sim.stimulus_.size(); ++ii)
+         {
+            sim.stimululs_[ii]->stim(sim.time_, iStimTransport);
+         }
+      }
+      stopTimer(stimulusTimer);
 
       // REACTION
       startTimer(reactionTimer);
@@ -201,20 +210,6 @@ void simulationLoop(Simulate& sim)
       }
       stopTimer(diffusionCalcTimer);
 
-      startTimer(stimulusTimer);
-      {
-//       #pragma omp target teams distribute parallel for
-         for (unsigned ii = 0; ii < sim.stimulus_.size(); ++ii)
-         {
-            sim.stimulus_[ii]->stim(sim.time_, sim.vdata_.dVmDiffusionTransport_);
-         }
-         wo_array_ptr<double> iStim = iStimTransport.useOn(DEFAULT_COMPUTE_SPACE);
-         ro_array_ptr<double> dVmDiffusion = sim.vdata_.dVmDiffusionTransport_.useOn(DEFAULT_COMPUTE_SPACE);
-         DEVICE_PARALLEL_FORALL(iStim.size(), ii,
-                                iStim[ii] = -dVmDiffusion[ii]);
-      }
-      stopTimer(stimulusTimer);
-
       startTimer(integratorTimer);
       if (sim.checkRange_.on)
       {
@@ -226,9 +221,10 @@ void simulationLoop(Simulate& sim)
          rw_array_ptr<double> Vm = vdata.VmTransport_.readwrite(DEFAULT_COMPUTE_SPACE);
          ro_array_ptr<double> dVmR = vdata.dVmReactionTransport_.readonly(DEFAULT_COMPUTE_SPACE);
          ro_array_ptr<double> dVmD = vdata.dVmDiffusionTransport_.readonly(DEFAULT_COMPUTE_SPACE);
+         ro_array_ptr<double> iStim = iStimTransport.readonly(DEFAULT_COMPUTE_SPACE);
          double dt = sim.dt_;
          DEVICE_PARALLEL_FORALL(dVmR.size(), ii,
-                                Vm[ii] += dt*(dVmR[ii]+dVmD[ii]));
+                                Vm[ii] += dt*(dVmR[ii]+dVmD[ii]+iStim[ii]));
       }
 
       sim.time_ += sim.dt_;
