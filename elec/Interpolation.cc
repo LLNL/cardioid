@@ -220,14 +220,17 @@ double Interpolation::create(const vector<double>& inputs,
          range[ii] = *(window.rbegin())-*(window.begin());
       }     
    }   
-   double funcMax = -1e30;
-   double funcMin =  1e30;
+   //check to make sure the range is reasonable.
+   double rangeMax = -1e30;
    for (int ii=0; ii<inSize; ii++)
    {
-      funcMax = max(funcMax,outputs[ii]);
-      funcMin = min(funcMin,outputs[ii]);
+      rangeMax = max(rangeMax,range[ii]);
    }
-   
+   double absMinRange = rangeMax*1e-7;
+   for (int ii=0; ii<inSize; ii++)
+   {
+      range[ii] = max(absMinRange, range[ii]);
+   }
 
    int totalMaxTerm = 2*MAX_TERM_COUNT;
    double bestError = 1e30;
@@ -289,6 +292,7 @@ double Interpolation::create(const vector<double>& inputs,
             for (int cc=0; cc<coeffCount; cc++) currentCoeffs[cc] = bbb[cc];
          }
          #else
+         assert(0 && "Disabling Jim's svd computation for now.");
          {
             vector<double> Abuffer(coeffCount*inSize);
             vector<double*> AAA(inSize);
