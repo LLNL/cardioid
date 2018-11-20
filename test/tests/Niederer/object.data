@@ -55,10 +55,9 @@ conductivity CONDUCTIVITY
 
 tt06 REACTION
 {
-    method = TT06_CellML;
+    method = BetterTT06;
     cellTypes = 102;
-    integrator = rushLarsen;
-    ttType = 2;   
+    celltype = 2;
 }
 
 s1 STIMULUS

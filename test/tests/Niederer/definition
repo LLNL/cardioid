@@ -14,7 +14,7 @@ function run {
     beginTest
     clean
     rm -f data
-    runBinary cardioid >| stdOut 2>&1 
+    runBinary cardioid object.data tt06.fit.data >| stdOut 2>&1 
     numCompare data 1e-14 >| result 2>&1
     endTest
 }
