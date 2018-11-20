@@ -13,10 +13,10 @@ using namespace FGRUtils;
 
 FGRDiffusionOMP::FGRDiffusionOMP(const FGRDiffusionParms& parms,
                                  const Anatomy& anatomy)
-: nLocal_(anatomy.nLocal()),
+: Diffusion(parms.diffusionScale_),
+  nLocal_(anatomy.nLocal()),
   nRemote_(anatomy.nRemote()),
-  localGrid_(DiffusionUtils::findBoundingBox(anatomy, parms.printBBox_)),
-  diffusionScale_(parms.diffusionScale_)
+  localGrid_(DiffusionUtils::findBoundingBox(anatomy, parms.printBBox_))
 {
 
    unsigned nx = localGrid_.nx();
@@ -72,9 +72,9 @@ FGRDiffusionOMP::FGRDiffusionOMP(const FGRDiffusionParms& parms,
 }
 
 
-void FGRDiffusionOMP::updateLocalVoltage(const Managed<ArrayView<double>> VmLocal_managed)
+void FGRDiffusionOMP::updateLocalVoltage(ro_mgarray_ptr<double> VmLocal_managed)
 {
-   ConstArrayView<double> VmLocal = VmLocal_managed;
+   ro_array_ptr<double> VmLocal = VmLocal_managed.useOn(CPU);
 #pragma omp parallel
    {
       startTimer(FGR_ArrayLocal2MatrixTimer);
@@ -88,9 +88,9 @@ void FGRDiffusionOMP::updateLocalVoltage(const Managed<ArrayView<double>> VmLoca
    }
 }
 
-void FGRDiffusionOMP::updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote_managed)
+void FGRDiffusionOMP::updateRemoteVoltage(ro_mgarray_ptr<double> VmRemote_managed)
 {
-   ConstArrayView<double> VmRemote = VmRemote_managed;
+   ro_array_ptr<double> VmRemote = VmRemote_managed.useOn(CPU);
 #pragma omp parallel
    {
       startTimer(FGR_ArrayRemote2MatrixTimer);
@@ -106,9 +106,9 @@ void FGRDiffusionOMP::updateRemoteVoltage(const Managed<ArrayView<double>> VmRem
 }
 
 
-void FGRDiffusionOMP::calc(Managed<ArrayView<double>> dVm_managed)
+void FGRDiffusionOMP::calc(rw_mgarray_ptr<double> dVm_managed)
 {
-   ArrayView<double> dVm = dVm_managed;
+   rw_array_ptr<double> dVm = dVm_managed.useOn(CPU);
    int nCells = dVm.size();
 #pragma omp parallel
    {// parallel section to contain timer start/stop

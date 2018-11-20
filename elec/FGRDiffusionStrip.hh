@@ -28,7 +28,6 @@ class FGRDiffusionStrip : public Diffusion
    unsigned* blockIndex(){return &blockIndex_[0];}
    double* VmBlock() {return VmBlock_.cBlock();}
    double* dVmBlock(){return dVmBlock_.cBlock();}
-   double diffusionScale(){return diffusionScale_;}
 
  private:
    void FGRDiff_simd(const uint32_t start,const int32_t chunk_size, Array3d<double>* VmTmp, double* out);
@@ -50,7 +49,6 @@ class FGRDiffusionStrip : public Diffusion
    int                             offsetMap_[27];
    int                             faceNbrOffset_[6];
    LocalGrid                       localGrid_;
-   double                          diffusionScale_;
    const ThreadTeam&               threadInfo_;
    const ThreadTeam&               reactionThreadInfo_;
    L2_Barrier_t*                   fgrBarrier_;

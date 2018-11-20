@@ -22,13 +22,12 @@ class FGRDiffusion : public Diffusion
       const ThreadTeam& threadInfo,
       const ThreadTeam& reactionThreadInfo);
    
-   void updateLocalVoltage(ro_larray_ptr<double> VmLocal);
-   void updateRemoteVoltage(ro_larray_ptr<double> VmRemote);
-   void calc(rw_larray_ptr<double> dVm);
+   void updateLocalVoltage(ro_mgarray_ptr<double> VmLocal);
+   void updateRemoteVoltage(ro_mgarray_ptr<double> VmRemote);
+   void calc(rw_mgarray_ptr<double> dVm);
    unsigned* blockIndex(){return &blockIndex_[0];}
    double* VmBlock() {return VmBlock_.cBlock();}
    double* dVmBlock(){return dVmBlock_.cBlock();}
-   double diffusionScale(){return diffusionScale_;}
 
  private:
    void FGRDiff_simd(const uint32_t start,const int32_t chunk_size, Array3d<double>* VmTmp, double* out);
@@ -50,7 +49,6 @@ class FGRDiffusion : public Diffusion
    int                             offsetMap_[27];
    int                             faceNbrOffset_[6];
    LocalGrid                       localGrid_;
-   double                          diffusionScale_;
    const ThreadTeam&               threadInfo_;
    const ThreadTeam&               reactionThreadInfo_;
    L2_Barrier_t*                   fgrBarrier_;

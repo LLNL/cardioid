@@ -6,11 +6,11 @@
 #include "object_cc.hh"
 
 #include "FGRUtils.hh"
-//#include "FGRDiffusion.hh"
-//#include "FGRDiffusionOMP.hh"
-//#include "FGRDiffusionThreads.hh"
+#include "FGRDiffusion.hh"
+#include "FGRDiffusionOMP.hh"
+#include "FGRDiffusionThreads.hh"
 #include "FGRDiffusionStrip.hh"
-//#include "FGRDiffusionOverlap.hh"
+#include "FGRDiffusionOverlap.hh"
 #include "NullDiffusion.hh"
 //#include "OpenmpGpuRedblackDiffusion.hh"
 //#include "OpenmpGpuFlatDiffusion.hh"
@@ -82,16 +82,16 @@ namespace
       string variant;
       objectGet(obj, "variant", variant, defaultVariant);
       if (0) {}
-      //else if (variant == "omp" || simLoopType == Simulate::omp)
-      //   return new FGRDiffusionOMP(p, anatomy);
-      //else if (variant == "threads")
-      //   return new FGRDiffusionThreads(p, anatomy, threadInfo, reactionThreadInfo);
-      //else if (variant == "simd")
-      //   return new FGRDiffusion(p, anatomy, threadInfo, reactionThreadInfo);
+      else if (variant == "omp" || simLoopType == Simulate::omp)
+         return new FGRDiffusionOMP(p, anatomy);
+      else if (variant == "threads")
+         return new FGRDiffusionThreads(p, anatomy, threadInfo, reactionThreadInfo);
+      else if (variant == "simd")
+         return new FGRDiffusion(p, anatomy, threadInfo, reactionThreadInfo);
       else if (variant == "strip" )
          return new FGRDiffusionStrip(p, anatomy, threadInfo, reactionThreadInfo);
-      //else if (variant == "overlap" )
-      //   return new FGRDiffusionOverlap(p, anatomy, threadInfo, reactionThreadInfo);
+      else if (variant == "overlap" )
+         return new FGRDiffusionOverlap(p, anatomy, threadInfo, reactionThreadInfo);
 
 
       // unreachable.  Should have matched a clause above.

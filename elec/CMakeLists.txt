@@ -153,10 +153,10 @@ set (heart_gpu_aware_src
 	stimulusFactory.cc sensorFactory.cc
 	FibreConductivity.cc JHUConductivity.cc
 	DiffusionUtils.cc
-	#FGRDiffusion.cc
-	#FGRDiffusionOMP.cc
-	#FGRDiffusionThreads.cc
-	#FGRDiffusionOverlap.cc
+	FGRDiffusion.cc
+	FGRDiffusionOMP.cc
+	FGRDiffusionThreads.cc
+	FGRDiffusionOverlap.cc
 	FGRDiffusionStrip.cc
 	#OpenmpGpuRedblackDiffusion.cc
 	#OpenmpGpuFlatDiffusion.cc

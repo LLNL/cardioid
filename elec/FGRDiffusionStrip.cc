@@ -20,11 +20,11 @@ FGRDiffusionStrip::FGRDiffusionStrip(const FGRDiffusionParms& parms,
                            const Anatomy& anatomy,
                            const ThreadTeam& threadInfo,
                            const ThreadTeam& reactionThreadInfo)
-: nLocal_(anatomy.nLocal()),
+: Diffusion(parms.diffusionScale_),
+  nLocal_(anatomy.nLocal()),
   localGrid_(DiffusionUtils::findBoundingBox_simd(anatomy, parms.printBBox_)),
   threadInfo_(threadInfo),
-  reactionThreadInfo_(reactionThreadInfo),
-  diffusionScale_(parms.diffusionScale_)
+  reactionThreadInfo_(reactionThreadInfo)
 {
 
    unsigned nx = localGrid_.nx();

@@ -19,11 +19,11 @@ FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
                                          const Anatomy& anatomy,
                                          const ThreadTeam& threadInfo,
                                          const ThreadTeam& reactionThreadInfo)
-: nLocal_(anatomy.nLocal()),
+: Diffusion(parms.diffusionScale_),
+  nLocal_(anatomy.nLocal()),
   localGrid_(DiffusionUtils::findBoundingBox(anatomy, parms.printBBox_)),
   threadInfo_(threadInfo),
-  reactionThreadInfo_(reactionThreadInfo),
-  diffusionScale_(parms.diffusionScale_)
+  reactionThreadInfo_(reactionThreadInfo)
 {
 
    unsigned nx = localGrid_.nx();
@@ -86,10 +86,10 @@ FGRDiffusionThreads::FGRDiffusionThreads(const FGRDiffusionParms& parms,
 }
 
 
-void FGRDiffusionThreads::updateLocalVoltage(const Managed<ArrayView<double>> VmLocal_managed)
+void FGRDiffusionThreads::updateLocalVoltage(ro_mgarray_ptr<double> VmLocal_managed)
 {
    startTimer(FGR_ArrayLocal2MatrixTimer);
-   ConstArrayView<double> VmLocal = VmLocal_managed;
+   ro_array_ptr<double> VmLocal = VmLocal_managed.useOn(CPU);
    int tid = reactionThreadInfo_.teamRank();
    unsigned begin = localCopyOffset_[tid];
    unsigned end   = localCopyOffset_[tid+1];
@@ -101,10 +101,10 @@ void FGRDiffusionThreads::updateLocalVoltage(const Managed<ArrayView<double>> Vm
    stopTimer(FGR_ArrayLocal2MatrixTimer);
 }
 
-void FGRDiffusionThreads::updateRemoteVoltage(const Managed<ArrayView<double>> VmRemote_managed)
+void FGRDiffusionThreads::updateRemoteVoltage(ro_mgarray_ptr<double> VmRemote_managed)
 {
    startTimer(FGR_ArrayRemote2MatrixTimer);
-   ConstArrayView<double> VmRemote = VmRemote_managed;
+   ro_array_ptr<double> VmRemote = VmRemote_managed.useOn(CPU);
    int tid = threadInfo_.teamRank();
    unsigned begin = remoteCopyOffset_[tid];
    unsigned end   = remoteCopyOffset_[tid+1];
@@ -120,7 +120,7 @@ void FGRDiffusionThreads::updateRemoteVoltage(const Managed<ArrayView<double>> V
 
 
 
-void FGRDiffusionThreads::calc(Managed<ArrayView<double>> dVm_managed)
+void FGRDiffusionThreads::calc(rw_mgarray_ptr<double> /*dVm_managed*/)
 {
    startTimer(FGR_StencilTimer);
 

@@ -17,9 +17,9 @@ class FGRDiffusionOMP : public Diffusion
       const FGRUtils::FGRDiffusionParms& parms,
       const Anatomy& anatomy);
    
-   void updateLocalVoltage(ro_larray_ptr<double> VmLocal);
-   void updateRemoteVoltage(ro_larray_ptr<double> VmRemote);
-   void calc(rw_larray_ptr<double> dVm);
+   void updateLocalVoltage(ro_mgarray_ptr<double> VmLocal);
+   void updateRemoteVoltage(ro_mgarray_ptr<double> VmRemote);
+   void calc(rw_mgarray_ptr<double> dVm);
 
  private:
    void buildTupleArray(const Anatomy& anatomy);
@@ -36,7 +36,6 @@ class FGRDiffusionOMP : public Diffusion
    int                             offset_[19];
    int                             faceNbrOffset_[6];
    LocalGrid                       localGrid_;
-   double                          diffusionScale_;
    std::vector<unsigned>           blockIndex_; // for local and remote cells
    std::vector<Tuple>              localTuple_; // only for local cells
    Array3d<double>                 A0_;
