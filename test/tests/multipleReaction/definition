@@ -13,7 +13,7 @@ function clean {
 function run {
     beginTest
     clean
-    runBinary cardioid >| stdOut 2>&1
+    runBinary cardioid object.data tt06*.fit.data tt06*.sv >| stdOut 2>&1
     ./traceVoltage.py $(sed -e 's/^/-g /' sensor.txt) >| traces
     numCompare traces 1e-14 >| result 2>&1
     endTest

@@ -42,65 +42,23 @@ conductivity CONDUCTIVITY
 
 tt06Endo REACTION
 {
-    method = TT06Opt;
-   tolerance = 0.0001;
-   mod = 1;
-   fitFile = fit.data;
-   fastGate = 1;
-   fastNonGate = 3;
+   method = BetterTT06;
    cellTypes = 100;
-   cellTypeName = endo;
-}
-endo CELLTYPE
-{
-  clone = endoRRG;
-  g_NaL = 0.15;
-  g_Ks  = 0.392;
-  g_Kr  = 0.45;
-  g_to  = 0.073;
-  P_NaK = 3.0;
+   celltype = 0;
 }
 
 tt06Mid REACTION
 {
-    method = TT06Opt;
-   tolerance = 0.0001;
-   mod = 1;
-   fitFile = fit.data;
-   fastGate = 1;
-   fastNonGate = 3;
+   method = BetterTT06;
    cellTypes = 101;
-   cellTypeName = mid;
-}
-mid CELLTYPE
-{
-  clone = midRRG;
-  g_NaL = 0.3;
-  g_Ks  = 0.196;
-  g_Kr  = 0.45;
-  g_to  = 0.294;
-  P_NaK = 3.0;
+   celltype = 1;
 }
 
 tt06Epi REACTION
 {
-    method = TT06Opt;
-   tolerance = 0.0001;
-   mod = 1;
-   fitFile = fit.data;
-   fastGate = 1;
-   fastNonGate = 3;
+   method = BetterTT06;
    cellTypes = 102;
-   cellTypeName = epi;
-}
-epi CELLTYPE
-{
-  clone = epiRRG;
-  g_NaL = 0.15;
-  g_Ks  = 0.392;
-  g_Kr  = 0.45;
-  g_to  = 0.294;
-  P_NaK = 3.0;
+   cellType = 2;
 }
 
 s1 STIMULUS
