@@ -48,8 +48,9 @@ conductivity CONDUCTIVITY
 
 null REACTION
 {
-    method = null;
+    method = Passive;
     cellTypes = 101;
-    initialVoltage = 0;
+    E_R = 0;
+    G = 0;
 }
 
