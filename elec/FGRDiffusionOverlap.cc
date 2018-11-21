@@ -49,7 +49,7 @@ FGRDiffusionOverlap::FGRDiffusionOverlap(const FGRDiffusionParms& parms,
 
   
    //simd thread offsets
-   unsigned int work[3]={ny,nx,nx};
+   unsigned int work[3]={static_cast<unsigned int>(ny),static_cast<unsigned int>(nx),static_cast<unsigned int>(nx)};
    for(int ii=0;ii<3;ii++)
    {
      int Twork=work[ii]-2;
