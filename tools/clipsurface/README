@@ -1,0 +1,26 @@
+Prerequisites:
+
+(SEE THE WIKI ENTRY FOR INSTALLATION AND GETTING EVERYTHING SET UP)
+1. The patient data (all of the .vtk and .fcsv files) should be located in the same directory.
+2. The patient directory should be named something like 'patientXXXX', and should be passed to the shell script upon execution. NOTE: The directory name passed to the script should not end in a slash, due to parsing. So it should be 'patient16', not 'patient16/'.
+1. Make sure to set the environment variables $ACVD_DIR and $TET_DIR are set to the appropriate location of ACVD and TetGen, respectively.
+2. The shell script should be located (and run) in the same directory as the clipping script (called vtkClipDataSetWithPolydata.py)
+
+Execution:
+
+Script execution is simple: Just run the shell script with the argument being the location of a patient's data, e.g.
+
+	sh generateMesh.sh $PATIENTS/patient16
+
+Output:
+
+During execution, several output files will be produced in the same directory as the shell script:
+	1. 'clipped.vtk' - This is the surface mesh after the clipping script has finished.
+	2. 'clipACVD.vtk' - Non-smoothed surface mesh after the ACVD clustering algorithm is run.
+	3. 'smooth_clipACVD.vtk' - Smoothed surface mesh after ACVD is finished.
+	4. 'mesh.ply' - Result of the vtk2ply conversion script. Converts the smooth ACVD output file to .ply format so that TetGen can use it.
+	5. 'mesh.1.smesh' - Produced by TetGen. Converted file representing the input surface mesh passed to TetGen. Not actually used for our purposes.
+
+The final tetrahedral mesh produced will be saved in the same directory passed to the shell script, i.e. the particular patient's directory, and will be called ${PATIENT_NUM}.vtk, where $PATIENT_NUM is the number of the patient being processed. So for our example above, that would be '16.vtk'
+
+NOTE: This process heavily depends on the quality of the models passed to the clipping script, so if the models are of poor quality (e.g. intersecting surfaces, sharp edges, holes in the models, etc.), the output mesh will most likely be useless. Therefore, models might need to be fixed if results are garbage.
