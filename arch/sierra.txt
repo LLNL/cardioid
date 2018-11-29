@@ -4,9 +4,9 @@
 set(ENABLE_MPI ON CACHE BOOL "")
 set(ENABLE_FIND_MPI OFF CACHE BOOL "")
 
-set(MPI_HOME                 "/usr/tcetmp" CACHE PATH "")
-set(MPI_C_COMPILER           "${MPI_HOME}/bin/mpiclang"   CACHE PATH "")
-set(MPI_CXX_COMPILER         "${MPI_HOME}/bin/mpiclang++"  CACHE PATH "")
+set(MPI_HOME                 "/usr/tce/packages/spectrum-mpi/spectrum-mpi-rolling-release-xl-beta-2018.11.02" CACHE PATH "")
+set(MPI_C_COMPILER           "${MPI_HOME}/bin/mpicc"   CACHE PATH "")
+set(MPI_CXX_COMPILER         "${MPI_HOME}/bin/mpic++"  CACHE PATH "")
 
 set(MPIEXEC                "mpirun"  CACHE PATH "")
 set(MPIEXEC_NUMPROC_FLAG   "-np"     CACHE PATH "")
