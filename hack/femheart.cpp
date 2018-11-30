@@ -35,13 +35,21 @@ int main(int argc, char *argv[])
 
    int order = 1;
 
-   ecg_process_args(argc,argv);
+   std::vector<std::string> objectFilenames;
+   if (argc == 1)
+      objectFilenames.push_back("femheard.data");
 
-   OBJECT* obj = object_find("ecg", "ECG");
+   for (int iargCursor=1; iargCursor<argc; iargCursor++)
+      objectFilenames.push_back(argv[iargCursor]);
+
+   if (my_rank == 0) {
+      for (int ii=0; ii<objectFilenames.size(); ii++)
+	 object_compilefile(objectFilenames[ii].c_str());
+   }
+   object_Bcast(0,MPI_COMM_WORLD);
+
+   OBJECT* obj = object_find("femheart", "HEART");
    assert(obj != NULL);
-
-   // Read unordered set of grounds
-   std::set<int> ground = ecg_readSet(obj, "ground");
 
    StartTimer("Read the mesh");
    // Read shared global mesh
@@ -50,48 +58,20 @@ int main(int argc, char *argv[])
    int dim = mesh->Dimension();
 
    //Fill in the MatrixElementPiecewiseCoefficients
-   std::vector<int> bathRegions, heartRegions;
-   objectGet(obj,"bath_regions",bathRegions);
+   std::vector<int> heartRegions;
    objectGet(obj,"heart_regions", heartRegions);
 
-   std::vector<double> sigma_b, sigma_i, sigma_e;
-   objectGet(obj,"sigma_b",sigma_b);
+   std::vector<double> sigma_i, sigma_e;
    objectGet(obj,"sigma_i",sigma_i);
    objectGet(obj,"sigma_e",sigma_e);
 
    // Verify Inputs
-   assert(bathRegions.size() == sigma_b.size());
    assert(heartRegions.size()*3 == sigma_i.size());
    assert(heartRegions.size()*3 == sigma_e.size());
 
    StartTimer("Constructing the ground part of the mesh.");
    // cardioid_from_ecg = torso/sensor.txt;
    std::unordered_map<int,int> gfFromGid = ecg_readInverseMap(obj,"cardioid_from_ecg");
-
-   {
-      // Iterate over boundary elements
-      int nbe=mesh->GetNBE();
-      std::cout << nbe << " border elements in pmesh." << std::endl;
-      for(int i=0; i<nbe; i++) {
-	 Element *ele = mesh->GetBdrElement(i);
-	 const int *v = ele->GetVertices();
-	 const int nv = ele->GetNVertices();
-	 // Search for element's vertices in the ground set
-	 bool isGround = true;
-	 for( int ivert=0; ivert<nv; ivert++) {
-	    if (ground.find(v[ivert]) == ground.end()) {
-	       isGround = false;
-	       break;
-	    }
-	 }
-	 // Set region type accordingly per ecg.data
-	 if (isGround) {
-	    ele->SetAttribute(2); // ess[1] below
-	 } else {
-	    ele->SetAttribute(1); // ess[0] below
-	 }
-      }
-   }
    EndTimer();
    // Sort+unique pmesh->bdr_attributes and pmesh->attributes?
    StartTimer("Setting Attributes");
@@ -138,14 +118,11 @@ int main(int argc, char *argv[])
    // 5. Determine the list of true (i.e. conforming) essential boundary DOFs
    Array<int> ess_tdof_list;   // Essential true degrees of freedom
    // "true" takes into account shared vertices.
-   if (pmesh->bdr_attributes.Size()) {
-      assert(pmesh->bdr_attributes.Max() > 1 && "Can't find a ground boundary!");
+   {
       Array<int> ess_bdr(pmesh->bdr_attributes.Max());
       ess_bdr = 0;
-      ess_bdr[1] = 1;
       pfespace->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
    }
-
 
    // 7. Define the solution vector x as a finite element grid function
    //    corresponding to pfespace. Initialize x with initial guess of zero,
@@ -163,21 +140,18 @@ int main(int argc, char *argv[])
 
    
    // Load conductivity data?
-   MatrixElementPiecewiseCoefficient sigma_i_coeffs(fiber_quat);
-   MatrixElementPiecewiseCoefficient sigma_ie_coeffs(fiber_quat);
+   MatrixElementPiecewiseCoefficient sigma_m_coeffs(fiber_quat);
    for (int ii=0; ii<heartRegions.size(); ii++) {
       int heartCursor=3*ii;
       Vector sigma_i_vec(&sigma_i[heartCursor],3);
       Vector sigma_e_vec(&sigma_e[heartCursor],3);
-      Vector sigma_ie_vec = sigma_e_vec;
-      sigma_ie_vec += sigma_i_vec;
+      Vector sigma_m_vec(3);
+      for (int jj=0; jj<3; jj++)
+      {
+         sigma_m_vec[jj] = (sigma_e_vec[jj]*sigma_i_vec[jj])/(sigma_i_vec[jj]+sigma_e_vec[jj]);
+      }
     
-      sigma_i_coeffs.heartConductivities_[heartRegions[ii]] = sigma_i_vec;
-      sigma_ie_coeffs.heartConductivities_[heartRegions[ii]] = sigma_ie_vec;
-   }
-   for (int ii=0; ii<bathRegions.size(); ii++) {
-      sigma_i_coeffs.bathConductivities_[bathRegions[ii]] = 0;
-      sigma_ie_coeffs.bathConductivities_[bathRegions[ii]] = sigma_b[ii];
+      sigma_m_coeffs.heartConductivities_[heartRegions[ii]] = sigma_m_vec;
    }
 
    // 8. Set up the bilinear form a(.,.) on the finite element space
@@ -187,7 +161,7 @@ int main(int argc, char *argv[])
    StartTimer("Forming bilinear system (heart)");
 
    ParBilinearForm *b = new ParBilinearForm(pfespace);
-   b->AddDomainIntegrator(new DiffusionIntegrator(sigma_i_coeffs));
+   b->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_coeffs));
    b->Assemble();
    // This creates the linear algebra problem.
    HypreParMatrix heart_mat;
@@ -202,7 +176,7 @@ int main(int argc, char *argv[])
    ParBilinearForm *a = new ParBilinearForm(pfespace);   // defines a.
    // this is the Laplacian: grad u . grad v with linear coefficient.
    // we defined "one" ourselves in step 6.
-   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_ie_coeffs));
+   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_coeffs));
    // a->Assemble();   // This creates the loops.
 
    a->Update(pfespace);
@@ -227,60 +201,8 @@ int main(int argc, char *argv[])
    Vector phi_e;
    Vector phi_b;
    
-   // Read in the electrode list
-   std::string electrodeFilename;
-   objectGet(obj, "ecg_electrodes", electrodeFilename, "");
-   std::vector<std::string> nameFromElectrode;
-   std::vector<int> gfidFromElectrode;
-   {
-      std::ifstream electrodeFile(electrodeFilename.c_str());
-      while (!!electrodeFile)
-      {
-         std::string name;
-         std::string dontCare;
-         int gfid;
-         electrodeFile >> name;
-         electrodeFile >> dontCare;
-         electrodeFile >> gfid;
 
-         if (!electrodeFile) { break; }
-         nameFromElectrode.push_back(name);
-         gfidFromElectrode.push_back(gfid);
-      }
-   }
-   // Want to use this instead of literal filenames for multiple time steps
-   std::string VmSubfile;
-   objectGet(obj, "vm_subfile", VmSubfile, ""); // VmPattern = ../torsoRun/snapshot.%012d/Vm#%06d;
-   std::string rootFilename;
-   objectGet(obj, "simdir", rootFilename, ".");
-   std::string outDir;
-   objectGet(obj, "outdir", outDir, rootFilename.c_str());
-   std::vector<std::ofstream> fileFromElectrode(nameFromElectrode.size());
-   for (int ielec=0; ielec<fileFromElectrode.size(); ielec++)
-   {
-      if(my_rank == pmeshpart[gfidFromElectrode[ielec]]) {
-         fileFromElectrode[ielec].open(outDir+"/"+nameFromElectrode[ielec]+".txt");
-      }
-   }
-
-   // Top-level simulation directory holding time steps (snapshots)
-   DIR *dir;
-   dir = opendir(rootFilename.c_str());
-   if (dir == NULL) return 0;
-
-   // Iterate over time steps in no particular order
-   dirent *entry;
-   regex_t snapshotRegex;
-   int retCode = regcomp(&snapshotRegex, "^snapshot\\.[[:digit:]]\\{1,\\}$", REG_NOSUB);
-   assert(retCode == 0);
-   while((entry = readdir(dir)) != NULL)
-   {
-      //Does the file match the output pattern?
-      retCode = regexec(&snapshotRegex, entry->d_name, 0, NULL, 0);
-      if (retCode != 0) { continue; }
-
-      std::string VmFilename = rootFilename + "/" + std::string(entry->d_name) + "/" + VmSubfile + "#";
-
+#if 0
       //Do we have a Vm file present?
       if (access((VmFilename + "000000").c_str(), R_OK) == -1) { continue; }
 
@@ -325,15 +247,14 @@ int main(int argc, char *argv[])
 #endif	 
    }
 
+#endif
+
 #ifdef DEBUG
    std::ofstream mesh_ofs(outDir+"/refined.mesh");
    mesh_ofs.precision(8);
    pmesh->PrintAsOne(mesh_ofs);
 #endif
    
-   regfree(&snapshotRegex);
-   closedir(dir);
-
    // 14. Free the used memory.
    delete M_test;
    delete a;
