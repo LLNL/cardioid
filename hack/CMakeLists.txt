@@ -6,5 +6,6 @@ blt_add_executable(
      femheart.cpp
      MatrixElementPiecewiseCoefficient.cpp
      util.cpp
-     DEPENDS_ON mfem ode_gpu_aware simUtil mpi
+     cardiac_coefficients.cpp
+     DEPENDS_ON mfem ode_gpu_aware simUtil mpi openmp
   )

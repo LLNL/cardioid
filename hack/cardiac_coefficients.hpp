@@ -2,7 +2,8 @@
 #define CARDIAC_COEF
 
 #include "mfem.hpp"
-#include "Lumens2009.hpp"
+#include "Reaction.hh"
+#include "ThreadServer.hh"
 #include <memory>
 #include <iostream>
 #include <fstream>
@@ -26,14 +27,11 @@ public:
 
    virtual double Eval(ElementTransformation &T,
                        const IntegrationPoint &ip);
-
-   virtual double EvalQ(ElementTransformation &T,
-                        const int num_ip);
 };
 
 /// Wrapper for interface to melodee-generated active tension
 /// values that live only at quadrature points
-class ActiveTensionFunction : public QuadratureFunction
+class ReactionFunction : public QuadratureFunction
 {
 private:
 
@@ -42,51 +40,33 @@ private:
 
    /// Finite element space for the displacements
    FiniteElementSpace *fes;
+   QuadratureFunction VmQuad;
 
    /// melodee compatible data members
-   vector<double> stretch;
-   vector<double> stretchVel;
-   vector<double> tension;
-   vector<double> dtension;
-   vector<double> actTime;
-
-   vector<string> outputNames;
-   vector<int> outOrder;
-   double *outArrays[2];
-
-   vector<string> inputNames;
-   vector<int> inOrder;
-   double *inArrays[2];
-
-   vector<double> nextStretch;
+   lazy_array<double> Vm;
+   lazy_array<double> iStim;
+   lazy_array<double> dVm;
 
    /// Number of integration points
    int nCells;
+   double dt;
+   std::string objectName;
+   ThreadTeam threadGroup;
 
    /// Cell model object
-   Lumens2009::ThisModel tester;
-
-   /// Fiber coefficient
-   VectorCoefficient *Q;
-
-   /// Stretch calculation 
-   void CalcStretch(const Vector &x, const double dt);   
+   std::shared_ptr<Reaction> reaction;
    
 public:
-   ActiveTensionFunction(QuadratureSpace *qs, FiniteElementSpace *f, VectorCoefficient &fib);
+   ReactionFunction(QuadratureSpace *qs, FiniteElementSpace *f,const double new_dt, const std::string new_objectName, const ThreadTeam& group);
 
    /// Call to melodee generated initialization
    void Initialize();
 
-   /// Try the active tension at each newton step
-   void TryStep(const Vector &x, const double dt);
+   /// Call to melodee generated calc
+   void Calc(const Vector& x);
 
-   /// Commit the active tension after a successful timestep
-   void CommitStep(const double dt);
-
-   /// Initialize the underlying vector with a constant (for testing only)
-   ActiveTensionFunction &operator=(double value);
-   
+ private:
+   void CalcVm(const Vector& x);
 };
 
 

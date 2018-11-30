@@ -98,7 +98,7 @@ blt_add_library(NAME ode_gpu_aware
                 DEPENDS_ON heart_transport simUtil simdops ode_cpu_only profiling threading ${extra_libs}
                            ${CUDA_NVTX_LIBRARY} ${CUDA_NVRTC_LIBRARY} ${CUDA_CUDA_LIBRARY}
                            ${cuda} ${cuda_runtime} openmp mpi
-                INCLUDES ${extra_includes}
+                INCLUDES ${extra_includes} ${CMAKE_CURRENT_SOURCE_DIR}
                 )
 
 
