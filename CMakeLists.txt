@@ -114,6 +114,7 @@ if (EXISTS ${MFEM_DIR})
    )
 
 
+   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/hack)
    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ecg)
    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/fibers)
    option(BUILD_MECH "Should we build with mechanics?  Needs a non-public version of mfem." OFF)
