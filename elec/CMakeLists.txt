@@ -108,7 +108,15 @@ set(ode_gpu_aware_src
    ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc
    Interpolation.cc
    reactionFactory.cc
- )
+)
+blt_add_library(NAME ode_gpu_aware
+                SOURCES ${ode_gpu_aware_src}
+                DEPENDS_ON heart_transport simUtil simdops ode_cpu_only ${extra_libs}
+                           ${CUDA_NVTX_LIBRARY} ${CUDA_NVRTC_LIBRARY} ${CUDA_CUDA_LIBRARY}
+                           ${cuda} ${cuda_runtime} openmp mpi
+                INCLUDES ${extra_includes}
+                )
+
 
 set(ode_cpu_only_src
     TT06GatesSimd2.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c 
@@ -121,7 +129,6 @@ blt_add_library(NAME ode_cpu_only
                 )
     
 set (heart_gpu_aware_src
-   ${ode_gpu_aware_src}
    ActivationAndRecoverySensor.cc
    ActivationTimeSensor.cc
    BoxStimulus.cc
@@ -186,8 +193,8 @@ set (heart_gpu_aware_src
 )
 blt_add_library(NAME heart_gpu_aware
                 SOURCES ${heart_gpu_aware_src}
-                DEPENDS_ON ${heart_explicit_cuda} heart_transport simUtil simdops ${extra_libs}
-                           ${CUDA_NVTX_LIBRARY} ${CUDA_NVRTC_LIBRARY} ${CUDA_CUDA_LIBRARY}
+                DEPENDS_ON ${heart_explicit_cuda} ode_gpu_aware heart_transport simUtil ${extra_libs}
+                           ${CUDA_NVTX_LIBRARY} ${CUDA_CUDA_LIBRARY}
                            ${cuda} ${cuda_runtime} openmp mpi
                 INCLUDES ${extra_includes}
                 )
@@ -198,7 +205,7 @@ set (heart_cpu_only_src
 )
 blt_add_library(NAME heart_cpu_only
                 SOURCES ${heart_cpu_only_src}
-                DEPENDS_ON ode_cpu_only ${extra_libs} openmp
+                DEPENDS_ON ${extra_libs} openmp
                 INCLUDES ${extra_includes}
                 )
 
