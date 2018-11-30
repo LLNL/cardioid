@@ -76,6 +76,16 @@ else()
    set(heart_explicit_cuda "")
 endif()
 
+set(threading_src
+    ThreadServer.cc
+    ThreadUtils.cc
+   )
+
+blt_add_library(NAME threading
+                SOURCES ${threading_src}
+                DEPENDS_ON openmp
+                )
+
 set(profiling_src
     PerformanceTimers.cc
     unionOfStrings.cc
@@ -121,7 +131,7 @@ set(ode_gpu_aware_src
 )
 blt_add_library(NAME ode_gpu_aware
                 SOURCES ${ode_gpu_aware_src}
-                DEPENDS_ON heart_transport simUtil simdops ode_cpu_only profiling ${extra_libs}
+                DEPENDS_ON heart_transport simUtil simdops ode_cpu_only profiling threading ${extra_libs}
                            ${CUDA_NVTX_LIBRARY} ${CUDA_NVRTC_LIBRARY} ${CUDA_CUDA_LIBRARY}
                            ${cuda} ${cuda_runtime} openmp mpi
                 INCLUDES ${extra_includes}
@@ -163,8 +173,6 @@ set (heart_gpu_aware_src
    TestStimulus.hh
    checkpointIO.cc
    getRemoteCells.cc
-	ThreadServer.cc
-	ThreadUtils.cc
 	stringUtils.cc
 	readCellList.cc
 	PioHeaderData.cc
@@ -203,7 +211,7 @@ set (heart_gpu_aware_src
 )
 blt_add_library(NAME heart_gpu_aware
                 SOURCES ${heart_gpu_aware_src}
-                DEPENDS_ON ${heart_explicit_cuda} ode_gpu_aware heart_transport simUtil profiling ${extra_libs}
+                DEPENDS_ON ${heart_explicit_cuda} ode_gpu_aware heart_transport simUtil profiling threading ${extra_libs}
                            ${CUDA_NVTX_LIBRARY} ${CUDA_CUDA_LIBRARY}
                            ${cuda} ${cuda_runtime} openmp mpi
                 INCLUDES ${extra_includes}
