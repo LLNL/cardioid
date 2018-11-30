@@ -98,6 +98,15 @@ add_custom_command(
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
  )
 
+set(profiling_src
+    PerformanceTimers.cc
+    unionOfStrings.cc
+    )
+
+blt_add_library(NAME profiling
+                SOURCES ${profiling_src}
+                DEPENDS_ON simUtil openmp 
+                )
 
 set(ode_gpu_aware_src
     ${reaction_src}
@@ -111,7 +120,7 @@ set(ode_gpu_aware_src
 )
 blt_add_library(NAME ode_gpu_aware
                 SOURCES ${ode_gpu_aware_src}
-                DEPENDS_ON heart_transport simUtil simdops ode_cpu_only ${extra_libs}
+                DEPENDS_ON heart_transport simUtil simdops ode_cpu_only profiling ${extra_libs}
                            ${CUDA_NVTX_LIBRARY} ${CUDA_NVRTC_LIBRARY} ${CUDA_CUDA_LIBRARY}
                            ${cuda} ${cuda_runtime} openmp mpi
                 INCLUDES ${extra_includes}
@@ -159,7 +168,7 @@ set (heart_gpu_aware_src
 	readCellList.cc
 	PioHeaderData.cc
 	Vector.cc SymmetricTensor.cc
-	PerformanceTimers.cc unionOfStrings.cc getUserInfo.cc
+	getUserInfo.cc
         GDLoadBalancer.cc BlockLoadBalancer.cc workBoundBalancer.cc
 	pioBalancer.cc
 	CommTable.cc
@@ -193,7 +202,7 @@ set (heart_gpu_aware_src
 )
 blt_add_library(NAME heart_gpu_aware
                 SOURCES ${heart_gpu_aware_src}
-                DEPENDS_ON ${heart_explicit_cuda} ode_gpu_aware heart_transport simUtil ${extra_libs}
+                DEPENDS_ON ${heart_explicit_cuda} ode_gpu_aware heart_transport simUtil profiling ${extra_libs}
                            ${CUDA_NVTX_LIBRARY} ${CUDA_CUDA_LIBRARY}
                            ${cuda} ${cuda_runtime} openmp mpi
                 INCLUDES ${extra_includes}
