@@ -36,6 +36,48 @@ if (CMAKE_SYSTEM_NAME MATCHES Darwin)
   SET(CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS "${CMAKE_SHARED_MODULE_CREATE_CXX_FLAGS} -undefined dynamic_lookup")
 endif()
 
+if (ENABLE_CUDA)
+   include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
+   add_definitions(-DUSE_CUDA)
+   add_definitions(-DUSE_NVTX)
+   set(cuda cuda)
+   set(cuda_runtime cuda_runtime)
+
+   find_library(CUDA_NVTX_LIBRARY
+      NAMES nvToolsExt nvTools nvtoolsext nvtools nvtx NVTX
+      PATHS ${CUDA_TOOLKIT_ROOT_DIR}
+      PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib"
+      DOC "Location of the CUDA Toolkit Extension (NVTX) library"
+      NO_DEFAULT_PATH
+   )
+   mark_as_advanced(CUDA_NVTX_LIBRARY)
+   find_library(CUDA_NVRTC_LIBRARY
+      NAMES nvrtc NVRTC
+      PATHS ${CUDA_TOOLKIT_ROOT_DIR}
+      PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib"
+      DOC "Location of the CUDA NVidia Runtime Compilation library"
+      NO_DEFAULT_PATH
+   )
+   mark_as_advanced(CUDA_NVRTC_LIBRARY)
+else()
+   set(cuda "")
+   set(cuda_runtime "")
+   set(CUDA_NVTX_LIBRARY "")
+   set(CUDA_NVRTC_LIBRARY "")
+   set(CUDA_CUDA_LIBRARY "")
+endif()   
+
+
+find_library(BLAS_LIB blas)
+find_library(LAPACK_LIB lapack)
+
+if (BLAS_LIB AND LAPACK_LIB)
+   add_definitions(-DHAVE_LAPACK)
+   set(lapack ${LAPACK_LIB} ${BLAS_LIB})
+else()
+   set(lapack "")   
+endif()
+
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/simUtil/src)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/simdops)

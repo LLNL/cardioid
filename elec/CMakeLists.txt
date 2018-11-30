@@ -5,46 +5,6 @@ add_definitions(${extra_definitions})
 
 set(extra_includes "" CACHE STRING "")
 
-if (ENABLE_CUDA)
-   include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
-   add_definitions(-DUSE_CUDA)
-   add_definitions(-DUSE_NVTX)
-   set(cuda cuda)
-   set(cuda_runtime cuda_runtime)
-
-   find_library(CUDA_NVTX_LIBRARY
-      NAMES nvToolsExt nvTools nvtoolsext nvtools nvtx NVTX
-      PATHS ${CUDA_TOOLKIT_ROOT_DIR}
-      PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib"
-      DOC "Location of the CUDA Toolkit Extension (NVTX) library"
-      NO_DEFAULT_PATH
-   )
-   mark_as_advanced(CUDA_NVTX_LIBRARY)
-   find_library(CUDA_NVRTC_LIBRARY
-      NAMES nvrtc NVRTC
-      PATHS ${CUDA_TOOLKIT_ROOT_DIR}
-      PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib"
-      DOC "Location of the CUDA NVidia Runtime Compilation library"
-      NO_DEFAULT_PATH
-   )
-   mark_as_advanced(CUDA_NVRTC_LIBRARY)
-else()
-   set(cuda "")
-   set(cuda_runtime "")
-   set(CUDA_NVTX_LIBRARY "")
-   set(CUDA_NVRTC_LIBRARY "")
-   set(CUDA_CUDA_LIBRARY "")
-endif()   
-
-find_library(BLAS_LIB blas)
-find_library(LAPACK_LIB lapack)
-
-find_program(PERL perl)
-
-if (BLAS_LIB AND LAPACK_LIB)
-   add_definitions(-DHAVE_LAPACK)
-   list(APPEND extra_libs ${LAPACK_LIB} ${BLAS_LIB})
-endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../simdops/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -53,6 +13,10 @@ set (heart_transport_src
    SpaceAllocator.cc 
    lazy_array.hh
 )
+
+list(APPEND extra_libs ${lapack})
+
+find_program(PERL perl)
 
 blt_add_library(NAME heart_transport
                 SOURCES ${heart_transport_src}
