@@ -114,6 +114,11 @@ set(ode_cpu_only_src
     TT06GatesSimd2.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c 
     svd.c
     )
+blt_add_library(NAME ode_cpu_only
+                SOURCES ${ode_cpu_only_src}
+                DEPENDS_ON ${extra_libs} openmp
+                INCLUDES ${extra_includes}
+                )
     
 set (heart_gpu_aware_src
    ${ode_gpu_aware_src}
@@ -188,13 +193,12 @@ blt_add_library(NAME heart_gpu_aware
                 )
 
 set (heart_cpu_only_src 
-   ${ode_cpu_only_src}
    spi_impl.c
    clooper.c workBound.c
 )
 blt_add_library(NAME heart_cpu_only
                 SOURCES ${heart_cpu_only_src}
-                DEPENDS_ON simUtil simdops ${extra_libs} openmp
+                DEPENDS_ON ode_cpu_only ${extra_libs} openmp
                 INCLUDES ${extra_includes}
                 )
 
