@@ -211,7 +211,7 @@ set (heart_gpu_aware_src
 )
 blt_add_library(NAME heart_gpu_aware
                 SOURCES ${heart_gpu_aware_src}
-                DEPENDS_ON ${heart_explicit_cuda} ode_gpu_aware heart_transport simUtil profiling threading ${extra_libs}
+                DEPENDS_ON ${heart_explicit_cuda} heart_cpu_only ode_gpu_aware heart_transport simUtil profiling threading ${extra_libs}
                            ${CUDA_NVTX_LIBRARY} ${CUDA_CUDA_LIBRARY}
                            ${cuda} ${cuda_runtime} openmp mpi
                 INCLUDES ${extra_includes}
@@ -229,9 +229,8 @@ blt_add_library(NAME heart_cpu_only
 
 blt_add_executable(NAME cardioid
                    SOURCES cardioid.cc
-                   DEPENDS_ON heart_gpu_aware heart_cpu_only ${heart_explicit_cuda}
-                              heart_gpu_aware heart_cpu_only ${heart_explicit_cuda}
-                              heart_gpu_aware heart_cpu_only ${heart_explicit_cuda}
+                   DEPENDS_ON heart_gpu_aware ${heart_explicit_cuda}
+                              heart_gpu_aware ${heart_explicit_cuda}
                               ${cuda_runtime} openmp)
 
 blt_add_executable(NAME singleCell
@@ -241,7 +240,7 @@ blt_add_executable(NAME singleCell
 if (LAPACK_LIB)
    blt_add_executable(NAME modifyAnatomyFile
                       SOURCES modifyAnatomyFile.cc
-                      DEPENDS_ON heart_gpu_aware heart_cpu_only ${cuda_runtime} openmp)
+                      DEPENDS_ON heart_gpu_aware ${cuda_runtime} openmp)
 endif ()
 
 
