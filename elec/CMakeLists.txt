@@ -76,6 +76,16 @@ else()
    set(heart_explicit_cuda "")
 endif()
 
+set(profiling_src
+    PerformanceTimers.cc
+    unionOfStrings.cc
+    )
+
+blt_add_library(NAME profiling
+                SOURCES ${profiling_src}
+                DEPENDS_ON simUtil openmp 
+                )
+
 set (reaction_src
 	#TT04_CellML_Reaction.cc
 	#TT06_CellML_Reaction.cc 
@@ -98,15 +108,6 @@ add_custom_command(
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
  )
 
-set(profiling_src
-    PerformanceTimers.cc
-    unionOfStrings.cc
-    )
-
-blt_add_library(NAME profiling
-                SOURCES ${profiling_src}
-                DEPENDS_ON simUtil openmp 
-                )
 
 set(ode_gpu_aware_src
     ${reaction_src}
@@ -175,7 +176,7 @@ set (heart_gpu_aware_src
 	BucketOfBits.cc
 	stateLoader.cc
 	readPioFile.cc
-	AnatomyReader.cc object_cc.cc
+	AnatomyReader.cc
 	Koradi.cc GridRouter.cc Grid3DStencil.cc writeCells.cc
 	checkpointIO.cc
 	DomainInfo.cc
@@ -227,7 +228,7 @@ blt_add_executable(NAME cardioid
 
 blt_add_executable(NAME singleCell
                    SOURCES singleCell.cc singleCellOptions.c
-                   DEPENDS_ON heart_gpu_aware heart_cpu_only ${cuda} ${cuda_runtime} openmp)
+                   DEPENDS_ON ode_gpu_aware ${cuda} ${cuda_runtime} openmp)
 
 if (LAPACK_LIB)
    blt_add_executable(NAME modifyAnatomyFile

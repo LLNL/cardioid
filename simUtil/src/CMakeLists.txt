@@ -23,5 +23,6 @@ blt_add_library(
       three_algebra.c
       units.c
       utilities.c
+      object_cc.cc
     DEPENDS_ON mpi
 )
