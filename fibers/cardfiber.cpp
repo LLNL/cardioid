@@ -91,10 +91,10 @@ bool isInTetElement(const Vector& q, Mesh* mesh, int eleIndex){
         Vector vec(4);
         int vert=v[i];
         const double* coord=mesh->GetVertex(vert);
-       for(int j=0; j<dim3; j++){
+       for(int j=0; j<dim; j++){
            vec(j)=coord[j];
        }        
-        vec(dim3)=1.0;
+        vec(dim)=1.0;
         VV.push_back(vec);
     }    
 
@@ -165,7 +165,7 @@ void calcGradient(GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction&
 
 void getAnatomy(anatomy& anat, DenseMatrix& QPfib, Option& options, Phi& phi,
         ThreeInts& inds, ThreeInts& nns){
-    DenseMatrix Sigma(dim3, dim3);
+    DenseMatrix Sigma(dim, dim);
     calcSigma(Sigma, QPfib, options);
 
     double *s=Sigma.Data();
@@ -192,13 +192,13 @@ bool findPtEle(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, Grid
 
             if (isInTetElement(q, mesh, eleIndex))
             {
-                DenseMatrix QPfib(dim3, dim3);
+                DenseMatrix QPfib(dim, dim);
                 Phi phi;
                 calcGradient(x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv, options, q, eleIndex, QPfib, phi);  
                 
                out << elemnum << " ";
-               for(int ii=0; ii<dim3; ii++){
-                  for(int jj=0; jj<dim3; jj++){
+               for(int ii=0; ii<dim; ii++){
+                  for(int jj=0; jj<dim; jj++){
                      out << QPfib(ii, jj) << " ";
                   }
                }
@@ -222,7 +222,7 @@ bool findPtEleAnat(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
     for (unsigned e = 0; e < elements.size(); e++) {
         int eleIndex=elements[e];                   
         if(isInTetElement(q, mesh, eleIndex)){
-            DenseMatrix QPfib(dim3, dim3);
+            DenseMatrix QPfib(dim, dim);
             Phi phi;
             calcGradient(x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv, options, q, eleIndex, QPfib, phi);  
             anatomy anat;
@@ -273,16 +273,16 @@ void calcSigma(DenseMatrix& Sigma, DenseMatrix& Q, Option& options){
     conduct(0)=options.gL;
     conduct(1)=options.gT;
     conduct(2)=options.gN;
-    DenseMatrix diag(dim3, dim3);
+    DenseMatrix diag(dim, dim);
     //Get Diag (conductivity)).
-    for(int i=0; i<dim3; i++){
+    for(int i=0; i<dim; i++){
         Vector vec(3);
         vec=0.0;
         vec(i)=conduct(i);
         diag.SetCol(i, vec);
     }
     
-    DenseMatrix tmp(dim3, dim3);
+    DenseMatrix tmp(dim, dim);
     Mult(Q, diag, tmp);
     DenseMatrix QT=Q;
     QT.Transpose();

@@ -74,7 +74,7 @@ void orient(DenseMatrix& Qp, DenseMatrix& Q, double a, double b){
     //| cosa   -sina   0  |
     //| sina    cosa   0  |
     //|  0        0    1  |
-    DenseMatrix matrixA(dim3, dim3);
+    DenseMatrix matrixA(dim, dim);
     matrixA=0.0;
     matrixA(0, 0)=cosa;
     matrixA(0, 1)=-sina;
@@ -84,7 +84,7 @@ void orient(DenseMatrix& Qp, DenseMatrix& Q, double a, double b){
     //|  1     0      0   |
     //|  0    cosb   sinb |
     //|  0   -sinb   cosb |    
-    DenseMatrix matrixB(dim3, dim3);
+    DenseMatrix matrixB(dim, dim);
     matrixB=0.0;
     matrixB(0, 0)=1;
     matrixB(1, 1)=cosb;
@@ -92,7 +92,7 @@ void orient(DenseMatrix& Qp, DenseMatrix& Q, double a, double b){
     matrixB(2, 1)=-sinb;
     matrixB(2, 2)=cosb;      
     
-    DenseMatrix QA(dim3, dim3);
+    DenseMatrix QA(dim, dim);
     
     Mult(Q, matrixA, QA);    
     Mult(QA, matrixB, Qp);
@@ -295,11 +295,11 @@ void vectorEigen(Vector& psi_ab, DenseMatrix& QPfib){
     double norm=e.Norml2();
     e/=norm;
     
-    DenseMatrix m(dim3,dim3);  
+    DenseMatrix m(dim,dim);  
     MultVVt(psi_ab, m);
       
-    double lamda[dim3];
-    double vec[dim3*dim3];
+    double lamda[dim];
+    double vec[dim*dim];
     m.CalcEigenvalues(lamda, vec);
     double lamda_max=-1;
     int index_max=-1;
@@ -341,7 +341,7 @@ void biSlerpCombo(DenseMatrix& QPfib,
    // Initialize big values for QPfib so we will know it is a wrong one.
    Vector nonVal(3);
    nonVal = 999;
-   for (int i = 0; i < dim3; i++) {
+   for (int i = 0; i < dim; i++) {
        QPfib.SetCol(i, nonVal);
    }   
    
@@ -374,7 +374,7 @@ void biSlerpCombo(DenseMatrix& QPfib,
     bool phi_rv_isnonzero = vecisnonzero(phi_rv_vec);
     bool phi_epi_isnonzero = vecisnonzero(phi_epi_vec);
 
-    DenseMatrix QPendo(dim3, dim3);
+    DenseMatrix QPendo(dim, dim);
 
     if (!vecisnonzero(psi_ab_vec)) {
         if(options.verbose){
@@ -384,12 +384,12 @@ void biSlerpCombo(DenseMatrix& QPfib,
     }
 
 
-    DenseMatrix QPlv(dim3, dim3);
+    DenseMatrix QPlv(dim, dim);
     if (phi_lv_isnonzero) {
         // Line 8
         Vector phi_lv_vec_neg = phi_lv_vec;
         phi_lv_vec_neg.Neg();
-        DenseMatrix Qlv(dim3, dim3);
+        DenseMatrix Qlv(dim, dim);
         if (vecdot(psi_ab_vec, phi_lv_vec_neg)) {
             if(options.verbose){
                 cout << "\tpsi_ab_vec equal to phi_lv_vec_neg" << endl;
@@ -402,10 +402,10 @@ void biSlerpCombo(DenseMatrix& QPfib,
         // End of Line 8
     }
 
-    DenseMatrix QPrv(dim3, dim3);
+    DenseMatrix QPrv(dim, dim);
     if (phi_rv_isnonzero) {
         //Line 9
-        DenseMatrix Qrv(dim3, dim3);
+        DenseMatrix Qrv(dim, dim);
         if (vecdot(psi_ab_vec, phi_rv_vec)) {
             if(options.verbose){
                 cout << "\tpsi_ab_vec equal to phi_rv_vec" << endl;
@@ -417,10 +417,10 @@ void biSlerpCombo(DenseMatrix& QPfib,
         }
     }
 
-    DenseMatrix QPepi(dim3, dim3);
+    DenseMatrix QPepi(dim, dim);
     if (phi_epi_isnonzero) {
         //Line 11
-        DenseMatrix Qepi(dim3, dim3);
+        DenseMatrix Qepi(dim, dim);
         if (vecdot(psi_ab_vec, phi_epi_vec)) {
             if(options.verbose){
                 cout << "\tpsi_ab_vec equal to phi_epi_vec" << endl;
@@ -482,13 +482,13 @@ void genfiber(vector<DenseMatrix>& QPfibVectors,
         Vector phi_lv_vec=phi_lv_grads[i];
         Vector phi_rv_vec=phi_rv_grads[i];
         Vector phi_epi_vec=phi_epi_grads[i];
-        DenseMatrix QPfib(dim3,dim3);
+        DenseMatrix QPfib(dim,dim);
         
         biSlerpCombo(QPfib, psi_ab[i], psi_ab_vec, phi_epi[i], phi_epi_vec, phi_lv[i], phi_lv_vec, phi_rv[i], phi_rv_vec, options);
 
         QPfibVectors.push_back(QPfib);
 //        vector<Vector> qpVecs;
-//        for(int j=0; j<dim3; j++){
+//        for(int j=0; j<dim; j++){
 //            Vector vec;
 //            QPfib.GetColumn(j, vec);
 //            qpVecs.push_back(vec);

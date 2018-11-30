@@ -547,15 +547,15 @@ void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
                double phi_rv = 0.0;
                getCardEleGrads(x_phi_rv, q, eleIndex, phi_rv_vec, phi_rv);
 
-               DenseMatrix QPfib(dim3, dim3);
+               DenseMatrix QPfib(dim, dim);
                biSlerpCombo(QPfib, psi_ab, psi_ab_vec, phi_epi, phi_epi_vec,
                             phi_lv, phi_lv_vec, phi_rv, phi_rv_vec, options);
 
                stringstream f_ofs;
                f_ofs << tokens[0] << " ";
-               for (int ii = 0; ii < dim3; ii++)
+               for (int ii = 0; ii < dim; ii++)
                {
-                  for (int jj = 0; jj < dim3; jj++)
+                  for (int jj = 0; jj < dim; jj++)
                   {
                      f_ofs << QPfib(ii, jj) << " ";
                   }
@@ -648,11 +648,11 @@ void calcNodeFiberP(vector<DenseMatrix>& QPfibVectors, int size, int rank){
 
 
     // Set up diag matrix
-    // [ 3 0 0
-    //   0 2 0
-    //   0 0 1 ]
-    DenseMatrix diag(dim3, dim3);
-    for(int i=0; i<dim3; i++){
+    // [ 3 0 0 
+    //   0 2 0 
+    //   0 0 1 ]    
+    DenseMatrix diag(dim, dim);
+    for(int i=0; i<dim; i++){
         Vector vec(3);
         vec=0.0;
         vec(i)=3-i;
@@ -666,12 +666,12 @@ void calcNodeFiberP(vector<DenseMatrix>& QPfibVectors, int size, int rank){
 
      for(unsigned i=bin*rank; i< bin*(rank+1); i++){
         if(i<vecSize){
-            DenseMatrix Q=QPfibVectors[i];
-            DenseMatrix tmp(dim3, dim3);
-            Mult(Q, diag, tmp);
+            DenseMatrix Q=QPfibVectors[i]; 
+            DenseMatrix tmp(dim, dim);
+            Mult(Q, diag, tmp);    
             DenseMatrix QT=Q;
-            QT.Transpose();
-            DenseMatrix Sigma(dim3, dim3);
+            QT.Transpose();  
+            DenseMatrix Sigma(dim, dim);
             Mult(tmp, QT, Sigma);
             SigmaVec.push_back(Sigma);
          }

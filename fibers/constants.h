@@ -9,7 +9,7 @@
 #define	CONSTANTS_H
 
 const double PI=3.14159265;
-const int dim3=3;
+const int dim=3;
 
 
 #endif	/* CONSTANTS_H */
