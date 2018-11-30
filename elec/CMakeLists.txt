@@ -98,9 +98,25 @@ add_custom_command(
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
  )
 
-set (heart_gpu_aware_src
-   ${reaction_src}
 
+set(ode_gpu_aware_src
+    ${reaction_src}
+    Reaction.cc
+    Reaction.hh
+    ReactionManager.cc
+    ReactionManager.hh
+   ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc
+   Interpolation.cc
+   reactionFactory.cc
+ )
+
+set(ode_cpu_only_src
+    TT06GatesSimd2.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c 
+    svd.c
+    )
+    
+set (heart_gpu_aware_src
+   ${ode_gpu_aware_src}
    ActivationAndRecoverySensor.cc
    ActivationTimeSensor.cc
    BoxStimulus.cc
@@ -116,10 +132,6 @@ set (heart_gpu_aware_src
    PointListSensor.cc
    PointStimulus.cc
    PointStimulus.hh
-   Reaction.cc
-   Reaction.hh
-   ReactionManager.cc
-   ReactionManager.hh
    simulationLoop.cc
    Simulate.cc
    Simulate.hh
@@ -149,7 +161,7 @@ set (heart_gpu_aware_src
 	BoundingBox.cc
 	initializeSimulate.cc
 	initializeAnatomy.cc setConductivity.cc assignCellsToTasks.cc
-	diffusionFactory.cc reactionFactory.cc
+	diffusionFactory.cc
 	stimulusFactory.cc sensorFactory.cc
 	FibreConductivity.cc JHUConductivity.cc
 	DiffusionUtils.cc
@@ -165,9 +177,7 @@ set (heart_gpu_aware_src
 	VoronoiCoarsening.cc
 	CaAverageSensor.cc
         ProcBox.cc
-   Interpolation.cc
    Version.cc
-   ${CMAKE_CURRENT_BINARY_DIR}/registerBuiltinReactions.cc
 )
 blt_add_library(NAME heart_gpu_aware
                 SOURCES ${heart_gpu_aware_src}
@@ -178,8 +188,9 @@ blt_add_library(NAME heart_gpu_aware
                 )
 
 set (heart_cpu_only_src 
+   ${ode_cpu_only_src}
    spi_impl.c
-   clooper.c TT06GatesSimd2.c TT06GatesSimd.c TT06Gates.c TT06NonGates.c TT06NonGatesSimd.c workBound.c svd.c
+   clooper.c workBound.c
 )
 blt_add_library(NAME heart_cpu_only
                 SOURCES ${heart_cpu_only_src}
