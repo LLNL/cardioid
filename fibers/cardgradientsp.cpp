@@ -48,17 +48,17 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
 
     int totalCardPoints = 0;
     vector<anatomy> anatVectors;
-    
-    double cutoff=options.maxEdgeLen*0.6124;  //Radius of circumsphere sqrt(6)/4 
+
+    double cutoff=options.maxEdgeLen*0.6124;  //Radius of circumsphere sqrt(6)/4
     if(myid==0){
-        cout << "\n\tCutoff for nearest point is " << cutoff << "\n\n";    
+        cout << "\n\tCutoff for nearest point is " << cutoff << "\n\n";
     }
-    
+
     double rangeCutoff=options.maxEdgeLen;
     if(rangeCutoff<options.dd){
         rangeCutoff=options.dd;
-    }    
-        
+    }
+
     long long gid_dim = nx * ny*nz;
     // MPI Parallel
     for (long long g = myid; g < gid_dim; g += num_procs) {
@@ -73,15 +73,15 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
         std::pair<tree_type::const_iterator, double> found = kdtree.find_nearest(pt);
         assert(found.first != kdtree.end());
         // Skip if the distance between pt and nearest is larger than cutoff
-        if (found.second>cutoff) continue; 
-         
+        if (found.second>cutoff) continue;
+
         //For barycentric
         Vector q(4);
         q(0) = x;
         q(1) = y;
         q(2) = z;
         q(3) = 1.0;
-        
+
         triplet vetexNearPt = *found.first;
         int vertex = vetexNearPt.getIndex();
         ThreeInts inds={i, j, k};
@@ -110,8 +110,8 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
             if (totalCardPoints % 10000 == 0) {
                 cout << "\tProcessor " << myid <<" finish " << totalCardPoints << " points." << endl;
                 cout.flush();
-            }                
-        }          
+            }
+        }
 
     }
     filerheader header;
@@ -121,6 +121,9 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
     header.dx = dx;
     header.dy = dy;
     header.dz = dz;
+    header.offset_x=xmin;
+    header.offset_y=ymin;
+    header.offset_z=zmin;
 
     int globalTotCardPoints;
 
@@ -132,19 +135,19 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
     if (myid == 0) {
         DirTestCreate(fullname.c_str());
     }
-    
+
     fullname += "/anatomy";
     int lrec = 88;
 //     int lrec = 80;
     //heap_allocate(lrec*totalCardPoints*128 + 4096);
     heap_allocate(lrec*globalTotCardPoints*64 + 4096);
-    
+
     Pio_setNumWriteFiles(num_procs);
     PFILE* file = Popen(fullname.c_str(), "w", MPI_COMM_WORLD);
     //PioReserve(file, lrec*totalCardPoints*64 + 4096);
     //int nFiles_ = num_procs;
 //    if (nFiles_ > 0)
-//        PioSet(file, "ngroup", nFiles_);  
+//        PioSet(file, "ngroup", nFiles_);
 
 
 
@@ -154,11 +157,11 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
     tm* timePtr = localtime(&tt);
     char buffer[256];
     string myfmt;
-    
+
     strftime(buffer, sizeof(buffer), "%a %b %d %H:%M:%S %Y", timePtr);
     string myline(buffer);
-    myline = "  created_time = " + myline + ";\n";  
-    
+    myline = "  created_time = " + myline + ";\n";
+
     int nfiles=file->nfiles;
     if(nfiles>num_procs){
         nfiles=num_procs;
@@ -171,17 +174,18 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
         Pprintf(file, "  datatype = FIXRECORDASCII;\n");
         Pprintf(file, "  nfiles = %d;  \n", nfiles);
         Pprintf(file, "  nrecord = %d; \n", header.nrecord);
-        Pprintf(file, "  lrec = %d; \n", lrec);        
-        Pprintf(file, "  endian_key = 875770417; \n");        
+        Pprintf(file, "  lrec = %d; \n", lrec);
+        Pprintf(file, "  endian_key = 875770417; \n");
         Pprintf(file, "  nfields = 8; \n");
         Pprintf(file, "  field_names = gid cellType sigma11 sigma12 sigma13 sigma22 sigma23 sigma33; \n");
         Pprintf(file, "  field_types = u u f f f f f f; \n");
         Pprintf(file, "  nx =  %d; ny =  %d; nz =  %d;\n", header.nx, header.ny, header.nz);
-        Pprintf(file, "  field_units = 1 1 mS/mm mS/mm mS/mm mS/mm mS/mm mS/mm; \n");        
-        Pprintf(file, "  dx =  %f; dy =  %f; dz =  %f;\n", header.dx, header.dy, header.dz);        
+        Pprintf(file, "  field_units = 1 1 mS/mm mS/mm mS/mm mS/mm mS/mm mS/mm; \n");
+        Pprintf(file, "  dx =  %f; dy =  %f; dz =  %f;\n", header.dx, header.dy, header.dz);
+        Pprintf(file, "  offset_x =  %f; offset_y =  %f; offset_z =  %f;\n", header.offset_x, header.offset_y, header.offset_z);
         Pprintf(file, "} \n\n");
 
-    }  
+    }
 
     for (unsigned i = 0; i < anatVectors.size(); i++) {
         anatomy anat = anatVectors[i];
@@ -219,7 +223,7 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
 //       Pprintf(file, "  dz =  %f;\n", header.dz);
 //        Pprintf(file, "} \n\n");
 //
-//    }  
+//    }
 
 //    for (unsigned i = 0; i < anatVectors.size(); i++) {
 //        anatomy anat = anatVectors[i];
@@ -231,7 +235,7 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
 //    }
 //
 //   Pclose(file);
-    
+
 }
 
 template < class ContainerT >
@@ -293,7 +297,7 @@ void readlines(MPI_File *in, const int rank, const int size, const int overlap,
     chunk[localsize] = '\0';
 
     /*
-     * everyone calculate what their start and end *really* are by going 
+     * everyone calculate what their start and end *really* are by going
      * from the first newline after start to the first newline after the
      * overlap region starts (eg, after end - overlap + 1)
      */
@@ -358,7 +362,7 @@ void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
     const std::string comment = "#";
 
     double rangeCutoff=options.rcut*options.maxEdgeLen;
-    
+
     vector<string> outLines;
 
     for (int i = 0; i < nlines; i++) {
@@ -424,11 +428,11 @@ void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
     //    if (rank == 0) {
     //        DirTestCreate(fullname.c_str());
     //    }
-    //    
+    //
     //    fullname += "/rotmatrix";
     //    int lrec = 80;
     //    heap_allocate(lrec*totalCardPoints*64 + 4096);
-    //    
+    //
     //    PFILE* file = Popen(fullname.c_str(), "w", MPI_COMM_WORLD);
     //    PioReserve(file, lrec*totalCardPoints*64 + 4096);
     //
@@ -437,7 +441,7 @@ void getRotMatrixp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, 
     //        Pprintf(file, "%s", line.c_str());
     //    }
     //
-    //    Pclose(file);   
+    //    Pclose(file);
 
     int file_free = 0;
     MPI_Status status;
@@ -478,7 +482,7 @@ void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
 {
 
    long long totalCardPoints = 0;
-   
+
    //f_ofs << "# elementnum mat11 mat12 mat13 mat21 mat22 mat23 mat31 mat32 mat33" << endl;
 
 
@@ -566,15 +570,15 @@ void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
                 }
 
 
-            
-         }
-         
 
-         
-         
+         }
+
+
+
+
       }
    }
-   
+
    cout << "\tProcessor " << rank << " has " << outLines.size() << " lines." << endl;
 
 //    // Parallel I/O
@@ -582,11 +586,11 @@ void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
 //    if (rank == 0) {
 //        DirTestCreate(fullname.c_str());
 //    }
-//    
+//
 //    fullname += "/rotmatrix";
 //    int lrec = 80;
 //    heap_allocate(lrec*totalCardPoints*64 + 4096);
-//    
+//
 //    PFILE* file = Popen(fullname.c_str(), "w", MPI_COMM_WORLD);
 //    PioReserve(file, lrec*totalCardPoints*64 + 4096);
 //
@@ -595,8 +599,8 @@ void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
 //        Pprintf(file, "%s", line.c_str());
 //    }
 //
-//    Pclose(file);   
-   
+//    Pclose(file);
+
    int file_free = 0;
    MPI_Status status;
 
@@ -612,7 +616,7 @@ void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
    if (file_free == 1)
    {
       ofstream out;
-      
+
       if (rank == 0)
       {
          out.open("rotmatrix.txt");
@@ -623,7 +627,7 @@ void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
       {
          out.open("rotmatrix.txt", std::fstream::app);
       }
-      
+
       for (int ii = 0; ii < outLines.size(); ii++)
       {
          out << outLines[ii];
@@ -641,12 +645,12 @@ void getRotMatrixFastp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
 }
 
 void calcNodeFiberP(vector<DenseMatrix>& QPfibVectors, int size, int rank){
-    
-    
+
+
     // Set up diag matrix
-    // [ 3 0 0 
-    //   0 2 0 
-    //   0 0 1 ]    
+    // [ 3 0 0
+    //   0 2 0
+    //   0 0 1 ]
     DenseMatrix diag(dim3, dim3);
     for(int i=0; i<dim3; i++){
         Vector vec(3);
@@ -654,25 +658,25 @@ void calcNodeFiberP(vector<DenseMatrix>& QPfibVectors, int size, int rank){
         vec(i)=3-i;
         diag.SetCol(i, vec);
     }
-     
+
     std::vector<DenseMatrix> SigmaVec;
-    
+
     int vecSize=QPfibVectors.size();
     int bin=(vecSize+size-1)/size;
-    
+
      for(unsigned i=bin*rank; i< bin*(rank+1); i++){
         if(i<vecSize){
-            DenseMatrix Q=QPfibVectors[i]; 
+            DenseMatrix Q=QPfibVectors[i];
             DenseMatrix tmp(dim3, dim3);
-            Mult(Q, diag, tmp);    
+            Mult(Q, diag, tmp);
             DenseMatrix QT=Q;
-            QT.Transpose();  
+            QT.Transpose();
             DenseMatrix Sigma(dim3, dim3);
             Mult(tmp, QT, Sigma);
             SigmaVec.push_back(Sigma);
          }
-    }   
-        
+    }
+
 
    int file_free = 0;
    MPI_Status status;
@@ -689,7 +693,7 @@ void calcNodeFiberP(vector<DenseMatrix>& QPfibVectors, int size, int rank){
    if (file_free == 1)
    {
       ofstream out;
-      
+
       if (rank == 0)
       {
          out.open("heart.fiber");
@@ -700,14 +704,14 @@ void calcNodeFiberP(vector<DenseMatrix>& QPfibVectors, int size, int rank){
       {
          out.open("heart.fiber", std::fstream::app);
       }
-      
+
       for (int ii = 0; ii < SigmaVec.size(); ii++)
       {
         DenseMatrix Sigma=SigmaVec[ii];
         int pointnum=bin*rank+ii;
-        out << pointnum << " " 
-             << Sigma(0,0) << " " << Sigma(1,0) << " " << Sigma(2,0) << " " 
-             << Sigma(1,1) << " " << Sigma(2,1) << " " << Sigma(2,2) 
+        out << pointnum << " "
+             << Sigma(0,0) << " " << Sigma(1,0) << " " << Sigma(2,0) << " "
+             << Sigma(1,1) << " " << Sigma(2,1) << " " << Sigma(2,2)
              << std::endl;
       }
       out.close();
@@ -720,5 +724,5 @@ void calcNodeFiberP(vector<DenseMatrix>& QPfibVectors, int size, int rank){
    }
 
 
-    
+
 }

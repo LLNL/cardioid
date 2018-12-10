@@ -11,35 +11,35 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
         tree_type& kdtree, vector<vector<int> >& vert2Elements, vector<Vector>& boundingbox, Option& options){
     Vector min=boundingbox[0];
     Vector max=boundingbox[1];
-    
+
     double xmin=min(0);
     double ymin=min(1);
     double zmin=min(2);
-    
+
     double x_dim=max(0)-xmin;
     double y_dim=max(1)-ymin;
     double z_dim=max(2)-zmin;
-    
-    double dd10=options.dd*10; 
-    
+
+    double dd10=options.dd*10;
+
     double dx=x_dim/(int(x_dim/(dd10))*10-1);
     double dy=y_dim/(int(y_dim/(dd10))*10-1);
     double dz=z_dim/(int(z_dim/(dd10))*10-1);
-    
+
     int nx=int(x_dim/dx)+1;
     int ny=int(y_dim/dy)+1;
     int nz=int(z_dim/dz)+1;
-    
+
     long long totalCardPoints=0;
     vector<anatomy> anatVectors;
-    
-    double cutoff=options.maxEdgeLen*0.6124;  //Radius of circumsphere sqrt(6)/4 
+
+    double cutoff=options.maxEdgeLen*0.6124;  //Radius of circumsphere sqrt(6)/4
     cout << "\n\tCutoff for nearest point is " << cutoff << "\n\n";
     double rangeCutoff=options.maxEdgeLen;
     if(rangeCutoff<options.dd){
         rangeCutoff=options.dd;
     }
-       
+
     for(int i=0; i<nx; i++){
         for(int j=0; j<ny; j++){
             for (int k=0; k<nz; k++){
@@ -47,24 +47,24 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                 double y=ymin+j*dy;
                 double z=zmin+k*dz;
                 //For k-D tree
-                triplet pt(x, y, z, 0);                
+                triplet pt(x, y, z, 0);
                 std::pair<tree_type::const_iterator,double> found = kdtree.find_nearest(pt);
                 assert(found.first != kdtree.end());
                 // Skip if the distance between pt and nearest is larger than cutoff
-                if (found.second>cutoff) continue; 
+                if (found.second>cutoff) continue;
 
                 //For barycentric
                 Vector q(4);
                 q(0)=x;
                 q(1)=y;
                 q(2)=z;
-                q(3)=1.0;                 
-                
+                q(3)=1.0;
+
                 triplet vetexNearPt=*found.first;
                 int vertex=vetexNearPt.getIndex();
                 ThreeInts inds={i, j, k};
                 ThreeInts nns={nx, ny, nz};
-                
+
                 bool findPt = findPtEleAnat(mesh, x_psi_ab, x_phi_epi, x_phi_lv, x_phi_rv,
                         vert2Elements, options, q, vertex, inds, nns, anatVectors);
 
@@ -88,9 +88,9 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                     if (totalCardPoints % 10000 == 0) {
                         cout << "\tFinish " << totalCardPoints << " points." << endl;
                         cout.flush();
-                    }                
-                }                 
-                
+                    }
+                }
+
             }
         }
     }
@@ -102,11 +102,14 @@ void getCardGradients(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
     header.dy=dy;
     header.dz=dz;
     header.nrecord=totalCardPoints;
-    
+    header.offset_x=xmin;
+    header.offset_y=ymin;
+    header.offset_z=zmin;
+
     ofstream anat_ofs("anatomy#000000");
     printAnatomy(anatVectors, header, anat_ofs);
-    
-    
+
+
 }
 
 template < class ContainerT >
@@ -151,7 +154,7 @@ void getRotMatrix(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, G
     }
 
     double rangeCutoff=options.rcut*options.maxEdgeLen;
-    
+
     std::string fileLine;
 
     const std::string comment = "#";
@@ -201,10 +204,10 @@ void getRotMatrix(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, G
                 if (totalCardPoints % 10000 == 0) {
                     cout << "\tFinish " << totalCardPoints << " points." << endl;
                     cout.flush();
-                }                
+                }
             } else {
                 cout << "\tNeed to increase the range cutoff for point" << pt << endl;
-            } 
+            }
         }
     }
 }
@@ -217,7 +220,7 @@ void getRotMatrixFast(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
 
     ofstream f_ofs("rotmatrix.txt");
     f_ofs << "# elementnum mat11 mat12 mat13 mat21 mat22 mat23 mat31 mat32 mat33" << endl;
-    
+
     ifstream f_ifs;
     try{
        f_ifs.open(options.fiblocs);
@@ -229,7 +232,7 @@ void getRotMatrixFast(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
     }
 
     std::string fileLine;
-    
+
     const std::string comment="#";
 
    while (f_ifs)
@@ -274,7 +277,7 @@ void getRotMatrixFast(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                DenseMatrix QPfib(dim3, dim3);
                biSlerpCombo(QPfib, psi_ab, psi_ab_vec, phi_epi, phi_epi_vec,
                             phi_lv, phi_lv_vec, phi_rv, phi_rv_vec, options);
-               
+
                f_ofs << tokens[0] << " ";
                for(int ii=0; ii<dim3; ii++){
                   for(int jj=0; jj<dim3; jj++){
@@ -282,7 +285,7 @@ void getRotMatrixFast(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                   }
                }
                f_ofs << endl;
-               
+
                totalCardPoints++;
                if (totalCardPoints % 10000 == 0)
                {
@@ -291,22 +294,22 @@ void getRotMatrixFast(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_ep
                }
 
             }
-                    
-         
+
+
 
       }
    }
 
-          
+
 }
 
 
 void calcNodeFiber(vector<DenseMatrix>& QPfibVectors){
-    
+
     // Set up diag matrix
-    // [ 3 0 0 
-    //   0 2 0 
-    //   0 0 1 ]    
+    // [ 3 0 0
+    //   0 2 0
+    //   0 0 1 ]
     DenseMatrix diag(dim3, dim3);
     for(int i=0; i<dim3; i++){
         Vector vec(3);
@@ -314,22 +317,22 @@ void calcNodeFiber(vector<DenseMatrix>& QPfibVectors){
         vec(i)=3-i;
         diag.SetCol(i, vec);
     }
- 
+
     ofstream f_ofs("heart.fiber");
-    
+
      for(unsigned i=0; i< QPfibVectors.size(); i++){
-        DenseMatrix Q=QPfibVectors[i]; 
+        DenseMatrix Q=QPfibVectors[i];
         DenseMatrix tmp(dim3, dim3);
-        Mult(Q, diag, tmp);    
+        Mult(Q, diag, tmp);
         DenseMatrix QT=Q;
-        QT.Transpose();  
+        QT.Transpose();
         DenseMatrix Sigma(dim3, dim3);
         Mult(tmp, QT, Sigma);
-        f_ofs << i << " " 
-             << Sigma(0,0) << " " << Sigma(1,0) << " " << Sigma(2,0) << " " 
-             << Sigma(1,1) << " " << Sigma(2,1) << " " << Sigma(2,2) 
+        f_ofs << i << " "
+             << Sigma(0,0) << " " << Sigma(1,0) << " " << Sigma(2,0) << " "
+             << Sigma(1,1) << " " << Sigma(2,1) << " " << Sigma(2,2)
              << std::endl;
-        
-    }   
-    
+
+    }
+
 }

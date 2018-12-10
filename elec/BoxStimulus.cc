@@ -1,6 +1,7 @@
 #include "BoxStimulus.hh"
 #include "Anatomy.hh"
 #include "DeviceFor.hh"
+#include "three_algebra.h"
 #include <cmath>
 #include <mpi.h>
 #include <iostream>
@@ -16,16 +17,25 @@ BoxStimulus::BoxStimulus(const BoxStimulusParms& p, const Anatomy& anatomy, Puls
    std::vector<int> stimList;
    for (unsigned ii=0; ii<anatomy.nLocal(); ++ii)
    {
-      Tuple gt = anatomy.globalTuple(ii);
-      if (gt.x() > p.xMin && gt.x() < p.xMax &&
+     if (!p.isXYZ) {
+       Tuple gt = anatomy.globalTuple(ii);
+       if (gt.x() > p.xMin && gt.x() < p.xMax &&
           gt.y() > p.yMin && gt.y() < p.yMax &&
           gt.z() > p.zMin && gt.z() < p.zMax )
-         stimList.push_back(ii);
+          stimList.push_back(ii);
+     } else {
+       double len = p.length/2;
+       THREE_VECTOR point = anatomy.pointFromGid(ii);
+       if (fabs(point.x - p.x) < len &&
+          fabs(point.y - p.y) < len &&
+          fabs(point.z - p.z) < len )
+          stimList.push_back(ii);
+     }
    }
-   
+
    // Print number of gids (compute cells) within each box stimulus, this helps you verify that you box stimuli lie completely within tissue
    // For example, if your box is 20x20x20, then you would expect to see 19^3 = 6859 gids inside box stimulus (remember your fenceposts, it is not 20^3 gids, it is 19^3)
-   int myrank;								
+   int myrank;
    int nLocal = stimList.size();						// Local # of box stimulus gids within tissue; the _ at end means this variable only apply to current class, not others (just a naming convention)
    int nGlobal;									// Global # of box stimulus gids within tissue
    MPI_Comm_rank(MPI_COMM_WORLD, &myrank);					// Get the current rank (process) #
@@ -48,7 +58,7 @@ int BoxStimulus::subClassStim(double time,
       return 0;
    ro_array_ptr<int> stimList = stimListTransport_.useOn(DEFAULT_COMPUTE_SPACE);
    rw_array_ptr<double> dVmDiffusion = _dVmDiffusion.useOn(DEFAULT_COMPUTE_SPACE);
-   DEVICE_PARALLEL_FORALL(stimList.size(), ii, 
+   DEVICE_PARALLEL_FORALL(stimList.size(), ii,
                           dVmDiffusion[stimList[ii]] = value);
    return 1;
 }

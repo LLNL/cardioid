@@ -29,7 +29,7 @@ Stimulus* stimulusFactory(const std::string& name, const Anatomy& anatomy)
    objectGet(obj, "method", method, "undefined");
    objectGet(obj, "t0", p.t0, "-1000", "t");
    objectGet(obj, "tf", p.tf, "1e30",  "t");
-   
+
    string pulse_type;
    double duration;
    double vStim;
@@ -52,7 +52,7 @@ Stimulus* stimulusFactory(const std::string& name, const Anatomy& anatomy)
       objectGet(obj, "max_period",   maxperiod,   "1000", "t");
       pulse=new RandomPulse(minperiod, maxperiod, duration, -vStim, tStart);
    }
-   
+
    if (method == "undefined")
       assert(false);
    else if (method == "point")
@@ -101,13 +101,20 @@ namespace
 
       BoxStimulusParms p;
       p.baseParms = bp;
+      // TO DO: ELIMINATE GID RANGES
       objectGet(obj, "xMin",     p.xMin,     "-1");
       objectGet(obj, "yMin",     p.yMin,     "-1");
       objectGet(obj, "zMin",     p.zMin,     "-1");
       objectGet(obj, "xMax",     p.xMax,     nxString);
       objectGet(obj, "yMax",     p.yMax,     nyString);
       objectGet(obj, "zMax",     p.zMax,     nzString);
-      
+
+      objectGet(obj, "isXYZ",   p.isXYZ,     "0");
+      objectGet(obj, "x",     p.x,     "0");
+      objectGet(obj, "y",     p.y,     "0");
+      objectGet(obj, "z",     p.z,     "0");
+      objectGet(obj, "length",     p.length,     "3.0");
+
       return new BoxStimulus(p, anatomy, pulse, name);
    }
 }

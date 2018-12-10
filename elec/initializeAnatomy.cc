@@ -52,9 +52,17 @@ void initializeAnatomy(Anatomy& anatomy, const string& name, MPI_Comm comm)
    anatomy.dx() = dx;
    anatomy.dy() = dy;
    anatomy.dz() = dz;
-   
+   double offset_x, offset_y, offset_z;
+   objectGet(obj, "offset_x", offset_x, "0.0", "l");
+   objectGet(obj, "offset_y", offset_y, "0.0", "l");
+   objectGet(obj, "offset_z", offset_z, "0.0", "l");
+   anatomy.offset_x() = offset_x;
+   anatomy.offset_y() = offset_y;
+   anatomy.offset_z() = offset_z;
+
+
    BucketOfBits* data = 0;
-   
+
    string method;
    objectGet(obj, "method", method, "pio");
    if (method == "pio")
@@ -72,7 +80,7 @@ void initializeAnatomy(Anatomy& anatomy, const string& name, MPI_Comm comm)
    Long64 nLocal = anatomy.size();
    MPI_Allreduce(&nLocal, &nGlobal, 1, MPI_LONG_LONG, MPI_SUM, comm);
    anatomy.nGlobal() = nGlobal;
-   
+
    Tuple globalGridSize(anatomy.nx(), anatomy.ny(), anatomy.nz());
 
    //ewd: check that there are no gids greater than or equal to nx*ny*nz, which
@@ -88,7 +96,7 @@ void initializeAnatomy(Anatomy& anatomy, const string& name, MPI_Comm comm)
          assert(gid < nXYZ);
       }
    }
-   
+
    setConductivity(conductivityName, *data, globalGridSize, anatomy.cellArray());
    delete data;
 }
@@ -102,14 +110,14 @@ namespace
 {
    /*!
      @page ANATOMY_pio ANATOMY pio method
-     
+
      Specifies that the anatomy should be read from a file.  The file
      format for the anatomy file is described in
      section @ref sec_anatomy_format.
-     
+
      @issue{Why don't we store the cell size (or at least the default cell
      size) in the anatomy file?}
-     
+
      @beginkeywords
      @kw{filename, Path to pio file to read.  Includes the #-sign\, but not
         a six digit sequence number., snapshot.initial/anatomy#}
@@ -120,10 +128,10 @@ namespace
    {
       int myRank;
       MPI_Comm_rank(comm, &myRank);
-      
+
       string fileName;
       objectGet(obj, "fileName", fileName, "snapshot.initial/anatomy#");
-      
+
       if (myRank==0) cout << "Starting read" <<endl;
 
       BucketOfBits* bucketP = readAnatomy(fileName, comm, anatomy);
@@ -137,10 +145,10 @@ namespace
 {
    /*!
      @page ANATOMY_brick ANATOMY brick method
-     
+
      Generates an orthorhombic "brick" of cells of a specified size.
      All cells are of the same type.
-     
+
      @issue{Something should be said about the layout of the
      discretization with respect to the specfied box.}
 
@@ -152,14 +160,14 @@ namespace
      @endkeywords
 
      ~~~~
-     niederer ANATOMY 
+     niederer ANATOMY
      {
        method = brick;
        cellType = 102;
        dx = 0.1;
        dy = 0.1;
        dz = 0.1;
-       xSize = 3; 
+       xSize = 3;
        ySize = 7;
        zSize = 20;
      }
@@ -187,15 +195,15 @@ namespace
       int cellType;
       string cellString;
       uint64_t seed;
-      objectGet(obj, "seed",     seed,       "195782659275");      
+      objectGet(obj, "seed",     seed,       "195782659275");
       objectGet(obj, "cellType", cellString, "102");
       if (cellString != "random")
          cellType = atoi(cellString.c_str());
-      
+
       int nx = int(xSize/anatomy.dx());
       int ny = int(ySize/anatomy.dy());
       int nz = int(zSize/anatomy.dz());
-      
+
       if (numberSpecified)
       {
          assert(!sizeSpecified);
@@ -203,9 +211,9 @@ namespace
          objectGet(obj, "ny", ny, "16");
          objectGet(obj, "nz", nz, "14");
       }
-      
+
       anatomy.setGridSize(nx, ny, nz);
-      
+
       Long64 maxGid = Long64(nx)*Long64(ny)*Long64(nz);
       unsigned cellsPerTask = maxGid/nTasks;
       if (maxGid%nTasks != 0)
@@ -223,7 +231,7 @@ namespace
          tmp.gid_ = ii;
          if (cellString == "random")
          {
-            Prand48Object rand(tmp.gid_, seed, 0xace2468bdf1357llu);  
+            Prand48Object rand(tmp.gid_, seed, 0xace2468bdf1357llu);
             tmp.cellType_ = 100 + rand(3);
          }
          else

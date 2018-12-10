@@ -11,6 +11,12 @@ class Anatomy;
 struct BoxStimulusParms
 {
    double period;
+   bool isXYZ;
+   double x;
+   double y;
+   double z;
+   double length;
+   // TO DO: ELIMINATE GID RANGES
    double xMin;
    double yMin;
    double zMin;
@@ -28,7 +34,7 @@ class BoxStimulus : public Stimulus
    int subClassStim(double time,
 		    rw_mgarray_ptr<double> dVmDiffusion);
    int nStim();
-   
+
  private:
    Pulse* pulse_;
    lazy_array<int> stimListTransport_;

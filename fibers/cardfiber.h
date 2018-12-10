@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   cardfiber.h
  * Author: zhang30
  *
@@ -30,13 +30,16 @@ struct filerheader{
     double dx;
     double dy;
     double dz;
+    double offset_x;
+    double offset_y;
+    double offset_z;
 };
 
 struct anatomy{
     long  gid;
     int celltype;
     double sigma[6];
-    
+
 };
 
 struct Phi{
@@ -48,7 +51,7 @@ struct Phi{
 struct ThreeInts{
     int i;
     int j;
-    int k;    
+    int k;
 };
 
 void buildKDTree(Mesh *mesh, tree_type& kdtree);
@@ -71,8 +74,7 @@ bool findPtEle(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, Grid
         vector<vector<int> >& vert2Elements, Option& options, Vector& q, int vertex, std::string& elemnum, ostream& out);
 
 bool findPtEleAnat(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_epi, GridFunction& x_phi_lv, GridFunction& x_phi_rv,
-        vector<vector<int> >& vert2Elements, Option& options, 
+        vector<vector<int> >& vert2Elements, Option& options,
         Vector& q, int vertex, ThreeInts& inds, ThreeInts& nns, vector<anatomy>& anatVectors);
 
 #endif	/* CARDFIBER_H */
-

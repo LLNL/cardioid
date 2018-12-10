@@ -7,6 +7,7 @@
 #include "Tuple.hh"
 #include "SymmetricTensor.hh"
 #include "IndexToTuple.hh"
+#include "three_algebra.h"
 
 class Conductivity;
 
@@ -23,7 +24,7 @@ class Anatomy
    unsigned& nRemote();
    unsigned nGlobal() const;
    unsigned& nGlobal();
-   
+
 //    unsigned nx();
 //    unsigned ny();
 //    unsigned nz();
@@ -34,7 +35,7 @@ class Anatomy
 
 
    void setGridSize(int nx, int ny, int nz);
-   
+
    double& dx();
    double& dy();
    double& dz();
@@ -42,24 +43,30 @@ class Anatomy
    double dx() const;
    double dy() const;
    double dz() const;
-   
+
    Long64 gid(unsigned ii) const;
    SymmetricTensor conductivity(unsigned ii) const;
    int cellType(unsigned ii) const;
    Tuple globalTuple(unsigned ii) const;
-   
+
    std::vector<AnatomyCell>& cellArray();
    const std::vector<AnatomyCell>& cellArray() const;
-   
-   
+
+   double& offset_x();
+   double& offset_y();
+   double& offset_z();
+
+   THREE_VECTOR pointFromGid(unsigned ii) const;
+
  private:
    unsigned nx_, ny_, nz_;
    double dx_, dy_, dz_;
+   double offset_x_, offset_y_, offset_z_;
    unsigned nRemote_;
    unsigned nGlobal_;
    IndexToTuple i2t_;
 
-   std::vector<AnatomyCell> cell_; 
+   std::vector<AnatomyCell> cell_;
 
 };
 
@@ -102,5 +109,25 @@ inline Tuple Anatomy::globalTuple(unsigned ii) const
 
 inline       std::vector<AnatomyCell>& Anatomy::cellArray()       {return cell_;}
 inline const std::vector<AnatomyCell>& Anatomy::cellArray() const {return cell_;}
+
+inline double& Anatomy::offset_x() {return offset_x_;}
+inline double& Anatomy::offset_y() {return offset_y_;}
+inline double& Anatomy::offset_z() {return offset_z_;}
+
+inline THREE_VECTOR Anatomy::pointFromGid(unsigned ii) const
+{
+   int x=ii%nx_;
+   int y=(ii/nx_) %ny_;
+   int z=ii/nx_/ny_;
+
+   // We retrive the center of the cell as a 3D point
+   double xcoor=(x + 0.5)*dx_ + offset_x_;
+   double ycoor=(y + 0.5)*dy_ + offset_y_;
+   double zcoor=(z + 0.5)*dz_ + offset_z_;
+
+   THREE_VECTOR point = { xcoor, ycoor, zcoor };
+
+   return point;
+}
 
 #endif
