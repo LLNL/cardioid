@@ -92,9 +92,9 @@ Many thanks go to Cardioid's [contributors](https://github.com/llnl/cardioid/gra
 License
 ----------------
 
-Cardioid is distributed under the terms of both the MIT license. All new contributions must be made under this license.
+Cardioid is distributed under the terms of the MIT license. All new contributions must be made under this license.
 
-See [LICENSE](https://github.com/llnl/simutil/blob/master/LICENSE) and [NOTICE](https://github.com/llnl/simutil/blob/master/NOTICE) for details.
+See [LICENSE](https://github.com/llnl/cardioid/blob/master/LICENSE) and [NOTICE](https://github.com/llnl/cardioid/blob/master/NOTICE) for details.
 
 `SPDX-License-Identifier: (MIT)`
 

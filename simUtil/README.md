@@ -76,7 +76,7 @@ Many thanks go to SimUtil's
 License
 ----------------
 
-Simutil is distributed under the terms of both the MIT license. All
+Simutil is distributed under the terms of the MIT license. All
 new contributions must be made under this license.
 
 See [LICENSE](https://github.com/llnl/simutil/blob/master/LICENSE) and
