@@ -242,9 +242,8 @@ void printBanner()
 {
    cout <<
       "Cardioid v2.0.0\n"
-      "Unclassified/Code in development Distribution\n"
       "LLNL-CODE-764041\n"
-      "Do not redistribute without permission\n\n";
+      "\n";
 
    Version::getInstance().versionPrint(cout);
 }
