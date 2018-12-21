@@ -22,6 +22,14 @@ double QuadratureFunctionCoefficient::Eval(ElementTransformation &T,
 
 }
 
+/// Evaluate the function coefficient at a specific quadrature point
+double QuadratureFunctionCoefficient::EvalQ(ElementTransformation &T,
+                                            const int num_ip)
+{
+   //int elem_no = T.ElementNo;
+   //return QuadF->GetElementValue(elem_no, num_ip);
+}
+
 ReactionFunction::ReactionFunction(QuadratureSpace *qs, FiniteElementSpace *f, const double new_dt, const std::string new_objectName, const ThreadTeam& group)
 : QuadratureFunction(qs), QuadS(qs), fes(f), dt(new_dt), objectName(new_objectName), threadGroup(group)
 {

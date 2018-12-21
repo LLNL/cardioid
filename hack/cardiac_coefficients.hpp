@@ -27,6 +27,8 @@ public:
 
    virtual double Eval(ElementTransformation &T,
                        const IntegrationPoint &ip);
+   virtual double EvalQ(ElementTransformation &T,
+                        const int num_ip);
 };
 
 /// Wrapper for interface to melodee-generated active tension
