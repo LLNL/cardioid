@@ -1,2 +1,27 @@
-SET(CMAKE_C_COMPILER mpicc)
-SET(CMAKE_CXX_COMPILER mpicxx)
+###########################################################
+# MPI Support
+###########################################################
+set(ENABLE_MPI ON CACHE BOOL "")
+set(ENABLE_FIND_MPI ON CACHE BOOL "")
+
+###########################################################
+# OpenMP support
+###########################################################
+set(ENABLE_OPENMP ON CACHE BOOL "")
+
+###########################################################
+# c compiler
+
+
+
+
+SET(CMAKE_C_FLAGS_DEBUG "-g -ggdb -O0 " CACHE STRING "")
+SET(CMAKE_C_FLAGS_MINSIZEREL "-g -pg -O3 -DPROFILE" CACHE STRING "")
+SET(CMAKE_C_FLAGS_RELEASE "-ggdb -O2" CACHE STRING "") 
+SET(CMAKE_C_FLAGS_RELWITHDEBINFO "-ggdb -O2" CACHE STRING "")
+
+SET(CMAKE_CXX_FLAGS_DEBUG  ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "")
+SET(CMAKE_CXX_FLAGS_MINSIZEREL ${CMAKE_C_FLAGS_MINSIZEREL} CACHE STRING "")
+SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" ) 
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_C_FLAGS_RELWITHDEBINFO} CACHE STRING "")
+

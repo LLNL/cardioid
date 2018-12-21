@@ -109,8 +109,8 @@ if (EXISTS ${MFEM_DIR})
    blt_register_library(
      NAME mfem
      INCLUDES ${MFEM_DIR}/include
-     LIBRARIES ${MFEM_LIBRARY}
-     LINK_FLAGS ${MFEM_LINK_FLAGS}
+     LIBRARIES ${MFEM_LIBRARY} ${MFEM_LINK_FLAGS}
+     #LINK_FLAGS ${MFEM_LINK_FLAGS}
    )
 
 
