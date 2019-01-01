@@ -12,24 +12,6 @@
 using namespace std;
 using namespace mfem;
 
-/// Standard coefficient evaluation is not valid
-double QuadratureFunctionCoefficient::Eval(ElementTransformation &T,
-                                           const IntegrationPoint &ip)
-{
-   mfem_error ("QuadratureFunctionCoefficient::Eval (...)\n"
-               "   is not implemented for this class.");
-   return 0.0;
-
-}
-
-/// Evaluate the function coefficient at a specific quadrature point
-double QuadratureFunctionCoefficient::EvalQ(ElementTransformation &T,
-                                            const int num_ip)
-{
-   //int elem_no = T.ElementNo;
-   //return QuadF->GetElementValue(elem_no, num_ip);
-}
-
 ReactionFunction::ReactionFunction(QuadratureSpace *qs, FiniteElementSpace *f, const double new_dt, const std::string new_objectName, const ThreadTeam& group)
 : QuadratureFunction(qs), QuadS(qs), fes(f), dt(new_dt), objectName(new_objectName), threadGroup(group)
 {
@@ -92,4 +74,29 @@ void ReactionFunction::Calc(const Vector &x)
    CalcVm(x);
    reaction->calc(dt, Vm, iStim, dVm);
    dVm.readonly(CPU);
+}
+
+QuadratureIntegrator::QuadratureIntegrator(QuadratureFunction* p_newQuadFunction, const double new_scale)
+: p_quadFunction(p_newQuadFunction),
+  scale(new_scale)
+{}
+
+void QuadratureIntegrator::AssembleRHSElementVect(const FiniteElement &el, ElementTransformation &Tr, Vector &result)
+{
+   int dof_u = el.GetDof();
+   result.SetSize(dof_u);
+   Vector shape(dof_u);
+   
+   const IntegrationRule &ir = p_quadFunction->GetSpace()->GetElementIntRule(Tr.ElementNo);
+
+   result = 0.0;
+   Vector localQuad;
+   p_quadFunction->GetElementValues(Tr.ElementNo, localQuad);
+   for (int i = 0; i < ir.GetNPoints(); i++)
+   {
+      const IntegrationPoint &ip = ir.IntPoint(i);
+      el.CalcShape(ip, shape);
+      shape *= ip.weight*Tr.Weight()*scale*localQuad[i];
+      result += shape;
+   }
 }

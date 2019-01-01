@@ -11,26 +11,6 @@
 using namespace std;
 using namespace mfem;
 
-/// Generic quadrature function coefficient class for using
-/// coefficients which only live at integration points
-class QuadratureFunctionCoefficient : public Coefficient
-{
-private:
-   QuadratureFunction *QuadF;   
-   
-public:
-   QuadratureFunctionCoefficient(QuadratureFunction *qf) { QuadF = qf; }
-
-   void SetQuadratureFunction(QuadratureFunction *qf) { QuadF = qf; }
-
-   QuadratureFunction * GetQuadFunction() const { return QuadF; }
-
-   virtual double Eval(ElementTransformation &T,
-                       const IntegrationPoint &ip);
-   virtual double EvalQ(ElementTransformation &T,
-                        const int num_ip);
-};
-
 /// Wrapper for interface to melodee-generated active tension
 /// values that live only at quadrature points
 class ReactionFunction : public QuadratureFunction
@@ -71,5 +51,15 @@ public:
    void CalcVm(const Vector& x);
 };
 
+
+class QuadratureIntegrator : public LinearFormIntegrator
+{
+ public:
+   QuadratureIntegrator(QuadratureFunction* p_newQuadFunction, const double scale=1);
+   virtual void AssembleRHSElementVect(const FiniteElement &el, ElementTransformation &Tr, Vector &elvect);
+ private:
+   QuadratureFunction *p_quadFunction;
+   double scale;
+};
 
 #endif
