@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 
 testroot = ""
 
@@ -27,7 +28,8 @@ class Test:
             "testname" : self.name,
             "testroot" : testroot,
             }
-        os.system(myscript)
+        bash_pipe = os.popen("bash", "w", len(myscript))
+        print >>bash_pipe, myscript
 
 def nameFromTestDir(dirname):
     return os.path.relpath(dirname,os.path.join(testroot, "tests"))
@@ -35,6 +37,7 @@ def nameFromTestDir(dirname):
 def main():
     global testroot
     testroot = os.path.dirname(os.path.realpath(__file__))
+    print testroot
     
     import sys
     import argparse
