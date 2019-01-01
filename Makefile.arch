@@ -130,6 +130,9 @@ endif
 ifeq ($(HOSTNAME),lassen)
   ARCHGUESS = sierra
 endif
+ifeq ($(HOSTNAME),araboth)
+  ARCHGUESS = myopenmpi
+endif
 
 ifndef ARCHGUESS
    ARCHGUESS = mpi-default
