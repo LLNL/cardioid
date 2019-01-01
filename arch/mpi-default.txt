@@ -11,6 +11,8 @@ set(ENABLE_OPENMP ON CACHE BOOL "")
 
 ###########################################################
 # c compiler
+set(CMAKE_C_COMPILER "mpicc" CACHE PATH "")
+set(CMAKE_CXX_COMPILER "mpicxx" CACHE PATH "")
 
 
 
