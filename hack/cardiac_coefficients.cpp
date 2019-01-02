@@ -100,3 +100,23 @@ void QuadratureIntegrator::AssembleRHSElementVect(const FiniteElement &el, Eleme
       result += shape;
    }
 }
+
+double StimulusCollection::Eval(ElementTransformation& T, const IntegrationPoint &ip)
+{
+   double x[3];
+   Vector transip(x, 3);
+ 
+   T.Transform(ip, transip);
+
+   double result = 0;
+   for (std::size_t istim=0; istim<stim_.size(); istim++)
+   {
+      result += stim_[istim].eval(time_, T.ElementNo, transip);
+   }
+   return result;
+}
+
+void StimulusCollection::add(Stimulus newStim)
+{
+   stim_.push_back(newStim);
+}

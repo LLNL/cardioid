@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include "util.hpp"
 #include "MatrixElementPiecewiseCoefficient.hpp"
+#include "cardiac_coefficients.hpp"
 
 #define StartTimer(x)
 #define EndTimer()
@@ -23,6 +24,32 @@
 using namespace mfem;
 
 MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
+
+//Stolen from SingleCell
+class Timeline
+{
+ public:
+   Timeline(double dt, double duration)
+   {
+      maxTimesteps_ = round(duration/dt);
+      dt_ = duration/maxTimesteps_;
+   }
+   int maxTimesteps() const { return maxTimesteps_; };
+   double dt() const { return dt_; }
+   double maxTime() const { return dt_*maxTimesteps_; }
+   double realTimeFromTimestep(int timestep) const
+   {
+      return timestep*dt_;
+   }
+   int timestepFromRealTime(double realTime) const
+   {
+      return round(realTime/dt_);
+   }
+
+ private:
+   double dt_;
+   int maxTimesteps_;
+};
 
 int main(int argc, char *argv[])
 {
@@ -61,9 +88,9 @@ int main(int argc, char *argv[])
    std::vector<int> heartRegions;
    objectGet(obj,"heart_regions", heartRegions);
 
-   std::vector<double> sigma_i, sigma_e;
-   objectGet(obj,"sigma_i",sigma_i);
-   objectGet(obj,"sigma_e",sigma_e);
+   std::vector<double> sigma_m;
+   objectGet(obj,"sigma_m",sigma_m);
+   assert(heartRegions.size()*3 == sigma_m.size());
 
    double dt;
    objectGet(obj,"dt",dt,"0.01 ms");
@@ -72,21 +99,89 @@ int main(int argc, char *argv[])
    double Cm;
    objectGet(obj,"Cm",Cm,"1 1/cm^2"); // 1 uF/cm^2
  
-   string reactionName;
+   std::string reactionName;
    objectGet(obj, "reaction", reactionName, "BetterTT06");
+
+
+   double endTime;
+   objectGet(obj, "end_time", endTime, "0 ms");
+
+   double outputRate;
+   objectGet(obj, "output_rate", outputRate, "1 ms");
+
+   //double checkpointRate;
+   //objectGet(obj, "checkpoint_rate", checkpointRate, "100 ms");
+
+   double initVm;
+   objectGet(obj, "init_vm", initVm, "-83 mV");
+
+   StimulusCollection stims;
+   {
+      std::vector<std::string> stimulusNames;
+      objectGet(obj, "stimulus", stimulusNames);
+      for (auto name : stimulusNames)
+      {
+         OBJECT* stimobj = object_find(name.c_str(), "STIMULUS");
+         assert(stimobj != NULL);
+         int numTimes;
+         objectGet(stimobj, "n", numTimes, "1");
+         double bcl;
+         objectGet(stimobj, "bcl", bcl, "0 ms");
+         assert(numTimes == 0 || bcl != 0);
+         double startTime;
+         objectGet(stimobj, "start", startTime, "0 ms");
+         double duration;
+         objectGet(stimobj, "duration", duration, "1 ms");
+         double strength;
+         objectGet(stimobj, "strength", strength, "-1");
+         assert(strength >= 0);
+         std::string location;
+         objectGet(stimobj, "where", location, "");
+         assert(!location.empty());
+         OBJECT* locobj = object_find(location.c_str(), "REGION");
+         assert(locobj != NULL);
+         std::string regionType;
+         objectGet(locobj, "type", regionType, "");
+         assert(!regionType.empty());
+         shared_ptr<StimulusLocation> stimLoc;
+         if (regionType == "ball")
+         {
+            std::vector<double> center;
+            objectGet(locobj, "center", center);
+            assert(center.size() == 3);
+            double radius;
+            objectGet(locobj, "radius", radius, "-1");
+            assert(radius >= 0);
+            stimLoc = std::make_shared<CenterBallStimulus>(center[0],center[1],center[2],radius);
+         }
+         else if (regionType == "box")
+         {
+            std::vector<double> lower;
+            objectGet(locobj, "lower", lower);
+            assert(lower.size() == 3);
+            vector<double> upper;
+            objectGet(locobj, "upper", upper);
+            assert(upper.size() == 3);
+            stimLoc = std::make_shared<BoxStimulus>
+               (lower[0], upper[0],
+                lower[1], upper[1],
+                lower[2], upper[2]);
+         }
+         shared_ptr<StimulusWaveform> stimWave(new SquareWaveform());
+         stims.add(Stimulus(numTimes, startTime, duration, bcl, strength, stimLoc, stimWave));
+      }
+   }
    
-   // Verify Inputs
-   assert(heartRegions.size()*3 == sigma_i.size());
-   assert(heartRegions.size()*3 == sigma_e.size());
+   Timeline timeline(dt, endTime);   
 
    /*
      Ok, we're solving:
 
      div(sigma_m*grad(Vm)) = Bm*Cm*(dVm/dt + Iion - Istim)
 
-     time in {ms}
+     time in ms
      space in mm
-     Vm in {mV}
+     Vm in mV
      Iion in uA/uF
      Istim in uA/uF
      Cm in uF/mm^2
@@ -105,10 +200,11 @@ int main(int argc, char *argv[])
 
      Each {} is a matrix that is done with FEM.
 
-     sigma_m = sigma_e*sigma_i/(sigma_e+sigma_i)
+     sigma_m = sigma_e_diagonal*sigma_i_diagonal/(sigma_e_diagonal+sigma_i_diagonal)
 
      This is the monodomain conductivity.  It really only approximates the bidomain conductivity if the ratio
-     of sigma_e_fiber/sigma_e_transverse = sigma_i_fiber/sigma_i_transverse
+     of sigma_e_tensor = k*sigma_i_tensor.  When this happens, you can remove Phi_e from the equations and
+     end up with the equation listed above. 
    */
 
    
@@ -167,7 +263,7 @@ int main(int argc, char *argv[])
    //    which satisfies the boundary conditions.
    ParGridFunction gf_Vm(pfespace);
    ParGridFunction gf_b(pfespace);
-   gf_vm = 0.0;
+   gf_Vm = initVm;
    gf_b = 0.0;
 
    // Load fiber quaternions from file
@@ -182,16 +278,14 @@ int main(int argc, char *argv[])
    MatrixElementPiecewiseCoefficient sigma_m_neg_coeffs(fiber_quat);
    for (int ii=0; ii<heartRegions.size(); ii++) {
       int heartCursor=3*ii;
-      Vector sigma_i_vec(&sigma_i[heartCursor],3);
-      Vector sigma_e_vec(&sigma_e[heartCursor],3);
+      Vector sigma_m_vec(&sigma_m[heartCursor],3);
       Vector sigma_m_pos_vec(3);
       Vector sigma_m_neg_vec(3);
       for (int jj=0; jj<3; jj++)
       {
-         double value = (sigma_e_vec[jj]*sigma_i_vec[jj])/(sigma_i_vec[jj]+sigma_e_vec[jj]);
-         value *= dt/2/Bm/Cm;
-         sigma_m_pos_coeffs[jj] = value;
-         sigma_m_neg_coeffs[jj] = -value;
+         double value = sigma_m[jj]*dt/2/Bm/Cm;
+         sigma_m_pos_vec[jj] = value;
+         sigma_m_neg_vec[jj] = -value;
       }
     
       sigma_m_pos_coeffs.heartConductivities_[heartRegions[ii]] = sigma_m_pos_vec;
@@ -204,6 +298,7 @@ int main(int argc, char *argv[])
 
    StartTimer("Forming bilinear system (RHS)");
 
+   ConstantCoefficient one(1.0);
    ParBilinearForm *b = new ParBilinearForm(pfespace);
    b->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_pos_coeffs));
    b->AddDomainIntegrator(new MassIntegrator(one));
@@ -226,7 +321,7 @@ int main(int argc, char *argv[])
    EndTimer();
 
    //Set up the solve
-   HyprePCG pcg(torso_mat);
+   HyprePCG pcg(LHS_mat);
    pcg.SetTol(1e-12);
    pcg.SetMaxIter(2000);
    pcg.SetPrintLevel(2);
@@ -234,35 +329,47 @@ int main(int argc, char *argv[])
    pcg.SetPreconditioner(*M_test);
 
    //Set up the ionic models
-   shared_ptr<QuadratureSpace> quadSpace;
-   ThreadGroup defaultGroup;
-   shared_ptr<ReactionFunction> rf(quadSpace.get(),pfespace,dt,reactionName,defaultGroup);
-   rf->Initialize(gf_Vm);
+   std::shared_ptr<QuadratureSpace> quadSpace; //FIXME
+   ThreadTeam defaultGroup; //FIXME
+   std::shared_ptr<ReactionFunction> rf(new ReactionFunction(quadSpace.get(),pfespace,dt,reactionName,defaultGroup));
+   rf->Initialize();
 
    ParLinearForm *c = new ParLinearForm(pfespace);
    c->AddDomainIntegrator(new QuadratureIntegrator(rf.get(), -dt));
+   c->AddDomainIntegrator(new DomainLFIntegrator(stims));
 
-   while (0) //for all time
+   Vector actual_Vm, actual_b, actual_old;
+   
+   int itime=0;
+   while (1)
    {
       //output if appropriate
+      if ((itime % timeline.timestepFromRealTime(outputRate)) == 0)
+      {
+         //do output
+      }
       //if end time, then exit
-      if (0) { break; }
+      if (itime == timeline.maxTimesteps()) { break; }
 
-      a->FormLinearSystem(ess_tdof_list,gf_Vm, gf_b, LHS_mat, actual_Vm, actual_b);
+      //calculate the ionic contribution.
+      rf->Calc(gf_Vm);
+      
+      //add stimulii
+      stims.updateTime(timeline.realTimeFromTimestep(itime));
+      
+      //compute the Iion and stimulus contribution
+      a->FormLinearSystem(ess_tdof_list, gf_Vm, *c, LHS_mat, actual_Vm, actual_b);
                           
       //compute the RHS matrix contribution
-      RHS_mat.Mult(actual_Vm, actual_b);
-      
-      //compute the Iion contribution
-      rf->Calc(actual_Vm);
-      XXX; c->Assemble(actual_b);
-
-      //add stimulii
+      RHS_mat.Mult(actual_Vm, actual_old);
+      actual_b += actual_old;
       
       //solve the matrix
       pcg.Mult(actual_b, actual_Vm);
 
       a->RecoverFEMSolution(actual_b, actual_Vm, gf_Vm);
+
+      itime++;
    }
 
    // 14. Free the used memory.
