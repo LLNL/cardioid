@@ -69,8 +69,7 @@ Builds are performed in `build/<arch>` .  Executables are installed in `build/<a
 
 Please submit any bugfixes or feature improvements as [pull requests](https://help.github.com/articles/using-pull-requests/).
 
-Authors
-----------------
+## Authors
 
 Many thanks go to Cardioid's [contributors](https://github.com/llnl/cardioid/graphs/contributors).
 
@@ -89,14 +88,13 @@ Many thanks go to Cardioid's [contributors](https://github.com/llnl/cardioid/gra
 * Changhoan Kim
 * and many more...
 
-License
-----------------
+## License
 
 Cardioid is distributed under the terms of the MIT license. All new contributions must be made under this license.
 
 See [LICENSE](https://github.com/llnl/cardioid/blob/master/LICENSE) and [NOTICE](https://github.com/llnl/cardioid/blob/master/NOTICE) for details.
 
-`SPDX-License-Identifier: (MIT)`
+`SPDX-License-Identifier: MIT`
 
 ``LLNL-CODE-764041``
 
