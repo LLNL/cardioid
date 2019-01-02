@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 
    std::vector<std::string> objectFilenames;
    if (argc == 1)
-      objectFilenames.push_back("femheard.data");
+      objectFilenames.push_back("femheart.data");
 
    for (int iargCursor=1; iargCursor<argc; iargCursor++)
       objectFilenames.push_back(argv[iargCursor]);
@@ -65,15 +65,53 @@ int main(int argc, char *argv[])
    objectGet(obj,"sigma_i",sigma_i);
    objectGet(obj,"sigma_e",sigma_e);
 
+   double dt;
+   objectGet(obj,"dt",dt,"0.01 ms");
+   double Bm;
+   objectGet(obj,"Bm",Bm,"0.14 1/mm"); // 1/mm
+   double Cm;
+   objectGet(obj,"Cm",Cm,"1 1/cm^2"); // 1 uF/cm^2
+ 
+   string reactionName;
+   objectGet(obj, "reaction", reactionName, "BetterTT06");
+   
    // Verify Inputs
    assert(heartRegions.size()*3 == sigma_i.size());
    assert(heartRegions.size()*3 == sigma_e.size());
 
-   StartTimer("Constructing the ground part of the mesh.");
-   // cardioid_from_ecg = torso/sensor.txt;
-   std::unordered_map<int,int> gfFromGid = ecg_readInverseMap(obj,"cardioid_from_ecg");
-   EndTimer();
-   // Sort+unique pmesh->bdr_attributes and pmesh->attributes?
+   /*
+     Ok, we're solving:
+
+     div(sigma_m*grad(Vm)) = Bm*Cm*(dVm/dt + Iion - Istim)
+
+     time in {ms}
+     space in mm
+     Vm in {mV}
+     Iion in uA/uF
+     Istim in uA/uF
+     Cm in uF/mm^2
+     Bm in 1/mm
+     sigma in mS/mm
+
+     To solve this, I use a semi implicit crank nicolson:
+
+     div(sigma_m*grad[(Vm_new+Vm_old)/2]) = Bm*Cm*[(Vm_new-Vm_old)/dt + Iion]
+
+     with some algebra, that comes to
+
+     {1-dt/(2*Bm*Cm)*(div sigma_m*grad)}*Vm_new = {1+dt/(2*Bm*Cm)*(div sigma_m*grad)}*Vm_old - dt*Iion + dt*Istim
+
+     One easy way to check this is to set sigma_m to zero, then you get Forward euler for isolated equations.
+
+     Each {} is a matrix that is done with FEM.
+
+     sigma_m = sigma_e*sigma_i/(sigma_e+sigma_i)
+
+     This is the monodomain conductivity.  It really only approximates the bidomain conductivity if the ratio
+     of sigma_e_fiber/sigma_e_transverse = sigma_i_fiber/sigma_i_transverse
+   */
+
+   
    StartTimer("Setting Attributes");
    mesh->SetAttributes();
    EndTimer();
@@ -127,9 +165,9 @@ int main(int argc, char *argv[])
    // 7. Define the solution vector x as a finite element grid function
    //    corresponding to pfespace. Initialize x with initial guess of zero,
    //    which satisfies the boundary conditions.
-   ParGridFunction gf_x(pfespace);
+   ParGridFunction gf_Vm(pfespace);
    ParGridFunction gf_b(pfespace);
-   gf_x = 0.0;
+   gf_vm = 0.0;
    gf_b = 0.0;
 
    // Load fiber quaternions from file
@@ -139,126 +177,99 @@ int main(int argc, char *argv[])
    fiber_quat = std::make_shared<mfem::ParGridFunction>(pmesh, flat_fiber_quat.get(), pmeshpart);
 
    
-   // Load conductivity data?
-   MatrixElementPiecewiseCoefficient sigma_m_coeffs(fiber_quat);
+   // Load conductivity data
+   MatrixElementPiecewiseCoefficient sigma_m_pos_coeffs(fiber_quat);
+   MatrixElementPiecewiseCoefficient sigma_m_neg_coeffs(fiber_quat);
    for (int ii=0; ii<heartRegions.size(); ii++) {
       int heartCursor=3*ii;
       Vector sigma_i_vec(&sigma_i[heartCursor],3);
       Vector sigma_e_vec(&sigma_e[heartCursor],3);
-      Vector sigma_m_vec(3);
+      Vector sigma_m_pos_vec(3);
+      Vector sigma_m_neg_vec(3);
       for (int jj=0; jj<3; jj++)
       {
-         sigma_m_vec[jj] = (sigma_e_vec[jj]*sigma_i_vec[jj])/(sigma_i_vec[jj]+sigma_e_vec[jj]);
+         double value = (sigma_e_vec[jj]*sigma_i_vec[jj])/(sigma_i_vec[jj]+sigma_e_vec[jj]);
+         value *= dt/2/Bm/Cm;
+         sigma_m_pos_coeffs[jj] = value;
+         sigma_m_neg_coeffs[jj] = -value;
       }
     
-      sigma_m_coeffs.heartConductivities_[heartRegions[ii]] = sigma_m_vec;
+      sigma_m_pos_coeffs.heartConductivities_[heartRegions[ii]] = sigma_m_pos_vec;
+      sigma_m_neg_coeffs.heartConductivities_[heartRegions[ii]] = sigma_m_neg_vec;
    }
 
    // 8. Set up the bilinear form a(.,.) on the finite element space
    //    corresponding to the Laplacian operator -Delta, by adding the Diffusion
    //    domain integrator.
 
-   StartTimer("Forming bilinear system (heart)");
+   StartTimer("Forming bilinear system (RHS)");
 
    ParBilinearForm *b = new ParBilinearForm(pfespace);
-   b->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_coeffs));
+   b->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_pos_coeffs));
+   b->AddDomainIntegrator(new MassIntegrator(one));
    b->Assemble();
    // This creates the linear algebra problem.
-   HypreParMatrix heart_mat;
-   b->FormSystemMatrix(ess_tdof_list, heart_mat);
-   // Parallel versions don't get finalized? // heart_mat.Finalize();
-
+   HypreParMatrix RHS_mat;
+   b->FormSystemMatrix(ess_tdof_list, RHS_mat);
    EndTimer();
 
-   StartTimer("Forming bilinear system (torso)");
+   StartTimer("Forming bilinear system (LHS)");
    
    // Brought out of loop to avoid unnecessary duplication
    ParBilinearForm *a = new ParBilinearForm(pfespace);   // defines a.
-   // this is the Laplacian: grad u . grad v with linear coefficient.
-   // we defined "one" ourselves in step 6.
-   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_coeffs));
-   // a->Assemble();   // This creates the loops.
-
+   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_neg_coeffs));
+   b->AddDomainIntegrator(new MassIntegrator(one));
    a->Update(pfespace);
    a->Assemble();
-   HypreParMatrix torso_mat;
-   a->FormSystemMatrix(ess_tdof_list,torso_mat);
-   // Look into FLS to see what steps are being applied and make sure boundary conditions are still being set
-   
-   // 10. Define a simple symmetric Gauss-Seidel preconditioner and use it to
-   //     solve the system A X = B with PCG.
+   HypreParMatrix LHS_mat;
+   a->FormSystemMatrix(ess_tdof_list,LHS_mat);
    EndTimer();
 
-   //FIXME!!!  move me outside the loop
+   //Set up the solve
    HyprePCG pcg(torso_mat);
    pcg.SetTol(1e-12);
    pcg.SetMaxIter(2000);
    pcg.SetPrintLevel(2);
-   HypreSolver *M_test = new HypreBoomerAMG(torso_mat);
+   HypreSolver *M_test = new HypreBoomerAMG(LHS_mat);
    pcg.SetPreconditioner(*M_test);
-   //end move me
 
-   Vector phi_e;
-   Vector phi_b;
-   
+   //Set up the ionic models
+   shared_ptr<QuadratureSpace> quadSpace;
+   ThreadGroup defaultGroup;
+   shared_ptr<ReactionFunction> rf(quadSpace.get(),pfespace,dt,reactionName,defaultGroup);
+   rf->Initialize(gf_Vm);
 
-#if 0
-      //Do we have a Vm file present?
-      if (access((VmFilename + "000000").c_str(), R_OK) == -1) { continue; }
+   ParLinearForm *c = new ParLinearForm(pfespace);
+   c->AddDomainIntegrator(new QuadratureIntegrator(rf.get(), -dt));
 
-      std::shared_ptr<ParGridFunction> gf_Vm;
-      std::shared_ptr<GridFunction> flat_gf_Vm;
-      std::vector<double> gfvmData;
-      double time = ecg_readParGF(obj, VmFilename, global_size, gfFromGid, gfvmData);
-      flat_gf_Vm = std::make_shared<mfem::GridFunction>(fespace, gfvmData.data());
-      gf_Vm = std::make_shared<mfem::ParGridFunction>(pmesh, flat_gf_Vm.get(), pmeshpart);
+   while (0) //for all time
+   {
+      //output if appropriate
+      //if end time, then exit
+      if (0) { break; }
 
-      StartTimer("Solve");
+      a->FormLinearSystem(ess_tdof_list,gf_Vm, gf_b, LHS_mat, actual_Vm, actual_b);
+                          
+      //compute the RHS matrix contribution
+      RHS_mat.Mult(actual_Vm, actual_b);
       
-      heart_mat.Mult(*gf_Vm, gf_b);
-      a->FormLinearSystem(ess_tdof_list,gf_x,gf_b,torso_mat,phi_e,phi_b);
+      //compute the Iion contribution
+      rf->Calc(actual_Vm);
+      XXX; c->Assemble(actual_b);
 
-
-      //HypreSmoother M(torso_mat, 6 /*GS*/);
-      // PCG(torso_mat, M, phi_b, phi_e, 1, 2000, 1e-12);//, 0.0);
-      phi_b *= -1.0;
-      pcg.Mult(phi_b,phi_e);
-
-      EndTimer();
+      //add stimulii
       
-      // 11. Recover the solution as a finite element grid function.
-      a->RecoverFEMSolution(phi_e, phi_b, gf_x);
+      //solve the matrix
+      pcg.Mult(actual_b, actual_Vm);
 
-      // 12. Save the refined mesh and the solution. This output can be viewed later
-      //     using GLVis: "glvis -m refined.mesh -g sol.gf".
-      for (int ielec=0; ielec<fileFromElectrode.size(); ielec++)
-      {
-	 if(my_rank == pmeshpart[gfidFromElectrode[ielec]]) {
-            //CHECKME, can I do this access?!
-            fileFromElectrode[ielec] << time << "\t" << gf_x[local_from_global[gfidFromElectrode[ielec]]] << std::endl;
-         }
-      }
-      
-#ifdef DEBUG
-      std::ofstream sol_ofs(outDir+"/sol"+std::to_string(time)+".gf");
-      sol_ofs.precision(8);
-      gf_x.SaveAsOne(sol_ofs);
-      sol_ofs.close();
-#endif	 
+      a->RecoverFEMSolution(actual_b, actual_Vm, gf_Vm);
    }
 
-#endif
-
-#ifdef DEBUG
-   std::ofstream mesh_ofs(outDir+"/refined.mesh");
-   mesh_ofs.precision(8);
-   pmesh->PrintAsOne(mesh_ofs);
-#endif
-   
    // 14. Free the used memory.
    delete M_test;
    delete a;
    delete b;
+   delete c;
    delete pfespace;
    if (order > 0) { delete fec; }
    delete mesh, pmesh, pmeshpart;
