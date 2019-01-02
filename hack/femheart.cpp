@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
 
      To solve this, I use a semi implicit crank nicolson:
 
-     div(sigma_m*grad[(Vm_new+Vm_old)/2]) = Bm*Cm*[(Vm_new-Vm_old)/dt + Iion]
+     div(sigma_m*grad[(Vm_new+Vm_old)/2]) = Bm*Cm*[(Vm_new-Vm_old)/dt + Iion - Istim]
 
      with some algebra, that comes to
 
@@ -329,8 +329,8 @@ int main(int argc, char *argv[])
    pcg.SetPreconditioner(*M_test);
 
    //Set up the ionic models
-   std::shared_ptr<QuadratureSpace> quadSpace; //FIXME
-   ThreadTeam defaultGroup; //FIXME
+   //std::shared_ptr<QuadratureSpace> quadSpace; //FIXME
+   //ThreadTeam defaultGroup; //FIXME
    std::shared_ptr<ReactionFunction> rf(new ReactionFunction(quadSpace.get(),pfespace,dt,reactionName,defaultGroup));
    rf->Initialize();
 
