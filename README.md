@@ -89,8 +89,7 @@ Many thanks go to Cardioid's [contributors](https://github.com/llnl/cardioid/gra
 * Changhoan Kim
 * and many more...
 
-Learn more
-----------------
+## Learn more
 
 Cardioid's history goes back a few years -- it was a finalist for the 2012 Gordon Bell Prize -- but only now is the code available as open source. Initially developed by a team of LLNL and IBM scientists, Cardioid divides the heart into a large number of manageable subdomains. This replicates the electrophysiology of the human heart, accurately simulating the activation of each heart muscle cell and cell-to-cell electric coupling.
 
