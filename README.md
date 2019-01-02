@@ -69,8 +69,7 @@ Builds are performed in `build/<arch>` .  Executables are installed in `build/<a
 
 Please submit any bugfixes or feature improvements as [pull requests](https://help.github.com/articles/using-pull-requests/).
 
-Authors
-----------------
+## Authors
 
 Many thanks go to Cardioid's [contributors](https://github.com/llnl/cardioid/graphs/contributors).
 
@@ -97,13 +96,12 @@ Cardioid's history goes back a few years -- it was a finalist for the 2012 Gordo
 - *Science & Technology Review* article: [Venturing into the Heart of High-Performance Computing Simulations](https://str.llnl.gov/Sep12/streitz.html)
 - *Science & Technology Review* article: [Reaching for New Computational Heights with Sequoia](https://str.llnl.gov/july-2013/mccoy) - Cardioid helped set speed records for the Sequoia supercomputer by clocking in at nearly 12 petaflops while scaling with better than 90% parallel efficiency across all 1,572,864 cores.
 
-License
-----------------
+## License
 
 Cardioid is distributed under the terms of the MIT license. All new contributions must be made under this license.
 
 See [LICENSE](https://github.com/llnl/cardioid/blob/master/LICENSE) and [NOTICE](https://github.com/llnl/cardioid/blob/master/NOTICE) for details.
 
-`SPDX-License-Identifier: (MIT)`
+`SPDX-License-Identifier: MIT`
 
 ``LLNL-CODE-764041``
