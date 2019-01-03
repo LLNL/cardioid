@@ -329,9 +329,11 @@ int main(int argc, char *argv[])
    pcg.SetPreconditioner(*M_test);
 
    //Set up the ionic models
-   //std::shared_ptr<QuadratureSpace> quadSpace; //FIXME
-   //ThreadTeam defaultGroup; //FIXME
-   std::shared_ptr<ReactionFunction> rf(new ReactionFunction(quadSpace.get(),pfespace,dt,reactionName,defaultGroup));
+   int Iion_order = 2*order+3;
+   QuadratureSpace quadSpace(pmesh, Iion_order);
+   ThreadServer& threadServer = ThreadServer::getInstance();
+   ThreadTeam defaultGroup = threadServer.getThreadTeam(vector<unsigned>());
+   std::shared_ptr<ReactionFunction> rf(new ReactionFunction(&quadSpace,pfespace,dt,reactionName,defaultGroup));
    rf->Initialize();
 
    ParLinearForm *c = new ParLinearForm(pfespace);
