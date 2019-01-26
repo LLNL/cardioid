@@ -204,6 +204,9 @@ if (LAPACK_LIB)
                       DEPENDS_ON heart_gpu_aware heart_cpu_only ${cuda_runtime} openmp)
 endif ()
 
+install(TARGETS cardioid singleCell
+        RUNTIME DESTINATION bin
+        )
 
 
 ### Getting compile flags for making plugins.

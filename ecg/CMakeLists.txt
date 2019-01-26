@@ -6,3 +6,7 @@ blt_add_executable(
      ecg.cpp
   DEPENDS_ON mfem simUtil mpi
   )
+
+install(TARGETS ecg
+        RUNTIME DESTINATION bin
+        )
