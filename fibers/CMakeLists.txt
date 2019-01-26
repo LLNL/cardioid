@@ -13,3 +13,7 @@ blt_add_executable(
      cardgradientsp.cpp
   DEPENDS_ON mfem simUtil kdtree mpi
   )
+
+install(TARGETS fiberp
+        RUNTIME DESTINATION bin
+        )
