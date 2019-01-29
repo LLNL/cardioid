@@ -121,13 +121,18 @@ endmacro()
 
 set(MFEM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps" CACHE PATH "Path to the mfem directory")
 if (EXISTS ${MFEM_DIR})
-   makefile_get_var(${MFEM_DIR}/share/mfem/config.mk MFEM_LIB_FILE MFEM_LIBRARY)
-   makefile_get_var(${MFEM_DIR}/share/mfem/config.mk MFEM_EXT_LIBS  MFEM_LINK_FLAGS)
-   
+   makefile_get_var(${MFEM_DIR}/share/mfem/config.mk MFEM_LIB_FILE MFEM_LIB_FILE)
+   makefile_get_var(${MFEM_DIR}/share/mfem/config.mk MFEM_EXT_LIBS MFEM_EXT_LIBS)
+   makefile_get_var(${MFEM_DIR}/share/mfem/config.mk MFEM_INCFLAGS MFEM_INCFLAGS)
+
+   set(FIXED_INCLUDES ${MFEM_INCFLAGS})
+   separate_arguments(FIXED_INCLUDES)
+   string(REPLACE "-I" "" FIXED_INCLUDES "${FIXED_INCLUDES}")
+
    blt_register_library(
      NAME mfem
-     INCLUDES ${MFEM_DIR}/include
-     LIBRARIES ${MFEM_LIBRARY} ${MFEM_LINK_FLAGS}
+     INCLUDES ${FIXED_INCLUDES}
+     LIBRARIES ${MFEM_LIB_FILE} ${MFEM_EXT_LIBS}
      #LINK_FLAGS ${MFEM_LINK_FLAGS}
    )
 
