@@ -341,6 +341,7 @@ int main(int argc, char *argv[])
    c->AddDomainIntegrator(new DomainLFIntegrator(stims));
 
    Vector actual_Vm, actual_b, actual_old;
+   bool first=true;
    
    int itime=0;
    while (1)
@@ -361,7 +362,10 @@ int main(int argc, char *argv[])
       
       //compute the Iion and stimulus contribution
       a->FormLinearSystem(ess_tdof_list, gf_Vm, *c, LHS_mat, actual_Vm, actual_b);
-                          
+      if (first)
+      {
+         actual_old = actual_b;
+      }
       //compute the RHS matrix contribution
       RHS_mat.Mult(actual_Vm, actual_old);
       actual_b += actual_old;
@@ -372,6 +376,7 @@ int main(int argc, char *argv[])
       a->RecoverFEMSolution(actual_b, actual_Vm, gf_Vm);
 
       itime++;
+      first=false;
    }
 
    // 14. Free the used memory.
