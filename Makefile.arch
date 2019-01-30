@@ -12,7 +12,7 @@ ifndef ARCHGUESS
       SPACKGUESS = $(lastword $(shell spack env status))
     endif
     #either way, have we already set up a build directory? If so, use that.
-    ifneq (, $(wildcard build/${SPACKGUESS}/.))
+    ifneq (, $(wildcard build/${SPACKGUESS}/CMakeCache.txt))
       ARCHGUESS = ${SPACKGUESS}
     endif
     
