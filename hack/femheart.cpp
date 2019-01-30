@@ -349,10 +349,14 @@ int main(int argc, char *argv[])
    int itime=0;
    while (1)
    {
+      std::cout << "time = " << timeline.realTimeFromTimestep(itime) << std::endl;
       //output if appropriate
       if ((itime % timeline.timestepFromRealTime(outputRate)) == 0)
       {
-         //do output
+         std::ofstream sol_ofs("sol."+std::to_string(itime)+".gf");
+         sol_ofs.precision(8);
+         gf_Vm.SaveAsOne(sol_ofs);
+         sol_ofs.close();
       }
       //if end time, then exit
       if (itime == timeline.maxTimesteps()) { break; }
