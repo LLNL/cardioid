@@ -28,7 +28,7 @@ clean-$1-$2: cleanbuild-$1
 	rm -f test/scratch/$1/$2/results.tap
 endef
 
-ALL_ARCH=$(patsubst arch/%.txt,%,$(wildcard arch/*.txt))
+ALL_ARCH=$(patsubst arch/%.txt,%,$(wildcard arch/*.txt)) $(ARCHES)
 ALL_PROFILE=$(patsubst test/profiles/%,%,$(wildcard test/profiles/*))
 
 $(foreach arch,$(ALL_ARCH),$(foreach profile,$(ALL_PROFILE),$(eval $(call TEST_RULE,$(arch),$(profile)))))

@@ -1,5 +1,25 @@
 ifndef ARCHES
 
+# if spack is running, get the arch from it.
+ifndef ARCHGUESS
+  ifneq (, $(shell which spack))
+    #do we have an environment loaded?
+    ifeq ("==> No active environment", "$(shell spack env status)")
+      #get the current architecture
+      SPACKGUESS = $(shell spack arch)
+    else
+      #get the environment
+      SPACKGUESS = $(lastword $(shell spack env status))
+    endif
+    #either way, have we already set up a build directory? If so, use that.
+    ifneq (, $(wildcard build/${SPACKGUESS}/.))
+      ARCHGUESS = ${SPACKGUESS}
+    endif
+    
+  endif
+endif
+
+ifndef ARCHGUESS
 # guess hostname with hostname command, stripping off all numbers
 HOSTNAME := $(shell hostname -s | sed  's/[0-9]*//g')
 
@@ -133,7 +153,9 @@ endif
 ifeq ($(HOSTNAME),araboth)
   ARCHGUESS = myopenmpi
 endif
+endif
 
+#fall back if everything else fails
 ifndef ARCHGUESS
    ARCHGUESS = mpi-default
    $(info Unrecognized build host.  Edit Makefile.arch)
