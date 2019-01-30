@@ -296,11 +296,13 @@ int main(int argc, char *argv[])
    //    corresponding to the Laplacian operator -Delta, by adding the Diffusion
    //    domain integrator.
 
+   // NOTICE THE FLIP IN SIGNS FOR SIGMA!  This is on purpose, Diffusion does -div(sigma*grad)
+
    StartTimer("Forming bilinear system (RHS)");
 
    ConstantCoefficient one(1.0);
    ParBilinearForm *b = new ParBilinearForm(pfespace);
-   b->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_pos_coeffs));
+   b->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_neg_coeffs));
    b->AddDomainIntegrator(new MassIntegrator(one));
    b->Assemble();
    // This creates the linear algebra problem.
@@ -312,8 +314,8 @@ int main(int argc, char *argv[])
    
    // Brought out of loop to avoid unnecessary duplication
    ParBilinearForm *a = new ParBilinearForm(pfespace);   // defines a.
-   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_neg_coeffs));
-   b->AddDomainIntegrator(new MassIntegrator(one));
+   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_pos_coeffs));
+   a->AddDomainIntegrator(new MassIntegrator(one));
    a->Update(pfespace);
    a->Assemble();
    HypreParMatrix LHS_mat;
