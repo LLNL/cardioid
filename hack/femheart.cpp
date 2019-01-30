@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
    double initVm;
    objectGet(obj, "init_vm", initVm, "-83 mV");
 
-   StimulusCollection stims;
+   StimulusCollection stims(dt);
    {
       std::vector<std::string> stimulusNames;
       objectGet(obj, "stimulus", stimulusNames);
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
          objectGet(stimobj, "n", numTimes, "1");
          double bcl;
          objectGet(stimobj, "bcl", bcl, "0 ms");
-         assert(numTimes == 0 || bcl != 0);
+         assert(numTimes == 1 || bcl != 0);
          double startTime;
          objectGet(stimobj, "start", startTime, "0 ms");
          double duration;

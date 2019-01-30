@@ -111,7 +111,7 @@ double StimulusCollection::Eval(ElementTransformation& T, const IntegrationPoint
    double result = 0;
    for (std::size_t istim=0; istim<stim_.size(); istim++)
    {
-      result += stim_[istim].eval(time_, T.ElementNo, transip);
+      result += dt_*stim_[istim].eval(time_, T.ElementNo, transip);
    }
    return result;
 }

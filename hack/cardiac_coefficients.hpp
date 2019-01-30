@@ -81,7 +81,7 @@ class BoxStimulus : public StimulusLocation
    {}
    virtual bool contains(const int elementNo, const Vector& x)
    {
-      if (0
+      if (1
           && xmin_ <= x[0] && x[0] <= xmax_
           && ymin_ <= x[1] && x[1] <= ymax_
           && zmin_ <= x[2] && x[2] <= zmax_
@@ -186,11 +186,13 @@ class Stimulus
 class StimulusCollection : public Coefficient
 {
  public:
+   StimulusCollection(const double new_dt) : dt_(new_dt) {}
    virtual double Eval(ElementTransformation& T, const IntegrationPoint &ip);
    void add(Stimulus stim);
    void updateTime(const double time) { time_ = time; }
  private:
    double time_;
+   double dt_;
    std::vector<Stimulus> stim_;
 };
 
