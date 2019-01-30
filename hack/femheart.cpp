@@ -331,7 +331,8 @@ int main(int argc, char *argv[])
    pcg.SetPreconditioner(*M_test);
 
    //Set up the ionic models
-   int Iion_order = 2*order+3;
+   //int Iion_order = 2*order+3;
+   int Iion_order = 2*order-1;
    QuadratureSpace quadSpace(pmesh, Iion_order);
    ThreadServer& threadServer = ThreadServer::getInstance();
    ThreadTeam defaultGroup = threadServer.getThreadTeam(vector<unsigned>());
