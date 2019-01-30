@@ -364,7 +364,7 @@ int main(int argc, char *argv[])
       stims.updateTime(timeline.realTimeFromTimestep(itime));
       
       //compute the Iion and stimulus contribution
-      a->FormLinearSystem(ess_tdof_list, gf_Vm, *c, LHS_mat, actual_Vm, actual_b);
+      a->FormLinearSystem(ess_tdof_list, gf_Vm, *c, LHS_mat, actual_Vm, actual_b, 1);
       if (first)
       {
          actual_old = actual_b;
