@@ -368,6 +368,7 @@ int main(int argc, char *argv[])
       stims.updateTime(timeline.realTimeFromTimestep(itime));
       
       //compute the Iion and stimulus contribution
+      c->Update();
       c->Assemble();
       a->FormLinearSystem(ess_tdof_list, gf_Vm, *c, LHS_mat, actual_Vm, actual_b, 1);
       if (first)
@@ -381,7 +382,7 @@ int main(int argc, char *argv[])
       //solve the matrix
       pcg.Mult(actual_b, actual_Vm);
 
-      a->RecoverFEMSolution(actual_b, actual_Vm, gf_Vm);
+      a->RecoverFEMSolution(actual_Vm, *c, gf_Vm);
 
       itime++;
       first=false;
