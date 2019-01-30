@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
 
      with some algebra, that comes to
 
-     {1-dt/(2*Bm*Cm)*(div sigma_m*grad)}*Vm_new = {1+dt/(2*Bm*Cm)*(div sigma_m*grad)}*Vm_old - dt*Iion + dt*Istim
+     {1+dt/(2*Bm*Cm)*(-div sigma_m*grad)}*Vm_new = {1-dt/(2*Bm*Cm)*(-div sigma_m*grad)}*Vm_old - dt*Iion + dt*Istim
 
      One easy way to check this is to set sigma_m to zero, then you get Forward euler for isolated equations.
 
