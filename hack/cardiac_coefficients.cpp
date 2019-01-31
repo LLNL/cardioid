@@ -17,9 +17,10 @@ ReactionFunction::ReactionFunction(QuadratureSpace *qs, FiniteElementSpace *f, c
 {
    nCells = this->Size();
 
-   Vm.resize(nCells);
-   dVm.resize(nCells);
-   iStim.resize(nCells);
+   int vectorLength = ((nCells+31)/32)*32;
+   Vm.resize(vectorLength);
+   dVm.resize(vectorLength);
+   iStim.resize(vectorLength);
 
    double* VmRaw = Vm.writeonly(CPU).raw();
    VmQuad.SetSpace(QuadS, VmRaw, 1);
