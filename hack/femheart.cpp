@@ -340,7 +340,8 @@ int main(int argc, char *argv[])
    rf->Initialize();
 
    ParLinearForm *c = new ParLinearForm(pfespace);
-   c->AddDomainIntegrator(new QuadratureIntegrator(rf.get(), -dt));
+   //positive dt here because the reaction models use dVm = -Iion
+   c->AddDomainIntegrator(new QuadratureIntegrator(rf.get(), dt)); 
    c->AddDomainIntegrator(new DomainLFIntegrator(stims));
 
    Vector actual_Vm, actual_b, actual_old;
