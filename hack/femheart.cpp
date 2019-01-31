@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
    double Bm;
    objectGet(obj,"Bm",Bm,"0.14 1/mm"); // 1/mm
    double Cm;
-   objectGet(obj,"Cm",Cm,"1 1/cm^2"); // 1 uF/cm^2
+   objectGet(obj,"Cm",Cm,"0.01 1/mm^2"); // 1 uF/cm^2
  
    std::string reactionName;
    objectGet(obj, "reaction", reactionName, "BetterTT06");
