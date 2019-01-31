@@ -155,14 +155,14 @@ class Stimulus
       for (int itime=0; itime<numTimes_; itime++)
       {
          double shiftedTime = time-startTime_-itime*bcl_;
-         if (shiftedTime < duration_) { return shiftedTime; }
+         if (shiftedTime <= duration_) { return shiftedTime; }
       }
       return -1;
    }
    inline double eval(const double time, const int elementNo, const Vector& x)
    {
       double waveTime = stimTime(time);
-      if (time >= 0 && loc_->contains(elementNo, x))
+      if (waveTime >= 0 && loc_->contains(elementNo, x))
       {
          return strength_*wave_->eval(waveTime);
       }
