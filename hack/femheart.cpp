@@ -354,7 +354,9 @@ int main(int argc, char *argv[])
       //output if appropriate
       if ((itime % timeline.timestepFromRealTime(outputRate)) == 0)
       {
-         std::ofstream sol_ofs("sol."+std::to_string(itime)+".gf");
+         char buffer[4096];
+         snprintf(buffer, 4096, "sol.%06d.gf", itime);
+         std::ofstream sol_ofs(buffer);
          sol_ofs.precision(8);
          gf_Vm.SaveAsOne(sol_ofs);
          sol_ofs.close();
