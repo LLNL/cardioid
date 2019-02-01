@@ -4,6 +4,7 @@
 #include "ddcMalloc.h"
 #include "pio.h"
 #include "pioFixedRecordHelper.h"
+#include "units.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -57,6 +58,9 @@ int main(int argc, char *argv[])
    int num_ranks, my_rank;
    MPI_Comm_size(COMM_LOCAL,&num_ranks);
    MPI_Comm_rank(COMM_LOCAL,&my_rank);
+
+   units_internal(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
+   units_external(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
 
    std::cout << "Initializing with " << num_ranks << " MPI ranks." << std::endl;
 
@@ -113,7 +117,7 @@ int main(int argc, char *argv[])
    //objectGet(obj, "checkpoint_rate", checkpointRate, "100 ms");
 
    double initVm;
-   objectGet(obj, "init_vm", initVm, "-83 mV");
+   objectGet(obj, "init_vm", initVm, "-83");
 
    StimulusCollection stims(dt);
    {
@@ -133,7 +137,7 @@ int main(int argc, char *argv[])
          double duration;
          objectGet(stimobj, "duration", duration, "1 ms");
          double strength;
-         objectGet(stimobj, "strength", strength, "-1");
+         objectGet(stimobj, "strength", strength, "0"); //uA/uF
          assert(strength >= 0);
          std::string location;
          objectGet(stimobj, "where", location, "");
