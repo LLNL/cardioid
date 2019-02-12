@@ -13,6 +13,8 @@
 #define LAZY_HOST_ONLY
 #endif
 
+
+//! Expression template object used for assignments.
 template <typename TTT>
 class OnlyAssignable
 {
@@ -27,6 +29,7 @@ class OnlyAssignable
    TTT& dataPoint_;
 };
 
+//! Iterator for write-only arrays.  Prevents entries from being read, but allows them to be written.
 template <typename TTT>
 class AssignableIterator
 {
@@ -52,6 +55,27 @@ class AssignableIterator
  private:
    pointer ptr_;
 };
+
+/**
+ * OK, this is evil, but I can't find another way to do it.
+ * I'm using some unholy variation of CRTP here to ease the implementation.
+ * I've tried multiple versions, and this is the easiest way to implement things
+ * that avoids unnecessary code duplication.
+ *
+ * Basically this is a bridge design pattern using static
+ * polymorphism.  *_interface is the abstraction layer, and *_impl is
+ * the implementation layer.
+ *
+ * *_array_ptr_interface presents an interface that looks like vectors
+ * except you can't change their size.  It implements things like
+ * operator[], iterators, so on and so forth.  To do this, they use
+ * size(), deref(), and create() on an _impl class.
+ *
+ * The basic_impl class does access to bare vectors, while the
+ * lazy_array_impl class offers something closer to CHAI access.
+ *
+ * These get combined together to make their external types.
+ */
 
 template <typename External,typename _value_type>
 class basic_impl
