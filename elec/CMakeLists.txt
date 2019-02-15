@@ -197,6 +197,10 @@ blt_add_executable(NAME cardioid
 blt_add_executable(NAME singleCell
                    SOURCES singleCell.cc singleCellOptions.c
                    DEPENDS_ON heart_gpu_aware heart_cpu_only ${cuda} ${cuda_runtime} openmp)
+                 
+if(ENABLE_CLANGQUERY)
+   blt_add_clang_query_target(NAME singleCellSA SRC_FILES singleCell.cc singleCellOptions.c)
+endif()
 
 if (LAPACK_LIB)
    blt_add_executable(NAME modifyAnatomyFile

@@ -1,0 +1,1 @@
+match declRefExpr(to(varDecl(isStaticStorageClass(),unless(isExpansionInSystemHeader()))))
