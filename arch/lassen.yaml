@@ -1,0 +1,63 @@
+# This is a Spack Environment file.
+#
+# It describes a set of packages to be installed, along with
+# configuration settings.
+spack:
+  # add package specs to the `specs` list
+  specs: [netlib-lapack+external-blas ^essl]
+  mirrors: {}
+  modules:
+    enable: []
+  repos: []
+  packages:
+    cmake:
+      paths:
+        cmake@3.9.2: /usr/tce/packages/cmake/cmake-3.9.2
+      buildable: false
+      version: []
+      providers: {}
+      modules: {}
+      compiler: []
+    perl:
+      paths:
+        perl@5.16.3: /usr
+      buildable: false
+      version: []
+      providers: {}
+      modules: {}
+      compiler: []
+    spectrum-mpi:
+      paths:
+        spectrum-mpi@2019.02.07%xl_r@16.1: /usr/tce/packages/spectrum-mpi/spectrum-mpi-rolling-release-xl-2019.02.07
+      buildable: false
+      version: []
+      providers: {}
+      modules: {}
+      compiler: []
+    cuda:
+      paths:
+        cuda@9.2.148: /usr/tce/packages/cuda/cuda-9.2.148
+      buildable: false
+      version: []
+      providers: {}
+      modules: {}
+      compiler: []
+    essl:
+      paths:
+        essl@2019.02.07%xl_r@16.1: /usr
+      buildable: false
+      version: []
+      providers: {}
+      modules: {}
+      compiler: []
+    all:
+      providers:
+        mpi: [spectrum-mpi]
+        blas: [essl]
+        lapack: [netlib-lapack]
+      buildable: true
+      version: []
+      paths: {}
+      modules: {}
+      compiler: []
+  config: {}
