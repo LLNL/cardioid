@@ -15,6 +15,7 @@
 #include <dirent.h>
 #include <regex.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include "util.hpp"
 #include "MatrixElementPiecewiseCoefficient.hpp"
 #include "cardiac_coefficients.hpp"
@@ -51,6 +52,32 @@ class Timeline
    double dt_;
    int maxTimesteps_;
 };
+
+
+void recursive_mkdir(const std::string dirname, mode_t mode=S_IRWXU|S_IRWXG)
+{
+   int startSearch=0;
+   do
+   {
+      int endSearch = dirname.find("/", startSearch);
+      //if directory doesn't exist
+      if (endSearch < 0) {
+         endSearch = dirname.length();
+      }
+      std::string thisDirname = dirname.substr(0, endSearch);
+      DIR* dir = opendir(thisDirname.c_str());
+      if (dir)
+      {
+         closedir(dir);
+      }
+      else if (ENOENT == errno) {
+         //make the directory
+         int ret = mkdir(thisDirname.c_str(), mode);
+         assert(ret == 0);
+      }
+      startSearch=endSearch+1;
+   } while (startSearch < dirname.length());
+}
 
 int main(int argc, char *argv[])
 {
@@ -106,7 +133,9 @@ int main(int argc, char *argv[])
    std::string reactionName;
    objectGet(obj, "reaction", reactionName, "BetterTT06");
 
-
+   std::string outputDir;
+   objectGet(obj, "outdir", outputDir, ".");
+   
    double endTime;
    objectGet(obj, "end_time", endTime, "0 ms");
 
@@ -221,28 +250,52 @@ int main(int argc, char *argv[])
    //  containing a partition ID (rank!) for every element ID.
    int *pmeshpart = mesh->GeneratePartitioning(num_ranks);
    EndTimer();
-   
-   
-   // Elements per rank
-   std::map<int,int> local_counts;
+
+
+   //Go through all the elements and label the partitioning for the vertices
+   std::vector<int> pvertpart(mesh->GetNV(),std::numeric_limits<int>::max());
+   for (int ielem=0; ielem<mesh->GetNE(); ielem++)
+   {
+      Array<int> verts;
+      mesh->GetElementVertices(ielem, verts);
+      for (int ivert=0; ivert<verts.Size(); ivert++)
+      {
+         pvertpart[verts[ivert]] = std::min(pvertpart[verts[ivert]],pmeshpart[ielem]);
+      }
+   }
+
+   // verticies per rank
+   std::vector<int> local_counts(num_ranks);
    for(int i = 0; i < num_ranks; i++) {
       local_counts[i]=0;
    }
 
-   // Map local indices manually and keep counts for later
-   int global_size = mesh->GetNE();
-   std::vector<int> local_from_global(global_size);
-   std::cout << "Global problem size " << global_size << std::endl;
-   for(int i=0; i<global_size; i++) {
-      // This calculates everybody's local indices, not just mine.
-      local_from_global[i] = local_counts[pmeshpart[i]]++;
+   for(int i=0; i<mesh->GetNV(); i++) {
+      local_counts[pvertpart[i]]++;
+   }
+
+   std::vector<int> local_extents(num_ranks+1);
+   local_extents[0] = 0;
+   for (int irank=0; irank<num_ranks; irank++)
+   {
+      local_extents[irank+1] = local_extents[irank]+local_counts[irank];
+   }
+
+   for(int i = 0; i < num_ranks; i++) {
+      local_counts[i]=0;
+   }
+   
+   std::vector<int> globalvert_from_ranklocalvert(mesh->GetNV());
+   for(int i=0; i<mesh->GetNV(); i++) {
+      int irank = pvertpart[i];
+      globalvert_from_ranklocalvert[local_extents[irank]+local_counts[pvertpart[i]]++] = i;
    }
 
    for(int i=0; i<num_ranks; i++) {
-      std::cout << "Rank " << i << " has " << local_counts[i] << " elements!" << std::endl;
+      std::cout << "Rank " << i << " has " << local_counts[i] << " nodes!" << std::endl;
    }
    ParMesh *pmesh = new ParMesh(MPI_COMM_WORLD, *mesh, pmeshpart);
-
+   
    // Build a new FEC...
    FiniteElementCollection *fec;
    std::cout << "Creating new FEC..." << std::endl;
@@ -358,12 +411,68 @@ int main(int argc, char *argv[])
       //output if appropriate
       if ((itime % timeline.timestepFromRealTime(outputRate)) == 0)
       {
-         char buffer[4096];
-         snprintf(buffer, 4096, "sol.%06d.gf", itime);
-         std::ofstream sol_ofs(buffer);
-         sol_ofs.precision(8);
-         gf_Vm.SaveAsOne(sol_ofs);
-         sol_ofs.close();
+         if (my_rank ==0)
+         {
+            std::vector<double> dataBuffer(local_extents[num_ranks]);
+            for (int irank=0; irank<num_ranks; irank++)
+            {
+               std::vector<double> rankBuffer(local_counts[irank]);
+               if (irank==0)
+               {
+                  memcpy(&rankBuffer[0], &gf_Vm[0], sizeof(double)*local_extents[1]);
+               }
+               else
+               {
+                  MPI_Recv(&dataBuffer[local_extents[irank]], local_extents[irank+1]-local_extents[irank],
+                           MPI_DOUBLE, irank, 455, MPI_COMM_WORLD, NULL);
+               }
+               for (int ii=0; ii<local_counts[irank]; ii++)
+               {
+                  dataBuffer[globalvert_from_ranklocalvert[ii+local_extents[irank]]] = rankBuffer[ii];
+               }
+            }
+            std::string VmFilename;
+            {
+               std::stringstream ss;
+               ss << outputDir << "/timestep" << std::setfill('0') << std::setw(8) << itime;
+               recursive_mkdir(ss.str());
+               VmFilename = ss.str() + "/Vm.npy";
+            }
+               
+            const int NUMPY_HEADER_SIZE = 128;
+            char numpyHeaderFull[NUMPY_HEADER_SIZE];
+            char numpyHeader1[] = 
+               "\x93NUMPY\x01\x00\x76\x00{'descr': '<f8', 'fortran_order': False, 'shape': (";
+            char numpyHeader2[] = ",)}";
+            int cursor=0;
+            memcpy(numpyHeaderFull+cursor, numpyHeader1, sizeof(numpyHeader1)-1);
+            cursor += sizeof(numpyHeader1)-1;
+            {
+               std::stringstream ss;
+               ss << dataBuffer.size();
+               ss.str();
+               memcpy(numpyHeaderFull+cursor,ss.str().c_str(),ss.str().size());
+               cursor += ss.str().size();
+            }
+            memcpy(numpyHeaderFull+cursor,numpyHeader2, sizeof(numpyHeader2)-1);
+            cursor += sizeof(numpyHeader2)-1;
+            for (; cursor<NUMPY_HEADER_SIZE-1; cursor++) {
+               numpyHeaderFull[cursor] = ' ';
+            }
+            numpyHeaderFull[NUMPY_HEADER_SIZE-1] = '\n';
+            FILE* numpyFile = fopen(VmFilename.c_str(), "w");
+            assert(numpyFile != NULL);
+            std::size_t bytesWritten = fwrite(numpyHeaderFull, sizeof(char), NUMPY_HEADER_SIZE, numpyFile);
+            assert(bytesWritten == NUMPY_HEADER_SIZE);
+            std::size_t doublesWritten = fwrite(&dataBuffer[0], sizeof(double), dataBuffer.size(), numpyFile);
+            assert(doublesWritten == dataBuffer.size());
+            fclose(numpyFile);
+         }
+         else
+         {
+            MPI_Send(&gf_Vm[0], local_extents[my_rank+1]-local_extents[my_rank],
+                     MPI_DOUBLE, 0, 455, MPI_COMM_WORLD);
+         }
       }
       //if end time, then exit
       if (itime == timeline.maxTimesteps()) { break; }
