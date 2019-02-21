@@ -419,12 +419,13 @@ int main(int argc, char *argv[])
                std::vector<double> rankBuffer(local_counts[irank]);
                if (irank==0)
                {
-                  memcpy(&rankBuffer[0], &gf_Vm[0], sizeof(double)*local_extents[1]);
+                  memcpy(&rankBuffer[0], &gf_Vm[0], sizeof(double)*local_counts[irank]);
                }
                else
                {
-                  MPI_Recv(&dataBuffer[local_extents[irank]], local_extents[irank+1]-local_extents[irank],
-                           MPI_DOUBLE, irank, 455, MPI_COMM_WORLD, NULL);
+                  MPI_Status dontcare;
+                  MPI_Recv(&rankBuffer[0], local_counts[irank],
+                           MPI_DOUBLE, irank, 455, MPI_COMM_WORLD, &dontcare);
                }
                for (int ii=0; ii<local_counts[irank]; ii++)
                {
