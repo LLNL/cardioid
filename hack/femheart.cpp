@@ -79,6 +79,52 @@ void recursive_mkdir(const std::string dirname, mode_t mode=S_IRWXU|S_IRWXG)
    } while (startSearch < dirname.length());
 }
 
+int convertTimeToOutputInt(const double time)
+{
+   return round(time*1e5);
+}
+
+void save1dNumpyArray(const std::string filename, const std::vector<double>& data)
+{
+   const int NUMPY_HEADER_SIZE = 128;
+   char numpyHeaderFull[NUMPY_HEADER_SIZE];
+   //FIXME, report the correct endianness.  I'm too lazy ATM.
+   char numpyHeader1[] = 
+      "\x93NUMPY\x01\x00\x76\x00{'descr': '<f8', 'fortran_order': False, 'shape': (";
+   char numpyHeader2[] = ",)}";
+   int cursor=0;
+   memcpy(numpyHeaderFull+cursor, numpyHeader1, sizeof(numpyHeader1)-1);
+   cursor += sizeof(numpyHeader1)-1;
+   {
+      std::stringstream ss;
+      ss << data.size();
+      ss.str();
+      memcpy(numpyHeaderFull+cursor,ss.str().c_str(),ss.str().size());
+      cursor += ss.str().size();
+   }
+   memcpy(numpyHeaderFull+cursor,numpyHeader2, sizeof(numpyHeader2)-1);
+   cursor += sizeof(numpyHeader2)-1;
+   for (; cursor<NUMPY_HEADER_SIZE-1; cursor++) {
+      numpyHeaderFull[cursor] = ' ';
+   }
+   numpyHeaderFull[NUMPY_HEADER_SIZE-1] = '\n';
+   FILE* numpyFile = fopen(filename.c_str(), "w");
+   assert(numpyFile != NULL);
+   std::size_t bytesWritten = fwrite(numpyHeaderFull, sizeof(char), NUMPY_HEADER_SIZE, numpyFile);
+   assert(bytesWritten == NUMPY_HEADER_SIZE);
+   std::size_t doublesWritten = fwrite(&data[0], sizeof(double), data.size(), numpyFile);
+   assert(doublesWritten == data.size());
+   fclose(numpyFile);
+}
+
+std::string timestepDirname(const std::string outdir, const double time)
+{
+   std::stringstream ss;
+   ss << outdir << "/tm"
+      << std::setfill('0') << std::setw(10)
+      << convertTimeToOutputInt(time);
+   return ss.str();
+}
 int main(int argc, char *argv[])
 {
    MPI_Init(NULL,NULL);
@@ -432,42 +478,10 @@ int main(int argc, char *argv[])
                   dataBuffer[globalvert_from_ranklocalvert[ii+local_extents[irank]]] = rankBuffer[ii];
                }
             }
-            std::string VmFilename;
-            {
-               std::stringstream ss;
-               ss << outputDir << "/timestep" << std::setfill('0') << std::setw(8) << itime;
-               recursive_mkdir(ss.str());
-               VmFilename = ss.str() + "/Vm.npy";
-            }
-               
-            const int NUMPY_HEADER_SIZE = 128;
-            char numpyHeaderFull[NUMPY_HEADER_SIZE];
-            char numpyHeader1[] = 
-               "\x93NUMPY\x01\x00\x76\x00{'descr': '<f8', 'fortran_order': False, 'shape': (";
-            char numpyHeader2[] = ",)}";
-            int cursor=0;
-            memcpy(numpyHeaderFull+cursor, numpyHeader1, sizeof(numpyHeader1)-1);
-            cursor += sizeof(numpyHeader1)-1;
-            {
-               std::stringstream ss;
-               ss << dataBuffer.size();
-               ss.str();
-               memcpy(numpyHeaderFull+cursor,ss.str().c_str(),ss.str().size());
-               cursor += ss.str().size();
-            }
-            memcpy(numpyHeaderFull+cursor,numpyHeader2, sizeof(numpyHeader2)-1);
-            cursor += sizeof(numpyHeader2)-1;
-            for (; cursor<NUMPY_HEADER_SIZE-1; cursor++) {
-               numpyHeaderFull[cursor] = ' ';
-            }
-            numpyHeaderFull[NUMPY_HEADER_SIZE-1] = '\n';
-            FILE* numpyFile = fopen(VmFilename.c_str(), "w");
-            assert(numpyFile != NULL);
-            std::size_t bytesWritten = fwrite(numpyHeaderFull, sizeof(char), NUMPY_HEADER_SIZE, numpyFile);
-            assert(bytesWritten == NUMPY_HEADER_SIZE);
-            std::size_t doublesWritten = fwrite(&dataBuffer[0], sizeof(double), dataBuffer.size(), numpyFile);
-            assert(doublesWritten == dataBuffer.size());
-            fclose(numpyFile);
+            std::string timedir = timestepDirname(outputDir, timeline.realTimeFromTimestep(itime));
+            recursive_mkdir(timedir); 
+            std::string VmFilename = timedir + "/Vm.npy";
+            save1dNumpyArray(timedir + "/Vm.npy", dataBuffer);
          }
          else
          {
