@@ -47,6 +47,20 @@ class Timeline
    {
       return round(realTime/dt_);
    }
+   std::string outputIdFromTimestep(const int timestep) const
+   {
+      double resolution = 1e-3;
+      int width = 8;
+      while (resolution > dt_) {
+         resolution /= 10;
+         width++;
+      }
+      std::stringstream ss;
+      ss << std::setfill('0') << std::setw(width)
+         << int(round(dt_*timestep/resolution))
+         ;
+   }
+}
 
  private:
    double dt_;
@@ -79,10 +93,6 @@ void recursive_mkdir(const std::string dirname, mode_t mode=S_IRWXU|S_IRWXG)
    } while (startSearch < dirname.length());
 }
 
-int convertTimeToOutputInt(const double time)
-{
-   return round(time*1e5);
-}
 
 void save1dNumpyArray(const std::string filename, const std::vector<double>& data)
 {
@@ -117,14 +127,6 @@ void save1dNumpyArray(const std::string filename, const std::vector<double>& dat
    fclose(numpyFile);
 }
 
-std::string timestepDirname(const std::string outdir, const double time)
-{
-   std::stringstream ss;
-   ss << outdir << "/tm"
-      << std::setfill('0') << std::setw(10)
-      << convertTimeToOutputInt(time);
-   return ss.str();
-}
 int main(int argc, char *argv[])
 {
    MPI_Init(NULL,NULL);
@@ -459,6 +461,9 @@ int main(int argc, char *argv[])
       {
          if (my_rank ==0)
          {
+            std::string timedir = outputDir + "/tm" + timeline.outputIdFromTimestep(itime);
+            recursive_mkdir(timedir); 
+
             std::vector<double> dataBuffer(local_extents[num_ranks]);
             for (int irank=0; irank<num_ranks; irank++)
             {
@@ -478,8 +483,6 @@ int main(int argc, char *argv[])
                   dataBuffer[globalvert_from_ranklocalvert[ii+local_extents[irank]]] = rankBuffer[ii];
                }
             }
-            std::string timedir = timestepDirname(outputDir, timeline.realTimeFromTimestep(itime));
-            recursive_mkdir(timedir); 
             std::string VmFilename = timedir + "/Vm.npy";
             save1dNumpyArray(timedir + "/Vm.npy", dataBuffer);
          }
