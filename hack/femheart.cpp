@@ -57,10 +57,9 @@ class Timeline
       }
       std::stringstream ss;
       ss << std::setfill('0') << std::setw(width)
-         << int(round(dt_*timestep/resolution))
-         ;
+         << int(round(dt_*timestep/resolution));
+      return ss.str();
    }
-}
 
  private:
    double dt_;
