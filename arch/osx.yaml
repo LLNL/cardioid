@@ -11,10 +11,10 @@ spack:
   repos: []
   packages:
     mpich:
-        compiler: [gcc@8.2.0]
+        compiler: [gcc@8.3.0]
         version: [3.2.3]
         paths:
-            mpich@3.2.3%gcc@8.2.0 arch=darwin-sierra-x86_64: /usr/local
+            mpich@3.2.3%gcc@8.3.0 arch=darwin-sierra-x86_64: /usr/local
     pkg-config:
         paths:
             pkg-config@0.29.2: /usr/local
