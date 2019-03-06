@@ -12,13 +12,14 @@ def main():
     
     outdir = args.outdir
     outdir = os.path.realpath(outdir)
+    print outdir
     #Make HDF5 file
     h5file = h5py.File(outdir+".h5", 'w')
     #Scan output for timesteps
     for possibleTime in os.listdir(outdir):
         #for each timestep
         timedir = os.path.join(outdir,possibleTime)
-        if (re.match(r"^timestep[0-9]+", possibleTime)
+        if (re.match(r"^tm[0-9]+", possibleTime)
             and
             os.path.isdir(timedir)):
             #scan directory for npy files

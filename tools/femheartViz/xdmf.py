@@ -37,9 +37,18 @@ class Indenter:
     def dec(self, indentAmount=1):
         self.indentAmount -= indentAmount
 
-def outputGrid(out, geom, data):
+def order(inSearchable):
+    aa = [ii for ii in inSearchable]
+    aa.sort()
+    for ii in aa:
+        yield ii
+        
+        
+def outputGrid(out, geom, data, time=None):
     out('<Grid GridType="Uniform">')
     out.inc()
+    if time!=None:
+        out('<Time Value="{}" />'.format(time))
     out(geom)
     out(data)
     out.dec()
@@ -64,6 +73,12 @@ def attrDesc(h5array, numPoints, numCells):
     else:
         return ""
     return attr
+
+def actualTimeFromDir(name):
+    strTime = re.sub('^tm0*','', name)
+    if not strTime:
+        strTime="0"
+    return float(strTime)/1000.
 
 def hdf5ArrayDesc(h5array):
     if h5array.dtype.kind == 'i':
@@ -125,7 +140,7 @@ visit onto stdout.  To work the command needs:
 """.format(hdf=hdf5ArrayDesc(h5file['XYZ']))
         if 'tets' in h5file:
             numCells = h5file['tets'].shape[0]
-            geom += """<Topology TopologyType="Tetrahedral" NumberOfElements="{numCells}">
+            geom += """<Topology TopologyType="Tetrahedron" NumberOfElements="{numCells}">
 {hdf}
 </Topology>
 """.format(numCells=numCells, hdf=hdf5ArrayDesc(h5file['tets']))
@@ -153,11 +168,11 @@ visit onto stdout.  To work the command needs:
 """.format(key=key,
            hdf=hdf5ArrayDesc(h5file[key]),
            attr=attr,)
-            elif re.match("^tm[0-9]+(?:\.[0-9]+)$",key):
+            elif re.match("^tm[0-9]+(?:\.[0-9]+)?$",key):
                 ttt = key
-                for keyAtTime in h5File[ttt]:
-                    if isH5Array(h5File[ttt][keyAtTime]):
-                        attr = attrDesc(h5File[ttt][keyAtTime])
+                for keyAtTime in h5file[ttt]:
+                    if isH5Array(h5file[ttt][keyAtTime]):
+                        attr = attrDesc(h5file[ttt][keyAtTime],numPoints,numCells)
                         if attr:
                             if ttt not in timeData:
                                 timeData[ttt] = ""
@@ -165,7 +180,7 @@ visit onto stdout.  To work the command needs:
 {hdf}
 </Attribute>
 """.format(keyAtTime=keyAtTime,
-           hdf=hdf5ArrayDesc(h5File[ttt][keyAtTime]),
+           hdf=hdf5ArrayDesc(h5file[ttt][keyAtTime]),
            attr=attr,)
     
     out = Indenter()
@@ -181,13 +196,13 @@ visit onto stdout.  To work the command needs:
         out('<Grid GridType="Collection" CollectionType="Temporal">')
         out.inc()
         for (time,timeData) in order(timeData.items()):
-            outputGrid(out, geom, constData+timeData)
+            outputGrid(out, geom, constData+timeData, time=actualTimeFromDir(time))
         out.dec()
         out('</Grid>')
     out.dec()
     out("</Domain>")
     out.dec()
-    out("</Xdfm>")
+    out("</Xdmf>")
 
 if __name__=='__main__':
     main()
