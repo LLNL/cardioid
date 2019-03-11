@@ -66,6 +66,13 @@ class Timeline
    int maxTimesteps_;
 };
 
+class OutputCoordinator
+{
+
+ private:
+   
+};
+
 
 void recursive_mkdir(const std::string dirname, mode_t mode=S_IRWXU|S_IRWXG)
 {
@@ -300,46 +307,60 @@ int main(int argc, char *argv[])
 
 
    //Go through all the elements and label the partitioning for the vertices
-   std::vector<int> pvertpart(mesh->GetNV(),std::numeric_limits<int>::max());
+   std::vector<set<int> > pvertset(mesh->GetNV());
    for (int ielem=0; ielem<mesh->GetNE(); ielem++)
    {
       Array<int> verts;
       mesh->GetElementVertices(ielem, verts);
       for (int ivert=0; ivert<verts.Size(); ivert++)
       {
-         pvertpart[verts[ivert]] = std::min(pvertpart[verts[ivert]],pmeshpart[ielem]);
+         pvertset[verts[ivert]].insert(pmeshpart[ielem]);
       }
    }
 
-   // verticies per rank
-   std::vector<int> local_counts(num_ranks);
-   for(int i = 0; i < num_ranks; i++) {
-      local_counts[i]=0;
-   }
-
-   for(int i=0; i<mesh->GetNV(); i++) {
-      local_counts[pvertpart[i]]++;
-   }
-
    std::vector<int> local_extents(num_ranks+1);
-   local_extents[0] = 0;
-   for (int irank=0; irank<num_ranks; irank++)
    {
-      local_extents[irank+1] = local_extents[irank]+local_counts[irank];
+      std::vector<int> local_counts(num_ranks, 0);
+      for(int i=0; i<mesh->GetNV(); i++)
+      {
+         if ( ! pvertset[i].empty())
+         {
+            local_counts[*(pvertset[i].begin())]++;
+         }
+      }
+
+      local_extents[0] = 0;
+      for (int irank=0; irank<num_ranks; irank++)
+      {
+         local_extents[irank+1] = local_extents[irank]+local_counts[irank];
+      }
    }
 
-   for(int i = 0; i < num_ranks; i++) {
-      local_counts[i]=0;
-   }
-   
-   std::vector<int> globalvert_from_ranklocalvert(mesh->GetNV());
-   for(int i=0; i<mesh->GetNV(); i++) {
-      int irank = pvertpart[i];
-      globalvert_from_ranklocalvert[local_extents[irank]+local_counts[pvertpart[i]]++] = i;
+   std::vector<int> globalvert_from_ranklookup(local_extents[num_ranks]);
+   std::vector<int> localvert_from_ranklookup(local_extents[num_ranks]);
+   {
+      std::vector<int> cursor_localvert_from_rank(num_ranks, 0);
+      std::vector<int> cursor_ranklookup_from_rank = local_extents;
+      for(int i=0; i<mesh->GetNV(); i++)
+      {
+         if ( ! pvertset[i].empty())
+         {
+            int irank = *(pvertset[i].begin());
+            int ranklookup = cursor_ranklookup_from_rank[irank]++;
+            int globalvert = i;
+            int localvert = cursor_localvert_from_rank[irank];
+            globalvert_from_ranklookup[ranklookup] = globalvert;
+            localvert_from_ranklookup[ranklookup] = localvert;
+            for (const int used_by_this_rank : pvertset[i])
+            {
+               cursor_localvert_from_rank[used_by_this_rank]++;
+            }
+         }
+      }
    }
 
    for(int i=0; i<num_ranks; i++) {
-      std::cout << "Rank " << i << " has " << local_counts[i] << " nodes!" << std::endl;
+      std::cout << "Rank " << i << " has " << local_extents[i+1]-local_extents[i] << " nodes!" << std::endl;
    }
    ParMesh *pmesh = new ParMesh(MPI_COMM_WORLD, *mesh, pmeshpart);
    
@@ -466,20 +487,27 @@ int main(int argc, char *argv[])
             std::vector<double> dataBuffer(local_extents[num_ranks]);
             for (int irank=0; irank<num_ranks; irank++)
             {
-               std::vector<double> rankBuffer(local_counts[irank]);
+               int local_size = local_extents[irank+1] - local_extents[irank];
+               std::vector<double> rankBuffer(local_size);
                if (irank==0)
                {
-                  memcpy(&rankBuffer[0], &gf_Vm[0], sizeof(double)*local_counts[irank]);
+                  if (local_extents[irank+1] > 0)
+                  {
+                     //Since rank 0 is always the least, ranklookup == localvert
+                     //the following assertion makes sure this is always true.
+                     assert(localvert_from_ranklookup[local_extents[irank+1]-1] == local_extents[irank+1]-1);
+                     memcpy(&rankBuffer[0], &gf_Vm[0], sizeof(double)*local_size);
+                  }
                }
                else
                {
                   MPI_Status dontcare;
-                  MPI_Recv(&rankBuffer[0], local_counts[irank],
+                  MPI_Recv(&rankBuffer[0], local_size,
                            MPI_DOUBLE, irank, 455, MPI_COMM_WORLD, &dontcare);
                }
-               for (int ii=0; ii<local_counts[irank]; ii++)
+               for (int ii=0; ii<local_size; ii++)
                {
-                  dataBuffer[globalvert_from_ranklocalvert[ii+local_extents[irank]]] = rankBuffer[ii];
+                  dataBuffer[globalvert_from_ranklookup[ii+local_extents[irank]]] = rankBuffer[ii];
                }
             }
             std::string VmFilename = timedir + "/Vm.npy";
@@ -487,7 +515,14 @@ int main(int argc, char *argv[])
          }
          else
          {
-            MPI_Send(&gf_Vm[0], local_extents[my_rank+1]-local_extents[my_rank],
+            int local_size = local_extents[my_rank+1]-local_extents[my_rank];
+            std::vector<double> dataFromLocalRanklookup(local_size);
+            for (int ii=0; ii<local_size; ii++)
+            {
+               int ranklookup = local_extents[my_rank] + ii;
+               dataFromLocalRanklookup[ii] = gf_Vm[localvert_from_ranklookup[ranklookup]];
+            }
+            MPI_Send(&dataFromLocalRanklookup[0], local_size,
                      MPI_DOUBLE, 0, 455, MPI_COMM_WORLD);
          }
       }
