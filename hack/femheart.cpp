@@ -143,8 +143,11 @@ int main(int argc, char *argv[])
    units_internal(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
    units_external(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
 
-   std::cout << "Initializing with " << num_ranks << " MPI ranks." << std::endl;
-
+   if (my_rank == 0)
+   {
+      std::cout << "Initializing with " << num_ranks << " MPI ranks." << std::endl;
+   }
+   
    int order = 1;
 
    std::vector<std::string> objectFilenames;
@@ -359,19 +362,22 @@ int main(int argc, char *argv[])
       }
    }
 
-   for(int i=0; i<num_ranks; i++) {
-      std::cout << "Rank " << i << " has " << local_extents[i+1]-local_extents[i] << " nodes!" << std::endl;
+   if (my_rank == 0)
+   {
+      for(int i=0; i<num_ranks; i++) {
+         std::cout << "Rank " << i << " has " << local_extents[i+1]-local_extents[i] << " nodes!" << std::endl;
+      }
    }
    ParMesh *pmesh = new ParMesh(MPI_COMM_WORLD, *mesh, pmeshpart);
    
    // Build a new FEC...
    FiniteElementCollection *fec;
-   std::cout << "Creating new FEC..." << std::endl;
+   if (my_rank == 0) { std::cout << "Creating new FEC..." << std::endl; }
    fec = new H1_FECollection(order, dim);
    // ...and corresponding FES
    ParFiniteElementSpace *pfespace = new ParFiniteElementSpace(pmesh, fec);
    FiniteElementSpace *fespace = new FiniteElementSpace(mesh, fec);
-   std::cout << "Number of finite element unknowns: "
+   std::cout << "[" << my_rank << "] Number of finite element unknowns: "
 	     << pfespace->GetTrueVSize() << std::endl;
 
    // 5. Determine the list of true (i.e. conforming) essential boundary DOFs
@@ -475,7 +481,10 @@ int main(int argc, char *argv[])
    int itime=0;
    while (1)
    {
-      std::cout << "time = " << timeline.realTimeFromTimestep(itime) << std::endl;
+      if (my_rank == 0)
+      {
+         std::cout << "time = " << timeline.realTimeFromTimestep(itime) << std::endl;
+      }
       //output if appropriate
       if ((itime % timeline.timestepFromRealTime(outputRate)) == 0)
       {
