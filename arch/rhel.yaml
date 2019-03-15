@@ -10,26 +10,13 @@ spack:
     enable: []
   repos: []
   packages:
-    mpich:
-        compiler: [gcc@8.3.0]
-        version: [3.2.3]
-        paths:
-            mpich@3.2.3%gcc@8.3.0 arch=darwin-sierra-x86_64: /usr/local
-    pkg-config:
-        paths:
-            pkg-config@0.29.2: /usr/local
-        buildable: False
-    openssl:
-        paths:
-            openssl@1.0.2: /usr/local/opt/openssl
-        buildable: False
     perl:
         paths:
             perl@5.18.2: /usr
         buildable: False
     cmake:
         paths:
-            cmake@3.9.1: /usr/local
+            cmake@3.9.1: /usr
         buildable: False
     all:
       providers:
