@@ -34,12 +34,8 @@ void ReactionFunction::Initialize()
    this->SetData(dVm.readwrite(CPU).raw());
 }
 
-void ReactionFunction::CalcVm(const Vector &x)
+void ReactionFunction::CalcVm(const Vector &xs)
 {
-   Vector xs_true(x.GetData(), fes->GetTrueVSize());
-   Vector xs(fes->GetVSize());
-   fes->GetProlongationMatrix()->Mult(xs_true, xs);
-
    ElementTransformation *T;
    const FiniteElement *fe;
    Vector el_x;

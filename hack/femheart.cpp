@@ -475,7 +475,7 @@ int main(int argc, char *argv[])
    c->AddDomainIntegrator(new QuadratureIntegrator(rf.get(), dt)); 
    c->AddDomainIntegrator(new DomainLFIntegrator(stims));
 
-   Vector actual_Vm, actual_b, actual_old;
+   Vector actual_Vm(pfespace->GetTrueVSize()), actual_b(pfespace->GetTrueVSize()), actual_old(pfespace->GetTrueVSize());
    bool first=true;
    
    int itime=0;
@@ -548,10 +548,6 @@ int main(int argc, char *argv[])
       c->Update();
       c->Assemble();
       a->FormLinearSystem(ess_tdof_list, gf_Vm, *c, LHS_mat, actual_Vm, actual_b, 1);
-      if (first)
-      {
-         actual_old = actual_b;
-      }
       //compute the RHS matrix contribution
       RHS_mat.Mult(actual_Vm, actual_old);
       actual_b += actual_old;
