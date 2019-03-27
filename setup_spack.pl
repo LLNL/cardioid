@@ -2,6 +2,23 @@
 
 use strict;
 
+sub usage {
+   print <<HERE
+$0 yourenv
+
+Makes a spack environment called yourenv and preloads it with all the
+libraries taken from your path.
+
+HERE
+       ;
+   die join("\n", @_) if @_;
+}
+
+usage("ERROR: Command only accepts one argument\n") if (scalar @ARGV != 1);
+my ($env) = @ARGV;
+
+usage("ERROR: Need to be able to run spack first.\nRun source spack/share/spack/setup-env.sh\n") if not findCommandDir("spack");
+
 sub getCommandString {
    my ($command, $regex) = @_;
 
@@ -29,6 +46,7 @@ sub which {
    my ($command) = @_;
    if (open (my $proghandle, "which $command |")) {
       my $fullCommand = <$proghandle>;
+      $fullCommand = "" if not $fullCommand;
       chomp $fullCommand;
       close $proghandle;
       return $fullCommand;
@@ -117,8 +135,9 @@ if ($mpitype and findCommandDir("spack")) {
 }
 
 
+open(my $envfile, ">", "arch/$env.yaml");
 
-print <<HERE
+print $envfile <<HERE
 # This is a Spack Environment file.
 #
 # It describes a set of packages to be installed, along with
@@ -134,7 +153,7 @@ spack:
 HERE
     ;
 if ($cmakedir) {
-   print <<HERE
+   print $envfile <<HERE
     cmake:
         paths:
             cmake\@$cmakeversion: $cmakedir
@@ -143,7 +162,7 @@ HERE
        ;
 }
 if ($perldir) {
-   print <<HERE
+   print $envfile <<HERE
     perl:
         paths:
             perl\@$perlversion: $perldir
@@ -152,7 +171,7 @@ HERE
        ;
 }
 if ($cudadir) {
-   print <<HERE
+   print $envfile <<HERE
     cuda:
         paths:
             cuda\@$cudaversion: $cudadir
@@ -161,7 +180,7 @@ HERE
        ;
 }
 if ($mpitype and $spackcompiler) {
-   print <<HERE
+   print $envfile <<HERE
     $mpitype:
         compiler: [$spackcompiler]
         version: [$mpiversion]
@@ -171,15 +190,19 @@ if ($mpitype and $spackcompiler) {
 HERE
        ;
 }
-print <<HERE
+print $envfile <<HERE
     all:
       providers:
         blas: [netlib-lapack]
         lapack: [netlib-lapack]
 HERE
     ;
-print "        mpi: [$mpitype]\n" if $mpitype and $spackcompiler;
-print <<HERE
+print $envfile "        mpi: [$mpitype]\n" if $mpitype and $spackcompiler;
+print $envfile <<HERE
   config: {}
 HERE
        ;
+
+#now, create a spack environment
+system("spack env create $env arch/$env.yaml");
+    
