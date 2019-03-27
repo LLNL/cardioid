@@ -46,7 +46,7 @@ To build Cardioid with spack, follow the following steps:
    # to build cardioid with cuda support
    spack diy cardioid+cuda
    # to build cardioid and dependencies with mfem support
-   spack diy cardioid+cuda+mfem
+   spack diy cardioid++mfem
    ```
    **IMPORTANT:** you must Ctrl-C spack once it starts to actually build Cardioid. This is a workaround in spack until they add a `--configure` option to the diy command.
 
