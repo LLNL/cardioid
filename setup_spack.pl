@@ -45,10 +45,13 @@ sub findCommandDir {
 }
 
 my $perldir = findCommandDir("perl");
-my $perlversion = getVersionString("$perldir/bin/perl -v", "v");
+my $perlversion = getVersionString("$perldir/bin/perl -v", "v") if $perldir;
 my $cmakedir = findCommandDir("cmake");
-my $cmakeversion = getVersionString("$cmakedir/bin/cmake --version", " ");
+my $cmakeversion = getVersionString("$cmakedir/bin/cmake --version", " ") if $cmakedir;
 
+my $cudadir = findCommandDir("nvcc");
+my $cudaversion;
+$cudaversion = getVersionString("$cudadir/bin/nvcc --version", "V") if $cudadir;
 
 my $mpitype = "";
 my $mpidir = "";
@@ -113,6 +116,8 @@ if ($mpitype and findCommandDir("spack")) {
    $spackcompiler = $nameFromCompiler{$mpicompiler};
 }
 
+
+
 print <<HERE
 # This is a Spack Environment file.
 #
@@ -142,6 +147,15 @@ if ($perldir) {
     perl:
         paths:
             perl\@$perlversion: $perldir
+        buildable: False
+HERE
+       ;
+}
+if ($cudadir) {
+   print <<HERE
+    cuda:
+        paths:
+            cuda\@$cudaversion: $cudadir
         buildable: False
 HERE
        ;
