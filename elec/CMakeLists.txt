@@ -63,15 +63,15 @@ blt_add_library(NAME profiling
 set (reaction_src
 	#TT04_CellML_Reaction.cc
 	#TT06_CellML_Reaction.cc 
-	TT06Dev_Reaction.cc
-        Passive.cc
+	#TT06Dev_Reaction.cc
+        #Passive.cc
         #ReactionFHN.cc
         #sundnes_et_al_2016_FHN.cc
-	TT06Tau.cc
-	TT06Func.cc
+	#TT06Tau.cc
+	#TT06Func.cc
         BetterTT06.cc
-        Grandi.cc
-	pade.cc
+        #Grandi.cc
+	#pade.cc
 )
 
 add_custom_command(

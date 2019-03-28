@@ -5,9 +5,7 @@
 #include <vector>
 #include <set>
 #include <string>
-#include "VectorDouble32.hh"
 #include "ThreadUtils.hh"
-#include "Anatomy.hh"
 #include "lazy_array.hh"
 
 class Reaction;
@@ -29,7 +27,7 @@ class ReactionManager
    void initializeMembraneState(wo_mgarray_ptr<double> Vm);
 
    void addReaction(const std::string& reactionName);
-   void create(const double dt, Anatomy& anatomy, const ThreadTeam &group);
+   void create(const double dt, ro_array_ptr<int> cellTypes, const ThreadTeam &group);
 
    /** Functions needed for checkpoint/restart */
    void getCheckpointInfo(std::vector<std::string>& fieldNames,
@@ -39,8 +37,8 @@ class ReactionManager
    void setValue(int iCell, int varHandle, double value);
    double getValue(int iCell, int varHandle) const;
    void getValue(int iCell,
-                 const std::vector<int>& handle,
-                 std::vector<double>& value) const;
+                 ro_array_ptr<int> handle,
+                 wo_array_ptr<double> value) const;
    const std::string getUnit(const std::string& varName) const;
    std::vector<int> allCellTypes() const;
    
@@ -48,6 +46,7 @@ class ReactionManager
    std::vector<std::string> objectNameFromRidx_;
    std::vector<Reaction*> reactions_;
    std::vector<int> extents_;
+   lazy_array<int> indexForReactions_;
    
    std::vector<std::string> unitFromHandle_;
    std::map<std::string, int> handleFromVarname_;

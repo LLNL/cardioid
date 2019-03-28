@@ -4,9 +4,9 @@
 
 using namespace std;
 
-void initializeMembraneState(Reaction* reaction, const string& objectName, wo_mgarray_ptr<double> _Vm)
+void initializeMembraneState(Reaction* reaction, const string& objectName, ro_mgarray_ptr<int> indexArray, wo_mgarray_ptr<double> _Vm)
 {
-   reaction->initializeMembraneVoltage(_Vm);
+   reaction->initializeMembraneVoltage(indexArray, _Vm);
    OBJECT* reactionObj = objectFind(objectName, "REACTION");
    assert(reactionObj != NULL);
    if (object_testforkeyword(reactionObj, "initialState"))
