@@ -64,7 +64,7 @@ if (ENABLE_CUDA)
    find_library(CUDA_NVTX_LIBRARY
       NAMES nvToolsExt nvTools nvtoolsext nvtools nvtx NVTX
       PATHS ${CUDA_TOOLKIT_ROOT_DIR}
-      PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib"
+      PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib" "lib/x86_64-linux-gnu"
       DOC "Location of the CUDA Toolkit Extension (NVTX) library"
       NO_DEFAULT_PATH
    )
@@ -72,7 +72,7 @@ if (ENABLE_CUDA)
    find_library(CUDA_NVRTC_LIBRARY
       NAMES nvrtc NVRTC
       PATHS ${CUDA_TOOLKIT_ROOT_DIR}
-      PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib"
+      PATH_SUFFIXES "lib64" "common/lib64" "common/lib" "lib" "lib/x86_64-linux-gnu"
       DOC "Location of the CUDA NVidia Runtime Compilation library"
       NO_DEFAULT_PATH
    )
