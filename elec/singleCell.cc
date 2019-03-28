@@ -243,8 +243,17 @@ int main(int argc, char* argv[])
    iStimTransport.resize(nCells);
    lazy_array<double> dVmTransport;
    dVmTransport.resize(nCells);
-
-   initializeMembraneState(reaction, objectName, VmTransport);
+   lazy_array<int> indexTransport;
+   indexTransport.resize(nCells);
+   {
+      wo_array_ptr<int> indexArray = indexTransport.useOn(CPU);
+      for (int ii=0; ii<nCells; ii++)
+      {
+         indexArray[ii] = ii;
+      }
+   }
+   
+   initializeMembraneState(reaction, objectName, indexTransport, VmTransport);
 
    //prepare for checkpoint output and extra columns
    vector<string> fieldNames;
@@ -458,12 +467,12 @@ int main(int argc, char* argv[])
          //calc() dVm and update the internal states
          if (params.alternate_update_flag)
          {
-            reaction->updateNonGate(dt, VmTransport, dVmTransport);
-            reaction->updateGate(dt,VmTransport);
+            reaction->updateNonGate(dt, indexTransport, VmTransport, dVmTransport);
+            reaction->updateGate(dt, indexTransport, VmTransport);
          }
          else
          {
-            reaction->calc(dt, VmTransport, iStimTransport, dVmTransport);
+            reaction->calc(dt, indexTransport, VmTransport, iStimTransport, dVmTransport);
          }
       }
       {

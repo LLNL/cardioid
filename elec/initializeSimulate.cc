@@ -208,7 +208,12 @@ void initializeSimulate(const string& name, Simulate& sim)
       const string& reactionName(reactionNames[ii]);
       sim.reaction_->addReaction(reactionName);
    }
-   sim.reaction_->create(sim.dt_, sim.anatomy_, sim.reactionThreads_);
+   std::vector<int> cellTypes(sim.anatomy_.nLocal());
+   for (int ii=0; ii<cellTypes.size(); ii++)
+   {
+      cellTypes[ii] = sim.anatomy_.cellType(ii);
+   }
+   sim.reaction_->create(sim.dt_, cellTypes, sim.reactionThreads_);
    timestampBarrier("finished building reaction object", MPI_COMM_WORLD);
 
    sim.printIndex_ = -1;
