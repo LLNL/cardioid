@@ -76,11 +76,10 @@ my $mpidir = "";
 my $mpiversion = "";
 my $mpicompiler = "";
 
-$mpidir = findCommandDir("mpichversion");
 if ($mpidir = findCommandDir("mpichversion")) {
    $mpitype = "mpich";
    $mpiversion = getVersionString("$mpidir/bin/mpichversion", "MPICH Version:\\s+");
-   $mpicompiler = which(getCommandString("$mpidir/bin/mpichversion", "MPICH CC:\\s+([A-Za-z0-9.@\-]+)"));
+   $mpicompiler = which(getCommandString("$mpidir/bin/mpichversion", "MPICH CC:\\s+([A-Za-z0-9.@\/\-]+)"));
 } elsif ($mpidir = findCommandDir("ompi_info")) {
    open(my $temp, "$mpidir/bin/ompi_info |");
    my @lines = <$temp>;
@@ -94,16 +93,16 @@ if ($mpidir = findCommandDir("mpichversion")) {
       $mpitype = "openmpi";
       $mpiversion = getVersionString("$mpidir/bin/ompi_info", "Open MPI:\\s+");
    }
-   $mpicompiler = which(getCommandString("$mpidir/bin/ompi_info", "C compiler:\\s+([A-Za-z0-9.@\-]+)"));
+   $mpicompiler = which(getCommandString("$mpidir/bin/ompi_info", "C compiler:\\s+([A-Za-z0-9.@\/\-]+)"));
 } elsif ($mpidir = findCommandDir("mpiname")) {
    $mpitype = "mvapich";
    $mpiversion = getVersionString("$mpidir/bin/mpiname -v", "");
-   $mpicompiler = which(getCommandString("$mpidir/bin/mpiname -c", "^CC:\\s+([A-Za-z0-9.@\-]+)"));
+   $mpicompiler = which(getCommandString("$mpidir/bin/mpiname -c", "^CC:\\s+([A-Za-z0-9.@\/\-]+)"));
 } elsif ($mpidir = findCommandDir("impi_info")) {
    if ($mpidir =~ m/(\d+\.\d+(?:\.\d+)?)/) {
       $mpitype = "intel-mpi";
       $mpiversion = $1;
-      $mpicompiler = which(getCommandString("$mpidir/bin/mpicc -show", "^([A-Za-z0-9.@\-]+)"));
+      $mpicompiler = which(getCommandString("$mpidir/bin/mpicc -show", "^([A-Za-z0-9.@\/\-]+)"));
    }
 }
 
