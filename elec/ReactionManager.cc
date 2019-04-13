@@ -20,7 +20,7 @@ void ReactionManager::calc(double dt,
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
       reactions_[ii]->calc(dt,
-                           ro_mgarray_ptr<int>(indexForReactions_).slice(extents_[ii],extents_[ii+1]),
+                           ro_mgarray_ptr<int>(EindexFromIindex_).slice(extents_[ii],extents_[ii+1]),
                            Vm,
                            iStim,
                            dVm);
@@ -34,7 +34,7 @@ void ReactionManager::updateNonGate(double dt,
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
       reactions_[ii]->updateNonGate(dt,
-                                    ro_mgarray_ptr<int>(indexForReactions_).slice(extents_[ii],extents_[ii+1]),
+                                    ro_mgarray_ptr<int>(EindexFromIindex_).slice(extents_[ii],extents_[ii+1]),
                                     Vm,
                                     dVm);
    }
@@ -46,7 +46,7 @@ void ReactionManager::updateGate(double dt,
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
       reactions_[ii]->updateGate(dt,
-                                 ro_mgarray_ptr<int>(indexForReactions_).slice(extents_[ii],extents_[ii+1]),
+                                 ro_mgarray_ptr<int>(EindexFromIindex_).slice(extents_[ii],extents_[ii+1]),
                                  Vm);
    }
 }
@@ -59,7 +59,7 @@ void ReactionManager::initializeMembraneState(wo_mgarray_ptr<double> Vm)
    for (int ii=0; ii<reactions_.size(); ++ii)
    {
       ::initializeMembraneState(reactions_[ii], objectNameFromRidx_[ii],
-                                ro_mgarray_ptr<int>(indexForReactions_).slice(extents_[ii],extents_[ii+1]),
+                                ro_mgarray_ptr<int>(EindexFromIindex_).slice(extents_[ii],extents_[ii+1]),
                                 Vm);
    }
 }
@@ -242,17 +242,22 @@ void ReactionManager::create(const double dt, ro_array_ptr<int> cellTypes, const
 
    //build up the index
    {
-      indexForReactions_.resize(extents_[numReactions]);
-      wo_array_ptr<int> indexForReactionsArray = indexForReactions_.useOn(CPU);
+      EindexFromIindex_.resize(extents_[numReactions]);
+      IindexFromEindex_.resize(cellTypes.size());
+      wo_array_ptr<int> EindexFromIindexArray = EindexFromIindex_.useOn(CPU);
       
       vector<int> reactionCursor = extents_;
       for (int icell=0; icell<cellTypes.size(); ++icell)
       {
+         int Eindex = icell;
+         int Iindex = -1;
          auto ridx_iter = ridxFromCellType.find(cellTypes[icell]);
          if (ridx_iter != ridxFromCellType.end())
          {
-            indexForReactionsArray[reactionCursor[ridx_iter->second]++] = icell;
+            Iindex = reactionCursor[ridx_iter->second]++;
+            EindexFromIindexArray[Iindex] = icell;
          }
+         IindexFromEindex_[Eindex] = Iindex;
       }
       //finish off the index
       for (int ireaction=0; ireaction<numReactions; ++ireaction)
@@ -418,7 +423,7 @@ void ReactionManager::setValue(int iCell, int varHandle, double value)
    int subHandle;
    double myUnitFromTheirUnit;
    if (subUsesHandle(ridx, varHandle, subHandle, myUnitFromTheirUnit)) {
-      int subCell = iCell-extents_[ridx];
+      int subCell = IindexFromEindex_[iCell]-extents_[ridx];
       reactions_[ridx]->setValue(subCell, subHandle, value/myUnitFromTheirUnit);
    }
 }
@@ -428,7 +433,7 @@ double ReactionManager::getValue(int iCell, int varHandle) const
    int subHandle;
    double myUnitFromTheirUnit;
    if (subUsesHandle(ridx, varHandle, subHandle, myUnitFromTheirUnit)) {
-      int subCell = iCell-extents_[ridx];
+      int subCell = IindexFromEindex_[iCell]-extents_[ridx];
       return myUnitFromTheirUnit*reactions_[ridx]->getValue(subCell, subHandle);
    } else {
       return numeric_limits<double>::quiet_NaN();
@@ -453,18 +458,20 @@ vector<int> ReactionManager::allCellTypes() const
    return retVal;
 }
    
-int ReactionManager::getRidxFromCell(const int iCell) const {
+int ReactionManager::getRidxFromCell(const int Eindex) const {
+   int Iindex = IindexFromEindex_[Eindex];
+   assert(Iindex != -1);
    //binary search to find the proper Ridx.
    int begin=0;
    int end=extents_.size();
    while (begin+1 < end)
    {
       int mid=(begin+end)/2;
-      if (extents_[mid] == iCell)
+      if (extents_[mid] == Iindex)
       {
          return mid;
       }
-      else if (extents_[mid] < iCell)
+      else if (extents_[mid] < Iindex)
       {
          begin=mid;
       }

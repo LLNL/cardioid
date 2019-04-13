@@ -46,7 +46,8 @@ class ReactionManager
    std::vector<std::string> objectNameFromRidx_;
    std::vector<Reaction*> reactions_;
    std::vector<int> extents_;
-   lazy_array<int> indexForReactions_;
+   lazy_array<int> EindexFromIindex_;
+   std::vector<int> IindexFromEindex_;
    
    std::vector<std::string> unitFromHandle_;
    std::map<std::string, int> handleFromVarname_;
