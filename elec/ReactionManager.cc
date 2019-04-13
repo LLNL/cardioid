@@ -257,10 +257,7 @@ void ReactionManager::create(const double dt, ro_array_ptr<int> cellTypes, const
       //finish off the index
       for (int ireaction=0; ireaction<numReactions; ++ireaction)
       {
-         for (int iindex=reactionCursor[ireaction]; iindex<extents_[ireaction+1]; ++iindex)
-         {
-            indexForReactionsArray[iindex] = -1;
-         }
+         assert(reactionCursor[ireaction] == extents_[ireaction+1]);
       }
    }
    
