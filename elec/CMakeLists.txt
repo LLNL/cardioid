@@ -171,7 +171,8 @@ set (heart_gpu_aware_src
 )
 blt_add_library(NAME heart_gpu_aware
                 SOURCES ${heart_gpu_aware_src}
-                DEPENDS_ON ${heart_explicit_cuda} heart_transport simUtil simdops ${extra_libs}
+                DEPENDS_ON ${heart_explicit_cuda} heart_transport simUtil simdops 
+                           ${CMAKE_DL_LIBS} ${extra_libs}
                            ${CUDA_NVTX_LIBRARY} ${CUDA_NVRTC_LIBRARY} ${CUDA_CUDA_LIBRARY}
                            ${cuda} ${cuda_runtime} openmp mpi
                 INCLUDES ${extra_includes}
