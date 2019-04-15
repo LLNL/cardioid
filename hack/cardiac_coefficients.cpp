@@ -15,22 +15,40 @@ using namespace mfem;
 ReactionFunction::ReactionFunction(QuadratureSpace *qs, FiniteElementSpace *f, const double new_dt, const std::string new_objectName, const ThreadTeam& group)
 : QuadratureFunction(qs), QuadS(qs), fes(f), dt(new_dt), objectName(new_objectName), threadGroup(group)
 {
+
+      
    nCells = this->Size();
 
-   int vectorLength = ((nCells+31)/32)*32;
+   int vectorLength = nCells;
    Vm.resize(vectorLength);
    dVm.resize(vectorLength);
    iStim.resize(vectorLength);
 
    double* VmRaw = Vm.writeonly(CPU).raw();
    VmQuad.SetSpace(QuadS, VmRaw, 1);
-   
-   reaction = std::shared_ptr<Reaction>(reactionFactory(objectName, dt, nCells, threadGroup));
+
+   std::vector<int> cellTypes;
+   for (int i = 0; i < fes->GetNE(); ++i)
+   {
+      ElementTransformation *T = fes->GetElementTransformation(i);
+      //This is a hack.  There's no way to get access to the offsets() array
+      //in Quadrature Space without declaring ourselves to be a friend class.
+      //This is broken and I hope it is fixed in 4.0
+      Vector localVm;
+      VmQuad.GetElementValues(i, localVm);
+      for ( int j=0; j<localVm.Size(); j++)
+      {
+         cellTypes.push_back(T->Attribute);
+      }
+   }
+      
+   reaction.addReaction(objectName);
+   reaction.create(dt, cellTypes, threadGroup);
 }
 
 void ReactionFunction::Initialize()
 {
-   initializeMembraneState(reaction.get(), objectName, Vm);
+   reaction.initializeMembraneState(Vm);
    this->SetData(dVm.readwrite(CPU).raw());
 }
 
@@ -69,7 +87,7 @@ void ReactionFunction::CalcVm(const Vector &xs)
 void ReactionFunction::Calc(const Vector &x)
 {
    CalcVm(x);
-   reaction->calc(dt, Vm, iStim, dVm);
+   reaction.calc(dt, Vm, iStim, dVm);
    dVm.readonly(CPU);
 }
 

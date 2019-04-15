@@ -2,7 +2,7 @@
 #define CARDIAC_COEF
 
 #include "mfem.hpp"
-#include "Reaction.hh"
+#include "ReactionManager.hh"
 #include "ThreadServer.hh"
 #include <memory>
 #include <iostream>
@@ -36,7 +36,7 @@ private:
    ThreadTeam threadGroup;
 
    /// Cell model object
-   std::shared_ptr<Reaction> reaction;
+   ReactionManager reaction;
    
 public:
    ReactionFunction(QuadratureSpace *qs, FiniteElementSpace *f,const double new_dt, const std::string new_objectName, const ThreadTeam& group);
