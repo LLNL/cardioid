@@ -63,7 +63,7 @@ void calcInvrCUDA(wo_mgarray_ptr<double> invr,
 
 }
 
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 600
+#if (defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 600) || (defined(__CUDACC_VER_MAJOR__) && __CUDACC_VER_MAJOR__ <= 7 && __CUDACC_VER_MINOR <= 5)
 inline __device__ double atomicAdd(double* pointer, const double value)
 {
    unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(pointer);
