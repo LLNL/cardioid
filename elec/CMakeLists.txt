@@ -1,17 +1,14 @@
 
 
 set(extra_definitions "" CACHE STRING "")
-add_definitions(${extra_definitions})
-
 set(extra_includes "" CACHE STRING "")
 
 if (ENABLE_CUDA)
-   include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
-   add_definitions(-DUSE_CUDA)
-   add_definitions(-DUSE_NVTX)
+   set(cuda_definitions -DUSE_CUDA -DUSE_NVTX)
    set(cuda cuda)
    set(cuda_runtime cuda_runtime)
-
+   set(cuda_root_include ${CUDA_TOOLKIT_ROOT_DIR}/include)
+   
    find_library(CUDA_NVTX_LIBRARY
       NAMES nvToolsExt nvTools nvtoolsext nvtools nvtx NVTX
       PATHS ${CUDA_TOOLKIT_ROOT_DIR}
@@ -29,8 +26,10 @@ if (ENABLE_CUDA)
    )
    mark_as_advanced(CUDA_NVRTC_LIBRARY)
 else()
+   set(cuda_definitions "")
    set(cuda "")
    set(cuda_runtime "")
+   set(cuda_root_include "")
    set(CUDA_NVTX_LIBRARY "")
    set(CUDA_NVRTC_LIBRARY "")
    set(CUDA_CUDA_LIBRARY "")
@@ -42,11 +41,12 @@ find_library(LAPACK_LIB lapack)
 find_program(PERL perl)
 
 if (BLAS_LIB AND LAPACK_LIB)
-   add_definitions(-DHAVE_LAPACK)
+   set(lapack_definitions -DHAVE_LAPACK) 
    list(APPEND extra_libs ${LAPACK_LIB} ${BLAS_LIB})
+else()
+   set(lapack_definitions "")
 endif()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../simdops/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set (heart_transport_src
@@ -56,11 +56,15 @@ set (heart_transport_src
 
 blt_add_library(NAME heart_transport
                 SOURCES ${heart_transport_src}
+                INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${cuda_root_include}
+                DEFINES ${cuda_definitions} ${lapack_definitions} ${extra_definitions}
                 DEPENDS_ON ${cuda_runtime} openmp)
 
 if (ENABLE_CUDA)
    blt_add_library(NAME heart_actual_cuda
                    SOURCES CUDADiffusion_ker.cu ECGSensor.cu
+                   INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${cuda_root_include}
+                   DEFINES ${cuda_definitions} ${lapack_definitions} ${extra_definitions}
                    DEPENDS_ON ${cuda} simUtil simdops openmp)
    set (heart_explicit_cuda_src
       CUDADiffusion.cc
@@ -171,11 +175,12 @@ set (heart_gpu_aware_src
 )
 blt_add_library(NAME heart_gpu_aware
                 SOURCES ${heart_gpu_aware_src}
+                DEFINES ${cuda_definitions} ${lapack_definitions} ${extra_definitions}
                 DEPENDS_ON ${heart_explicit_cuda} heart_transport simUtil simdops 
                            ${CMAKE_DL_LIBS} ${extra_libs}
                            ${CUDA_NVTX_LIBRARY} ${CUDA_NVRTC_LIBRARY} ${CUDA_CUDA_LIBRARY}
                            ${cuda} ${cuda_runtime} openmp mpi
-                INCLUDES ${extra_includes}
+                INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${cuda_root_include} ${extra_includes}
                 )
 
 set (heart_cpu_only_src 
@@ -184,8 +189,9 @@ set (heart_cpu_only_src
 )
 blt_add_library(NAME heart_cpu_only
                 SOURCES ${heart_cpu_only_src}
+                DEFINES ${cuda_definitions} ${lapack_definitions} ${extra_definitions}
                 DEPENDS_ON simUtil simdops ${extra_libs} openmp
-                INCLUDES ${extra_includes}
+                INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${cuda_root_include} ${extra_includes}
                 )
 
 blt_add_executable(NAME cardioid
@@ -212,43 +218,72 @@ install(TARGETS cardioid singleCell
 
 ### Getting compile flags for making plugins.
 
-set(heart_compile_flags "")
 
-get_property(p_dirs TARGET heart_gpu_aware PROPERTY INCLUDE_DIRECTORIES)
-foreach(dir ${p_dirs})
+function(get_recursive_list retvar target prop)
+  set(${retvar} "" PARENT_SCOPE)
+  if (NOT TARGET ${target})
+    return()
+  endif()
+  set(searched ${ARGN})
+  list(APPEND searched ${target})
+  #message(SEND_ERROR "=== ${target} ${prop} ${searched}")
+  
+  set(${retval} "")
+  get_property(propval TARGET ${target} PROPERTY ${prop} SET)
+  if (propval)
+    get_target_property(propval ${target} ${prop})
+    list(APPEND retval ${propval})
+  endif()
+
+  get_target_property(libs ${target} INTERFACE_LINK_LIBRARIES) 
+  foreach(lib ${libs})
+    list(FIND searched ${lib} lib_has_been_searched)
+    #message(SEND_ERROR "+++ ${lib} ${lib_has_been_searched}")
+    if (lib_has_been_searched EQUAL -1)
+      get_recursive_list(recursive_val ${lib} ${prop} ${searched})
+      list(APPEND retval ${recursive_val})
+    endif()
+  endforeach()
+  
+  set(${retvar} ${retval} PARENT_SCOPE)
+  #message(SEND_ERROR "--- ${target} ${prop} ${retval}")
+endfunction()
+
+
+set(runtime_includes "")
+get_recursive_list(val heart_gpu_aware INTERFACE_SYSTEM_INCLUDE_DIRECTORIES)
+list(APPEND runtime_includes ${val})
+get_recursive_list(val heart_gpu_aware INTERFACE_INCLUDE_DIRECTORIES)
+list(APPEND runtime_includes ${val})
+
+set(runtime_defs "")
+get_recursive_list(val heart_gpu_aware INTERFACE_COMPILE_DEFINITIONS)
+list(APPEND runtime_defs ${val})
+
+set(runtime_flags "")
+get_recursive_list(val heart_gpu_aware INTERFACE_COMPILE_OPTIONS)
+list(APPEND runtime_flags ${val})
+
+set(heart_compile_flags "")
+foreach(dir ${runtime_includes})
   set(heart_compile_flags "${heart_compile_flags} -I${dir}")
 endforeach()
 
-get_property(p_flags TARGET heart_gpu_aware PROPERTY COMPILE_FLAGS)
-foreach(flag ${p_flags})
+foreach(flag ${runtime_flags})
   set(heart_compile_flags "${heart_compile_flags} ${flag}")
 endforeach()
 
-get_property(p_flags TARGET heart_gpu_aware PROPERTY COMPILE_DEFINITIONS)
-foreach(flag ${p_flags})
-  set(heart_compile_flags "${heart_compile_flags} -D${flag}")
-endforeach()
-
-get_property(p_flags TARGET heart_gpu_aware PROPERTY COMPILE_DEFINITIONS_RELEASE)
-foreach(flag ${p_flags})
-  set(heart_compile_flags "${heart_compile_flags} -D${flag}")
-endforeach()
-
-get_property(p_flags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIRECTORY} PROPERTY COMPILE_DEFINITIONS)
-foreach(flag ${p_flags})
-  set(heart_compile_flags "${heart_compile_flags} -D${flag}")
-endforeach()
-
-get_property(p_flags DIRECTORY ${CMAKE_CURRENT_SOURCE_DIRECTORY} PROPERTY COMPILE_FLAGS)
-foreach(flag ${p_flags})
-  set(heart_compile_flags "${heart_compile_flags} ${flag}")
+foreach(def ${runtime_defs})
+  set(heart_compile_flags "${heart_compile_flags} -D${def}")
 endforeach()
 
 string(TOUPPER "CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE}" CMAKE_C_FLAGS_BUILDNAME)
 set(CMAKE_C_FLAGS_BUILD "${${CMAKE_C_FLAGS_BUILDNAME}}")
 
-
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/compileReaction.template
-               ${CMAKE_BINARY_DIR}/compileReaction
+               ${CMAKE_BINARY_DIR}/bin/compileReaction
                @ONLY
                )
+install(PROGRAMS ${CMAKE_BINARY_DIR}/bin/compileReaction
+	RUNTIME DESTINATION bin
+	)
