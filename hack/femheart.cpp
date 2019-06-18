@@ -205,6 +205,9 @@ int main(int argc, char *argv[])
    double initVm;
    objectGet(obj, "init_vm", initVm, "-83");
 
+   bool useNodalIion;
+   objectGet(obj, "nodal_ion", useNodalIion, "0");
+
    StimulusCollection stims(dt);
    {
       std::vector<std::string> stimulusNames;
@@ -340,9 +343,9 @@ int main(int argc, char *argv[])
    }
 
    std::vector<int> globalvert_from_ranklookup(local_extents[num_ranks]);
-   std::vector<int> localvert_from_ranklookup(local_extents[num_ranks]);
+   std::vector<int> ghostlocalvert_from_ranklookup(local_extents[num_ranks]);
    {
-      std::vector<int> cursor_localvert_from_rank(num_ranks, 0);
+      std::vector<int> cursor_ghostlocal_from_rank(num_ranks, 0);
       std::vector<int> cursor_ranklookup_from_rank = local_extents;
       for(int i=0; i<mesh->GetNV(); i++)
       {
@@ -351,17 +354,45 @@ int main(int argc, char *argv[])
             int irank = *(pvertset[i].begin());
             int ranklookup = cursor_ranklookup_from_rank[irank]++;
             int globalvert = i;
-            int localvert = cursor_localvert_from_rank[irank];
+            int ghostlocal = cursor_ghostlocal_from_rank[irank];
             globalvert_from_ranklookup[ranklookup] = globalvert;
-            localvert_from_ranklookup[ranklookup] = localvert;
+            ghostlocalvert_from_ranklookup[ranklookup] = ghostlocal;
             for (const int used_by_this_rank : pvertset[i])
             {
-               cursor_localvert_from_rank[used_by_this_rank]++;
+               cursor_ghostlocal_from_rank[used_by_this_rank]++;
             }
          }
       }
    }
 
+   //Get the element material types for each index.
+   std::vector<int> material_from_ranklookup(local_extents[num_ranks]);
+   {
+      std::vector<int> element_from_globalvert(mesh->GetNV(), mesh->GetNE());
+      for (int ielem=0; ielem<mesh->GetNE(); ielem++)
+      {
+         Array<int> verts;
+         mesh->GetElementVertices(ielem, verts);
+         for (int ivert=0; ivert<verts.Size(); ivert++)
+         {
+            element_from_globalvert[verts[ivert]] = std::min(element_from_globalvert[verts[ivert]], ielem);
+         }
+      }
+      std::vector<int> cursor_ranklookup_from_rank = local_extents;
+      for(int i=0; i<mesh->GetNV(); i++)
+      {
+         if ( ! pvertset[i].empty())
+         {
+            int irank = *(pvertset[i].begin());
+            int ranklookup = cursor_ranklookup_from_rank[irank]++;
+            int globalvert = i;
+
+            int ielem = element_from_globalvert[globalvert];
+            material_from_ranklookup[ranklookup] = mesh->GetElement(ielem)->GetAttribute();
+         }
+      }
+   }
+   
    if (my_rank == 0)
    {
       for(int i=0; i<num_ranks; i++) {
@@ -461,22 +492,77 @@ int main(int argc, char *argv[])
    HypreSolver *M_test = new HypreBoomerAMG(LHS_mat);
    pcg.SetPreconditioner(*M_test);
 
+
    //Set up the ionic models
+   ParLinearForm *c = new ParLinearForm(pfespace);
+   //positive dt here because the reaction models use dVm = -Iion
+   c->AddDomainIntegrator(new DomainLFIntegrator(stims));
+
+
+   
+   ThreadServer& threadServer = ThreadServer::getInstance();
+   ThreadTeam defaultGroup = threadServer.getThreadTeam(vector<unsigned>());
+   std::vector<std::string> reactionNames;
+   reactionNames.push_back(reactionName);
+   std::vector<int> cellTypes;
+
    //int Iion_order = 2*order+3;
    int Iion_order = 2*order-1;
    QuadratureSpace quadSpace(pmesh, Iion_order);
-   ThreadServer& threadServer = ThreadServer::getInstance();
-   ThreadTeam defaultGroup = threadServer.getThreadTeam(vector<unsigned>());
-   std::shared_ptr<ReactionFunction> rf(new ReactionFunction(&quadSpace,pfespace,dt,reactionName,defaultGroup));
-   rf->Initialize();
+   if (useNodalIion)
+   {
+      for (int ranklookup=local_extents[my_rank]; ranklookup<local_extents[my_rank+1]; ranklookup++)
+      {
+         cellTypes.push_back(material_from_ranklookup[ranklookup]);
+      }
+   }
+   else
+   {
+      for (int i = 0; i < pfespace->GetNE(); ++i)
+      {
+         ElementTransformation *T = pfespace->GetElementTransformation(i);
+         //This is a hack.  There's no way to get access to the offsets() array
+         //in Quadrature Space without declaring ourselves to be a friend class.
+         //This is broken and I hope it is fixed in 4.0
+         Vector localVm;
+         int NNN = quadSpace.GetElementIntRule(i).GetNPoints();
+         for ( int j=0; j<NNN; j++)
+         {
+            cellTypes.push_back(T->Attribute);
+         }
+      }
+   }
 
-   ParLinearForm *c = new ParLinearForm(pfespace);
-   //positive dt here because the reaction models use dVm = -Iion
-   c->AddDomainIntegrator(new QuadratureIntegrator(rf.get(), dt)); 
-   c->AddDomainIntegrator(new DomainLFIntegrator(stims));
+   ReactionWrapper reactionWrapper(dt,reactionNames,defaultGroup,cellTypes);
+   reactionWrapper.Initialize();
+   cellTypes.clear();
+   reactionNames.clear();
+   
+   ParBilinearForm *Iion_blf;
+   HypreParMatrix Iion_mat;
+   ConstantCoefficient dt_coeff(dt);
+   ReactionFunction* rf = NULL;
+   if (useNodalIion) {
+      Iion_blf = new ParBilinearForm(pfespace);
+      Iion_blf->AddDomainIntegrator(new MassIntegrator(dt_coeff));
+      Iion_blf->Update(pfespace);
+      Iion_blf->Assemble();
+      Iion_blf->FormSystemMatrix(ess_tdof_list,Iion_mat);
+   } else {
+      Iion_blf = NULL;
+      
+      rf = new ReactionFunction(&quadSpace,pfespace,&reactionWrapper); 
+      c->AddDomainIntegrator(new QuadratureIntegrator(rf, dt)); 
+   }
 
    Vector actual_Vm(pfespace->GetTrueVSize()), actual_b(pfespace->GetTrueVSize()), actual_old(pfespace->GetTrueVSize());
+   Vector actual_Iion(pfespace->GetTrueVSize());
    bool first=true;
+
+   if (useNodalIion)
+   {
+      actual_Vm = reactionWrapper.getVmReadonly();
+   }
    
    int itime=0;
    while (1)
@@ -504,7 +590,7 @@ int main(int argc, char *argv[])
                   {
                      //Since rank 0 is always the least, ranklookup == localvert
                      //the following assertion makes sure this is always true.
-                     assert(localvert_from_ranklookup[local_extents[irank+1]-1] == local_extents[irank+1]-1);
+                     assert(ghostlocalvert_from_ranklookup[local_extents[irank+1]-1] == local_extents[irank+1]-1);
                      memcpy(&rankBuffer[0], &gf_Vm[0], sizeof(double)*local_size);
                   }
                }
@@ -529,7 +615,7 @@ int main(int argc, char *argv[])
             for (int ii=0; ii<local_size; ii++)
             {
                int ranklookup = local_extents[my_rank] + ii;
-               dataFromLocalRanklookup[ii] = gf_Vm[localvert_from_ranklookup[ranklookup]];
+               dataFromLocalRanklookup[ii] = gf_Vm[ghostlocalvert_from_ranklookup[ranklookup]];
             }
             MPI_Send(&dataFromLocalRanklookup[0], local_size,
                      MPI_DOUBLE, 0, 455, MPI_COMM_WORLD);
@@ -539,7 +625,12 @@ int main(int argc, char *argv[])
       if (itime == timeline.maxTimesteps()) { break; }
 
       //calculate the ionic contribution.
-      rf->Calc(gf_Vm);
+      if (useNodalIion) {
+         reactionWrapper.getVmReadwrite() = actual_Vm; //should be a memcpy
+         reactionWrapper.Calc();
+      } else {
+         rf->Calc(gf_Vm);
+      }
       
       //add stimulii
       stims.updateTime(timeline.realTimeFromTimestep(itime));
@@ -551,7 +642,12 @@ int main(int argc, char *argv[])
       //compute the RHS matrix contribution
       RHS_mat.Mult(actual_Vm, actual_old);
       actual_b += actual_old;
-      
+
+      if (useNodalIion)
+      {
+         Iion_mat.Mult(reactionWrapper.getIionReadonly(), actual_old);
+         actual_b += actual_old;
+      }
       //solve the matrix
       pcg.Mult(actual_b, actual_Vm);
 

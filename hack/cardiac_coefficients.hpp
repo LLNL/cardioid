@@ -11,6 +11,35 @@
 using namespace std;
 using namespace mfem;
 
+class ReactionWrapper
+{
+ public:
+   ReactionWrapper(const double new_dt, const std::vector<std::string> new_objectNames, const ThreadTeam& group, const std::vector<int>& cellTypes);
+   void Initialize();
+   void Calc();
+   Vector& getVmReadwrite();
+   Vector& getIionReadwrite();
+   const Vector& getVmReadonly() const;
+   const Vector& getIionReadonly() const;
+
+   //private:
+   lazy_array<double> Vm;
+   lazy_array<double> iStim;
+   lazy_array<double> dVm;
+
+   int nCells;
+   double dt;
+   std::string objectName;
+   ThreadTeam threadGroup;
+
+   ReactionManager reaction;
+
+   Vector Vm_vector;
+   Vector Iion_vector;
+};
+
+
+
 /// Wrapper for interface to melodee-generated active tension
 /// values that live only at quadrature points
 class ReactionFunction : public QuadratureFunction
@@ -24,31 +53,16 @@ private:
    FiniteElementSpace *fes;
    QuadratureFunction VmQuad;
 
-   /// melodee compatible data members
-   lazy_array<double> Vm;
-   lazy_array<double> iStim;
-   lazy_array<double> dVm;
-
-   /// Number of integration points
-   int nCells;
-   double dt;
-   std::string objectName;
-   ThreadTeam threadGroup;
-
    /// Cell model object
-   ReactionManager reaction;
+   ReactionWrapper* reactionWrapper;
    
 public:
-   ReactionFunction(QuadratureSpace *qs, FiniteElementSpace *f,const double new_dt, const std::string new_objectName, const ThreadTeam& group);
-
-   /// Call to melodee generated initialization
-   void Initialize();
+   ReactionFunction(QuadratureSpace *qs, FiniteElementSpace *f,ReactionWrapper* rw);
 
    /// Call to melodee generated calc
    void Calc(const Vector& x);
 
  private:
-   void CalcVm(const Vector& x);
 };
 
 

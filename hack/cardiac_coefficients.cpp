@@ -12,47 +12,69 @@
 using namespace std;
 using namespace mfem;
 
-ReactionFunction::ReactionFunction(QuadratureSpace *qs, FiniteElementSpace *f, const double new_dt, const std::string new_objectName, const ThreadTeam& group)
-: QuadratureFunction(qs), QuadS(qs), fes(f), dt(new_dt), objectName(new_objectName), threadGroup(group)
+ReactionWrapper::ReactionWrapper(const double new_dt, const std::vector<std::string> new_objectNames, const ThreadTeam& group, const std::vector<int>& cellTypes)
+: dt(new_dt), threadGroup(group)
 {
-
       
-   nCells = this->Size();
+   nCells = cellTypes.size();
 
-   int vectorLength = nCells;
-   Vm.resize(vectorLength);
-   dVm.resize(vectorLength);
-   iStim.resize(vectorLength);
+   Vm.resize(nCells);
+   dVm.resize(nCells);
+   iStim.resize(nCells);
 
-   double* VmRaw = Vm.writeonly(CPU).raw();
-   VmQuad.SetSpace(QuadS, VmRaw, 1);
-
-   std::vector<int> cellTypes;
-   for (int i = 0; i < fes->GetNE(); ++i)
-   {
-      ElementTransformation *T = fes->GetElementTransformation(i);
-      //This is a hack.  There's no way to get access to the offsets() array
-      //in Quadrature Space without declaring ourselves to be a friend class.
-      //This is broken and I hope it is fixed in 4.0
-      Vector localVm;
-      VmQuad.GetElementValues(i, localVm);
-      for ( int j=0; j<localVm.Size(); j++)
-      {
-         cellTypes.push_back(T->Attribute);
-      }
+   for (auto objectName : new_objectNames) {
+      reaction.addReaction(objectName);
    }
-      
-   reaction.addReaction(objectName);
    reaction.create(dt, cellTypes, threadGroup);
+
+   rw_array_ptr<double> Vm_ptr = Vm.readwrite(CPU);
+   Vm_vector.SetDataAndSize(Vm_ptr.raw(), nCells);
+   rw_array_ptr<double> Iion_ptr = dVm.readwrite(CPU);
+   Iion_vector.SetDataAndSize(Iion_ptr.raw(), nCells);
 }
 
-void ReactionFunction::Initialize()
+void ReactionWrapper::Initialize()
 {
    reaction.initializeMembraneState(Vm);
-   this->SetData(dVm.readwrite(CPU).raw());
 }
 
-void ReactionFunction::CalcVm(const Vector &xs)
+void ReactionWrapper::Calc()
+{
+   reaction.calc(dt, Vm, iStim, dVm);
+}
+
+Vector& ReactionWrapper::getVmReadwrite()
+{
+   rw_array_ptr<double> Vm_ptr = Vm.useOn(CPU);
+   return Vm_vector;
+}
+
+Vector& ReactionWrapper::getIionReadwrite()
+{
+   rw_array_ptr<double> Iion_ptr = dVm.useOn(CPU);
+   return Iion_vector;
+}
+
+const Vector& ReactionWrapper::getVmReadonly() const
+{
+   ro_array_ptr<double> Vm_ptr = Vm.useOn(CPU);
+   return Vm_vector;
+}
+
+const Vector& ReactionWrapper::getIionReadonly() const
+{
+   ro_array_ptr<double> Iion_ptr = dVm.useOn(CPU);
+   return Iion_vector;
+}
+
+ReactionFunction::ReactionFunction(QuadratureSpace *qs, FiniteElementSpace *f,ReactionWrapper* rw)
+: QuadratureFunction(qs),reactionWrapper(rw), QuadS(qs), fes(f)
+{
+   double* VmRaw = rw->getVmReadwrite().GetData();
+   VmQuad.SetSpace(QuadS, VmRaw, 1);
+}
+
+void ReactionFunction::Calc(const Vector &xs)
 {
    ElementTransformation *T;
    const FiniteElement *fe;
@@ -62,7 +84,7 @@ void ReactionFunction::CalcVm(const Vector &xs)
    
    int dof;
 
-   wo_array_ptr<double> VmRaw = Vm.writeonly(CPU);
+   wo_array_ptr<double> VmRaw = reactionWrapper->Vm.writeonly(CPU);
    for (int i = 0; i < fes->GetNE(); ++i) {
       T = fes->GetElementTransformation(i);
       fes->GetElementVDofs(i, vdofs);
@@ -82,13 +104,8 @@ void ReactionFunction::CalcVm(const Vector &xs)
          localVm[i_num] = el_x*basisFunctions;
       }
    }      
-}
-
-void ReactionFunction::Calc(const Vector &x)
-{
-   CalcVm(x);
-   reaction.calc(dt, Vm, iStim, dVm);
-   dVm.readonly(CPU);
+   reactionWrapper->Calc();
+   reactionWrapper->getIionReadonly();
 }
 
 QuadratureIntegrator::QuadratureIntegrator(QuadratureFunction* p_newQuadFunction, const double new_scale)
