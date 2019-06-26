@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
    objectGet(obj, "init_vm", initVm, "-83");
 
    bool useNodalIion;
-   objectGet(obj, "nodal_ion", useNodalIion, "0");
+   objectGet(obj, "nodal_ion", useNodalIion, "1");
 
    StimulusCollection stims(dt);
    {
