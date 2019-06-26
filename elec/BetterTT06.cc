@@ -1640,7 +1640,7 @@ void ThisReaction::calc(double _dt,
       simdops::store(&__dVm_local[0],-Iion_001);
       {
          int cursor = 0;
-         for (int __kk=0; __kk<width || __ii+__kk<nCells_; __kk++)
+         for (int __kk=0; __kk<width && __ii+__kk<nCells_; __kk++)
          {
             __dVm[__indexArray[__ii+__kk]] = __dVm_local[__kk];
          }
