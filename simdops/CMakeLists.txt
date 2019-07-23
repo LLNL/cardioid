@@ -10,3 +10,5 @@ blt_add_library(
        include/simdops/x86_avx512f.hpp
        include/simdops/default_math.hpp
 )
+target_include_directories(simdops INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+

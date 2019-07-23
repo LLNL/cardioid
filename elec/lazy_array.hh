@@ -79,7 +79,11 @@ class rw_mgarray_ptr : public managed_array_impl<rw_mgarray_ptr<TTT>,rw_array_pt
    }
 };
 
-/*
+#if 0
+//Version of lazy arrays that work more like CHAI, can be indexed directly
+
+#include "ContextManager.hh"
+
 template <typename External,typename TTT>
 class lazy_array_impl
 {
@@ -174,7 +178,8 @@ class rw_lzarray_ptr : public rw_array_ptr_interface<lazy_array_impl<rw_lzarray_
    LAZY_HOST_DEVICE inline operator rw_array_ptr<TTT>() { return rw_array_ptr<TTT>(this->raw(), this->size()); }
 
 };
-*/
+
+#endif
 
 template <typename TTT>
 class DelayedUse

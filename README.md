@@ -23,17 +23,15 @@ We recommend compiling Cardioid using [Spack](https://github.com/LLNL/spack).
 
 To build Cardioid with spack, follow the following steps:
 
-* Make a YAML file for your particular cluster telling the system where to find MPI, what compilers to use, where to find lapack, etc. Examples can be found in arch/*.yaml. [Read here](https://spack.readthedocs.io/en/latest/tutorial_environments.html#spack-yaml) for more information on the syntax for this YAML file.
-
 * Clone [Spack](https://spack.io) and set it up:
    ```
    git clone https://github.com/spack/spack.git
    . spack/share/spack/setup-env.sh
    ```
    
-* Install your YAML file as a spack environment.
+* Make a YAML file for your particular cluster telling the system where to find MPI, what compilers to use, where to find lapack, etc. Examples can be found in arch/*.yaml. We've created a script to automate this process and make it easier.  This script will check your path for mpi, cuda, perl, and cmake.  For more information on spack environments, [Read here](https://spack.readthedocs.io/en/latest/tutorial_environments.html#spack-yaml).
    ```
-   spack env create YOURENV arch/YOURENV.yaml
+   ./setup_spack.pl YOURENV
    ```
    
 * Activate your environment
@@ -41,20 +39,30 @@ To build Cardioid with spack, follow the following steps:
    spack env activate YOURENV
    ```
 
-* Build the cardioid dependencies
+* Ask spack to configure your build
    ```
-   spack install mfem+hypre+lapack
+   # to build regular cardioid:
+   spack diy cardioid
+   # to build cardioid with cuda support
+   spack diy cardioid+cuda
+   # to build cardioid and dependencies with mfem support
+   spack diy cardioid++mfem
    ```
-   
-* Install the dependencies into a directory called deps
-   ```
-   spack view symlink deps mfem+hypre+lapack
-   ```
+   **IMPORTANT:** you must Ctrl-C spack once it starts to actually build Cardioid. This is a workaround in spack until they add a `--configure` option to the diy command.
 
-* Build the rest of Cardioid, using the default settings
+* Once you've done this setup, typing "make" in cardioid will just work. Finish with your build
    ```
    make build
    ```
+* If you close the terminal,
+    * Simply reload the spack environment:
+       ```
+       spack env activate YOURENV
+       ```
+    * Continue on building with your previous setup
+       ```
+       make build
+       ```
 
 ## Building without spack
 
@@ -69,8 +77,7 @@ Builds are performed in `build/<arch>` .  Executables are installed in `build/<a
 
 Please submit any bugfixes or feature improvements as [pull requests](https://help.github.com/articles/using-pull-requests/).
 
-Authors
-----------------
+## Authors
 
 Many thanks go to Cardioid's [contributors](https://github.com/llnl/cardioid/graphs/contributors).
 
@@ -89,14 +96,20 @@ Many thanks go to Cardioid's [contributors](https://github.com/llnl/cardioid/gra
 * Changhoan Kim
 * and many more...
 
-License
-----------------
+## Learn more
+
+Cardioid's history goes back a few years -- it was a finalist for the 2012 Gordon Bell Prize -- but only now is the code available as open source. Initially developed by a team of LLNL and IBM scientists, Cardioid divides the heart into a large number of manageable subdomains. This replicates the electrophysiology of the human heart, accurately simulating the activation of each heart muscle cell and cell-to-cell electric coupling.
+
+- Video: [The Cardioid Project: Simulating the Human Heart](https://computation.llnl.gov/cardioid-project-simulating-human-heart-0)
+- *Science & Technology Review* article: [Venturing into the Heart of High-Performance Computing Simulations](https://str.llnl.gov/Sep12/streitz.html)
+- *Science & Technology Review* article: [Reaching for New Computational Heights with Sequoia](https://str.llnl.gov/july-2013/mccoy) - Cardioid helped set speed records for the Sequoia supercomputer by clocking in at nearly 12 petaflops while scaling with better than 90% parallel efficiency across all 1,572,864 cores.
+
+## License
 
 Cardioid is distributed under the terms of the MIT license. All new contributions must be made under this license.
 
 See [LICENSE](https://github.com/llnl/cardioid/blob/master/LICENSE) and [NOTICE](https://github.com/llnl/cardioid/blob/master/NOTICE) for details.
 
-`SPDX-License-Identifier: (MIT)`
+`SPDX-License-Identifier: MIT`
 
 ``LLNL-CODE-764041``
-
