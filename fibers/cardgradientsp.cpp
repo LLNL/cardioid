@@ -130,6 +130,9 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
     MPI_Allreduce(&totalCardPoints, &globalTotCardPoints, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     header.nrecord = globalTotCardPoints;
 
+    int maxCardPoints;
+    MPI_Allreduce(&totalCardPoints, &maxCardPoints, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+    
     // Parallel I/O
     string fullname = "snapshot.initial";
     if (myid == 0) {
@@ -140,7 +143,7 @@ void getCardGradientsp(Mesh* mesh, GridFunction& x_psi_ab, GridFunction& x_phi_e
     int lrec = 88;
 //     int lrec = 80;
     //heap_allocate(lrec*totalCardPoints*128 + 4096);
-    heap_allocate(lrec*globalTotCardPoints*64 + 4096);
+    heap_allocate(lrec*maxCardPoints*4 + 4096);
 
     Pio_setNumWriteFiles(num_procs);
     PFILE* file = Popen(fullname.c_str(), "w", MPI_COMM_WORLD);
