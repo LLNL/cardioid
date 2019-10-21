@@ -13,23 +13,23 @@ class Indenter:
     def __call__(self, string, *args, **kwargs):
         initialstrip = string.lstrip('\n')
         if not initialstrip:
-            print >>self.outfile, string,
+            print(string, file=self.outfile)
             return
         indentString = self.indent*self.indentAmount
         for line in initialstrip.split('\n'):
             outline = indentString+line
             if line == "":
-                print >>self.outfile, "\n",
+                print("\n", file=self.outfile)
             elif kwargs:
-                print >>self.outfile, (outline % kwargs)
+                print((outline % kwargs), file=self.outfile)
             elif len(args) == 1 and type(args[0]) == dict:
-                print >>self.outfile, (outline % args[0])
+                print((outline % args[0]), file=self.outfile)
             elif len(args) == 1:
-                print >>self.outfile, (outline % args[0])
+                print((outline % args[0]), file=self.outfile)
             elif len(args) == 0:
-                print >>self.outfile, outline
+                print(outline, file=self.outfile)
             else:
-                print >>self.outfile, (outline % args)
+                print((outline % args), file=self.outfile)
 
     def inc(self, indentAmount=1):
         self.indentAmount += indentAmount
@@ -87,7 +87,7 @@ def hdf5ArrayDesc(h5array):
         ttype = "Float"
     return """   <DataItem Format="HDF" Dimensions="{dim}" NumberType="{ttype}" Precision="{prec}">
       {filename}:{name}
-   </DataItem>""".format(dim=" ".join(map(lambda x:str(x),h5array.shape)),
+   </DataItem>""".format(dim=" ".join([str(x) for x in h5array.shape]),
            ttype=ttype,
            prec=h5array.dtype.itemsize,
            filename=h5array.file.filename,
