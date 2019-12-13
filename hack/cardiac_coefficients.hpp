@@ -122,7 +122,7 @@ class CenterBallStimulus : public StimulusLocation
       if (0
           +(x_-x[0])*(x_-x[0])
           +(y_-x[1])*(y_-x[1])
-          +(z_-x[2])*(z_-x[1])
+          +(z_-x[2])*(z_-x[2])
           <= size_*size_
       )
       {
