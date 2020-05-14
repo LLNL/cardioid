@@ -328,5 +328,5 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/compileReaction.template
                @ONLY
                )
 install(PROGRAMS ${CMAKE_BINARY_DIR}/bin/compileReaction
-	RUNTIME DESTINATION bin
+	DESTINATION bin
 	)
