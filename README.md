@@ -29,40 +29,47 @@ To build Cardioid with spack, follow the following steps:
    . spack/share/spack/setup-env.sh
    ```
    
-* Make a YAML file for your particular cluster telling the system where to find MPI, what compilers to use, where to find lapack, etc. Examples can be found in arch/*.yaml. We've created a script to automate this process and make it easier.  This script will check your path for mpi, cuda, perl, and cmake.  For more information on spack environments, [Read here](https://spack.readthedocs.io/en/latest/tutorial_environments.html#spack-yaml).
-   ```
-   ./setup_spack.pl YOURENV
-   ```
-   
-* Activate your environment
-   ```
-   spack env activate YOURENV
-   ```
+* Make a spack environment in order to build cardioid.
+  ```
+  mkdir myenv
+  cd myenv
+  spack env create -d .
+  spacktivate .
+  ```
+* Load any necessary modules in order to build cardioid (cmake, perl, some sort of mpi, optional cuda)
+* Add the necessary dependencies in order to build cardioid.
+  ```
+  spack compiler find
+  spack external find cmake perl
+  spack external find --not-buildable openmpi mvapich2 mpich spectrum-mpi cuda
+  ```
+* Add cardioid to the environment
+  ```
+  spack add cardioid
+  # or
+  spack add cardioid+cuda
+  ```
+* Add cardioid as a develop package
+  ```
+  spack develop cardioid@develop
+  ```
+  This will check out the cardioid source code into this directory
+* Concretize everything
+  ```
+  spack concretize -f
+  ```
+* Build!
+  ```
+  spack install
+  ```
+  The binary will be in `.spack-env/view/bin/cardioid`
+* Once you've done this, you can change directory to `cardioid/spack-build-*` and type `make` to build the source code manually.  All the configure options will be set up for you.
 
-* Ask spack to configure your build
-   ```
-   # to build regular cardioid:
-   spack diy cardioid
-   # to build cardioid with cuda support
-   spack diy cardioid+cuda
-   # to build cardioid and dependencies with mfem support
-   spack diy cardioid++mfem
-   ```
-   **IMPORTANT:** you must Ctrl-C spack once it starts to actually build Cardioid. This is a workaround in spack until they add a `--configure` option to the diy command.
-
-* Once you've done this setup, typing "make" in cardioid will just work. Finish with your build
-   ```
-   make build
-   ```
-* If you close the terminal,
-    * Simply reload the spack environment:
-       ```
-       spack env activate YOURENV
-       ```
-    * Continue on building with your previous setup
-       ```
-       make build
-       ```
+* To remove your changes and build from a fresh source tree again, just use undevelop and reinstall with spack
+  ```
+  spack undevelop cardioid
+  spack install
+  ```
 
 ## Building without spack
 
