@@ -261,50 +261,54 @@ install(TARGETS cardioid singleCell
 
 ### Getting compile flags for making plugins.
 
+function(get_recursive_libs retvar target)
+   set(${retvar} "" PARENT_SCOPE)
+  if (NOT TARGET ${target})
+    return()
+  endif()
 
-function(get_recursive_list retvar target prop)
+  get_target_property(libs ${target} INTERFACE_LINK_LIBRARIES)
+  set(retval "${libs}")
+  foreach(lib ${libs})
+    get_recursive_libs(recursive_val ${lib} ${prop} ${searched})
+    list(APPEND retval ${recursive_val})
+  endforeach()
+
+  list(REMOVE_DUPLICATES retval)
+  set(${retvar} "${retval}" PARENT_SCOPE)
+endfunction()
+
+function(get_recursive_props retvar target prop)
   set(${retvar} "" PARENT_SCOPE)
   if (NOT TARGET ${target})
     return()
   endif()
-  set(searched ${ARGN})
-  list(APPEND searched ${target})
-  #message(SEND_ERROR "=== ${target} ${prop} ${searched}")
-  
-  set(${retval} "")
-  get_property(propval TARGET ${target} PROPERTY ${prop} SET)
-  if (propval)
-    get_target_property(propval ${target} ${prop})
-    list(APPEND retval ${propval})
-  endif()
+  get_recursive_libs(libs target)
 
-  get_target_property(libs ${target} INTERFACE_LINK_LIBRARIES) 
+  set(retval "")
   foreach(lib ${libs})
-    list(FIND searched ${lib} lib_has_been_searched)
-    #message(SEND_ERROR "+++ ${lib} ${lib_has_been_searched}")
-    if (lib_has_been_searched EQUAL -1)
-      get_recursive_list(recursive_val ${lib} ${prop} ${searched})
-      list(APPEND retval ${recursive_val})
+    get_property(propval TARGET ${lib} PROPERTY ${prop} SET)
+    if (propval)
+      get_target_property(propval ${target} ${prop})
+      list(APPEND retval ${propval})
     endif()
   endforeach()
-  
+
   set(${retvar} ${retval} PARENT_SCOPE)
-  #message(SEND_ERROR "--- ${target} ${prop} ${retval}")
 endfunction()
 
-
 set(runtime_includes "")
-get_recursive_list(val heart_gpu_aware INTERFACE_SYSTEM_INCLUDE_DIRECTORIES)
+get_recursive_props(val heart_gpu_aware INTERFACE_SYSTEM_INCLUDE_DIRECTORIES)
 list(APPEND runtime_includes ${val})
-get_recursive_list(val heart_gpu_aware INTERFACE_INCLUDE_DIRECTORIES)
+get_recursive_props(val heart_gpu_aware INTERFACE_INCLUDE_DIRECTORIES)
 list(APPEND runtime_includes ${val})
 
 set(runtime_defs "")
-get_recursive_list(val heart_gpu_aware INTERFACE_COMPILE_DEFINITIONS)
+get_recursive_props(val heart_gpu_aware INTERFACE_COMPILE_DEFINITIONS)
 list(APPEND runtime_defs ${val})
 
 set(runtime_flags "")
-get_recursive_list(val heart_gpu_aware INTERFACE_COMPILE_OPTIONS)
+get_recursive_props(val heart_gpu_aware INTERFACE_COMPILE_OPTIONS)
 list(APPEND runtime_flags ${val})
 
 set(heart_compile_flags "")
