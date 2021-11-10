@@ -17,28 +17,18 @@
 # include "VectorDouble32.hh"
 #endif //USE_CUDA
 
-REACTION_FACTORY(ohara_cipa_SCC)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);    
+REACTION_FACTORY(ord_SCC)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);    
 
-namespace ohara_cipa_SCC
+namespace ord_SCC
 {
 
 #ifndef USE_CUDA
    struct State
    {
 
-      double C1[SIMDOPS_FLOAT64V_WIDTH];
-      double C2[SIMDOPS_FLOAT64V_WIDTH];
       double CaMKt[SIMDOPS_FLOAT64V_WIDTH];
-      double Cbound[SIMDOPS_FLOAT64V_WIDTH];
-      double D[SIMDOPS_FLOAT64V_WIDTH];
-      double IC1[SIMDOPS_FLOAT64V_WIDTH];
-      double IC2[SIMDOPS_FLOAT64V_WIDTH];
-      double IO[SIMDOPS_FLOAT64V_WIDTH];
-      double IObound[SIMDOPS_FLOAT64V_WIDTH];
       double Jrelnp[SIMDOPS_FLOAT64V_WIDTH];
       double Jrelp[SIMDOPS_FLOAT64V_WIDTH];
-      double O[SIMDOPS_FLOAT64V_WIDTH];
-      double Obound[SIMDOPS_FLOAT64V_WIDTH];
       double a[SIMDOPS_FLOAT64V_WIDTH];
       double ap[SIMDOPS_FLOAT64V_WIDTH];
       double cai[SIMDOPS_FLOAT64V_WIDTH];
@@ -52,18 +42,15 @@ namespace ohara_cipa_SCC
       double ff[SIMDOPS_FLOAT64V_WIDTH];
       double ffp[SIMDOPS_FLOAT64V_WIDTH];
       double fs[SIMDOPS_FLOAT64V_WIDTH];
+      double h[SIMDOPS_FLOAT64V_WIDTH];
       double hL[SIMDOPS_FLOAT64V_WIDTH];
       double hLp[SIMDOPS_FLOAT64V_WIDTH];
-      double hf[SIMDOPS_FLOAT64V_WIDTH];
-      double hs[SIMDOPS_FLOAT64V_WIDTH];
-      double hsp[SIMDOPS_FLOAT64V_WIDTH];
       double iF[SIMDOPS_FLOAT64V_WIDTH];
       double iFp[SIMDOPS_FLOAT64V_WIDTH];
       double iS[SIMDOPS_FLOAT64V_WIDTH];
       double iSp[SIMDOPS_FLOAT64V_WIDTH];
       double j[SIMDOPS_FLOAT64V_WIDTH];
       double jca[SIMDOPS_FLOAT64V_WIDTH];
-      double jp[SIMDOPS_FLOAT64V_WIDTH];
       double ki[SIMDOPS_FLOAT64V_WIDTH];
       double kss[SIMDOPS_FLOAT64V_WIDTH];
       double m[SIMDOPS_FLOAT64V_WIDTH];
@@ -72,6 +59,8 @@ namespace ohara_cipa_SCC
       double nass[SIMDOPS_FLOAT64V_WIDTH];
       double nca[SIMDOPS_FLOAT64V_WIDTH];
       double xk1[SIMDOPS_FLOAT64V_WIDTH];
+      double xrf[SIMDOPS_FLOAT64V_WIDTH];
+      double xrs[SIMDOPS_FLOAT64V_WIDTH];
       double xs1[SIMDOPS_FLOAT64V_WIDTH];
       double xs2[SIMDOPS_FLOAT64V_WIDTH];
    };
@@ -102,6 +91,7 @@ namespace ohara_cipa_SCC
       //PARAMETERS
       double JrelStiffConst;
       double celltype;
+      double g_Na;
     public:
       void calc(double dt,
                 ro_mgarray_ptr<int> indexArray,
@@ -126,7 +116,7 @@ namespace ohara_cipa_SCC
 
       //BGQ_HACKFIX, compiler bug with zero length arrays
       Interpolation _interpolant[0+1];
-      FRIEND_FACTORY(ohara_cipa_SCC)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);
+      FRIEND_FACTORY(ord_SCC)(OBJECT* obj, const double dt, const int numPoints, const ThreadTeam& group);
    };
 }
 

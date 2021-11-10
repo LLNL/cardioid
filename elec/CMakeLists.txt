@@ -115,7 +115,7 @@ set (reaction_src
         BetterTT06.cc
 	TT06_SCC.cc
         fenton_karma_SCC.cc
-        ohara_cipa_SCC.cc	
+        ord_SCC.cc	
         #Grandi.cc
 	#pade.cc
 )
