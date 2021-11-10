@@ -42,15 +42,18 @@ namespace ord_SCC
       double ff[SIMDOPS_FLOAT64V_WIDTH];
       double ffp[SIMDOPS_FLOAT64V_WIDTH];
       double fs[SIMDOPS_FLOAT64V_WIDTH];
-      double h[SIMDOPS_FLOAT64V_WIDTH];
       double hL[SIMDOPS_FLOAT64V_WIDTH];
       double hLp[SIMDOPS_FLOAT64V_WIDTH];
+      double hf[SIMDOPS_FLOAT64V_WIDTH];
+      double hs[SIMDOPS_FLOAT64V_WIDTH];
+      double hsp[SIMDOPS_FLOAT64V_WIDTH];
       double iF[SIMDOPS_FLOAT64V_WIDTH];
       double iFp[SIMDOPS_FLOAT64V_WIDTH];
       double iS[SIMDOPS_FLOAT64V_WIDTH];
       double iSp[SIMDOPS_FLOAT64V_WIDTH];
       double j[SIMDOPS_FLOAT64V_WIDTH];
       double jca[SIMDOPS_FLOAT64V_WIDTH];
+      double jp[SIMDOPS_FLOAT64V_WIDTH];
       double ki[SIMDOPS_FLOAT64V_WIDTH];
       double kss[SIMDOPS_FLOAT64V_WIDTH];
       double m[SIMDOPS_FLOAT64V_WIDTH];
@@ -91,7 +94,6 @@ namespace ord_SCC
       //PARAMETERS
       double JrelStiffConst;
       double celltype;
-      double g_Na;
     public:
       void calc(double dt,
                 ro_mgarray_ptr<int> indexArray,
