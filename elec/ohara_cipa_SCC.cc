@@ -224,7 +224,7 @@ void ThisReaction::constructKernel()
    "   NUMSTATES\n"
    "};\n"
    "extern \"C\"\n"
-   "__global__ void ohara_cipa_SCC_kernel(const double* _Vm, const double* _iStim, double* _dVm, double* _state) {\n"
+   "__global__ void ohara_cipa_SCC_kernel(const int* _indexArray, const double* _Vm, const double* _iStim, double* _dVm, double* _state) {\n"
    "const double _dt = " << __cachedDt << ";\n"
    "const int _nCells = " << nCells_ << ";\n"
 
@@ -232,7 +232,7 @@ void ThisReaction::constructKernel()
    "const double celltype = " << celltype << ";\n"
    "const int _ii = threadIdx.x + blockIdx.x*blockDim.x;\n"
    "if (_ii >= _nCells) { return; }\n"
-   "const double V = _Vm[_ii];\n"
+   "const double V = _Vm[_indexArray[_ii]];\n"
    "double _ratPoly;\n"
 
    "const double C1 = _state[_ii+C1_off*_nCells];\n"
@@ -1295,7 +1295,7 @@ void ThisReaction::constructKernel()
    "_state[_ii+xk1_off*_nCells] += _xk1_RLA*(xk1+_xk1_RLB);\n"
    "_state[_ii+xs1_off*_nCells] += _xs1_RLA*(xs1+_xs1_RLB);\n"
    "_state[_ii+xs2_off*_nCells] += _xs2_RLA*(xs2+_xs2_RLB);\n"
-   "_dVm[_ii] = -Iion_001;\n"
+   "_dVm[_indexArray[_ii]] = -Iion_001;\n"
    "}\n";
 
    _program_code = ss.str();
@@ -1319,6 +1319,7 @@ void ThisReaction::constructKernel()
 }
 
 void ThisReaction::calc(double dt,
+                ro_mgarray_ptr<int> indexArray_m,
                 ro_mgarray_ptr<double> Vm_m,
                 ro_mgarray_ptr<double> iStim_m,
                 wo_mgarray_ptr<double> dVm_m)
@@ -1330,11 +1331,13 @@ void ThisReaction::calc(double dt,
       if (blockSize_ == -1) { blockSize_ = 1024; }
       while(1)
       {
+         const int* indexArrayRaw = indexArray_m.useOn(GPU).raw();
          const double* VmRaw = Vm_m.useOn(GPU).raw();
          const double* iStimRaw = iStim_m.useOn(GPU).raw();
          double* dVmRaw = dVm_m.useOn(GPU).raw();
          double* stateRaw= stateTransport_.readwrite(GPU).raw();
-         void* args[] = { &VmRaw,
+         void* args[] = { &indexArrayRaw,
+                          &VmRaw,
                           &iStimRaw,
                           &dVmRaw,
                           &stateRaw};
@@ -1453,12 +1456,13 @@ ThisReaction::ThisReaction(const int numPoints, const double __dt)
 ThisReaction::~ThisReaction() {}
 
 void ThisReaction::calc(double _dt,
+                ro_mgarray_ptr<int> ___indexArray,
                 ro_mgarray_ptr<double> ___Vm,
-                ro_mgarray_ptr<double> ___iStim,
+                ro_mgarray_ptr<double> ,
                 wo_mgarray_ptr<double> ___dVm)
 {
+   ro_array_ptr<int>    __indexArray = ___indexArray.useOn(CPU);
    ro_array_ptr<double> __Vm = ___Vm.useOn(CPU);
-   ro_array_ptr<double> __iStim = ___iStim.useOn(CPU);
    wo_array_ptr<double> __dVm = ___dVm.useOn(CPU);
 
    //define the constants
@@ -1917,9 +1921,16 @@ void ThisReaction::calc(double _dt,
    {
       const int __ii = __jj*width;
       //set Vm
-      const real V = load(&__Vm[__ii]);
-      const real iStim = load(&__iStim[__ii]);
-
+      double __Vm_local[width];
+      {
+         int cursor = 0;
+         for (int __kk=0; __kk<width; __kk++)
+         {
+            __Vm_local[__kk] = __Vm[__indexArray[__ii+cursor]];
+            if (__ii+__kk < nCells_) { cursor++; }
+         }
+      }
+      const real V = load(&__Vm_local[0]);
       //set all state variables
       real C1=load(state_[__jj].C1);
       real C2=load(state_[__jj].C2);
@@ -2579,7 +2590,15 @@ void ThisReaction::calc(double _dt,
       store(state_[__jj].xk1, xk1);
       store(state_[__jj].xs1, xs1);
       store(state_[__jj].xs2, xs2);
-      simdops::store(&__dVm.raw()[__ii],-Iion_001);
+      double __dVm_local[width];
+      simdops::store(&__dVm_local[0],-Iion_001);
+      {
+         int cursor = 0;
+         for (int __kk=0; __kk<width && __ii+__kk<nCells_; __kk++)
+         {
+            __dVm[__indexArray[__ii+__kk]] = __dVm_local[__kk];
+         }
+      }
    }
 }
 #endif //USE_CUDA
@@ -2589,11 +2608,12 @@ string ThisReaction::methodName() const
    return "ohara_cipa_SCC";
 }
 
-void ThisReaction::initializeMembraneVoltage(wo_mgarray_ptr<double> __Vm_m)
+void ThisReaction::initializeMembraneVoltage(ro_mgarray_ptr<int> __indexArray_m, wo_mgarray_ptr<double> __Vm_m)
 {
    assert(__Vm_m.size() >= nCells_);
 
    wo_array_ptr<double> __Vm = __Vm_m.useOn(CPU);
+   ro_array_ptr<int> __indexArray = __indexArray_m.useOn(CPU);
 #ifdef USE_CUDA
 #define READ_STATE(state,index) (stateData[_##state##_off*nCells_+index])
    wo_array_ptr<double> stateData = stateTransport_.useOn(CPU);
@@ -2751,9 +2771,8 @@ void ThisReaction::initializeMembraneVoltage(wo_mgarray_ptr<double> __Vm_m)
       READ_STATE(xk1,iCell) = xk1;
       READ_STATE(xs1,iCell) = xs1;
       READ_STATE(xs2,iCell) = xs2;
+      __Vm[__indexArray[iCell]] = V_init;
    }
-
-   __Vm.assign(__Vm.size(), V_init);
 }
 
 enum varHandles

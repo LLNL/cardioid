@@ -104,10 +104,11 @@ namespace ohara_cipa_SCC
       double celltype;
     public:
       void calc(double dt,
+                ro_mgarray_ptr<int> indexArray,
                 ro_mgarray_ptr<double> Vm_m,
                 ro_mgarray_ptr<double> iStim_m,
                 wo_mgarray_ptr<double> dVm_m);
-      void initializeMembraneVoltage(wo_mgarray_ptr<double> Vm);
+      void initializeMembraneVoltage(ro_mgarray_ptr<int> indexArray, wo_mgarray_ptr<double> Vm);
       virtual ~ThisReaction();
 #ifdef USE_CUDA
       void constructKernel();
