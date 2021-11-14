@@ -107,8 +107,8 @@ Many thanks go to Cardioid's [contributors](https://github.com/llnl/cardioid/gra
 
 Cardioid's history goes back a few years -- it was a finalist for the 2012 Gordon Bell Prize -- but only now is the code available as open source. Initially developed by a team of LLNL and IBM scientists, Cardioid divides the heart into a large number of manageable subdomains. This replicates the electrophysiology of the human heart, accurately simulating the activation of each heart muscle cell and cell-to-cell electric coupling.
 
-- Video: [The Cardioid Project: Simulating the Human Heart](https://computation.llnl.gov/cardioid-project-simulating-human-heart-0)
-- *Science & Technology Review* article: [Venturing into the Heart of High-Performance Computing Simulations](https://str.llnl.gov/Sep12/streitz.html)
+- Video: [The Cardioid Project: Simulating the Human Heart](https://youtu.be/KQIqLb9kYtA)
+- *Science & Technology Review* article: [Venturing into the Heart of High-Performance Computing Simulations](https://str.llnl.gov/content/pages/past-issues-pdfs/2012.09.pdf#page=24)
 - *Science & Technology Review* article: [Reaching for New Computational Heights with Sequoia](https://str.llnl.gov/july-2013/mccoy) - Cardioid helped set speed records for the Sequoia supercomputer by clocking in at nearly 12 petaflops while scaling with better than 90% parallel efficiency across all 1,572,864 cores.
 
 ## License
