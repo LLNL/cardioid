@@ -90,8 +90,8 @@ class BoxStimulus : public StimulusLocation
                const double ymin, const double ymax,
                const double zmin, const double zmax)
    : xmin_(xmin), xmax_(xmax),
-     ymin_(xmin), ymax_(xmax),
-     zmin_(xmin), zmax_(xmax)
+     ymin_(ymin), ymax_(ymax),
+     zmin_(zmin), zmax_(zmax)
    {}
    virtual bool contains(const int elementNo, const Vector& x)
    {
